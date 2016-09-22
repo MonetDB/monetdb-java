@@ -1,6 +1,10 @@
 # ChangeLog file for java
 # This file is updated with Maddlog
 
+* Thu Sep 22 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved JdbcClient program when doing dump of table definition.  It now
+  outputs CREATE TABLE definition more similar to mclient program.
+
 * Thu Sep 15 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved performance of following JDBC ResultSet and ResultSetMetaData
   methods:
