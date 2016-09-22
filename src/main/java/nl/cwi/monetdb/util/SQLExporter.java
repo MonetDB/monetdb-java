@@ -70,7 +70,8 @@ public class SQLExporter extends Exporter {
 			String[] types = new String[1];
 			types[0] = type;
 			ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
-			if (!tbl.next()) throw new SQLException("Whoops no meta data for view " + fqname);
+			if (!tbl.next())
+				throw new SQLException("Whoops no meta data for view " + fqname);
 
 			// This will probably only work for MonetDB
 			String remarks = tbl.getString("REMARKS");	// for MonetDB driver this contains the view definition
@@ -89,33 +90,53 @@ public class SQLExporter extends Exporter {
 
 		// add all columns with their type, nullability and default definition
 		ResultSet cols = dbmd.getColumns(catalog, schema, name, null);
+		int colNmIndex = cols.findColumn("COLUMN_NAME");
+		int colTypeNmIndex = cols.findColumn("TYPE_NAME");
+
 		ResultSetMetaData rsmd = cols.getMetaData();
-		int colwidth = rsmd.getColumnDisplaySize(cols.findColumn("COLUMN_NAME"));
-		int typewidth = rsmd.getColumnDisplaySize(cols.findColumn("TYPE_NAME"));
+		int colwidth = rsmd.getColumnDisplaySize(colNmIndex);
+		int typewidth = rsmd.getColumnDisplaySize(colTypeNmIndex);
+		if (typewidth < 13)
+			typewidth = 13;	// use minimal 13 characters for the typename (same as used in mclient)
+
+		StringBuilder sb = new StringBuilder(128);
 		for (i = 0; cols.next(); i++) {
 			if (i > 0) out.println(",");
-			// print column name
-			s = dq(cols.getString("COLUMN_NAME"));
-			out.print("\t" + s + repeat(' ', (colwidth - s.length()) + 3));
 
-			s = cols.getString("TYPE_NAME");
+			// print column name (with double quotes)
+			s = dq(cols.getString(colNmIndex));
+			out.print("\t" + s + repeat(' ', (colwidth - s.length() + 3)));
+
 			int ctype = cols.getInt("DATA_TYPE");
 			int size = cols.getInt("COLUMN_SIZE");
 			int digits = cols.getInt("DECIMAL_DIGITS");
-			// small hack to get desired behaviour: set digits when we
-			// have a time or timestamp with time zone and at the same
-			// time masking the internal types
-			if (s.equals("timetz")) {
-				digits = 1;
-				s = "time";
-			} else if (s.equals("timestamptz")) {
-				digits = 1;
-				s = "timestamp";
-			}
-			// print column type
-			out.print(s + repeat(' ', typewidth - s.length()));
+			boolean isNotNull = cols.getInt("NULLABLE") == DatabaseMetaData.columnNoNulls;
+			String defaultValue = cols.getString("COLUMN_DEF");
+			boolean hasDefault = (defaultValue != null && !defaultValue.isEmpty());
 
-			// do some MonetDB type specifics
+			s = cols.getString(colTypeNmIndex).toUpperCase();
+			// do some data type substitutions to match SQL standard
+			if (s.equals("INT")) {
+				s = "INTEGER";
+			} else if (s.equals("SEC_INTERVAL")) {
+				s = "INTERVAL SECOND";
+			} else if (s.equals("MONTH_INTERVAL")) {
+				s = "INTERVAL MONTH";
+			} else if (s.equals("TIMETZ")) {
+				s = "TIME";
+				// small hack to get desired behaviour: set digits when we have
+				// a time with time zone and at the same time masking the internal types
+				digits = 1;
+			} else if (s.equals("TIMESTAMPTZ")) {
+				s = "TIMESTAMP";
+				// small hack to get desired behaviour: set digits when we have
+				// a timestamp with time zone and at the same time masking the internal types
+				digits = 1;
+			}
+
+			sb.append(s);	// add the data type for this column
+
+			// do some SQL/MonetDB type length/precision and scale specifics
 			switch (ctype) {
 				case Types.CHAR:
 				case Types.VARCHAR:
@@ -124,27 +145,37 @@ public class SQLExporter extends Exporter {
 				case Types.BLOB:
 				case Types.FLOAT:
 					if (size > 0)
-						out.print("(" + size + ")");
+						sb.append('(').append(size).append(')');
 					break;
 				case Types.TIME:
 				case Types.TIMESTAMP:
 					if (size > 1)
-				 		out.print("(" + (size - 1) + ")");
+						sb.append('(').append(size -1).append(')');
 					if (digits != 0)
-						out.print(" WITH TIME ZONE");
+						sb.append(" WITH TIME ZONE");
 					break;
 				case Types.DECIMAL:
 				case Types.NUMERIC:
+					sb.append('(').append(size);
 					if (digits != 0)
-				 		out.print("(" + size + "," + digits + ")");
-					else
-				 		out.print("(" + size + ")");
+						sb.append(',').append(digits);
+					sb.append(')');
 					break;
 			}
-			if (cols.getInt("NULLABLE") == DatabaseMetaData.columnNoNulls)
-				out.print("\tNOT NULL");
-			if ((s = cols.getString("COLUMN_DEF")) != null)
-				out.print("\tDEFAULT " + q(s));
+			if (isNotNull || hasDefault) {
+				int spaces = typewidth - sb.length();
+				if (spaces > 0)
+					sb.append(repeat(' ', spaces));
+				if (isNotNull)
+					sb.append(" NOT NULL");
+				if (hasDefault)
+					sb.append(" DEFAULT ").append(defaultValue);
+			}
+
+			// print column type, optional length and scale, optional Not NULL, optional default value
+			out.print(sb.toString());
+
+			sb.delete(0, sb.length());	// clear the stringbuffer for next column
 		}
 		cols.close();
 
@@ -156,9 +187,7 @@ public class SQLExporter extends Exporter {
 		// first make an 'index' of the KEY_SEQ column
 		SortedMap<Integer, Integer> seqIndex = new TreeMap<Integer, Integer>();
 		for (i = 1; cols.next(); i++) {
-			seqIndex.put(
-					Integer.valueOf(cols.getInt("KEY_SEQ")),
-					Integer.valueOf(i));
+			seqIndex.put(Integer.valueOf(cols.getInt("KEY_SEQ")), Integer.valueOf(i));
 		}
 		if (seqIndex.size() > 0) {
 			// terminate the previous line
@@ -182,22 +211,26 @@ public class SQLExporter extends Exporter {
 
 		// add unique constraint definitions
 		cols = dbmd.getIndexInfo(catalog, schema, name, true, true);
+		int colIndexNm = cols.findColumn("INDEX_NAME");
+		int colIndexColNm = cols.findColumn("COLUMN_NAME");
 		while (cols.next()) {
-			String idxname = cols.getString("INDEX_NAME");
-			out.println(",");
-			out.print("\tCONSTRAINT " + dq(idxname) + " UNIQUE (" +
-				dq(cols.getString("COLUMN_NAME")));
+			String idxname = cols.getString(colIndexNm);
+			if (idxname != null) {
+				out.println(",");
+				out.print("\tCONSTRAINT " + dq(idxname) + " UNIQUE (" +
+					dq(cols.getString(colIndexColNm)));
 
-			boolean next;
-			while ((next = cols.next()) && idxname != null &&
-					idxname.equals(cols.getString("INDEX_NAME"))) {
-				out.print(", " + dq(cols.getString("COLUMN_NAME")));
+				boolean next;
+				while ((next = cols.next()) &&
+						idxname.equals(cols.getString(colIndexNm))) {
+					out.print(", " + dq(cols.getString(colIndexColNm)));
+				}
+				// go back one, we've gone one too far
+				if (next)
+					cols.previous();
+
+				out.print(")");
 			}
-			// go back one, we've gone one too far
-			if (next)
-				cols.previous();
-
-			out.print(")");
 		}
 		cols.close();
 
@@ -220,23 +253,24 @@ public class SQLExporter extends Exporter {
 				pk.add(cols.getString("PKCOLUMN_NAME").intern());
 			}
 			// go back one
-			if (next) cols.previous();
+			if (next)
+				cols.previous();
 
 			Iterator<String> it = fk.iterator();
 			for (i = 0; it.hasNext(); i++) {
-				if (i > 0) out.print(", ");
+				if (i > 0)
+					out.print(", ");
 				out.print(dq(it.next()));
 			}
-			out.print(") ");
-
-			out.print("REFERENCES " + dq(cols.getString("PKTABLE_SCHEM")) +
+			out.print(") REFERENCES " + dq(cols.getString("PKTABLE_SCHEM")) +
 				"." + dq(cols.getString("PKTABLE_NAME")) + " (");
 			it = pk.iterator();
 			for (i = 0; it.hasNext(); i++) {
-				if (i > 0) out.print(", ");
+				if (i > 0)
+					out.print(", ");
 				out.print(dq(it.next()));
 			}
-		 	out.print(")");
+			out.print(")");
 		}
 		cols.close();
 		out.println();
@@ -245,26 +279,30 @@ public class SQLExporter extends Exporter {
 
 		// create the non unique indexes defined for this table
 		cols = dbmd.getIndexInfo(catalog, schema, name, false, true);
+		colIndexNm = cols.findColumn("INDEX_NAME");
+		colIndexColNm = cols.findColumn("COLUMN_NAME");
 		while (cols.next()) {
-			if (!cols.getBoolean("NON_UNIQUE")) {
-				// we already covered this one as UNIQUE constraint in the CREATE TABLE
-				continue;
-			} else {
-				String idxname = cols.getString("INDEX_NAME");
-				out.print("CREATE INDEX " + dq(idxname) + " ON " +
-					dq(cols.getString("TABLE_NAME")) + " (" +
-					dq(cols.getString("COLUMN_NAME")));
+			if (cols.getBoolean("NON_UNIQUE")) {
+				// We only process non-unique indexes here.
+				// The unique indexes are already covered as UNIQUE constraints in the CREATE TABLE above
+				String idxname = cols.getString(colIndexNm);
+				if (idxname != null) {
+					out.print("CREATE INDEX " + dq(idxname) + " ON " +
+						dq(cols.getString("TABLE_NAME")) + " (" +
+						dq(cols.getString(colIndexColNm)));
 
-				boolean next;
-				while ((next = cols.next()) && idxname != null &&
-					idxname.equals(cols.getString("INDEX_NAME")))
-				{
-					out.print(", " + dq(cols.getString("COLUMN_NAME")));
+					boolean next;
+					while ((next = cols.next()) &&
+						idxname.equals(cols.getString(colIndexNm)))
+					{
+						out.print(", " + dq(cols.getString(colIndexColNm)));
+					}
+					// go back one
+					if (next)
+						cols.previous();
+
+					out.println(");");
 				}
-				// go back one
-				if (next) cols.previous();
-
-				out.println(");");
 			}
 		}
 		cols.close();
