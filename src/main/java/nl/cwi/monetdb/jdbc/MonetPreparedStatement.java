@@ -8,22 +8,46 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import java.sql.*;
-import java.util.*;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.math.RoundingMode;
 import java.net.URL;
-import java.io.*;
-import java.nio.*;
-import java.math.*;	// BigDecimal, etc.
+import java.nio.CharBuffer;
+import java.sql.Array;
+import java.sql.Blob;
+import java.sql.Clob;
+import java.sql.NClob;
+import java.sql.ParameterMetaData;
+import java.sql.PreparedStatement;
+import java.sql.Ref;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.RowId;
+import java.sql.SQLData;
+import java.sql.SQLDataException;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLOutput;
+import java.sql.SQLXML;
+import java.sql.Struct;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.sql.Types;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Map;
 
 /**
  * A {@link PreparedStatement} suitable for the MonetDB database.
- * 
+ *
  * This implementation of the PreparedStatement interface uses the
  * capabilities of the MonetDB/SQL backend to prepare and execute
  * queries.  The backend takes care of finding the '?'s in the input and
  * returns the types it expects for them.
- * 
+ *
  * An example of a server response on a prepare query is:
  * <pre>
  * % prepare select name from tables where id &gt; ? and id &lt; ?;
@@ -36,8 +60,8 @@ import java.text.SimpleDateFormat;
  * [ "int",        9,      0       ]
  * </pre>
  *
- * @author Fabian Groffen
- * @version 0.3
+ * @author Fabian Groffen, Martin van Dinther
+ * @version 0.4
  */
 public class MonetPreparedStatement
 	extends MonetStatement
@@ -204,7 +228,7 @@ public class MonetPreparedStatement
 
 	/**
 	 * Clears the current parameter values immediately.
-	 * 
+	 *
 	 * In general, parameter values remain in force for repeated use of a
 	 * statement. Setting a parameter value automatically clears its previous
 	 * value. However, in some cases it is useful to immediately release the
@@ -224,7 +248,7 @@ public class MonetPreparedStatement
 	 * return multiple results; the execute method handles these complex
 	 * statements as well as the simpler form of statements handled by
 	 * the methods executeQuery and executeUpdate.
-	 * 
+	 *
 	 * The execute method returns a boolean to indicate the form of the
 	 * first result.  You must call either the method getResultSet or
 	 * getUpdateCount to retrieve the result; you must call
@@ -331,7 +355,7 @@ public class MonetPreparedStatement
 	 * Retrieves a ResultSetMetaData object that contains information
 	 * about the columns of the ResultSet object that will be returned
 	 * when this PreparedStatement object is executed.
-	 * 
+	 *
 	 * Because a PreparedStatement object is precompiled, it is possible
 	 * to know about the ResultSet object that it will return without
 	 * having to execute it.  Consequently, it is possible to invoke the
@@ -392,11 +416,19 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public boolean isCaseSensitive(int column) throws SQLException {
-				switch (javaType[getColumnIdx(column)]) {
+				switch (getColumnType(column)) {
 					case Types.CHAR:
-					case Types.VARCHAR:
 					case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
 					case Types.CLOB:
+						return true;
+					case Types.VARCHAR:
+						String monettype = getColumnTypeName(column);
+						if (monettype != null) {
+							// data of type inet or uuid is not case sensitive
+							if ("inet".equals(monettype)
+							 || "uuid".equals(monettype))
+								return false;
+						}
 						return true;
 				}
 
@@ -442,23 +474,24 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public boolean isSigned(int column) throws SQLException {
-				String monettype = getColumnTypeName(column);
-				if (monettype != null) {
-					if ("oid".equals(monettype)
-					 || "ptr".equals(monettype))
-						return false;
-				}
 				// we can hardcode this, based on the colum type
-				switch (javaType[getColumnIdx(column)]) {
+				switch (getColumnType(column)) {
 					case Types.NUMERIC:
 					case Types.DECIMAL:
 					case Types.TINYINT:
 					case Types.SMALLINT:
 					case Types.INTEGER:
-					case Types.BIGINT:
 					case Types.REAL:
 					case Types.FLOAT:
 					case Types.DOUBLE:
+						return true;
+					case Types.BIGINT:
+						String monettype = getColumnTypeName(column);
+						if (monettype != null) {
+							if ("oid".equals(monettype)
+							 || "ptr".equals(monettype))
+								return false;
+						}
 						return true;
 					case Types.BIT: // we don't use type BIT, it's here for completeness
 					case Types.BOOLEAN:
@@ -481,7 +514,11 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public int getColumnDisplaySize(int column) throws SQLException {
-				return digits[getColumnIdx(column)];
+				try {
+					return digits[getColumnIdx(column)];
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+				}
 			}
 
 			/**
@@ -493,7 +530,11 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public String getSchemaName(int column) throws SQLException {
-				return schema[getColumnIdx(column)];
+				try {
+					return schema[getColumnIdx(column)];
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+				}
 			}
 
 			/**
@@ -503,8 +544,12 @@ public class MonetPreparedStatement
 			 * @return table name or "" if not applicable
 			 */
 			@Override
-			public String getTableName(int col) throws SQLException {
-				return table[getColumnIdx(col)];
+			public String getTableName(int column) throws SQLException {
+				try {
+					return table[getColumnIdx(column)];
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+				}
 			}
 
 			/**
@@ -519,7 +564,11 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public int getPrecision(int column) throws SQLException {
-				return digits[getColumnIdx(column)];
+				try {
+					return digits[getColumnIdx(column)];
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+				}
 			}
 
 			/**
@@ -534,7 +583,11 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public int getScale(int column) throws SQLException {
-				return scale[getColumnIdx(column)];
+				try {
+					return scale[getColumnIdx(column)];
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+				}
 			}
 
 			/**
@@ -619,7 +672,7 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public String getColumnClassName(int column) throws SQLException {
-				return MonetResultSet.getClassForType(javaType[getColumnIdx(column)]).getName();
+				return MonetResultSet.getClassForType(getColumnType(column)).getName();
 			}
 
 			/**
@@ -644,8 +697,12 @@ public class MonetPreparedStatement
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
-			public String getColumnName(int col) throws SQLException {
-				return column[getColumnIdx(col)];
+			public String getColumnName(int colnr) throws SQLException {
+				try {
+					return column[getColumnIdx(colnr)];
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(colnr);
+				}
 			}
 
 			/**
@@ -657,7 +714,11 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public int getColumnType(int column) throws SQLException {
-				return javaType[getColumnIdx(column)];
+				try {
+					return javaType[getColumnIdx(column)];
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+				}
 			}
 
 			/**
@@ -671,7 +732,11 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public String getColumnTypeName(int column) throws SQLException {
-				return monetdbType[getColumnIdx(column)];
+				try {
+					return monetdbType[getColumnIdx(column)];
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+				}
 			}
 		};
 	}
@@ -713,14 +778,14 @@ public class MonetPreparedStatement
 			/**
 			 * Retrieves whether null values are allowed in the
 			 * designated parameter.
-			 * 
+			 *
 			 * This is currently always unknown for MonetDB/SQL.
 			 *
-			 * @param param the first parameter is 1, the second is 2, ... 
+			 * @param param the first parameter is 1, the second is 2, ...
 			 * @return the nullability status of the given parameter;
 			 *         one of ParameterMetaData.parameterNoNulls,
 			 *         ParameterMetaData.parameterNullable, or
-			 *         ParameterMetaData.parameterNullableUnknown 
+			 *         ParameterMetaData.parameterNullableUnknown
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
@@ -732,15 +797,14 @@ public class MonetPreparedStatement
 			 * Retrieves whether values for the designated parameter can
 			 * be signed numbers.
 			 *
-			 * @param param the first parameter is 1, the second is 2, ... 
-			 * @return true if so; false otherwise 
+			 * @param param the first parameter is 1, the second is 2, ...
+			 * @return true if so; false otherwise
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public boolean isSigned(int param) throws SQLException {
 				// we can hardcode this, based on the colum type
-				// (from ResultSetMetaData.isSigned)
-				switch (javaType[getParamIdx(param)]) {
+				switch (getParameterType(param)) {
 					case Types.NUMERIC:
 					case Types.DECIMAL:
 					case Types.TINYINT:
@@ -765,53 +829,69 @@ public class MonetPreparedStatement
 			 * Retrieves the designated parameter's number of decimal
 			 * digits.
 			 *
-			 * @param param the first parameter is 1, the second is 2, ... 
+			 * @param param the first parameter is 1, the second is 2, ...
 			 * @return precision
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public int getPrecision(int param) throws SQLException {
-				return digits[getParamIdx(param)];
+				try {
+					return digits[getParamIdx(param)];
+				} catch (IndexOutOfBoundsException e) {
+					throw newSQLInvalidParameterIndexException(param);
+				}
 			}
 
 			/**
 			 * Retrieves the designated parameter's number of digits to
 			 * right of the decimal point.
 			 *
-			 * @param param the first parameter is 1, the second is 2, ... 
-			 * @return scale 
+			 * @param param the first parameter is 1, the second is 2, ...
+			 * @return scale
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public int getScale(int param) throws SQLException {
-				return scale[getParamIdx(param)];
+				try {
+					return scale[getParamIdx(param)];
+				} catch (IndexOutOfBoundsException e) {
+					throw newSQLInvalidParameterIndexException(param);
+				}
 			}
 
 			/**
 			 * Retrieves the designated parameter's SQL type.
 			 *
-			 * @param param the first parameter is 1, the second is 2, ... 
-			 * @return SQL type from java.sql.Types 
+			 * @param param the first parameter is 1, the second is 2, ...
+			 * @return SQL type from java.sql.Types
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public int getParameterType(int param) throws SQLException {
-				return javaType[getParamIdx(param)];
+				try {
+					return javaType[getParamIdx(param)];
+				} catch (IndexOutOfBoundsException e) {
+					throw newSQLInvalidParameterIndexException(param);
+				}
 			}
 
 			/**
 			 * Retrieves the designated parameter's database-specific
 			 * type name.
 			 *
-			 * @param param the first parameter is 1, the second is 2, ... 
+			 * @param param the first parameter is 1, the second is 2, ...
 			 * @return type the name used by the database.  If the
 			 *         parameter type is a user-defined type, then a
-			 *         fully-qualified type name is returned. 
+			 *         fully-qualified type name is returned.
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public String getParameterTypeName(int param) throws SQLException {
-				return monetdbType[getParamIdx(param)];
+				try {
+					return monetdbType[getParamIdx(param)];
+				} catch (IndexOutOfBoundsException e) {
+					throw newSQLInvalidParameterIndexException(param);
+				}
 			}
 
 			/**
@@ -819,24 +899,23 @@ public class MonetPreparedStatement
 			 * whose instances should be passed to the method
 			 * PreparedStatement.setObject.
 			 *
-			 * @param param the first parameter is 1, the second is 2, ... 
+			 * @param param the first parameter is 1, the second is 2, ...
 			 * @return the fully-qualified name of the class in the Java
 			 *         programming language that would be used by the
 			 *         method PreparedStatement.setObject to set the
 			 *         value in the specified parameter. This is the
-			 *         class name used for custom mapping. 
+			 *         class name used for custom mapping.
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public String getParameterClassName(int param) throws SQLException {
+				String typeName = getParameterTypeName(param);
 				Map<String,Class<?>> map = getConnection().getTypeMap();
 				Class<?> c;
-				if (map.containsKey(monetdbType[getParamIdx(param)])) {
-					c = (Class)map.get(monetdbType[getParamIdx(param)]);
+				if (map.containsKey(typeName)) {
+					c = (Class)map.get(typeName);
 				} else {
-					c = MonetResultSet.getClassForType(
-							javaType[getParamIdx(param)]
-					);
+					c = MonetResultSet.getClassForType(getParameterType(param));
 				}
 				return c.getName();
 			}
@@ -845,12 +924,12 @@ public class MonetPreparedStatement
 			 * Retrieves the designated parameter's mode.
 			 * For MonetDB/SQL this is currently always unknown.
 			 *
-			 * @param param - the first parameter is 1, the second is 2, ... 
+			 * @param param - the first parameter is 1, the second is 2, ...
 			 * @return mode of the parameter; one of
 			 *         ParameterMetaData.parameterModeIn,
 			 *         ParameterMetaData.parameterModeOut, or
 			 *         ParameterMetaData.parameterModeInOut
-			 *         ParameterMetaData.parameterModeUnknown. 
+			 *         ParameterMetaData.parameterModeUnknown.
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
@@ -881,7 +960,7 @@ public class MonetPreparedStatement
 	 * java.io.InputStream. Data will be read from the stream as needed until
 	 * end-of-file is reached. The JDBC driver will do any necessary conversion
 	 * from ASCII to the database char format.
-	 * 
+	 *
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
 	 *
@@ -905,7 +984,7 @@ public class MonetPreparedStatement
 	 * java.io.InputStream. Data will be read from the stream as needed until
 	 * end-of-file is reached. The JDBC driver will do any necessary conversion
 	 * from ASCII to the database char format.
-	 * 
+	 *
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
 	 *
@@ -929,7 +1008,7 @@ public class MonetPreparedStatement
 	 * from the stream as needed until end-of-file is reached. The JDBC
 	 * driver will do any necessary conversion from ASCII to the
 	 * database char format.
-	 * 
+	 *
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
 	 *
@@ -990,7 +1069,7 @@ public class MonetPreparedStatement
 	 * to a LONGVARBINARY parameter, it may be more practical to send it via a
 	 * java.io.InputStream object. The data will be read from the stream as
 	 * needed until end-of-file is reached.
-	 * 
+	 *
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
 	 *
@@ -1013,7 +1092,7 @@ public class MonetPreparedStatement
 	 * to a LONGVARBINARY parameter, it may be more practical to send it via a
 	 * java.io.InputStream object. The data will be read from the stream as
 	 * needed until end-of-file is reached.
-	 * 
+	 *
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
 	 *
@@ -1037,7 +1116,7 @@ public class MonetPreparedStatement
 	 * to a LONGVARBINARY parameter, it may be more practical to send it via a
 	 * java.io.InputStream object. The data will be read from the stream as
 	 * needed until end-of-file is reached.
-	 * 
+	 *
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
 	 *
@@ -1171,10 +1250,10 @@ public class MonetPreparedStatement
 	 * via a java.io.Reader object. The data will be read from the stream as
 	 * needed until end-of-file is reached. The JDBC driver will do any
 	 * necessary conversion from UNICODE to the database char format.
-	 * 
+	 *
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
-	 * 
+	 *
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param reader the java.io.Reader object that contains the Unicode data
 	 * @param length the number of characters in the stream
@@ -1208,10 +1287,10 @@ public class MonetPreparedStatement
 	 * via a java.io.Reader object. The data will be read from the stream as
 	 * needed until end-of-file is reached. The JDBC driver will do any
 	 * necessary conversion from UNICODE to the database char format.
-	 * 
+	 *
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
-	 * 
+	 *
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param reader the java.io.Reader object that contains the Unicode data
 	 * @throws SQLException if a database access error occurs
@@ -1232,10 +1311,10 @@ public class MonetPreparedStatement
 	 * via a java.io.Reader object. The data will be read from the stream as
 	 * needed until end-of-file is reached. The JDBC driver will do any
 	 * necessary conversion from UNICODE to the database char format.
-	 * 
+	 *
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
-	 * 
+	 *
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param reader the java.io.Reader object that contains the Unicode data
 	 * @param length the number of characters in the stream
@@ -1552,7 +1631,7 @@ public class MonetPreparedStatement
 
 	/**
 	 * Sets the designated parameter to SQL NULL.
-	 * 
+	 *
 	 * Note: You must specify the parameter's SQL type.
 	 *
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
@@ -1571,7 +1650,7 @@ public class MonetPreparedStatement
 	 * setNull should be used for user-defined types and REF type parameters.
 	 * Examples of user-defined types include: STRUCT, DISTINCT, JAVA_OBJECT,
 	 * and named array types.
-	 * 
+	 *
 	 * Note: To be portable, applications must give the SQL type code and the
 	 * fully-qualified SQL type name when specifying a NULL user-defined or REF
 	 * parameter. In the case of a user-defined type the name is the type name
@@ -1602,11 +1681,11 @@ public class MonetPreparedStatement
 	 * object.  The second parameter must be of type Object; therefore,
 	 * the java.lang equivalent objects should be used for built-in
 	 * types.
-	 * 
+	 *
 	 * The JDBC specification specifies a standard mapping from Java
 	 * Object types to SQL types. The given argument will be converted
 	 * to the corresponding SQL type before being sent to the database.
-	 * 
+	 *
 	 * Note that this method may be used to pass datatabase-specific
 	 * abstract data types, by using a driver-specific Java type. If the
 	 * object is of a class implementing the interface SQLData, the JDBC
@@ -1614,7 +1693,7 @@ public class MonetPreparedStatement
 	 * SQL data stream. If, on the other hand, the object is of a class
 	 * implementing Ref, Blob, Clob, Struct, or Array, the driver should
 	 * pass it to the database as a value of the corresponding SQL type.
-	 * 
+	 *
 	 * This method throws an exception if there is an ambiguity, for
 	 * example, if the object is of a class implementing more than one
 	 * of the interfaces named above.
@@ -1651,7 +1730,7 @@ public class MonetPreparedStatement
 	 * Sets the value of the designated parameter with the given object. The
 	 * second argument must be an object type; for integral values, the
 	 * java.lang equivalent objects should be used.
-	 * 
+	 *
 	 * The given Java object will be converted to the given targetSqlType
 	 * before being sent to the database. If the object has a custom mapping
 	 * (is of a class implementing the interface SQLData), the JDBC driver
@@ -1659,10 +1738,10 @@ public class MonetPreparedStatement
 	 * stream. If, on the other hand, the object is of a class implementing
 	 * Ref, Blob, Clob, Struct, or Array, the driver should pass it to the
 	 * database as a value of the corresponding SQL type.
-	 * 
+	 *
 	 * Note that this method may be used to pass database-specific abstract
 	 * data types.
-	 * 
+	 *
 	 * To meet the requirements of this interface, the Java object is
 	 * converted in the driver, instead of using a SQL CAST construct.
 	 *
@@ -2375,7 +2454,7 @@ public class MonetPreparedStatement
 	 * data will be read from the stream as needed until end-of-file is
 	 * reached. The JDBC driver will do any necessary conversion from Unicode
 	 * to the database char format.
-	 * 
+	 *
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
 	 *
@@ -2414,13 +2493,13 @@ public class MonetPreparedStatement
 	 * it is automatically closed.  It is generally good practice to
 	 * release resources as soon as you are finished with them to avoid
 	 * tying up database resources.
-	 * 
+	 *
 	 * Calling the method close on a PreparedStatement object that is
 	 * already closed has no effect.
-	 * 
+	 *
 	 * <b>Note:</b> A PreparedStatement object is automatically closed
 	 * when it is garbage collected. When a Statement object is closed,
-	 * its current ResultSet object, if one exists, is also closed. 
+	 * its current ResultSet object, if one exists, is also closed.
 	 */
 	@Override
 	public void close() {
@@ -2487,6 +2566,17 @@ public class MonetPreparedStatement
 		buf.append(')');
 
 		return buf.toString();
+	}
+
+	/**
+	 * Small helper method that formats the "Invalid Parameter Index number ..." message
+	 * and creates a new SQLException object whose SQLState is set to "M1M05".
+	 *
+	 * @param paramIdx the parameter index number
+	 * @return a new created SQLException object with SQLState M1M05
+	 */
+	private final static SQLException newSQLInvalidParameterIndexException(int paramIdx) {
+		return new SQLException("Invalid Parameter Index number: " + paramIdx, "M1M05");
 	}
 
 	/**

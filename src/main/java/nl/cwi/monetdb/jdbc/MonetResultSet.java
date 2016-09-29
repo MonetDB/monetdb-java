@@ -8,8 +8,9 @@
 
 package nl.cwi.monetdb.jdbc;
 
+import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.parser.TupleLineParser;
 import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.StringReader;
@@ -41,12 +42,8 @@ import java.sql.Types;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.TimeZone;
-
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
-import nl.cwi.monetdb.mcl.parser.TupleLineParser;
 
 /**
  * A ResultSet suitable for the MonetDB database.
@@ -1330,10 +1327,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			 */
 			@Override
 			public boolean isAutoIncrement(int column) throws SQLException {
-				if (_is_fetched[column] != true) {
-					fetchColumnInfo(column);
+				try {
+					if (_is_fetched[column] != true) {
+						fetchColumnInfo(column);
+					}
+					return _isAutoincrement[column];
+				} catch (IndexOutOfBoundsException e) {
+					throw newSQLInvalidColumnIndexException(column);
 				}
-				return _isAutoincrement[column];
 			}
 
 			/**
@@ -1346,9 +1347,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			public boolean isCaseSensitive(int column) throws SQLException {
 				switch (getColumnType(column)) {
 					case Types.CHAR:
-					case Types.VARCHAR:
 					case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
 					case Types.CLOB:
+						return true;
+					case Types.VARCHAR:
+						String monettype = getColumnTypeName(column);
+						if (monettype != null) {
+							// data of type inet or uuid is not case sensitive
+							if ("inet".equals(monettype)
+							 || "uuid".equals(monettype))
+								return false;
+						}
 						return true;
 				}
 
@@ -1397,12 +1406,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			 */
 			@Override
 			public boolean isSigned(int column) throws SQLException {
-				String monettype = getColumnTypeName(column);
-				if (monettype != null) {
-					if ("oid".equals(monettype)
-					 || "ptr".equals(monettype))
-						return false;
-				}
 				// we can hardcode this, based on the colum type
 				switch (getColumnType(column)) {
 					case Types.NUMERIC:
@@ -1410,10 +1413,18 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					case Types.TINYINT:
 					case Types.SMALLINT:
 					case Types.INTEGER:
-					case Types.BIGINT:
 					case Types.REAL:
 					case Types.FLOAT:
 					case Types.DOUBLE:
+						return true;
+					case Types.BIGINT:
+						String monettype = getColumnTypeName(column);
+						if (monettype != null) {
+							// data of type oid or ptr is not signed
+							if ("oid".equals(monettype)
+							 || "ptr".equals(monettype))
+								return false;
+						}
 						return true;
 					case Types.BIT: // we don't use type BIT, it's here for completeness
 					case Types.BOOLEAN:
@@ -1517,62 +1528,66 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			 */
 			@Override
 			public int getPrecision(int column) throws SQLException {
-				if (_is_fetched[column] != true) {
-					fetchColumnInfo(column);
-				}
-				if (_precision[column] == 0) {
-					// apparently no precision could be fetched
-					// use columnDisplaySize() value for variable length data types
-					switch (getColumnType(column)) {
-						case Types.CHAR:
-						case Types.VARCHAR:
-						case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
-						case Types.CLOB:
-						case Types.BLOB:
-						case Types.NUMERIC:
-						case Types.DECIMAL:
-							_precision[column] = getColumnDisplaySize(column);
-							break;
-						case Types.TINYINT:
-							_precision[column] = 3;
-							break;
-						case Types.SMALLINT:
-							_precision[column] = 5;
-							break;
-						case Types.INTEGER:
-							_precision[column] = 10;
-							break;
-						case Types.BIGINT:
-							_precision[column] = 19;
-							break;
-						case Types.REAL:
-							_precision[column] = 7;
-							break;
-						case Types.FLOAT:
-						case Types.DOUBLE:
-							_precision[column] = 15;
-							break;
-						case Types.BIT: // MonetDB doesn't use type BIT, it's here for completeness
-							_precision[column] = 1;
-							break;
-						case Types.BOOLEAN:
-							_precision[column] = 5;
-							break;
-						case Types.DATE:
-							_precision[column] = 10;
-							break;
-						case Types.TIME:
-							_precision[column] = 8;
-							break;
-						case Types.TIMESTAMP:
-							_precision[column] = 19;
-							break;
-						default:
-							_precision[column] = 30;
-							break;
+				try {
+					if (_is_fetched[column] != true) {
+						fetchColumnInfo(column);
 					}
+					if (_precision[column] == 0) {
+						// apparently no precision could be fetched
+						// use columnDisplaySize() value for variable length data types
+						switch (getColumnType(column)) {
+							case Types.CHAR:
+							case Types.VARCHAR:
+							case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+							case Types.CLOB:
+							case Types.BLOB:
+							case Types.NUMERIC:
+							case Types.DECIMAL:
+								_precision[column] = getColumnDisplaySize(column);
+								break;
+							case Types.TINYINT:
+								_precision[column] = 3;
+								break;
+							case Types.SMALLINT:
+								_precision[column] = 5;
+								break;
+							case Types.INTEGER:
+								_precision[column] = 10;
+								break;
+							case Types.BIGINT:
+								_precision[column] = 19;
+								break;
+							case Types.REAL:
+								_precision[column] = 7;
+								break;
+							case Types.FLOAT:
+							case Types.DOUBLE:
+								_precision[column] = 15;
+								break;
+							case Types.BIT: // MonetDB doesn't use type BIT, it's here for completeness
+								_precision[column] = 1;
+								break;
+							case Types.BOOLEAN:
+								_precision[column] = 5;
+								break;
+							case Types.DATE:
+								_precision[column] = 10;
+								break;
+							case Types.TIME:
+								_precision[column] = 8;
+								break;
+							case Types.TIMESTAMP:
+								_precision[column] = 19;
+								break;
+							default:
+								_precision[column] = 30;
+								break;
+						}
+					}
+					return _precision[column];
+				} catch (IndexOutOfBoundsException e) {
+					throw newSQLInvalidColumnIndexException(column);
 				}
-				return _precision[column];
 			}
 
 			/**
@@ -1587,10 +1602,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			 */
 			@Override
 			public int getScale(int column) throws SQLException {
-				if (_is_fetched[column] != true) {
-					fetchColumnInfo(column);
+				try {
+					if (_is_fetched[column] != true) {
+						fetchColumnInfo(column);
+					}
+					return _scale[column];
+				} catch (IndexOutOfBoundsException e) {
+					throw newSQLInvalidColumnIndexException(column);
 				}
-				return _scale[column];
 			}
 
 			/**
@@ -1605,10 +1624,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			 */
 			@Override
 			public int isNullable(int column) throws SQLException {
-				if (_is_fetched[column] != true) {
-					fetchColumnInfo(column);
+				try {
+					if (_is_fetched[column] != true) {
+						fetchColumnInfo(column);
+					}
+					return _isNullable[column];
+				} catch (IndexOutOfBoundsException e) {
+					throw newSQLInvalidColumnIndexException(column);
 				}
-				return _isNullable[column];
 			}
 
 			/**
@@ -3721,10 +3744,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Small helper method that formats the "Invalid Column Index number ..." message
 	 * and creates a new SQLException object whose SQLState is set to "M1M05".
 	 *
-	 * @param colIdx the column index numberr
+	 * @param colIdx the column index number
 	 * @return a new created SQLException object with SQLState M1M05
 	 */
-	private final static SQLException newSQLInvalidColumnIndexException(int colIdx) {
+	public final static SQLException newSQLInvalidColumnIndexException(int colIdx) {
 		return new SQLException("Invalid Column Index number: " + colIdx, "M1M05");
 	}
 
