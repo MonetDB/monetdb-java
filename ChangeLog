@@ -1,6 +1,15 @@
 # ChangeLog file for java
 # This file is updated with Maddlog
 
+* Thu Sep 29 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected ResultSet methods: getByte(), getBigDecimal(), getShort(),
+  getInt(), getLong(), getFloat() and getDouble() in case the conversion
+  to the native type failed due to a Number Format conversion error.
+  It used to silently ignore the conversion error and return 0 instead,
+  which is not correct.  Now it throws an SQLException with message
+  "Could not convert value to a number." and SQLstate "22003" meaning:
+  Numeric value out of range.
+
 * Thu Sep 22 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved JdbcClient program when doing dump of table definition.  It now
   outputs CREATE TABLE definition more similar to mclient program.

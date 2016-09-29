@@ -669,11 +669,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return null;
 			}
 			lastReadWasNull = false;
-			try {
-				return new BigDecimal(val);
-			} catch (NumberFormatException e) {
-				return BigDecimal.ZERO;
-			}
+			return new BigDecimal(val);
+		} catch (NumberFormatException e) {
+			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -701,13 +699,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return null;
 			}
 			lastReadWasNull = false;
-			try {
-				BigDecimal bd = new BigDecimal(val);
-				bd.setScale(scale);
-				return bd;
-			} catch (NumberFormatException e) {
-				return BigDecimal.ZERO;
-			}
+
+			BigDecimal bd = new BigDecimal(val);
+			bd.setScale(scale);
+			return bd;
+		} catch (NumberFormatException e) {
+			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -846,12 +843,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return (byte) 0;
 			}
 			lastReadWasNull = false;
-			try {
-				return Byte.parseByte(val);
-			} catch (NumberFormatException e) {
-				// ignore parse error, return the default: 0
-				return (byte) 0;
-			}
+			return Byte.parseByte(val);
+		} catch (NumberFormatException e) {
+			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -994,12 +988,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return 0;
 			}
 			lastReadWasNull = false;
-			try {
-				return Double.parseDouble(val);
-			} catch (NumberFormatException e) {
-				// ignore conversion error, return the default: 0
-				return 0;
-			}
+			return Double.parseDouble(val);
+		} catch (NumberFormatException e) {
+			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -1117,12 +1108,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return 0;
 			}
 			lastReadWasNull = false;
-			try {
-				return Float.parseFloat(val);
-			} catch (NumberFormatException e) {
-				// ignore conversion error, return the default: 0
-				return 0;
-			}
+			return Float.parseFloat(val);
+		} catch (NumberFormatException e) {
+			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -1160,12 +1148,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return 0;
 			}
 			lastReadWasNull = false;
-			try {
-				return Integer.parseInt(val);
-			} catch (NumberFormatException e) {
-				// ignore conversion error, return the default: 0
-				return 0;
-			}
+			return Integer.parseInt(val);
+		} catch (NumberFormatException e) {
+			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -1211,12 +1196,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				if (len > 2 && val.endsWith("@0"))
 					val = val.substring(0, len-2);
 			}
-			try {
-				return Long.parseLong(val);
-			} catch (NumberFormatException e) {
-				// ignore conversion error, return the default: 0
-				return 0;
-			}
+			return Long.parseLong(val);
+		} catch (NumberFormatException e) {
+			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -2413,12 +2395,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return 0;
 			}
 			lastReadWasNull = false;
-			try {
-				return Short.parseShort(val);
-			} catch (NumberFormatException e) {
-				// ignore conversion error, return the default: 0
-				return 0;
-			}
+			return Short.parseShort(val);
+		} catch (NumberFormatException e) {
+			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -3724,11 +3703,22 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Small helper method that formats the "Invalid Column Index number ..." message
 	 * and creates a new SQLException object whose SQLState is set to "M1M05".
 	 *
-	 * @param name the method name
+	 * @param colIdx the column index numberr
 	 * @return a new created SQLException object with SQLState M1M05
 	 */
 	private final static SQLException newSQLInvalidColumnIndexException(int colIdx) {
 		return new SQLException("Invalid Column Index number: " + colIdx, "M1M05");
+	}
+
+	/**
+	 * Small helper method that formats the "Could not convert value to a number" message
+	 * and creates a new SQLException object whose SQLState is set to "22003": Numeric value out of range.
+	 *
+	 * @param error the NumberFormatException
+	 * @return a new created SQLException object with SQLState 22003
+	 */
+	private final static SQLException newSQLNumberFormatException(NumberFormatException error) {
+		return new SQLException("Could not convert value to a number. " + error.getMessage(), "22003");
 	}
 
 	/**
