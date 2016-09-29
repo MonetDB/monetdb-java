@@ -68,7 +68,7 @@ final public class MonetDriver implements Driver {
 	static {
 		try {
 			DriverManager.registerDriver(new MonetDriver());
- 		} catch (SQLException e) {
+		} catch (SQLException e) {
 			e.printStackTrace();
 		}
 	}
@@ -147,7 +147,7 @@ final public class MonetDriver implements Driver {
 		String uri_path = uri.getPath();
 		if (uri_path != null && uri_path.length() != 0) {
 			uri_path = uri_path.substring(1);
-			if (!uri_path.trim().equals(""))
+			if (!uri_path.trim().isEmpty())
 				info.put("database", uri_path);
 		}
 
@@ -358,9 +358,9 @@ final public class MonetDriver implements Driver {
 		if (TypeMapppingSQL == null) {
 			// first time, compose TypeMappping SQL string
 			StringBuilder val = new StringBuilder((typeMap.size() * (7 + 7 + 7 + 4)) + 14);
-	 		for (Entry<String, Integer> entry : typeMap.entrySet()) {
+			for (Entry<String, Integer> entry : typeMap.entrySet()) {
 				val.append(" WHEN '").append(entry.getKey()).append("' THEN ").append(entry.getValue().toString());
-	 		}
+			}
 			val.append(" ELSE ").append(Types.OTHER).append(" END");
 			// as the typeMap is static, cache this SQL part for all next calls
 			TypeMapppingSQL = val.toString();

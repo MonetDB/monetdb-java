@@ -1277,11 +1277,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 				// we can only call dbmd.getColumns() when we have a specific schema name and table name and column name
 				String schName = getSchemaName(column);
-				if (schName != null && !"".equals(schName)) {
+				if (schName != null && !schName.isEmpty()) {
 					String tblName = getTableName(column);
-					if (tblName != null && !"".equals(tblName)) {
+					if (tblName != null && !tblName.isEmpty()) {
 						String colName = getColumnName(column);
-						if (colName != null && !"".equals(colName)) {
+						if (colName != null && !colName.isEmpty()) {
 							if (conn == null) {
 								// first time, get a Connection object and cache it for all next columns
 								conn = getStatement().getConnection();

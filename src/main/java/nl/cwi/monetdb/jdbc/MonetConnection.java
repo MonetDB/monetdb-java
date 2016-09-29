@@ -179,15 +179,15 @@ public class MonetConnection extends MonetWrapper implements Connection {
 			sockTimeout = 0;
 		}
 		// check input arguments
-		if (hostname == null || hostname.trim().equals(""))
+		if (hostname == null || hostname.trim().isEmpty())
 			throw new IllegalArgumentException("hostname should not be null or empty");
 		if (port == 0)
 			throw new IllegalArgumentException("port should not be 0");
-		if (username == null || username.trim().equals(""))
+		if (username == null || username.trim().isEmpty())
 			throw new IllegalArgumentException("user should not be null or empty");
-		if (password == null || password.trim().equals(""))
+		if (password == null || password.trim().isEmpty())
 			throw new IllegalArgumentException("password should not be null or empty");
-		if (language == null || language.trim().equals("")) {
+		if (language == null || language.trim().isEmpty()) {
 			language = "sql";
 			addWarning("No language given, defaulting to 'sql'", "M1M05");
 		}
@@ -1116,7 +1116,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * NOTE: If this method is called during a transaction, the
 	 * transaction is committed.
 	 *
- 	 * @param autoCommit true to enable auto-commit mode; false to disable it
+	 * @param autoCommit true to enable auto-commit mode; false to disable it
 	 * @throws SQLException if a database access error occurs
 	 * @see #getAutoCommit()
 	 */
