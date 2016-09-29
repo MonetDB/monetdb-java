@@ -1122,8 +1122,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * ResultSet object as a float in the Java programming language.
 	 *
 	 * @param columnName the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is 0
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 */
 	@Override
@@ -1136,14 +1135,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * ResultSet object as an int in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is 0
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
 	 * @throws SQLException if there is no such column
 	 */
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
+		String val = "";
 		try {
-			String val = tlp.values[columnIndex - 1];
+			val = tlp.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return 0;
@@ -1151,6 +1150,19 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			lastReadWasNull = false;
 			return Integer.parseInt(val);
 		} catch (NumberFormatException e) {
+			// The oid datatype values (as string) have a  @0  suffix in the string value.
+			// To allow succesful parsing and conversion to int, we need to remove the suffix first
+			if ("oid".equals(types[columnIndex - 1])) {
+				int len = val.length();
+				if (len > 2 && val.endsWith("@0")) {
+					val = val.substring(0, len-2);
+					try {
+						return Integer.parseInt(val);
+					} catch (NumberFormatException nfe) {
+						throw newSQLNumberFormatException(nfe);
+					}
+				}
+			}
 			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
@@ -1162,8 +1174,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * ResultSet object as an int in the Java programming language.
 	 *
 	 * @param columnName the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is 0
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 */
 	@Override
@@ -1176,29 +1187,34 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * ResultSet object as a long in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is 0
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
 	 * @throws SQLException if there is no such column
 	 */
 	@Override
 	public long getLong(int columnIndex) throws SQLException {
+		String val = "";
 		try {
-			String val = tlp.values[columnIndex - 1];
+			val = tlp.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return 0;
 			}
 			lastReadWasNull = false;
-
-			// The oid datatype values (as string) have a  @0  suffix in the string value.
-			// To allow succesful parsing and conversion to long, we need to remove it first
-			if ("oid".equals(types[columnIndex - 1])) {
-				int len = val.length();
-				if (len > 2 && val.endsWith("@0"))
-					val = val.substring(0, len-2);
-			}
 			return Long.parseLong(val);
 		} catch (NumberFormatException e) {
+			// The oid datatype values (as string) have a  @0  suffix in the string value.
+			// To allow succesful parsing and conversion to long, we need to remove the suffix first
+			if ("oid".equals(types[columnIndex - 1])) {
+				int len = val.length();
+				if (len > 2 && val.endsWith("@0")) {
+					val = val.substring(0, len-2);
+					try {
+						return Long.parseLong(val);
+					} catch (NumberFormatException nfe) {
+						throw newSQLNumberFormatException(nfe);
+					}
+				}
+			}
 			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
