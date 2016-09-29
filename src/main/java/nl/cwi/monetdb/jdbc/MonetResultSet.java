@@ -330,12 +330,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public int findColumn(String columnName) throws SQLException {
 		if (columnName != null && columns != null) {
-			for (int i = 0; i < columns.length; i++) {
+			final int array_size = columns.length;
+			for (int i = 0; i < array_size; i++) {
 				if (columnName.equals(columns[i]))
 					return i + 1;
 			}
 			/* if an exact match did not succeed try a case insensitive match */
-			for (int i = 0; i < columns.length; i++) {
+			for (int i = 0; i < array_size; i++) {
 				if (columnName.equalsIgnoreCase(columns[i]))
 					return i + 1;
 			}
@@ -1232,11 +1233,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		return new rsmdw() {
 			// for the more expensive methods (getPrecision(), getScale(), isNullable()), we provide a simple cache
 			// caches to store precision, scale and isNullable values from getColumns()
-			private boolean[] _is_fetched	= new boolean[columns.length +1];
-			private int[] _precision	= new int[columns.length +1];
-			private int[] _scale		= new int[columns.length +1];
-			private int[] _isNullable	= new int[columns.length +1];
-			private boolean[] _isAutoincrement = new boolean[columns.length +1];
+			final int array_size = columns.length + 1;  // add 1 as in JDBC columns start from 1 (array from 0).
+			private boolean[] _is_fetched	= new boolean[array_size];
+			private int[] _precision	= new int[array_size];
+			private int[] _scale		= new int[array_size];
+			private int[] _isNullable	= new int[array_size];
+			private boolean[] _isAutoincrement = new boolean[array_size];
 			private Connection conn = null;
 			private DatabaseMetaData dbmd = null;
 
