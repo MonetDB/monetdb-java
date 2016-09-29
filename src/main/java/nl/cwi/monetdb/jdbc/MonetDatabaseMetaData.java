@@ -27,6 +27,8 @@ import java.util.ArrayList;
  */
 public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaData {
 	private Connection con;
+
+	// Internal cache for 3 server environment values
 	private String env_current_user;
 	private String env_monet_version;
 	private String env_max_clients;
@@ -36,12 +38,11 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Internal cache for 3 environment values retrieved from the
-	 * server, to avoid querying the server over and over again.
-	 * Once a value is read, it is kept in the private env_* variables for reuse.
-	 * We currently only need the env values of: current_user, monet_version and max_clients.
+	 * Utility method to fetch some server environment values combined in one query for efficiency.
+	 * We currently fetch the env values of: current_user, monet_version and max_clients.
+	 * We cache them locally such that we do not need to query the server again and again.
 	 */
-	private synchronized void getEnvValues() {
+	private synchronized void getEnvValues() throws SQLException {
 		Statement st = null;
 		ResultSet rs = null;
 		try {
@@ -65,8 +66,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 					}
 				}
 			}
-		} catch (SQLException e) {
-			// ignore
+		/* do not catch SQLException here, as we want to know it when it fails */
 		} finally {
 			if (rs != null) {
 				try {
@@ -224,7 +224,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	public String getDatabaseProductVersion() throws SQLException {
 		if (env_monet_version == null)
 			getEnvValues();
-		return env_monet_version;
+		// always return a valid String to prevent NPE in getTables() and getTableTypes()
+		return (env_monet_version != null) ? env_monet_version : "";
 	}
 
 	/**
@@ -1408,7 +1409,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @return the maximum number of connections
 	 */
 	@Override
-	public int getMaxConnections() {
+	public int getMaxConnections() throws SQLException {
 		if (env_max_clients == null)
 			getEnvValues();
 
@@ -3611,7 +3612,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		if (env_monet_version != null) {
 			try {
 				int start = env_monet_version.indexOf(".");
-				major = Integer.parseInt(env_monet_version.substring(0, start));
+				major = Integer.parseInt((start >= 0) ? env_monet_version.substring(0, start) : env_monet_version);
 			} catch (NumberFormatException e) {
 				// ignore
 			}
@@ -3633,8 +3634,11 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		if (env_monet_version != null) {
 			try {
 				int start = env_monet_version.indexOf(".");
-				int end = env_monet_version.indexOf(".", start + 1);
-				minor = Integer.parseInt(env_monet_version.substring(start + 1, end));
+				if (start >= 0) {
+					start++;
+					int end = env_monet_version.indexOf(".", start);
+					minor = Integer.parseInt((end > 0) ? env_monet_version.substring(start, end) : env_monet_version.substring(start));
+				}
 			} catch (NumberFormatException e) {
 				// ignore
 			}
