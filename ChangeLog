@@ -2,6 +2,11 @@
 # This file is updated with Maddlog
 
 * Thu Oct  6 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected return values of DatabaseMetaData methods nullsAreSortedHigh(),
+  nullsAreSortedLow(), getMaxCursorNameLength(), getMaxProcedureNameLength(),
+  getMaxStatementLength() and getMaxUserNameLength().
+  Improved return values of DatabaseMetaData methods getMaxBinaryLiteralLength(),
+  getMaxCharLiteralLength() and getMaxColumnsInTable().
 - Implemented Statement methods: getQueryTimeout() and setQueryTimeout(int
   seconds).  getQueryTimeout() used to always return 0, now it returns the
   query timeout retrieved from the server.  setQueryTimeout(int seconds)

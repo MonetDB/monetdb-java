@@ -163,24 +163,32 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Are NULL values sorted high?
+	 * Retrieves whether NULL values are sorted high. Sorted high means
+	 * that NULL values sort higher than any other value in a domain.
+	 * In an ascending order, if this method returns true, NULL values will appear at the end.
+	 * By contrast, the method nullsAreSortedAtEnd indicates whether NULL values are sorted at the end regardless of sort order.
 	 *
-	 * @return true because MonetDB puts NULL values on top upon ORDER BY
+	 * @return false because MonetDB shows NULL values at the beginning upon ORDER BY .. ASC
 	 */
 	@Override
 	public boolean nullsAreSortedHigh() {
-		return true;
+		return false;
 	}
 
 	/**
-	 * Are NULL values sorted low?
+	 * Retrieves whether NULL values are sorted low. Sorted low means
+	 * that NULL values sort lower than any other value in a domain.
+	 * In an ascending order, if this method returns true, NULL values will appear at the beginning.
+	 * By contrast, the method nullsAreSortedAtStart indicates whether NULL values are sorted at the beginning regardless of sort order.
+	 *
+	 * @return true because MonetDB shows NULL values at the beginning upon ORDER BY .. ASC
 	 *
 	 * @return negative of nullsAreSortedHigh()
 	 * @see #nullsAreSortedHigh()
 	 */
 	@Override
 	public boolean nullsAreSortedLow() {
-		return !nullsAreSortedHigh();
+		return true;
 	}
 
 	/**
@@ -269,8 +277,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Does the database store tables in a local file?	No - it
-	 * stores them in a file on the server.
+	 * Does the database store tables in a local file?
+	 * No, it stores them in files on the server.
 	 *
 	 * @return false because that's what MonetDB is for
 	 */
@@ -280,8 +288,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Does the database use a local file for each table?  Well, not really,
-	 * since it doesn't use local files.
+	 * Does the database use a local file for each table?
 	 *
 	 * @return false for it doesn't
 	 */
@@ -965,7 +972,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Are full nexted outer joins supported?
+	 * Are full nested outer joins supported?
 	 *
 	 * @return true if so
 	 */
@@ -1315,24 +1322,22 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * How many hex characters can you have in an inline binary literal
-	 * I honestly wouldn't know...
 	 *
 	 * @return the max literal length
 	 */
 	@Override
 	public int getMaxBinaryLiteralLength() {
-		return 0; // no limit
+		return 2*1024*1024*1024 - 2;	// MonetDB supports null terminated strings of max 2GB, see function: int UTF8_strlen()
 	}
 
 	/**
 	 * What is the maximum length for a character literal
-	 * Is there a max?
 	 *
 	 * @return the max literal length
 	 */
 	@Override
 	public int getMaxCharLiteralLength() {
-		return 0; // no limit
+		return 2*1024*1024*1024 - 2;	// MonetDB supports null terminated strings of max 2GB, see function: int UTF8_strlen()
 	}
 
 	/**
@@ -1343,7 +1348,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxColumnNameLength() {
-		return 1024;
+		return 1024;	// In MonetDB the max length of column sys._columns.name is defined as 1024
 	}
 
 	/**
@@ -1353,7 +1358,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxColumnsInGroupBy() {
-		return 0; // no limit
+		return 0;	// no specific limit known
 	}
 
 	/**
@@ -1363,7 +1368,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxColumnsInIndex() {
-		return 0;	// unlimited I guess
+		return 0;	// no specific limit known
 	}
 
 	/**
@@ -1373,7 +1378,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxColumnsInOrderBy() {
-		return 0; // unlimited I guess
+		return 0;	// no specific limit known
 	}
 
 	/**
@@ -1383,18 +1388,21 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxColumnsInSelect() {
-		return 0; // unlimited I guess
+		return 0;	// no specific limit known
 	}
 
 	/**
 	 * What is the maximum number of columns in a table?
-	 * wasn't MonetDB designed for datamining? (= much columns)
+	 *
+	 * The theoretical max value of int column sys._columns.id is 2^31 -1
+	 * but this is for all columns of all tables in all schemas (including all data dictionary columns).
+	 * For one table we should reduce it to a more practical soft limit of say 100 thousand
 	 *
 	 * @return the max columns
 	 */
 	@Override
 	public int getMaxColumnsInTable() {
-		return 0;
+		return 100*1000;	// soft limit it to 100 thousand
 	}
 
 	/**
@@ -1431,7 +1439,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxCursorNameLength() {
-		return 1024;
+		return 0;	// no specific limit known
 	}
 
 	/**
@@ -1444,7 +1452,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxIndexLength() {
-		return 0; // I assume it is large, but I don't know
+		return 0;	// no specific limit known
 	}
 
 	/**
@@ -1456,7 +1464,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxSchemaNameLength() {
-		return 1024;
+		return 1024;	// In MonetDB the max length of column sys.schemas.name is defined as 1024
 	}
 
 	/**
@@ -1466,7 +1474,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxProcedureNameLength() {
-		return 1024;
+		return 256;	// In MonetDB the max length of column sys.functions.name is defined as 256
 	}
 
 	/**
@@ -1491,7 +1499,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Did getMaxRowSize() include LONGVARCHAR and LONGVARBINARY
+	 * Did getMaxRowSize() include the SQL data types LONGVARCHAR and LONGVARBINARY
 	 * blobs?
 	 * Yes I thought so...
 	 *
@@ -1504,14 +1512,12 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * What is the maximum length of a SQL statement?
-	 * Till a programmer makes a mistake and causes a segmentation fault
-	 * on a string overflow...
 	 *
 	 * @return max length in bytes
 	 */
 	@Override
 	public int getMaxStatementLength() {
-		return 0;		// actually whatever fits in size_t
+		return 2*1024*1024*1024 - 2;	// MonetDB supports null terminated strings of max 2GB, see function: int UTF8_strlen()
 	}
 
 	/**
@@ -1523,7 +1529,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxStatements() {
-		return 0;
+		return 0;	// no specific limit known
 	}
 
 	/**
@@ -1533,7 +1539,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxTableNameLength() {
-		return 1024;
+		return 1024;	// In MonetDB the max length of column sys._tables.name is defined as 1024
 	}
 
 	/**
@@ -1544,7 +1550,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxTablesInSelect() {
-		return 0; // no limit
+		return 0;	// no specific limit known
 	}
 
 	/**
@@ -1554,7 +1560,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxUserNameLength() {
-		return 512;
+		return 1024;	// In MonetDB the max length of column sys.db_user_info.name is defined as 1024
 	}
 
 	/**
@@ -2153,7 +2159,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *		<UL>
 	 *		<LI> YES --- if the column is auto incremented
 	 *		<LI> NO --- if the column is not auto incremented
-    	 *		<LI> empty string --- if it cannot be determined whether the column is auto incremented
+	 *		<LI> empty string --- if it cannot be determined whether the column is auto incremented
 	 *		</UL>
 	 *	<LI><B>IS_GENERATEDCOLUMN</B> String => Indicates whether this is a generated column
 	 *		<UL>
@@ -3527,7 +3533,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *		scope of a reference attribute (<code>null</code> if DATA_TYPE isn't REF)
 	 *	<LI><B>SCOPE_TABLE</B> String => table name that is the scope of a
 	 *		reference attribute (<code>null</code> if the DATA_TYPE isn't REF)
-	 * 	<LI><B>SOURCE_DATA_TYPE</B> short => source type of a distinct type or user-generated
+	 *	<LI><B>SOURCE_DATA_TYPE</B> short => source type of a distinct type or user-generated
 	 *		Ref type,SQL type from java.sql.Types (<code>null</code> if DATA_TYPE
 	 *		isn't DISTINCT or user-generated REF)
 	 *	</OL>
@@ -3617,7 +3623,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 				// ignore
 			}
 		}
- 		return major;
+		return major;
 	}
 
 	/**
@@ -3643,7 +3649,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 				// ignore
 			}
 		}
- 		return minor;
+		return minor;
 	}
 
 	/**
@@ -3792,7 +3798,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		String query =
 		"SELECT 'host' AS \"NAME\", CAST(1024 as int) AS \"MAX_LEN\", 'localhost' AS \"DEFAULT_VALUE\", 'DSN or IP-address of machine running MonetDB' AS \"DESCRIPTION\" UNION ALL " +
 		"SELECT 'port', 5, '50000', 'communication port number of MonetDB server process' UNION ALL " +
-		"SELECT 'user', 128, '', 'user name to login to MonetDB server' UNION ALL " +
+		"SELECT 'user', 1024, '', 'user name to login to MonetDB server' UNION ALL " +
 		"SELECT 'password', 128, '', 'password for user name to login to MonetDB server' UNION ALL " +
 		"SELECT 'language', 16, 'sql', 'language (sql or mal) used to parse commands in MonetDB server' UNION ALL " +
 		"SELECT 'debug', 5, 'false', 'boolean flag true or false' UNION ALL " +
@@ -3921,13 +3927,13 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * 13.  REMARKS String => comment describing column/parameter
 	 * 14.  CHAR_OCTET_LENGTH int => the maximum length of binary and character based parameters or columns. For any other datatype the returned value is a NULL
 	 * 15.  ORDINAL_POSITION int => the ordinal position, starting from 1, for the input and output parameters.
-	 * 	   A value of 0 is returned if this row describes the function's return value. For result set columns, it is the ordinal position of the column in the result set starting from 1.
+	 *	   A value of 0 is returned if this row describes the function's return value. For result set columns, it is the ordinal position of the column in the result set starting from 1.
 	 * 16.  IS_NULLABLE String => ISO rules are used to determine the nullability for a parameter or column.
 	 *         YES --- if the parameter or column can include NULLs
 	 *         NO --- if the parameter or column cannot include NULLs
 	 *         empty string --- if the nullability for the parameter or column is unknown
 	 * 17.  SPECIFIC_NAME String => the name which uniquely identifies this function within its schema.
-	 * 	  This is a user specified, or DBMS generated, name that may be different then the FUNCTION_NAME for example with overload functions
+	 *	  This is a user specified, or DBMS generated, name that may be different then the FUNCTION_NAME for example with overload functions
 	 *
 	 * @param catalog a catalog name; must match the catalog name as
 	 *        it is stored in the database; "" retrieves those without a
