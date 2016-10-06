@@ -1,6 +1,14 @@
 # ChangeLog file for java
 # This file is updated with Maddlog
 
+* Thu Oct  6 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented Statement methods: getQueryTimeout() and setQueryTimeout(int
+  seconds).  getQueryTimeout() used to always return 0, now it returns the
+  query timeout retrieved from the server.  setQueryTimeout(int seconds)
+  used to always throw SQLException: query time outs not supported.
+  Now it sets the query timeout for the current connection/session on
+  the server.
+
 * Thu Sep 29 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected ResultSet methods: getByte(), getBigDecimal(), getShort(),
   getInt(), getLong(), getFloat() and getDouble() in case the conversion

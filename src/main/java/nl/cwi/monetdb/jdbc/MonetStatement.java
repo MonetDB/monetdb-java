@@ -826,9 +826,6 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * Statement object to execute.  If the limit is exceeded, a
 	 * SQLException is thrown.
 	 *
-	 * For MonetDB this method always returns zero, as no query
-	 * cancelling is possible.
-	 *
 	 * @return the current query timeout limit in seconds; zero means
 	 *         there is no limit
 	 * @throws SQLException if a database access error occurs
@@ -836,7 +833,26 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 */
 	@Override
 	public int getQueryTimeout() throws SQLException {
-		return 0;
+		Statement st = null;
+		ResultSet rs = null;
+		try {
+			st = connection.createStatement();
+			rs = st.executeQuery("SELECT \"querytimeout\" FROM \"sys\".\"sessions\"() WHERE \"active\"");
+			if (rs != null && rs.next()) {
+				// MonetDB stores querytimeout in a bigint, so correctly deal with big int values
+				long timeout = rs.getLong(1);
+				return (timeout > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) timeout;
+			}
+		/* do not catch SQLException here, as we want to know it when it fails */
+		} finally {
+			if (rs != null) {
+				rs.close();
+			}
+			if (st != null) {
+				 st.close();
+			}
+		}
+		return 0;	// in case the query didn't return a result (which should normally never happen)
 	}
 
 	/**
@@ -1080,9 +1096,6 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * object to execute to the given number of seconds. If the limit is
 	 * exceeded, an SQLException is thrown.
 	 *
-	 * MonetDB does not support cancelling running queries, hence this
-	 * method does not do anything.
-	 *
 	 * @param seconds the new query timeout limit in seconds; zero means
 	 *        there is no limit
 	 * @throws SQLException if a database access error occurs or the
@@ -1092,8 +1105,18 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	public void setQueryTimeout(int seconds) throws SQLException {
 		if (seconds < 0)
 			throw new SQLException("Illegal timeout value: " + seconds, "M1M05");
-		if (seconds > 0)
-			addWarning("setQueryTimeout: query time outs not supported", "01M24");
+
+		Statement st = null;
+		try {
+			st = connection.createStatement();
+			// CALL "sys"."settimeout"(int_value)
+			st.execute("CALL \"sys\".\"settimeout\"(" + seconds + ")");
+		/* do not catch SQLException here, as we want to know it when it fails */
+		} finally {
+			if (st != null) {
+				 st.close();
+			}
+		}
 	}
 
 	//== 1.6 methods (JDBC 4.0)
