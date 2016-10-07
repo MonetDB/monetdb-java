@@ -1,3 +1,0 @@
-all: src/main/java/nl/cwi/monetdb/jdbc/MonetDriver.java
-	ant -f build.xml distjdbc distmerocontrol
-	cd tests&&ant -f build.xml jar_jdbctests
