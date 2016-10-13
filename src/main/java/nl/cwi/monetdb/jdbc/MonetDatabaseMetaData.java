@@ -476,9 +476,13 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		return sb.toString();
 	}
 
-	// SQL query parts shared in below four getXxxxFunctions() methods
+	// SQL query parts shared by four get<Type>Functions() below
 	private final static String FunctionsSelect = "SELECT DISTINCT \"name\" FROM \"sys\".\"functions\" ";
 	private final static String FunctionsWhere = "WHERE \"id\" IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1 AND \"name\" = 'arg_1' AND \"type\" IN ";
+	// Scalar functions sql_max(x, y) and sql_min(x, y) are defined in sys.args only for type 'any'.
+	// Easiest way to include them in the Num, Str and TimeDate lists is to add them explicitly via UNION SQL:
+	private final static String AddFunctionsMaxMin = " UNION SELECT 'sql_max' UNION SELECT 'sql_min'";
+	private final static String FunctionsOrderBy1 = " ORDER BY 1";
 
 	@Override
 	public String getNumericFunctions() {
@@ -486,7 +490,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"('tinyint', 'smallint', 'int', 'bigint', 'hugeint', 'decimal', 'double', 'real') )" +
 			// exclude functions which belong to the 'str' module
 			" AND \"mod\" <> 'str'";
-		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + " ORDER BY 1");
+		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + AddFunctionsMaxMin + FunctionsOrderBy1);
 	}
 
 	@Override
@@ -495,7 +499,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"('char', 'varchar', 'clob', 'json') )" +
 			// include functions which belong to the 'str' module
 			" OR \"mod\" = 'str'";
-		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + " ORDER BY 1");
+		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + AddFunctionsMaxMin + FunctionsOrderBy1);
 	}
 
 	@Override
@@ -512,14 +516,14 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			" UNION SELECT 'ifthenelse'" +
 			" UNION SELECT 'isnull'" +
 			" UNION SELECT 'nullif'";
-		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + " ORDER BY 1");
+		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + FunctionsOrderBy1);
 	}
 
 	@Override
 	public String getTimeDateFunctions() {
 		String match =
 			"('date', 'time', 'timestamp', 'timetz', 'timestamptz', 'sec_interval', 'month_interval') )";
-		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + " ORDER BY 1");
+		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + AddFunctionsMaxMin + FunctionsOrderBy1);
 	}
 
 	/**
