@@ -901,6 +901,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				default:
 					throw new SQLException("Cannot operate on " + types[columnIndex - 1] + " type", "M1M05");
 			}
+		} catch (NumberFormatException e) {
+			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
