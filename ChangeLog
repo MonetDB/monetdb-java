@@ -1,6 +1,11 @@
 # ChangeLog file for java
 # This file is updated with Maddlog
 
+* Thu Oct 13 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected implementation of java.sql.Wrapper methods isWrapperFor()
+  and unwrap().  They now properly return expected results instead of
+  always return false or throw an SQLException.
+
 * Thu Oct  6 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected return values of DatabaseMetaData methods nullsAreSortedHigh(),
   nullsAreSortedLow(), getMaxCursorNameLength(), getMaxProcedureNameLength(),
