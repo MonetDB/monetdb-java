@@ -11,7 +11,7 @@ import java.util.*;
 
 public class Test_PSlargeresponse {
 	public static void main(String[] args) throws Exception {
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		PreparedStatement pstmt;
@@ -23,7 +23,10 @@ public class Test_PSlargeresponse {
 
 		try {
 			System.out.print("1. DatabaseMetadata environment retrieval... ");
-			System.out.println(dbmd.getURL());
+			if (args[0].startsWith(dbmd.getURL()))
+				System.out.println("oke");
+			else
+				System.out.println("not oke " + dbmd.getURL());
 
 			pstmt = con.prepareStatement("select * from columns");
 			System.out.print("2. empty call...");

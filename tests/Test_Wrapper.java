@@ -10,7 +10,7 @@ import java.sql.*;
 
 public class Test_Wrapper {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		final Connection con = DriverManager.getConnection(args[0]);
 		System.out.println("Connected. Auto commit is: " + con.getAutoCommit());
 

@@ -10,7 +10,7 @@ import java.sql.*;
 
 public class Test_Rbooleans {
 	public static void main(String[] args) throws Exception {
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		ResultSet rs = null;

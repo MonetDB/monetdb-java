@@ -14,7 +14,7 @@ import java.util.*;
 
 public class Test_PSlargeamount {
 	public static void main(String[] args) throws Exception {
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		PreparedStatement pstmt;
@@ -24,7 +24,7 @@ public class Test_PSlargeamount {
 
 		try {
 			System.out.println("1. Preparing and executing a unique statement");
-			for (int i = 0; i < 100000; i++) {
+			for (int i = 0; i < 50000; i++) {
 				pstmt = con.prepareStatement("select " + i + ", " + i + " = ?");
 				pstmt.setInt(1, i);
 				ResultSet rs = pstmt.executeQuery();

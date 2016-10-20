@@ -13,7 +13,7 @@ public class BugConcurrent_sequences {
 		Connection con1 = null, con2 = null;
 		Statement stmt1 = null, stmt2 = null;
 		ResultSet rs1 = null, rs2 = null;
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		con1 = DriverManager.getConnection(args[0]);
 		con2 = DriverManager.getConnection(args[0]);
 		stmt1 = con1.createStatement();

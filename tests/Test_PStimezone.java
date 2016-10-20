@@ -18,7 +18,7 @@ public class Test_PStimezone {
 		// savings corrections
 		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		PreparedStatement pstmt;

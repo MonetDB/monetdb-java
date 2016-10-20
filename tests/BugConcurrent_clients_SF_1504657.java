@@ -13,7 +13,7 @@ public class BugConcurrent_clients_SF_1504657 {
 		Connection con1 = null, con2 = null, con3 = null;	
 		Statement stmt1 = null, stmt2 = null, stmt3 = null;
 		ResultSet rs1 = null, rs2= null, rs3 = null;
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		con1 = DriverManager.getConnection(args[0]);
 		con2 = DriverManager.getConnection(args[0]);
 		con3 = DriverManager.getConnection(args[0]);

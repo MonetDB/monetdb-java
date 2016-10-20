@@ -11,7 +11,7 @@ import java.util.*;
 
 public class Test_PSmanycon {
 	public static void main(String[] args) throws Exception {
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		List pss = new ArrayList(100);	// Connections go in here
 
 		try {

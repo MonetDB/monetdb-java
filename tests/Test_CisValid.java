@@ -14,7 +14,7 @@ public class Test_CisValid {
 	 * The function Connection.isValid() should only return TRUE or FALSE. It
 	 * shall never alter the state of this connection */
 	public static void main(String[] args) throws Exception {
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection conn = DriverManager.getConnection(args[0]);
 		Statement stmt = conn.createStatement();
 

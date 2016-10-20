@@ -18,7 +18,7 @@ import java.sql.Statement;
 /* Test whether we can represent a full-size int128 as JDBC results */
 public class Test_Int128 {
 	public static void main(String[] args) throws Exception {
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		BigInteger bi = new BigInteger(
 				"123456789012345678909876543210987654321");

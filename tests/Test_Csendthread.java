@@ -10,8 +10,7 @@ import java.sql.*;
 
 public class Test_Csendthread {
 	public static void main(String[] args) throws Exception {
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
-
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		System.out.println("0. active threads: " + Thread.activeCount());
 
 		StringBuilder sb = new StringBuilder();
