@@ -95,43 +95,43 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
   <!-- Run tests -->
   <target name="test">
     <antcall target="Test_Cautocommit" />
-    <antcall target="Test_Clargequery" />
-    <antcall target="Test_Cmanycon" />
     <antcall target="Test_Cforkbomb" />
     <antcall target="Test_CisValid" />
-    <antcall target="Test_Csavepoints" />
-    <antcall target="Test_Ctransaction" />
+    <antcall target="Test_Clargequery" />
+    <antcall target="Test_Cmanycon" />
     <antcall target="Test_Creplysize" />
+    <antcall target="Test_Csavepoints" />
     <antcall target="Test_Csendthread" />
+    <antcall target="Test_Ctransaction" />
     <antcall target="Test_Dobjects" />
+    <antcall target="Test_FetchSize" />
+    <antcall target="Test_Int128" />
     <antcall target="Test_PSgeneratedkeys" />
     <antcall target="Test_PSgetObject" />
-    <antcall target="Test_PSlargeresponse" />
     <antcall target="Test_PSlargeamount" />
-    <antcall target="Test_PSsomeamount" />
     <antcall target="Test_PSlargebatchval" />
+    <antcall target="Test_PSlargeresponse" />
+    <antcall target="Test_PSmanycon" />
+    <antcall target="Test_PSmetadata" />
+    <antcall target="Test_PSsomeamount" />
+    <antcall target="Test_PSsqldata" />
     <antcall target="Test_PStimedate" />
     <antcall target="Test_PStimezone" />
     <antcall target="Test_PStypes" />
-    <antcall target="Test_PSmanycon" />
-    <antcall target="Test_PSmetadata" />
-    <antcall target="Test_PSsqldata" />
     <antcall target="Test_Rbooleans" />
     <antcall target="Test_Rmetadata" />
     <antcall target="Test_Rpositioning" />
-    <antcall target="Test_Rtimedate" />
     <antcall target="Test_Rsqldata" />
+    <antcall target="Test_Rtimedate" />
     <antcall target="Test_Sbatching" />
     <antcall target="Test_Smoreresults" />
-    <antcall target="Test_Int128" />
-    <antcall target="Test_FetchSize" />
     <antcall target="Test_Wrapper" />
     <antcall target="BugConcurrent_clients_SF_1504657" />
     <antcall target="BugConcurrent_sequences" />
-    <antcall target="BugExecuteUpdate_Bug_3350" />
     <antcall target="BugDatabaseMetaData_Bug_3356" />
-    <antcall target="BugSetQueryTimeout_Bug_3357" />
     <antcall target="BugDecimalRound_Bug_3561" />
+    <antcall target="BugExecuteUpdate_Bug_3350" />
+    <antcall target="BugSetQueryTimeout_Bug_3357" />
   </target>
 
   <target name="test_class" depends="compile,jdbc">
