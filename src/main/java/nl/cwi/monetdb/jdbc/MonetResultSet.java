@@ -83,7 +83,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	/** The JDBC SQL types of the columns in this ResultSet. The content will be derived from the MonetDB types[] */
 	private final int[] JdbcSQLTypes;
 	/** The number of rows in this ResultSet */
-	final int tupleCount;	// default for the MonetVirtualResultSet
+	final int tupleCount;
 
 	/** The parental Statement object */
 	private final Statement statement;
@@ -326,7 +326,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public int findColumn(String columnName) throws SQLException {
-		if (columnName != null && columns != null) {
+		if (columnName != null) {
 			final int array_size = columns.length;
 			for (int i = 0; i < array_size; i++) {
 				if (columnName.equals(columns[i]))
@@ -1354,7 +1354,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 						return true;
 					case Types.VARCHAR:
 						String monettype = getColumnTypeName(column);
-						if (monettype != null) {
+						if (monettype != null && monettype.length() == 4) {
 							// data of type inet or uuid is not case sensitive
 							if ("inet".equals(monettype)
 							 || "uuid".equals(monettype))
@@ -1421,7 +1421,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 						return true;
 					case Types.BIGINT:
 						String monettype = getColumnTypeName(column);
-						if (monettype != null) {
+						if (monettype != null && monettype.length() == 3) {
 							// data of type oid or ptr is not signed
 							if ("oid".equals(monettype)
 							 || "ptr".equals(monettype))
@@ -1450,16 +1450,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			@Override
 			public int getColumnDisplaySize(int column) throws SQLException {
 				int ret = 1;
-
-				if (header == null)
-					return ret;
-
-				try {
-					ret = header.getColumnLengths()[column - 1];
-				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
+				if (header != null) {
+					try {
+						ret = header.getColumnLengths()[column - 1];
+					} catch (IndexOutOfBoundsException e) {
+						throw newSQLInvalidColumnIndexException(column);
+					}
 				}
-
 				return ret;
 			}
 
@@ -1472,22 +1469,18 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			 */
 			@Override
 			public String getSchemaName(int column) throws SQLException {
-				String schema = "";
-
-				if (header == null)
-					return schema;
-
-				// figure the name out
-				try {
-					schema = header.getTableNames()[column - 1];
-					if (schema != null) {
-						int dot = schema.indexOf('.');
-						return (dot >= 0) ? schema.substring(0, dot) : "";
+				if (header != null) {
+					// figure the name out
+					try {
+						String schema = header.getTableNames()[column - 1];
+						if (schema != null) {
+							int dot = schema.indexOf('.');
+							return (dot >= 0) ? schema.substring(0, dot) : "";
+						}
+					} catch (IndexOutOfBoundsException e) {
+						throw newSQLInvalidColumnIndexException(column);
 					}
-				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
 				}
-
 				return "";
 			}
 
@@ -1499,22 +1492,18 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			 */
 			@Override
 			public String getTableName(int column) throws SQLException {
-				String table = "";
-
-				if (header == null)
-					return table;
-
-				// figure the name out
-				try {
-					table = header.getTableNames()[column - 1];
-					if (table != null) {
-						int dot = table.indexOf('.');
-						return (dot >= 0) ? table.substring(dot + 1) : table;
+				if (header != null) {
+					// figure the name out
+					try {
+						String table = header.getTableNames()[column - 1];
+						if (table != null) {
+							int dot = table.indexOf('.');
+							return (dot >= 0) ? table.substring(dot + 1) : table;
+						}
+					} catch (IndexOutOfBoundsException e) {
+						throw newSQLInvalidColumnIndexException(column);
 					}
-				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
 				}
-
 				return "";
 			}
 
@@ -1709,11 +1698,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					conn = getStatement().getConnection();
 				}
 				try {
+					String MonetDBType = types[column - 1];
 					Class<?> type = null;
 					if (conn != null) {
 						Map<String,Class<?>> map = conn.getTypeMap();
-						if (map != null && map.containsKey(types[column - 1])) {
-							type = (Class)map.get(types[column - 1]);
+						if (map != null && map.containsKey(MonetDBType)) {
+							type = (Class)map.get(MonetDBType);
 						}
 					}
 					if (type == null) {
@@ -1723,7 +1713,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					if (type != null) {
 						return type.getName();
 					}
-					throw new SQLException("column type mapping null: " + types[column - 1], "M0M03");
+					throw new SQLException("column type mapping null: " + MonetDBType, "M0M03");
 				} catch (IndexOutOfBoundsException e) {
 					throw newSQLInvalidColumnIndexException(column);
 				}
@@ -1820,7 +1810,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public Object getObject(int columnIndex) throws SQLException {
 		// Many generic JDBC programs use getObject(colnr) to retrieve value objects from a resultset
 		// For speed the implementation should be as fast as possible, so avoid method calls (by inlining code) where possible
-		final String MonetDBType;
 		final int JdbcType;
 		final String val;
 		try {
@@ -1830,7 +1819,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return null;
 			}
 			lastReadWasNull = false;
-			MonetDBType = types[columnIndex - 1];
 			JdbcType = JdbcSQLTypes[columnIndex - 1];
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
@@ -1881,24 +1869,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return Boolean.valueOf(val);
 			case Types.VARCHAR:
 			{
+
 				// The MonetDB types: inet, json, url and uuid are all mapped to Types.VARCHAR in MonetDriver.typeMap
 				// For these MonetDB types (except json, see comments below) we try to create objects of the corresponding class.
-				// As in most cases when we get here the MonetDBtype will be "varchar". For efficiency we compare
-				// the MonetDBtype first letter to see if we can skip the three .equals(MonetDBType) method calls.
-				char firstletter = MonetDBType.charAt(0);
-				if (firstletter == 'i') {
-					if ("inet".equals(MonetDBType)) {
-						try {
-							nl.cwi.monetdb.jdbc.types.INET inet_obj = new nl.cwi.monetdb.jdbc.types.INET();
-							inet_obj.fromString(val);
-							return inet_obj;
-						} catch (Exception exc) {
-							// ignore exception and just return the val String object
-							return val;
-						}
-					}
-				}
-				else if (firstletter == 'u') {
+				String MonetDBType = types[columnIndex - 1];
+				switch (MonetDBType.length()) {
+				case 3:
 					if ("url".equals(MonetDBType)) {
 						try {
 							nl.cwi.monetdb.jdbc.types.URL url_obj = new nl.cwi.monetdb.jdbc.types.URL();
@@ -1912,6 +1888,18 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 							return val;
 						}
 					}
+					break;
+				case 4:
+					if ("inet".equals(MonetDBType)) {
+						try {
+							nl.cwi.monetdb.jdbc.types.INET inet_obj = new nl.cwi.monetdb.jdbc.types.INET();
+							inet_obj.fromString(val);
+							return inet_obj;
+						} catch (Exception exc) {
+							// ignore exception and just return the val String object
+							return val;
+						}
+					} else
 					if ("uuid".equals(MonetDBType)) {
 						try {
 							return java.util.UUID.fromString(val);
@@ -1919,9 +1907,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 							// ignore exception and just return the val String object
 							return val;
 						}
-					}
-				}
-//				else if (firstletter == 'j') {
+//					} else
 //					if ("json".equals(MonetDBType)) {
 						// There is no support for JSON in standard java class libraries.
 						// Possibly we could use org.json.simple.JSONObject or other/faster libs
@@ -1930,8 +1916,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 						// Note that it would make our JDBC driver dependent of an external jar
 						// and we don't want that so simply return it as String object
 //						return val;
-//					}
-//				}
+					}
+					break;
+				}
 				return val;
 			}
 			case Types.CHAR:
@@ -2636,20 +2623,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 
-		// we know whether we have a time with or without
-		// time zone if the monet type ends with "tz"
-		boolean hasTimeZone = (MonetDBType != null) ? MonetDBType.endsWith("tz") : false;
 		TimeZone ptz = cal.getTimeZone();
 
 		// it is important to parse the time in the given timezone in
 		// order to get a correct (UTC) time value, hence we need to
 		// parse it first
-		if (hasTimeZone) {
-			// MonetDB/SQL99:  Sign TwoDigitHours : Minutes
-			ptz = TimeZone.getTimeZone("GMT" +
-					monetDate.substring(
-						monetDate.length() - 6,
-						monetDate.length()));
+		if (MonetDBType != null && ("timetz".equals(MonetDBType) || "timestamptz".equals(MonetDBType))) {
+			int vallen = monetDate.length();
+			if (vallen >= 6) {
+				// MonetDB/SQL99:  Sign TwoDigitHours : Minutes
+				ptz = TimeZone.getTimeZone("GMT" + monetDate.substring(vallen - 6, vallen));
+			}
 		}
 
 		java.util.Date pdate = null;
