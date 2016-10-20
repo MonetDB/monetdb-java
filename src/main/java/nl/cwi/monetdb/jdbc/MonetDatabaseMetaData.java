@@ -3004,7 +3004,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"\"systemname\" AS \"LOCAL_TYPE_NAME\", " +
 			"cast(0 AS smallint) AS \"MINIMUM_SCALE\", " +
 			"cast(CASE WHEN \"sqlname\" = 'decimal' THEN (CASE \"systemname\" WHEN 'lng' THEN 18 WHEN 'hge' THEN 38 WHEN 'int' THEN 9 WHEN 'sht' THEN 4 WHEN 'bte' THEN 2 ELSE 0 END)" +
-				" WHEN \"sqlname\" IN ('sec_interval', 'timestamp', 'timestamptz') THEN 9 ELSE 0 END AS smallint) AS \"MAXIMUM_SCALE\", " +
+				" WHEN \"sqlname\" IN ('time', 'timetz', 'timestamp', 'timestamptz', 'sec_interval') THEN 6 ELSE 0 END AS smallint) AS \"MAXIMUM_SCALE\", " +
 			"cast(0 AS int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 AS int) AS \"SQL_DATETIME_SUB\", " +
 			"cast(\"radix\" as int) AS \"NUM_PREC_RADIX\" " +
