@@ -3621,7 +3621,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		int major = 0;
 		if (env_monet_version != null) {
 			try {
-				int start = env_monet_version.indexOf(".");
+				int start = env_monet_version.indexOf('.');
 				major = Integer.parseInt((start >= 0) ? env_monet_version.substring(0, start) : env_monet_version);
 			} catch (NumberFormatException e) {
 				// ignore
@@ -3643,10 +3643,10 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		int minor = 0;
 		if (env_monet_version != null) {
 			try {
-				int start = env_monet_version.indexOf(".");
+				int start = env_monet_version.indexOf('.');
 				if (start >= 0) {
 					start++;
-					int end = env_monet_version.indexOf(".", start);
+					int end = env_monet_version.indexOf('.', start);
 					minor = Integer.parseInt((end > 0) ? env_monet_version.substring(start, end) : env_monet_version.substring(start));
 				}
 			} catch (NumberFormatException e) {

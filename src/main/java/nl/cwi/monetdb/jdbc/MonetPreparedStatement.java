@@ -1055,7 +1055,7 @@ public class MonetPreparedStatement
 	  // this to the exact number "0".)  Also strip off trailing
 	  // numbers that are inherent to the double representation.
 	  String xStr = x.toPlainString();
-	  int dot = xStr.indexOf(".");
+	  int dot = xStr.indexOf('.');
 	  if (dot >= 0)
 	    xStr = xStr.substring(0, Math.min(xStr.length(), dot + 1 + scale[i]));
 	  while (xStr.startsWith("0") && xStr.length() > 1)

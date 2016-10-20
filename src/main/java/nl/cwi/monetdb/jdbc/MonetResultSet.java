@@ -1481,7 +1481,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				try {
 					schema = header.getTableNames()[column - 1];
 					if (schema != null) {
-						int dot = schema.indexOf(".");
+						int dot = schema.indexOf('.');
 						return (dot >= 0) ? schema.substring(0, dot) : "";
 					}
 				} catch (IndexOutOfBoundsException e) {
@@ -1508,7 +1508,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				try {
 					table = header.getTableNames()[column - 1];
 					if (table != null) {
-						int dot = table.indexOf(".");
+						int dot = table.indexOf('.');
 						return (dot >= 0) ? table.substring(dot + 1) : table;
 					}
 				} catch (IndexOutOfBoundsException e) {

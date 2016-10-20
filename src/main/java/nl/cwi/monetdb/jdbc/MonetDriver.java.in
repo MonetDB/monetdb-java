@@ -156,7 +156,7 @@ final public class MonetDriver implements Driver {
 			// handle additional arguments
 			String args[] = uri_query.split("&");
 			for (int i = 0; i < args.length; i++) {
-				tmp = args[i].indexOf("=");
+				tmp = args[i].indexOf('=');
 				if (tmp > 0)
 					info.put(args[i].substring(0, tmp), args[i].substring(tmp + 1));
 			}

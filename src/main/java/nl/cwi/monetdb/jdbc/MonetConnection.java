@@ -208,7 +208,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 				String fname = props.getProperty("logfile", "monet_" +
 					System.currentTimeMillis() + ".log");
 				File f = new File(fname);
-				int ext = fname.lastIndexOf(".");
+				int ext = fname.lastIndexOf('.');
 				if (ext < 0) ext = fname.length();
 				String pre = fname.substring(0, ext);
 				String suf = fname.substring(ext);
