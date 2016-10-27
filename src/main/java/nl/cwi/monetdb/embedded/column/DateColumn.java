@@ -6,31 +6,31 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded.result.column;
+package nl.cwi.monetdb.embedded.column;
 
-import nl.cwi.monetdb.mcl.embedded.result.EmbeddedQueryResult;
+import nl.cwi.monetdb.embedded.EmbeddedQueryResult;
 
-import java.sql.Time;
+import java.sql.Date;
 
 /**
- * Mapping for MonetDB TIME data type
+ * Mapping for MonetDB DATE data type
  */
-public class TimeColumn extends Column<Time> {
+public class DateColumn extends Column<Date> {
 
-    private final Time[] values;
+    private final Date[] values;
 
-    public TimeColumn(EmbeddedQueryResult result, int index, Time[] values, boolean[] nullIndex) {
+    public DateColumn(EmbeddedQueryResult result, int index, Date[] values, boolean[] nullIndex) {
         super(result, index, nullIndex);
         this.values = values;
     }
 
     @Override
-    public Time[] getAllValues() {
+    public Date[] getAllValues() {
         return this.values;
     }
 
     @Override
-    protected Time getValueImplementation(int index) {
+    protected Date getValueImplementation(int index) {
         return this.values[index];
     }
 }

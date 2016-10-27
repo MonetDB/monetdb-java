@@ -1,6 +1,6 @@
-package nl.cwi.monetdb.mcl.embedded.result.column;
+package nl.cwi.monetdb.embedded.column;
 
-import nl.cwi.monetdb.mcl.embedded.result.EmbeddedQueryResult;
+import nl.cwi.monetdb.embedded.EmbeddedQueryResult;
 
 /**
  * Mapping for MonetDB VARCHAR data type

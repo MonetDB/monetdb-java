@@ -6,31 +6,30 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded.result.column;
+package nl.cwi.monetdb.embedded.column;
 
-import nl.cwi.monetdb.mcl.embedded.result.EmbeddedQueryResult;
-
-import java.util.UUID;
+import nl.cwi.monetdb.embedded.EmbeddedQueryResult;
+import java.net.URL;
 
 /**
- * Mapping for MonetDB UUID data type
+ * Mapping for MonetDB URL data type
  */
-public class UUIDColumn extends Column<UUID> {
+public class URLColumn extends Column<URL> {
 
-    private final UUID[] values;
+    private final URL[] values;
 
-    public UUIDColumn(EmbeddedQueryResult result, int index, UUID[] values, boolean[] nullIndex) {
+    public URLColumn(EmbeddedQueryResult result, int index, URL[] values, boolean[] nullIndex) {
         super(result, index, nullIndex);
         this.values = values;
     }
 
     @Override
-    public UUID[] getAllValues() {
+    public URL[] getAllValues() {
         return this.values;
     }
 
     @Override
-    protected UUID getValueImplementation(int index) {
+    protected URL getValueImplementation(int index) {
         return this.values[index];
     }
 }

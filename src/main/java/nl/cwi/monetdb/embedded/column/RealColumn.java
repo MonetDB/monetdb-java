@@ -6,38 +6,38 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded.result.column;
+package nl.cwi.monetdb.embedded.column;
 
-import nl.cwi.monetdb.mcl.embedded.result.EmbeddedQueryResult;
+import nl.cwi.monetdb.embedded.EmbeddedQueryResult;
 
 /**
- * Mapping for MonetDB FLOAT data type
+ * Mapping for MonetDB REAL data type
  */
-public class DoubleColumn extends Column<Double> {
+public class RealColumn extends Column<Float> {
 
-	private final Double[] values;
+	private final Float[] values;
 
-	public DoubleColumn(EmbeddedQueryResult result, int index, double[] values, boolean[] nullIndex) {
+	public RealColumn(EmbeddedQueryResult result, int index, float[] values, boolean[] nullIndex) {
 		super(result, index, nullIndex);
-		Double[] newArray = new Double[values.length];
+		Float[] newArray = new Float[values.length];
 		int j = newArray.length;
 		for(int i = 0 ; i < j ; i++) {
 			if (nullIndex[i]) {
 				newArray[i] = null;
 			} else {
-				newArray[i] = Double.valueOf(values[i]);
+				newArray[i] = Float.valueOf(values[i]);
 			}
 		}
 		this.values = newArray;
 	}
 
 	@Override
-	public Double[] getAllValues() {
+	public Float[] getAllValues() {
 		return this.values;
 	}
 
 	@Override
-	protected Double getValueImplementation(int index) {
+	protected Float getValueImplementation(int index) {
 		return this.values[index];
 	}
 }

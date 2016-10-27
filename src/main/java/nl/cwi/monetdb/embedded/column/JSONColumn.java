@@ -6,18 +6,18 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded.result.column;
+package nl.cwi.monetdb.embedded.column;
 
-import nl.cwi.monetdb.mcl.embedded.result.EmbeddedQueryResult;
+import nl.cwi.monetdb.embedded.EmbeddedQueryResult;
 
 /**
- * Mapping for MonetDB CHAR data type
+ * Mapping for MonetDB JSON data type
  */
-public class CharColumn extends Column<String> {
+public class JSONColumn extends Column<String> {
 
     private final String[] values;
 
-    public CharColumn(EmbeddedQueryResult result, int index, String[] values, boolean[] nullIndex) {
+    public JSONColumn(EmbeddedQueryResult result, int index, String[] values, boolean[] nullIndex) {
         super(result, index, nullIndex);
         this.values = values;
     }

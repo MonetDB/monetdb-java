@@ -6,13 +6,13 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded.result;
+package nl.cwi.monetdb.embedded;
 
 import java.io.Closeable;
 import java.sql.SQLException;
 import java.util.Iterator;
 
-import nl.cwi.monetdb.mcl.embedded.result.column.Column;
+import nl.cwi.monetdb.embedded.column.Column;
 
 /**
  * Embedded MonetDB query result.

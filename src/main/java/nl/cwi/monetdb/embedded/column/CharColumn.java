@@ -6,31 +6,29 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded.result.column;
+package nl.cwi.monetdb.embedded.column;
 
-import nl.cwi.monetdb.mcl.embedded.result.EmbeddedQueryResult;
-
-import java.sql.Date;
+import nl.cwi.monetdb.embedded.EmbeddedQueryResult;
 
 /**
- * Mapping for MonetDB DATE data type
+ * Mapping for MonetDB CHAR data type
  */
-public class DateColumn extends Column<Date> {
+public class CharColumn extends Column<String> {
 
-    private final Date[] values;
+    private final String[] values;
 
-    public DateColumn(EmbeddedQueryResult result, int index, Date[] values, boolean[] nullIndex) {
+    public CharColumn(EmbeddedQueryResult result, int index, String[] values, boolean[] nullIndex) {
         super(result, index, nullIndex);
         this.values = values;
     }
 
     @Override
-    public Date[] getAllValues() {
+    public String[] getAllValues() {
         return this.values;
     }
 
     @Override
-    protected Date getValueImplementation(int index) {
+    protected String getValueImplementation(int index) {
         return this.values[index];
     }
 }

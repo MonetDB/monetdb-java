@@ -6,38 +6,38 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded.result.column;
+package nl.cwi.monetdb.embedded.column;
 
-import nl.cwi.monetdb.mcl.embedded.result.EmbeddedQueryResult;
+import nl.cwi.monetdb.embedded.EmbeddedQueryResult;
 
 /**
- * Mapping for MonetDB SMALLINT data type
+ * Mapping for MonetDB Integer data type
  */
-public class SmallintColumn extends Column<Short> {
+public class IntColumn extends Column<Integer> {
 
-	private final Short[] values;
+	private final Integer[] values;
 
-	public SmallintColumn(EmbeddedQueryResult result, int index, short[] values, boolean[] nullIndex) {
+	public IntColumn(EmbeddedQueryResult result, int index, int[] values, boolean[] nullIndex) {
 		super(result, index, nullIndex);
-		Short[] newArray = new Short[values.length];
+		Integer[] newArray = new Integer[values.length];
 		int j = newArray.length;
 		for(int i = 0 ; i < j ; i++) {
 			if (nullIndex[i]) {
 				newArray[i] = null;
 			} else {
-				newArray[i] = Short.valueOf(values[i]);
+				newArray[i] = Integer.valueOf(values[i]);
 			}
 		}
 		this.values = newArray;
 	}
 
 	@Override
-	public Short[] getAllValues() {
+	public Integer[] getAllValues() {
 		return this.values;
 	}
 
 	@Override
-	protected Short getValueImplementation(int index) {
+	protected Integer getValueImplementation(int index) {
 		return this.values[index];
 	}
 }

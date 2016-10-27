@@ -6,38 +6,38 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded.result.column;
+package nl.cwi.monetdb.embedded.column;
 
-import nl.cwi.monetdb.mcl.embedded.result.EmbeddedQueryResult;
+import nl.cwi.monetdb.embedded.EmbeddedQueryResult;
 
 /**
- * Mapping for MonetDB REAL data type
+ * Mapping for MonetDB SMALLINT data type
  */
-public class RealColumn extends Column<Float> {
+public class SmallintColumn extends Column<Short> {
 
-	private final Float[] values;
+	private final Short[] values;
 
-	public RealColumn(EmbeddedQueryResult result, int index, float[] values, boolean[] nullIndex) {
+	public SmallintColumn(EmbeddedQueryResult result, int index, short[] values, boolean[] nullIndex) {
 		super(result, index, nullIndex);
-		Float[] newArray = new Float[values.length];
+		Short[] newArray = new Short[values.length];
 		int j = newArray.length;
 		for(int i = 0 ; i < j ; i++) {
 			if (nullIndex[i]) {
 				newArray[i] = null;
 			} else {
-				newArray[i] = Float.valueOf(values[i]);
+				newArray[i] = Short.valueOf(values[i]);
 			}
 		}
 		this.values = newArray;
 	}
 
 	@Override
-	public Float[] getAllValues() {
+	public Short[] getAllValues() {
 		return this.values;
 	}
 
 	@Override
-	protected Float getValueImplementation(int index) {
+	protected Short getValueImplementation(int index) {
 		return this.values[index];
 	}
 }

@@ -6,38 +6,38 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded.result.column;
+package nl.cwi.monetdb.embedded.column;
 
-import nl.cwi.monetdb.mcl.embedded.result.EmbeddedQueryResult;
+import nl.cwi.monetdb.embedded.EmbeddedQueryResult;
 
 /**
- * Mapping for MonetDB BIGINT data type
+ * Mapping for MonetDB FLOAT data type
  */
-public class BigintColumn extends Column<Long> {
+public class DoubleColumn extends Column<Double> {
 
-	private final Long[] values;
+	private final Double[] values;
 
-	public BigintColumn(EmbeddedQueryResult result, int index, long[] values, boolean[] nullIndex) {
+	public DoubleColumn(EmbeddedQueryResult result, int index, double[] values, boolean[] nullIndex) {
 		super(result, index, nullIndex);
-		Long[] newArray = new Long[values.length];
+		Double[] newArray = new Double[values.length];
 		int j = newArray.length;
 		for(int i = 0 ; i < j ; i++) {
 			if (nullIndex[i]) {
 				newArray[i] = null;
 			} else {
-				newArray[i] = Long.valueOf(values[i]);
+				newArray[i] = Double.valueOf(values[i]);
 			}
 		}
 		this.values = newArray;
 	}
 
 	@Override
-	public Long[] getAllValues() {
+	public Double[] getAllValues() {
 		return this.values;
 	}
 
 	@Override
-	protected Long getValueImplementation(int index) {
+	protected Double getValueImplementation(int index) {
 		return this.values[index];
 	}
 }

@@ -6,7 +6,7 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded;
+package nl.cwi.monetdb.embedded;
 
 import java.io.*;
 import java.nio.file.Files;
@@ -22,54 +22,17 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * <br/>
  * <strong>Note</strong>: You can have only one nl.cwi.monetdb.embedded MonetDB database running per JVM process.
  */
-public class MonetDBEmbeddedInstance {
+public class MonetDBEmbeddedDatabase {
 
-    private final static String NATIVE_LIB_PATH_IN_JAR = "src" + File.separatorChar + "main" +
-            File.separatorChar + "resources";
-    private final static String NATIVE_LIB_NAME = "libmonetdb5.so";
-
-    /**
-     * The native nl.cwi.monetdb.embedded MonetDB library.
-     */
-    static {
-        try {
-            // Try load the nl.cwi.monetdb.embedded library
-            System.loadLibrary("monetdb5");
-        } catch (UnsatisfiedLinkError e) {
-            // Still no, then get the resources.lib bundled in the jar
-            loadLibFromJar(NATIVE_LIB_NAME);
+    public static MonetDBEmbeddedDatabase StartDatabase(String dbDirectory, boolean silentFlag, boolean sequentialFlag) throws SQLException {
+        if(MonetDBEmbeddedInstance.IsEmbeddedInstanceInitialized() == false) {
+            throw new SQLException("The embedded instance has not been loaded yet!");
+        } else {
+            return StartDatabaseInternal(dbDirectory, silentFlag, sequentialFlag);
         }
     }
 
-    private static void loadLibFromJar(String fileName) {
-        String pathToLib = NATIVE_LIB_PATH_IN_JAR + File.separatorChar + fileName;
-        try {
-            InputStream in = MonetDBEmbeddedInstance.class.getResourceAsStream(File.separatorChar + pathToLib);
-            if (in == null) {
-                // OK, the input stream is null, hence no .jar
-                // This was probably a test and/or in an IDE
-                // Just read the files from the src/main/resources dir
-                in = new FileInputStream(new File(pathToLib));
-            }
-            // Set a temp location to extract (and load from later)
-            final Path tempLibsDir = Files.createTempDirectory("nl.cwi.monetdb.embedded");
-            File fileOut = new File(tempLibsDir.toString() + File.separatorChar + fileName);
-            try (OutputStream out = new FileOutputStream(fileOut)) {
-                byte[] buffer = new byte[in.available()];
-                while (in.read(buffer) != -1) {
-                    out.write(buffer);
-                }
-                out.flush();
-                in.close();
-                // Load the resources.lib from the extracted file
-                System.load(fileOut.toString());
-            }
-        } catch (IOException e) {
-            throw new UnsatisfiedLinkError("Unable to extract native library from JAR:" + e.getMessage());
-        }
-    }
-
-    public static native MonetDBEmbeddedInstance StartDatabase(String dbDirectory, boolean silentFlag, boolean sequentialFlag) throws SQLException;
+    private static native MonetDBEmbeddedDatabase StartDatabaseInternal(String dbDirectory, boolean silentFlag, boolean sequentialFlag) throws SQLException;
 
     private final File databaseDirectory;
 
@@ -83,7 +46,7 @@ public class MonetDBEmbeddedInstance {
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    public MonetDBEmbeddedInstance(String dbDirectory, boolean silentFlag, boolean sequentialFlag, boolean isRunning) {
+    public MonetDBEmbeddedDatabase(String dbDirectory, boolean silentFlag, boolean sequentialFlag, boolean isRunning) {
         this.databaseDirectory = new File(dbDirectory);
         this.silentFlag = silentFlag;
         this.sequentialFlag = sequentialFlag;

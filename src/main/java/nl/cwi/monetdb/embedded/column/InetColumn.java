@@ -6,32 +6,31 @@
  * Copyright 2008-2015 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.embedded.result.column;
+package nl.cwi.monetdb.embedded.column;
 
-import nl.cwi.monetdb.jdbc.types.INET;
-import nl.cwi.monetdb.mcl.embedded.result.EmbeddedQueryResult;
+import nl.cwi.monetdb.embedded.EmbeddedQueryResult;
 
 import java.net.InetAddress;
 
 /**
  * Mapping for MonetDB INET data type
  */
-public class InetColumn extends Column<INET> {
+public class InetColumn extends Column<InetAddress> {
 
-    private final INET[] values;
+    private final InetAddress[] values;
 
-    public InetColumn(EmbeddedQueryResult result, int index, INET[] values, boolean[] nullIndex) {
+    public InetColumn(EmbeddedQueryResult result, int index, InetAddress[] values, boolean[] nullIndex) {
         super(result, index, nullIndex);
         this.values = values;
     }
 
     @Override
-    public INET[] getAllValues() {
+    public InetAddress[] getAllValues() {
         return this.values;
     }
 
     @Override
-    protected INET getValueImplementation(int index) {
+    protected InetAddress getValueImplementation(int index) {
         return this.values[index];
     }
 }
