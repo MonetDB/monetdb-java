@@ -60,7 +60,8 @@ import java.util.Map;
  * [ "int",        9,      0       ]
  * </pre>
  *
- * @author Fabian Groffen, Martin van Dinther
+ * @author Fabian Groffen
+ * @author Martin van Dinther
  * @version 0.4
  */
 public class MonetPreparedStatement
@@ -79,7 +80,7 @@ public class MonetPreparedStatement
 	private final int rscolcnt;
 
 	private final String[] values;
-	
+
 	private final MonetConnection connection;
 
 	/* only parse the date patterns once, use multiple times */
@@ -280,7 +281,7 @@ public class MonetPreparedStatement
 	 *                      statement does not return a ResultSet object
 	 */
 	@Override
-	public ResultSet executeQuery() throws SQLException{
+	public ResultSet executeQuery() throws SQLException {
 		if (execute() != true)
 			throw new SQLException("Query did not produce a result set", "M1M19");
 
@@ -463,7 +464,7 @@ public class MonetPreparedStatement
 			public boolean isCurrency(int column) {
 				return false;
 			}
-			
+
 			/**
 			 * Indicates whether values in the designated column are signed
 			 * numbers.
@@ -771,7 +772,7 @@ public class MonetPreparedStatement
 					if (column[i] == null)
 						cnt++;
 				}
-				
+
 				return cnt;
 			}
 
@@ -943,14 +944,14 @@ public class MonetPreparedStatement
 	 * Sets the designated parameter to the given Array object.  The
 	 * driver converts this to an SQL ARRAY value when it sends it to
 	 * the database.
-     *
+	 *
 	 * @param i the first parameter is 1, the second is 2, ...
 	 * @param x an Array object that maps an SQL ARRAY value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public void setArray(int i, Array x) throws SQLException {
-		throw new SQLException("Operation setArray(int i, Array x) currently not supported!", "0A000");
+		throw newSQLFeatureNotSupportedException("setArray");
 	}
 
 	/**
@@ -1036,31 +1037,29 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setBigDecimal(int idx, BigDecimal x)
-	    throws SQLException
-	{
-	  // get array position
-	  int i = getParamIdx(idx);
+	public void setBigDecimal(int idx, BigDecimal x) throws SQLException {
+		// get array position
+		int i = getParamIdx(idx);
 
-	  // round to the scale of the DB:
-	  x = x.setScale(scale[i], RoundingMode.HALF_UP);
+		// round to the scale of the DB:
+		x = x.setScale(scale[i], RoundingMode.HALF_UP);
 
-	  // if precision is now greater than that of the db, throw an error:
-	  if (x.precision() > digits[i]) {
-	    throw new SQLDataException("DECIMAL value exceeds allowed digits/scale: " + x.toPlainString() + " (" + digits[i] + "/" + scale[i] + ")", "22003");
-	  }
+		// if precision is now greater than that of the db, throw an error:
+		if (x.precision() > digits[i]) {
+			throw new SQLDataException("DECIMAL value exceeds allowed digits/scale: " + x.toPlainString() + " (" + digits[i] + "/" + scale[i] + ")", "22003");
+		}
 
-	  // MonetDB doesn't like leading 0's, since it counts them as part of
-	  // the precision, so let's strip them off. (But be careful not to do
-	  // this to the exact number "0".)  Also strip off trailing
-	  // numbers that are inherent to the double representation.
-	  String xStr = x.toPlainString();
-	  int dot = xStr.indexOf('.');
-	  if (dot >= 0)
-	    xStr = xStr.substring(0, Math.min(xStr.length(), dot + 1 + scale[i]));
-	  while (xStr.startsWith("0") && xStr.length() > 1)
-	    xStr = xStr.substring(1);
-	  setValue(idx, xStr);
+		// MonetDB doesn't like leading 0's, since it counts them as part of
+		// the precision, so let's strip them off. (But be careful not to do
+		// this to the exact number "0".)  Also strip off trailing
+		// numbers that are inherent to the double representation.
+		String xStr = x.toPlainString();
+		int dot = xStr.indexOf('.');
+		if (dot >= 0)
+			xStr = xStr.substring(0, Math.min(xStr.length(), dot + 1 + scale[i]));
+		while (xStr.startsWith("0") && xStr.length() > 1)
+			xStr = xStr.substring(1);
+		setValue(idx, xStr);
 	}
 
 	/**
@@ -2128,7 +2127,7 @@ public class MonetPreparedStatement
 				public void writeLong(long x) throws SQLException {
 					setLong(paramnr, x);
 				}
-				
+
 				@Override
 				public void writeFloat(float x) throws SQLException {
 					setFloat(paramnr, x);
