@@ -2354,7 +2354,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 * Internal executor of queries.
 		 *
 		 * @param templ the template to fill in
-		 * @param the query to execute
+		 * @param query the query to execute
 		 * @throws SQLException if a database error occurs
 		 */
 		@SuppressWarnings("fallthrough")
@@ -2655,7 +2655,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 * Constructor which immediately starts this thread and sets it
 		 * into daemon mode.
 		 *
-		 * @param monet the socket to write to
+		 * @param out the socket to write to
 		 */
 		public SendThread(BufferedMCLWriter out) {
 			super("SendThread");

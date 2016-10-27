@@ -17,8 +17,6 @@ import java.sql.ResultSetMetaData;
 import java.sql.RowIdLifetime;
 import java.sql.Types;
 
-import java.util.ArrayList;
-
 /**
  * A DatabaseMetaData object suitable for the MonetDB database.
  *

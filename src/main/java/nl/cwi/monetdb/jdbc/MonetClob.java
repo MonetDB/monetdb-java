@@ -26,7 +26,7 @@ public class MonetClob implements Clob {
 	
 	private StringBuilder buf;
 
-	protected MonetClob(String in) {
+	public MonetClob(String in) {
 		buf = new StringBuilder(in);
 	}
 

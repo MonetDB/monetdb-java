@@ -10,7 +10,6 @@ package nl.cwi.monetdb.mcl.net;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.EOFException;
 import java.io.FileWriter;
 import java.io.FilterInputStream;
 import java.io.FilterOutputStream;

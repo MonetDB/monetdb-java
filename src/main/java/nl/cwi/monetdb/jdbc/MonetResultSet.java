@@ -148,7 +148,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @param columns the column names
 	 * @param types the column types
 	 * @param results the number of rows in the ResultSet
-	 * @throws IOException if communicating with monet failed
+	 * @throws IllegalArgumentException if communicating with monet failed
 	 * @throws SQLException is a protocol error occurs
 	 */
 	MonetResultSet(
@@ -537,7 +537,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * of this ResultSet object as a Blob object in the Java programming
 	 * language.
 	 *
-	 * @param i the first column is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a Blob object representing the SQL BLOB value in the
 	 *         specified column
 	 * @throws SQLException if a database access error occurs
@@ -578,7 +578,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * of this ResultSet object as a Clob object in the
 	 * Java programming language.
 	 *
-	 * @param i the first column is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a Clob object representing the SQL CLOB value in the
 	 *         specified column
 	 * @throws SQLException if a database access error occurs
@@ -1977,7 +1977,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * structured values are not supported, and distinct values are mapped to the
 	 * default Java class as determined by the underlying SQL type of the DISTINCT type.
 	 *
-	 * @param i the first column is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param map a java.util.Map object that contains the mapping from SQL
 	 *        type names to classes in the Java programming language
 	 * @return an Object in the Java programming language representing the SQL
@@ -2586,7 +2586,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * The dates are parsed with the given Calendar.
 	 *
 	 * @param cal the Calendar to use/fill when parsing the date/time
-	 * @param col the column to parse
+	 * @param columnIndex the column to parse
 	 * @param type the corresponding java.sql.Types type of the calling
 	 *        function
 	 * @return the fractional seconds (nanos) or -1 if the value is NULL

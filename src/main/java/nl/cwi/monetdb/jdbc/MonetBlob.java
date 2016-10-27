@@ -25,7 +25,7 @@ import java.io.*;
 public class MonetBlob implements Blob {
 	private byte[] buf;
 
-	protected MonetBlob(byte[] data) {
+	public MonetBlob(byte[] data) {
 		buf = data;
 	}
 	
