@@ -3,146 +3,261 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 2008-2015 MonetDB B.V.
+ * Copyright 2016 MonetDB B.V.
  */
 
 package nl.cwi.monetdb.embedded;
 
-import nl.cwi.monetdb.embedded.column.Column;
-
-import java.io.*;
-import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * A single connection to a MonetDB database instance
  * Communication between Java and native C is done via JNI.
  * <br/>
- * <strong>Note</strong>: You can have only one nl.cwi.monetdb.embedded MonetDB database running per JVM process.
+ * <strong>Note</strong>: You can have only one Embedded MonetDB database running per JVM process.
+ *
+ * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
 public class MonetDBEmbeddedConnection {
 
+    private final MonetDBEmbeddedDatabase database;
+
 	private final long connectionPointer;
 
-	public MonetDBEmbeddedConnection(long connectionPointer) {
-		this.connectionPointer = connectionPointer;
+    private final List<AbstractStatementResult> results = new ArrayList<>();
+
+    //TODO add autocommit
+	protected MonetDBEmbeddedConnection(MonetDBEmbeddedDatabase database, long connectionPointer) {
+        this.database = database;
+        this.connectionPointer = connectionPointer;
 	}
 
-	protected long getConnectionPointer() {
-		return connectionPointer;
-	}
+    /**
+     * Gets the current schema set on the connection.
+     *
+     * @return A Java String with the name of the schema
+     * @throws MonetDBEmbeddedException If an error in the database occurred
+     */
+    public String getCurrentSchema() throws MonetDBEmbeddedException {
+        QueryResultSet eqr = this.sendQuery("select current_schema from sys.var();");
+        QueryResultSetColumn<String> col = eqr.getColumn(0);
+        String res = col.fetchFirstNColumnValues(1)[0];
+        eqr.close();
+        return res;
+    }
 
-	/**
-	 * Execute an SQL query in an nl.cwi.monetdb.embedded database.
+    /**
+     * Sets the current schema on the connection.
+     *
+     * @param currentSchema Java String with the name of the schema
+     * @throws MonetDBEmbeddedException If an error in the database occurred
+     */
+    public void setCurrentSchema(String currentSchema) throws MonetDBEmbeddedException {
+        String valueToSubmit = "'" + currentSchema.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "';";
+        this.sendUpdate("SET SCHEMA " + valueToSubmit).close();
+    }
+
+    /**
+     * Begins a transaction.
+     *
+     * @throws MonetDBEmbeddedException If an error in the database occurred
+     */
+    public void startTransaction() throws MonetDBEmbeddedException {
+        this.sendUpdate("START TRANSACTION;").close();
+    }
+
+    /**
+     * Commits the current transaction.
+     *
+     * @throws MonetDBEmbeddedException If an error in the database occurred
+     */
+    public void commit() throws MonetDBEmbeddedException {
+        this.sendUpdate("COMMIT;").close();
+    }
+
+    /**
+     * Rollbacks the current transaction.
+     *
+     * @throws MonetDBEmbeddedException If an error in the database occurred
+     */
+    public void rollback() throws MonetDBEmbeddedException {
+        this.sendUpdate("ROLLBACK;").close();
+    }
+
+    /**
+     * Executes a SQL query without a result set.
+     *
+     * @param query The SQL query string
+     * @return The update result object
+     * @throws MonetDBEmbeddedException If an error in the database occurred
+     */
+    public UpdateResultSet sendUpdate(String query) throws MonetDBEmbeddedException {
+        if (!query.endsWith(";")) {
+            query += ";";
+        }
+        UpdateResultSet res = this.createEmptyResultSetInternal(this.connectionPointer, query, true);
+        results.add(res);
+        return res;
+    }
+
+    /**
+     * Executes a SQL query without a result set asynchronously.
+     *
+     * @param query The SQL query string
+     * @return The update result object
+     * @throws MonetDBEmbeddedException If an error in the database occurred
+     */
+    public UpdateResultSet sendUpdateAsync(String query) throws MonetDBEmbeddedException {
+        /* CompletableFuture.supplyAsync(() -> this.sendUpdate(query)); */
+        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    }
+
+    /**
+	 * Executes a SQL query with a result set.
 	 * 
 	 * @param query The SQL query string
-	 * @return The query result object, {@code null} if the database is not running
-	 * @throws SQLException
+	 * @return The query result object
+	 * @throws MonetDBEmbeddedException If an error in the database occurred
 	 */
-	public EmbeddedQueryResult createQuery(String query) throws SQLException {
-		String queryString = query;
-		if (!queryString.endsWith(";")) {
-			queryString += ";";
+	public QueryResultSet sendQuery(String query) throws MonetDBEmbeddedException {
+		if (!query.endsWith(";")) {
+            query += ";";
 		}
-		return queryWrapper(queryString, true, this.connectionPointer);
+        QueryResultSet res = this.createNonEmptyResultSetInternal(this.connectionPointer, query, true);
+        results.add(res);
+        return res;
 	}
 
     /**
-     * Begins a transaction in nl.cwi.monetdb.embedded database.
+     * Executes an SQL query with a result set asynchronously.
      *
-     * @throws SQLException
+     * @param query The SQL query string
+     * @return The query result object
+     * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-	public void startTransaction() throws SQLException {
-		this.createQuery("START TRANSACTION;").close();
-	}
+    public QueryResultSet sendQueryAsync(String query) throws MonetDBEmbeddedException {
+        /* CompletableFuture.supplyAsync(() -> this.sendQuery(query)); */
+        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    }
 
     /**
-     * Commits a transaction in nl.cwi.monetdb.embedded database.
+     * Creates a prepared query statement likewise the PreparedStatement in JDBC.
      *
-     * @throws SQLException
+     * @param query The SQL query with ? indicating the parameters to replace in the query
+     * @return An instance of EmbeddedPreparedStatement
+     * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-	public void commit() throws SQLException {
-		this.createQuery("COMMIT;").close();
-	}
+    public EmbeddedPreparedStatement createPreparedStatement(String query) throws MonetDBEmbeddedException {
+        if (!query.endsWith(";")) {
+            query += ";";
+        }
+        return this.createPreparedStatementInternal(this.connectionPointer, query);
+    }
 
     /**
-     * Rollbacks a transaction in nl.cwi.monetdb.embedded database.
+     * Creates a prepared query statement likewise the PreparedStatement in JDBC asynchronously.
      *
-     * @throws SQLException
+     * @param query The SQL query with ? indicating the parameters to replace in the query
+     * @return An instance of EmbeddedPreparedStatement
+     * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-	public void rollback() throws SQLException {
-		this.createQuery("ROLLBACK;").close();
-	}
+    public EmbeddedPreparedStatement createPreparedStatementAsync(String query) throws MonetDBEmbeddedException {
+        /* CompletableFuture.supplyAsync(() -> this.createPreparedStatement(query)); */
+        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    }
+
+    /*public MonetDBTable getMonetDBTable(String schemaName, String tableName) throws MonetDBEmbeddedException {
+        MonetDBTable res = this.getMonetDBTableInternal(schemaName, tableName, this.connectionPointer);
+        //results.add(res);
+        return res;
+    }
+        add the method from current schema
+    public MonetDBTable getMonetDBTableAsync(String schema, String tableName) throws MonetDBEmbeddedException {
+        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    }*/
 
     /**
-     * Performs a Lists the the existing tables with schemas on the system
+     * Performs a listing of the existing tables with schemas.
      *
      * @param listSystemTables List system's tables as well (default true)
      * @return The query result object, {@code null} if the database is not running
-     * @throws SQLException
+     * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public EmbeddedQueryResult listTables(boolean listSystemTables) throws SQLException {
+    public QueryResultSet listTables(boolean listSystemTables) throws MonetDBEmbeddedException {
         String query = "select schemas.name as sn, tables.name as tn from sys.tables join sys.schemas on tables.schema_id=schemas.id";
         if (!listSystemTables) {
             query += " where tables.system=false order by sn, tn";
         }
-        return this.createQuery(query + ";");
+        return this.sendQuery(query + ";");
     }
 
     /**
-     * Performs a SELECT * FROM a table  in nl.cwi.monetdb.embedded database.
+     * Check if a table it exists.
      *
-     * @param tableName The name of the table
-     * @return The query result object, {@code null} if the database is not running
-     * @throws SQLException
-     */
-	public EmbeddedQueryResult readTable(String tableName) throws SQLException {
-        return this.createQuery("SELECT * FROM " + tableName + ";");
-    }
-
-    /**
-     * Check if a table exists  in nl.cwi.monetdb.embedded database.
-     *
+     * @param schemaName The schema of the table
      * @param tableName The name of the table
      * @return If a the table exists or not
-     * @throws SQLException
+     * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public boolean checkTableExists(String tableName) throws SQLException {
-        EmbeddedQueryResult eqr = this.listTables(true);
-        Column<String> tablenames = (Column<String>) eqr.getColumn(0);
-        boolean res = false;
-        for (String str: tablenames.getAllValues()) {
-            if(str.equals(tableName)) {
-                res = true;
-            }
-        }
+    public boolean checkIfTableExists(String schemaName, String tableName) throws MonetDBEmbeddedException {
+        String query =
+                "select schemas.name as sn, tables.name as tn from sys.tables join sys.schemas on tables.schema_id=schemas.id where tables.system=true order by sn, tn and schemas.name ='" +
+                        schemaName + "' and tables.name ='" + tableName + "';";
+        QueryResultSet eqr = this.sendQuery(query);
         eqr.close();
-        return res;
+        return eqr.getNumberOfRows() > 0;
     }
 
     /**
-     * Lists the table fields and types in nl.cwi.monetdb.embedded database.
+     * Deletes a table if it exists.
      *
+     * @param schemaName The schema of the table
      * @param tableName The name of the table
-     * @return
-     * @throws SQLException
+     * @throws MonetDBEmbeddedException
      */
-    public String[] listFields(String tableName) throws SQLException {
-        if(!this.checkTableExists(tableName)) {
-            throw  new SQLException("The table " + tableName + " doesn't exist!!");
-        }
-        EmbeddedQueryResult eqr = this.createQuery("select columns.name as name from sys.columns join sys.tables on columns.table_id=tables.id where tables.name='" + tableName + "';");
-        String[] res = (String[]) eqr.getColumn(0).getAllValues();
-        eqr.close();
-        return res;
+    public void removeTable(String schemaName, String tableName) throws MonetDBEmbeddedException {
+        String query = "drop table " + schemaName + "." + tableName + ";";
+        this.sendUpdate(query).close();
     }
 
-	/**
-	 * Execute an SQL query in an nl.cwi.monetdb.embedded database.
-	 * 
-	 * @param query The SQL query string
-	 * @return The query result object, {@code null} if the database is not running
-	 * @throws SQLException
-	 */
-	private native EmbeddedQueryResult queryWrapper(String query, boolean execute, long connectionPointer) throws SQLException;
+    /**
+     * Shuts down this connection. Any pending queries connections will be immediately closed as well.
+     */
+    public void shutdownConnection() {
+        for(AbstractStatementResult res : this.results) {
+            res.close();
+        }
+        this.shutdownConnectionInternal(this.connectionPointer);
+        this.database.removeConnection(this);
+    }
 
+    /**
+     * Shuts down this connection asynchronously. Any pending queries connections will be immediately closed as well.
+     */
+    public void shutdownConnectionAsync() {
+        /* CompletableFuture.supplyAsync(() -> this.shutdownConnection()); */
+        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    }
+
+    /**
+     * Removes a query result from this connection.
+     */
+    protected void removeQueryResult(AbstractStatementResult res) {
+        this.results.remove(res);
+    }
+
+	private native UpdateResultSet createEmptyResultSetInternal(long connectionPointer, String query, boolean execute)
+            throws MonetDBEmbeddedException;
+
+    private native QueryResultSet createNonEmptyResultSetInternal(long connectionPointer, String query, boolean execute)
+            throws MonetDBEmbeddedException;
+
+    private native EmbeddedPreparedStatement createPreparedStatementInternal(long connectionPointer, String query)
+            throws MonetDBEmbeddedException;
+
+    /*private native MonetDBTable getMonetDBTableInternal(long connectionPointer, String schemaName, String tableName)
+            throws MonetDBEmbeddedException;*/
+
+    private native void shutdownConnectionInternal(long connectionPointer);
 }
