@@ -95,7 +95,7 @@ public class CmdLineOpts {
 		OptionContainer option = null;
 		int quant = -1;
 		int qcount = 0;
-		boolean moreData = false;
+		boolean moreData;
 		for (int i = 0; i < args.length; i++) {
 			if (option == null) {
 				if (args[i].charAt(0) != '-') throw
@@ -139,7 +139,7 @@ public class CmdLineOpts {
 					// single char argument
 					option = opts.get("" + args[i].charAt(1));
 					// is there more data left in the argument?
-					moreData = args[i].length() > 2 ? true : false;
+					moreData = args[i].length() > 2;
 				}
 
 				if (option != null) {

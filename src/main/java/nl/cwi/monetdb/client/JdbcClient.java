@@ -133,7 +133,7 @@ public final class JdbcClient {
 			System.exit(1);
 		}
 		// we can actually compare pointers (objects) here
-		if (user != copts.getOption("user").getArgument()) pass = null;
+		if (user != null && !user.equals(copts.getOption("user").getArgument())) pass = null;
 
 		if (copts.getOption("help").isPresent()) {
 			System.out.print(
@@ -190,7 +190,7 @@ public final class JdbcClient {
 
 		// build the hostname
 		String host = copts.getOption("host").getArgument();
-		if (host.indexOf(":") == -1) {
+		if (!host.contains(":")) {
 			host = host + ":" + copts.getOption("port").getArgument();
 		}
 
@@ -268,7 +268,7 @@ public final class JdbcClient {
 			// request the tables available in the current schema in the database
 			tbl = dbmd.getTables(null, con.getSchema(), null, types);
 
-			List<Table> tables = new LinkedList<Table>();
+			List<Table> tables = new LinkedList<>();
 			while (tbl.next()) {
 				tables.add(new Table(
 					tbl.getString("TABLE_SCHEM"),
@@ -276,7 +276,6 @@ public final class JdbcClient {
 					tbl.getString("TABLE_TYPE")));
 			}
 			tbl.close();
-			tbl = null;
 
 			if (xmlMode) {
 				exporter = new XMLExporter(out);
@@ -296,12 +295,10 @@ public final class JdbcClient {
 			// dump specific table(s) or not?
 			if (copts.getOption("dump").getArgumentCount() > 0) { // yes we do
 				String[] dumpers = copts.getOption("dump").getArguments();
-				for (int i = 0; i < tables.size(); i++) {
-					Table ttmp = tables.get(i);
-					for (int j = 0; j < dumpers.length; j++) {
-						if (ttmp.getName().equalsIgnoreCase(dumpers[j].toString()) ||
-							ttmp.getFqname().equalsIgnoreCase(dumpers[j].toString()))
-						{
+				for (Table ttmp : tables) {
+					for (String dumper : dumpers) {
+						if (ttmp.getName().equalsIgnoreCase(dumper) ||
+								ttmp.getFqname().equalsIgnoreCase(dumper)) {
 							// dump the table
 							doDump(out, ttmp);
 						}
@@ -327,13 +324,12 @@ public final class JdbcClient {
 					fk.addDependancy(pk);
 				}
 				tbl.close();
-				tbl = null;
 
 				// search for cycles of type a -> (x ->)+ b probably not
 				// the most optimal way, but it works by just scanning
 				// every table for loops in a recursive manor
 				for (Table t : tables) {
-					Table.checkForLoop(t, new ArrayList<Table>());
+					Table.checkForLoop(t, new ArrayList<>());
 				}
 
 				// find the graph, at this point we know there are no
@@ -523,7 +519,7 @@ public final class JdbcClient {
 		// an SQL stack keeps track of ( " and '
 		SQLStack stack = new SQLStack();
 		// a query part is a line of an SQL query
-		QueryPart qp = null;
+		QueryPart qp;
 
 		String query = "", curLine;
 		boolean wasComplete = true, doProcess, lastac = false;
@@ -750,8 +746,7 @@ public final class JdbcClient {
 	{
 		// warnings generated during querying
 		SQLWarning warn;
-		long startTime = (showTiming ? System.currentTimeMillis() : 0);
-		long finishTime = 0;
+		long startTime = (showTiming ? System.currentTimeMillis() : 0), finishTime;
 
 		// execute the query, let the driver decide what type it is
 		int aff = -1;
@@ -1106,7 +1101,7 @@ class Table {
 	final String name;
 	final String type;
 	final String fqname;
-	List<Table> needs = new ArrayList<Table>();
+	List<Table> needs = new ArrayList<>();
 
 	Table(String schem, String name, String type) {
 		this.schem = schem;
@@ -1128,9 +1123,9 @@ class Table {
 
 	List<Table> requires(List<Table> existingTables) {
 		if (existingTables == null || existingTables.isEmpty())
-			return new ArrayList<Table>(needs);
+			return new ArrayList<>(needs);
 
-		List<Table> req = new ArrayList<Table>();
+		List<Table> req = new ArrayList<>();
 		for (Table n : needs) {
 			if (!existingTables.contains(n))
 				req.add(n);

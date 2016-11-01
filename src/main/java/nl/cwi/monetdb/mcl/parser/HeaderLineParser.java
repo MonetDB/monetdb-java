@@ -143,7 +143,7 @@ public class HeaderLineParser extends MCLParser {
 			}
 		}
 		// add the left over part
-		values[elem++] = new String(chrLine, start, stop - start);
+		values[elem + 1] = new String(chrLine, start, stop - start);
 	}
 
 	/**
@@ -164,7 +164,6 @@ public class HeaderLineParser extends MCLParser {
 			if (chrLine[i] == ',' && chrLine[i + 1] == '\t') {
 				intValues[elem++] = tmp;
 				tmp = 0;
-				start = i++;
 			} else {
 				tmp *= 10;
 				// note: don't use Character.isDigit() here, because
@@ -177,6 +176,6 @@ public class HeaderLineParser extends MCLParser {
 			}
 		}
 		// add the left over part
-		intValues[elem++] = tmp;
+		intValues[elem + 1] = tmp;
 	}
 }

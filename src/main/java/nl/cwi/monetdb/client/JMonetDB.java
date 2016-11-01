@@ -10,7 +10,6 @@ package nl.cwi.monetdb.client;
 
 import nl.cwi.monetdb.util.*;
 import nl.cwi.monetdb.merovingian.*;
-import java.io.*;
 import java.util.*;
 
 /**
@@ -22,7 +21,6 @@ import java.util.*;
  */
 
 public class JMonetDB {
-	private static PrintWriter out;
 
 	public final static void main(String[] args) throws Exception {
 		CmdLineOpts copts = new CmdLineOpts();
@@ -74,8 +72,6 @@ copts.produceHelpMessage()
 			System.exit(0);
 		}
 
-		out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
-
 		String pass = copts.getOption("passphrase").getArgument();
 
 		// we need the password from the user, fetch it with a pseudo
@@ -99,9 +95,9 @@ copts.produceHelpMessage()
 		}
 		int port = Integer.parseInt(sport);
 
-		String hash = null;
+		/*String hash; TODO check this, the hash algorithm is not being used
 		if (copts.getOption("Xhash").isPresent())
-			hash = copts.getOption("Xhash").getArgument();
+			hash = copts.getOption("Xhash").getArgument();*/
 
 		if (!copts.getOption("command").isPresent()) {
 			System.err.println("need a command to execute (-c)");
@@ -128,13 +124,11 @@ copts.produceHelpMessage()
 			if (commands.length == 1) {
 				sdbs = ctl.getAllStatuses();
 			} else {
-				sdbs = new ArrayList<SabaothDB>();
+				sdbs = new ArrayList<>();
 				for (int i = 1; i < commands.length; i++)
 					sdbs.add(ctl.getStatus(commands[i]));
 			}
-			Iterator<SabaothDB> it = sdbs.iterator();
-			while (it.hasNext()) {
-				SabaothDB sdb = it.next();
+			for (SabaothDB sdb : sdbs) {
 				System.out.println(sdb.getName() + " " + sdb.getURI());
 			}
 		}

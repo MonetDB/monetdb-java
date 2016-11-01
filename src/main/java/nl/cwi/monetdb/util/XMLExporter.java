@@ -32,7 +32,7 @@ public class XMLExporter extends Exporter {
 			String name)
 		throws SQLException
 	{
-		if (type.indexOf("VIEW") != -1) {
+		if (type.contains("VIEW")) {
 			String[] types = new String[1];
 			types[0] = type;
 			ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
@@ -332,9 +332,9 @@ public class XMLExporter extends Exporter {
 					case java.sql.Types.TIMESTAMP:
 						Timestamp ts = rs.getTimestamp(i);
 						if ("timestamptz".equals(rsmd.getColumnTypeName(i))) {
-							data = xsd_tstz.format(ts).toString();
+							data = xsd_tstz.format(ts);
 						} else {
-							data = xsd_ts.format(ts).toString();
+							data = xsd_ts.format(ts);
 						}
 					break;
 					default:
