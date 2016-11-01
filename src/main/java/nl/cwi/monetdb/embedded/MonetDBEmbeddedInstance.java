@@ -22,7 +22,7 @@ public class MonetDBEmbeddedInstance {
     private static final String NATIVE_LIB_NAME = "monetdb5";
 
     /**
-     * Tries to load the JNI library with MonetDBLite from the current Java Classpath
+     * Tries to load the JNI library with MonetDBLite from the current Java Classpath.
      *
      * @param libraryName The library name, if null will load the default name "monetdb5"
      * @return A boolean indicating if the load was successful
@@ -39,7 +39,7 @@ public class MonetDBEmbeddedInstance {
     }
 
     /**
-     * Tries to load the JNI library with MonetDBLite from the given path
+     * Tries to load the JNI library with MonetDBLite from the given path.
      *
      * @param libraryPath The full library path name
      * @return A boolean indicating if the load was successful
@@ -56,7 +56,7 @@ public class MonetDBEmbeddedInstance {
     }
 
     /**
-     * Check if the JNI library with MonetDBLite has been loaded yet or not
+     * Check if the JNI library with MonetDBLite has been loaded yet or not.
      *
      * @return A boolean indicating if it is loaded
      */

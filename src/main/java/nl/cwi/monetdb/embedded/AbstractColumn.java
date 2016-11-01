@@ -17,27 +17,22 @@ package nl.cwi.monetdb.embedded;
 public abstract class AbstractColumn<T> implements Iterable<T> {
 
     /**
-     * The pointer to the corresponding AbstractQueryResultSet
-     */
-    protected final long resultSetPointer;
-
-    /**
-     * Index on the AbstractQueryResultSet
+     * Index on the result set.
      */
     protected final int resultSetIndex;
 
     /**
-     * The number of rows in this column
+     * The number of rows in this column.
      */
     protected final int numberOfRows;
 
     /**
-     * The name of the columns in the query result
+     * The name of the columns in the query result.
      */
     protected final String columnName;
 
     /**
-     * The Mapping between MonetDB type and the Java Class
+     * The Mapping between MonetDB type and the Java Class.
      */
     protected final MonetDBToJavaMapping mapping;
 
@@ -51,9 +46,8 @@ public abstract class AbstractColumn<T> implements Iterable<T> {
      */
     protected final int columnScale;
 
-    protected AbstractColumn(long resultSetPointer, int resultSetIndex, int numberOfRows, String columnName,
-                             String columnType, int columnDigits, int columnScale) {
-        this.resultSetPointer = resultSetPointer;
+    protected AbstractColumn(int resultSetIndex, int numberOfRows, String columnName, String columnType,
+                             int columnDigits, int columnScale) {
         this.resultSetIndex = resultSetIndex;
         this.numberOfRows = numberOfRows;
         this.columnName = columnName;
@@ -63,7 +57,7 @@ public abstract class AbstractColumn<T> implements Iterable<T> {
     }
 
     /**
-     * Get the number of rows in this column
+     * Get the number of rows in this column.
      *
      * @return The number of rows
      */

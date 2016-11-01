@@ -22,6 +22,11 @@ import java.util.ListIterator;
 public class QueryResultSetColumn<T> extends AbstractColumn<T> {
 
     /**
+     * The C pointer of the result set of the column.
+     */
+    protected final long resultSetPointer;
+
+    /**
      * Array with the retrieved values.
      */
     private final T[] values;
@@ -37,9 +42,10 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
     private int lastRetrievedIndex;
 
     @SuppressWarnings("unchecked")
-	protected QueryResultSetColumn(long resultSetPointer, int resultSetIndex, int numberOfRows, String columnName,
-                                   String columnType, int columnDigits, int columnScale) {
-        super(resultSetPointer, resultSetIndex, numberOfRows, columnName, columnType, columnDigits, columnScale);
+	protected QueryResultSetColumn(int resultSetIndex, int numberOfRows, String columnName, String columnType,
+                                   int columnDigits, int columnScale, long resultSetPointer) {
+        super(resultSetIndex, numberOfRows, columnName, columnType, columnDigits, columnScale);
+        this.resultSetPointer = resultSetPointer;
         this.firstRetrievedIndex = numberOfRows;
         this.lastRetrievedIndex = 0;
         this.values = (T[]) Array.newInstance(this.mapping.getJavaClass(), numberOfRows);

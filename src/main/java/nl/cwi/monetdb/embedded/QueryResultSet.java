@@ -19,28 +19,117 @@ import java.util.ListIterator;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryResultSet extends AbstractQueryResultSet {
+public class QueryResultSet extends AbstractStatementResult implements Iterable {
+
+    /**
+     * The number of columns in the query result.
+     */
+    protected final int numberOfColumns;
+
+    /**
+     * The number of rows in the query result.
+     */
+    protected final int numberOfRows;
 
 	/**
-	 * The query result set columns listing
+	 * The query result set columns listing.
 	 */
     private final QueryResultSetColumn<?>[] columns;
 
 	protected QueryResultSet(MonetDBEmbeddedConnection connection, long resultPointer,
                              QueryResultSetColumn<?>[] columns, int numberOfRows) {
-        super(connection, resultPointer, columns.length, numberOfRows);
+        super(connection, resultPointer);
+        this.numberOfColumns = columns.length;
+        this.numberOfRows = numberOfRows;
         this.columns = columns;
-		this.resultPointer = resultPointer;
 	}
 
     /**
-     * Get the query set column values as an Iterable.
+     * Returns the number of columns in the result set.
      *
-     * @return An Iterable over the columns
+     * @return Number of columns
      */
-    @Override
-    protected Iterable<AbstractColumn<?>> getIterable() {
-        return Arrays.asList(columns);
+    public int getNumberOfColumns() {
+        return this.numberOfColumns;
+    }
+
+    /**
+     * Returns the number of rows in the result set.
+     *
+     * @return Number of rows
+     */
+    public int getNumberOfRows() {
+        return this.numberOfRows;
+    }
+
+    /**
+     * Get the columns names as a string array.
+     *
+     * @return The columns names array
+     */
+    public String[] getColumnNames() {
+        int i = 0;
+        String[] result = new String[this.numberOfColumns];
+        for(AbstractColumn col : this.columns) {
+            result[i] = col.getColumnName();
+        }
+        return result;
+    }
+
+    /**
+     * Get the columns types as a string array.
+     *
+     * @return The columns types array
+     */
+    public String[] getColumnTypes() {
+        int i = 0;
+        String[] result = new String[this.numberOfColumns];
+        for(AbstractColumn col : this.columns) {
+            result[i] = col.getColumnType();
+        }
+        return result;
+    }
+
+    /**
+     * Get the Java mappings as a MonetDBToJavaMapping array.
+     *
+     * @return The columns MonetDBToJavaMapping array
+     */
+    public MonetDBToJavaMapping[] getMappings() {
+        int i = 0;
+        MonetDBToJavaMapping[] result = new MonetDBToJavaMapping[this.numberOfColumns];
+        for(AbstractColumn col : this.columns) {
+            result[i] = col.getMapping();
+        }
+        return result;
+    }
+
+    /**
+     * Get the columns digits as a int array.
+     *
+     * @return The columns digits array
+     */
+    public int[] getColumnDigits() {
+        int i = 0;
+        int[] result = new int[this.numberOfColumns];
+        for(AbstractColumn col : this.columns) {
+            result[i] = col.getColumnDigits();
+        }
+        return result;
+    }
+
+    /**
+     * Get the columns scales as a int array.
+     *
+     * @return The columns scales array
+     */
+    public int[] getColumnScales() {
+        int i = 0;
+        int[] result = new int[this.numberOfColumns];
+        for(AbstractColumn col : this.columns) {
+            result[i] = col.getColumnScale();
+        }
+        return result;
     }
 
     /**
@@ -49,10 +138,26 @@ public class QueryResultSet extends AbstractQueryResultSet {
      * @param index QueryResultSetColumn index (starting from 0)
      * @return The columns, {@code null} if index not in bounds
      */
-    @Override
     @SuppressWarnings("unchecked")
     public <T> QueryResultSetColumn<T> getColumn(int index) {
         return (QueryResultSetColumn<T>) columns[index];
+    }
+
+    /**
+     * Get a columns from the result set by name.
+     *
+     * @param name QueryResultSetColumn name
+     * @return The columns
+     */
+    public <T> QueryResultSetColumn<T> getColumn(String name) {
+        int index = 0;
+        for (AbstractColumn col : this.columns) {
+            if (col.getColumnName().equals(name)) {
+                return this.getColumn(index);
+            }
+            index++;
+        }
+        throw new ArrayIndexOutOfBoundsException("The columns is not present in the result set!");
     }
 
     /**
@@ -60,10 +165,10 @@ public class QueryResultSet extends AbstractQueryResultSet {
      *
      * @param startIndex The first row index to retrieve
      * @param endIndex The last row index to retrieve
-     * @return The rows as {@code QueryRowsResultSet}
+     * @return The rows as {@code QueryResultSetRows}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-	public QueryRowsResultSet fetchResultSetRows(int startIndex, int endIndex) throws MonetDBEmbeddedException {
+	public QueryResultSetRows fetchResultSetRows(int startIndex, int endIndex) throws MonetDBEmbeddedException {
         if(endIndex < startIndex) {
             int aux = startIndex;
             startIndex = endIndex;
@@ -84,7 +189,7 @@ public class QueryResultSet extends AbstractQueryResultSet {
                 temp[j][i] = nextColumn[j];
 			}
 		}
-        return new QueryRowsResultSet(this, this.getMappings(), temp);
+        return new QueryResultSetRows(this, this.getMappings(), temp);
 	}
 
     /**
@@ -92,10 +197,10 @@ public class QueryResultSet extends AbstractQueryResultSet {
      *
      * @param startIndex The first row index to retrieve
      * @param endIndex The last row index to retrieve
-     * @return The rows as {@code QueryRowsResultSet}
+     * @return The rows as {@code QueryResultSetRows}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public QueryRowsResultSet fetchResultSetRowsAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
+    public QueryResultSetRows fetchResultSetRowsAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
         /* CompletableFuture.supplyAsync(() -> this.fetchResultSetRows(startIndex, endIndex)); */
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
     }
@@ -104,10 +209,10 @@ public class QueryResultSet extends AbstractQueryResultSet {
      * Fetches the first N rows from the result set.
      *
      * @param n The last row index to retrieve
-     * @return The rows as {@code QueryRowsResultSet}
+     * @return The rows as {@code QueryResultSetRows}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public QueryRowsResultSet fetchFirstNRowValues(int n) throws MonetDBEmbeddedException {
+    public QueryResultSetRows fetchFirstNRowValues(int n) throws MonetDBEmbeddedException {
         return this.fetchResultSetRows(0, n);
     }
 
@@ -115,35 +220,35 @@ public class QueryResultSet extends AbstractQueryResultSet {
      * Fetches the first N rows from the result set asynchronously.
      *
      * @param n The last row index to retrieve
-     * @return The rows as {@code QueryRowsResultSet}
+     * @return The rows as {@code QueryResultSetRows}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public QueryRowsResultSet fetchFirstNRowValuesAsync(int n) throws MonetDBEmbeddedException {
+    public QueryResultSetRows fetchFirstNRowValuesAsync(int n) throws MonetDBEmbeddedException {
         return this.fetchResultSetRowsAsync(0, n);
     }
 
     /**
      * Fetches all rows from the result set.
      *
-     * @return The rows as {@code QueryRowsResultSet}
+     * @return The rows as {@code QueryResultSetRows}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public QueryRowsResultSet fetchAllRowValues() throws MonetDBEmbeddedException {
+    public QueryResultSetRows fetchAllRowValues() throws MonetDBEmbeddedException {
         return this.fetchResultSetRows(0, this.numberOfRows);
     }
 
     /**
      * Fetches all rows from the result set asynchronously.
      *
-     * @return The rows as {@code QueryRowsResultSet}
+     * @return The rows as {@code QueryResultSetRows}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public QueryRowsResultSet fetchAllRowValuesAsync() throws MonetDBEmbeddedException {
+    public QueryResultSetRows fetchAllRowValuesAsync() throws MonetDBEmbeddedException {
         return this.fetchResultSetRowsAsync(0, this.numberOfRows);
     }
 
     @Override
-    public ListIterator<QueryRowsResultSet.QueryResulSetSingleRow> iterator() {
+    public ListIterator<QueryResultSetRows.QueryResulSetRow> iterator() {
         try {
             return Arrays.asList(this.fetchAllRowValues().getAllRows()).listIterator();
         } catch (MonetDBEmbeddedException ex) {

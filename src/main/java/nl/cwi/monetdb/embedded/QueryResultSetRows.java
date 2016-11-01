@@ -18,26 +18,26 @@ import java.util.ListIterator;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryRowsResultSet implements Iterable {
+public class QueryResultSetRows implements Iterable {
 
     /**
      * A single row in a result set.
      *
      * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
      */
-    static public class QueryResulSetSingleRow implements Iterable {
+    static public class QueryResulSetRow implements Iterable {
 
         /**
          * The original row result set from this row.
          */
-        private final QueryRowsResultSet resultSet;
+        private final QueryResultSetRows resultSet;
 
         /**
          * The columns values as Java objects.
          */
         private final Object[] columns;
 
-        protected QueryResulSetSingleRow(QueryRowsResultSet resultSet, Object[] columns) {
+        protected QueryResulSetRow(QueryResultSetRows resultSet, Object[] columns) {
             this.resultSet = resultSet;
             this.columns = columns;
         }
@@ -47,7 +47,7 @@ public class QueryRowsResultSet implements Iterable {
          *
          * @return The original row result set from this row
          */
-        public QueryRowsResultSet getRowResultSet() { return resultSet; }
+        public QueryResultSetRows getRowResultSet() { return resultSet; }
 
         /**
          * Gets the columns values as Java objects.
@@ -98,7 +98,7 @@ public class QueryRowsResultSet implements Iterable {
     /**
      * The original query result set this row set belongs.
      */
-    private final AbstractQueryResultSet queryResultSet;
+    private final QueryResultSet queryResultSet;
 
     /**
      * The MonetDB-To-Java mappings of the columns.
@@ -108,15 +108,14 @@ public class QueryRowsResultSet implements Iterable {
     /**
      * The rows of this set.
      */
-    private final QueryResulSetSingleRow[] rows;
+    private final QueryResulSetRow[] rows;
 
-    protected QueryRowsResultSet(AbstractQueryResultSet queryResultSet, MonetDBToJavaMapping[] mappings,
-                                 Object[][] rows) {
+    protected QueryResultSetRows(QueryResultSet queryResultSet, MonetDBToJavaMapping[] mappings, Object[][] rows) {
         this.queryResultSet = queryResultSet;
         this.mappings = mappings;
-        this.rows = new QueryResulSetSingleRow[mappings.length];
+        this.rows = new QueryResulSetRow[mappings.length];
         for(int i = 0 ; i < mappings.length ; i++) {
-            this.rows[i] = new QueryResulSetSingleRow(this, rows[i]);
+            this.rows[i] = new QueryResulSetRow(this, rows[i]);
         }
     }
 
@@ -125,7 +124,7 @@ public class QueryRowsResultSet implements Iterable {
      *
      * @return The original query result set this row set belongs
      */
-    public AbstractQueryResultSet getQueryResultSet() {
+    public QueryResultSet getQueryResultSet() {
         return queryResultSet;
     }
 
@@ -134,7 +133,7 @@ public class QueryRowsResultSet implements Iterable {
      *
      * @return All rows of this set
      */
-    public QueryResulSetSingleRow[] getAllRows() { return rows; }
+    public QueryResulSetRow[] getAllRows() { return rows; }
 
     /**
      * Gets the number of rows in this set.
@@ -156,7 +155,7 @@ public class QueryRowsResultSet implements Iterable {
      * @param row The index of the row to retrieve
      * @return A single row in this set
      */
-    public QueryResulSetSingleRow getSingleRow(int row) {
+    public QueryResulSetRow getSingleRow(int row) {
         return rows[row];
     }
 
@@ -220,7 +219,7 @@ public class QueryRowsResultSet implements Iterable {
     }
 
     @Override
-    public ListIterator<QueryResulSetSingleRow> iterator() {
+    public ListIterator<QueryResulSetRow> iterator() {
         return Arrays.asList(this.rows).listIterator();
     }
 }

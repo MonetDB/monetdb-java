@@ -35,23 +35,21 @@ public abstract class AbstractStatementResult implements Closeable {
     }
 
     /**
-     * Get the corresponding connection to this statement result
+     * Get the corresponding connection to this statement result.
      *
      * @return A MonetDBEmbeddedConnection instance
      */
-    public MonetDBEmbeddedConnection getConnection() { return connection;}
+    public MonetDBEmbeddedConnection getConnection() { return connection; }
 
     /**
-     * Tells if the connection of this statement result has been closed or not
+     * Tells if the connection of this statement result has been closed or not.
      *
      * @return A boolean indicating if the statement result has been cleaned or not
      */
-    public boolean isStatementClosed() {
-        return this.resultPointer == 0;
-    }
+    public boolean isStatementClosed() { return this.resultPointer == 0; }
 
     /**
-     * Close the query data so no more new results can be retrieved
+     * Close the query data so no more new results can be retrieved.
      */
     @Override
     public void close() {
