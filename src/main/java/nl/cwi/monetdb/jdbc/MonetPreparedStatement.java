@@ -158,7 +158,7 @@ public class MonetPreparedStatement
 				continue;
 			schema[i] = rs.getString("schema");
 			table[i] = rs.getString("table");
-			column[i] = rs.getString("column");
+			column[i] = rs.getString("columns");
 		}
 		rs.close();
 
@@ -197,7 +197,7 @@ public class MonetPreparedStatement
 		scale = null;
 		schema = null;
 		table = null;
-		column = null;
+		columns = null;
 		values = null;
 		id = -1;
 		size = -1;
@@ -281,7 +281,7 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public ResultSet executeQuery() throws SQLException{
-		if (execute() != true)
+		if (!execute())
 			throw new SQLException("Query did not produce a result set", "M1M19");
 
 		return getResultSet();
@@ -305,7 +305,7 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public int executeUpdate() throws SQLException {
-		if (execute() != false)
+		if (execute())
 			throw new SQLException("Query produced a result set", "M1M17");
 
 		return getUpdateCount();
@@ -319,7 +319,7 @@ public class MonetPreparedStatement
 
 	/**
 	 * Returns the index (0..size-1) in the backing arrays for the given
-	 * resultset column number or an SQLException when not found
+	 * result set columns number or an SQLException when not found
 	 */
 	private int getColumnIdx(int colnr) throws SQLException {
 		int curcol = 0;
@@ -330,7 +330,7 @@ public class MonetPreparedStatement
 			if (curcol == colnr)
 				return i;
 		}
-		throw new SQLException("No such column with index: " + colnr, "M1M05");
+		throw new SQLException("No such columns with index: " + colnr, "M1M05");
 	}
 	/**
 	 * Returns the index (0..size-1) in the backing arrays for the given
@@ -365,7 +365,6 @@ public class MonetPreparedStatement
 	 *
 	 * @return the description of a ResultSet object's columns or null if the
 	 *         driver cannot return a ResultSetMetaData object
-	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public ResultSetMetaData getMetaData() {
@@ -377,7 +376,7 @@ public class MonetPreparedStatement
 			/**
 			 * Returns the number of columns in this ResultSet object.
 			 *
-			 * @returns the number of columns
+			 * @return the number of columns
 			 */
 			@Override
 			public int getColumnCount() {
@@ -391,17 +390,17 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Indicates whether the designated column is automatically numbered.
+			 * Indicates whether the designated columns is automatically numbered.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public boolean isAutoIncrement(int column) throws SQLException {
 				/* TODO: in MonetDB only numeric (int, decimal) columns could be autoincrement/serial
-				 * This however requires an expensive dbmd.getColumns(null, schema, table, column)
-				 * query call to pull the IS_AUTOINCREMENT value for this column.
+				 * This however requires an expensive dbmd.getColumns(null, schema, table, columns)
+				 * query call to pull the IS_AUTOINCREMENT value for this columns.
 				 * See also ResultSetMetaData.isAutoIncrement()
 				 */
 				// For now we simply allways return false.
@@ -409,10 +408,10 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Indicates whether a column's case matters.
+			 * Indicates whether a columns's case matters.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
-			 * @returns false
+			 * @param column the first columns is 1, the second is 2, ...
+			 * @return false
 			 */
 			@Override
 			public boolean isCaseSensitive(int column) throws SQLException {
@@ -436,13 +435,13 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Indicates whether the designated column can be used in a
+			 * Indicates whether the designated columns can be used in a
 			 * where clause.
 			 *
 			 * Returning true for all here, even for CLOB, BLOB.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
-			 * @returns true
+			 * @param column the first columns is 1, the second is 2, ...
+			 * @return true
 			 */
 			@Override
 			public boolean isSearchable(int column) {
@@ -450,14 +449,14 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Indicates whether the designated column is a cash value.
+			 * Indicates whether the designated columns is a cash value.
 			 * From the MonetDB database perspective it is by definition
 			 * unknown whether the value is a currency, because there are
 			 * no currency datatypes such as MONEY.  With this knowledge
 			 * we can always return false here.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
-			 * @returns false
+			 * @param column the first columns is 1, the second is 2, ...
+			 * @return false
 			 */
 			@Override
 			public boolean isCurrency(int column) {
@@ -465,11 +464,11 @@ public class MonetPreparedStatement
 			}
 			
 			/**
-			 * Indicates whether values in the designated column are signed
+			 * Indicates whether values in the designated columns are signed
 			 * numbers.
 			 * Within MonetDB all numeric types (except oid and ptr) are signed.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 */
 			@Override
@@ -504,13 +503,13 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Indicates the designated column's normal maximum width in
+			 * Indicates the designated columns's normal maximum width in
 			 * characters.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return the normal maximum number of characters allowed as the
-			 *         width of the designated column
-			 * @throws SQLException if there is no such column
+			 *         width of the designated columns
+			 * @throws SQLException if there is no such columns
 			 */
 			@Override
 			public int getColumnDisplaySize(int column) throws SQLException {
@@ -522,9 +521,9 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Get the designated column's table's schema.
+			 * Get the designated columns's table's schema.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return schema name or "" if not applicable
 			 * @throws SQLException if a database access error occurs
 			 */
@@ -538,9 +537,9 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Gets the designated column's table name.
+			 * Gets the designated columns's table name.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return table name or "" if not applicable
 			 */
 			@Override
@@ -553,12 +552,12 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Get the designated column's number of decimal digits.
+			 * Get the designated columns's number of decimal digits.
 			 * This method is currently very expensive as it needs to
 			 * retrieve the information from the database using an SQL
 			 * query.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return precision
 			 * @throws SQLException if a database access error occurs
 			 */
@@ -572,12 +571,12 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Gets the designated column's number of digits to right of
+			 * Gets the designated columns's number of digits to right of
 			 * the decimal point.  This method is currently very
 			 * expensive as it needs to retrieve the information from
 			 * the database using an SQL query.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return scale
 			 * @throws SQLException if a database access error occurs
 			 */
@@ -592,11 +591,11 @@ public class MonetPreparedStatement
 
 			/**
 			 * Indicates the nullability of values in the designated
-			 * column.  This method is currently very expensive as it
+			 * columns.  This method is currently very expensive as it
 			 * needs to retrieve the information from the database using
 			 * an SQL query.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return nullability
 			 * @throws SQLException if a database access error occurs
 			 */
@@ -606,12 +605,12 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Gets the designated column's table's catalog name.
+			 * Gets the designated columns's table's catalog name.
 			 * MonetDB does not support the catalog naming concept as in: catalog.schema.table naming scheme
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return the name of the catalog for the table in which the given
-			 *         column appears or "" if not applicable
+			 *         columns appears or "" if not applicable
 			 */
 			@Override
 			public String getCatalogName(int column) throws SQLException {
@@ -619,11 +618,11 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Indicates whether the designated column is definitely not
+			 * Indicates whether the designated columns is definitely not
 			 * writable.  MonetDB does not support cursor updates, so
 			 * nothing is writable.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 */
 			@Override
@@ -633,9 +632,9 @@ public class MonetPreparedStatement
 
 			/**
 			 * Indicates whether it is possible for a write on the
-			 * designated column to succeed.
+			 * designated columns to succeed.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 */
 			@Override
@@ -644,10 +643,10 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Indicates whether a write on the designated column will
+			 * Indicates whether a write on the designated columns will
 			 * definitely succeed.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 */
 			@Override
@@ -659,16 +658,16 @@ public class MonetPreparedStatement
 			 * Returns the fully-qualified name of the Java class whose
 			 * instances are manufactured if the method
 			 * ResultSet.getObject is called to retrieve a value from
-			 * the column.  ResultSet.getObject may return a subclass of
+			 * the columns.  ResultSet.getObject may return a subclass of
 			 * the class returned by this method.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return the fully-qualified name of the class in the Java
 			 *         programming language that would be used by the method
 			 *         ResultSet.getObject to retrieve the value in the
-			 *         specified column. This is the class name used for custom
+			 *         specified columns. This is the class name used for custom
 			 *         mapping.
-			 * @throws SQLException if there is no such column
+			 * @throws SQLException if there is no such columns
 			 */
 			@Override
 			public String getColumnClassName(int column) throws SQLException {
@@ -676,13 +675,13 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Gets the designated column's suggested title for use in
+			 * Gets the designated columns's suggested title for use in
 			 * printouts and displays. This is currently equal to
 			 * getColumnName().
 			 *
-			 * @param column the first column is 1, the second is 2, ...
-			 * @return the suggested column title
-			 * @throws SQLException if there is no such column
+			 * @param column the first columns is 1, the second is 2, ...
+			 * @return the suggested columns title
+			 * @throws SQLException if there is no such columns
 			 */
 			@Override
 			public String getColumnLabel(int column) throws SQLException {
@@ -690,11 +689,11 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Gets the designated column's name
+			 * Gets the designated columns's name
 			 *
-			 * @param column the first column is 1, the second is 2, ...
-			 * @return the column name
-			 * @throws SQLException if there is no such column
+			 * @param colnr the first columns is 1, the second is 2, ...
+			 * @return the columns name
+			 * @throws SQLException if there is no such columns
 			 */
 			@Override
 			public String getColumnName(int colnr) throws SQLException {
@@ -706,11 +705,11 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Retrieves the designated column's SQL type.
+			 * Retrieves the designated columns's SQL type.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param column the first columns is 1, the second is 2, ...
 			 * @return SQL type from java.sql.Types
-			 * @throws SQLException if there is no such column
+			 * @throws SQLException if there is no such columns
 			 */
 			@Override
 			public int getColumnType(int column) throws SQLException {
@@ -722,13 +721,13 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Retrieves the designated column's database-specific type name.
+			 * Retrieves the designated columns's database-specific type name.
 			 *
-			 * @param column the first column is 1, the second is 2, ...
-			 * @return type name used by the database. If the column type is a
+			 * @param column the first columns is 1, the second is 2, ...
+			 * @return type name used by the database. If the columns type is a
 			 *         user-defined type, then a fully-qualified type name is
 			 *         returned.
-			 * @throws SQLException if there is no such column
+			 * @throws SQLException if there is no such columns
 			 */
 			@Override
 			public String getColumnTypeName(int column) throws SQLException {
@@ -1234,11 +1233,8 @@ public class MonetPreparedStatement
 		}
 
 		StringBuilder hex = new StringBuilder(x.length * 2);
-		byte b;
-		for (int i = 0; i < x.length; i++) {
-			b = x[i];
-			hex.append(HEXES.charAt((b & 0xF0) >> 4))
-				.append(HEXES.charAt((b & 0x0F)));
+		for (byte aX : x) {
+			hex.append(HEXES.charAt((aX & 0xF0) >> 4)).append(HEXES.charAt((aX & 0x0F)));
 		}
 		setValue(parameterIndex, "blob '" + hex.toString() + "'");
 	}
@@ -1641,7 +1637,7 @@ public class MonetPreparedStatement
 	@Override
 	public void setNull(int parameterIndex, int sqlType) throws SQLException {
 		// we discard the given type here, the backend converts the
-		// value NULL to whatever it needs for the column
+		// value NULL to whatever it needs for the columns
 		setValue(parameterIndex, "NULL");
 	}
 
@@ -1831,7 +1827,7 @@ public class MonetPreparedStatement
 				} break;
 				case Types.BIT:
 				case Types.BOOLEAN:
-					setBoolean(parameterIndex, (Boolean.valueOf((String)x)).booleanValue());
+					setBoolean(parameterIndex, Boolean.valueOf((String) x));
 				break;
 				case Types.CHAR:
 				case Types.VARCHAR:
@@ -2538,8 +2534,8 @@ public class MonetPreparedStatement
 
 	/**
 	 * Transforms the prepare query into a simple SQL query by replacing
-	 * the ?'s with the given column contents.
-	 * Mind that the JDBC specs allow `reuse' of a value for a column over
+	 * the ?'s with the given columns contents.
+	 * Mind that the JDBC specs allow `reuse' of a value for a columns over
 	 * multiple executes.
 	 *
 	 * @return the simple SQL string for the prepare query

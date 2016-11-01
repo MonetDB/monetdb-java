@@ -284,8 +284,8 @@ public final class MapiSocket {
 				);
 
 		// read monet response till prompt
-		List<String> redirects = new ArrayList<String>();
-		List<String> warns = new ArrayList<String>();
+		List<String> redirects = new ArrayList<>();
+		List<String> warns = new ArrayList<>();
 		String err = "", tmp;
 		int lineType;
 		do {
@@ -301,7 +301,7 @@ public final class MapiSocket {
 				redirects.add(tmp.substring(1));
 			}
 		} while (lineType != BufferedMCLReader.PROMPT);
-		if (err != "") {
+		if (!err.equals("")) {
 			close();
 			throw new MCLException(err.trim());
 		}
@@ -316,7 +316,7 @@ public final class MapiSocket {
 				// "mapi:merovingian://proxy?arg=value&..."
 				// note that the extra arguments must be obeyed in both
 				// cases
-				String suri = redirects.get(0).toString();
+				String suri = redirects.get(0);
 				if (!suri.startsWith("mapi:"))
 					throw new MCLException("unsupported redirect: " + suri);
 
@@ -330,74 +330,82 @@ public final class MapiSocket {
 				tmp = u.getQuery();
 				if (tmp != null) {
 					String args[] = tmp.split("&");
-					for (int i = 0; i < args.length; i++) {
-						int pos = args[i].indexOf("=");
+					for (String arg : args) {
+						int pos = arg.indexOf("=");
 						if (pos > 0) {
-							tmp = args[i].substring(0, pos);
-							if (tmp.equals("database")) {
-								tmp = args[i].substring(pos + 1);
-								if (!tmp.equals(database)) {
-									warns.add("redirect points to different " +
-											"database: " + tmp);
-									setDatabase(tmp);
-								}
-							} else if (tmp.equals("language")) {
-								tmp = args[i].substring(pos + 1);
-								warns.add("redirect specifies use of different language: " + tmp);
-								setLanguage(tmp);
-							} else if (tmp.equals("user")) {
-								tmp = args[i].substring(pos + 1);
-								if (!tmp.equals(user))
-									warns.add("ignoring different username '" + tmp + "' set by " +
-											"redirect, what are the security implications?");
-							} else if (tmp.equals("password")) {
-								warns.add("ignoring different password set by redirect, " +
-										"what are the security implications?");
-							} else {
-								warns.add("ignoring unknown argument '" + tmp + "' from redirect");
+							tmp = arg.substring(0, pos);
+							switch (tmp) {
+								case "database":
+									tmp = arg.substring(pos + 1);
+									if (!tmp.equals(database)) {
+										warns.add("redirect points to different " +
+												"database: " + tmp);
+										setDatabase(tmp);
+									}
+									break;
+								case "language":
+									tmp = arg.substring(pos + 1);
+									warns.add("redirect specifies use of different language: " + tmp);
+									setLanguage(tmp);
+									break;
+								case "user":
+									tmp = arg.substring(pos + 1);
+									if (!tmp.equals(user))
+										warns.add("ignoring different username '" + tmp + "' set by " +
+												"redirect, what are the security implications?");
+									break;
+								case "password":
+									warns.add("ignoring different password set by redirect, " +
+											"what are the security implications?");
+									break;
+								default:
+									warns.add("ignoring unknown argument '" + tmp + "' from redirect");
+									break;
 							}
 						} else {
-							warns.add("ignoring illegal argument from redirect: " +
-									args[i]);
+							warns.add("ignoring illegal argument from redirect: " + arg);
 						}
 					}
 				}
 
-				if (u.getScheme().equals("monetdb")) {
-					// this is a redirect to another (monetdb) server,
-					// which means a full reconnect
-					// avoid the debug log being closed
-					if (debug) {
-						debug = false;
-						close();
-						debug = true;
-					} else {
-						close();
-					}
-					tmp = u.getPath();
-					if (tmp != null && tmp.length() != 0) {
-						tmp = tmp.substring(1).trim();
-						if (!tmp.isEmpty() && !tmp.equals(database)) {
-							warns.add("redirect points to different " +
-								"database: " + tmp);
-							setDatabase(tmp);
+				switch (u.getScheme()) {
+					case "monetdb":
+						// this is a redirect to another (monetdb) server,
+						// which means a full reconnect
+						// avoid the debug log being closed
+						if (debug) {
+							debug = false;
+							close();
+							debug = true;
+						} else {
+							close();
 						}
-					}
-					int p = u.getPort();
-					warns.addAll(connect(u.getHost(), p == -1 ? port : p,
-							user, pass, true));
-					warns.add("Redirect by " + host + ":" + port + " to " + suri);
-				} else if (u.getScheme().equals("merovingian")) {
-					// reuse this connection to inline connect to the
-					// right database that Merovingian proxies for us
-					warns.addAll(connect(host, port, user, pass, false));
-				} else {
-					throw new MCLException("unsupported scheme in redirect: " + suri);
+						tmp = u.getPath();
+						if (tmp != null && tmp.length() != 0) {
+							tmp = tmp.substring(1).trim();
+							if (!tmp.isEmpty() && !tmp.equals(database)) {
+								warns.add("redirect points to different " +
+										"database: " + tmp);
+								setDatabase(tmp);
+							}
+						}
+						int p = u.getPort();
+						warns.addAll(connect(u.getHost(), p == -1 ? port : p,
+								user, pass, true));
+						warns.add("Redirect by " + host + ":" + port + " to " + suri);
+						break;
+					case "merovingian":
+						// reuse this connection to inline connect to the
+						// right database that Merovingian proxies for us
+						warns.addAll(connect(host, port, user, pass, false));
+						break;
+					default:
+						throw new MCLException("unsupported scheme in redirect: " + suri);
 				}
 			} else {
 				StringBuilder msg = new StringBuilder("The server sent a redirect for this connection:");
 				for (String it : redirects) {
-					msg.append(" [" + it + "]");
+					msg.append(" [").append(it).append("]");
 				}
 				throw new MCLException(msg.toString());
 			}
@@ -453,20 +461,25 @@ public final class MapiSocket {
 				// challenge after the byte-order
 
 				/* NOTE: Java doesn't support RIPEMD160 :( */
-				if (chaltok[5].equals("SHA512")) {
-					algo = "SHA-512";
-				} else if (chaltok[5].equals("SHA384")) {
-					algo = "SHA-384";
-				} else if (chaltok[5].equals("SHA256")) {
-					algo = "SHA-256";
+				switch (chaltok[5]) {
+					case "SHA512":
+						algo = "SHA-512";
+						break;
+					case "SHA384":
+						algo = "SHA-384";
+						break;
+					case "SHA256":
+						algo = "SHA-256";
 				/* NOTE: Java doesn't support SHA-224 */
-				} else if (chaltok[5].equals("SHA1")) {
-					algo = "SHA-1";
-				} else if (chaltok[5].equals("MD5")) {
-					algo = "MD5";
-				} else {
-					throw new MCLException("Unsupported password hash: " +
-							chaltok[5]);
+						break;
+					case "SHA1":
+						algo = "SHA-1";
+						break;
+					case "MD5":
+						algo = "MD5";
+						break;
+					default:
+						throw new MCLException("Unsupported password hash: " + chaltok[5]);
 				}
 
 				try {
@@ -474,9 +487,7 @@ public final class MapiSocket {
 					md.update(password.getBytes("UTF-8"));
 					byte[] digest = md.digest();
 					password = toHex(digest);
-				} catch (NoSuchAlgorithmException e) {
-					throw new AssertionError("internal error: " + e.toString());
-				} catch (UnsupportedEncodingException e) {
+				} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
 					throw new AssertionError("internal error: " + e.toString());
 				}
 
@@ -491,7 +502,7 @@ public final class MapiSocket {
 				// proto 8, the byte-order of the blocks is always little
 				// endian because most machines today are.
 				String hashes = (hash == null ? chaltok[3] : hash);
-				Set<String> hashesSet = new HashSet<String>(Arrays.asList(hashes.toUpperCase().split("[, ]")));
+				Set<String> hashesSet = new HashSet<>(Arrays.asList(hashes.toUpperCase().split("[, ]")));
 
 				// if we deal with merovingian, mask our credentials
 				if (servert.equals("merovingian") && !language.equals("control")) {
@@ -499,7 +510,6 @@ public final class MapiSocket {
 					password = "merovingian";
 				}
 				String pwhash;
-				algo = null;
 				
 				if (hashesSet.contains("SHA512")) {
 					algo = "SHA-512";
@@ -519,27 +529,26 @@ public final class MapiSocket {
 				} else {
 					throw new MCLException("no supported password hashes in " + hashes);
 				}
-				if (algo != null) {
-					try {
-						MessageDigest md = MessageDigest.getInstance(algo);
-						md.update(password.getBytes("UTF-8"));
-						md.update(challenge.getBytes("UTF-8"));
-						byte[] digest = md.digest();
-						pwhash += toHex(digest);
-					} catch (NoSuchAlgorithmException e) {
-						throw new AssertionError("internal error: " + e.toString());
-					} catch (UnsupportedEncodingException e) {
-						throw new AssertionError("internal error: " + e.toString());
-					}
+				try {
+					MessageDigest md = MessageDigest.getInstance(algo);
+					md.update(password.getBytes("UTF-8"));
+					md.update(challenge.getBytes("UTF-8"));
+					byte[] digest = md.digest();
+					pwhash += toHex(digest);
+				} catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+					throw new AssertionError("internal error: " + e.toString());
 				}
 				// TODO: some day when we need this, we should store
 				// this
-				if (chaltok[4].equals("BIG")) {
-					// byte-order of server is big-endian
-				} else if (chaltok[4].equals("LIT")) {
-					// byte-order of server is little-endian
-				} else {
-					throw new MCLParseException("Invalid byte-order: " + chaltok[5]);
+				switch (chaltok[4]) {
+					case "BIG":
+						// byte-order of server is big-endian
+						break;
+					case "LIT":
+						// byte-order of server is little-endian
+						break;
+					default:
+						throw new MCLParseException("Invalid byte-order: " + chaltok[5]);
 				}
 
 				// generate response
@@ -567,9 +576,9 @@ public final class MapiSocket {
 	private static String toHex(byte[] digest) {
 		char[] result = new char[digest.length * 2];
 		int pos = 0;
-		for (int i = 0; i < digest.length; i++) {
-			result[pos++] = hexChar((digest[i] & 0xf0) >> 4);
-			result[pos++] = hexChar(digest[i] & 0x0f);
+		for (byte aDigest : digest) {
+			result[pos++] = hexChar((aDigest & 0xf0) >> 4);
+			result[pos++] = hexChar(aDigest & 0x0f);
 		}
 		return new String(result);
 	}
@@ -765,7 +774,7 @@ public final class MapiSocket {
 
 		@Override
 		public void write(byte[] b, int off, int len) throws IOException {
-			int t = 0;
+			int t;
 			while (len > 0) {
 				t = BLOCK - writePos;
 				if (len > t) {
@@ -971,8 +980,7 @@ public final class MapiSocket {
 					if (size != 0)
 						break;
 					if (readBlock() == -1) {
-						if (size == 0)
-							size = -1;
+						size = -1;
 						break;
 					}
 					t = available();
@@ -996,7 +1004,7 @@ public final class MapiSocket {
 		@Override
 		public long skip(long n) throws IOException {
 			long skip = n;
-			int t = 0;
+			int t;
 			while (skip > 0) {
 				t = available();
 				if (skip > t) {

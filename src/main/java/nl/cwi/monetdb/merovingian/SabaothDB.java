@@ -137,7 +137,7 @@ public class SabaothDB {
 		} else {
 			this.uri = parts[pc++];
 		}
-		this.locked = parts[pc++].equals("1") ? true : false;
+		this.locked = parts[pc++].equals("1");
 		this.state = SABdbState.getInstance(Integer.parseInt(parts[pc++]));
 		this.scenarios = parts[pc++].split("'");
 		if (protover == 1)  /* skip connections */
@@ -171,7 +171,7 @@ public class SabaothDB {
 		} else {
 			this.lastStop = null;
 		}
-		this.crashAvg1 = parts[pc++].equals("1") ? true : false;
+		this.crashAvg1 = parts[pc++].equals("1");
 		this.crashAvg10 = Double.parseDouble(parts[pc++]);
 		this.crashAvg30 = Double.parseDouble(parts[pc++]);
 	}

@@ -41,7 +41,7 @@ public abstract class Exporter {
 	
 	/**
 	 * returns the given string between two double quotes for usage as
-	 * identifier such as column or table name in SQL queries.
+	 * identifier such as columns or table name in SQL queries.
 	 *
 	 * @param in the string to quote
 	 * @return the quoted string

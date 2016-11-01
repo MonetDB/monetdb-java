@@ -44,9 +44,9 @@ public class Extract {
 		throws FileNotFoundException, IOException
 	{
 		char[] cbuf = new char[DEFAULT_BUFSIZE];
-		int ret = 0;
+		int ret;
 
-		InputStream is = new Extract().getClass().getResourceAsStream(fromFile);
+		InputStream is = Extract.class.getResourceAsStream(fromFile);
 
 		if(is == null) {
 			throw new FileNotFoundException("File " + fromFile +

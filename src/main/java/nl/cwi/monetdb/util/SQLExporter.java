@@ -27,7 +27,7 @@ public class SQLExporter extends Exporter {
 	private Stack<String> lastSchema;
 
 	public final static int TYPE_OUTPUT	= 1;
-	public final static int VALUE_INSERT	= 0;
+	public final static int VALUE_INSERT = 0;
 	public final static int VALUE_COPY	= 1;
 	public final static int VALUE_TABLE	= 2;
 
@@ -38,7 +38,7 @@ public class SQLExporter extends Exporter {
 	/**
 	 * A helper method to generate SQL CREATE code for a given table.
 	 * This method performs all required lookups to find all relations and
-	 * column information, as well as additional indices.
+	 * columns information, as well as additional indices.
 	 *
 	 * @param dbmd a DatabaseMetaData object to query on (not null)
 	 * @param type the type of the object, e.g. VIEW, TABLE (not null)
@@ -66,7 +66,7 @@ public class SQLExporter extends Exporter {
 			changeSchema(schema);
 
 		// handle views directly
-		if (type.indexOf("VIEW") != -1) {
+		if (type.contains("VIEW")) {
 			String[] types = new String[1];
 			types[0] = type;
 			ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
@@ -103,7 +103,7 @@ public class SQLExporter extends Exporter {
 		for (i = 0; cols.next(); i++) {
 			if (i > 0) out.println(",");
 
-			// print column name (with double quotes)
+			// print columns name (with double quotes)
 			s = dq(cols.getString(colNmIndex));
 			out.print("\t" + s + repeat(' ', (colwidth - s.length() + 3)));
 
@@ -116,25 +116,31 @@ public class SQLExporter extends Exporter {
 
 			s = cols.getString(colTypeNmIndex).toUpperCase();
 			// do some data type substitutions to match SQL standard
-			if (s.equals("INT")) {
-				s = "INTEGER";
-			} else if (s.equals("SEC_INTERVAL")) {
-				s = "INTERVAL SECOND";
-			} else if (s.equals("MONTH_INTERVAL")) {
-				s = "INTERVAL MONTH";
-			} else if (s.equals("TIMETZ")) {
-				s = "TIME";
-				// small hack to get desired behaviour: set digits when we have
-				// a time with time zone and at the same time masking the internal types
-				digits = 1;
-			} else if (s.equals("TIMESTAMPTZ")) {
-				s = "TIMESTAMP";
-				// small hack to get desired behaviour: set digits when we have
-				// a timestamp with time zone and at the same time masking the internal types
-				digits = 1;
+			switch (s) {
+				case "INT":
+					s = "INTEGER";
+					break;
+				case "SEC_INTERVAL":
+					s = "INTERVAL SECOND";
+					break;
+				case "MONTH_INTERVAL":
+					s = "INTERVAL MONTH";
+					break;
+				case "TIMETZ":
+					s = "TIME";
+					// small hack to get desired behaviour: set digits when we have
+					// a time with time zone and at the same time masking the internal types
+					digits = 1;
+					break;
+				case "TIMESTAMPTZ":
+					s = "TIMESTAMP";
+					// small hack to get desired behaviour: set digits when we have
+					// a timestamp with time zone and at the same time masking the internal types
+					digits = 1;
+					break;
 			}
 
-			sb.append(s);	// add the data type for this column
+			sb.append(s);	// add the data type for this columns
 
 			// do some SQL/MonetDB type length/precision and scale specifics
 			switch (ctype) {
@@ -172,22 +178,22 @@ public class SQLExporter extends Exporter {
 					sb.append(" DEFAULT ").append(defaultValue);
 			}
 
-			// print column type, optional length and scale, optional Not NULL, optional default value
+			// print columns type, optional length and scale, optional Not NULL, optional default value
 			out.print(sb.toString());
 
-			sb.delete(0, sb.length());	// clear the stringbuffer for next column
+			sb.delete(0, sb.length());	// clear the stringbuffer for next columns
 		}
 		cols.close();
 
 		// add the primary key constraint definition
 		// unfortunately some idiot defined that getPrimaryKeys()
-		// returns the primary key columns sorted by column name, not
+		// returns the primary key columns sorted by columns name, not
 		// key sequence order.  So we have to sort ourself :(
 		cols = dbmd.getPrimaryKeys(catalog, schema, name);
-		// first make an 'index' of the KEY_SEQ column
-		SortedMap<Integer, Integer> seqIndex = new TreeMap<Integer, Integer>();
+		// first make an 'index' of the KEY_SEQ columns
+		SortedMap<Integer, Integer> seqIndex = new TreeMap<>();
 		for (i = 1; cols.next(); i++) {
-			seqIndex.put(Integer.valueOf(cols.getInt("KEY_SEQ")), Integer.valueOf(i));
+			seqIndex.put(cols.getInt("KEY_SEQ"), i);
 		}
 		if (seqIndex.size() > 0) {
 			// terminate the previous line
@@ -200,7 +206,7 @@ public class SQLExporter extends Exporter {
 					it.hasNext(); i++)
 			{
 				Map.Entry<Integer, Integer> e = it.next();
-				cols.absolute(e.getValue().intValue());
+				cols.absolute(e.getValue());
 				if (i > 0)
 					out.print(", ");
 				out.print(dq(cols.getString("COLUMN_NAME")));
@@ -241,9 +247,9 @@ public class SQLExporter extends Exporter {
 			out.print("\tCONSTRAINT " + dq(cols.getString("FK_NAME")) + " FOREIGN KEY (");
 
 			boolean next;
-			Set<String> fk = new LinkedHashSet<String>();
+			Set<String> fk = new LinkedHashSet<>();
 			fk.add(cols.getString("FKCOLUMN_NAME").intern());
-			Set<String> pk = new LinkedHashSet<String>();
+			Set<String> pk = new LinkedHashSet<>();
 			pk.add(cols.getString("PKCOLUMN_NAME").intern());
 
 			while ((next = cols.next()) &&
@@ -363,7 +369,6 @@ public class SQLExporter extends Exporter {
 	 * format.
 	 *
 	 * @param rs the ResultSet to convert into INSERT INTO statements
-	 * @param absolute if true, dumps table name prepended with schema name
 	 * @throws SQLException if a database related error occurs
 	 */
 	private void resultSetToSQL(ResultSet rs)
@@ -469,10 +474,7 @@ public class SQLExporter extends Exporter {
 		strbuf.append('|');
 		for (int j = 1; j < width.length; j++) {
 			String colLabel = md.getColumnLabel(j);
-			strbuf.append(' ');
-			strbuf.append(colLabel);
-			strbuf.append(repeat(' ', width[j] - colLabel.length()));
-			strbuf.append(" |");
+			strbuf.append(' ').append(colLabel).append(repeat(' ', width[j] - colLabel.length())).append(" |");
 		}
 		// print the header text
 		out.println(outsideLine);
@@ -520,7 +522,7 @@ public class SQLExporter extends Exporter {
 
 	private void changeSchema(String schema) {
 		if (lastSchema == null) {
-			lastSchema = new Stack<String>();
+			lastSchema = new Stack<>();
 			lastSchema.push(null);
 		}
 

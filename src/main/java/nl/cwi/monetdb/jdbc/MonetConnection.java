@@ -1603,9 +1603,9 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		private String[] name;
 		/** The types of the columns in this result */
 		private String[] type;
-		/** The max string length for each column in this result */
+		/** The max string length for each columns in this result */
 		private int[] columnLengths;
-		/** The table for each column in this result */
+		/** The table for each columns in this result */
 		private String[] tableNames;
 		/** The query sequence number */
 		private final int seqnr;
@@ -1811,7 +1811,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 			if (!isSet[NAMES]) error += "name header missing\n";
 			if (!isSet[TYPES]) error += "type header missing\n";
 			if (!isSet[TABLES]) error += "table name header missing\n";
-			if (!isSet[LENS]) error += "column width header missing\n";
+			if (!isSet[LENS]) error += "columns width header missing\n";
 			if (error != "") throw new SQLException(error, "M0M10");
 		}
 
@@ -2008,7 +2008,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * <pre>
 	 * [ "value",	56	]
 	 * </pre>
-	 * where each column is separated by ",\t" and each tuple surrounded
+	 * where each columns is separated by ",\t" and each tuple surrounded
 	 * by brackets ("[" and "]").  A DataBlockResponse object holds the
 	 * raw data as read from the server, in a parsed manner, ready for
 	 * easy retrieval.

@@ -51,7 +51,7 @@ public class XMLExporter extends Exporter {
 
 		ResultSet cols = dbmd.getColumns(catalog, schema, name, null);
 		String ident;
-		Set<String> types = new HashSet<String>();
+		Set<String> types = new HashSet<>();
 		// walk through the ResultSet and create the types
 		// for a bit of a clue on the types, see this url:
 		// http://books.xmlschemata.org/relaxng/relax-CHP-19.html

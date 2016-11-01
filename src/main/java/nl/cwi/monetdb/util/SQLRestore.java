@@ -100,7 +100,7 @@ public class SQLRestore {
 	/**
 	 * Restores a given SQL dump to the database.
 	 * 
-	 * @param source
+	 * @param source File location of the SQL dump
 	 * @throws IOException
 	 */
 	public void restore(File source) throws IOException {
@@ -120,16 +120,16 @@ public class SQLRestore {
 			try {
 				// FIXME: we assume here that the dump is in system's default encoding
 				BufferedReader sourceData = new BufferedReader(new FileReader(source));
-				try { 
+				try {
 					os.write('s'); // signal that a new statement (or series of) is coming
 					while(!srr.inErrorState()) {
 						char[] buf = new char[4096];
 						int result = sourceData.read(buf);
-						if (result < 0) 
-							break;				
+						if (result < 0)
+							break;
 						os.write(buf, 0, result);
 					}
-					
+
 					os.flush(); // mark the end of the statement (or series of)
 					os.close();
 				} finally {
@@ -147,9 +147,7 @@ public class SQLRestore {
 					throw new IOException(srr.getErrorMessage());
 				}
 			}
-		} catch (MCLException e) {
-			throw new IOException(e.getMessage());
-		} catch (MCLParseException e) {
+		} catch (MCLException | MCLParseException e) {
 			throw new IOException(e.getMessage());
 		} finally {
 			ms.close();

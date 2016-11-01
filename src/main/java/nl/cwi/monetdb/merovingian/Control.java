@@ -124,9 +124,7 @@ public class Control {
 			ms.connect(host, port, "monetdb", passphrase);
 			min = ms.getReader();
 			mout = ms.getWriter();
-		} catch (MCLParseException e) {
-			throw new MerovingianException(e.getMessage());
-		} catch (MCLException e) {
+		} catch (MCLParseException | MCLException e) {
 			throw new MerovingianException(e.getMessage());
 		} catch (AssertionError e) { // mcl panics
 			ms.close();
@@ -189,7 +187,7 @@ public class Control {
 				if (!hasOutput)
 					return null;
 
-				ArrayList<String> l = new ArrayList<String>();
+				ArrayList<String> l = new ArrayList<>();
 				while ((response = in.readLine()) != null) {
 					l.add(response);
 				}
@@ -202,7 +200,7 @@ public class Control {
 		}
 
 		mout.writeLine(database + " " + command + "\n");
-		ArrayList<String> l = new ArrayList<String>();
+		ArrayList<String> l = new ArrayList<>();
 		String tmpLine = min.readLine();
 		int linetype = min.getLineType();
 		if (linetype == BufferedMCLReader.ERROR)
@@ -343,7 +341,7 @@ public class Control {
 	/**
 	 * Test whether a specific database exists. 
 	 * 
-	 * @param database
+	 * @param database The database name
 	 * @return true, iff database already exists.
 	 * @throws MerovingianException
 	 * @throws IOException
@@ -363,7 +361,7 @@ public class Control {
 	public List<SabaothDB> getAllStatuses()
 		throws MerovingianException, IOException
 	{
-		List<SabaothDB> l = new ArrayList<SabaothDB>();
+		List<SabaothDB> l = new ArrayList<>();
 		List<String> response = sendCommand("#all", "status", true);
 		try {
 			for (String responseLine : response) {

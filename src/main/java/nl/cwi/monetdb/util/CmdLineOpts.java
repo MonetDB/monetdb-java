@@ -281,7 +281,7 @@ public class CmdLineOpts {
 		int cardinality;
 		String shorta;
 		String longa;
-		List<String> values = new ArrayList<String>();
+		List<String> values = new ArrayList<>();
 		String name;
 		String defaulta;
 		String descriptiona;
