@@ -112,7 +112,7 @@ public class MonetDBEmbeddedDatabase {
     public void stopDatabase() throws MonetDBEmbeddedException {
         if(this.isRunning) {
             for(MonetDBEmbeddedConnection mdbec : connections) {
-                mdbec.shutdownConnection();
+                mdbec.closeConnection();
             }
             this.connections.clear();
             this.stopDatabaseInternal();

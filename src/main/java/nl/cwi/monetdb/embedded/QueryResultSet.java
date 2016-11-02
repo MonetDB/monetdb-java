@@ -24,7 +24,7 @@ public class QueryResultSet extends AbstractStatementResult implements Iterable 
     /**
      * Pointer to the native result set.
      * We need to keep it around for getting columns.
-     * The native result set is kept until the {@link super.close()} is called.
+     * The native result set is kept until the the close method is called.
      */
     protected long resultPointer;
 

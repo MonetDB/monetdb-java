@@ -223,19 +223,19 @@ public class MonetDBEmbeddedConnection {
     /**
      * Shuts down this connection. Any pending queries connections will be immediately closed as well.
      */
-    public void shutdownConnection() {
+    public void closeConnection() {
         for(AbstractStatementResult res : this.results) {
             res.close();
         }
-        this.shutdownConnectionInternal(this.connectionPointer);
+        this.closeConnectionInternal(this.connectionPointer);
         this.database.removeConnection(this);
     }
 
     /**
      * Shuts down this connection asynchronously. Any pending queries connections will be immediately closed as well.
      */
-    public void shutdownConnectionAsync() {
-        /* CompletableFuture.supplyAsync(() -> this.shutdownConnection()); */
+    public void closeConnectionAsync() {
+        /* CompletableFuture.supplyAsync(() -> this.closeConnection()); */
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
     }
 
@@ -258,5 +258,5 @@ public class MonetDBEmbeddedConnection {
     /*private native MonetDBTable getMonetDBTableInternal(long connectionPointer, String schemaName, String tableName)
             throws MonetDBEmbeddedException;*/
 
-    private native void shutdownConnectionInternal(long connectionPointer);
+    private native void closeConnectionInternal(long connectionPointer);
 }

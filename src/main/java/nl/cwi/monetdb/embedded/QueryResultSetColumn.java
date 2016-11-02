@@ -81,7 +81,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
             }
             if(startIndex < this.firstRetrievedIndex) {
                 T[] new_start_batch = this.fetchValuesInternal(this.resultSetPointer, this.resultSetIndex,
-                        this.mapping.getJavaClass(), this.mapping.ordinal(), startIndex, this.firstRetrievedIndex);
+                        (Class<T>) this.mapping.getJavaClass(), this.mapping.ordinal(), startIndex, this.firstRetrievedIndex);
                 System.arraycopy(new_start_batch, 0, this.values, startIndex, new_start_batch.length);
                 this.firstRetrievedIndex = startIndex;
             }
@@ -92,7 +92,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
             }
             if(endIndex > this.lastRetrievedIndex) {
                 T[] new_end_batch = this.fetchValuesInternal(this.resultSetPointer, this.resultSetIndex,
-                        this.mapping.getJavaClass(), this.mapping.ordinal(), this.lastRetrievedIndex, endIndex);
+                        (Class<T>) this.mapping.getJavaClass(), this.mapping.ordinal(), this.lastRetrievedIndex, endIndex);
                 System.arraycopy(new_end_batch, 0, this.values, this.lastRetrievedIndex, new_end_batch.length);
                 this.lastRetrievedIndex = endIndex;
             }
@@ -172,7 +172,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
      */
     @SuppressWarnings("unchecked")
     public T[] fetchColumnValues(int startIndex, int endIndex) throws MonetDBEmbeddedException {
-        return this.fetchColumnValues(startIndex, endIndex, this.mapping.getJavaClass());
+        return this.fetchColumnValues(startIndex, endIndex, (Class<T>) this.mapping.getJavaClass());
     }
 
     /**
@@ -185,7 +185,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
      */
     @SuppressWarnings("unchecked")
     public T[] fetchColumnValuesAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
-        return this.fetchColumnValuesAsync(startIndex, endIndex, this.mapping.getJavaClass());
+        return this.fetchColumnValuesAsync(startIndex, endIndex, (Class<T>) this.mapping.getJavaClass());
     }
 
     /**
