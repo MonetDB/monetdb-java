@@ -80,8 +80,8 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
                 throw new MonetDBEmbeddedException("Connection closed!");
             }
             if(startIndex < this.firstRetrievedIndex) {
-                T[] new_start_batch = this.getValuesBatch(this.resultSetPointer, this.resultSetIndex,
-                        this.mapping.ordinal(), startIndex, this.firstRetrievedIndex);
+                T[] new_start_batch = this.fetchValuesInternal(this.resultSetPointer, this.resultSetIndex,
+                        this.mapping.getJavaClass(), this.mapping.ordinal(), startIndex, this.firstRetrievedIndex);
                 System.arraycopy(new_start_batch, 0, this.values, startIndex, new_start_batch.length);
                 this.firstRetrievedIndex = startIndex;
             }
@@ -91,8 +91,8 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
                 throw new MonetDBEmbeddedException("Connection closed!");
             }
             if(endIndex > this.lastRetrievedIndex) {
-                T[] new_end_batch = this.getValuesBatch(this.resultSetPointer, this.resultSetIndex,
-                        this.mapping.ordinal(), this.lastRetrievedIndex, endIndex);
+                T[] new_end_batch = this.fetchValuesInternal(this.resultSetPointer, this.resultSetIndex,
+                        this.mapping.getJavaClass(), this.mapping.ordinal(), this.lastRetrievedIndex, endIndex);
                 System.arraycopy(new_end_batch, 0, this.values, this.lastRetrievedIndex, new_end_batch.length);
                 this.lastRetrievedIndex = endIndex;
             }
@@ -235,7 +235,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
         return Arrays.asList(this.values).listIterator();
     }
 
-    private native T[] getValuesBatch(long resultPointer, int resultSetIndex, int mappingType, int first, int last)
-            throws MonetDBEmbeddedException;
+    private native T[] fetchValuesInternal(long resultPointer, int resultSetIndex, Class<T> jclass, int enumEntry,
+                                           int first, int last) throws MonetDBEmbeddedException;
 
 }

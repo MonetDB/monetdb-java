@@ -15,7 +15,7 @@ package nl.cwi.monetdb.embedded;
  */
 public class UpdateResultSet extends AbstractStatementResult {
 
-    protected UpdateResultSet(MonetDBEmbeddedConnection connection, long resultPointer) {
-        super(connection, resultPointer);
+    protected UpdateResultSet(MonetDBEmbeddedConnection connection) {
+        super(connection);
     }
 }

@@ -22,15 +22,7 @@ public abstract class AbstractStatementResult implements Closeable {
      */
     private final MonetDBEmbeddedConnection connection;
 
-    /**
-     * Pointer to the native result set.
-     * We need to keep it around for getting columns.
-     * The native result set is kept until the {@link super.close()} is called.
-     */
-    protected long resultPointer;
-
-    protected AbstractStatementResult(MonetDBEmbeddedConnection connection, long resultPointer) {
-        this.resultPointer = resultPointer;
+    protected AbstractStatementResult(MonetDBEmbeddedConnection connection) {
         this.connection = connection;
     }
 
@@ -41,22 +33,8 @@ public abstract class AbstractStatementResult implements Closeable {
      */
     public MonetDBEmbeddedConnection getConnection() { return connection; }
 
-    /**
-     * Tells if the connection of this statement result has been closed or not.
-     *
-     * @return A boolean indicating if the statement result has been cleaned or not
-     */
-    public boolean isStatementClosed() { return this.resultPointer == 0; }
-
-    /**
-     * Close the query data so no more new results can be retrieved.
-     */
     @Override
     public void close() {
-        this.cleanupResult(this.resultPointer);
-        this.resultPointer = 0;
         this.connection.removeQueryResult(this);
     }
-
-    private native void cleanupResult(long resultPointer);
 }

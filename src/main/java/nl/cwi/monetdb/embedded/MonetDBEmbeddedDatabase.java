@@ -50,7 +50,7 @@ public class MonetDBEmbeddedDatabase {
      */
     public static MonetDBEmbeddedDatabase StartDatabaseAsync(String dbDirectory, boolean silentFlag,
                                                              boolean sequentialFlag) throws MonetDBEmbeddedException {
-        /* CompletableFuture.supplyAsync(() -> StartDatabase(dbDirectory, silentFlag, sequentialFlag); */
+        /* CompletableFuture.supplyAsync(() -> StartDatabase(dbDirectory, silentFlag, sequentialFlag)); */
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
     }
 
@@ -139,7 +139,7 @@ public class MonetDBEmbeddedDatabase {
      * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
      */
     public MonetDBEmbeddedConnection createConnection() throws MonetDBEmbeddedException {
-        return this.createConnectionOnSchema(null);
+        return this.createConnectionInternal();
     }
 
     /**
@@ -149,35 +149,7 @@ public class MonetDBEmbeddedDatabase {
      * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
      */
     public MonetDBEmbeddedConnection createConnectionAsync() throws MonetDBEmbeddedException {
-        return this.createConnectionOnSchemaAsync(null);
-    }
-
-    /**
-     * Creates a connection on the database on the given schema.
-     *
-     * @param schema A String with the schema to be set
-     * @return A MonetDBEmbeddedConnection instance
-     * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
-     */
-    public MonetDBEmbeddedConnection createConnectionOnSchema(String schema) throws MonetDBEmbeddedException {
-        if(this.isRunning) {
-            MonetDBEmbeddedConnection mdbec = this.createConnectionInternal(schema);
-            connections.add(mdbec);
-            return mdbec;
-        } else {
-            throw new MonetDBEmbeddedException("The database is not running!");
-        }
-    }
-
-    /**
-     * Creates a connection on the database on the given schema asynchronously.
-     *
-     * @param schema A String with the schema to be set
-     * @return A MonetDBEmbeddedConnection instance
-     * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
-     */
-    public MonetDBEmbeddedConnection createConnectionOnSchemaAsync(String schema) throws MonetDBEmbeddedException {
-        /* CompletableFuture.supplyAsync(() -> this.createConnectionOnSchema(schema)); */
+        /* CompletableFuture.supplyAsync(() -> this.createConnectionInternal()); */
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
     }
 
@@ -189,9 +161,10 @@ public class MonetDBEmbeddedDatabase {
     }
 
     private static native MonetDBEmbeddedDatabase StartDatabaseInternal(String dbDirectory, boolean silentFlag,
-                                                                        boolean sequentialFlag) throws MonetDBEmbeddedException;
+                                                                        boolean sequentialFlag)
+            throws MonetDBEmbeddedException;
 
     private native void stopDatabaseInternal();
 
-    private native MonetDBEmbeddedConnection createConnectionInternal(String schema) throws MonetDBEmbeddedException;
+    private native MonetDBEmbeddedConnection createConnectionInternal() throws MonetDBEmbeddedException;
 }

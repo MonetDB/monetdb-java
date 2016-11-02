@@ -51,7 +51,7 @@ public abstract class AbstractColumn<T> implements Iterable<T> {
         this.resultSetIndex = resultSetIndex;
         this.numberOfRows = numberOfRows;
         this.columnName = columnName;
-        this.mapping = Enum.valueOf(MonetDBToJavaMapping.class, columnType);
+        this.mapping = MonetDBToJavaMapping.GetJavaMappingFromMonetDBString(columnType);
         this.columnDigits = columnDigits;
         this.columnScale = columnScale;
     }

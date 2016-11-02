@@ -25,12 +25,12 @@ import java.util.UUID;
  */
 public enum MonetDBToJavaMapping {
 
-    Boolean(Boolean.class), Char(String.class), Varchar(String.class), Clob(String.class), Tinyint(Byte.class),
-    Smallint(Short.class), Int(Integer.class), Bigint(Long.class), Hugeint(BigInteger.class), Decimal(BigDecimal.class),
-    Real(Float.class), Double(Double.class), MonthInterval(Integer.class), SecondInterval(Long.class), Time(Time.class),
-    TimeTz(Time.class), Date(Date.class), Timestamp(Timestamp.class), TimestampTz(Timestamp.class), Blob(Byte[].class),
-    Geometry(Byte[].class), GeometryA(Byte[].class), URL(URI.class), Inet(InetAddress.class), JSON(Byte[].class),
-    UUID(UUID.class);
+    Boolean(Boolean.class), Char(String.class), Varchar(String.class), Clob(String.class), Oid(Long.class),
+    Tinyint(Byte.class), Smallint(Short.class), Int(Integer.class), Wrd(Long.class), Bigint(Long.class),
+    Hugeint(BigInteger.class), Decimal(BigDecimal.class), Real(Float.class), Double(Double.class),
+    MonthInterval(Integer.class), SecondInterval(Long.class), Time(Time.class), TimeTz(Time.class), Date(Date.class),
+    Timestamp(Timestamp.class), TimestampTz(Timestamp.class), Blob(Byte[].class), Geometry(Byte[].class),
+    GeometryA(Byte[].class), URL(URI.class), Inet(InetAddress.class), JSON(Byte[].class), UUID(UUID.class);
 
     /**
      * The mapping between MonetDB data types and enum values.
@@ -43,9 +43,11 @@ public enum MonetDBToJavaMapping {
         MonetDBMappings.put("char", Char);
         MonetDBMappings.put("varchar", Varchar);
         MonetDBMappings.put("clob", Clob);
+        MonetDBMappings.put("oid", Oid);
         MonetDBMappings.put("tinyint", Tinyint);
         MonetDBMappings.put("smallint", Smallint);
         MonetDBMappings.put("int", Int);
+        MonetDBMappings.put("wrd", Wrd);
         MonetDBMappings.put("bigint", Bigint);
         MonetDBMappings.put("hugeint", Hugeint);
         MonetDBMappings.put("decimal", Decimal);

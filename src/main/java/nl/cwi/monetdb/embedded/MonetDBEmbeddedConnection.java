@@ -27,7 +27,6 @@ public class MonetDBEmbeddedConnection {
 
     private final List<AbstractStatementResult> results = new ArrayList<>();
 
-    //TODO add autocommit
 	protected MonetDBEmbeddedConnection(MonetDBEmbeddedDatabase database, long connectionPointer) {
         this.database = database;
         this.connectionPointer = connectionPointer;
@@ -96,7 +95,7 @@ public class MonetDBEmbeddedConnection {
         if (!query.endsWith(";")) {
             query += ";";
         }
-        UpdateResultSet res = this.createEmptyResultSetInternal(this.connectionPointer, query, true);
+        UpdateResultSet res = this.sendUpdateInternal(this.connectionPointer, query, true);
         results.add(res);
         return res;
     }
@@ -124,7 +123,7 @@ public class MonetDBEmbeddedConnection {
 		if (!query.endsWith(";")) {
             query += ";";
 		}
-        QueryResultSet res = this.createNonEmptyResultSetInternal(this.connectionPointer, query, true);
+        QueryResultSet res = this.sendQueryInternal(this.connectionPointer, query, true);
         results.add(res);
         return res;
 	}
@@ -247,10 +246,10 @@ public class MonetDBEmbeddedConnection {
         this.results.remove(res);
     }
 
-	private native UpdateResultSet createEmptyResultSetInternal(long connectionPointer, String query, boolean execute)
+    private native UpdateResultSet sendUpdateInternal(long connectionPointer, String query, boolean execute)
             throws MonetDBEmbeddedException;
 
-    private native QueryResultSet createNonEmptyResultSetInternal(long connectionPointer, String query, boolean execute)
+    private native QueryResultSet sendQueryInternal(long connectionPointer, String query, boolean execute)
             throws MonetDBEmbeddedException;
 
     private native EmbeddedPreparedStatement createPreparedStatementInternal(long connectionPointer, String query)

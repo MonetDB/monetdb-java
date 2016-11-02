@@ -22,6 +22,13 @@ import java.util.ListIterator;
 public class QueryResultSet extends AbstractStatementResult implements Iterable {
 
     /**
+     * Pointer to the native result set.
+     * We need to keep it around for getting columns.
+     * The native result set is kept until the {@link super.close()} is called.
+     */
+    protected long resultPointer;
+
+    /**
      * The number of columns in the query result.
      */
     protected final int numberOfColumns;
@@ -38,11 +45,19 @@ public class QueryResultSet extends AbstractStatementResult implements Iterable 
 
 	protected QueryResultSet(MonetDBEmbeddedConnection connection, long resultPointer,
                              QueryResultSetColumn<?>[] columns, int numberOfRows) {
-        super(connection, resultPointer);
+        super(connection);
+        this.resultPointer = resultPointer;
         this.numberOfColumns = columns.length;
         this.numberOfRows = numberOfRows;
         this.columns = columns;
 	}
+
+    /**
+     * Tells if the connection of this statement result has been closed or not.
+     *
+     * @return A boolean indicating if the statement result has been cleaned or not
+     */
+    public boolean isStatementClosed() { return this.resultPointer == 0; }
 
     /**
      * Returns the number of columns in the result set.
@@ -255,4 +270,16 @@ public class QueryResultSet extends AbstractStatementResult implements Iterable 
             return null;
         }
     }
+
+    /**
+     * Close the query data so no more new results can be retrieved.
+     */
+    @Override
+    public void close() {
+        this.cleanupResultInternal(this.resultPointer);
+        this.resultPointer = 0;
+        super.close();
+    }
+
+    private native void cleanupResultInternal(long resultPointer);
 }
