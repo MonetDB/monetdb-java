@@ -67,7 +67,6 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
             startIndex = endIndex;
             endIndex = aux;
         }
-        int numberOfRowsToRetrieve = endIndex - startIndex;
         if (startIndex < 0) {
             throw new ArrayIndexOutOfBoundsException("The start index must be larger than 0!");
         } else if (endIndex > this.numberOfRows) {
@@ -75,28 +74,29 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
         } else if(startIndex == endIndex) {
             throw new ArrayIndexOutOfBoundsException("Retrieving 0 values?");
         }
+
+        boolean hasToConvert = false;
+        int numberOfRowsToRetrieve = endIndex - startIndex;
+        int firstIndexToFetch = Math.min(startIndex, this.firstRetrievedIndex);
+        int lastIndexToFetch = Math.max(endIndex, this.lastRetrievedIndex);
         if(startIndex < this.firstRetrievedIndex) {
-            if(this.resultSetPointer == 0) {
-                throw new MonetDBEmbeddedException("Connection closed!");
-            }
-            if(startIndex < this.firstRetrievedIndex) {
-                T[] new_start_batch = this.fetchValuesInternal(this.resultSetPointer, this.resultSetIndex,
-                        (Class<T>) this.mapping.getJavaClass(), this.mapping.ordinal(), startIndex, this.firstRetrievedIndex);
-                System.arraycopy(new_start_batch, 0, this.values, startIndex, new_start_batch.length);
-                this.firstRetrievedIndex = startIndex;
-            }
+            this.firstRetrievedIndex = startIndex;
+            hasToConvert = true;
         }
         if(endIndex > this.lastRetrievedIndex) {
+            this.lastRetrievedIndex = endIndex;
+            hasToConvert = true;
+        }
+        if(hasToConvert) {
             if(this.resultSetPointer == 0) {
                 throw new MonetDBEmbeddedException("Connection closed!");
             }
-            if(endIndex > this.lastRetrievedIndex) {
-                T[] new_end_batch = this.fetchValuesInternal(this.resultSetPointer, this.resultSetIndex,
-                        (Class<T>) this.mapping.getJavaClass(), this.mapping.ordinal(), this.lastRetrievedIndex, endIndex);
-                System.arraycopy(new_end_batch, 0, this.values, this.lastRetrievedIndex, new_end_batch.length);
-                this.lastRetrievedIndex = endIndex;
-            }
+            T[] newvalues = this.fetchValuesInternal(this.resultSetPointer, this.resultSetIndex,
+                    (Class<T>) this.mapping.getJavaClass(), this.mapping.getJavaClass().getSimpleName(),
+                    this.mapping.ordinal(), firstIndexToFetch, lastIndexToFetch);
+            System.arraycopy(newvalues, 0, this.values, firstIndexToFetch, newvalues.length);
         }
+
         T[] result = (T[]) Array.newInstance(javaClass, numberOfRowsToRetrieve);
         System.arraycopy(this.values, startIndex, result, 0, numberOfRowsToRetrieve);
         return result;
@@ -235,7 +235,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
         return Arrays.asList(this.values).listIterator();
     }
 
-    private native T[] fetchValuesInternal(long resultPointer, int resultSetIndex, Class<T> jclass, int enumEntry,
-                                           int first, int last) throws MonetDBEmbeddedException;
+    private native T[] fetchValuesInternal(long resultPointer, int resultSetIndex, Class<T> jclass, String className,
+                                           int enumEntry, int first, int last) throws MonetDBEmbeddedException;
 
 }
