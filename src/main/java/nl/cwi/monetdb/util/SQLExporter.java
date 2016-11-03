@@ -38,7 +38,7 @@ public class SQLExporter extends Exporter {
 	/**
 	 * A helper method to generate SQL CREATE code for a given table.
 	 * This method performs all required lookups to find all relations and
-	 * columns information, as well as additional indices.
+	 * column information, as well as additional indices.
 	 *
 	 * @param dbmd a DatabaseMetaData object to query on (not null)
 	 * @param type the type of the object, e.g. VIEW, TABLE (not null)
@@ -103,7 +103,7 @@ public class SQLExporter extends Exporter {
 		for (i = 0; cols.next(); i++) {
 			if (i > 0) out.println(",");
 
-			// print columns name (with double quotes)
+			// print column name (with double quotes)
 			s = dq(cols.getString(colNmIndex));
 			out.print("\t" + s + repeat(' ', (colwidth - s.length() + 3)));
 
@@ -140,7 +140,7 @@ public class SQLExporter extends Exporter {
 					break;
 			}
 
-			sb.append(s);	// add the data type for this columns
+			sb.append(s);	// add the data type for this column
 
 			// do some SQL/MonetDB type length/precision and scale specifics
 			switch (ctype) {
@@ -178,7 +178,7 @@ public class SQLExporter extends Exporter {
 					sb.append(" DEFAULT ").append(defaultValue);
 			}
 
-			// print columns type, optional length and scale, optional Not NULL, optional default value
+			// print column type, optional length and scale, optional Not NULL, optional default value
 			out.print(sb.toString());
 
 			sb.delete(0, sb.length());	// clear the stringbuffer for next columns
@@ -187,10 +187,10 @@ public class SQLExporter extends Exporter {
 
 		// add the primary key constraint definition
 		// unfortunately some idiot defined that getPrimaryKeys()
-		// returns the primary key columns sorted by columns name, not
+		// returns the primary key column sorted by column name, not
 		// key sequence order.  So we have to sort ourself :(
 		cols = dbmd.getPrimaryKeys(catalog, schema, name);
-		// first make an 'index' of the KEY_SEQ columns
+		// first make an 'index' of the KEY_SEQ column
 		SortedMap<Integer, Integer> seqIndex = new TreeMap<>();
 		for (i = 1; cols.next(); i++) {
 			seqIndex.put(cols.getInt("KEY_SEQ"), i);

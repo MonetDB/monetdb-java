@@ -145,8 +145,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * DO NOT USE THIS CONSTRUCTOR IF YOU ARE NOT EXTENDING THIS OBJECT!
 	 *
 	 * @param statement the statement which created this ResultSet
-	 * @param columns the columns names
-	 * @param types the columns types
+	 * @param columns the column names
+	 * @param types the column types
 	 * @param results the number of rows in the ResultSet
 	 * @throws IllegalArgumentException if communicating with monet failed
 	 */
@@ -314,13 +314,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 	// Chapter 14.2.3 from Sun JDBC 3.0 specification
 	/**
-	 * Maps the given ResultSet columns name to its ResultSet columns index.
-	 * QueryResultSetColumn names supplied to getter methods are case insensitive. If a select
-	 * list contains the same columns more than once, the first instance of the
-	 * columns will be returned.
+	 * Maps the given ResultSet column name to its ResultSet column index.
+	 * Column names supplied to getter methods are case insensitive. If a select
+	 * list contains the same column more than once, the first instance of the
+	 * column will be returned.
 	 *
-	 * @param columnName the name of the columns
-	 * @return the columns index of the given columns name
+	 * @param columnName the name of the column
+	 * @return the column index of the given column name
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 */
 	@Override
@@ -337,7 +337,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					return i + 1;
 			}
 		}
-		throw new SQLException("No such columns name: " + columnName, "M1M05");
+		throw new SQLException("No such column name: " + columnName, "M1M05");
 	}
 
 	/**
@@ -384,19 +384,19 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a stream of uninterpreted bytes. The
 	 * value can then be read in chunks from the stream. This method is
 	 * particularly suitable for retrieving large LONGVARBINARY values.
 	 * <br/><br/>
 	 * Note: All the data in the returned stream must be read prior to
-	 * getting the value of any other columns. The next call to a getter
+	 * getting the value of any other column. The next call to a getter
 	 * method implicitly closes the stream. Also, a stream may return 0
 	 * when the method InputStream.available  is called whether there is
 	 * data available or not.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return a Java input stream that delivers the database columns
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return a Java input stream that delivers the database column
 	 * value as a stream of uninterpreted bytes; if the value is SQL
 	 * NULL, the value returned is null
 	 * @throws SQLException if the columnIndex is not valid; if a
@@ -427,21 +427,21 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 	
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a stream of uninterpreted bytes. The
 	 * value can then be read in chunks from the stream. This method is
 	 * particularly suitable for retrieving large LONGVARBINARY  values.
 	 * <br/><br/>
 	 * Note: All the data in the returned stream must be read prior to
-	 * getting the value of any other columns. The next call to a getter
+	 * getting the value of any other column. The next call to a getter
 	 * method implicitly closes the stream. Also, a stream may return 0
 	 * when the method available  is called whether there is data
 	 * available or not.
 	 *
-	 * @param columnName the label for the columns specified with
+	 * @param columnName the label for the column specified with
 	 * the SQL AS clause. If the SQL AS clause was not specified, then
-	 * the label is the name of the columns
-	 * @return a Java input stream that delivers the database columns
+	 * the label is the name of the column
+	 * @return a Java input stream that delivers the database column
 	 * value as a stream of uninterpreted bytes; if the value is SQL
 	 * NULL, the result is null
 	 * @throws SQLException if the columnLabel is not valid; if a
@@ -454,11 +454,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a java.io.Reader object.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return a java.io.Reader object that contains the columns value;
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return a java.io.Reader object that contains the column value;
 	 *         if the value is SQL NULL, the value returned is null in
 	 *         the Java programming language.
 	 * @throws SQLException if a database access error occurs
@@ -479,11 +479,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a java.io.Reader object.
 	 *
-	 * @param columnName the name of the columns
-	 * @return a java.io.Reader object that contains the columns value;
+	 * @param columnName the name of the column
+	 * @return a java.io.Reader object that contains the column value;
 	 *         if the value is SQL NULL, the value returned is null in
 	 *         the Java programming language.
 	 * @throws SQLException if a database access error occurs
@@ -494,13 +494,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a java.io.Reader object. It is
 	 * intended for use when accessing NCHAR,NVARCHAR and LONGNVARCHAR
 	 * columns.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return a java.io.Reader object that contains the columns value;
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return a java.io.Reader object that contains the column value;
 	 *         if the value is SQL NULL, the value returned is null in
 	 *         the Java programming language.
 	 * @throws SQLException if a database access error occurs
@@ -513,13 +513,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a java.io.Reader object. It is
 	 * intended for use when accessing NCHAR,NVARCHAR and LONGNVARCHAR
 	 * columns.
 	 *
-	 * @param columnName the name of the columns
-	 * @return a java.io.Reader object that contains the columns value;
+	 * @param columnName the name of the column
+	 * @return a java.io.Reader object that contains the column value;
 	 *         if the value is SQL NULL, the value returned is null in
 	 *         the Java programming language.
 	 * @throws SQLException if a database access error occurs
@@ -532,13 +532,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a Blob object in the Java programming
 	 * language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a Blob object representing the SQL BLOB value in the
-	 *         specified columns
+	 *         specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -557,14 +557,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a Blob object in the Java programming
 	 * language.
 	 *
-	 * @param colName the name of the columns from which to retrieve
+	 * @param colName the name of the column from which to retrieve
 	 *        the value
 	 * @return a Blob object representing the SQL BLOB value in the
-	 *         specified columns
+	 *         specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -573,13 +573,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a Clob object in the
 	 * Java programming language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a Clob object representing the SQL CLOB value in the
-	 *         specified columns
+	 *         specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -598,14 +598,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a Clob object in the
 	 * Java programming language.
 	 *
-	 * @param colName the name of the columns from which to retrieve
+	 * @param colName the name of the column from which to retrieve
 	 *        the value
 	 * @return a Clob object representing the SQL CLOB value in the
-	 *         specified columns
+	 *         specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -614,13 +614,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a NClob object in the
 	 * Java programming language.
 	 *
-	 * @param i the first columns is 1, the second is 2, ...
+	 * @param i the first column is 1, the second is 2, ...
 	 * @return a NClob object representing the SQL NCLOB value in the
-	 *         specified columns
+	 *         specified column
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
@@ -631,14 +631,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a NClob object in the
 	 * Java programming language.
 	 *
-	 * @param colName the name of the columns from which to retrieve
+	 * @param colName the name of the column from which to retrieve
 	 *        the value
 	 * @return a NClob object representing the SQL NCLOB value in the
-	 *         specified columns
+	 *         specified column
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
@@ -649,11 +649,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.math.BigDecimal with full precision.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value (full precision); if the value is SQL NULL,
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value (full precision); if the value is SQL NULL,
 	 *         the value returned is null in the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -675,12 +675,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.math.BigDecimal with full precision.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param scale the number of digits to the right of the decimal point
-	 * @return the columns value (full precision); if the value is SQL NULL,
+	 * @return the column value (full precision); if the value is SQL NULL,
 	 *         the value returned is null in the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -708,11 +708,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.math.BigDecimal with full precision.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value (full precision); if the value is SQL NULL,
+	 * @param columnName the SQL name of the column
+	 * @return the column value (full precision); if the value is SQL NULL,
 	 *         the value returned is null in the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -722,12 +722,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.math.BigDecimal with full precision.
 	 *
-	 * @param columnName the SQL name of the columns
+	 * @param columnName the SQL name of the column
 	 * @param scale the number of digits to the right of the decimal point
-	 * @return the columns value (full precision); if the value is SQL NULL,
+	 * @return the column value (full precision); if the value is SQL NULL,
 	 *         the value returned is null in the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -741,13 +741,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 	// See Sun JDBC Specification 3.0 Table B-6
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a boolean in the Java programming language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is false
-	 * @throws SQLException if there is no such columns
+	 * @throws SQLException if there is no such column
 	 */
 	@Override
 	public boolean getBoolean(int columnIndex) throws SQLException {
@@ -797,11 +797,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a boolean in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is false
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 */
@@ -811,11 +811,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a byte in the Java programming language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is 0
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -837,11 +837,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a byte in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is 0
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -851,12 +851,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a byte array in the Java programming language. The
 	 * bytes represent the raw values returned by the driver.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -896,7 +896,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a byte array in the Java programming language. The
 	 * bytes represent the raw values returned by the driver.
 	 *
@@ -905,8 +905,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 *       an encoding into a sequence of bytes using the platform's default
 	 *       charset.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -958,13 +958,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a double in the Java programming language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is 0
-	 * @throws SQLException if there is no such columns
+	 * @throws SQLException if there is no such column
 	 */
 	@Override
 	public double getDouble(int columnIndex) throws SQLException {
@@ -984,11 +984,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a double in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is 0
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 */
@@ -1078,13 +1078,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a float in the Java programming language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is 0
-	 * @throws SQLException if there is no such columns
+	 * @throws SQLException if there is no such column
 	 */
 	@Override
 	public float getFloat(int columnIndex) throws SQLException {
@@ -1104,11 +1104,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a float in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned is 0
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 */
 	@Override
@@ -1117,12 +1117,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as an int in the Java programming language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned is 0
-	 * @throws SQLException if there is no such columns
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
+	 * @throws SQLException if there is no such column
 	 */
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
@@ -1156,11 +1156,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as an int in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned is 0
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 */
 	@Override
@@ -1169,12 +1169,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a long in the Java programming language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned is 0
-	 * @throws SQLException if there is no such columns
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
+	 * @throws SQLException if there is no such column
 	 */
 	@Override
 	public long getLong(int columnIndex) throws SQLException {
@@ -1208,11 +1208,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a long in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is 0
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 */
@@ -1245,10 +1245,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			private DatabaseMetaData dbmd = null;
 
 			/**
-			 * A private method to fetch the precision, scale, isNullable and isAutoincrement value for a fully qualified columns.
-			 * As md.getColumns() is an expensive method we call it only once per columns
+			 * A private method to fetch the precision, scale, isNullable and isAutoincrement value for a fully qualified column.
+			 * As md.getColumns() is an expensive method we call it only once per column
 			 * and cache the precision, scale, isNullable and isAutoincrement values in the above array chaches.
-			 * Also we only call md.getColumns() when we have a non empty schema name and table name and columns name.
+			 * Also we only call md.getColumns() when we have a non empty schema name and table name and column name.
 			 */
 			private void fetchColumnInfo(int column) throws SQLException
 			{
@@ -1261,7 +1261,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				_isNullable[column] = columnNullableUnknown;
 				_isAutoincrement[column] = false;
 
-				// we can only call dbmd.getColumns() when we have a specific schema name and table name and columns name
+				// we can only call dbmd.getColumns() when we have a specific schema name and table name and column name
 				String schName = getSchemaName(column);
 				if (schName != null && !schName.isEmpty()) {
 					String tblName = getTableName(column);
@@ -1308,9 +1308,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Indicates whether the designated columns is automatically numbered.
+			 * Indicates whether the designated column is automatically numbered.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 * @throws SQLException if a database access error occurs
 			 */
@@ -1327,11 +1327,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Indicates whether a columns's case matters.
+			 * Indicates whether a column's case matters.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return true for all character string columns else false
-			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public boolean isCaseSensitive(int column) throws SQLException {
@@ -1355,16 +1354,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Indicates whether the designated columns can be used in a
+			 * Indicates whether the designated column can be used in a
 			 * where clause.
 			 * It is unknown to me what kind ot columns they regard to,
 			 * as I think all columns are useable in a where clause.
 			 * Returning true for all here, for the time being.
 			 * Possible thought; maybe they want to know here if it's a
-			 * real columns existing in a table or not...
+			 * real column existing in a table or not...
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
-			 * @return Always true
+			 * @param column the first column is 1, the second is 2, ...
+			 * @return true
 			 */
 			@Override
 			public boolean isSearchable(int column) {
@@ -1372,14 +1371,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Indicates whether the designated columns is a cash value.
+			 * Indicates whether the designated column is a cash value.
 			 * From the MonetDB database perspective it is by definition
 			 * unknown whether the value is a currency, because there are
 			 * no currency datatypes such as MONEY.  With this knowledge
 			 * we can always return false here.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
-			 * @return Always false
+			 * @param column the first column is 1, the second is 2, ...
+			 * @return false
 			 */
 			@Override
 			public boolean isCurrency(int column) {
@@ -1387,11 +1386,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 			
 			/**
-			 * Indicates whether values in the designated columns are signed
+			 * Indicates whether values in the designated column are signed
 			 * numbers.
 			 * Within MonetDB all numeric types (except oid and ptr) are signed.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 */
 			@Override
@@ -1427,13 +1426,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Indicates the designated columns's normal maximum width in
+			 * Indicates the designated column's normal maximum width in
 			 * characters.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return the normal maximum number of characters allowed as the
-			 *         width of the designated columns
-			 * @throws SQLException if there is no such columns
+			 *         width of the designated column
+			 * @throws SQLException if there is no such column
 			 */
 			@Override
 			public int getColumnDisplaySize(int column) throws SQLException {
@@ -1449,9 +1448,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Get the designated columns's schema name.
+			 * Get the designated column's schema name.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return schema name or "" if not applicable
 			 * @throws SQLException if a database access error occurs
 			 */
@@ -1473,9 +1472,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Gets the designated columns's table name.
+			 * Gets the designated column's table name.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return table name or "" if not applicable
 			 */
 			@Override
@@ -1496,12 +1495,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Get the designated columns's number of decimal digits.
+			 * Get the designated column's number of decimal digits.
 			 * This method is currently very expensive as it needs to
 			 * retrieve the information from the database using an SQL
 			 * query.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return precision
 			 * @throws SQLException if a database access error occurs
 			 */
@@ -1570,12 +1569,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Gets the designated columns's number of digits to right of
+			 * Gets the designated column's number of digits to right of
 			 * the decimal point.  This method is currently very
 			 * expensive as it needs to retrieve the information from
 			 * the database using an SQL query.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return scale
 			 * @throws SQLException if a database access error occurs
 			 */
@@ -1593,12 +1592,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 			/**
 			 * Indicates the nullability of values in the designated
-			 * columns.  This method is currently very expensive as it
+			 * column.  This method is currently very expensive as it
 			 * needs to retrieve the information from the database using
 			 * an SQL query.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
-			 * @return the nullability status of the given columns; one of columnNoNulls, columnNullable or columnNullableUnknown
+			 * @param column the first column is 1, the second is 2, ...
+			 * @return the nullability status of the given column; one of columnNoNulls, columnNullable or columnNullableUnknown
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
@@ -1614,12 +1613,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Gets the designated columns's table's catalog name.
+			 * Gets the designated column's table's catalog name.
 			 * MonetDB does not support the catalog naming concept as in: catalog.schema.table naming scheme
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return the name of the catalog for the table in which the given
-			 *         columns appears or "" if not applicable
+			 *         column appears or "" if not applicable
 			 */
 			@Override
 			public String getCatalogName(int column) throws SQLException {
@@ -1628,11 +1627,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Indicates whether the designated columns is definitely not
+			 * Indicates whether the designated column is definitely not
 			 * writable.  MonetDB does not support cursor updates, so
 			 * nothing is writable.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 */
 			@Override
@@ -1642,9 +1641,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 			/**
 			 * Indicates whether it is possible for a write on the
-			 * designated columns to succeed.
+			 * designated column to succeed.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 */
 			@Override
@@ -1653,10 +1652,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Indicates whether a write on the designated columns will
+			 * Indicates whether a write on the designated column will
 			 * definitely succeed.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 */
 			@Override
@@ -1668,16 +1667,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			 * Returns the fully-qualified name of the Java class whose
 			 * instances are manufactured if the method
 			 * ResultSet.getObject is called to retrieve a value from
-			 * the columns.  ResultSet.getObject may return a subclass of
+			 * the column.  ResultSet.getObject may return a subclass of
 			 * the class returned by this method.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return the fully-qualified name of the class in the Java
 			 *         programming language that would be used by the method
 			 *         ResultSet.getObject to retrieve the value in the
-			 *         specified columns. This is the class name used for custom
+			 *         specified column. This is the class name used for custom
 			 *         mapping.
-			 * @throws SQLException if there is no such columns
+			 * @throws SQLException if there is no such column
 			 */
 			@Override
 			public String getColumnClassName(int column) throws SQLException {
@@ -1701,20 +1700,20 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					if (type != null) {
 						return type.getName();
 					}
-					throw new SQLException("columns type mapping null: " + MonetDBType, "M0M03");
+					throw new SQLException("column type mapping null: " + MonetDBType, "M0M03");
 				} catch (IndexOutOfBoundsException e) {
 					throw newSQLInvalidColumnIndexException(column);
 				}
 			}
 
 			/**
-			 * Gets the designated columns's suggested title for use in
+			 * Gets the designated column's suggested title for use in
 			 * printouts and displays. This is currently equal to
 			 * getColumnName().
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
-			 * @return the suggested columns title
-			 * @throws SQLException if there is no such columns
+			 * @param column the first column is 1, the second is 2, ...
+			 * @return the suggested column title
+			 * @throws SQLException if there is no such column
 			 */
 			@Override
 			public String getColumnLabel(int column) throws SQLException {
@@ -1722,11 +1721,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Gets the designated columns's name
+			 * Gets the designated column's name
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
-			 * @return the columns name
-			 * @throws SQLException if there is no such columns
+			 * @param column the first column is 1, the second is 2, ...
+			 * @return the column name
+			 * @throws SQLException if there is no such column
 			 */
 			@Override
 			public String getColumnName(int column) throws SQLException {
@@ -1738,11 +1737,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Retrieves the designated columns's SQL type.
+			 * Retrieves the designated column's SQL type.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return SQL type from java.sql.Types
-			 * @throws SQLException if there is no such columns
+			 * @throws SQLException if there is no such column
 			 */
 			@Override
 			public int getColumnType(int column) throws SQLException {
@@ -1754,13 +1753,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Retrieves the designated columns's database-specific type name.
+			 * Retrieves the designated column's database-specific type name.
 			 *
-			 * @param column the first columns is 1, the second is 2, ...
-			 * @return type name used by the database. If the columns type is a
+			 * @param column the first column is 1, the second is 2, ...
+			 * @return type name used by the database. If the column type is a
 			 *         user-defined type, then a fully-qualified type name is
 			 *         returned.
-			 * @throws SQLException if there is no such columns
+			 * @throws SQLException if there is no such column
 			 */
 			@Override
 			public String getColumnTypeName(int column) throws SQLException {
@@ -1775,23 +1774,23 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}	// end of getMetaData()
 
 	/**
-	 * Gets the value of the designated columns in the current row of this
+	 * Gets the value of the designated column in the current row of this
 	 * ResultSet object as an Object in the Java programming language.
 	 *
-	 * This method will return the value of the given columns as a Java object.
+	 * This method will return the value of the given column as a Java object.
 	 * The type of the Java object will be the default Java object type
-	 * corresponding to the columns's SQL type, following the mapping for
+	 * corresponding to the column's SQL type, following the mapping for
 	 * built-in types specified in the JDBC specification. If the value is
 	 * an SQL NULL, the driver returns a Java null.
 	 *
 	 * This method may also be used to read database-specific abstract data
 	 * types. In the JDBC 2.0 API, the behavior of method getObject is extended
-	 * to materialize data of SQL user-defined types. When a columns contains a
+	 * to materialize data of SQL user-defined types. When a column contains a
 	 * structured or distinct value, the behavior of this method is as if it
 	 * were a call to: getObject(columnIndex, this.getStatement().getConnection().getTypeMap()).
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return a java.lang.Object holding the columns value or null
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return a java.lang.Object holding the column value or null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -1899,7 +1898,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 //					if ("json".equals(MonetDBType)) {
 						// There is no support for JSON in standard java class libraries.
 						// Possibly we could use org.json.simple.JSONObject or other/faster libs
-						// javax.json.JSON is not released yet (see https://json-processing-spec.java.net/)
+						// javax.json.Json is not released yet (see https://json-processing-spec.java.net/)
 						// see also https://github.com/fabienrenaud/java-json-benchmark
 						// Note that it would make our JDBC driver dependent of an external jar
 						// and we don't want that so simply return it as String object
@@ -1928,7 +1927,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return getBytes(columnIndex);
 			case Types.OTHER:
 			default:
-				// When we get here the columns type is a non-standard JDBC SQL type, possibly a User Defined Type.
+				// When we get here the column type is a non-standard JDBC SQL type, possibly a User Defined Type.
 				// Just call getObject(int, Map) for those rare cases.
 				return getObject(columnIndex, this.getStatement().getConnection().getTypeMap());
 		}
@@ -1944,12 +1943,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Gets the value of the designated columns in the current row of this
+	 * Gets the value of the designated column in the current row of this
 	 * ResultSet object as an Object in the Java programming language.
 	 *
-	 * This method will return the value of the given columns as a Java object.
+	 * This method will return the value of the given column as a Java object.
 	 * The type of the Java object will be the default Java object type corresponding
-	 * to the columns's SQL type, following the mapping for built-in types specified
+	 * to the column's SQL type, following the mapping for built-in types specified
 	 * in the JDBC specification.
 	 * If the value is an SQL NULL, the driver returns a Java null.
 	 *
@@ -1958,14 +1957,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * materialize data of SQL user-defined types.
 	 *
 	 * If Connection.getTypeMap does not throw a SQLFeatureNotSupportedException, then
-	 * when a columns contains a structured or distinct value, the behavior of this
+	 * when a column contains a structured or distinct value, the behavior of this
 	 * method is as if it were a call to: getObject(columnIndex,
 	 * this.getStatement().getConnection().getTypeMap()).
 	 * If Connection.getTypeMap does throw a SQLFeatureNotSupportedException, then
 	 * structured values are not supported, and distinct values are mapped to the
 	 * default Java class as determined by the underlying SQL type of the DISTINCT type.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param map a java.util.Map object that contains the mapping from SQL
 	 *        type names to classes in the Java programming language
 	 * @return an Object in the Java programming language representing the SQL
@@ -2034,7 +2033,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				Constructor<? extends SQLData> ctor =
 					((Class)type).getConstructor();
 				x = ctor.newInstance();
-			} catch (NoSuchMethodException | InstantiationException | IllegalAccessException | SecurityException | InvocationTargetException nsme) {
+			} catch (NoSuchMethodException | InstantiationException | InvocationTargetException | SecurityException | IllegalAccessException nsme) {
 				throw new SQLException(nsme.getMessage(), "M0M27");
 			}
 			final int colnum = columnIndex;
@@ -2183,9 +2182,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object and will convert from the SQL type of
-	 * the columns to the requested Java data type, if the conversion is
+	 * the column to the requested Java data type, if the conversion is
 	 * supported.  If the conversion is not supported or null is
 	 * specified for the type, a SQLException is thrown.
 	 *
@@ -2194,10 +2193,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * SQL types to a Java type which implements SQLData, or Struct.
 	 * Additional conversions may be supported and are vendor defined.
 	 *
-	 * @param i the first columns is 1, the second is 2, ...
+	 * @param i the first column is 1, the second is 2, ...
 	 * @param type Class representing the Java data type to convert the
-	 *        designated columns to
-	 * @return an instance of type holding the columns value
+	 *        designated column to
+	 * @return an instance of type holding the column value
 	 * @throws SQLException if conversion is not supported, type is
 	 *         null or another error occurs. The getCause() method of
 	 *         the exception may provide a more detailed exception, for
@@ -2212,18 +2211,18 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object and will convert from the SQL type of
-	 * the columns to the requested Java data type, if the conversion is
+	 * the column to the requested Java data type, if the conversion is
 	 * supported.  If the conversion is not supported or null is
 	 * specified for the type, a SQLException is thrown.
 	 *
-	 * @param columnLabel the label for the columns specified with the
+	 * @param columnLabel the label for the column specified with the
 	 *        SQL AS clause. If the SQL AS clause was not specified,
-	 *        then the label is the name of the columns
+	 *        then the label is the name of the column
 	 * @param type Class representing the Java data type to convert the
-	 *        designated columns to
-	 * @return an instance of type holding the columns value
+	 *        designated column to
+	 * @return an instance of type holding the column value
 	 * @throws SQLException if conversion is not supported, type is
 	 *         null or another error occurs. The getCause() method of
 	 *         the exception may provide a more detailed exception, for
@@ -2294,20 +2293,20 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Gets the value of the designated columns in the current row of this
+	 * Gets the value of the designated column in the current row of this
 	 * ResultSet object as an Object in the Java programming language.
 	 *
-	 * This method will return the value of the given columns as a Java object.
+	 * This method will return the value of the given column as a Java object.
 	 * The type of the Java object will be the default Java object type
-	 * corresponding to the columns's SQL type, following the mapping for
+	 * corresponding to the column's SQL type, following the mapping for
 	 * built-in types specified in the JDBC specification. If the value is an
 	 * SQL NULL, the driver returns a Java null.
 	 *
 	 * This method may also be used to read database-specific abstract data
 	 * types.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return a java.lang.Object holding the columns value
+	 * @param columnName the SQL name of the column
+	 * @return a java.lang.Object holding the column value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -2316,15 +2315,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as an Object  in the Java programming language. If the
 	 * value is an SQL NULL, the driver returns a Java null. This method uses
 	 * the specified Map object for custom mapping if appropriate.
 	 *
-	 * @param colName the name of the columns from which to retrieve the value
+	 * @param colName the name of the column from which to retrieve the value
 	 * @param map a java.util.Map object that contains the mapping from SQL
 	 *        type names to classes in the Java programming language
-	 * @return an Object representing the SQL value in the specified columns
+	 * @return an Object representing the SQL value in the specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -2354,14 +2353,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a java.sql.RowId object in the Java
 	 * programming language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
-	 * @throws SQLException if there is no such columns
+	 * @throws SQLException if there is no such column
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
@@ -2371,12 +2370,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a java.sql.RowId object in the Java
 	 * programming language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
@@ -2388,13 +2387,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a short in the Java programming language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is 0
-	 * @throws SQLException if there is no such columns
+	 * @throws SQLException if there is no such column
 	 */
 	@Override
 	public short getShort(int columnIndex) throws SQLException {
@@ -2414,11 +2413,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a short in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is 0
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 */
@@ -2441,13 +2440,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a String in the Java programming language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
-	 * @throws SQLException if there is no such columns
+	 * @throws SQLException if there is no such column
 	 */
 	@Override
 	public String getString(int columnIndex) throws SQLException {
@@ -2465,11 +2464,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a String in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 */
@@ -2479,15 +2478,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a String in the Java programming
 	 * language. It is intended for use when accessing NCHAR,NVARCHAR
 	 * and LONGNVARCHAR columns.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
-	 * @throws SQLException if there is no such columns
+	 * @throws SQLException if there is no such column
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
@@ -2497,13 +2496,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a String in the Java programming
 	 * language. It is intended for use when accessing NCHAR,NVARCHAR
 	 * and LONGNVARCHAR columns.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if the ResultSet object does not contain columnName
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
@@ -2515,11 +2514,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet as a java.sql.SQLXML object in the Java
 	 * programming language.
 	 *
-	 * @param i the first columns is 1, the second is 2, ...
+	 * @param i the first column is 1, the second is 2, ...
 	 * @return a SQLXML object that maps an SQL XML value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
@@ -2531,13 +2530,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet as a java.sql.SQLXML object in the Java
 	 * programming language.
 	 *
-	 * @param colName the label for the columns specified with the SQL AS
+	 * @param colName the label for the column specified with the SQL AS
 	 *        clause. If the SQL AS clause was not specified, then the
-	 *        label is the name of the columns
+	 *        label is the name of the column
 	 * @return a SQLXML object that maps an SQL XML value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
@@ -2561,12 +2560,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * LONGVARCHAR an attempt is made to parse the date according to the
 	 * given type.  The given Calender object is filled with the parsed
 	 * data.  Optional fractional seconds (nanos) are returned by this
-	 * method.  If the underlying type of the columns is none of the
+	 * method.  If the underlying type of the column is none of the
 	 * mentioned six, January 1st 1970 0:00:00 GMT is returned.<br />
 	 * The dates are parsed with the given Calendar.
 	 *
 	 * @param cal the Calendar to use/fill when parsing the date/time
-	 * @param columnIndex the columns to parse
+	 * @param columnIndex the column to parse
 	 * @param type the corresponding java.sql.Types type of the calling
 	 *        function
 	 * @return the fractional seconds (nanos) or -1 if the value is NULL
@@ -2719,12 +2718,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.sql.Date object in the Java programming
 	 * language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 * @see #getDate(int col, Calendar cal)
@@ -2735,15 +2734,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.sql.Date object in the Java programming
 	 * language. This method uses the given calendar to construct an appropriate
 	 * millisecond value for the date if the underlying database does not store
 	 * timezone information.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param cal the java.util.Calendar object to use in constructing the date
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -2756,13 +2755,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.sql.Date object in the Java programming
 	 * language.
 	 *
-	 * @param columnName the SQL name of the columns from which to retrieve the
+	 * @param columnName the SQL name of the column from which to retrieve the
 	 *        value
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -2772,16 +2771,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.sql.Date object in the Java programming
 	 * language. This method uses the given calendar to construct an appropriate
 	 * millisecond value for the date if the underlying database does not store
 	 * timezone information.
 	 *
-	 * @param columnName the SQL name of the columns from which to retrieve the
+	 * @param columnName the SQL name of the column from which to retrieve the
 	 *        value
 	 * @param cal the java.util.Calendar object to use in constructing the date
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -2793,12 +2792,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.sql.Time object in the Java programming
 	 * language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -2808,16 +2807,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of
+	 * Retrieves the value of the designated column in the current row of
 	 * this ResultSet object as a java.sql.Time object in the Java programming
 	 * language. This method uses the given calendar to construct an appropriate
 	 * millisecond value for the time if the underlying database does not store
 	 * timezone information.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param cal the java.util.Calendar object to use in constructing the
 	 *        timestamp
-	 * @return the columns value as a java.sql.Timestamp object; if the value is
+	 * @return the column value as a java.sql.Timestamp object; if the value is
 	 *         SQL NULL, the value returned is null in the Java programming
 	 *         language
 	 * @throws SQLException if a database access error occurs
@@ -2831,12 +2830,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.sql.Time object in the Java programming
 	 * language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -2846,16 +2845,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of
+	 * Retrieves the value of the designated column in the current row of
 	 * this ResultSet object as a java.sql.Time object in the Java programming
 	 * language. This method uses the given calendar to construct an appropriate
 	 * millisecond value for the time if the underlying database does not store
 	 * timezone information.
 	 *
-	 * @param columnName the SQL name of the columns
+	 * @param columnName the SQL name of the column
 	 * @param cal the java.util.Calendar object to use in constructing the
 	 *        timestamp
-	 * @return the columns value as a java.sql.Timestamp object; if the value is
+	 * @return the column value as a java.sql.Timestamp object; if the value is
 	 *         SQL NULL, the value returned is null in the Java programming
 	 *         language
 	 * @throws SQLException if a database access error occurs
@@ -2868,12 +2867,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.sql.Timestamp object in the Java programming
 	 * language.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -2883,16 +2882,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.sql.Timestamp object in the Java programming
 	 * language. This method uses the given calendar to construct an appropriate
 	 * millisecond value for the timestamp if the underlying database does not
 	 * store timezone information.
 	 *
-	 * @param columnIndex the first columns is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param cal the java.util.Calendar object to use in constructing the
 	 *        timestamp
-	 * @return the columns value as a java.sql.Timestamp object; if the value is
+	 * @return the column value as a java.sql.Timestamp object; if the value is
 	 *         SQL NULL, the value returned is null in the Java programming
 	 *         language
 	 * @throws SQLException if a database access error occurs
@@ -2911,12 +2910,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.sql.Timestamp object in the Java programming
 	 * language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value; if the value is SQL NULL, the value returned
+	 * @param columnName the SQL name of the column
+	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -2926,16 +2925,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row of this
+	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.sql.Timestamp object in the Java programming
 	 * language. This method uses the given calendar to construct an appropriate
 	 * millisecond value for the timestamp if the underlying database does not
 	 * store timezone information.
 	 *
-	 * @param columnName the SQL name of the columns
+	 * @param columnName the SQL name of the column
 	 * @param cal the java.util.Calendar object to use in constructing the
 	 *        timestamp
-	 * @return the columns value as a java.sql.Timestamp object; if the value is
+	 * @return the column value as a java.sql.Timestamp object; if the value is
 	 *         SQL NULL, the value returned is null in the Java programming
 	 *         language
 	 * @throws SQLException if a database access error occurs
@@ -2960,13 +2959,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a java.net.URL object in the Java
 	 * programming language.
 	 *
-	 * @param columnIndex the index of the columns 1 is the first,
+	 * @param columnIndex the index of the column 1 is the first,
 	 *                    2 is the second,...
-	 * @return the columns value as a java.net.URL object; if the value
+	 * @return the column value as a java.net.URL object; if the value
 	 *         is SQL NULL, the value returned is null in the Java
 	 *         programming language
 	 * @throws SQLException if a database access error occurs, or if a
@@ -2992,12 +2991,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated columns in the current row
+	 * Retrieves the value of the designated column in the current row
 	 * of this ResultSet object as a java.net.URL object in the Java
 	 * programming language.
 	 *
-	 * @param columnName the SQL name of the columns
-	 * @return the columns value as a java.net.URL object; if the value
+	 * @param columnName the SQL name of the column
+	 * @return the column value as a java.net.URL object; if the value
 	 *         is SQL NULL, the value returned is null in the Java
 	 *         programming language
 	 * @throws SQLException if a database access error occurs, or if a
@@ -3675,12 +3674,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 	// Chapter 14.2.3.3 Sun JDBC 3.0 Specification
 	/**
-	 * Reports whether the last columns read had a value of SQL NULL. Note that
-	 * you must first call one of the getter methods on a columns to try to read
+	 * Reports whether the last column read had a value of SQL NULL. Note that
+	 * you must first call one of the getter methods on a column to try to read
 	 * its value and then call the method wasNull to see if the value read was
 	 * SQL NULL.
 	 *
-	 * @return true if the last columns value read was SQL NULL and false
+	 * @return true if the last column value read was SQL NULL and false
 	 *          otherwise
 	 */
 	@Override
@@ -3707,14 +3706,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Small helper method that formats the "Invalid QueryResultSetColumn Index number ..." message
+	 * Small helper method that formats the "Invalid Column Index number ..." message
 	 * and creates a new SQLException object whose SQLState is set to "M1M05".
 	 *
-	 * @param colIdx the columns index number
+	 * @param colIdx the column index number
 	 * @return a new created SQLException object with SQLState M1M05
 	 */
 	public final static SQLException newSQLInvalidColumnIndexException(int colIdx) {
-		return new SQLException("Invalid QueryResultSetColumn Index number: " + colIdx, "M1M05");
+		return new SQLException("Invalid Column Index number: " + colIdx, "M1M05");
 	}
 
 	/**

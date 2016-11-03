@@ -87,7 +87,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * we set it to close (and free server resources) when the ResultSet object is closed by the caller.
 	 */
 	private ResultSet executeMetaDataQuery(String query) throws SQLException {
-		Statement stmt = null;
+		Statement stmt;
 		ResultSet rs = null;
 		stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 		if (stmt != null) {
@@ -180,8 +180,6 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * By contrast, the method nullsAreSortedAtStart indicates whether NULL values are sorted at the beginning regardless of sort order.
 	 *
 	 * @return true because MonetDB shows NULL values at the beginning upon ORDER BY .. ASC
-	 *
-	 * @return negative of nullsAreSortedHigh()
 	 * @see #nullsAreSortedHigh()
 	 */
 	@Override
@@ -433,7 +431,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Internal utility method getConcatenatedStringFromQuery(String query)
-	 * args: query: SQL SELECT query. Only the output of the first columns is concatenated.
+	 * args: query: SQL SELECT query. Only the output of the first column is concatenated.
 	 * @return a String of query result values concatenated into one string, and values separated by comma's
 	 */
 	private String getConcatenatedStringFromQuery(String query) {
@@ -443,7 +441,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		try {
 			st = con.createStatement();
 			rs = st.executeQuery(query);
-			// Fetch the first columns output and concatenate the values into a StringBuilder separated by comma's
+			// Fetch the first column output and concatenate the values into a StringBuilder separated by comma's
 			boolean isfirst = true;
 			while (rs.next()) {
 				String value = rs.getString(1);
@@ -548,7 +546,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Is "ALTER TABLE" with an add columns supported?
+	 * Is "ALTER TABLE" with an add column supported?
 	 *
 	 * @return true if so
 	 */
@@ -558,7 +556,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Is "ALTER TABLE" with a drop columns supported?
+	 * Is "ALTER TABLE" with a drop column supported?
 	 *
 	 * @return true if so
 	 */
@@ -568,7 +566,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Is columns aliasing supported?
+	 * Is column aliasing supported?
 	 *
 	 * <p>If so, the SQL AS clause can be used to provide names for
 	 * computed columns or to provide alias names for columns as
@@ -580,7 +578,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * select count(C) as C_COUNT from T group by C;
 	 *
 	 * </pre><br>
-	 * should return a columns named as C_COUNT instead of count(C)
+	 * should return a column named as C_COUNT instead of count(C)
 	 *
 	 * @return true if so
 	 */
@@ -1343,14 +1341,14 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Whats the limit on columns name length.
+	 * Whats the limit on column name length.
 	 * I take some safety here, but it's just a varchar in MonetDB
 	 *
-	 * @return the maximum columns name length
+	 * @return the maximum column name length
 	 */
 	@Override
 	public int getMaxColumnNameLength() {
-		return 1024;	// In MonetDB the max length of columns sys._columns.name is defined as 1024
+		return 1024;	// In MonetDB the max length of column sys._columns.name is defined as 1024
 	}
 
 	/**
@@ -1396,7 +1394,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	/**
 	 * What is the maximum number of columns in a table?
 	 *
-	 * The theoretical max value of int columns sys._columns.id is 2^31 -1
+	 * The theoretical max value of int column sys._columns.id is 2^31 -1
 	 * but this is for all columns of all tables in all schemas (including all data dictionary columns).
 	 * For one table we should reduce it to a more practical soft limit of say 100 thousand
 	 *
@@ -1466,7 +1464,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxSchemaNameLength() {
-		return 1024;	// In MonetDB the max length of columns sys.schemas.name is defined as 1024
+		return 1024;	// In MonetDB the max length of column sys.schemas.name is defined as 1024
 	}
 
 	/**
@@ -1476,7 +1474,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxProcedureNameLength() {
-		return 256;	// In MonetDB the max length of columns sys.functions.name is defined as 256
+		return 256;	// In MonetDB the max length of column sys.functions.name is defined as 256
 	}
 
 	/**
@@ -1541,7 +1539,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxTableNameLength() {
-		return 1024;	// In MonetDB the max length of columns sys._tables.name is defined as 1024
+		return 1024;	// In MonetDB the max length of column sys._tables.name is defined as 1024
 	}
 
 	/**
@@ -1562,7 +1560,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public int getMaxUserNameLength() {
-		return 1024;	// In MonetDB the max length of columns sys.db_user_info.name is defined as 1024
+		return 1024;	// In MonetDB the max length of column sys.db_user_info.name is defined as 1024
 	}
 
 	/**
@@ -1743,22 +1741,22 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * criteria are returned. They are ordered by PROCEDURE_SCHEM, PROCEDURE_NAME
 	 * and SPECIFIC_NAME. Within this, the return value, if any, is first.
 	 * Next are the parameter descriptions in call order. The
-	 * columns descriptions follow in columns number order.
+	 * column descriptions follow in column number order.
 	 *
-	 * <p>Each row in the ResultSet is a parameter description or columns
+	 * <p>Each row in the ResultSet is a parameter description or column
 	 * description with the following fields:
 	 * <ol>
 	 * <li><b>PROCEDURE_CAT</b> String => procedure catalog (may be null)
 	 * <li><b>PROCEDURE_SCHEM</b> String => procedure schema (may be null)
 	 * <li><b>PROCEDURE_NAME</b> String => procedure name
-	 * <li><b>COLUMN_NAME</b> String => columns/parameter name
-	 * <li><b>COLUMN_TYPE</b> Short => kind of columns/parameter:
+	 * <li><b>COLUMN_NAME</b> String => column/parameter name
+	 * <li><b>COLUMN_TYPE</b> Short => kind of column/parameter:
 	 * <ul><li>procedureColumnUnknown - nobody knows
 	 * <li>procedureColumnIn - IN parameter
 	 * <li>procedureColumnInOut - INOUT parameter
 	 * <li>procedureColumnOut - OUT parameter
 	 * <li>procedureColumnReturn - procedure return value
-	 * <li>procedureColumnResult - result columns in ResultSet
+	 * <li>procedureColumnResult - result column in ResultSet
 	 * </ul>
 	 * <li><b>DATA_TYPE</b> int => SQL type from java.sql.Types
 	 * <li><b>TYPE_NAME</b> String => SQL type name, for a UDT type the type name is fully qualified
@@ -1771,8 +1769,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * <li>procedureNullable - allows NULL values
 	 * <li>procedureNullableUnknown - nullability unknown
 	 * </ul>
-	 * <li><b>REMARKS</b> String => comment describing parameter/columns
-	 * <li><b>COLUMN_DEF</b> String => default value for the columns, which should be interpreted as a string when the value is enclosed in single quotes (may be null)
+	 * <li><b>REMARKS</b> String => comment describing parameter/column
+	 * <li><b>COLUMN_DEF</b> String => default value for the column, which should be interpreted as a string when the value is enclosed in single quotes (may be null)
 	 *         The string NULL (not enclosed in quotes) - if NULL was specified as the default value
 	 *         TRUNCATE (not enclosed in quotes) - if the specified default value cannot be represented without truncation
 	 *         NULL - if a default value was not specified
@@ -1781,8 +1779,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * <li><b>CHAR_OCTET_LENGTH</b> int => the maximum length of binary and character based columns. For any other datatype the returned value is a NULL
 	 * <li><b>ORDINAL_POSITION</b> int => the ordinal position, starting from 1, for the input and output parameters for a procedure.
 	 *	A value of 0 is returned if this row describes the procedure's return value. For result set columns, it is the ordinal position of the
-	 *	columns in the result set starting from 1. If there are multiple result sets, the columns ordinal positions are implementation defined.
-	 * <li><b>IS_NULLABLE</b> String => ISO rules are used to determine the nullability for a columns.
+	 *	column in the result set starting from 1. If there are multiple result sets, the column ordinal positions are implementation defined.
+	 * <li><b>IS_NULLABLE</b> String => ISO rules are used to determine the nullability for a column.
 	 * <ul><li>YES --- if the parameter can include NULLs
 	 * <li>NO --- if the parameter cannot include NULLs
 	 * <li>empty string --- if the nullability for the parameter is unknown
@@ -1796,8 +1794,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	"" retrieves those without a schema;
 	 *	null means that the schema name should not be used to narrow the search
 	 * @param procedureNamePattern - a procedure name pattern; must match the procedure name as it is stored in the database
-	 * @param columnNamePattern - a columns name pattern; must match the columns name as it is stored in the database
-	 * @return ResultSet - each row describes a stored procedure parameter or columns
+	 * @param columnNamePattern - a column name pattern; must match the column name as it is stored in the database
+	 * @return ResultSet - each row describes a stored procedure parameter or column
 	 * @throws SQLException if a database-access error occurs
 	 * @see #getSearchStringEscape
 	 */
@@ -1886,7 +1884,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Returns the given string between two double quotes for usage as
-	 * exact columns or table name in SQL queries.
+	 * exact column or table name in SQL queries.
 	 *
 	 * @param in the string to quote
 	 * @return the quoted string
@@ -1916,7 +1914,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * <li><b>TYPE_CAT</b> String => the types catalog (may be null)
 	 * <li><b>TYPE_SCHEM</b> String => the types schema (may be null)
 	 * <li><b>TYPE_NAME</b> String => type name (may be null)
-	 * <li><b>SELF_REFERENCING_COL_NAME</b> String => name of the designated "identifier" columns of a typed table (may be null)
+	 * <li><b>SELF_REFERENCING_COL_NAME</b> String => name of the designated "identifier" column of a typed table (may be null)
 	 * <li><b>REF_GENERATION</b> String => specifies how values in SELF_REFERENCING_COL_NAME are created. Values are "SYSTEM", "USER", "DERIVED". (may be null)
 	 * </ol>
 	 *
@@ -2019,7 +2017,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * Get the schema names available in this database.  The results
 	 * are ordered by schema name.
 	 *
-	 * <P>The schema columns is:
+	 * <P>The schema column is:
 	 *	<OL>
 	 *	<LI><B>TABLE_SCHEM</B> String => schema name
 	 *	<LI><B>TABLE_CATALOG</B> String => catalog name (may be null)
@@ -2032,7 +2030,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param schemaPattern a schema name; must match the schema name as
 	 *        it is stored in the database; null means schema name
 	 *        should not be used to narrow down the search.
-	 * @return ResultSet each row has a single String columns that is a
+	 * @return ResultSet each row has a single String column that is a
 	 *         schema name
 	 * @throws SQLException if a database error occurs
 	 */
@@ -2063,13 +2061,13 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * Get the catalog names available in this database.  The results
 	 * are ordered by catalog name.
 	 *
-	 * <P>The catalog columns is:
+	 * <P>The catalog column is:
 	 *	<OL>
 	 *	<LI><B>TABLE_CAT</B> String => catalog name
 	 *	</OL>
 	 *
 	 *
-	 * @return ResultSet each row has a single String columns that is a
+	 * @return ResultSet each row has a single String column that is a
 	 *         catalog name
 	 * @throws SQLException if a database error occurs
 	 */
@@ -2091,7 +2089,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *			"LOCAL TEMPORARY", "ALIAS", "SYNONYM".
 	 *	</OL>
 	 *
-	 * @return ResultSet each row has a single String columns that is a
+	 * @return ResultSet each row has a single String column that is a
 	 *         table type
 	 * @throws SQLException if a database error occurs
 	 */
@@ -2118,19 +2116,19 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	/**
 	 * Get a description of table columns available in a catalog.
 	 *
-	 * <P>Only columns descriptions matching the catalog, schema, table
-	 * and columns name criteria are returned.  They are ordered by
+	 * <P>Only column descriptions matching the catalog, schema, table
+	 * and column name criteria are returned.  They are ordered by
 	 * TABLE_SCHEM, TABLE_NAME and ORDINAL_POSITION.
 	 *
-	 * <P>Each columns description has the following columns:
+	 * <P>Each column description has the following columns:
 	 *	<OL>
 	 *	<LI><B>TABLE_CAT</B> String => table catalog (may be null)
 	 *	<LI><B>TABLE_SCHEM</B> String => table schema (may be null)
 	 *	<LI><B>TABLE_NAME</B> String => table name
-	 *	<LI><B>COLUMN_NAME</B> String => columns name
+	 *	<LI><B>COLUMN_NAME</B> String => column name
 	 *	<LI><B>DATA_TYPE</B> int => SQL type from java.sql.Types
 	 *	<LI><B>TYPE_NAME</B> String => Data source dependent type name
-	 *	<LI><B>COLUMN_SIZE</B> int => columns size.	For char or date
+	 *	<LI><B>COLUMN_SIZE</B> int => column size.	For char or date
 	 *		types this is the maximum number of characters, for numeric or
 	 *		decimal types this is precision.
 	 *	<LI><B>BUFFER_LENGTH</B> is not used.
@@ -2142,32 +2140,32 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *		<LI> columnNullable - definitely allows NULL values
 	 *		<LI> columnNullableUnknown - nullability unknown
 	 *		</UL>
-	 *	<LI><B>REMARKS</B> String => comment describing columns (may be null)
+	 *	<LI><B>REMARKS</B> String => comment describing column (may be null)
 	 *	<LI><B>COLUMN_DEF</B> String => default value (may be null)
 	 *	<LI><B>SQL_DATA_TYPE</B> int => unused
 	 *	<LI><B>SQL_DATETIME_SUB</B> int => unused
 	 *	<LI><B>CHAR_OCTET_LENGTH</B> int => for char types the
-	 *		 maximum number of bytes in the columns
-	 *	<LI><B>ORDINAL_POSITION</B> int => index of columns in table
+	 *		 maximum number of bytes in the column
+	 *	<LI><B>ORDINAL_POSITION</B> int => index of column in table
 	 *		(starting at 1)
-	 *	<LI><B>IS_NULLABLE</B> String => "NO" means columns definitely
-	 *		does not allow NULL values; "YES" means the columns might
+	 *	<LI><B>IS_NULLABLE</B> String => "NO" means column definitely
+	 *		does not allow NULL values; "YES" means the column might
 	 *		allow NULL values.	An empty string means nobody knows.
 	 *	<LI><B>SCOPE_CATALOG</B> String => catalog of table that is the scope of a reference attribute (null if DATA_TYPE isn't REF)
 	 *	<LI><B>SCOPE_SCHEMA</B> String => schema of table that is the scope of a reference attribute (null if the DATA_TYPE isn't REF)
 	 *	<LI><B>SCOPE_TABLE</B> String => table name that this the scope of a reference attribute (null if the DATA_TYPE isn't REF)
 	 *	<LI><B>SOURCE_DATA_TYPE</B> short => source type of a distinct type or user-generated Ref type, SQL type from java.sql.Types (null if DATA_TYPE isn't DISTINCT or user-generated REF)
-	 *	<LI><B>IS_AUTOINCREMENT</B> String => Indicates whether this columns is auto incremented
+	 *	<LI><B>IS_AUTOINCREMENT</B> String => Indicates whether this column is auto incremented
 	 *		<UL>
-	 *		<LI> YES --- if the columns is auto incremented
-	 *		<LI> NO --- if the columns is not auto incremented
-	 *		<LI> empty string --- if it cannot be determined whether the columns is auto incremented
+	 *		<LI> YES --- if the column is auto incremented
+	 *		<LI> NO --- if the column is not auto incremented
+	 *		<LI> empty string --- if it cannot be determined whether the column is auto incremented
 	 *		</UL>
-	 *	<LI><B>IS_GENERATEDCOLUMN</B> String => Indicates whether this is a generated columns
+	 *	<LI><B>IS_GENERATEDCOLUMN</B> String => Indicates whether this is a generated column
 	 *		<UL>
-	 *		<LI> YES --- if this a generated columns
-	 *		<LI> NO --- if this not a generated columns
-	 *		<LI> empty string --- if it cannot be determined whether this is a generated columns
+	 *		<LI> YES --- if this a generated column
+	 *		<LI> NO --- if this not a generated column
+	 *		<LI> empty string --- if it cannot be determined whether this is a generated column
 	 *		</UL>
 	 *	</OL>
 	 *
@@ -2179,8 +2177,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	null means that the schema name should not be used to narrow the search
 	 * @param tableNamePattern - a table name pattern; must match the table name as it is stored in the database
 	 *	For all tables this should be "%"
-	 * @param columnNamePattern - a columns name pattern; must match the columns name as it is stored in the database
-	 * @return ResultSet - each row is a columns description
+	 * @param columnNamePattern - a column name pattern; must match the column name as it is stored in the database
+	 * @return ResultSet - each row is a column description
 	 * @throws SQLException if a database error occurs
 	 * @see #getSearchStringEscape
 	 */
@@ -2250,7 +2248,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * Get a description of the access rights for a table's columns.
 	 * MonetDB doesn't have this level of access rights.
 	 *
-	 * <P>Only privileges matching the columns name criteria are
+	 * <P>Only privileges matching the column name criteria are
 	 * returned.  They are ordered by COLUMN_NAME and PRIVILEGE.
 	 *
 	 * <P>Each privilige description has the following columns:
@@ -2258,7 +2256,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	<LI><B>TABLE_CAT</B> String => table catalog (may be null)
 	 *	<LI><B>TABLE_SCHEM</B> String => table schema (may be null)
 	 *	<LI><B>TABLE_NAME</B> String => table name
-	 *	<LI><B>COLUMN_NAME</B> String => columns name
+	 *	<LI><B>COLUMN_NAME</B> String => column name
 	 *	<LI><B>GRANTOR</B> => grantor of access (may be null)
 	 *	<LI><B>GRANTEE</B> String => grantee of access
 	 *	<LI><B>PRIVILEGE</B> String => name of access (SELECT,
@@ -2270,8 +2268,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schemaPattern a schema name; "" retrieves those without a schema
 	 * @param tableNamePattern a table name
-	 * @param columnNamePattern a columns name pattern
-	 * @return ResultSet each row is a columns privilege description
+	 * @param columnNamePattern a column name pattern
+	 * @return ResultSet each row is a column privilege description
 	 * @see #getSearchStringEscape
 	 * @throws SQLException if a database error occurs
 	 */
@@ -2422,7 +2420,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * Get a description of a table's optimal set of columns that
 	 * uniquely identifies a row. They are ordered by SCOPE.
 	 *
-	 * <P>Each columns description has the following columns:
+	 * <P>Each column description has the following columns:
 	 *	<OL>
 	 *	<LI><B>SCOPE</B> short => actual scope of result
 	 *		<UL>
@@ -2430,18 +2428,18 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *		<LI> bestRowTransaction - valid for remainder of current transaction
 	 *		<LI> bestRowSession - valid for remainder of current session
 	 *		</UL>
-	 *	<LI><B>COLUMN_NAME</B> String => columns name
+	 *	<LI><B>COLUMN_NAME</B> String => column name
 	 *	<LI><B>DATA_TYPE</B> int => SQL data type from java.sql.Types
 	 *	<LI><B>TYPE_NAME</B> String => Data source dependent type name
 	 *	<LI><B>COLUMN_SIZE</B> int => precision
 	 *	<LI><B>BUFFER_LENGTH</B> int => not used
 	 *	<LI><B>DECIMAL_DIGITS</B> short  => scale
-	 *	<LI><B>PSEUDO_COLUMN</B> short => is this a pseudo columns
+	 *	<LI><B>PSEUDO_COLUMN</B> short => is this a pseudo column
 	 *		like an Oracle ROWID
 	 *		<UL>
-	 *		<LI> bestRowUnknown - may or may not be pseudo columns
-	 *		<LI> bestRowNotPseudo - is NOT a pseudo columns
-	 *		<LI> bestRowPseudo - is a pseudo columns
+	 *		<LI> bestRowUnknown - may or may not be pseudo column
+	 *		<LI> bestRowNotPseudo - is NOT a pseudo column
+	 *		<LI> bestRowPseudo - is a pseudo column
 	 *		</UL>
 	 *	</OL>
 	 *
@@ -2450,7 +2448,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param table a table name
 	 * @param scope the scope of interest; use same values as SCOPE
 	 * @param nullable include columns that are nullable?
-	 * @return ResultSet each row is a columns description
+	 * @return ResultSet each row is a column description
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
@@ -2510,27 +2508,27 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * Get a description of a table's columns that are automatically
 	 * updated when any value in a row is updated. They are unordered.
 	 *
-	 * <P>Each columns description has the following columns:
+	 * <P>Each column description has the following columns:
 	 *	<OL>
 	 *	<LI><B>SCOPE</B> short => is not used
-	 *	<LI><B>COLUMN_NAME</B> String => columns name
+	 *	<LI><B>COLUMN_NAME</B> String => column name
 	 *	<LI><B>DATA_TYPE</B> int => SQL data type from java.sql.Types
 	 *	<LI><B>TYPE_NAME</B> String => Data source dependent type name
 	 *	<LI><B>COLUMN_SIZE</B> int => precision
-	 *	<LI><B>BUFFER_LENGTH</B> int => length of columns value in bytes
+	 *	<LI><B>BUFFER_LENGTH</B> int => length of column value in bytes
 	 *	<LI><B>DECIMAL_DIGITS</B> short => scale
-	 *	<LI><B>PSEUDO_COLUMN</B> short => is this a pseudo columns like an Oracle ROWID
+	 *	<LI><B>PSEUDO_COLUMN</B> short => is this a pseudo column like an Oracle ROWID
 	 *		<UL>
-	 *		<LI> versionColumnUnknown - may or may not be pseudo columns
-	 *		<LI> versionColumnNotPseudo - is NOT a pseudo columns
-	 *		<LI> versionColumnPseudo - is a pseudo columns
+	 *		<LI> versionColumnUnknown - may or may not be pseudo column
+	 *		<LI> versionColumnNotPseudo - is NOT a pseudo column
+	 *		<LI> versionColumnPseudo - is a pseudo column
 	 *		</UL>
 	 *	</OL>
 	 *
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schema a schema name; "" retrieves those without a schema
 	 * @param table a table name
-	 * @return ResultSet each row is a columns description
+	 * @return ResultSet each row is a column description
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
@@ -2559,12 +2557,12 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * Get a description of a table's primary key columns.  They
 	 * are ordered by COLUMN_NAME.
 	 *
-	 * <P>Each columns description has the following columns:
+	 * <P>Each column description has the following columns:
 	 *	<OL>
 	 *	<LI><B>TABLE_CAT</B> String => table catalog (may be null)
 	 *	<LI><B>TABLE_SCHEM</B> String => table schema (may be null)
 	 *	<LI><B>TABLE_NAME</B> String => table name
-	 *	<LI><B>COLUMN_NAME</B> String => columns name
+	 *	<LI><B>COLUMN_NAME</B> String => column name
 	 *	<LI><B>KEY_SEQ</B> short => sequence number within primary key
 	 *	<LI><B>PK_NAME</B> String => primary key name (may be null)
 	 *	</OL>
@@ -2573,7 +2571,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param schema a schema name pattern; "" retrieves those
 	 * without a schema
 	 * @param table a table name
-	 * @return ResultSet each row is a primary key columns description
+	 * @return ResultSet each row is a primary key column description
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
@@ -2656,7 +2654,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * imported by a table). They are ordered by PKTABLE_CAT,
 	 * PKTABLE_SCHEM, PKTABLE_NAME, and KEY_SEQ.
 	 *
-	 * <P>Each primary key columns description has the following columns:
+	 * <P>Each primary key column description has the following columns:
 	 *	<OL>
 	 *	<LI><B>PKTABLE_CAT</B> String => primary key table catalog
 	 *		being imported (may be null)
@@ -2664,14 +2662,14 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *		being imported (may be null)
 	 *	<LI><B>PKTABLE_NAME</B> String => primary key table name
 	 *		being imported
-	 *	<LI><B>PKCOLUMN_NAME</B> String => primary key columns name
+	 *	<LI><B>PKCOLUMN_NAME</B> String => primary key column name
 	 *		being imported
 	 *	<LI><B>FKTABLE_CAT</B> String => foreign key table catalog (may be null)
 	 *	<LI><B>FKTABLE_SCHEM</B> String => foreign key table schema (may be null)
 	 *	<LI><B>FKTABLE_NAME</B> String => foreign key table name
-	 *	<LI><B>FKCOLUMN_NAME</B> String => foreign key columns name
+	 *	<LI><B>FKCOLUMN_NAME</B> String => foreign key column name
 	 *	<LI><B>KEY_SEQ</B> short => sequence number within foreign key
-	 *		(a value of 1 represents the first columns of the foreign key, a value of 2 would represent the second columns within the foreign key).
+	 *		(a value of 1 represents the first column of the foreign key, a value of 2 would represent the second column within the foreign key).
 	 *	<LI><B>UPDATE_RULE</B> short => What happens to
 	 *		 foreign key when primary is updated:
 	 *		<UL>
@@ -2706,7 +2704,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schema a schema name pattern; "" retrieves those without a schema
 	 * @param table a table name
-	 * @return ResultSet each row is a primary key columns description
+	 * @return ResultSet each row is a primary key column description
 	 * @see #getExportedKeys
 	 * @throws SQLException if a database error occurs
 	 */
@@ -2739,22 +2737,22 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * table's primary key columns (the foreign keys exported by a table).
 	 * They are ordered by FKTABLE_CAT, FKTABLE_SCHEM, FKTABLE_NAME, and KEY_SEQ.
 	 *
-	 * <P>Each foreign key columns description has the following columns:
+	 * <P>Each foreign key column description has the following columns:
 	 *	<OL>
 	 *	<LI><B>PKTABLE_CAT</B> String => primary key table catalog (may be null)
 	 *	<LI><B>PKTABLE_SCHEM</B> String => primary key table schema (may be null)
 	 *	<LI><B>PKTABLE_NAME</B> String => primary key table name
-	 *	<LI><B>PKCOLUMN_NAME</B> String => primary key columns name
+	 *	<LI><B>PKCOLUMN_NAME</B> String => primary key column name
 	 *	<LI><B>FKTABLE_CAT</B> String => foreign key table catalog (may be null)
 	 *		being exported (may be null)
 	 *	<LI><B>FKTABLE_SCHEM</B> String => foreign key table schema (may be null)
 	 *		being exported (may be null)
 	 *	<LI><B>FKTABLE_NAME</B> String => foreign key table name
 	 *		being exported
-	 *	<LI><B>FKCOLUMN_NAME</B> String => foreign key columns name
+	 *	<LI><B>FKCOLUMN_NAME</B> String => foreign key column name
 	 *		being exported
 	 *	<LI><B>KEY_SEQ</B> short => sequence number within foreign key
-	 *		(a value of 1 represents the first columns of the foreign key, a value of 2 would represent the second columns within the foreign key).
+	 *		(a value of 1 represents the first column of the foreign key, a value of 2 would represent the second column within the foreign key).
 	 *	<LI><B>UPDATE_RULE</B> short => What happens to
 	 *		 foreign key when primary is updated:
 	 *		<UL>
@@ -2789,7 +2787,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schema a schema name pattern; "" retrieves those without a schema
 	 * @param table a table name
-	 * @return ResultSet each row is a foreign key columns description
+	 * @return ResultSet each row is a foreign key column description
 	 * @see #getImportedKeys
 	 * @throws SQLException if a database error occurs
 	 */
@@ -2825,22 +2823,22 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * (most tables only import a foreign key from a table once.)
 	 * They are ordered by FKTABLE_CAT, FKTABLE_SCHEM, FKTABLE_NAME, and KEY_SEQ.
 	 *
-	 * <P>Each foreign key columns description has the following columns:
+	 * <P>Each foreign key column description has the following columns:
 	 *	<OL>
 	 *	<LI><B>PKTABLE_CAT</B> String => primary key table catalog (may be null)
 	 *	<LI><B>PKTABLE_SCHEM</B> String => primary key table schema (may be null)
 	 *	<LI><B>PKTABLE_NAME</B> String => primary key table name
-	 *	<LI><B>PKCOLUMN_NAME</B> String => primary key columns name
+	 *	<LI><B>PKCOLUMN_NAME</B> String => primary key column name
 	 *	<LI><B>FKTABLE_CAT</B> String => foreign key table catalog (may be null)
 	 *		being exported (may be null)
 	 *	<LI><B>FKTABLE_SCHEM</B> String => foreign key table schema (may be null)
 	 *		being exported (may be null)
 	 *	<LI><B>FKTABLE_NAME</B> String => foreign key table name
 	 *		being exported
-	 *	<LI><B>FKCOLUMN_NAME</B> String => foreign key columns name
+	 *	<LI><B>FKCOLUMN_NAME</B> String => foreign key column name
 	 *		being exported
 	 *	<LI><B>KEY_SEQ</B> short => sequence number within foreign key
-	 *		(a value of 1 represents the first columns of the foreign key, a value of 2 would represent the second columns within the foreign key).
+	 *		(a value of 1 represents the first column of the foreign key, a value of 2 would represent the second column within the foreign key).
 	 *	<LI><B>UPDATE_RULE</B> short => What happens to
 	 *		 foreign key when primary is updated:
 	 *		<UL>
@@ -2878,7 +2876,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param fcatalog foreign key catalog name; "" retrieves those without a catalog
 	 * @param fschema foreign key schema name pattern; "" retrieves those without a schema
 	 * @param ftable koreign key table name
-	 * @return ResultSet each row is a foreign key columns description
+	 * @return ResultSet each row is a foreign key column description
 	 * @throws SQLException if a database error occurs
 	 * @see #getImportedKeys
 	 */
@@ -2973,7 +2971,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	</OL>
 	 *
 	 * @return ResultSet each row is a SQL type description
-	 * @throws Exception if the developer made a Boo-Boo
+	 * @throws SQLException if the developer made a Boo-Boo
 	 */
 	@Override
 	public ResultSet getTypeInfo() throws SQLException {
@@ -3016,7 +3014,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * Retrieves a description of the given table's indices and statistics.
 	 * They are ordered by NON_UNIQUE, TYPE, INDEX_NAME, and ORDINAL_POSITION.
 	 *
-	 * <P>Each index columns description has the following columns:
+	 * <P>Each index column description has the following columns:
 	 *	<OL>
 	 *	<LI><B>TABLE_CAT</B> String => table catalog (may be null)
 	 *	<LI><B>TABLE_SCHEM</B> String => table schema (may be null)
@@ -3035,11 +3033,11 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *		<LI> tableIndexHashed - this is a hashed index
 	 *		<LI> tableIndexOther - this is some other style of index
 	 *		</UL>
-	 *	<LI><B>ORDINAL_POSITION</B> short => columns sequence number
+	 *	<LI><B>ORDINAL_POSITION</B> short => column sequence number
 	 *		within index; zero when TYPE is tableIndexStatistic
-	 *	<LI><B>COLUMN_NAME</B> String => columns name; null when TYPE is
+	 *	<LI><B>COLUMN_NAME</B> String => column name; null when TYPE is
 	 *		tableIndexStatistic
-	 *	<LI><B>ASC_OR_DESC</B> String => columns sort sequence, "A" => ascending
+	 *	<LI><B>ASC_OR_DESC</B> String => column sort sequence, "A" => ascending
 	 *		"D" => descending, may be null if sort sequence is not supported;
 	 *		null when TYPE is tableIndexStatistic
 	 *	<LI><B>CARDINALITY</B> int => When TYPE is tableIndexStatisic then
@@ -3060,7 +3058,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param approximate when true, result is allowed to reflect approximate
 	 *	   or out of data values; when false, results are requested to be
 	 *	   accurate
-	 * @return ResultSet each row is an index columns description
+	 * @return ResultSet each row is an index column description
 	 * @throws SQLException if a database occurs
 	 */
 	@Override
@@ -3256,7 +3254,6 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *   user-generated reference type of the SELF_REFERENCING_COLUMN of a structured type as defined
 	 *   in java.sql.Types (null if DATA_TYPE is not DISTINCT or not STRUCT with REFERENCE_GENERATION = USER_DEFINED)
 	 *
-	 * @throws SQLException
 	 */
 	@Override
 	public ResultSet getUDTs(
@@ -3507,7 +3504,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	<LI><B>ATTR_TYPE_NAME</B> String => Data source dependent type name.
 	 *	For a UDT, the type name is fully qualified. For a REF, the type name is
 	 *	fully qualified and represents the target type of the reference type.
-	 *	<LI><B>ATTR_SIZE</B> int => columns size.  For char or date
+	 *	<LI><B>ATTR_SIZE</B> int => column size.  For char or date
 	 *		types this is the maximum number of characters; for numeric or
 	 *		decimal types this is precision.
 	 *	<LI><B>DECIMAL_DIGITS</B> int => the number of fractional digits
@@ -3518,16 +3515,16 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *		<LI> attributeNullable - definitely allows NULL values
 	 *		<LI> attributeNullableUnknown - nullability unknown
 	 *		</UL>
-	 *	<LI><B>REMARKS</B> String => comment describing columns (may be <code>null</code>)
+	 *	<LI><B>REMARKS</B> String => comment describing column (may be <code>null</code>)
 	 *	<LI><B>ATTR_DEF</B> String => default value (may be <code>null</code>)
 	 *	<LI><B>SQL_DATA_TYPE</B> int => unused
 	 *	<LI><B>SQL_DATETIME_SUB</B> int => unused
 	 *	<LI><B>CHAR_OCTET_LENGTH</B> int => for char types the
-	 *		 maximum number of bytes in the columns
-	 *	<LI><B>ORDINAL_POSITION</B> int => index of columns in table
+	 *		 maximum number of bytes in the column
+	 *	<LI><B>ORDINAL_POSITION</B> int => index of column in table
 	 *		(starting at 1)
-	 *	<LI><B>IS_NULLABLE</B> String => "NO" means columns definitely
-	 *		does not allow NULL values; "YES" means the columns might
+	 *	<LI><B>IS_NULLABLE</B> String => "NO" means column definitely
+	 *		does not allow NULL values; "YES" means the column might
 	 *		allow NULL values.	An empty string means unknown.
 	 *	<LI><B>SCOPE_CATALOG</B> String => catalog of table that is the
 	 *		scope of a reference attribute (<code>null</code> if DATA_TYPE isn't REF)
@@ -3730,13 +3727,13 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * Get the schema names available in this database.  The results
 	 * are ordered by schema name.
 	 *
-	 * <P>The schema columns is:
+	 * <P>The schema column is:
 	 *	<OL>
 	 *	<LI><B>TABLE_SCHEM</B> String => schema name
 	 *	<LI><B>TABLE_CATALOG</B> String => catalog name (may be null)
 	 *	</OL>
 	 *
-	 * @return ResultSet each row has a single String columns that is a
+	 * @return ResultSet each row has a single String column that is a
 	 *         schema name
 	 * @throws SQLException if a database error occurs
 	 */
@@ -3788,7 +3785,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *       property. This will typically contain information as
 	 *       to where this property is stored in the database.
 	 *
-	 * The ResultSet is sorted by the NAME columns
+	 * The ResultSet is sorted by the NAME column
 	 *
 	 * @return A ResultSet object; each row is a supported client info
 	 *         property, none in case of MonetDB's current JDBC driver
@@ -3903,19 +3900,19 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * Only descriptions matching the schema, function and parameter name criteria are returned.
 	 * They are ordered by FUNCTION_CAT, FUNCTION_SCHEM, FUNCTION_NAME and SPECIFIC_ NAME.
 	 * Within this, the return value, if any, is first. Next are the parameter descriptions in call order.
-	 * The columns descriptions follow in columns number order.
+	 * The column descriptions follow in column number order.
 	 *
 	 * 1.  FUNCTION_CAT String => function catalog (may be null)
 	 * 2.  FUNCTION_SCHEM String => function schema (may be null)
 	 * 3.  FUNCTION_NAME String => function name. This is the name used to invoke the function
-	 * 4.   COLUMN_NAME String => columns/parameter name
-	 * 5.   COLUMN_TYPE Short => kind of columns/parameter:
+	 * 4.   COLUMN_NAME String => column/parameter name
+	 * 5.   COLUMN_TYPE Short => kind of column/parameter:
 	 *         functionColumnUnknown - nobody knows
 	 *         functionColumnIn - IN parameter
 	 *         functionColumnInOut - INOUT parameter
 	 *         functionColumnOut - OUT parameter
 	 *         functionColumnReturn - function return value
-	 *         functionColumnResult - Indicates that the parameter or columns is a columns in the ResultSet
+	 *         functionColumnResult - Indicates that the parameter or column is a column in the ResultSet
 	 * 6.   DATA_TYPE int => SQL type from java.sql.Types
 	 * 7.   TYPE_NAME String => SQL type name, for a UDT type the type name is fully qualified
 	 * 8.   PRECISION int => precision
@@ -3926,14 +3923,14 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *         functionNoNulls - does not allow NULL values
 	 *         functionNullable - allows NULL values
 	 *         functionNullableUnknown - nullability unknown
-	 * 13.  REMARKS String => comment describing columns/parameter
+	 * 13.  REMARKS String => comment describing column/parameter
 	 * 14.  CHAR_OCTET_LENGTH int => the maximum length of binary and character based parameters or columns. For any other datatype the returned value is a NULL
 	 * 15.  ORDINAL_POSITION int => the ordinal position, starting from 1, for the input and output parameters.
-	 *	   A value of 0 is returned if this row describes the function's return value. For result set columns, it is the ordinal position of the columns in the result set starting from 1.
-	 * 16.  IS_NULLABLE String => ISO rules are used to determine the nullability for a parameter or columns.
-	 *         YES --- if the parameter or columns can include NULLs
-	 *         NO --- if the parameter or columns cannot include NULLs
-	 *         empty string --- if the nullability for the parameter or columns is unknown
+	 *	   A value of 0 is returned if this row describes the function's return value. For result set columns, it is the ordinal position of the column in the result set starting from 1.
+	 * 16.  IS_NULLABLE String => ISO rules are used to determine the nullability for a parameter or column.
+	 *         YES --- if the parameter or column can include NULLs
+	 *         NO --- if the parameter or column cannot include NULLs
+	 *         empty string --- if the nullability for the parameter or column is unknown
 	 * 17.  SPECIFIC_NAME String => the name which uniquely identifies this function within its schema.
 	 *	  This is a user specified, or DBMS generated, name that may be different then the FUNCTION_NAME for example with overload functions
 	 *
@@ -3948,9 +3945,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param functionNamePattern a procedure name pattern; must match the
 	 *        function name as it is stored in the database
 	 * @param columnNamePattern a parameter name pattern; must match the
-	 *        parameter or columns name as it is stored in the database
+	 *        parameter or column name as it is stored in the database
 	 * @return ResultSet - each row describes a user function parameter,
-	 *         columns or return type
+	 *         column or return type
 	 * @throws SQLException - if a database access error occurs
 	 */
 	@Override
@@ -4024,32 +4021,32 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * necessarily be able to be modified.
 	 * If there are no pseudo or hidden columns, an empty ResultSet is returned.
 	 *
-	 * Only columns descriptions matching the catalog, schema, table and columns name criteria are returned.
+	 * Only column descriptions matching the catalog, schema, table and column name criteria are returned.
 	 * They are ordered by TABLE_CAT,TABLE_SCHEM, TABLE_NAME and COLUMN_NAME.
 	 *
-	 * Each columns description has the following columns:
+	 * Each column description has the following columns:
 	 *
 	 *  1. TABLE_CAT String => table catalog (may be null)
 	 *  2. TABLE_SCHEM String => table schema (may be null)
 	 *  3. TABLE_NAME String => table name
-	 *  4. COLUMN_NAME String => columns name
+	 *  4. COLUMN_NAME String => column name
 	 *  5. DATA_TYPE int => SQL type from java.sql.Types
-	 *  6. COLUMN_SIZE int => columns size.
+	 *  6. COLUMN_SIZE int => column size.
 	 *  7. DECIMAL_DIGITS int => the number of fractional digits. Null is returned for data types where DECIMAL_DIGITS is not applicable.
 	 *  8. NUM_PREC_RADIX int => Radix (typically either 10 or 2)
-	 *  9. COLUMN_USAGE String => The allowed usage for the columns. The value returned will correspond to the enum name returned by PseudoColumnUsage.name()
-	 * 10. REMARKS String => comment describing columns (may be null)
-	 * 11. CHAR_OCTET_LENGTH int => for char types the maximum number of bytes in the columns
-	 * 12. IS_NULLABLE String => ISO rules are used to determine the nullability for a columns.
-	 *         YES --- if the columns can include NULLs
-	 *         NO --- if the columns cannot include NULLs
-	 *         empty string --- if the nullability for the columns is unknown
+	 *  9. COLUMN_USAGE String => The allowed usage for the column. The value returned will correspond to the enum name returned by PseudoColumnUsage.name()
+	 * 10. REMARKS String => comment describing column (may be null)
+	 * 11. CHAR_OCTET_LENGTH int => for char types the maximum number of bytes in the column
+	 * 12. IS_NULLABLE String => ISO rules are used to determine the nullability for a column.
+	 *         YES --- if the column can include NULLs
+	 *         NO --- if the column cannot include NULLs
+	 *         empty string --- if the nullability for the column is unknown
 	 *
 	 * @param catalog a catalog name
 	 * @param schemaPattern a schema name pattern
 	 * @param tableNamePattern a table name pattern
-	 * @param columnNamePattern a columns name pattern
-	 * @return ResultSet where each row is a columns description
+	 * @param columnNamePattern a column name pattern
+	 * @return ResultSet where each row is a column description
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -4081,9 +4078,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Retrieves whether a generated key will always be returned if the
-	 * columns name(s) or index(es) specified for the auto generated key
-	 * columns(s) are valid and the statement succeeds.  The key that is
-	 * returned may or may not be based on the columns(s) for the auto
+	 * column name(s) or index(es) specified for the auto generated key
+	 * column(s) are valid and the statement succeeds.  The key that is
+	 * returned may or may not be based on the column(s) for the auto
 	 * generated key.
 	 *
 	 * @return true if so, false otherwise

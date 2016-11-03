@@ -1179,7 +1179,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 */
 	@Override
 	public void setReadOnly(boolean readOnly) throws SQLException {
-		if (readOnly == true)
+		if (readOnly)
 			addWarning("cannot setReadOnly(true): read-only Connection mode not supported", "01M08");
 	}
 
@@ -1571,7 +1571,6 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 * Instructs the Response implementation to close and do the
 		 * necessary clean up procedures.
 		 *
-		 * @throws SQLException
 		 */
 		public abstract void close();
 	}
@@ -1603,9 +1602,9 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		private String[] name;
 		/** The types of the columns in this result */
 		private String[] type;
-		/** The max string length for each columns in this result */
+		/** The max string length for each column in this result */
 		private int[] columnLengths;
-		/** The table for each columns in this result */
+		/** The table for each column in this result */
 		private String[] tableNames;
 		/** The query sequence number */
 		private final int seqnr;
@@ -1753,11 +1752,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 */
 		@Override
 		public boolean wantsMore() {
-			if (isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES]) {
-				return resultBlocks[0].wantsMore();
-			} else {
-				return true;
-			}
+			return !(isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES]) || resultBlocks[0].wantsMore();
 		}
 
 		/**
@@ -1811,8 +1806,8 @@ public class MonetConnection extends MonetWrapper implements Connection {
 			if (!isSet[NAMES]) error += "name header missing\n";
 			if (!isSet[TYPES]) error += "type header missing\n";
 			if (!isSet[TABLES]) error += "table name header missing\n";
-			if (!isSet[LENS]) error += "columns width header missing\n";
-			if (error != "") throw new SQLException(error, "M0M10");
+			if (!isSet[LENS]) error += "column width header missing\n";
+			if (!error.equals("")) throw new SQLException(error, "M0M10");
 		}
 
 		/**
@@ -2008,7 +2003,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * <pre>
 	 * [ "value",	56	]
 	 * </pre>
-	 * where each columns is separated by ",\t" and each tuple surrounded
+	 * where each column is separated by ",\t" and each tuple surrounded
 	 * by brackets ("[" and "]").  A DataBlockResponse object holds the
 	 * raw data as read from the server, in a parsed manner, ready for
 	 * easy retrieval.
@@ -2091,7 +2086,6 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 * Instructs the Response implementation to close and do the
 		 * necessary clean up procedures.
 		 *
-		 * @throws SQLException
 		 */
 		@Override
 		public void close() {
@@ -2258,7 +2252,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 			this.maxrows = maxrows;
 			this.rstype = rstype;
 			this.rsconcur = rsconcur;
-			responses = new ArrayList<Response>();
+			responses = new ArrayList<>();
 			curResponse = -1;
 			seqnr = MonetConnection.seqCounter++;
 		}
@@ -2452,7 +2446,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 												if (rsresponses == null)
 													rsresponses = new HashMap<Integer, ResultSetResponse>();
 												rsresponses.put(
-														Integer.valueOf(id),
+														id,
 														(ResultSetResponse) res
 												);
 											}
@@ -2467,7 +2461,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 											res = new SchemaResponse();
 										break;
 										case StartOfHeaderParser.Q_TRANS:
-											boolean ac = sohp.getNextAsString().equals("t") ? true : false;
+											boolean ac = sohp.getNextAsString().equals("t");
 											if (autoCommit && ac) {
 												addWarning("Server enabled auto commit " +
 														"mode while local state " +
@@ -2485,7 +2479,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 											int rowcount = sohp.getNextAsInt();
 											int offset = sohp.getNextAsInt();
 											ResultSetResponse t =
-												rsresponses.get(Integer.valueOf(id));
+												rsresponses.get(id);
 											if (t == null) {
 												error = "M0M12!no ResultSetResponse with id " + id + " found";
 												break;
@@ -2597,14 +2591,14 @@ public class MonetConnection extends MonetWrapper implements Connection {
 				if (error != null) {
 					SQLException ret = null;
 					String[] errors = error.split("\n");
-					for (int i = 0; i < errors.length; i++) {
+					for (String error1 : errors) {
 						if (ret == null) {
-							ret = new SQLException(errors[i].substring(6),
-									errors[i].substring(0, 5));
+							ret = new SQLException(error1.substring(6),
+									error1.substring(0, 5));
 						} else {
 							ret.setNextException(new SQLException(
-										errors[i].substring(6),
-										errors[i].substring(0, 5)));
+									error1.substring(6),
+									error1.substring(0, 5)));
 						}
 					}
 					throw ret;

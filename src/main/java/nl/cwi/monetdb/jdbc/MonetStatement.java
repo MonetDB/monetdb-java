@@ -413,8 +413,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * getResultSet or getUpdateCount  to retrieve the result, and
 	 * getMoreResults to move to any subsequent result(s).
 	 *
-	 * MonetDB only supports returing the generated key for one columns,
-	 * which will be the first columns that has a serial.  Hence, this
+	 * MonetDB only supports returing the generated key for one column,
+	 * which will be the first column that has a serial.  Hence, this
 	 * method cannot work as required and the driver will fall back to
 	 * executing with request to the database to return the generated
 	 * key, if any.
@@ -427,7 +427,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 *         it is an update count or there are no results
 	 * @throws SQLException if a database access error occurs or the
 	 *         elements in the int array passed to this method are not
-	 *         valid columns indexes
+	 *         valid column indexes
 	 */
 	@Override
 	public boolean execute(String sql, int[] columnIndexes)
@@ -457,8 +457,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * getResultSet or getUpdateCount  to retrieve the result, and
 	 * getMoreResults to move to any subsequent result(s).
 	 *
-	 * MonetDB only supports returing the generated key for one columns,
-	 * which will be the first columns that has a serial.  Hence, this
+	 * MonetDB only supports returing the generated key for one column,
+	 * which will be the first column that has a serial.  Hence, this
 	 * method cannot work as required and the driver will fall back to
 	 * executing with request to the database to return the generated
 	 * key, if any.
@@ -471,7 +471,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 *         it is an update count or there are no more results
 	 * @throws SQLException if a database access error occurs or the
 	 *         elements of the String array passed to this method are
-	 *         not valid columns names
+	 *         not valid column names
 	 */
 	@Override
 	public boolean execute(String sql, String[] columnNames)
@@ -593,22 +593,22 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * available for retrieval. The driver will ignore the array if the
 	 * SQL statement is not an INSERT statement.
 	 *
-	 * MonetDB only supports returing the generated key for one columns,
-	 * which will be the first columns that has a serial.  Hence, this
+	 * MonetDB only supports returing the generated key for one column,
+	 * which will be the first column that has a serial.  Hence, this
 	 * method cannot work as required and the driver will fall back to
 	 * executing with request to the database to return the generated
 	 * key, if any.
 	 *
 	 * @param sql an SQL INSERT, UPDATE or DELETE statement or an SQL
 	 *        statement that returns nothing, such as an SQL DDL statement
-	 * @param columnIndexes an array of columns indexes indicating the
+	 * @param columnIndexes an array of column indexes indicating the
 	 *        columns that should be returned from the inserted row
 	 * @return either the row count for INSERT, UPDATE, or DELETE
 	 *         statements, or 0 for SQL statements that return nothing
 	 * @throws SQLException if a database access error occurs, the SQL
 	 *         statement returns a ResultSet object, or the second
 	 *         argument supplied to this method is not an int array
-	 *         whose elements are valid columns indexes
+	 *         whose elements are valid column indexes
 	 */
 	@Override
 	public int executeUpdate(String sql, int[] columnIndexes)
@@ -624,8 +624,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * available for retrieval. The driver will ignore the array if the
 	 * SQL statement is not an INSERT statement.
 	 *
-	 * MonetDB only supports returing the generated key for one columns,
-	 * which will be the first columns that has a serial.  Hence, this
+	 * MonetDB only supports returing the generated key for one column,
+	 * which will be the first column that has a serial.  Hence, this
 	 * method cannot work as required and the driver will fall back to
 	 * executing with request to the database to return the generated
 	 * key, if any.
@@ -639,7 +639,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * @throws SQLException if a database access error occurs, the SQL
 	 *         statement returns a ResultSet object, or the second
 	 *         argument supplied to this method is not a String array
-	 *         whose elements are valid columns names
+	 *         whose elements are valid column names
 	 */
 	@Override
 	public int executeUpdate(String sql, String[] columnNames)
@@ -731,7 +731,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 
 	/**
 	 * Retrieves the maximum number of bytes that can be returned for
-	 * character and binary columns values in a ResultSet object produced
+	 * character and binary column values in a ResultSet object produced
 	 * by this Statement object. This limit applies only to BINARY,
 	 * VARBINARY, LONGVARBINARY, CHAR, VARCHAR, and LONGVARCHAR
 	 * columns. If the limit is exceeded, the excess data is silently
@@ -740,7 +740,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * The MonetDB JDBC driver currently doesn't support limiting
 	 * fieldsizes, and hence always return 0 (unlimited).
 	 *
-	 * @return the current columns size limit for columns storing
+	 * @return the current column size limit for columns storing
 	 *         character and binary values; zero means there is no limit
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -1049,7 +1049,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 
 	/**
 	 * Sets the limit for the maximum number of bytes in a ResultSet
-	 * columns storing character or binary values to the given number of
+	 * column storing character or binary values to the given number of
 	 * bytes. This limit applies only to BINARY, VARBINARY,
 	 * LONGVARBINARY, CHAR, VARCHAR, and LONGVARCHAR fields. If the
 	 * limit is exceeded, the excess data is silently discarded. For
@@ -1059,7 +1059,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * driver does not emulate it either, since it doesn't really lead
 	 * to memory reduction.
 	 *
-	 * @param max the new columns size limit in bytes; zero means there
+	 * @param max the new column size limit in bytes; zero means there
 	 *        is no limit
 	 * @throws SQLException if a database access error occurs or the
 	 *         condition max &gt;= 0 is not satisfied
