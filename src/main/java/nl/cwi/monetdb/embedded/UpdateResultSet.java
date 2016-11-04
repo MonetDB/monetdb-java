@@ -18,4 +18,6 @@ public class UpdateResultSet extends AbstractStatementResult {
     protected UpdateResultSet(MonetDBEmbeddedConnection connection) {
         super(connection);
     }
+
+    public void closeImplementation() {}
 }

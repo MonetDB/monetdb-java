@@ -20,7 +20,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 /**
- * The embedded version of the {@link PreparedStatement} interface from JDBC (not inheriting for simpler implementation).
+ * The embedded version of the {@link PreparedStatement} interface from JDBC (not inheriting for easier implementation).
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>, Fabian Groffen, Martin van Dinther
  */
@@ -49,14 +49,14 @@ public class EmbeddedPreparedStatement {
     /**
      * A list of Java classes that don't need special parsing of values (jsut call toString() method).
      */
-    private static final List<Class<?>> DirectMappingClasses;
+    private static final Set<Class<?>> DirectMappingClasses;
 
     static {
         TimeFormatter = new SimpleDateFormat("HH:mm:ss.SSS");
         TimeTzFormatter = new SimpleDateFormat("HH:mm:ss.SSSZ");
         TimestampFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
         TimestampTzFormatter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-        DirectMappingClasses = new ArrayList<>();
+        DirectMappingClasses = new HashSet<>();
         DirectMappingClasses.add(Boolean.class);
         DirectMappingClasses.add(Byte.class);
         DirectMappingClasses.add(Short.class);
@@ -65,7 +65,7 @@ public class EmbeddedPreparedStatement {
         DirectMappingClasses.add(BigInteger.class);
         DirectMappingClasses.add(Float.class);
         DirectMappingClasses.add(Double.class);
-        DirectMappingClasses.add(Byte[].class);
+        DirectMappingClasses.add(MonetDBEmbeddedBlob.class);
         DirectMappingClasses.add(URI.class);
         DirectMappingClasses.add(InetAddress.class);
         DirectMappingClasses.add(UUID.class);

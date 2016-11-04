@@ -8,8 +8,8 @@
 
 package nl.cwi.monetdb.embedded;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * An embedded version of a MonetDB database.
@@ -62,7 +62,7 @@ public class MonetDBEmbeddedDatabase {
 
     private boolean isRunning = true;
 
-    private final List<MonetDBEmbeddedConnection> connections = new ArrayList<>();
+    private final Set<MonetDBEmbeddedConnection> connections = new HashSet<>();
 
     private MonetDBEmbeddedDatabase(String dbDirectory, boolean silentFlag, boolean sequentialFlag) {
         this.databaseDirectory = dbDirectory;
@@ -112,7 +112,7 @@ public class MonetDBEmbeddedDatabase {
     public void stopDatabase() throws MonetDBEmbeddedException {
         if(this.isRunning) {
             for(MonetDBEmbeddedConnection mdbec : connections) {
-                mdbec.closeConnection();
+                mdbec.closeConnectionImplementation();
             }
             this.connections.clear();
             this.stopDatabaseInternal();

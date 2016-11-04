@@ -8,8 +8,8 @@
 
 package nl.cwi.monetdb.embedded;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * A single connection to a MonetDB database instance
@@ -25,7 +25,7 @@ public class MonetDBEmbeddedConnection {
 
 	private final long connectionPointer;
 
-    private final List<AbstractStatementResult> results = new ArrayList<>();
+    private final Set<AbstractStatementResult> results = new HashSet<>();
 
 	protected MonetDBEmbeddedConnection(MonetDBEmbeddedDatabase database, long connectionPointer) {
         this.database = database;
@@ -213,7 +213,7 @@ public class MonetDBEmbeddedConnection {
      *
      * @param schemaName The schema of the table
      * @param tableName The name of the table
-     * @throws MonetDBEmbeddedException
+     * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     public void removeTable(String schemaName, String tableName) throws MonetDBEmbeddedException {
         String query = "drop table " + schemaName + "." + tableName + ";";
@@ -221,13 +221,20 @@ public class MonetDBEmbeddedConnection {
     }
 
     /**
+     * When the database is shuts down, this method is called instead
+     */
+    protected void closeConnectionImplementation() {
+        for(AbstractStatementResult res : this.results) {
+            res.closeImplementation();
+        }
+        this.closeConnectionInternal(this.connectionPointer);
+    }
+
+    /**
      * Shuts down this connection. Any pending queries connections will be immediately closed as well.
      */
     public void closeConnection() {
-        for(AbstractStatementResult res : this.results) {
-            res.close();
-        }
-        this.closeConnectionInternal(this.connectionPointer);
+        this.closeConnectionImplementation();
         this.database.removeConnection(this);
     }
 

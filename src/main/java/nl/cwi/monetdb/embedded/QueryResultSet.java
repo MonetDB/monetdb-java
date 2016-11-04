@@ -275,10 +275,9 @@ public class QueryResultSet extends AbstractStatementResult implements Iterable 
      * Close the query data so no more new results can be retrieved.
      */
     @Override
-    public void close() {
+    public void closeImplementation() {
         this.cleanupResultInternal(this.resultPointer);
         this.resultPointer = 0;
-        super.close();
     }
 
     private native void cleanupResultInternal(long resultPointer);

@@ -33,8 +33,14 @@ public abstract class AbstractStatementResult implements Closeable {
      */
     public MonetDBEmbeddedConnection getConnection() { return connection; }
 
+    /**
+     * To be called by the connection when is closing, to avoid concurrency problems on the iteration.
+     */
+    protected abstract void closeImplementation();
+
     @Override
     public void close() {
+        this.closeImplementation();
         this.connection.removeQueryResult(this);
     }
 }
