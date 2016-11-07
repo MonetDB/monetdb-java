@@ -6,18 +6,16 @@
  * Copyright 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.embedded;
+package nl.cwi.monetdb.embedded.env;
 
 /**
- * The result set from a sendUpdate method from a connection.
+ * The exception fired from embedded methods.
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class UpdateResultSet extends AbstractStatementResult {
+public class MonetDBEmbeddedException extends Exception {
 
-    protected UpdateResultSet(MonetDBEmbeddedConnection connection) {
-        super(connection);
+    public MonetDBEmbeddedException(String message) {
+        super(message);
     }
-
-    public void closeImplementation() {}
 }

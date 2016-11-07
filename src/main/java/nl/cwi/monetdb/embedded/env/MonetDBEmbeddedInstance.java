@@ -6,7 +6,7 @@
  * Copyright 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.embedded;
+package nl.cwi.monetdb.embedded.env;
 
 /**
  * The MonetDB's JNI library loader for Java.

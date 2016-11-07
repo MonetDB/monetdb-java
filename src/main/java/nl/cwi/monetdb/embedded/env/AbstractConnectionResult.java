@@ -6,23 +6,23 @@
  * Copyright 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.embedded;
+package nl.cwi.monetdb.embedded.env;
 
 import java.io.Closeable;
 
 /**
- * The base class for a query result.
+ * The base class for a pending statement to a connection.
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public abstract class AbstractStatementResult implements Closeable {
+public abstract class AbstractConnectionResult implements Closeable {
 
     /**
      * The corresponding connection of this result.
      */
     private final MonetDBEmbeddedConnection connection;
 
-    protected AbstractStatementResult(MonetDBEmbeddedConnection connection) {
+    protected AbstractConnectionResult(MonetDBEmbeddedConnection connection) {
         this.connection = connection;
     }
 

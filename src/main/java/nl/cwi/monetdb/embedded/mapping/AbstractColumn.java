@@ -6,7 +6,9 @@
  * Copyright 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.embedded;
+package nl.cwi.monetdb.embedded.mapping;
+
+import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
 
 /**
  * A single Java representation of a MonetDB column.
@@ -14,17 +16,12 @@ package nl.cwi.monetdb.embedded;
  * @param <T> A Java class mapped to a MonetDB data type
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public abstract class AbstractColumn<T> implements Iterable<T> {
+public abstract class AbstractColumn<T> {
 
     /**
      * Index on the result set.
      */
     protected final int resultSetIndex;
-
-    /**
-     * The number of rows in this column.
-     */
-    protected final int numberOfRows;
 
     /**
      * The name of the columns in the query result.
@@ -46,22 +43,14 @@ public abstract class AbstractColumn<T> implements Iterable<T> {
      */
     protected final int columnScale;
 
-    protected AbstractColumn(int resultSetIndex, int numberOfRows, String columnName, String columnType,
-                             int columnDigits, int columnScale) {
+    protected AbstractColumn(int resultSetIndex, String columnName, String columnType, int columnDigits,
+                             int columnScale) {
         this.resultSetIndex = resultSetIndex;
-        this.numberOfRows = numberOfRows;
         this.columnName = columnName;
         this.mapping = MonetDBToJavaMapping.GetJavaMappingFromMonetDBString(columnType);
         this.columnDigits = columnDigits;
         this.columnScale = columnScale;
     }
-
-    /**
-     * Get the number of rows in this column.
-     *
-     * @return The number of rows
-     */
-    public int getNumberOfRows() { return numberOfRows; }
 
     /**
      * Get the result set index of the column.

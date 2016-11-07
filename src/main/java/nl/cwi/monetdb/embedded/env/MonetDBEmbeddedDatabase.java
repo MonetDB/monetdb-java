@@ -6,7 +6,7 @@
  * Copyright 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.embedded;
+package nl.cwi.monetdb.embedded.env;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -48,11 +48,11 @@ public class MonetDBEmbeddedDatabase {
      * @return A MonetDBEmbeddedDatabase instance
      * @throws MonetDBEmbeddedException If the JNI library has not been loaded yet or an error in the database occurred
      */
-    public static MonetDBEmbeddedDatabase StartDatabaseAsync(String dbDirectory, boolean silentFlag,
+    /*public static MonetDBEmbeddedDatabase StartDatabaseAsync(String dbDirectory, boolean silentFlag,
                                                              boolean sequentialFlag) throws MonetDBEmbeddedException {
-        /* CompletableFuture.supplyAsync(() -> StartDatabase(dbDirectory, silentFlag, sequentialFlag)); */
+        CompletableFuture.supplyAsync(() -> StartDatabase(dbDirectory, silentFlag, sequentialFlag));
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
-    }
+    }*/
 
     private final String databaseDirectory;
 
@@ -127,10 +127,10 @@ public class MonetDBEmbeddedDatabase {
      *
      * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
      */
-    public void stopDatabaseAsync() throws MonetDBEmbeddedException {
-        /* CompletableFuture.supplyAsync(() -> this.stopDatabase()); */
+    /*public void stopDatabaseAsync() throws MonetDBEmbeddedException {
+        CompletableFuture.supplyAsync(() -> this.stopDatabase());
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
-    }
+    }*/
 
     /**
      * Creates a connection on the database, set on the default schema.
@@ -148,10 +148,10 @@ public class MonetDBEmbeddedDatabase {
      * @return A MonetDBEmbeddedConnection instance
      * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
      */
-    public MonetDBEmbeddedConnection createConnectionAsync() throws MonetDBEmbeddedException {
-        /* CompletableFuture.supplyAsync(() -> this.createConnectionInternal()); */
+    /*public MonetDBEmbeddedConnection createConnectionAsync() throws MonetDBEmbeddedException {
+        CompletableFuture.supplyAsync(() -> this.createConnectionInternal());
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
-    }
+    }*/
 
     /**
      * Removes a connection from this database.

@@ -6,7 +6,9 @@
  * Copyright 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.embedded;
+package nl.cwi.monetdb.embedded.resultset;
+
+import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;

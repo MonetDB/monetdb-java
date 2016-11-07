@@ -6,7 +6,12 @@
  * Copyright 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.embedded;
+package nl.cwi.monetdb.embedded.env;
+
+import nl.cwi.monetdb.embedded.resultset.EmbeddedPreparedStatement;
+import nl.cwi.monetdb.embedded.resultset.QueryResultSet;
+import nl.cwi.monetdb.embedded.resultset.QueryResultSetColumn;
+import nl.cwi.monetdb.embedded.resultset.UpdateResultSet;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +30,7 @@ public class MonetDBEmbeddedConnection {
 
 	private final long connectionPointer;
 
-    private final Set<AbstractStatementResult> results = new HashSet<>();
+    private final Set<AbstractConnectionResult> results = new HashSet<>();
 
 	protected MonetDBEmbeddedConnection(MonetDBEmbeddedDatabase database, long connectionPointer) {
         this.database = database;
@@ -107,10 +112,10 @@ public class MonetDBEmbeddedConnection {
      * @return The update result object
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public UpdateResultSet sendUpdateAsync(String query) throws MonetDBEmbeddedException {
-        /* CompletableFuture.supplyAsync(() -> this.sendUpdate(query)); */
+    /*public UpdateResultSet sendUpdateAsync(String query) throws MonetDBEmbeddedException {
+        /CompletableFuture.supplyAsync(() -> this.sendUpdate(query));
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
-    }
+    }*/
 
     /**
 	 * Executes a SQL query with a result set.
@@ -135,10 +140,10 @@ public class MonetDBEmbeddedConnection {
      * @return The query result object
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public QueryResultSet sendQueryAsync(String query) throws MonetDBEmbeddedException {
-        /* CompletableFuture.supplyAsync(() -> this.sendQuery(query)); */
+    /*public QueryResultSet sendQueryAsync(String query) throws MonetDBEmbeddedException {
+        CompletableFuture.supplyAsync(() -> this.sendQuery(query));
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
-    }
+    }*/
 
     /**
      * Creates a prepared query statement likewise the PreparedStatement in JDBC.
@@ -161,10 +166,10 @@ public class MonetDBEmbeddedConnection {
      * @return An instance of EmbeddedPreparedStatement
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public EmbeddedPreparedStatement createPreparedStatementAsync(String query) throws MonetDBEmbeddedException {
-        /* CompletableFuture.supplyAsync(() -> this.createPreparedStatement(query)); */
+    /*public EmbeddedPreparedStatement createPreparedStatementAsync(String query) throws MonetDBEmbeddedException {
+        CompletableFuture.supplyAsync(() -> this.createPreparedStatement(query));
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
-    }
+    }*/
 
     /*public MonetDBTable getMonetDBTable(String schemaName, String tableName) throws MonetDBEmbeddedException {
         MonetDBTable res = this.getMonetDBTableInternal(schemaName, tableName, this.connectionPointer);
@@ -224,7 +229,7 @@ public class MonetDBEmbeddedConnection {
      * When the database is shuts down, this method is called instead
      */
     protected void closeConnectionImplementation() {
-        for(AbstractStatementResult res : this.results) {
+        for(AbstractConnectionResult res : this.results) {
             res.closeImplementation();
         }
         this.closeConnectionInternal(this.connectionPointer);
@@ -241,15 +246,15 @@ public class MonetDBEmbeddedConnection {
     /**
      * Shuts down this connection asynchronously. Any pending queries connections will be immediately closed as well.
      */
-    public void closeConnectionAsync() {
-        /* CompletableFuture.supplyAsync(() -> this.closeConnection()); */
+    /*public void closeConnectionAsync() {
+        CompletableFuture.supplyAsync(() -> this.closeConnection());
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
-    }
+    }*/
 
     /**
      * Removes a query result from this connection.
      */
-    protected void removeQueryResult(AbstractStatementResult res) {
+    protected void removeQueryResult(AbstractConnectionResult res) {
         this.results.remove(res);
     }
 

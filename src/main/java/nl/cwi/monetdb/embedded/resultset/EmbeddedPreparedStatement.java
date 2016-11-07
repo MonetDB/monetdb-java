@@ -6,8 +6,12 @@
  * Copyright 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.embedded;
+package nl.cwi.monetdb.embedded.resultset;
 
+import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
+import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
+import nl.cwi.monetdb.embedded.mapping.MonetDBEmbeddedBlob;
+import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
@@ -410,9 +414,9 @@ public class EmbeddedPreparedStatement {
      * @return The update result object
      * @throws MonetDBEmbeddedException If an error in the database occurred or if a parameter has not been set yet
      */
-    public UpdateResultSet sendUpdateAsync() throws MonetDBEmbeddedException {
+    /*public UpdateResultSet sendUpdateAsync() throws MonetDBEmbeddedException {
         return this.connection.sendUpdateAsync(this.applyParameters());
-    }
+    }*/
 
     /**
      * Executes this statement as a SQL query with a result set asynchronously.
@@ -420,7 +424,7 @@ public class EmbeddedPreparedStatement {
      * @return The query result object
      * @throws MonetDBEmbeddedException If an error in the database occurred or if a parameter has not been set yet
      */
-    public QueryResultSet sendQueryAsync() throws MonetDBEmbeddedException {
+    /*public QueryResultSet sendQueryAsync() throws MonetDBEmbeddedException {
         return this.connection.sendQueryAsync(this.applyParameters());
-    }
+    }*/
 }

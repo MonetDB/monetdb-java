@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.embedded;
+package nl.cwi.monetdb.embedded.mapping;
 
 /**
  * A Java representation for Blob data type. Added for more efficient data mapping when fetching from the database.

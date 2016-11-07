@@ -6,7 +6,10 @@
  * Copyright 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.embedded;
+package nl.cwi.monetdb.embedded.resultset;
+
+import nl.cwi.monetdb.embedded.mapping.AbstractColumn;
+import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
@@ -19,7 +22,7 @@ import java.util.ListIterator;
  * @param <T> A Java class mapped to a MonetDB data type
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryResultSetColumn<T> extends AbstractColumn<T> {
+public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterable<T> {
 
     /**
      * The C pointer of the result set of the column.
@@ -32,6 +35,11 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
     private final T[] values;
 
     /**
+     * The number of rows in this column.
+     */
+    protected final int numberOfRows;
+
+    /**
      * The index of the first value mapped to a Java class.
      */
     private int firstRetrievedIndex;
@@ -42,14 +50,22 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
     private int lastRetrievedIndex;
 
     @SuppressWarnings("unchecked")
-	protected QueryResultSetColumn(int resultSetIndex, int numberOfRows, String columnName, String columnType,
-                                   int columnDigits, int columnScale, long resultSetPointer) {
-        super(resultSetIndex, numberOfRows, columnName, columnType, columnDigits, columnScale);
+	protected QueryResultSetColumn(int resultSetIndex, String columnName, String columnType, int columnDigits,
+                                   int columnScale, long resultSetPointer, int numberOfRows) {
+        super(resultSetIndex, columnName, columnType, columnDigits, columnScale);
         this.resultSetPointer = resultSetPointer;
+        this.numberOfRows = numberOfRows;
         this.firstRetrievedIndex = numberOfRows;
         this.lastRetrievedIndex = 0;
         this.values = (T[]) Array.newInstance(this.mapping.getJavaClass(), numberOfRows);
  	}
+
+    /**
+     * Get the number of rows in this column.
+     *
+     * @return The number of rows
+     */
+    public int getNumberOfRows() { return numberOfRows; }
 
     /**
      * Maps columns values into the Java representation.
@@ -111,10 +127,10 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public T[] fetchColumnValuesAsync(int startIndex, int endIndex, Class<T> javaClass) throws MonetDBEmbeddedException {
-        /* CompletableFuture.supplyAsync(() -> this.fetchColumnValues(startIndex, endIndex, javaClass)); */
+    /*public T[] fetchColumnValuesAsync(int startIndex, int endIndex, Class<T> javaClass) throws MonetDBEmbeddedException {
+        CompletableFuture.supplyAsync(() -> this.fetchColumnValues(startIndex, endIndex, javaClass));
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
-    }
+    }*/
 
     /**
      * Maps the first N column values.
@@ -136,9 +152,9 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public T[] fetchFirstNColumnValuesAsync(int n, Class<T> javaClass) throws MonetDBEmbeddedException {
+    /*public T[] fetchFirstNColumnValuesAsync(int n, Class<T> javaClass) throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(0, n, javaClass);
-    }
+    }*/
 
     /**
      * Maps all column values.
@@ -158,9 +174,9 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public T[] fetchAllColumnValuesAsync(Class<T> javaClass) throws MonetDBEmbeddedException {
+    /*public T[] fetchAllColumnValuesAsync(Class<T> javaClass) throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(0, this.numberOfRows, javaClass);
-    }
+    }*/
 
     /**
      * Maps columns values using the provided Java representation by the query.
@@ -184,9 +200,9 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     @SuppressWarnings("unchecked")
-    public T[] fetchColumnValuesAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
+    /*public T[] fetchColumnValuesAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(startIndex, endIndex, (Class<T>) this.mapping.getJavaClass());
-    }
+    }*/
 
     /**
      * Maps the first N column values using the provided Java representation by the query.
@@ -206,9 +222,9 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public T[] fetchFirstNColumnValuesAsync(int n) throws MonetDBEmbeddedException {
+    /*public T[] fetchFirstNColumnValuesAsync(int n) throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(0, n);
-    }
+    }*/
 
     /**
      * Maps all column values using the provided Java representation by the query.
@@ -226,16 +242,19 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> {
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public T[] fetchAllColumnValuesAsync() throws MonetDBEmbeddedException {
+    /*public T[] fetchAllColumnValuesAsync() throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(0, this.numberOfRows);
-    }
+    }*/
 
     @Override
     public ListIterator<T> iterator() {
-        return Arrays.asList(this.values).listIterator();
+        try {
+            return Arrays.asList(this.fetchAllColumnValues()).listIterator();
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     private native T[] fetchValuesInternal(long resultPointer, int resultSetIndex, Class<T> jclass, String className,
                                            int enumEntry, int first, int last) throws MonetDBEmbeddedException;
-
 }
