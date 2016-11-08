@@ -18,9 +18,10 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
  */
 public class UpdateResultSet extends AbstractConnectionResult {
 
-    protected UpdateResultSet(MonetDBEmbeddedConnection connection) {
-        super(connection);
-    }
+    protected UpdateResultSet(MonetDBEmbeddedConnection connection) { super(connection); }
 
+    /**
+     * Close this result set.
+     */
     public void closeImplementation() {}
 }

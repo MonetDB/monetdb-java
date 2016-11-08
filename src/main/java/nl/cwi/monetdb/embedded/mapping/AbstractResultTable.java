@@ -10,14 +10,12 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
  */
 public abstract class AbstractResultTable extends AbstractConnectionResult {
 
-    public AbstractResultTable(MonetDBEmbeddedConnection connection) {
-        super(connection);
-    }
+    public AbstractResultTable(MonetDBEmbeddedConnection connection) { super(connection); }
 
     /**
-     * Returns an array of columns in the result set;
+     * Returns an array of columns in the result set.
      *
-     * @return An array of columns in the result set;
+     * @return An array of columns in the result set
      */
     protected abstract AbstractColumn<?>[] getColumns();
 
@@ -36,7 +34,7 @@ public abstract class AbstractResultTable extends AbstractConnectionResult {
     public abstract int getNumberOfRows();
 
     /**
-     * Get the columns names as a string array.
+     * Gets the columns names as a string array.
      *
      * @return The columns names array
      */
@@ -50,7 +48,7 @@ public abstract class AbstractResultTable extends AbstractConnectionResult {
     }
 
     /**
-     * Get the columns types as a string array.
+     * Gets the columns types as a string array.
      *
      * @return The columns types array
      */
@@ -64,7 +62,7 @@ public abstract class AbstractResultTable extends AbstractConnectionResult {
     }
 
     /**
-     * Get the Java mappings as a MonetDBToJavaMapping array.
+     * Gets the Java mappings as a MonetDBToJavaMapping array.
      *
      * @return The columns MonetDBToJavaMapping array
      */
@@ -78,7 +76,7 @@ public abstract class AbstractResultTable extends AbstractConnectionResult {
     }
 
     /**
-     * Get the columns digits as a int array.
+     * Gets the columns digits as an integer array.
      *
      * @return The columns digits array
      */
@@ -92,7 +90,7 @@ public abstract class AbstractResultTable extends AbstractConnectionResult {
     }
 
     /**
-     * Get the columns scales as a int array.
+     * Gets the columns scales as an integer array.
      *
      * @return The columns scales array
      */

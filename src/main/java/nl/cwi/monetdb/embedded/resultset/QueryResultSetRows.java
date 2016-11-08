@@ -75,9 +75,7 @@ public class QueryResultSetRows implements Iterable {
          * @param javaClass The Java class
          * @return The column value as a Java class
          */
-        public <T> T getColumn(int index, Class<T> javaClass) {
-            return javaClass.cast(columns[index]);
-        }
+        public <T> T getColumn(int index, Class<T> javaClass) { return javaClass.cast(columns[index]); }
 
         /**
          * Gets a column value as a Java class using the default mapping.
@@ -92,9 +90,7 @@ public class QueryResultSetRows implements Iterable {
         }
 
         @Override
-        public ListIterator<Object> iterator() {
-            return Arrays.asList(this.columns).listIterator();
-        }
+        public ListIterator<Object> iterator() { return Arrays.asList(this.columns).listIterator(); }
     }
 
     /**
@@ -126,9 +122,7 @@ public class QueryResultSetRows implements Iterable {
      *
      * @return The original query result set this row set belongs
      */
-    public QueryResultSet getQueryResultSet() {
-        return queryResultSet;
-    }
+    public QueryResultSet getQueryResultSet() { return queryResultSet; }
 
     /**
      * Gets all rows of this set.
@@ -157,9 +151,7 @@ public class QueryResultSetRows implements Iterable {
      * @param row The index of the row to retrieve
      * @return A single row in this set
      */
-    public QueryResulSetRow getSingleRow(int row) {
-        return rows[row];
-    }
+    public QueryResulSetRow getSingleRow(int row) { return rows[row]; }
 
     /**
      * Gets a single value in this set as a Java class.
@@ -221,7 +213,5 @@ public class QueryResultSetRows implements Iterable {
     }
 
     @Override
-    public ListIterator<QueryResulSetRow> iterator() {
-        return Arrays.asList(this.rows).listIterator();
-    }
+    public ListIterator<QueryResulSetRow> iterator() { return Arrays.asList(this.rows).listIterator(); }
 }

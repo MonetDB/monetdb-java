@@ -16,8 +16,7 @@ import java.util.Arrays;
 import java.util.ListIterator;
 
 /**
- *  Am abstract class for accessing, 
- *  materialised (Java-level) query result columns.
+ * An abstract class for accessing materialised (Java-level) query result columns.
  *
  * @param <T> A Java class mapped to a MonetDB data type
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
@@ -199,8 +198,8 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    @SuppressWarnings("unchecked")
-    /*public T[] fetchColumnValuesAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
+    /*@SuppressWarnings("unchecked")
+    public T[] fetchColumnValuesAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(startIndex, endIndex, (Class<T>) this.mapping.getJavaClass());
     }*/
 
@@ -255,6 +254,9 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
         }
     }
 
+    /**
+     * Internal implementation to fetch values from the column.
+     */
     private native T[] fetchValuesInternal(long resultPointer, int resultSetIndex, Class<T> jclass, String className,
                                            int enumEntry, int first, int last) throws MonetDBEmbeddedException;
 }

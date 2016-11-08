@@ -8,8 +8,6 @@
 
 package nl.cwi.monetdb.embedded.mapping;
 
-import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
-
 /**
  * A single Java representation of a MonetDB column.
  *
@@ -19,7 +17,7 @@ import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
 public abstract class AbstractColumn<T> {
 
     /**
-     * Index on the result set.
+     * The column index on the result set.
      */
     protected final int resultSetIndex;
 
@@ -39,7 +37,7 @@ public abstract class AbstractColumn<T> {
     protected final int columnDigits;
 
     /**
-     * 	The precision after decimal point. Only applicable for decimal/numeric types.
+     * The precision after decimal point. Only applicable for decimal/numeric types.
      */
     protected final int columnScale;
 
@@ -53,14 +51,14 @@ public abstract class AbstractColumn<T> {
     }
 
     /**
-     * Get the result set index of the column.
+     * Gets the result set index of the column.
      *
      * @return The index number
      */
     public int getResultSetIndex() { return resultSetIndex; }
 
     /**
-     * Get the name of the column.
+     * Gets the name of the column.
      *
      * @return The column name
      */
@@ -69,31 +67,30 @@ public abstract class AbstractColumn<T> {
     }
 
     /**
-     * Get the type of the column.
+     * Gets the type of the column.
      *
      * @return The Column type
      */
     public String getColumnType() { return mapping.toString(); }
 
     /**
-     * Get the Java mapping of the column.
+     * Gets the Java mapping of the column.
      *
      * @return A enum constant of the Java mapping
      */
     public MonetDBToJavaMapping getMapping() { return mapping; }
 
     /**
-     * Get column digits of the column.
+     * Gets the number digits of the column.
      *
      * @return The number of digits
      */
     public int getColumnDigits() { return columnDigits; }
 
     /**
-     * Get scale of the column.
+     * Gets the scale of the column.
      *
      * @return The scale
      */
     public int getColumnScale() { return columnScale; }
-
 }

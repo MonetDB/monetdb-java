@@ -160,11 +160,20 @@ public class MonetDBEmbeddedDatabase {
         this.connections.remove(con);
     }
 
+    /**
+     * Internal implementation to start a database.
+     */
     private static native MonetDBEmbeddedDatabase StartDatabaseInternal(String dbDirectory, boolean silentFlag,
                                                                         boolean sequentialFlag)
             throws MonetDBEmbeddedException;
 
+    /**
+     * Internal implementation to stop a database.
+     */
     private native void stopDatabaseInternal();
 
+    /**
+     * Internal implementation to create a connection on this database.
+     */
     private native MonetDBEmbeddedConnection createConnectionInternal() throws MonetDBEmbeddedException;
 }

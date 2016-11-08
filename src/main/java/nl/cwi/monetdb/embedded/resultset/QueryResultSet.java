@@ -52,7 +52,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
 	}
 
     /**
-     * Close the query data so no more new results can be retrieved.
+     * Closes the query data so no more new results can be retrieved.
      */
     @Override
     public void closeImplementation() {
@@ -64,9 +64,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     protected AbstractColumn<?>[] getColumns() { return columns; }
 
     @Override
-    public int getNumberOfRows() {
-        return this.numberOfRows;
-    }
+    public int getNumberOfRows() { return this.numberOfRows; }
 
     @Override
     public int getNumberOfColumns() { return this.columns.length; }
@@ -79,7 +77,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     public boolean isStatementClosed() { return this.resultPointer == 0; }
 
     /**
-     * Get a columns' values from the result set by index.
+     * Gets a column from the result set by index.
      *
      * @param index QueryResultSetColumn index (starting from 0)
      * @return The columns, {@code null} if index not in bounds
@@ -90,7 +88,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     }
 
     /**
-     * Get a columns from the result set by name.
+     * Gets a column from the result set by name.
      *
      * @param name QueryResultSetColumn name
      * @return The columns
@@ -202,5 +200,8 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
         }
     }
 
+    /**
+     * Internal implementation to clean the result set.
+     */
     private native void cleanupResultInternal(long resultPointer);
 }

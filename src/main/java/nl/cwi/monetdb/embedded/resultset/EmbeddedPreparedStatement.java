@@ -12,6 +12,8 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.embedded.mapping.MonetDBEmbeddedBlob;
 import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
+import nl.cwi.monetdb.embedded.utils.StringEscaper;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
@@ -350,8 +352,7 @@ public class EmbeddedPreparedStatement {
                 throw new MonetDBEmbeddedException("The class " + javaClass.getSimpleName() +
                         " is not supported by the mapping!");
             }
-            this.parsedValues[parameter] = "'" + valueToSubmit.replaceAll("\\\\", "\\\\\\\\")
-                    .replaceAll("'", "\\\\'") + "'";
+            this.parsedValues[parameter] = StringEscaper.SQLStringEscape(valueToSubmit);
         }
     }
 
@@ -360,9 +361,7 @@ public class EmbeddedPreparedStatement {
      *
      * @param parameter The index of the parameter
      */
-    public void setParameterNull(int parameter) {
-        this.parsedValues[parameter] = "NULL";
-    }
+    public void setParameterNull(int parameter) { this.parsedValues[parameter] = "NULL"; }
 
     /**
      * Creates the SQL String from the parsed parameters (adapted from the JDBC driver implementation).

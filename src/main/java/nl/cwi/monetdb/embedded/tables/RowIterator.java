@@ -3,7 +3,10 @@ package nl.cwi.monetdb.embedded.tables;
 import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
 
 /**
- * Created by ferreira on 11/7/16.
+ * The iterator class for a MonetDB table. It's possible to inspect the current currentColumns in the row as well
+ * their mappings.
+ *
+ * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
 public class RowIterator {
 
@@ -13,29 +16,36 @@ public class RowIterator {
     protected final MonetDBTable table;
 
     /**
-     * The mappings of the columns.
+     * The mappings of the currentColumns.
      */
     protected final MonetDBToJavaMapping[] mappings;
 
     /**
-     * The columns values as Java objects.
+     * The currentColumns values as Java objects.
      */
-    protected Object[] columns;
+    protected Object[] currentColumns;
 
     /**
      * The current row number.
      */
-    protected int rowNumber;
+    protected int currentRowNumber;
 
-    private final int firstIndex;
+    /**
+     * The first row in the table to iterate.
+     */
+    protected final int firstIndex;
 
-    private final int lastIndex;
+    /**
+     * The last row in the table to iterate.
+     */
+    protected final int lastIndex;
 
     public RowIterator(MonetDBTable table, int firstIndex, int lastIndex) {
         this.table = table;
         this.mappings = table.getMappings();
         this.firstIndex = Math.max(firstIndex, 0);
-        this.lastIndex = Math.min(lastIndex, table.getNumberOfRows());
+        this.lastIndex = Math.min(Math.min(lastIndex, table.getNumberOfRows()), 0);
+        this.currentRowNumber = this.firstIndex - 1; //starting on the row before the first index
     }
 
     /**
@@ -46,20 +56,39 @@ public class RowIterator {
     public MonetDBTable getTable() { return table; }
 
     /**
-     * Gets the columns values as Java objects.
+     * Gets the current row currentColumns values as Java objects.
      *
-     * @return The columns values as Java objects
+     * @return The current row currentColumns values as Java objects
      */
-    public Object[] getColumns() {
-        return columns;
-    }
+    public Object[] getCurrentColumns() { return currentColumns; }
 
     /**
      * Gets the current row number in the iteration.
      *
      * @return The current row number in the iteration
      */
-    public int getRowNumber() { return rowNumber; }
+    public int getCurrentRowNumber() { return currentRowNumber; }
+
+    /**
+     * Gets the first index used on this iteration.
+     *
+     * @return The first index used on this iteration
+     */
+    public int getFirstIndex() { return firstIndex; }
+
+    /**
+     * Gets the last index used on this iteration.
+     *
+     * @return The last index used on this iteration
+     */
+    public int getLastIndex() { return lastIndex; }
+
+    /**
+     * Checks if there are more rows to iterate after the current one.
+     *
+     * @return There are more rows to iterate
+     */
+    public boolean hasMore() { return currentRowNumber < lastIndex; }
 
     /**
      * Gets a column value as a Java class.
@@ -69,9 +98,7 @@ public class RowIterator {
      * @param javaClass The Java class
      * @return The column value as a Java class
      */
-    public <T> T getColumn(int index, Class<T> javaClass) {
-        return javaClass.cast(columns[index]);
-    }
+    public <T> T getColumn(int index, Class<T> javaClass) { return javaClass.cast(this.currentColumns[index]); }
 
     /**
      * Gets a column value as a Java class using the default mapping.
@@ -82,11 +109,23 @@ public class RowIterator {
      */
     public <T> T getColumn(int index) {
         Class<T> javaClass = this.mappings[index].getJavaClass();
-        return javaClass.cast(columns[index]);
+        return javaClass.cast(this.currentColumns[index]);
     }
 
-    protected void setNextIteration(Object[] columns, int rowNumber) {
-        this.columns = columns;
-        this.rowNumber = rowNumber;
+    /**
+     * Method used by JNI to set the next columns and increment the current row number.
+     *
+     * @param columns The next retrieved columns
+     */
+    protected void setNextIteration(Object[] columns) {
+        this.currentColumns = columns;
+        this.currentRowNumber++;
     }
+
+    /**
+     * Gets the next row in the iteration if there are more.
+     *
+     * @return A boolean indicating if a row was fetched
+     */
+    protected native boolean getNextTableRow();
 }

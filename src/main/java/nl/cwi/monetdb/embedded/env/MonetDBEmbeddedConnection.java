@@ -8,10 +8,10 @@
 
 package nl.cwi.monetdb.embedded.env;
 
-import nl.cwi.monetdb.embedded.resultset.EmbeddedPreparedStatement;
-import nl.cwi.monetdb.embedded.resultset.QueryResultSet;
-import nl.cwi.monetdb.embedded.resultset.QueryResultSetColumn;
-import nl.cwi.monetdb.embedded.resultset.UpdateResultSet;
+import nl.cwi.monetdb.embedded.resultset.*;
+import nl.cwi.monetdb.embedded.tables.MonetDBTable;
+import nl.cwi.monetdb.embedded.tables.MonetDBTableColumn;
+import nl.cwi.monetdb.embedded.utils.StringEscaper;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -44,7 +44,7 @@ public class MonetDBEmbeddedConnection {
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     public String getCurrentSchema() throws MonetDBEmbeddedException {
-        QueryResultSet eqr = this.sendQuery("select current_schema from sys.var();");
+        QueryResultSet eqr = this.sendQuery("SELECT current_schema FROM sys.var();");
         QueryResultSetColumn<String> col = eqr.getColumn(0);
         String res = col.fetchFirstNColumnValues(1)[0];
         eqr.close();
@@ -54,12 +54,12 @@ public class MonetDBEmbeddedConnection {
     /**
      * Sets the current schema on the connection.
      *
-     * @param currentSchema Java String with the name of the schema
+     * @param newSchema Java String with the name of the schema
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public void setCurrentSchema(String currentSchema) throws MonetDBEmbeddedException {
-        String valueToSubmit = "'" + currentSchema.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "';";
-        this.sendUpdate("SET SCHEMA " + valueToSubmit).close();
+    public void setCurrentSchema(String newSchema) throws MonetDBEmbeddedException {
+        newSchema = StringEscaper.SQLStringEscape(newSchema);
+        this.sendUpdate("SET SCHEMA " + newSchema + ";").close();
     }
 
     /**
@@ -152,12 +152,12 @@ public class MonetDBEmbeddedConnection {
      * @return An instance of EmbeddedPreparedStatement
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public EmbeddedPreparedStatement createPreparedStatement(String query) throws MonetDBEmbeddedException {
+    /*public EmbeddedPreparedStatement createPreparedStatement(String query) throws MonetDBEmbeddedException {
         if (!query.endsWith(";")) {
             query += ";";
         }
         return this.createPreparedStatementInternal(this.connectionPointer, query);
-    }
+    }*/
 
     /**
      * Creates a prepared query statement likewise the PreparedStatement in JDBC asynchronously.
@@ -171,13 +171,56 @@ public class MonetDBEmbeddedConnection {
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
     }*/
 
-    /*public MonetDBTable getMonetDBTable(String schemaName, String tableName) throws MonetDBEmbeddedException {
-        MonetDBTable res = this.getMonetDBTableInternal(schemaName, tableName, this.connectionPointer);
-        //results.add(res);
+    /**
+     * Retrieves a MonetDB Table for further operations
+     *
+     * @param schemaName The schema of the table
+     * @param tableName The name of the table
+     * @return A MonetDBTable instance with currentColumns details
+     * @throws MonetDBEmbeddedException If an error in the database occurred
+     */
+    public MonetDBTable getMonetDBTable(String schemaName, String tableName) throws MonetDBEmbeddedException {
+        String qschemaName = StringEscaper.SQLStringEscape(schemaName);
+        String qtableName = StringEscaper.SQLStringEscape(tableName);
+        String query = "SELECT currentColumns.\"name\" AS column, currentColumns.\"type\", currentColumns.\"type_digits\", currentColumns.\"type_scale\", currentColumns.\"default\", currentColumns.\"null\" FROM (SELECT \"id\", \"table_id\", \"name\", \"type\", \"type_digits\", \"type_scale\", \"default\", \"null\", \"number\" FROM sys.currentColumns) AS currentColumns INNER JOIN (SELECT \"id\", \"schema_id\" FROM sys.tables WHERE name="
+                + qtableName + ") AS tables ON (tables.\"id\"=currentColumns.\"table_id\") INNER JOIN (SELECT \"id\" FROM sys.schemas WHERE name="
+                + qschemaName + ") AS schemas ON (tables.\"schema_id\"=schemas.\"id\") ORDER BY currentColumns.\"number\";";
+
+        QueryResultSet eqr = this.sendQuery(query);
+        int numberOfRows = eqr.getNumberOfRows();
+        if(numberOfRows == 0) {
+            throw new MonetDBEmbeddedException("The table " + tableName + " on schema " + schemaName + " does not exist!");
+        }
+        QueryResultSetRows rows = eqr.fetchAllRowValues();
+        eqr.close();
+
+        MonetDBTableColumn<?>[] array = new MonetDBTableColumn<?>[numberOfRows];
+        int i = 0;
+        for(QueryResultSetRows.QueryResulSetRow row : rows.getAllRows()) {
+            String columnName = row.getColumn(0);
+            String columnType = row.getColumn(1);
+            int ndigits = row.getColumn(2);
+            int nscale = row.getColumn(3);
+            String defaultValue = row.getColumn(4);
+            boolean isNullable = row.getColumn(5);
+            array[i] = new MonetDBTableColumn(i, columnName, columnType, ndigits, nscale, defaultValue, isNullable);
+            i++;
+        }
+        MonetDBTable res = new MonetDBTable(this, schemaName, tableName, array);
+        results.add(res);
         return res;
     }
-        add the method from current schema
-    public MonetDBTable getMonetDBTableAsync(String schema, String tableName) throws MonetDBEmbeddedException {
+
+    /**
+     * Retrieves a MonetDB Table for further operations asynchronously.
+     *
+     * @param schemaName The schema of the table
+     * @param tableName The name of the table
+     * @return A MonetDBTable instance with currentColumns details
+     * @throws MonetDBEmbeddedException If an error in the database occurred
+     */
+    /*public MonetDBTable getMonetDBTableAsync(String schemaName, String tableName) throws MonetDBEmbeddedException {
+        CompletableFuture.supplyAsync(() -> this.getMonetDBTable(schemaName, tableName));
         throw new UnsupportedOperationException("Must wait for Java 8 :(");
     }*/
 
@@ -205,8 +248,10 @@ public class MonetDBEmbeddedConnection {
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     public boolean checkIfTableExists(String schemaName, String tableName) throws MonetDBEmbeddedException {
+        schemaName = StringEscaper.SQLStringEscape(schemaName);
+        tableName = StringEscaper.SQLStringEscape(tableName);
         String query =
-                "select schemas.name as sn, tables.name as tn from sys.tables join sys.schemas on tables.schema_id=schemas.id where tables.system=true order by sn, tn and schemas.name ='" +
+                "select schemas.name as sn, tables.name as tn from sys.tables join sys.schemas on sys.tables.schema_id=schemas.id where tables.system=true order by sn, tn and schemas.name ='" +
                         schemaName + "' and tables.name ='" + tableName + "';";
         QueryResultSet eqr = this.sendQuery(query);
         eqr.close();
@@ -221,6 +266,8 @@ public class MonetDBEmbeddedConnection {
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     public void removeTable(String schemaName, String tableName) throws MonetDBEmbeddedException {
+        schemaName = StringEscaper.SQLStringEscape(schemaName);
+        tableName = StringEscaper.SQLStringEscape(tableName);
         String query = "drop table " + schemaName + "." + tableName + ";";
         this.sendUpdate(query).close();
     }
@@ -258,17 +305,23 @@ public class MonetDBEmbeddedConnection {
         this.results.remove(res);
     }
 
+    /**
+     * Internal implementation of sendUpdate.
+     */
     private native UpdateResultSet sendUpdateInternal(long connectionPointer, String query, boolean execute)
             throws MonetDBEmbeddedException;
 
+    /**
+     * Internal implementation of sendQuery.
+     */
     private native QueryResultSet sendQueryInternal(long connectionPointer, String query, boolean execute)
             throws MonetDBEmbeddedException;
 
-    private native EmbeddedPreparedStatement createPreparedStatementInternal(long connectionPointer, String query)
-            throws MonetDBEmbeddedException;
-
-    /*private native MonetDBTable getMonetDBTableInternal(long connectionPointer, String schemaName, String tableName)
+    /*private native EmbeddedPreparedStatement createPreparedStatementInternal(long connectionPointer, String query)
             throws MonetDBEmbeddedException;*/
 
+    /**
+     * Internal implementation to close a connection.
+     */
     private native void closeConnectionInternal(long connectionPointer);
 }

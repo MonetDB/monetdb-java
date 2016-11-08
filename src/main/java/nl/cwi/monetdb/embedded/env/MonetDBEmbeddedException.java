@@ -15,7 +15,5 @@ package nl.cwi.monetdb.embedded.env;
  */
 public class MonetDBEmbeddedException extends Exception {
 
-    public MonetDBEmbeddedException(String message) {
-        super(message);
-    }
+    public MonetDBEmbeddedException(String message) { super(message); }
 }

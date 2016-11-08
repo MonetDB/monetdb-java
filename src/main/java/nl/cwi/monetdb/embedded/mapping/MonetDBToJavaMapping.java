@@ -92,8 +92,5 @@ public enum MonetDBToJavaMapping {
      * @return The corresponding Java class for the enum value
      */
     @SuppressWarnings("unchecked")
-    public <T> Class<T> getJavaClass() {
-        return (Class<T>) this.javaClass;
-    }
-
+    public <T> Class<T> getJavaClass() { return (Class<T>) this.javaClass; }
 }
