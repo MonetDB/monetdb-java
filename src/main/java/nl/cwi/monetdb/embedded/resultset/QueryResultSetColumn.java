@@ -107,8 +107,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
                 throw new MonetDBEmbeddedException("Connection closed!");
             }
             T[] newvalues = this.fetchValuesInternal(this.resultSetPointer, this.resultSetIndex,
-                    (Class<T>) this.mapping.getJavaClass(), this.mapping.getJavaClass().getSimpleName(),
-                    this.mapping.ordinal(), firstIndexToFetch, lastIndexToFetch);
+                    (Class<T>) this.mapping.getJavaClass(), this.mapping.ordinal(), firstIndexToFetch, lastIndexToFetch);
             System.arraycopy(newvalues, 0, this.values, firstIndexToFetch, newvalues.length);
         }
 
@@ -257,6 +256,6 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
     /**
      * Internal implementation to fetch values from the column.
      */
-    private native T[] fetchValuesInternal(long resultPointer, int resultSetIndex, Class<T> jclass, String className,
-                                           int enumEntry, int first, int last) throws MonetDBEmbeddedException;
+    private native T[] fetchValuesInternal(long resultPointer, int resultSetIndex, Class<T> jclass, int enumEntry,
+                                           int first, int last) throws MonetDBEmbeddedException;
 }

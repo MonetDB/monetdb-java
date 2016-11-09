@@ -1,5 +1,6 @@
 package nl.cwi.monetdb.embedded.mapping;
 
+import java.io.Serializable;
 import java.util.Arrays;
 
 /**
@@ -7,7 +8,7 @@ import java.util.Arrays;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class MonetDBEmbeddedBlob {
+public class MonetDBEmbeddedBlob implements Serializable {
 
     /**
      * The BLOB's content as a Java byte array.

@@ -17,8 +17,8 @@ import nl.cwi.monetdb.embedded.utils.StringEscaper;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
-import java.net.InetAddress;
-import java.net.URI;
+import java.net.Inet4Address;
+import java.net.URL;
 import java.sql.PreparedStatement;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -72,8 +72,8 @@ public class EmbeddedPreparedStatement {
         DirectMappingClasses.add(Float.class);
         DirectMappingClasses.add(Double.class);
         DirectMappingClasses.add(MonetDBEmbeddedBlob.class);
-        DirectMappingClasses.add(URI.class);
-        DirectMappingClasses.add(InetAddress.class);
+        DirectMappingClasses.add(URL.class);
+        DirectMappingClasses.add(Inet4Address.class);
         DirectMappingClasses.add(UUID.class);
     }
 
@@ -366,6 +366,7 @@ public class EmbeddedPreparedStatement {
     /**
      * Creates the SQL String from the parsed parameters (adapted from the JDBC driver implementation).
      *
+     * @return The SQL statement with all parameters replaced
      * @throws MonetDBEmbeddedException If a parameter has not been set yet
      */
     private String applyParameters() throws MonetDBEmbeddedException {

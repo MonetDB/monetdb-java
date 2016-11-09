@@ -10,7 +10,6 @@ package nl.cwi.monetdb.embedded.env;
 
 import nl.cwi.monetdb.embedded.resultset.*;
 import nl.cwi.monetdb.embedded.tables.MonetDBTable;
-import nl.cwi.monetdb.embedded.tables.MonetDBTableColumn;
 import nl.cwi.monetdb.embedded.utils.StringEscaper;
 
 import java.util.HashSet;
@@ -148,7 +147,7 @@ public class MonetDBEmbeddedConnection {
     /**
      * Creates a prepared query statement likewise the PreparedStatement in JDBC.
      *
-     * @param query The SQL query with ? indicating the parameters to replace in the query
+     * @param query The SQL query with '?' indicating the parameters to replace in the query
      * @return An instance of EmbeddedPreparedStatement
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
@@ -162,7 +161,7 @@ public class MonetDBEmbeddedConnection {
     /**
      * Creates a prepared query statement likewise the PreparedStatement in JDBC asynchronously.
      *
-     * @param query The SQL query with ? indicating the parameters to replace in the query
+     * @param query The SQL query with '?' indicating the parameters to replace in the query
      * @return An instance of EmbeddedPreparedStatement
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
@@ -176,37 +175,11 @@ public class MonetDBEmbeddedConnection {
      *
      * @param schemaName The schema of the table
      * @param tableName The name of the table
-     * @return A MonetDBTable instance with currentColumns details
+     * @return A MonetDBTable instance with column details
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     public MonetDBTable getMonetDBTable(String schemaName, String tableName) throws MonetDBEmbeddedException {
-        String qschemaName = StringEscaper.SQLStringEscape(schemaName);
-        String qtableName = StringEscaper.SQLStringEscape(tableName);
-        String query = "SELECT currentColumns.\"name\" AS column, currentColumns.\"type\", currentColumns.\"type_digits\", currentColumns.\"type_scale\", currentColumns.\"default\", currentColumns.\"null\" FROM (SELECT \"id\", \"table_id\", \"name\", \"type\", \"type_digits\", \"type_scale\", \"default\", \"null\", \"number\" FROM sys.currentColumns) AS currentColumns INNER JOIN (SELECT \"id\", \"schema_id\" FROM sys.tables WHERE name="
-                + qtableName + ") AS tables ON (tables.\"id\"=currentColumns.\"table_id\") INNER JOIN (SELECT \"id\" FROM sys.schemas WHERE name="
-                + qschemaName + ") AS schemas ON (tables.\"schema_id\"=schemas.\"id\") ORDER BY currentColumns.\"number\";";
-
-        QueryResultSet eqr = this.sendQuery(query);
-        int numberOfRows = eqr.getNumberOfRows();
-        if(numberOfRows == 0) {
-            throw new MonetDBEmbeddedException("The table " + tableName + " on schema " + schemaName + " does not exist!");
-        }
-        QueryResultSetRows rows = eqr.fetchAllRowValues();
-        eqr.close();
-
-        MonetDBTableColumn<?>[] array = new MonetDBTableColumn<?>[numberOfRows];
-        int i = 0;
-        for(QueryResultSetRows.QueryResulSetRow row : rows.getAllRows()) {
-            String columnName = row.getColumn(0);
-            String columnType = row.getColumn(1);
-            int ndigits = row.getColumn(2);
-            int nscale = row.getColumn(3);
-            String defaultValue = row.getColumn(4);
-            boolean isNullable = row.getColumn(5);
-            array[i] = new MonetDBTableColumn(i, columnName, columnType, ndigits, nscale, defaultValue, isNullable);
-            i++;
-        }
-        MonetDBTable res = new MonetDBTable(this, schemaName, tableName, array);
+        MonetDBTable res = this.getMonetDBTableInternal(this.connectionPointer, schemaName, tableName);
         results.add(res);
         return res;
     }
@@ -216,7 +189,7 @@ public class MonetDBEmbeddedConnection {
      *
      * @param schemaName The schema of the table
      * @param tableName The name of the table
-     * @return A MonetDBTable instance with currentColumns details
+     * @return A MonetDBTable instance with column details
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     /*public MonetDBTable getMonetDBTableAsync(String schemaName, String tableName) throws MonetDBEmbeddedException {
@@ -301,9 +274,7 @@ public class MonetDBEmbeddedConnection {
     /**
      * Removes a query result from this connection.
      */
-    protected void removeQueryResult(AbstractConnectionResult res) {
-        this.results.remove(res);
-    }
+    protected void removeQueryResult(AbstractConnectionResult res) { this.results.remove(res); }
 
     /**
      * Internal implementation of sendUpdate.
@@ -315,6 +286,12 @@ public class MonetDBEmbeddedConnection {
      * Internal implementation of sendQuery.
      */
     private native QueryResultSet sendQueryInternal(long connectionPointer, String query, boolean execute)
+            throws MonetDBEmbeddedException;
+
+    /**
+     * Internal implementation of getMonetDBTable.
+     */
+    private native MonetDBTable getMonetDBTableInternal(long connectionPointer, String schemaName, String tableName)
             throws MonetDBEmbeddedException;
 
     /*private native EmbeddedPreparedStatement createPreparedStatementInternal(long connectionPointer, String query)

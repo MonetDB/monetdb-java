@@ -10,8 +10,8 @@ package nl.cwi.monetdb.embedded.mapping;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.net.InetAddress;
-import java.net.URI;
+import java.net.Inet4Address;
+import java.net.URL;
 import java.sql.Date;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -30,7 +30,7 @@ public enum MonetDBToJavaMapping {
     Hugeint(BigInteger.class), Decimal(BigDecimal.class), Real(Float.class), Double(Double.class),
     MonthInterval(Integer.class), SecondInterval(Long.class), Time(Time.class), TimeTz(Time.class), Date(Date.class),
     Timestamp(Timestamp.class), TimestampTz(Timestamp.class), Blob(MonetDBEmbeddedBlob.class),
-    Geometry(MonetDBEmbeddedBlob.class), GeometryA(MonetDBEmbeddedBlob.class), URL(URI.class), Inet(InetAddress.class),
+    Geometry(MonetDBEmbeddedBlob.class), GeometryA(MonetDBEmbeddedBlob.class), URL(URL.class), Inet(Inet4Address.class),
     JSON(MonetDBEmbeddedBlob.class), UUID(UUID.class);
 
     /**
