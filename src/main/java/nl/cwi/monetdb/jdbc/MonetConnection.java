@@ -1448,9 +1448,11 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 */
 	@Override
 	public void setClientInfo(Properties props) throws java.sql.SQLClientInfoException {
-		for (Entry<Object, Object> entry : props.entrySet()) {
-			setClientInfo(entry.getKey().toString(),
-					entry.getValue().toString());
+		if (props != null) {
+			for (Entry<Object, Object> entry : props.entrySet()) {
+				setClientInfo(entry.getKey().toString(),
+						entry.getValue().toString());
+			}
 		}
 	}
 

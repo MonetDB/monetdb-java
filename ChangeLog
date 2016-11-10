@@ -4,8 +4,11 @@
 * Thu Nov 10 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Implemented Connection methods: getClientInfo(name) and getClientInfo().
   They used to return null and empty Properties object.
-  Method Connection.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT) now
-  throws an SQLFeatureNotSupportedException.
+  Corrected implementation of Connection methods: setClientInfo(name, value)
+  and setClientInfo(properties). They are now processed as expected.
+  Corrected implementation of Connection.setHoldability(holdability). It now
+  throws an SQLFeatureNotSupportedException when holdability is not
+  ResultSet.HOLD_CURSORS_OVER_COMMIT (which is the only supported holdability).
 
 * Thu Oct 13 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected implementation of java.sql.Wrapper methods isWrapperFor()
