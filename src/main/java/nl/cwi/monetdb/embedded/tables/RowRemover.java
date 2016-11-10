@@ -1,5 +1,7 @@
 package nl.cwi.monetdb.embedded.tables;
 
+import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
+
 /**
  * The removal iterator for a MonetDB table.
  *
@@ -10,11 +12,11 @@ public class RowRemover extends RowIterator {
     /**
      * If the next row is going to be removed.
      */
-    private boolean toRemove;
+    private boolean[] removeIndexes;
 
-    public RowRemover(MonetDBTable table, int firstIndex, int lastIndex) {
-        super(table, firstIndex, lastIndex);
-        this.toRemove = false;
+    public RowRemover(MonetDBTable table, Object[][] rows, int firstIndex, int lastIndex) {
+        super(table, rows, firstIndex, lastIndex);
+        this.removeIndexes = new boolean[lastIndex - firstIndex];
     }
 
     /**
@@ -22,37 +24,19 @@ public class RowRemover extends RowIterator {
      *
      * @return If the next row is going to be removed
      */
-    public boolean isToRemove() { return toRemove; }
+    public boolean isCurrentRowSetToRemove() { return this.removeIndexes[this.getCurrentIterationNumber()]; }
 
     /**
      * Sets the current row to remove or not.
      *
      * @param toRemove A boolean indicating if the next row will be removed
      */
-    public void setToRemove(boolean toRemove) { this.toRemove = toRemove; }
+    public void setCurrentRowToRemove(boolean toRemove) { this.removeIndexes[this.getCurrentIterationNumber()] = toRemove; }
 
     /**
-     * To be called by the JNI interface in every iteration.
+     * Removes the rows.
      *
-     * @param columns The next row's columns
+     * @return The number of rows deleted
      */
-    @Override
-    protected void setNextIteration(Object[] columns) {
-        super.setNextIteration(columns);
-        this.toRemove = false;
-    }
-
-    /**
-     * Remove the current row if it was set for so.
-     *
-     * @return If the row was removed internally
-     */
-    protected boolean tryRemove() { return this.isToRemove() && this.removeNextTableRow(); }
-
-    /**
-     * Removes the next row.
-     *
-     * @return If the row was removed internally
-     */
-    private native boolean removeNextTableRow();
+    protected native int submitDeletes() throws MonetDBEmbeddedException;
 }

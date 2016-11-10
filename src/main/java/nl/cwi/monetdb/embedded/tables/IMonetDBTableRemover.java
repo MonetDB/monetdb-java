@@ -9,10 +9,10 @@ public interface IMonetDBTableRemover extends IMonetDBTableBaseIterator {
 
     /**
      * The business logic for the iterator. Use the
-     * {@link nl.cwi.monetdb.embedded.tables.RowRemover#setToRemove(boolean) setToRemove}
-     * method in <code>nextRow</code> to set the current row to remove.
+     * {@link nl.cwi.monetdb.embedded.tables.RowRemover#setCurrentRowToRemove(boolean) setToRemove}
+     * method in <code>processNextRow</code> to set the current row to remove.
      *
      * @param nextRow The next row in the iteration.
      */
-    void nextRow(RowRemover nextRow);
+    void processNextRow(RowRemover nextRow);
 }

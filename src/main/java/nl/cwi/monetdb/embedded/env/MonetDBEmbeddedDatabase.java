@@ -48,10 +48,9 @@ public class MonetDBEmbeddedDatabase {
      * @return A MonetDBEmbeddedDatabase instance
      * @throws MonetDBEmbeddedException If the JNI library has not been loaded yet or an error in the database occurred
      */
-    /*public static MonetDBEmbeddedDatabase StartDatabaseAsync(String dbDirectory, boolean silentFlag,
+    /*public static CompletableFuture<MonetDBEmbeddedDatabase> StartDatabaseAsync(String dbDirectory, boolean silentFlag,
                                                              boolean sequentialFlag) throws MonetDBEmbeddedException {
-        CompletableFuture.supplyAsync(() -> StartDatabase(dbDirectory, silentFlag, sequentialFlag));
-        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+        return CompletableFuture.supplyAsync(() -> StartDatabase(dbDirectory, silentFlag, sequentialFlag));
     }*/
 
     private final String databaseDirectory;
@@ -127,9 +126,8 @@ public class MonetDBEmbeddedDatabase {
      *
      * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
      */
-    /*public void stopDatabaseAsync() throws MonetDBEmbeddedException {
-        CompletableFuture.supplyAsync(() -> this.stopDatabase());
-        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    /*public CompletableFuture<Void> stopDatabaseAsync() throws MonetDBEmbeddedException {
+        return CompletableFuture.runAsync(() -> this.stopDatabase());
     }*/
 
     /**
@@ -148,9 +146,8 @@ public class MonetDBEmbeddedDatabase {
      * @return A MonetDBEmbeddedConnection instance
      * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
      */
-    /*public MonetDBEmbeddedConnection createConnectionAsync() throws MonetDBEmbeddedException {
-        CompletableFuture.supplyAsync(() -> this.createConnectionInternal());
-        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    /*public CompletableFuture<MonetDBEmbeddedConnection> createConnectionAsync() throws MonetDBEmbeddedException {
+        return CompletableFuture.supplyAsync(() -> this.createConnectionInternal());
     }*/
 
     /**

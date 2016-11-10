@@ -12,5 +12,5 @@ public interface IMonetDBTableIterator extends IMonetDBTableBaseIterator {
      *
      * @param nextRow The next row in the iteration.
      */
-    void nextRow(RowIterator nextRow);
+    void processNextRow(RowIterator nextRow);
 }

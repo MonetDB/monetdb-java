@@ -12,6 +12,7 @@ import nl.cwi.monetdb.embedded.mapping.AbstractColumn;
 import nl.cwi.monetdb.embedded.mapping.AbstractResultTable;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
+import nl.cwi.monetdb.embedded.mapping.MonetDBRow;
 
 import java.util.Arrays;
 import java.util.ListIterator;
@@ -83,9 +84,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
      * @return The columns, {@code null} if index not in bounds
      */
     @SuppressWarnings("unchecked")
-    public <T> QueryResultSetColumn<T> getColumn(int index) {
-        return (QueryResultSetColumn<T>) columns[index];
-    }
+    public <T> QueryResultSetColumn<T> getColumn(int index) { return (QueryResultSetColumn<T>) columns[index]; }
 
     /**
      * Gets a column from the result set by name.
@@ -109,10 +108,10 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
      *
      * @param startIndex The first row index to retrieve
      * @param endIndex The last row index to retrieve
-     * @return The rows as {@code QueryResultSetRows}
+     * @return The rows as {@code AbstractRowSet}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-	public QueryResultSetRows fetchResultSetRows(int startIndex, int endIndex) throws MonetDBEmbeddedException {
+	public QueryResultRowSet fetchResultSetRows(int startIndex, int endIndex) throws MonetDBEmbeddedException {
         if(endIndex < startIndex) {
             int aux = startIndex;
             startIndex = endIndex;
@@ -133,7 +132,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
                 temp[j][i] = nextColumn[j];
 			}
 		}
-        return new QueryResultSetRows(this, this.getMappings(), temp);
+        return new QueryResultRowSet(this.getMappings(), temp, this);
 	}
 
     /**
@@ -141,22 +140,21 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
      *
      * @param startIndex The first row index to retrieve
      * @param endIndex The last row index to retrieve
-     * @return The rows as {@code QueryResultSetRows}
+     * @return The rows as {@code AbstractRowSet}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public QueryResultSetRows fetchResultSetRowsAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
-        CompletableFuture.supplyAsync(() -> this.fetchResultSetRows(startIndex, endIndex));
-        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    /*public CompletableFuture<AbstractRowSet> fetchResultSetRowsAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
+        return CompletableFuture.supplyAsync(() -> this.fetchResultSetRows(startIndex, endIndex));
     }*/
 
     /**
      * Fetches the first N rows from the result set.
      *
      * @param n The last row index to retrieve
-     * @return The rows as {@code QueryResultSetRows}
+     * @return The rows as {@code AbstractRowSet}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public QueryResultSetRows fetchFirstNRowValues(int n) throws MonetDBEmbeddedException {
+    public QueryResultRowSet fetchFirstNRowValues(int n) throws MonetDBEmbeddedException {
         return this.fetchResultSetRows(0, n);
     }
 
@@ -164,35 +162,35 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
      * Fetches the first N rows from the result set asynchronously.
      *
      * @param n The last row index to retrieve
-     * @return The rows as {@code QueryResultSetRows}
+     * @return The rows as {@code AbstractRowSet}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public QueryResultSetRows fetchFirstNRowValuesAsync(int n) throws MonetDBEmbeddedException {
+    /*public CompletableFuture<AbstractRowSet> fetchFirstNRowValuesAsync(int n) throws MonetDBEmbeddedException {
         return this.fetchResultSetRowsAsync(0, n);
     }*/
 
     /**
      * Fetches all rows from the result set.
      *
-     * @return The rows as {@code QueryResultSetRows}
+     * @return The rows as {@code AbstractRowSet}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public QueryResultSetRows fetchAllRowValues() throws MonetDBEmbeddedException {
+    public QueryResultRowSet fetchAllRowValues() throws MonetDBEmbeddedException {
         return this.fetchResultSetRows(0, this.numberOfRows);
     }
 
     /**
      * Fetches all rows from the result set asynchronously.
      *
-     * @return The rows as {@code QueryResultSetRows}
+     * @return The rows as {@code AbstractRowSet}
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public QueryResultSetRows fetchAllRowValuesAsync() throws MonetDBEmbeddedException {
+    /*public CompletableFuture<AbstractRowSet> fetchAllRowValuesAsync() throws MonetDBEmbeddedException {
         return this.fetchResultSetRowsAsync(0, this.numberOfRows);
     }*/
 
     @Override
-    public ListIterator<QueryResultSetRows.QueryResulSetRow> iterator() {
+    public ListIterator<MonetDBRow> iterator() {
         try {
             return Arrays.asList(this.fetchAllRowValues().getAllRows()).listIterator();
         } catch (MonetDBEmbeddedException ex) {

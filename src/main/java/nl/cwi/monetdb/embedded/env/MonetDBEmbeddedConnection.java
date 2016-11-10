@@ -111,9 +111,8 @@ public class MonetDBEmbeddedConnection {
      * @return The update result object
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public UpdateResultSet sendUpdateAsync(String query) throws MonetDBEmbeddedException {
-        /CompletableFuture.supplyAsync(() -> this.sendUpdate(query));
-        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    /*public CompletableFuture<UpdateResultSet> sendUpdateAsync(String query) throws MonetDBEmbeddedException {
+        return CompletableFuture.supplyAsync(() -> this.sendUpdate(query));
     }*/
 
     /**
@@ -139,9 +138,8 @@ public class MonetDBEmbeddedConnection {
      * @return The query result object
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public QueryResultSet sendQueryAsync(String query) throws MonetDBEmbeddedException {
-        CompletableFuture.supplyAsync(() -> this.sendQuery(query));
-        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    /*public CompletableFuture<QueryResultSet> sendQueryAsync(String query) throws MonetDBEmbeddedException {
+        return CompletableFuture.supplyAsync(() -> this.sendQuery(query));
     }*/
 
     /**
@@ -165,9 +163,8 @@ public class MonetDBEmbeddedConnection {
      * @return An instance of EmbeddedPreparedStatement
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public EmbeddedPreparedStatement createPreparedStatementAsync(String query) throws MonetDBEmbeddedException {
-        CompletableFuture.supplyAsync(() -> this.createPreparedStatement(query));
-        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    /*public CompletableFuture<EmbeddedPreparedStatement> createPreparedStatementAsync(String query) throws MonetDBEmbeddedException {
+        return CompletableFuture.supplyAsync(() -> this.createPreparedStatement(query));
     }*/
 
     /**
@@ -192,9 +189,8 @@ public class MonetDBEmbeddedConnection {
      * @return A MonetDBTable instance with column details
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public MonetDBTable getMonetDBTableAsync(String schemaName, String tableName) throws MonetDBEmbeddedException {
-        CompletableFuture.supplyAsync(() -> this.getMonetDBTable(schemaName, tableName));
-        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    /*public CompletableFuture<MonetDBTable> getMonetDBTableAsync(String schemaName, String tableName) throws MonetDBEmbeddedException {
+        return CompletableFuture.supplyAsync(() -> this.getMonetDBTable(schemaName, tableName));
     }*/
 
     /**
@@ -266,9 +262,8 @@ public class MonetDBEmbeddedConnection {
     /**
      * Shuts down this connection asynchronously. Any pending queries connections will be immediately closed as well.
      */
-    /*public void closeConnectionAsync() {
-        CompletableFuture.supplyAsync(() -> this.closeConnection());
-        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    /*public CompletableFuture<Void> closeConnectionAsync() {
+        return CompletableFuture.runAsync(() -> this.closeConnection());
     }*/
 
     /**

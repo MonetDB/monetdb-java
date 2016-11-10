@@ -414,7 +414,7 @@ public class EmbeddedPreparedStatement {
      * @return The update result object
      * @throws MonetDBEmbeddedException If an error in the database occurred or if a parameter has not been set yet
      */
-    /*public UpdateResultSet sendUpdateAsync() throws MonetDBEmbeddedException {
+    /*public CompletableFuture<UpdateResultSet> sendUpdateAsync() throws MonetDBEmbeddedException {
         return this.connection.sendUpdateAsync(this.applyParameters());
     }*/
 
@@ -424,7 +424,7 @@ public class EmbeddedPreparedStatement {
      * @return The query result object
      * @throws MonetDBEmbeddedException If an error in the database occurred or if a parameter has not been set yet
      */
-    /*public QueryResultSet sendQueryAsync() throws MonetDBEmbeddedException {
+    /*public CompletableFuture<QueryResultSet> sendQueryAsync() throws MonetDBEmbeddedException {
         return this.connection.sendQueryAsync(this.applyParameters());
     }*/
 }

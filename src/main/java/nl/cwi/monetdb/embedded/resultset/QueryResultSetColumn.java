@@ -125,9 +125,8 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public T[] fetchColumnValuesAsync(int startIndex, int endIndex, Class<T> javaClass) throws MonetDBEmbeddedException {
-        CompletableFuture.supplyAsync(() -> this.fetchColumnValues(startIndex, endIndex, javaClass));
-        throw new UnsupportedOperationException("Must wait for Java 8 :(");
+    /*public CompletableFuture<T[]> fetchColumnValuesAsync(int startIndex, int endIndex, Class<T> javaClass) throws MonetDBEmbeddedException {
+        return CompletableFuture.supplyAsync(() -> this.fetchColumnValues(startIndex, endIndex, javaClass));
     }*/
 
     /**
@@ -150,7 +149,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public T[] fetchFirstNColumnValuesAsync(int n, Class<T> javaClass) throws MonetDBEmbeddedException {
+    /*public CompletableFuture<T[]> fetchFirstNColumnValuesAsync(int n, Class<T> javaClass) throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(0, n, javaClass);
     }*/
 
@@ -172,7 +171,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public T[] fetchAllColumnValuesAsync(Class<T> javaClass) throws MonetDBEmbeddedException {
+    /*public CompletableFuture<T[]> fetchAllColumnValuesAsync(Class<T> javaClass) throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(0, this.numberOfRows, javaClass);
     }*/
 
@@ -198,7 +197,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     /*@SuppressWarnings("unchecked")
-    public T[] fetchColumnValuesAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
+    public CompletableFuture<T[]> fetchColumnValuesAsync(int startIndex, int endIndex) throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(startIndex, endIndex, (Class<T>) this.mapping.getJavaClass());
     }*/
 
@@ -220,7 +219,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public T[] fetchFirstNColumnValuesAsync(int n) throws MonetDBEmbeddedException {
+    /*public CompletableFuture<T[]> fetchFirstNColumnValuesAsync(int n) throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(0, n);
     }*/
 
@@ -240,7 +239,7 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
      * @return The column values as a Java array
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public T[] fetchAllColumnValuesAsync() throws MonetDBEmbeddedException {
+    /*public CompletableFuture<T[]> fetchAllColumnValuesAsync() throws MonetDBEmbeddedException {
         return this.fetchColumnValuesAsync(0, this.numberOfRows);
     }*/
 

@@ -8,6 +8,8 @@
 
 package nl.cwi.monetdb.embedded.resultset;
 
+import nl.cwi.monetdb.embedded.mapping.AbstractRowSet;
+import nl.cwi.monetdb.embedded.mapping.MonetDBRow;
 import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
 
 import java.lang.reflect.Array;
@@ -15,106 +17,20 @@ import java.util.Arrays;
 import java.util.ListIterator;
 
 /**
- * A row set retrieved from an embedded MonetDB query result. All the values in this set are already mapped
- * to Java classes a priori.
+ * The row result set from a sendQuery.
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryResultSetRows implements Iterable {
-
-    /**
-     * A single row in a result set.
-     *
-     * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
-     */
-    static public class QueryResulSetRow implements Iterable {
-
-        /**
-         * The original row result set from this row.
-         */
-        private final QueryResultSetRows resultSet;
-
-        /**
-         * The columns values as Java objects.
-         */
-        private final Object[] columns;
-
-        protected QueryResulSetRow(QueryResultSetRows resultSet, Object[] columns) {
-            this.resultSet = resultSet;
-            this.columns = columns;
-        }
-
-        /**
-         * Gets the original row result set from this row.
-         *
-         * @return The original row result set from this row
-         */
-        public QueryResultSetRows getRowResultSet() { return resultSet; }
-
-        /**
-         * Gets the columns values as Java objects.
-         *
-         * @return The columns values as Java objects
-         */
-        public Object[] getAllColumns() {
-            return columns;
-        }
-
-        /**
-         * Gets the number of columns.
-         *
-         * @return The number of columns
-         */
-        public int getNumberOfColumns() { return columns.length; }
-
-        /**
-         * Gets a column value as a Java class.
-         *
-         * @param <T> A Java class mapped to a MonetDB data type
-         * @param index The index of the column
-         * @param javaClass The Java class
-         * @return The column value as a Java class
-         */
-        public <T> T getColumn(int index, Class<T> javaClass) { return javaClass.cast(columns[index]); }
-
-        /**
-         * Gets a column value as a Java class using the default mapping.
-         *
-         * @param <T> A Java class mapped to a MonetDB data type
-         * @param index The index of the column
-         * @return The column value as a Java class
-         */
-        public <T> T getColumn(int index) {
-            Class<T> javaClass = this.resultSet.mappings[index].getJavaClass();
-            return javaClass.cast(columns[index]);
-        }
-
-        @Override
-        public ListIterator<Object> iterator() { return Arrays.asList(this.columns).listIterator(); }
-    }
+public class QueryResultRowSet extends AbstractRowSet implements Iterable {
 
     /**
      * The original query result set this row set belongs.
      */
     private final QueryResultSet queryResultSet;
 
-    /**
-     * The MonetDB-To-Java mappings of the columns.
-     */
-    private final MonetDBToJavaMapping[] mappings;
-
-    /**
-     * The rows of this set.
-     */
-    private final QueryResulSetRow[] rows;
-
-    protected QueryResultSetRows(QueryResultSet queryResultSet, MonetDBToJavaMapping[] mappings, Object[][] rows) {
+    protected QueryResultRowSet(MonetDBToJavaMapping[] mappings, Object[][] rows, QueryResultSet queryResultSet) {
+        super(mappings, rows);
         this.queryResultSet = queryResultSet;
-        this.mappings = mappings;
-        this.rows = new QueryResulSetRow[mappings.length];
-        for(int i = 0 ; i < mappings.length ; i++) {
-            this.rows[i] = new QueryResulSetRow(this, rows[i]);
-        }
     }
 
     /**
@@ -129,7 +45,7 @@ public class QueryResultSetRows implements Iterable {
      *
      * @return All rows of this set
      */
-    public QueryResulSetRow[] getAllRows() { return rows; }
+    public MonetDBRow[] getAllRows() { return rows; }
 
     /**
      * Gets the number of rows in this set.
@@ -139,19 +55,12 @@ public class QueryResultSetRows implements Iterable {
     public int getNumberOfRows() { return rows.length; }
 
     /**
-     * Gets the number of columns in this set.
-     *
-     * @return The number of columns in this set
-     */
-    public int getNumberOfColumns() { return mappings.length; }
-
-    /**
      * Gets a single row in this set.
      *
      * @param row The index of the row to retrieve
      * @return A single row in this set
      */
-    public QueryResulSetRow getSingleRow(int row) { return rows[row]; }
+    public MonetDBRow getSingleRow(int row) { return rows[row]; }
 
     /**
      * Gets a single value in this set as a Java class.
@@ -213,5 +122,5 @@ public class QueryResultSetRows implements Iterable {
     }
 
     @Override
-    public ListIterator<QueryResulSetRow> iterator() { return Arrays.asList(this.rows).listIterator(); }
+    public ListIterator<MonetDBRow> iterator() { return Arrays.asList(this.rows).listIterator(); }
 }
