@@ -1,6 +1,12 @@
 # ChangeLog file for java
 # This file is updated with Maddlog
 
+* Thu Nov 10 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented Connection methods: getClientInfo(name) and getClientInfo().
+  They used to return null and empty Properties object.
+  Method Connection.setHoldability(ResultSet.CLOSE_CURSORS_AT_COMMIT) now
+  throws an SQLFeatureNotSupportedException.
+
 * Thu Oct 13 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected implementation of java.sql.Wrapper methods isWrapperFor()
   and unwrap().  They now properly return expected results instead of
