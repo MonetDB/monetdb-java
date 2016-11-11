@@ -19,11 +19,17 @@ public class MonetDBTableColumn<T> extends AbstractColumn<T> {
      */
     private final boolean isNullable;
 
+    /**
+     * Internal MonetDB index of the column.
+     */
+    private final int internalMonetDBTypeIndex;
+
     public MonetDBTableColumn(int resultSetIndex, String columnName, String columnType, int columnDigits,
-                              int columnScale, String defaultValue, boolean isNullable) {
+                              int columnScale, String defaultValue, boolean isNullable, int internalMonetDBTypeIndex) {
         super(resultSetIndex, columnName, columnType, columnDigits, columnScale);
         this.defaultValue = defaultValue;
         this.isNullable = isNullable;
+        this.internalMonetDBTypeIndex = internalMonetDBTypeIndex;
     }
 
     /**
@@ -39,4 +45,6 @@ public class MonetDBTableColumn<T> extends AbstractColumn<T> {
      * @return The indication if the column is nullable
      */
     public boolean isNullable() { return isNullable; }
+
+    protected int getInternalMonetDBTypeIndex() { return internalMonetDBTypeIndex; }
 }

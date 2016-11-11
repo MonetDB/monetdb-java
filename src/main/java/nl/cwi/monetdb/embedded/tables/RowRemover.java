@@ -14,7 +14,7 @@ public class RowRemover extends RowIterator {
      */
     private boolean[] removeIndexes;
 
-    public RowRemover(MonetDBTable table, Object[][] rows, int firstIndex, int lastIndex) {
+    protected RowRemover(MonetDBTable table, Object[][] rows, int firstIndex, int lastIndex) {
         super(table, rows, firstIndex, lastIndex);
         this.removeIndexes = new boolean[lastIndex - firstIndex];
     }

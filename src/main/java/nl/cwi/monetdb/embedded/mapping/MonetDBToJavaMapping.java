@@ -25,6 +25,7 @@ import java.util.UUID;
  */
 public enum MonetDBToJavaMapping {
 
+    /* PLEASE Don't change these enum values order!! */
     Boolean(Boolean.class), Char(String.class), Varchar(String.class), Clob(String.class), Oid(Long.class),
     Tinyint(Byte.class), Smallint(Short.class), Int(Integer.class), Wrd(Long.class), Bigint(Long.class),
     Hugeint(BigInteger.class), Decimal(BigDecimal.class), Real(Float.class), Double(Double.class),

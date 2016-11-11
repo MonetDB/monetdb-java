@@ -169,9 +169,9 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		this.username = props.getProperty("user");
 		this.password = props.getProperty("password");
 		String language = props.getProperty("language");
-		boolean debug = Boolean.valueOf(props.getProperty("debug")).booleanValue();
+		boolean debug = Boolean.valueOf(props.getProperty("debug"));
 		String hash = props.getProperty("hash");
-		blobIsBinary = Boolean.valueOf(props.getProperty("treat_blob_as_binary")).booleanValue();
+		blobIsBinary = Boolean.valueOf(props.getProperty("treat_blob_as_binary"));
 		int sockTimeout = 0;
 		try {
 			sockTimeout = Integer.parseInt(props.getProperty("so_timeout"));
@@ -1548,7 +1548,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 * @return a non-null String if the line is invalid,
 		 *         or additional lines are not allowed.
 		 */
-		public abstract String addLine(String line, int linetype);
+		String addLine(String line, int linetype);
 
 		/**
 		 * Returns whether this Reponse expects more lines to be added
@@ -1556,7 +1556,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 *
 		 * @return true if a next line should be added, false otherwise
 		 */
-		public abstract boolean wantsMore();
+		boolean wantsMore();
 
 		/**
 		 * Indicates that no more header lines will be added to this
@@ -1565,14 +1565,14 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 * @throws SQLException if the contents of the Response is not
 		 *         consistent or sufficient.
 		 */
-		public abstract void complete() throws SQLException;
+		void complete() throws SQLException;
 
 		/**
 		 * Instructs the Response implementation to close and do the
 		 * necessary clean up procedures.
 		 *
 		 */
-		public abstract void close();
+		void close();
 	}
 	// }}}
 

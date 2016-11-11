@@ -34,8 +34,8 @@ public class RowIterator extends AbstractRowSet {
     protected RowIterator(MonetDBTable table, Object[][] rows, int firstIndex, int lastIndex) {
         super(table.getMappings(), rows);
         this.table = table;
-        this.firstIndex = firstIndex; //Math.max(firstIndex, 0);
-        this.lastIndex = lastIndex; //Math.min(Math.min(lastIndex, table.getNumberOfRows()), 0);
+        this.firstIndex = firstIndex;
+        this.lastIndex = lastIndex;
         this.currentIterationNumber = 0;
     }
 

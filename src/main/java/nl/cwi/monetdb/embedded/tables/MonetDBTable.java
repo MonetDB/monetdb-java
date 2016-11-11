@@ -4,6 +4,7 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.embedded.mapping.AbstractColumn;
 import nl.cwi.monetdb.embedded.mapping.AbstractResultTable;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
+import nl.cwi.monetdb.embedded.mapping.MonetDBRow;
 import nl.cwi.monetdb.embedded.resultset.QueryResultSet;
 import nl.cwi.monetdb.embedded.resultset.QueryResultSetColumn;
 
@@ -35,6 +36,11 @@ public class MonetDBTable extends AbstractResultTable {
      */
     private long connectionPointer;
 
+    private final int[] columnsJavaIndexes;
+    private final int[] columnsMonetDBIndexes;
+    private final String[] columnsNames;
+    private final Class[] columnsClasses;
+
     public MonetDBTable(MonetDBEmbeddedConnection connection, long connectionPointer, String schemaName,
                         String tableName, MonetDBTableColumn<?>[] columns) {
         super(connection);
@@ -42,6 +48,18 @@ public class MonetDBTable extends AbstractResultTable {
         this.schemaName = schemaName;
         this.tableName = tableName;
         this.columns = columns;
+        this.columnsJavaIndexes = new int[columns.length];
+        this.columnsMonetDBIndexes = new int[columns.length];
+        this.columnsNames = new String[columns.length];
+        this.columnsClasses = new Class[columns.length];
+        int i = 0;
+        for(MonetDBTableColumn col : this.columns) {
+            this.columnsJavaIndexes[i] = col.getInternalMonetDBTypeIndex();
+            this.columnsMonetDBIndexes[i] = col.getMapping().ordinal();
+            this.columnsNames[i] = col.getColumnName();
+            this.columnsClasses[i] = col.getMapping().getJavaClass();
+            i++;
+        }
     }
 
     @Override
@@ -114,32 +132,69 @@ public class MonetDBTable extends AbstractResultTable {
     }
 
     /**
-     * Iterate over the table using a {@link nl.cwi.monetdb.embedded.tables.IMonetDBTableIterator} instance.
+     * Private method to check the limits of iteration.
      *
-     * @param iterator The iterator with the business logic
+     * @param iterator The iterator to check
+     * @return An integer array with the limits fixed
+     */
+    private int[] checkIterator(IMonetDBTableBaseIterator iterator) {
+        int[] res = {iterator.getFirstRowToIterate(), iterator.getLastRowToIterate()};
+        if(res[0] == res[1]) {
+            throw new ArrayIndexOutOfBoundsException("Iterating over 0 rows?");
+        }
+        if(res[1] < res[0]) {
+            int aux = res[0];
+            res[0] = res[1];
+            res[0] = aux;
+        }
+        if (res[0] < 0) {
+            res[0] = 0;
+        }
+        int numberOfRows = this.getNumberOfRows();
+        if (res[1] > numberOfRows) {
+            res[1] = numberOfRows;
+        }
+        return res;
+    }
+
+    /**
+     * Iterate over the table using a {@link IMonetDBTableCursor} instance.
+     *
+     * @param cursor The iterator with the business logic
      * @return The number of rows iterated
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public int iterateTable(IMonetDBTableIterator iterator) throws MonetDBEmbeddedException {
-        int res = 0;
-        RowIterator ri = this.getRowIteratorInternal(this.connectionPointer, this.schemaName, this.tableName,
-                iterator.getFirstRowToIterate(), iterator.getLastRowToIterate());
+    public int iterateTable(IMonetDBTableCursor cursor) throws MonetDBEmbeddedException {
+        int[] limits = this.checkIterator(cursor);
+        int res = 0, total = limits[1] - limits[0];
+        String query = new StringBuffer("SELECT * FROM ").append(this.schemaName).append(".").append(this.tableName)
+                .append(" LIMIT ").append(total).append(" OFFSET ").append(limits[0]).append(";").toString();
+
+        QueryResultSet eqr = this.getConnection().sendQuery(query);
+        MonetDBRow[] array = eqr.fetchAllRowValues().getAllRows();
+        eqr.close();
+        Object[][] data = new Object[eqr.getNumberOfRows()][this.getNumberOfColumns()];
+        for(int i = 0 ; i < eqr.getNumberOfRows() ; i++) {
+            data[i] = array[i].getAllColumns();
+        }
+
+        RowIterator ri = new RowIterator(this, data, limits[0], limits[1]);
         while(ri.tryContinueIteration()) {
-            iterator.processNextRow(ri);
+            cursor.processNextRow(ri);
             res++;
         }
         return res;
     }
 
     /**
-     * Iterate over the table using a {@link nl.cwi.monetdb.embedded.tables.IMonetDBTableIterator}
+     * Iterate over the table using a {@link IMonetDBTableCursor}
      * instance asynchronously.
      *
      * @param iterator The iterator with the business logic
      * @return The number of rows iterated
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public CompletableFuture<Integer> iterateTable(IMonetDBTableIterator iterator) throws MonetDBEmbeddedException {
+    /*public CompletableFuture<Integer> iterateTable(IMonetDBTableCursor iterator) throws MonetDBEmbeddedException {
         return CompletableFuture.supplyAsync(() -> this.iterateTable(iterator));
     }*/
 
@@ -151,14 +206,15 @@ public class MonetDBTable extends AbstractResultTable {
      * @return The number of rows updated
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public int updateRows(IMonetDBTableUpdater updater) throws MonetDBEmbeddedException {
+    /*public int updateRows(IMonetDBTableUpdater updater) throws MonetDBEmbeddedException {
+        int[] limits = this.checkIterator(updater);
         RowUpdater ru = this.getRowUpdaterInternal(this.connectionPointer, this.schemaName, this.tableName,
-                updater.getFirstRowToIterate(), updater.getLastRowToIterate());
+                limits[0], limits[1]);
         while(ru.tryContinueIteration()) {
             updater.processNextRow(ru);
         }
         return ru.submitUpdates();
-    }
+    }*/
 
     /**
      * Perform an update iteration over the table using a {@link nl.cwi.monetdb.embedded.tables.IMonetDBTableUpdater}
@@ -180,14 +236,15 @@ public class MonetDBTable extends AbstractResultTable {
      * @return The number of rows removed
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public int removeRows(IMonetDBTableRemover remover) throws MonetDBEmbeddedException {
+    /*public int removeRows(IMonetDBTableRemover remover) throws MonetDBEmbeddedException {
+        int[] limits = this.checkIterator(remover);
         RowRemover rr = this.getRowRemoverInternal(this.connectionPointer, this.schemaName, this.tableName,
-                remover.getFirstRowToIterate(), remover.getLastRowToIterate());
+                limits[0], limits[1]);
         while(rr.tryContinueIteration()) {
             remover.processNextRow(rr);
         }
         return rr.submitDeletes();
-    }
+    }*/
 
     /**
      * Perform a removal iteration over the table using a {@link nl.cwi.monetdb.embedded.tables.IMonetDBTableRemover}
@@ -207,9 +264,9 @@ public class MonetDBTable extends AbstractResultTable {
      * @return The number of rows removed
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public int truncateTable() throws MonetDBEmbeddedException {
+    /*public int truncateTable() throws MonetDBEmbeddedException {
         return this.truncateTableInternal(this.connectionPointer, this.schemaName, this.tableName);
-    }
+    }*/
 
     /**
      * Deletes all rows in the table asynchronously.
@@ -222,21 +279,30 @@ public class MonetDBTable extends AbstractResultTable {
     }*/
 
     /**
-     * Appends new rows to the table.
+     * Appends new rows to the table. As MonetDB's storage is column-wise, the method
+     * {@link nl.cwi.monetdb.embedded.tables.MonetDBTable#appendColumns(Object[][]) appendColumns} is preferable
+     * over this one.
      *
      * @param rows An array of rows to append
      * @return The number of rows appended
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     public int appendRows(Object[][] rows) throws MonetDBEmbeddedException {
-        int i = 0;
-        for (Object[] row : rows) {
-            if (row.length != this.getNumberOfColumns()) {
+        int numberOfRows = rows.length, numberOfColumns = this.getNumberOfColumns();
+        if(numberOfRows == 0) {
+            throw new ArrayStoreException("Appending 0 rows?");
+        }
+        Object[][] transposed = new Object[numberOfColumns][numberOfRows];
+
+        for (int i = 0; i < numberOfRows; i++) {
+            if(rows[i].length != numberOfColumns) {
                 throw new ArrayStoreException("The values array at row " + i + " differs from the number of columns!");
             }
-            i++;
+            for (int j = 0; j < numberOfColumns; j++) {
+                transposed[j][i] = rows[i][j];
+            }
         }
-        return this.appendRowsInternal(this.connectionPointer, this.schemaName, this.tableName, rows);
+        return this.appendColumns(transposed);
     }
 
     /**
@@ -251,32 +317,52 @@ public class MonetDBTable extends AbstractResultTable {
     }*/
 
     /**
-     * Internal implementation to get a table iterator.
+     * Appends new rows to the table column-wise. As MonetDB's storage is column-wise, this method is preferable over
+     * {@link nl.cwi.monetdb.embedded.tables.MonetDBTable#appendRows(Object[][]) appendRows} method.
+     *
+     * @param columns An array of columns to append
+     * @return The number of rows appended
+     * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    private native RowIterator getRowIteratorInternal(long connectionPointer, String schemaName, String tableName,
-                                                     int firstRowToIterate, int lastRowToIterate) throws MonetDBEmbeddedException;
+    public int appendColumns(Object[][] columns) throws MonetDBEmbeddedException {
+        int numberOfRows = columns[0].length, numberOfColumns = this.getNumberOfColumns();
+        if(numberOfRows == 0) {
+            throw new ArrayStoreException("Appending 0 rows?");
+        }
+        if (columns.length != numberOfColumns) {
+            throw new ArrayStoreException("The number of columns differs from the table's number of columns!");
+        }
+        for (int i = 0; i < numberOfRows; i++) {
+            if(columns[i].length != numberOfRows) {
+                throw new ArrayStoreException("The number of rows in each column is not consistent!");
+            }
+        }
+        return this.appendColumnsInternal(this.connectionPointer, this.schemaName, this.tableName, this.columnsJavaIndexes,
+                this.columnsMonetDBIndexes,  this.columnsNames, this.columnsClasses, columns);
+    }
 
     /**
-     * Internal implementation to get a table updater iterator.
+     * Appends new rows to the table column-wise and asynchronously.
+     *
+     * @param columns An array of columns to append
+     * @return The number of rows appended
+     * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    private native RowUpdater getRowUpdaterInternal(long connectionPointer, String schemaName, String tableName,
-                                                      int firstRowToIterate, int lastRowToIterate) throws MonetDBEmbeddedException;
-
-    /**
-     * Internal implementation to get a table remover iterator.
-     */
-    private native RowRemover getRowRemoverInternal(long connectionPointer, String schemaName, String tableName,
-                                                    int firstRowToIterate, int lastRowToIterate) throws MonetDBEmbeddedException;
+    /*public CompletableFuture<Integer> appendColumnsAsync(Object[][] columns) throws MonetDBEmbeddedException {
+        return CompletableFuture.supplyAsync(() -> this.appendColumns(schemaName, tableName));
+    }*/
 
     /**
      * Internal implementation of table truncation.
      */
-    private native int truncateTableInternal(long connectionPointer, String schemaName, String tableName)
-            throws MonetDBEmbeddedException;
+    /*private native int truncateTableInternal(long connectionPointer, String schemaName, String tableName)
+            throws MonetDBEmbeddedException;*/
 
     /**
-     * Internal implementation of rows insertion.
+     * Internal implementation of columns insertion.
      */
-    private native int appendRowsInternal(long connectionPointer, String schemaName, String tableName, Object[][] rows)
+    private native int appendColumnsInternal(long connectionPointer, String schemaName, String tableName,
+                                             int[] monetDBindexes, int[] javaindexes, String[] columnsNames,
+                                             Class[] classes, Object[][] columns)
             throws MonetDBEmbeddedException;
 }
