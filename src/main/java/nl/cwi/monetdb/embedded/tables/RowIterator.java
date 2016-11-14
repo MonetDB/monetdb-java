@@ -36,7 +36,7 @@ public class RowIterator extends AbstractRowSet {
         this.table = table;
         this.firstIndex = firstIndex;
         this.lastIndex = lastIndex;
-        this.currentIterationNumber = 0;
+        this.currentIterationNumber = -1;
     }
 
     /**
@@ -72,7 +72,7 @@ public class RowIterator extends AbstractRowSet {
      *
      * @return The current row number of the table in the iteration
      */
-    public int getCurrentTableRowNumber() { return this.currentIterationNumber + this.firstIndex; }
+    public int getCurrentTableRowNumber() { return this.firstIndex + this.currentIterationNumber; }
 
     /**
      * Gets the current row currentColumns values as Java objects.
@@ -86,7 +86,7 @@ public class RowIterator extends AbstractRowSet {
      *
      * @return There are more rows to iterate
      */
-    public boolean hasMore() { return this.currentIterationNumber < this.lastIndex; }
+    public boolean hasMore() { return this.currentIterationNumber + this.firstIndex < this.lastIndex; }
 
     /**
      * Gets a column value as a Java class.

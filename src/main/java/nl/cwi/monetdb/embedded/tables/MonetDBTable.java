@@ -82,8 +82,9 @@ public class MonetDBTable extends AbstractResultTable {
         try {
             String query = "SELECT COUNT(*) FROM " + this.schemaName + "." + this.tableName + ";";
             QueryResultSet eqr = this.getConnection().sendQuery(query);
-            QueryResultSetColumn<Integer> eqc = eqr.getColumn(0);
-            res = eqc.fetchFirstNColumnValues(1)[0];
+            QueryResultSetColumn<Long> eqc = eqr.getColumn(0);
+            res = eqc.fetchFirstNColumnValues(1)[0].intValue();
+            eqr.close();
         } catch (MonetDBEmbeddedException ex) {
         }
         return res;
@@ -139,19 +140,16 @@ public class MonetDBTable extends AbstractResultTable {
      */
     private int[] checkIterator(IMonetDBTableBaseIterator iterator) {
         int[] res = {iterator.getFirstRowToIterate(), iterator.getLastRowToIterate()};
-        if(res[0] == res[1]) {
-            throw new ArrayIndexOutOfBoundsException("Iterating over 0 rows?");
-        }
         if(res[1] < res[0]) {
             int aux = res[0];
             res[0] = res[1];
             res[0] = aux;
         }
-        if (res[0] < 0) {
-            res[0] = 0;
+        if (res[0] < 1) {
+            res[0] = 1;
         }
         int numberOfRows = this.getNumberOfRows();
-        if (res[1] > numberOfRows) {
+        if (res[1] >= numberOfRows) {
             res[1] = numberOfRows;
         }
         return res;
@@ -166,9 +164,9 @@ public class MonetDBTable extends AbstractResultTable {
      */
     public int iterateTable(IMonetDBTableCursor cursor) throws MonetDBEmbeddedException {
         int[] limits = this.checkIterator(cursor);
-        int res = 0, total = limits[1] - limits[0];
+        int res = 0, total = limits[1] - limits[0] + 1;
         String query = new StringBuffer("SELECT * FROM ").append(this.schemaName).append(".").append(this.tableName)
-                .append(" LIMIT ").append(total).append(" OFFSET ").append(limits[0]).append(";").toString();
+                .append(" LIMIT ").append(total).append(" OFFSET ").append(limits[0] - 1).append(";").toString();
 
         QueryResultSet eqr = this.getConnection().sendQuery(query);
         MonetDBRow[] array = eqr.fetchAllRowValues().getAllRows();
@@ -326,13 +324,13 @@ public class MonetDBTable extends AbstractResultTable {
      */
     public int appendColumns(Object[][] columns) throws MonetDBEmbeddedException {
         int numberOfRows = columns[0].length, numberOfColumns = this.getNumberOfColumns();
-        if(numberOfRows == 0) {
-            throw new ArrayStoreException("Appending 0 rows?");
-        }
         if (columns.length != numberOfColumns) {
             throw new ArrayStoreException("The number of columns differs from the table's number of columns!");
         }
-        for (int i = 0; i < numberOfRows; i++) {
+        if(numberOfRows == 0) {
+            throw new ArrayStoreException("Appending 0 rows?");
+        }
+        for (int i = 0; i < numberOfColumns; i++) {
             if(columns[i].length != numberOfRows) {
                 throw new ArrayStoreException("The number of rows in each column is not consistent!");
             }

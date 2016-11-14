@@ -20,8 +20,8 @@ public abstract class AbstractRowSet {
 
     protected AbstractRowSet(MonetDBToJavaMapping[] mappings, Object[][] rows) {
         this.mappings = mappings;
-        this.rows = new MonetDBRow[mappings.length];
-        for(int i = 0 ; i < mappings.length ; i++) {
+        this.rows = new MonetDBRow[rows.length];
+        for(int i = 0 ; i < rows.length ; i++) {
             this.rows[i] = new MonetDBRow(this, rows[i]);
         }
     }
