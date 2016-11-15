@@ -36,6 +36,9 @@ public class MonetDBTable extends AbstractResultTable {
      */
     private long connectionPointer;
 
+    /**
+     * These arrays are used for table imports.
+     */
     private final int[] columnsJavaIndexes;
     private final int[] columnsMonetDBIndexes;
     private final String[] columnsNames;
@@ -54,8 +57,8 @@ public class MonetDBTable extends AbstractResultTable {
         this.columnsClasses = new Class[columns.length];
         int i = 0;
         for(MonetDBTableColumn col : this.columns) {
-            this.columnsJavaIndexes[i] = col.getInternalMonetDBTypeIndex();
-            this.columnsMonetDBIndexes[i] = col.getMapping().ordinal();
+            this.columnsJavaIndexes[i] = col.getMapping().ordinal();
+            this.columnsMonetDBIndexes[i] = col.getInternalMonetDBTypeIndex();
             this.columnsNames[i] = col.getColumnName();
             this.columnsClasses[i] = col.getMapping().getJavaClass();
             i++;
@@ -78,7 +81,7 @@ public class MonetDBTable extends AbstractResultTable {
      */
     @Override
     public int getNumberOfRows() {
-        int res = -1;
+        int res;
         try {
             String query = "SELECT COUNT(*) FROM " + this.schemaName + "." + this.tableName + ";";
             QueryResultSet eqr = this.getConnection().sendQuery(query);
@@ -86,6 +89,7 @@ public class MonetDBTable extends AbstractResultTable {
             res = eqc.fetchFirstNColumnValues(1)[0].intValue();
             eqr.close();
         } catch (MonetDBEmbeddedException ex) {
+            res = -1;
         }
         return res;
     }
@@ -360,7 +364,7 @@ public class MonetDBTable extends AbstractResultTable {
      * Internal implementation of columns insertion.
      */
     private native int appendColumnsInternal(long connectionPointer, String schemaName, String tableName,
-                                             int[] monetDBindexes, int[] javaindexes, String[] columnsNames,
+                                             int[] javaindexes, int[] monetDBindexes, String[] columnsNames,
                                              Class[] classes, Object[][] columns)
             throws MonetDBEmbeddedException;
 }
