@@ -22,7 +22,7 @@ public class MonetDBEmbeddedBlob implements Serializable {
      *
      * @return A Java byte array containing the BLOB itself
      */
-    public byte[] getBlob() { return blob; }
+    public byte[] getBlob() { return this.blob; }
 
     /**
      * Overriding the equals method for the byte array.

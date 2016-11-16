@@ -96,8 +96,8 @@ public class RowIterator extends AbstractRowSet {
      * @param javaClass The Java class
      * @return The column value as a Java class
      */
-    public <T> T getColumn(int index, Class<T> javaClass) {
-        return javaClass.cast(this.getCurrentRow().getColumn(index, javaClass));
+    public <T> T getColumnByIndex(int index, Class<T> javaClass) {
+        return javaClass.cast(this.getCurrentRow().getColumnByIndex(index, javaClass));
     }
 
     /**
@@ -107,9 +107,48 @@ public class RowIterator extends AbstractRowSet {
      * @param index The index of the column
      * @return The column value as a Java class
      */
-    public <T> T getColumn(int index) {
+    public <T> T getColumnByIndex(int index) {
         Class<T> javaClass = this.mappings[index].getJavaClass();
-        return javaClass.cast(this.getCurrentRow().getColumn(index));
+        return javaClass.cast(this.getCurrentRow().getColumnByIndex(index));
+    }
+
+    /**
+     * Gets a column value as a Java class.
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param name The name of the column
+     * @param javaClass The Java class
+     * @return The column value as a Java class
+     */
+    public <T> T getColumnByName(String name, Class<T> javaClass) {
+        String[] colNames = this.getTable().getColumnNames();
+        int index = 0;
+        for (String colName : colNames) {
+            if (name.equals(colName)) {
+                return this.getColumnByIndex(index, javaClass);
+            }
+            index++;
+        }
+        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
+    }
+
+    /**
+     * Gets a column value as a Java class using the default mapping.
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param name The name of the column
+     * @return The column value as a Java class
+     */
+    public <T> T getColumnByName(String name) {
+        String[] colNames = this.getTable().getColumnNames();
+        int index = 0;
+        for (String colName : colNames) {
+            if (name.equals(colName)) {
+                return this.getColumnByIndex(index);
+            }
+            index++;
+        }
+        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
     }
 
     /**

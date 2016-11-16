@@ -22,9 +22,7 @@ public abstract class AbstractConnectionResult implements Closeable {
      */
     private final MonetDBEmbeddedConnection connection;
 
-    protected AbstractConnectionResult(MonetDBEmbeddedConnection connection) {
-        this.connection = connection;
-    }
+    protected AbstractConnectionResult(MonetDBEmbeddedConnection connection) { this.connection = connection; }
 
     /**
      * Get the corresponding connection to this statement result.
@@ -33,8 +31,10 @@ public abstract class AbstractConnectionResult implements Closeable {
      */
     public MonetDBEmbeddedConnection getConnection() { return connection; }
 
+    protected long getConnectionPointer() { return connection.connectionPointer; }
+
     /**
-     * To be called by the connection when is closing, to avoid concurrency problems on the iteration.
+     * To be called by the connection when is closing.
      */
     protected abstract void closeImplementation();
 

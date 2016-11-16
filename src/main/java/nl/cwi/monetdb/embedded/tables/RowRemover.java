@@ -38,5 +38,5 @@ public class RowRemover extends RowIterator {
      *
      * @return The number of rows deleted
      */
-    protected native int submitDeletes() throws MonetDBEmbeddedException;
+    //protected native int submitDeletes() throws MonetDBEmbeddedException;
 }

@@ -28,8 +28,8 @@ public class RowUpdater extends RowIterator {
      * @param index The index of the column
      * @param value The value to set
      */
-    public <T> void updateColumn(int index, T value) {
-        this.getCurrentRow().setColumn(index, value);
+    public <T> void updateColumnByIndex(int index, T value) {
+        this.getCurrentRow().setColumnByIndex(index, value);
         this.updatedIndexes[this.getCurrentIterationNumber()][index] = true;
     }
 
@@ -41,9 +41,50 @@ public class RowUpdater extends RowIterator {
      * @param javaClass The Java class
      * @param value The value to set
      */
-    public <T> void updateColumn(int index, Class<T> javaClass, T value) {
-        this.getCurrentRow().setColumn(index, javaClass, value);
+    public <T> void updateColumnByIndex(int index, Class<T> javaClass, T value) {
+        this.getCurrentRow().setColumnByIndex(index, javaClass, value);
         this.updatedIndexes[this.getCurrentIterationNumber()][index] = true;
+    }
+
+    /**
+     * Updates a column value.
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param name The name of the column
+     * @param value The value to set
+     */
+    public <T> void updateColumnByName(String name, T value) {
+        String[] colNames = this.getTable().getColumnNames();
+        int index = 0;
+        for (String colName : colNames) {
+            if (name.equals(colName)) {
+                this.updateColumnByIndex(index, value);
+                return;
+            }
+            index++;
+        }
+        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
+    }
+
+    /**
+     * Updates a column value.
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param name The name of the column
+     * @param javaClass The Java class
+     * @param value The value to set
+     */
+    public <T> void updateColumnByName(String name, Class<T> javaClass, T value) {
+        String[] colNames = this.getTable().getColumnNames();
+        int index = 0;
+        for (String colName : colNames) {
+            if (name.equals(colName)) {
+                this.updateColumnByIndex(index, javaClass, value);
+                return;
+            }
+            index++;
+        }
+        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
     }
 
     /**
@@ -84,5 +125,5 @@ public class RowUpdater extends RowIterator {
      *
      * @return The number of rows updated
      */
-    protected native int submitUpdates() throws MonetDBEmbeddedException;
+    //protected native int submitUpdates() throws MonetDBEmbeddedException;
 }

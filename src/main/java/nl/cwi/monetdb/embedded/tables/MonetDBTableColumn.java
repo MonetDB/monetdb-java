@@ -7,44 +7,48 @@ import nl.cwi.monetdb.embedded.mapping.AbstractColumn;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class MonetDBTableColumn<T> extends AbstractColumn<T> {
+public class MonetDBTableColumn extends AbstractColumn {
 
-    /**
-     * A String representation of the default value if exists, otherwise is null.
-     */
+    private final String columnName;
+
+    private final int columnDigits;
+
+    private final int columnScale;
+
     private final String defaultValue;
 
-    /**
-     * A boolean indication if the column is nullable.
-     */
     private final boolean isNullable;
 
-    /**
-     * Internal MonetDB index of the column.
-     */
-    private final int internalMonetDBTypeIndex;
-
-    public MonetDBTableColumn(int resultSetIndex, String columnName, String columnType, int columnDigits,
-                              int columnScale, String defaultValue, boolean isNullable, int internalMonetDBTypeIndex) {
-        super(resultSetIndex, columnName, columnType, columnDigits, columnScale);
+    protected MonetDBTableColumn(String columnType, String columnName, int columnDigits, int columnScale,
+                                 String defaultValue, boolean isNullable) {
+        super(columnType);
+        this.columnName = columnName;
+        this.columnDigits = columnDigits;
+        this.columnScale = columnScale;
         this.defaultValue = defaultValue;
         this.isNullable = isNullable;
-        this.internalMonetDBTypeIndex = internalMonetDBTypeIndex;
     }
+
+    @Override
+    public String getColumnName() { return this.columnName; }
+
+    @Override
+    public int getColumnDigits() { return this.columnDigits; }
+
+    @Override
+    public int getColumnScale() { return this.columnScale; }
 
     /**
      * Get the default value if there is one, or null if none.
      *
      * @return The default value if there is one, or null if none
      */
-    public String getDefaultValue() { return defaultValue; }
+    public String getDefaultValue() { return this.defaultValue; }
 
     /**
      * Get the indication if the column is nullable.
      *
      * @return The indication if the column is nullable
      */
-    public boolean isNullable() { return isNullable; }
-
-    protected int getInternalMonetDBTypeIndex() { return internalMonetDBTypeIndex; }
+    public boolean isNullable() { return this.isNullable; }
 }

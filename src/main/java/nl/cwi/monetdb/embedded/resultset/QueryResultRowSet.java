@@ -71,8 +71,8 @@ public class QueryResultRowSet extends AbstractRowSet implements Iterable {
      * @param javaClass The Java class to map
      * @return The value mapped to a instance of the provided class
      */
-    public <T> T getSingleValue(int row, int column, Class<T> javaClass) {
-        return javaClass.cast(this.rows[row].getColumn(column));
+    public <T> T getSingleValueByIndex(int row, int column, Class<T> javaClass) {
+        return javaClass.cast(this.rows[row].getColumnByIndex(column));
     }
 
     /**
@@ -83,9 +83,50 @@ public class QueryResultRowSet extends AbstractRowSet implements Iterable {
      * @param column The index of the column to retrieve
      * @return The value mapped to a instance of the provided class
      */
-    public <T> T getSingleValue(int row, int column) {
+    public <T> T getSingleValueByIndex(int row, int column) {
         Class<T> javaClass = this.mappings[column].getJavaClass();
-        return javaClass.cast(this.rows[row].getColumn(column));
+        return javaClass.cast(this.rows[row].getColumnByIndex(column));
+    }
+
+    /**
+     * Gets a single value in this set as a Java class.
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param row The index of the row to retrieve
+     * @param columnName The name of the column to retrieve
+     * @param javaClass The Java class to map
+     * @return The value mapped to a instance of the provided class
+     */
+    public <T> T getSingleValueByName(int row, String columnName, Class<T> javaClass) {
+        String[] colNames = this.getQueryResultSet().getColumnNames();
+        int index = 0;
+        for (String colName : colNames) {
+            if (columnName.equals(colName)) {
+                return this.getSingleValueByIndex(row, index, javaClass);
+            }
+            index++;
+        }
+        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
+    }
+
+    /**
+     * Gets a single value in this set as a Java class using the default mapping.
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param row The index of the row to retrieve
+     * @param columnName The name of the column to retrieve
+     * @return The value mapped to a instance of the provided class
+     */
+    public <T> T getSingleValueByName(int row, String columnName) {
+        String[] colNames = this.getQueryResultSet().getColumnNames();
+        int index = 0;
+        for (String colName : colNames) {
+            if (columnName.equals(colName)) {
+                return this.getSingleValueByIndex(row, index);
+            }
+            index++;
+        }
+        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
     }
 
     /**
@@ -97,10 +138,10 @@ public class QueryResultRowSet extends AbstractRowSet implements Iterable {
      * @return The value mapped to a instance of the provided class
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] getColumn(int column, Class<T> javaClass) {
+    public <T> T[] getColumnByIndex(int column, Class<T> javaClass) {
         T[] res = (T[]) Array.newInstance(javaClass, this.rows.length);
         for(int i = 0 ; i < this.rows.length ; i++) {
-            res[i] = this.rows[i].getColumn(column);
+            res[i] = this.rows[i].getColumnByIndex(column);
         }
         return res;
     }
@@ -113,12 +154,51 @@ public class QueryResultRowSet extends AbstractRowSet implements Iterable {
      * @return The value mapped to a instance of the provided class
      */
     @SuppressWarnings("unchecked")
-    public <T> T[] getColumn(int column) {
+    public <T> T[] getColumnByIndex(int column) {
         T[] res = (T[]) Array.newInstance(this.mappings[column].getJavaClass(), this.rows.length);
         for(int i = 0 ; i < this.rows.length ; i++) {
-            res[i] = this.rows[i].getColumn(column);
+            res[i] = this.rows[i].getColumnByIndex(column);
         }
         return res;
+    }
+
+    /**
+     * Gets a column in this set as a Java class.
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param name The name of the column to retrieve
+     * @param javaClass The Java class
+     * @return The value mapped to a instance of the provided class
+     */
+    public <T> T[] getColumnByName(String name, Class<T> javaClass) {
+        String[] colNames = this.getQueryResultSet().getColumnNames();
+        int index = 0;
+        for (String colName : colNames) {
+            if (name.equals(colName)) {
+                return this.getColumnByIndex(index, javaClass);
+            }
+            index++;
+        }
+        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
+    }
+
+    /**
+     * Gets a column in this set as a Java class using the default mapping.
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param name The name of the column to retrieve
+     * @return The value mapped to a instance of the provided class
+     */
+    public <T> T[] getColumnByName(String name) {
+        String[] colNames = this.getQueryResultSet().getColumnNames();
+        int index = 0;
+        for (String colName : colNames) {
+            if (name.equals(colName)) {
+                return this.getColumnByIndex(index);
+            }
+            index++;
+        }
+        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
     }
 
     @Override

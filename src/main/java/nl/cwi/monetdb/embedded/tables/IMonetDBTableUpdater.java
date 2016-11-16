@@ -9,7 +9,7 @@ public interface IMonetDBTableUpdater extends IMonetDBTableBaseIterator {
 
     /**
      * The business logic for the iterator. Use the
-     * {@link nl.cwi.monetdb.embedded.tables.RowUpdater#updateColumn(int, Object) setColumn}
+     * {@link nl.cwi.monetdb.embedded.tables.RowUpdater#updateColumnByIndex(int, Class, Object)}
      * method in <code>processNextRow</code> to update the current row.
      *
      * @param nextRow The next row in the iteration.

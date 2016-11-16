@@ -65,7 +65,7 @@ public class MonetDBRow implements Iterable {
      * @param javaClass The Java class
      * @return The column value as a Java class
      */
-    public <T> T getColumn(int index, Class<T> javaClass) { return javaClass.cast(columns[index]); }
+    public <T> T getColumnByIndex(int index, Class<T> javaClass) { return javaClass.cast(columns[index]); }
 
     /**
      * Gets a column value as a Java class using the default mapping.
@@ -74,7 +74,7 @@ public class MonetDBRow implements Iterable {
      * @param index The index of the column
      * @return The column value as a Java class
      */
-    public <T> T getColumn(int index) {
+    public <T> T getColumnByIndex(int index) {
         Class<T> javaClass = this.originalSet.mappings[index].getJavaClass();
         return javaClass.cast(columns[index]);
     }
@@ -86,7 +86,7 @@ public class MonetDBRow implements Iterable {
      * @param index The index of the column
      * @param value The value to set
      */
-    public <T> void setColumn(int index, T value) {
+    public <T> void setColumnByIndex(int index, T value) {
         this.columns[index] = this.originalSet.mappings[index].getJavaClass().cast(value);
     }
 
@@ -98,7 +98,7 @@ public class MonetDBRow implements Iterable {
      * @param javaClass The Java class
      * @param value The value to set
      */
-    public <T> void setColumn(int index, Class<T> javaClass, T value) {
+    public <T> void setColumnByIndex(int index, Class<T> javaClass, T value) {
         this.columns[index] = javaClass.cast(value);
     }
 

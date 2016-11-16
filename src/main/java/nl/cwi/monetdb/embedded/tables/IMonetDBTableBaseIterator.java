@@ -8,7 +8,7 @@ package nl.cwi.monetdb.embedded.tables;
 public interface IMonetDBTableBaseIterator {
 
     /**
-     * Specify the first row in the table to iterate. If a negative number is provided, then the iteration
+     * Specify the first row in the table to iterate starting from 1. If a lower number is provided, then the iteration
      * will start on the first row.
      *
      * @return The first row in the table to iterate
@@ -16,8 +16,8 @@ public interface IMonetDBTableBaseIterator {
     int getFirstRowToIterate();
 
     /**
-     * Specify the last row in the table to iterate. If a negative number or a number larger than the number of rows
-     * is provided, then the iteration will end on the last row of the table.
+     * Specify the last row in the table to iterate. If a number larger than the number of rows is provided, then the
+     * iteration will end on the last row of the table.
      *
      * @return The last row in the table to iterate
      */

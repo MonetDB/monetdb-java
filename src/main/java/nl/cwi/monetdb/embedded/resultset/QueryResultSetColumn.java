@@ -21,17 +21,25 @@ import java.util.ListIterator;
  * @param <T> A Java class mapped to a MonetDB data type
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterable<T> {
+public class QueryResultSetColumn<T> extends AbstractColumn implements Iterable<T> {
 
     /**
-     * The C pointer of the result set of the column.
+     * Internal C pointer of the column,
      */
-    protected final long resultSetPointer;
+    protected long tablePointer;
 
     /**
      * Array with the retrieved values.
      */
     private final T[] values;
+
+    private final int resultSetIndex;
+
+    private final String columnName;
+
+    private final int columnDigits;
+
+    private final int columnScale;
 
     /**
      * The number of rows in this column.
@@ -49,22 +57,36 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
     private int lastRetrievedIndex;
 
     @SuppressWarnings("unchecked")
-	protected QueryResultSetColumn(int resultSetIndex, String columnName, String columnType, int columnDigits,
-                                   int columnScale, long resultSetPointer, int numberOfRows) {
-        super(resultSetIndex, columnName, columnType, columnDigits, columnScale);
-        this.resultSetPointer = resultSetPointer;
+	protected QueryResultSetColumn(String columnType, long tablePointer, int resultSetIndex, String columnName, int columnDigits, int columnScale, int numberOfRows) {
+        super(columnType);
+        this.tablePointer = tablePointer;
+        this.resultSetIndex = resultSetIndex;
+        this.columnName = columnName;
+        this.columnDigits = columnDigits;
+        this.columnScale = columnScale;
         this.numberOfRows = numberOfRows;
         this.firstRetrievedIndex = numberOfRows;
         this.lastRetrievedIndex = 0;
         this.values = (T[]) Array.newInstance(this.mapping.getJavaClass(), numberOfRows);
  	}
 
+    @Override
+    public String getColumnName() { return this.columnName; }
+
+    @Override
+    public int getColumnDigits() { return this.columnDigits; }
+
+    @Override
+    public int getColumnScale() { return this.columnScale; }
+
     /**
      * Get the number of rows in this column.
      *
      * @return The number of rows
      */
-    public int getNumberOfRows() { return numberOfRows; }
+    public int getNumberOfRows() { return this.numberOfRows; }
+
+    public int getResultSetIndex() { return resultSetIndex; }
 
     /**
      * Maps columns values into the Java representation.
@@ -103,10 +125,10 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
             hasToConvert = true;
         }
         if(hasToConvert) {
-            if(this.resultSetPointer == 0) {
+            if(this.tablePointer == 0) {
                 throw new MonetDBEmbeddedException("Connection closed!");
             }
-            T[] newvalues = this.fetchValuesInternal(this.resultSetPointer, this.resultSetIndex,
+            T[] newvalues = this.fetchValuesInternal(this.tablePointer, this.resultSetIndex,
                     (Class<T>) this.mapping.getJavaClass(), this.mapping.ordinal(), firstIndexToFetch, lastIndexToFetch);
             System.arraycopy(newvalues, 0, this.values, firstIndexToFetch, newvalues.length);
         }
@@ -255,6 +277,6 @@ public class QueryResultSetColumn<T> extends AbstractColumn<T> implements Iterab
     /**
      * Internal implementation to fetch values from the column.
      */
-    private native T[] fetchValuesInternal(long resultPointer, int resultSetIndex, Class<T> jclass, int enumEntry,
-                                           int first, int last) throws MonetDBEmbeddedException;
+    private native T[] fetchValuesInternal(long tablePointer, int resultSetIndex, Class<T> jclass, int javaIndex, int first, int last)
+            throws MonetDBEmbeddedException;
 }

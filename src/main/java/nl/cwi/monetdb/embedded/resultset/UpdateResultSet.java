@@ -23,5 +23,6 @@ public class UpdateResultSet extends AbstractConnectionResult {
     /**
      * Close this result set.
      */
+    @Override
     public void closeImplementation() {}
 }

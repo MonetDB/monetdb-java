@@ -27,7 +27,7 @@ public class MonetDBEmbeddedConnection {
 
     private final MonetDBEmbeddedDatabase database;
 
-	private final long connectionPointer;
+	protected final long connectionPointer;
 
     private final Set<AbstractConnectionResult> results = new HashSet<>();
 
@@ -44,7 +44,7 @@ public class MonetDBEmbeddedConnection {
      */
     public String getCurrentSchema() throws MonetDBEmbeddedException {
         QueryResultSet eqr = this.sendQuery("SELECT current_schema FROM sys.var();");
-        QueryResultSetColumn<String> col = eqr.getColumn(0);
+        QueryResultSetColumn<String> col = eqr.getColumnByIndex(0);
         String res = col.fetchFirstNColumnValues(1)[0];
         eqr.close();
         return res;

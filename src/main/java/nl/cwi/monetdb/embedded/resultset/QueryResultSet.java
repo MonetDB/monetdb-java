@@ -8,11 +8,11 @@
 
 package nl.cwi.monetdb.embedded.resultset;
 
-import nl.cwi.monetdb.embedded.mapping.AbstractColumn;
 import nl.cwi.monetdb.embedded.mapping.AbstractResultTable;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.embedded.mapping.MonetDBRow;
+import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
 
 import java.util.Arrays;
 import java.util.ListIterator;
@@ -28,11 +28,9 @@ import java.util.ListIterator;
 public class QueryResultSet extends AbstractResultTable implements Iterable {
 
     /**
-     * Pointer to the native result set.
-     * We need to keep it around for getting columns.
-     * The native result set is kept until the the close method is called.
+     * The table C pointer.
      */
-    protected long resultPointer;
+    protected long tablePointer;
 
     /**
      * The query result set columns listing.
@@ -44,25 +42,13 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
      */
     protected final int numberOfRows;
 
-	protected QueryResultSet(MonetDBEmbeddedConnection connection, long resultPointer,
-                             QueryResultSetColumn<?>[] columns, int numberOfRows) {
+	protected QueryResultSet(MonetDBEmbeddedConnection connection, long tablePointer, QueryResultSetColumn<?>[] columns,
+                             int numberOfRows) {
         super(connection);
-        this.resultPointer = resultPointer;
+        this.tablePointer = tablePointer;
         this.numberOfRows = numberOfRows;
         this.columns = columns;
 	}
-
-    /**
-     * Closes the query data so no more new results can be retrieved.
-     */
-    @Override
-    public void closeImplementation() {
-        this.cleanupResultInternal(this.resultPointer);
-        this.resultPointer = 0;
-    }
-
-    @Override
-    protected AbstractColumn<?>[] getColumns() { return columns; }
 
     @Override
     public int getNumberOfRows() { return this.numberOfRows; }
@@ -70,37 +56,91 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     @Override
     public int getNumberOfColumns() { return this.columns.length; }
 
+    @Override
+    protected void closeImplementation() { this.cleanResultSet(this.tablePointer); }
+
+    @Override
+    public String[] getColumnNames() {
+        int i = 0;
+        String[] result = new String[this.getNumberOfColumns()];
+        for(QueryResultSetColumn col : this.columns) {
+            result[i] = col.getColumnName();
+        }
+        return result;
+    }
+
+    @Override
+    public String[] getColumnTypes() {
+        int i = 0;
+        String[] result = new String[this.getNumberOfColumns()];
+        for(QueryResultSetColumn col : this.columns) {
+            result[i] = col.getColumnInternalTypeName();
+        }
+        return result;
+    }
+
+    @Override
+    public MonetDBToJavaMapping[] getMappings() {
+        int i = 0;
+        MonetDBToJavaMapping[] result = new MonetDBToJavaMapping[this.getNumberOfColumns()];
+        for(QueryResultSetColumn col : this.columns) {
+            result[i] = col.getMapping();
+        }
+        return result;
+    }
+
+    @Override
+    public int[] getColumnDigits() {
+        int i = 0;
+        int[] result = new int[this.getNumberOfColumns()];
+        for(QueryResultSetColumn col : this.columns) {
+            result[i] = col.getColumnDigits();
+        }
+        return result;
+    }
+
+    @Override
+    public int[] getColumnScales() {
+        int i = 0;
+        int[] result = new int[this.getNumberOfColumns()];
+        for(QueryResultSetColumn col : this.columns) {
+            result[i] = col.getColumnScale();
+        }
+        return result;
+    }
+
     /**
      * Tells if the connection of this statement result has been closed or not.
      *
      * @return A boolean indicating if the statement result has been cleaned or not
      */
-    public boolean isStatementClosed() { return this.resultPointer == 0; }
+    public boolean isStatementClosed() { return this.tablePointer == 0; }
 
     /**
      * Gets a column from the result set by index.
      *
      * @param index QueryResultSetColumn index (starting from 0)
-     * @return The columns, {@code null} if index not in bounds
+     * @return The column
      */
     @SuppressWarnings("unchecked")
-    public <T> QueryResultSetColumn<T> getColumn(int index) { return (QueryResultSetColumn<T>) columns[index]; }
+    public <T> QueryResultSetColumn<T> getColumnByIndex(int index) { return (QueryResultSetColumn<T>) columns[index]; }
 
     /**
      * Gets a column from the result set by name.
      *
      * @param name QueryResultSetColumn name
-     * @return The columns
+     * @return The column
      */
-    public <T> QueryResultSetColumn<T> getColumn(String name) {
+    @SuppressWarnings("unchecked")
+    public <T> QueryResultSetColumn<T> getColumnByName(String name) {
         int index = 0;
-        for (AbstractColumn col : this.columns) {
+        for (QueryResultSetColumn col : this.columns) {
             if (col.getColumnName().equals(name)) {
-                return this.getColumn(index);
+                return (QueryResultSetColumn<T>) this.columns[index];
             }
             index++;
         }
-        throw new ArrayIndexOutOfBoundsException("The columns is not present in the result set!");
+        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
     }
 
     /**
@@ -198,8 +238,5 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
         }
     }
 
-    /**
-     * Internal implementation to clean the result set.
-     */
-    private native void cleanupResultInternal(long resultPointer);
+    private native void cleanResultSet(long tablePointer);
 }

@@ -1,10 +1,10 @@
 package nl.cwi.monetdb.embedded.tables;
 
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
-import nl.cwi.monetdb.embedded.mapping.AbstractColumn;
 import nl.cwi.monetdb.embedded.mapping.AbstractResultTable;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.embedded.mapping.MonetDBRow;
+import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
 import nl.cwi.monetdb.embedded.resultset.QueryResultSet;
 import nl.cwi.monetdb.embedded.resultset.QueryResultSetColumn;
 
@@ -16,66 +16,21 @@ import nl.cwi.monetdb.embedded.resultset.QueryResultSetColumn;
  */
 public class MonetDBTable extends AbstractResultTable {
 
-    /**
-     * The table's schema.
-     */
-    private final String schemaName;
+    private final String tableSchema;
 
-    /**
-     * The table's name.
-     */
     private final String tableName;
 
-    /**
-     * The table's columns.
-     */
-    private final MonetDBTableColumn<?>[] columns;
-
-    /**
-     * The connection's C pointer.
-     */
-    private long connectionPointer;
-
-    /**
-     * These arrays are used for table imports.
-     */
-    private final int[] columnsJavaIndexes;
-    private final int[] columnsMonetDBIndexes;
-    private final String[] columnsNames;
-    private final Class[] columnsClasses;
-
-    public MonetDBTable(MonetDBEmbeddedConnection connection, long connectionPointer, String schemaName,
-                        String tableName, MonetDBTableColumn<?>[] columns) {
+    protected MonetDBTable(MonetDBEmbeddedConnection connection, String tableSchema, String tableName) {
         super(connection);
-        this.connectionPointer = connectionPointer;
-        this.schemaName = schemaName;
+        this.tableSchema = tableSchema;
         this.tableName = tableName;
-        this.columns = columns;
-        this.columnsJavaIndexes = new int[columns.length];
-        this.columnsMonetDBIndexes = new int[columns.length];
-        this.columnsNames = new String[columns.length];
-        this.columnsClasses = new Class[columns.length];
-        int i = 0;
-        for(MonetDBTableColumn col : this.columns) {
-            this.columnsJavaIndexes[i] = col.getMapping().ordinal();
-            this.columnsMonetDBIndexes[i] = col.getInternalMonetDBTypeIndex();
-            this.columnsNames[i] = col.getColumnName();
-            this.columnsClasses[i] = col.getMapping().getJavaClass();
-            i++;
-        }
     }
 
     @Override
-    protected void closeImplementation() { this.connectionPointer = 0; }
-
-    @Override
-    protected AbstractColumn<?>[] getColumns() { return this.columns; }
-
-    @Override
-    public int getNumberOfColumns() { return this.columns.length; }
+    public native int getNumberOfColumns();
 
     /**
-     * Gets the current number of rows in the table, or -1 if an error in the database has ocurred.
+     * Gets the current number of rows in the table, or -1 if an error in the database has occurred.
      *
      * @return The number of rows in the table.
      */
@@ -83,9 +38,9 @@ public class MonetDBTable extends AbstractResultTable {
     public int getNumberOfRows() {
         int res;
         try {
-            String query = "SELECT COUNT(*) FROM " + this.schemaName + "." + this.tableName + ";";
+            String query = "SELECT COUNT(*) FROM " + this.getTableSchema() + "." + this.getTableName() + ";";
             QueryResultSet eqr = this.getConnection().sendQuery(query);
-            QueryResultSetColumn<Long> eqc = eqr.getColumn(0);
+            QueryResultSetColumn<Long> eqc = eqr.getColumnByIndex(0);
             res = eqc.fetchFirstNColumnValues(1)[0].intValue();
             eqr.close();
         } catch (MonetDBEmbeddedException ex) {
@@ -94,47 +49,71 @@ public class MonetDBTable extends AbstractResultTable {
         return res;
     }
 
+    @Override
+    public native String[] getColumnNames();
+
+    @Override
+    public native String[] getColumnTypes();
+
+    @Override
+    public native MonetDBToJavaMapping[] getMappings();
+
+    @Override
+    public native int[] getColumnDigits();
+
+    @Override
+    public native int[] getColumnScales();
+
     /**
      * Gets the table schema name.
      *
      * @return The table schema name
      */
-    public String getSchemaName() { return schemaName; }
+    public String getTableSchema() { return this.tableSchema; }
 
     /**
      * Gets the table name.
      *
      * @return The table name
      */
-    public String getTableName() { return tableName; }
+    public String getTableName() { return this.tableName; }
 
     /**
      * Gets the columns nullable indexes as an array.
      *
      * @return The columns nullable indexes as an array
      */
-    public boolean[] getColumnNullableIndexes() {
-        int i = 0;
-        boolean[] result = new boolean[this.getNumberOfColumns()];
-        for(MonetDBTableColumn col : this.columns) {
-            result[i] = col.isNullable();
-        }
-        return result;
-    }
+    public native boolean[] getColumnNullableIndexes();
 
     /**
      * Gets the columns default values in an array.
      *
      * @return The columns default values in an array
      */
-    public String[] getColumnDefaultValues() {
-        int i = 0;
-        String[] result = new String[this.getNumberOfColumns()];
-        for(MonetDBTableColumn col : this.columns) {
-            result[i] = col.getDefaultValue();
-        }
-        return result;
-    }
+    public native String[] getColumnDefaultValues();
+
+    /**
+     * Gets a column metadata by index.
+     *
+     * @param index The column index (starting from 0)
+     * @return The column metadata, {@code null} if index not in bounds
+     */
+    public native MonetDBTableColumn getColumnMetadataByIndex(int index);
+
+    /**
+     * Gets a column metadata by name.
+     *
+     * @param name The column name
+     * @return The column metadata, {@code null} if not found
+     */
+    public native MonetDBTableColumn getColumnMetadataByName(String name);
+
+    /**
+     * Gets all columns metadata.
+     *
+     * @return An array instance of columns metadata
+     */
+    public native MonetDBTableColumn[] getAllColumnsMetadata();
 
     /**
      * Private method to check the limits of iteration.
@@ -142,7 +121,7 @@ public class MonetDBTable extends AbstractResultTable {
      * @param iterator The iterator to check
      * @return An integer array with the limits fixed
      */
-    private int[] checkIterator(IMonetDBTableBaseIterator iterator) {
+    private int[] prepareIterator(IMonetDBTableBaseIterator iterator) {
         int[] res = {iterator.getFirstRowToIterate(), iterator.getLastRowToIterate()};
         if(res[1] < res[0]) {
             int aux = res[0];
@@ -167,9 +146,9 @@ public class MonetDBTable extends AbstractResultTable {
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     public int iterateTable(IMonetDBTableCursor cursor) throws MonetDBEmbeddedException {
-        int[] limits = this.checkIterator(cursor);
+        int[] limits = this.prepareIterator(cursor);
         int res = 0, total = limits[1] - limits[0] + 1;
-        String query = new StringBuffer("SELECT * FROM ").append(this.schemaName).append(".").append(this.tableName)
+        String query = new StringBuffer("SELECT * FROM ").append(this.getTableSchema()).append(".").append(this.getTableName())
                 .append(" LIMIT ").append(total).append(" OFFSET ").append(limits[0] - 1).append(";").toString();
 
         QueryResultSet eqr = this.getConnection().sendQuery(query);
@@ -209,7 +188,7 @@ public class MonetDBTable extends AbstractResultTable {
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     /*public int updateRows(IMonetDBTableUpdater updater) throws MonetDBEmbeddedException {
-        int[] limits = this.checkIterator(updater);
+        int[] limits = this.prepareIterator(updater);
         RowUpdater ru = this.getRowUpdaterInternal(this.connectionPointer, this.schemaName, this.tableName,
                 limits[0], limits[1]);
         while(ru.tryContinueIteration()) {
@@ -239,7 +218,7 @@ public class MonetDBTable extends AbstractResultTable {
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
     /*public int removeRows(IMonetDBTableRemover remover) throws MonetDBEmbeddedException {
-        int[] limits = this.checkIterator(remover);
+        int[] limits = this.prepareIterator(remover);
         RowRemover rr = this.getRowRemoverInternal(this.connectionPointer, this.schemaName, this.tableName,
                 limits[0], limits[1]);
         while(rr.tryContinueIteration()) {
@@ -285,23 +264,23 @@ public class MonetDBTable extends AbstractResultTable {
      * {@link nl.cwi.monetdb.embedded.tables.MonetDBTable#appendColumns(Object[][]) appendColumns} is preferable
      * over this one.
      *
-     * @param rows An array of rows to append
+     * @param data An array of rows to append
      * @return The number of rows appended
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public int appendRows(Object[][] rows) throws MonetDBEmbeddedException {
-        int numberOfRows = rows.length, numberOfColumns = this.getNumberOfColumns();
+    public int appendRows(Object[][] data) throws MonetDBEmbeddedException {
+        int numberOfRows = data.length, numberOfColumns = this.getNumberOfColumns();
         if(numberOfRows == 0) {
             throw new ArrayStoreException("Appending 0 rows?");
         }
         Object[][] transposed = new Object[numberOfColumns][numberOfRows];
 
         for (int i = 0; i < numberOfRows; i++) {
-            if(rows[i].length != numberOfColumns) {
+            if(data[i].length != numberOfColumns) {
                 throw new ArrayStoreException("The values array at row " + i + " differs from the number of columns!");
             }
             for (int j = 0; j < numberOfColumns; j++) {
-                transposed[j][i] = rows[i][j];
+                transposed[j][i] = data[i][j];
             }
         }
         return this.appendColumns(transposed);
@@ -322,25 +301,31 @@ public class MonetDBTable extends AbstractResultTable {
      * Appends new rows to the table column-wise. As MonetDB's storage is column-wise, this method is preferable over
      * {@link nl.cwi.monetdb.embedded.tables.MonetDBTable#appendRows(Object[][]) appendRows} method.
      *
-     * @param columns An array of columns to append
+     * @param data An array of columns to append
      * @return The number of rows appended
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public int appendColumns(Object[][] columns) throws MonetDBEmbeddedException {
-        int numberOfRows = columns[0].length, numberOfColumns = this.getNumberOfColumns();
-        if (columns.length != numberOfColumns) {
+    public int appendColumns(Object[][] data) throws MonetDBEmbeddedException {
+        MonetDBToJavaMapping[] mappings = this.getMappings();
+        int numberOfRowsToInsert = data[0].length, numberOfColumns = mappings.length;
+        if (data.length != numberOfColumns) {
             throw new ArrayStoreException("The number of columns differs from the table's number of columns!");
         }
-        if(numberOfRows == 0) {
+        if(numberOfRowsToInsert == 0) {
             throw new ArrayStoreException("Appending 0 rows?");
         }
         for (int i = 0; i < numberOfColumns; i++) {
-            if(columns[i].length != numberOfRows) {
+            if(data[i].length != numberOfRowsToInsert) {
                 throw new ArrayStoreException("The number of rows in each column is not consistent!");
             }
         }
-        return this.appendColumnsInternal(this.connectionPointer, this.schemaName, this.tableName, this.columnsJavaIndexes,
-                this.columnsMonetDBIndexes,  this.columnsNames, this.columnsClasses, columns);
+        Class[] jClasses = new Class[mappings.length];
+        int[] javaIndexes = new int[mappings.length];
+        for (int i = 0; i < mappings.length; i++) {
+            jClasses[i] = mappings[i].getJavaClass();
+            javaIndexes[i] = mappings[i].ordinal();
+        }
+        return this.appendColumnsInternal(jClasses, javaIndexes, data, numberOfRowsToInsert);
     }
 
     /**
@@ -360,11 +345,9 @@ public class MonetDBTable extends AbstractResultTable {
     /*private native int truncateTableInternal(long connectionPointer, String schemaName, String tableName)
             throws MonetDBEmbeddedException;*/
 
-    /**
-     * Internal implementation of columns insertion.
-     */
-    private native int appendColumnsInternal(long connectionPointer, String schemaName, String tableName,
-                                             int[] javaindexes, int[] monetDBindexes, String[] columnsNames,
-                                             Class[] classes, Object[][] columns)
+    @Override
+    protected void closeImplementation() {}
+
+    private native int appendColumnsInternal(Class[] jClasses, int[] javaIndexes, Object[][] data, int numberOfRows)
             throws MonetDBEmbeddedException;
 }
