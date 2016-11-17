@@ -25,16 +25,11 @@ import java.util.Set;
  */
 public class MonetDBEmbeddedConnection {
 
-    private final MonetDBEmbeddedDatabase database;
-
 	protected final long connectionPointer;
 
     private final Set<AbstractConnectionResult> results = new HashSet<>();
 
-	protected MonetDBEmbeddedConnection(MonetDBEmbeddedDatabase database, long connectionPointer) {
-        this.database = database;
-        this.connectionPointer = connectionPointer;
-	}
+	protected MonetDBEmbeddedConnection(long connectionPointer) { this.connectionPointer = connectionPointer; }
 
     /**
      * Gets the current schema set on the connection.
@@ -256,7 +251,7 @@ public class MonetDBEmbeddedConnection {
      */
     public void closeConnection() {
         this.closeConnectionImplementation();
-        this.database.removeConnection(this);
+        MonetDBEmbeddedDatabase.RemoveConnection(this);
     }
 
     /**

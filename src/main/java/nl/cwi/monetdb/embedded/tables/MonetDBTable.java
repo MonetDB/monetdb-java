@@ -168,98 +168,6 @@ public class MonetDBTable extends AbstractResultTable {
     }
 
     /**
-     * Iterate over the table using a {@link IMonetDBTableCursor}
-     * instance asynchronously.
-     *
-     * @param iterator The iterator with the business logic
-     * @return The number of rows iterated
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    /*public CompletableFuture<Integer> iterateTable(IMonetDBTableCursor iterator) throws MonetDBEmbeddedException {
-        return CompletableFuture.supplyAsync(() -> this.iterateTable(iterator));
-    }*/
-
-    /**
-     * Perform an update iteration over the table using a {@link nl.cwi.monetdb.embedded.tables.IMonetDBTableUpdater}
-     * instance.
-     *
-     * @param updater The iterator with the business logic
-     * @return The number of rows updated
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    /*public int updateRows(IMonetDBTableUpdater updater) throws MonetDBEmbeddedException {
-        int[] limits = this.prepareIterator(updater);
-        RowUpdater ru = this.getRowUpdaterInternal(this.connectionPointer, this.schemaName, this.tableName,
-                limits[0], limits[1]);
-        while(ru.tryContinueIteration()) {
-            updater.processNextRow(ru);
-        }
-        return ru.submitUpdates();
-    }*/
-
-    /**
-     * Perform an update iteration over the table using a {@link nl.cwi.monetdb.embedded.tables.IMonetDBTableUpdater}
-     * instance asynchronously.
-     *
-     * @param updater The iterator with the business logic
-     * @return The number of rows updated
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    /*public CompletableFuture<Integer> updateRowsAsync(IMonetDBTableUpdater updater) throws MonetDBEmbeddedException {
-        return CompletableFuture.supplyAsync(() -> this.updateRows(updater));
-    }*/
-
-    /**
-     * Perform a removal iteration over the table using a {@link nl.cwi.monetdb.embedded.tables.IMonetDBTableRemover}
-     * instance.
-     *
-     * @param remover The iterator with the business logic
-     * @return The number of rows removed
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    /*public int removeRows(IMonetDBTableRemover remover) throws MonetDBEmbeddedException {
-        int[] limits = this.prepareIterator(remover);
-        RowRemover rr = this.getRowRemoverInternal(this.connectionPointer, this.schemaName, this.tableName,
-                limits[0], limits[1]);
-        while(rr.tryContinueIteration()) {
-            remover.processNextRow(rr);
-        }
-        return rr.submitDeletes();
-    }*/
-
-    /**
-     * Perform a removal iteration over the table using a {@link nl.cwi.monetdb.embedded.tables.IMonetDBTableRemover}
-     * instance asynchronously.
-     *
-     * @param remover The iterator with the business logic
-     * @return The number of rows removed
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    /*public CompletableFuture<Integer> removeRowsAsync(IMonetDBTableRemover remover) throws MonetDBEmbeddedException {
-        return CompletableFuture.supplyAsync(() -> this.removeRows(remover));
-    }*/
-
-    /**
-     * Deletes all rows in the table.
-     *
-     * @return The number of rows removed
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    /*public int truncateTable() throws MonetDBEmbeddedException {
-        return this.truncateTableInternal(this.connectionPointer, this.schemaName, this.tableName);
-    }*/
-
-    /**
-     * Deletes all rows in the table asynchronously.
-     *
-     * @return The number of rows removed
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    /*public CompletableFuture<Integer> truncateTableAsync() throws MonetDBEmbeddedException {
-        return CompletableFuture.supplyAsync(() -> this.truncateTable());
-    }*/
-
-    /**
      * Appends new rows to the table. As MonetDB's storage is column-wise, the method
      * {@link nl.cwi.monetdb.embedded.tables.MonetDBTable#appendColumns(Object[][]) appendColumns} is preferable
      * over this one.
@@ -328,22 +236,16 @@ public class MonetDBTable extends AbstractResultTable {
         return this.appendColumnsInternal(jClasses, javaIndexes, data, numberOfRowsToInsert);
     }
 
-    /**
+    /*
      * Appends new rows to the table column-wise and asynchronously.
      *
-     * @param columns An array of columns to append
+     * @param data An array of columns to append
      * @return The number of rows appended
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public CompletableFuture<Integer> appendColumnsAsync(Object[][] columns) throws MonetDBEmbeddedException {
+    /*public CompletableFuture<Integer> appendColumnsAsync(Object[][] data) throws MonetDBEmbeddedException {
         return CompletableFuture.supplyAsync(() -> this.appendColumns(schemaName, tableName));
     }*/
-
-    /**
-     * Internal implementation of table truncation.
-     */
-    /*private native int truncateTableInternal(long connectionPointer, String schemaName, String tableName)
-            throws MonetDBEmbeddedException;*/
 
     @Override
     protected void closeImplementation() {}

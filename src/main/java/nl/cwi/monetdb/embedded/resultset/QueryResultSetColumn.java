@@ -33,12 +33,24 @@ public class QueryResultSetColumn<T> extends AbstractColumn implements Iterable<
      */
     private final T[] values;
 
+    /**
+     * The index of the column.
+     */
     private final int resultSetIndex;
 
+    /**
+     * The column name.
+     */
     private final String columnName;
 
+    /**
+     * The column digits.
+     */
     private final int columnDigits;
 
+    /**
+     * The column scale.
+     */
     private final int columnScale;
 
     /**

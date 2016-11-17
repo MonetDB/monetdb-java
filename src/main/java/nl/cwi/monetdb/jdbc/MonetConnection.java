@@ -172,7 +172,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		boolean debug = Boolean.valueOf(props.getProperty("debug"));
 		String hash = props.getProperty("hash");
 		blobIsBinary = Boolean.valueOf(props.getProperty("treat_blob_as_binary"));
-		int sockTimeout = 0;
+		int sockTimeout;
 		try {
 			sockTimeout = Integer.parseInt(props.getProperty("so_timeout"));
 		} catch (NumberFormatException e) {

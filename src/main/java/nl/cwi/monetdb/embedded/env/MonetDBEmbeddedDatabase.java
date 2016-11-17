@@ -13,7 +13,8 @@ import java.util.Set;
 
 /**
  * An embedded version of a MonetDB database.
- * Communication between Java and native C is done via JNI.
+ * Communication between Java and native C is done via JNI. The MonetDB's JNI library must be successfully loaded in
+ * order to the other methods work.
  * <br/>
  * <strong>Note</strong>: You can have only one Embedded MonetDB database running per JVM process.
  *
@@ -21,22 +22,33 @@ import java.util.Set;
  */
 public class MonetDBEmbeddedDatabase {
 
+    private static MonetDBEmbeddedDatabase MonetDBEmbeddedDatabase = null;
+
+    /**
+     * Check if the database is still running or not.
+     *
+     * @return A boolean indicating if the database is running
+     */
+    public static boolean IsDatabaseRunning() { return MonetDBEmbeddedDatabase != null; }
+
     /**
      * Starts a MonetDB database on the given farm.
      *
      * @param dbDirectory The full path of the farm
      * @param silentFlag A boolean if silent mode will be turned on or not
      * @param sequentialFlag A boolean indicating if the sequential pipeline will be set or not
-     * @return A MonetDBEmbeddedDatabase instance
+     * @return Returns true if the load was successful.
      * @throws MonetDBEmbeddedException If the JNI library has not been loaded yet or an error in the database occurred
      */
-    public static MonetDBEmbeddedDatabase StartDatabase(String dbDirectory, boolean silentFlag, boolean sequentialFlag)
+    public static boolean StartDatabase(String dbDirectory, boolean silentFlag, boolean sequentialFlag)
             throws MonetDBEmbeddedException {
-        if(!MonetDBEmbeddedInstance.IsEmbeddedInstanceInitialized()) {
-            throw new MonetDBEmbeddedException("The embedded instance has not been loaded yet!");
+        if(MonetDBEmbeddedDatabase != null) {
+            throw new MonetDBEmbeddedException("The database is still running!");
         } else {
-            return StartDatabaseInternal(dbDirectory, silentFlag, sequentialFlag);
+            System.loadLibrary("monetdb5");
+            MonetDBEmbeddedDatabase = StartDatabaseInternal(dbDirectory, silentFlag, sequentialFlag);
         }
+        return true;
     }
 
     /**
@@ -45,7 +57,7 @@ public class MonetDBEmbeddedDatabase {
      * @param dbDirectory The full path of the farm
      * @param silentFlag A boolean if silent mode will be turned on or not
      * @param sequentialFlag A boolean indicating if the sequential pipeline will be set or not
-     * @return A MonetDBEmbeddedDatabase instance
+     * @return Returns true if the load was successful
      * @throws MonetDBEmbeddedException If the JNI library has not been loaded yet or an error in the database occurred
      */
     /*public static CompletableFuture<MonetDBEmbeddedDatabase> StartDatabaseAsync(String dbDirectory, boolean silentFlag,
@@ -53,13 +65,59 @@ public class MonetDBEmbeddedDatabase {
         return CompletableFuture.supplyAsync(() -> StartDatabase(dbDirectory, silentFlag, sequentialFlag));
     }*/
 
+    /**
+     * Get the database farm directory.
+     *
+     * @return A String representing the farm directory
+     */
+    public static String GetDatabaseDirectory() { return MonetDBEmbeddedDatabase.databaseDirectory; }
+
+    /**
+     * Check if the Silent Flag was set while creating the database.
+     *
+     * @return The Silent Flag
+     */
+    public static boolean IsSilentFlagSet() { return MonetDBEmbeddedDatabase.silentFlag; }
+
+    /**
+     * Check if the Sequential Flag was set while creating the database.
+     *
+     * @return The Sequential Flag
+     */
+    public static boolean IsSequentialFlagSet() { return MonetDBEmbeddedDatabase.sequentialFlag; }
+
+    /**
+     * Stops the database. All the pending connections will be shut down as well.
+     *
+     * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
+     */
+    public static void StopDatabase() throws MonetDBEmbeddedException {
+        if(MonetDBEmbeddedDatabase == null) {
+            throw new MonetDBEmbeddedException("The database is not running!");
+        } else {
+            for(MonetDBEmbeddedConnection mdbec : MonetDBEmbeddedDatabase.connections) {
+                mdbec.closeConnectionImplementation();
+            }
+            MonetDBEmbeddedDatabase.connections.clear();
+            MonetDBEmbeddedDatabase.stopDatabaseInternal();
+            MonetDBEmbeddedDatabase = null;
+        }
+    }
+
+    /**
+     * Stops the database asynchronously. All the pending connections will be shut down as well.
+     *
+     * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
+     */
+    /*public static CompletableFuture<Void> StopDatabaseAsync() throws MonetDBEmbeddedException {
+        return CompletableFuture.runAsync(() -> this.stopDatabase());
+    }*/
+
     private final String databaseDirectory;
 
     private final boolean silentFlag;
 
     private final boolean sequentialFlag;
-
-    private boolean isRunning = true;
 
     private final Set<MonetDBEmbeddedConnection> connections = new HashSet<>();
 
@@ -70,74 +128,13 @@ public class MonetDBEmbeddedDatabase {
     }
 
     /**
-     * Get the database farm directory.
-     *
-     * @return A String representing the farm directory
-     */
-    public String getDatabaseDirectory() {
-        return databaseDirectory;
-    }
-
-    /**
-     * Check if the Silent Flag was set while creating the database.
-     *
-     * @return The Silent Flag
-     */
-    public boolean isSilentFlagSet() {
-        return silentFlag;
-    }
-
-    /**
-     * Check if the Sequential Flag was set while creating the database.
-     *
-     * @return The Sequential Flag
-     */
-    public boolean isSequentialFlagSet() {
-        return sequentialFlag;
-    }
-
-    /**
-     * Check if the database is still running or not.
-     *
-     * @return A boolean indicating if the database is running
-     */
-    public boolean isRunning() { return isRunning; }
-
-    /**
-     * Stops the database. All the pending connections will be shut down as well.
-     *
-     * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
-     */
-    public void stopDatabase() throws MonetDBEmbeddedException {
-        if(this.isRunning) {
-            for(MonetDBEmbeddedConnection mdbec : connections) {
-                mdbec.closeConnectionImplementation();
-            }
-            this.connections.clear();
-            this.stopDatabaseInternal();
-            this.isRunning = false;
-        } else {
-            throw new MonetDBEmbeddedException("The database is not running!");
-        }
-    }
-
-    /**
-     * Stops the database asynchronously. All the pending connections will be shut down as well.
-     *
-     * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
-     */
-    /*public CompletableFuture<Void> stopDatabaseAsync() throws MonetDBEmbeddedException {
-        return CompletableFuture.runAsync(() -> this.stopDatabase());
-    }*/
-
-    /**
      * Creates a connection on the database, set on the default schema.
      *
      * @return A MonetDBEmbeddedConnection instance
      * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
      */
-    public MonetDBEmbeddedConnection createConnection() throws MonetDBEmbeddedException {
-        return this.createConnectionInternal();
+    public static MonetDBEmbeddedConnection CreateConnection() throws MonetDBEmbeddedException {
+        return MonetDBEmbeddedDatabase.createConnectionInternal();
     }
 
     /**
@@ -153,8 +150,8 @@ public class MonetDBEmbeddedDatabase {
     /**
      * Removes a connection from this database.
      */
-    protected void removeConnection(MonetDBEmbeddedConnection con) {
-        this.connections.remove(con);
+    protected static void RemoveConnection(MonetDBEmbeddedConnection con) {
+        MonetDBEmbeddedDatabase.connections.remove(con);
     }
 
     /**
