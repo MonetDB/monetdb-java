@@ -41,7 +41,7 @@ import nl.cwi.monetdb.mcl.parser.MCLParseException;
 /**
  * A Socket for communicating with the MonetDB database in MAPI block
  * mode.
- * 
+ *
  * The MapiSocket implements the protocol specifics of the MAPI block
  * mode protocol, and interfaces it as a socket that delivers a
  * BufferedReader and a BufferedWriter.  Because logging in is an
@@ -56,7 +56,7 @@ import nl.cwi.monetdb.mcl.parser.MCLParseException;
  * PROMPT, HEADER, RESULT, ERROR or UNKNOWN.  Use the getLineType()
  * method on the BufferedMCLReader to retrieve the type of the last
  * line read.
- * 
+ *
  * For debugging purposes a socket level debugging is implemented where
  * each and every interaction to and from the MonetDB server is logged
  * to a file on disk.<br />
@@ -66,7 +66,7 @@ import nl.cwi.monetdb.mcl.parser.MCLParseException;
  * instead.  Following this two char prefix, a timestamp follows as the
  * number of milliseconds since the UNIX epoch.  The rest of the line is
  * a String representation of the data sent or received.
- * 
+ *
  * The general use of this Socket must be seen only in the full context
  * of a MAPI connection to a server.  It has the same ingredients as a
  * normal Socket, allowing for seamless plugging.
@@ -91,6 +91,8 @@ import nl.cwi.monetdb.mcl.parser.MCLParseException;
 public final class MapiSocket {
 	/** The TCP Socket to mserver */
 	private Socket con;
+	/** The TCP Socket timeout in milliseconds. Default is 0 meaning the timeout is disabled (i.e., timeout of infinity) */
+	private int soTimeout = 0;
 	/** Stream from the Socket for reading */
 	private InputStream fromMonet;
 	/** Stream from the Socket for writing */
@@ -202,8 +204,14 @@ public final class MapiSocket {
 	 * @throws SocketException Issue with the socket
 	 */
 	public void setSoTimeout(int s) throws SocketException {
+		if (s < 0) {
+			throw new IllegalArgumentException("timeout can't be negative");
+		}
+		this.soTimeout = s;
 		// limit time to wait on blocking operations (0 = indefinite)
-		con.setSoTimeout(s);
+		if (con != null) {
+			con.setSoTimeout(s);
+		}
 	}
 
 	/**
@@ -213,7 +221,10 @@ public final class MapiSocket {
 	 * @throws SocketException Issue with the socket
 	 */
 	public int getSoTimeout() throws SocketException {
-		return con.getSoTimeout();
+		if (con != null) {
+			this.soTimeout = con.getSoTimeout();
+		}
+		return this.soTimeout;
 	}
 	
 	/**
@@ -234,10 +245,9 @@ public final class MapiSocket {
 	 * @param port the port number
 	 * @param user the username
 	 * @param pass the password
-	 * @return A List with informational (warning) messages. If this 
-	 * 		list is empty; then there are no warnings.
-	 * @throws IOException if an I/O error occurs when creating the
-	 *         socket
+	 * @return A List with informational (warning) messages. If this
+	 *		list is empty; then there are no warnings.
+	 * @throws IOException if an I/O error occurs when creating the socket
 	 * @throws MCLParseException if bogus data is received
 	 * @throws MCLException if an MCL related error occurs
 	 */
@@ -252,12 +262,12 @@ public final class MapiSocket {
 			boolean makeConnection)
 		throws IOException, MCLParseException, MCLException {
 		if (ttl-- <= 0)
-			throw new MCLException("Maximum number of redirects reached, aborting connection attempt.  Sorry.");
+			throw new MCLException("Maximum number of redirects reached, aborting connection attempt. Sorry.");
 
 		if (makeConnection) {
 			con = new Socket(host, port);
-			// set nodelay, as it greatly speeds up small messages (like we
-			// often do)
+			con.setSoTimeout(this.soTimeout);
+			// set nodelay, as it greatly speeds up small messages (like we often do)
 			con.setTcpNoDelay(true);
 
 			fromMonet = new BlockInputStream(con.getInputStream());
@@ -265,10 +275,10 @@ public final class MapiSocket {
 			try {
 				reader = new BufferedMCLReader(fromMonet, "UTF-8");
 				writer = new BufferedMCLWriter(toMonet, "UTF-8");
+				writer.registerReader(reader);
 			} catch (UnsupportedEncodingException e) {
 				throw new AssertionError(e.toString());
 			}
-			writer.registerReader(reader);
 		}
 
 		String c = reader.readLine();
@@ -302,7 +312,7 @@ public final class MapiSocket {
 				redirects.add(tmp.substring(1));
 			}
 		} while (lineType != BufferedMCLReader.PROMPT);
-		if (err != "") {
+		if (err.length() > 0) {
 			close();
 			throw new MCLException(err.trim());
 		}
@@ -358,8 +368,7 @@ public final class MapiSocket {
 								warns.add("ignoring unknown argument '" + tmp + "' from redirect");
 							}
 						} else {
-							warns.add("ignoring illegal argument from redirect: " +
-									args[i]);
+							warns.add("ignoring illegal argument from redirect: " + args[i]);
 						}
 					}
 				}
@@ -379,14 +388,12 @@ public final class MapiSocket {
 					if (tmp != null && tmp.length() != 0) {
 						tmp = tmp.substring(1).trim();
 						if (!tmp.isEmpty() && !tmp.equals(database)) {
-							warns.add("redirect points to different " +
-								"database: " + tmp);
+							warns.add("redirect points to different " + "database: " + tmp);
 							setDatabase(tmp);
 						}
 					}
 					int p = u.getPort();
-					warns.addAll(connect(u.getHost(), p == -1 ? port : p,
-							user, pass, true));
+					warns.addAll(connect(u.getHost(), p == -1 ? port : p, user, pass, true));
 					warns.add("Redirect by " + host + ":" + port + " to " + suri);
 				} else if (u.getScheme().equals("merovingian")) {
 					// reuse this connection to inline connect to the
@@ -416,8 +423,7 @@ public final class MapiSocket {
 	 * @param password the password to use
 	 * @param language the language to use
 	 * @param database the database to connect to
-	 * @param hash the hash method(s) to use, or NULL for all supported
-	 *             hashes
+	 * @param hash the hash method(s) to use, or NULL for all supported hashes
 	 */
 	private String getChallengeResponse(
 			String chalstr,
@@ -553,9 +559,9 @@ public final class MapiSocket {
 	}
 	
 	private static char hexChar(int n) {
-		return (n > 9) 
-				? (char) ('a' + (n - 10))
-				: (char) ('0' + n);
+		return (n > 9)
+			? (char) ('a' + (n - 10))
+			: (char) ('0' + n);
 	}
 
 	/**
@@ -1018,15 +1024,41 @@ public final class MapiSocket {
 	 * possible.  If an error occurs during disconnecting it is ignored.
 	 */
 	public synchronized void close() {
-		try {
-			if (reader != null) reader.close();
-			if (writer != null) writer.close();
-			if (fromMonet != null) fromMonet.close();
-			if (toMonet != null) toMonet.close();
-			if (con != null) con.close();
-			if (debug && log instanceof FileWriter) log.close();
-		} catch (IOException e) {
-			// ignore it
+		if (writer != null) {
+			try {
+				writer.close();
+				writer = null;
+			} catch (IOException e) { /* ignore it */ }
+		}
+		if (reader != null) {
+			try {
+				reader.close();
+				reader = null;
+			} catch (IOException e) { /* ignore it */ }
+		}
+		if (toMonet != null) {
+			try {
+				toMonet.close();
+				toMonet = null;
+			} catch (IOException e) { /* ignore it */ }
+		}
+		if (fromMonet != null) {
+			try {
+				fromMonet.close();
+				fromMonet = null;
+			} catch (IOException e) { /* ignore it */ }
+		}
+		if (con != null) {
+			try {
+				con.close();
+				con = null;
+			} catch (IOException e) { /* ignore it */ }
+		}
+		if (debug && log != null) {
+			try {
+				log.close();
+				log = null;
+			} catch (IOException e) { /* ignore it */ }
 		}
 	}
 

@@ -1,6 +1,14 @@
 # ChangeLog file for java
 # This file is updated with Maddlog
 
+* Thu Nov 17 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- The MapiSocket object now supports getting and setting the
+  socket timeout, even before the TCP socket is created.  To set
+  the socket timeout specify it in the JDBC URL, for example:
+    jdbc:monetdb://localhost:50000/demo?so_timeout=8000
+  This enables the timeout and sets it to 8000 milliseconds (= 8 seconds).
+  By default the timeout is not set, so wait infinitely.
+
 * Thu Nov 10 2016 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Implemented Connection methods: getClientInfo(name) and getClientInfo().
   They used to return null and empty Properties object.

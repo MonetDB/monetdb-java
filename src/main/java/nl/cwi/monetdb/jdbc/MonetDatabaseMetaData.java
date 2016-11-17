@@ -3809,7 +3809,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		"SELECT 'debug', 5, 'false', 'boolean flag true or false' UNION ALL " +
 		"SELECT 'hash', 128, '', 'hash string' UNION ALL " +
 		"SELECT 'treat_blob_as_binary', 5, 'false', 'boolean flag true or false' UNION ALL " +
-		"SELECT 'so_timeout', 10, '0', 'timeout of communication socket. 0 means no timeout is set' " +
+		"SELECT 'so_timeout', 10, '0', 'timeout (in milliseconds) of communication socket. 0 means no timeout is set' " +
 		"ORDER BY \"NAME\"";
 
 		return executeMetaDataQuery(query);
