@@ -16,12 +16,30 @@ package nl.cwi.monetdb.embedded.mapping;
 public abstract class AbstractColumn {
 
     /**
-     * The Mapping between MonetDB type and the Java Class.
+     * The mapping between MonetDB type and the Java Class.
      */
     protected final MonetDBToJavaMapping mapping;
 
-    protected AbstractColumn(String columnType) {
+    /**
+     * The column name.
+     */
+    private final String columnName;
+
+    /**
+     * The column digits.
+     */
+    private final int columnDigits;
+
+    /**
+     * The column scale.
+     */
+    private final int columnScale;
+
+    protected AbstractColumn(String columnType, String columnName, int columnDigits, int columnScale) {
         this.mapping = MonetDBToJavaMapping.GetJavaMappingFromMonetDBString(columnType);
+        this.columnName = columnName;
+        this.columnDigits = columnDigits;
+        this.columnScale = columnScale;
     }
 
     /**
@@ -43,19 +61,19 @@ public abstract class AbstractColumn {
      *
      * @return The column name
      */
-    public abstract String getColumnName();
+    public String getColumnName() { return this.columnName; }
 
     /**
      * Gets the number digits of the column.
      *
      * @return The number of digits
      */
-    public abstract int getColumnDigits();
+    public int getColumnDigits() { return this.columnDigits; }
 
     /**
      * Gets the scale of the column.
      *
      * @return The scale
      */
-    public abstract int getColumnScale();
+    public int getColumnScale() { return this.columnScale; }
 }

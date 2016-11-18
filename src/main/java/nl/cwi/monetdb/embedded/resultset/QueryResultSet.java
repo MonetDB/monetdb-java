@@ -35,15 +35,15 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     /**
      * The query result set columns listing.
      */
-    private final QueryResultSetColumn<?>[] columns;
+    private final AbstractQueryResultSetColumn<?>[] columns;
 
     /**
      * The number of rows in the query result.
      */
     protected final int numberOfRows;
 
-	protected QueryResultSet(MonetDBEmbeddedConnection connection, long tablePointer, QueryResultSetColumn<?>[] columns,
-                             int numberOfRows) {
+	protected QueryResultSet(MonetDBEmbeddedConnection connection, long tablePointer,
+                             AbstractQueryResultSetColumn<?>[] columns, int numberOfRows) {
         super(connection);
         this.tablePointer = tablePointer;
         this.numberOfRows = numberOfRows;
@@ -63,7 +63,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     public String[] getColumnNames() {
         int i = 0;
         String[] result = new String[this.getNumberOfColumns()];
-        for(QueryResultSetColumn col : this.columns) {
+        for(AbstractQueryResultSetColumn col : this.columns) {
             result[i] = col.getColumnName();
         }
         return result;
@@ -73,7 +73,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     public String[] getColumnTypes() {
         int i = 0;
         String[] result = new String[this.getNumberOfColumns()];
-        for(QueryResultSetColumn col : this.columns) {
+        for(AbstractQueryResultSetColumn col : this.columns) {
             result[i] = col.getColumnInternalTypeName();
         }
         return result;
@@ -83,7 +83,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     public MonetDBToJavaMapping[] getMappings() {
         int i = 0;
         MonetDBToJavaMapping[] result = new MonetDBToJavaMapping[this.getNumberOfColumns()];
-        for(QueryResultSetColumn col : this.columns) {
+        for(AbstractQueryResultSetColumn col : this.columns) {
             result[i] = col.getMapping();
         }
         return result;
@@ -93,7 +93,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     public int[] getColumnDigits() {
         int i = 0;
         int[] result = new int[this.getNumberOfColumns()];
-        for(QueryResultSetColumn col : this.columns) {
+        for(AbstractQueryResultSetColumn col : this.columns) {
             result[i] = col.getColumnDigits();
         }
         return result;
@@ -103,7 +103,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     public int[] getColumnScales() {
         int i = 0;
         int[] result = new int[this.getNumberOfColumns()];
-        for(QueryResultSetColumn col : this.columns) {
+        for(AbstractQueryResultSetColumn col : this.columns) {
             result[i] = col.getColumnScale();
         }
         return result;
@@ -117,30 +117,213 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
     public boolean isStatementClosed() { return this.tablePointer == 0; }
 
     /**
-     * Gets a column from the result set by index.
+     * Gets a column index from the result set by name
      *
-     * @param index QueryResultSetColumn index (starting from 0)
-     * @return The column
+     * @param columnName AbstractQueryResultSetColumn name
+     * @return The index number
      */
-    @SuppressWarnings("unchecked")
-    public <T> QueryResultSetColumn<T> getColumnByIndex(int index) { return (QueryResultSetColumn<T>) columns[index]; }
-
-    /**
-     * Gets a column from the result set by name.
-     *
-     * @param name QueryResultSetColumn name
-     * @return The column
-     */
-    @SuppressWarnings("unchecked")
-    public <T> QueryResultSetColumn<T> getColumnByName(String name) {
+    public int getColumnIndexByName(String columnName) {
         int index = 0;
-        for (QueryResultSetColumn col : this.columns) {
-            if (col.getColumnName().equals(name)) {
-                return (QueryResultSetColumn<T>) this.columns[index];
+        for (AbstractQueryResultSetColumn col : this.columns) {
+            if (col.getColumnName().equals(columnName)) {
+                return index;
             }
             index++;
         }
         throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
+    }
+
+    /**
+     * Gets a column from the result set by index.
+     *
+     * @param index AbstractQueryResultSetColumn index (starting from 0)
+     * @return The column
+     */
+    protected AbstractQueryResultSetColumn<?> getColumnByIndex(int index) {
+        return this.columns[index];
+    }
+
+    /**
+     * Gets a column from the result set by name.
+     *
+     * @param columnName AbstractQueryResultSetColumn name
+     * @return The column
+     */
+    protected AbstractQueryResultSetColumn<?> getColumnByName(String columnName) {
+        int index = this.getColumnIndexByName(columnName);
+        return this.columns[index];
+    }
+
+    /**
+     * Gets a boolean column from the result set by index.
+     *
+     * @param index QueryResultSetBooleanColumn index (starting from 0)
+     * @return The boolean column
+     */
+    public QueryResultSetBooleanColumn getBooleanColumnByIndex(int index) {
+        return (QueryResultSetBooleanColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a boolean column from the result set by name.
+     *
+     * @param columnName QueryResultSetBooleanColumn name
+     * @return The boolean column
+     */
+    public QueryResultSetBooleanColumn getBooleanColumnByName(String columnName) {
+        int index = this.getColumnIndexByName(columnName);
+        return (QueryResultSetBooleanColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a byte column from the result set by index.
+     *
+     * @param index QueryResultSetByteColumn index (starting from 0)
+     * @return The byte column
+     */
+    public QueryResultSetByteColumn getByteColumnByIndex(int index) {
+        return (QueryResultSetByteColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a byte column from the result set by name.
+     *
+     * @param columnName QueryResultSetByteColumn name
+     * @return The byte column
+     */
+    public QueryResultSetByteColumn getByteColumnByName(String columnName) {
+        int index = this.getColumnIndexByName(columnName);
+        return (QueryResultSetByteColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a short column from the result set by index.
+     *
+     * @param index QueryResultSetShortColumn index (starting from 0)
+     * @return The short column
+     */
+    public QueryResultSetShortColumn getShortColumnByIndex(int index) {
+        return (QueryResultSetShortColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a short column from the result set by name.
+     *
+     * @param columnName QueryResultSetShortColumn name
+     * @return The short column
+     */
+    public QueryResultSetShortColumn getShortColumnByName(String columnName) {
+        int index = this.getColumnIndexByName(columnName);
+        return (QueryResultSetShortColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a int column from the result set by index.
+     *
+     * @param index QueryResultSetIntColumn index (starting from 0)
+     * @return The int column
+     */
+    public QueryResultSetIntColumn getIntColumnByIndex(int index) {
+        return (QueryResultSetIntColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a int column from the result set by name.
+     *
+     * @param columnName QueryResultSetIntColumn name
+     * @return The int column
+     */
+    public QueryResultSetIntColumn getIntColumnByName(String columnName) {
+        int index = this.getColumnIndexByName(columnName);
+        return (QueryResultSetIntColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a long column from the result set by index.
+     *
+     * @param index QueryResultSetLongColumn index (starting from 0)
+     * @return The long column
+     */
+    public QueryResultSetLongColumn getLongColumnByIndex(int index) {
+        return (QueryResultSetLongColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a long column from the result set by name.
+     *
+     * @param columnName QueryResultSetLongColumn name
+     * @return The long column
+     */
+    public QueryResultSetLongColumn getLongColumnByName(String columnName) {
+        int index = this.getColumnIndexByName(columnName);
+        return (QueryResultSetLongColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a float column from the result set by index.
+     *
+     * @param index QueryResultSetFloatColumn index (starting from 0)
+     * @return The float column
+     */
+    public QueryResultSetFloatColumn getFloatColumnByIndex(int index) {
+        return (QueryResultSetFloatColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a float column from the result set by name.
+     *
+     * @param columnName QueryResultSetFloatColumn name
+     * @return The float column
+     */
+    public QueryResultSetFloatColumn getFloatColumnByName(String columnName) {
+        int index = this.getColumnIndexByName(columnName);
+        return (QueryResultSetFloatColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a double column from the result set by index.
+     *
+     * @param index QueryResultSetDoubleColumn index (starting from 0)
+     * @return The double column
+     */
+    public QueryResultSetDoubleColumn getDoubleColumnByIndex(int index) {
+        return (QueryResultSetDoubleColumn) this.columns[index];
+    }
+
+    /**
+     * Gets a double column from the result set by name.
+     *
+     * @param columnName QueryResultSetDoubleColumn name
+     * @return The double column
+     */
+    public QueryResultSetDoubleColumn getDoubleColumnByName(String columnName) {
+        int index = this.getColumnIndexByName(columnName);
+        return (QueryResultSetDoubleColumn) this.columns[index];
+    }
+
+    /**
+     * Gets an object column from the result set by index.
+     *
+     * @param <T> The Java class of the mapped MonetDB column
+     * @param index QueryResultSetObjectColumn index (starting from 0)
+     * @return The object column
+     */
+    @SuppressWarnings("unchecked")
+    public <T> QueryResultSetObjectColumn<T> getObjectColumnByIndex(int index) {
+        return (QueryResultSetObjectColumn<T>) this.columns[index];
+    }
+
+    /**
+     * Gets an object column from the result set by name.
+     *
+     * @param <T> The Java class of the mapped MonetDB column
+     * @param columnName QueryResultSetObjectColumn name
+     * @return The object column
+     */
+    @SuppressWarnings("unchecked")
+    public <T> QueryResultSetObjectColumn<T> getObjectColumnByName(String columnName) {
+        int index = this.getColumnIndexByName(columnName);
+        return (QueryResultSetObjectColumn<T>) this.columns[index];
     }
 
     /**
@@ -167,12 +350,12 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
         int numberOfRowsToRetrieve = endIndex - startIndex;
         Object[][] temp = new Object[numberOfRowsToRetrieve][this.getNumberOfColumns()];
 		for (int i = 0 ; i < this.getNumberOfColumns(); i++) {
-            Object[] nextColumn = this.columns[i].fetchColumnValues(startIndex, endIndex);
-            for(int j = 0; j < numberOfRowsToRetrieve ; j++) {
+            Object[] nextColumn = this.columns[i].mapValuesToObjectArray(startIndex, endIndex);
+            for(int j = 0; j < numberOfRowsToRetrieve; j++) {
                 temp[j][i] = nextColumn[j];
 			}
 		}
-        return new QueryResultRowSet(this.getMappings(), temp, this);
+        return new QueryResultRowSet(this, this.getMappings(), temp);
 	}
 
     /**

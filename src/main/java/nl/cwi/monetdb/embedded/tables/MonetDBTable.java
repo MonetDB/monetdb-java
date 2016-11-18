@@ -1,3 +1,11 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.embedded.tables;
 
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
@@ -6,7 +14,7 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.embedded.mapping.MonetDBRow;
 import nl.cwi.monetdb.embedded.mapping.MonetDBToJavaMapping;
 import nl.cwi.monetdb.embedded.resultset.QueryResultSet;
-import nl.cwi.monetdb.embedded.resultset.QueryResultSetColumn;
+import nl.cwi.monetdb.embedded.resultset.QueryResultSetLongColumn;
 
 /**
  * Java representation of a MonetDB table. It's possible to perform several CRUD operations using the respective
@@ -40,8 +48,8 @@ public class MonetDBTable extends AbstractResultTable {
         try {
             String query = "SELECT COUNT(*) FROM " + this.getTableSchema() + "." + this.getTableName() + ";";
             QueryResultSet eqr = this.getConnection().sendQuery(query);
-            QueryResultSetColumn<Long> eqc = eqr.getColumnByIndex(0);
-            res = eqc.fetchFirstNColumnValues(1)[0].intValue();
+            QueryResultSetLongColumn eqc = eqr.getLongColumnByIndex(0);
+            res = (int) eqc.fetchFirstNColumnValues(1)[0];
             eqr.close();
         } catch (MonetDBEmbeddedException ex) {
             res = -1;

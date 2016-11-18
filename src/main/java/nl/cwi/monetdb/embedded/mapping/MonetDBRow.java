@@ -1,3 +1,11 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.embedded.mapping;
 
 import java.util.Arrays;
@@ -30,7 +38,7 @@ public class MonetDBRow implements Iterable {
      *
      * @return The original row result set from this row
      */
-    public AbstractRowSet getOriginalSet() { return originalSet; }
+    public AbstractRowSet getRowSet() { return originalSet; }
 
     /**
      * Gets the columns values as Java objects.
@@ -40,7 +48,7 @@ public class MonetDBRow implements Iterable {
     public Object[] getAllColumns() { return columns; }
 
     /**
-     * Sets all columns values as Java objects.
+     * Sets all columns values as Java objects. Warning - this method does not override the contents in the database!
      *
      * @param values An object array of the elements to update
      */
@@ -80,7 +88,33 @@ public class MonetDBRow implements Iterable {
     }
 
     /**
-     * Sets a column value as a Java class.
+     * Gets a column value as a Java class.
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param columnName The name of the column
+     * @param javaClass The Java class
+     * @return The column value as a Java class
+     */
+    public <T> T getColumnByName(String columnName, Class<T> javaClass) {
+        int index =  this.getRowSet().getColumnIndexByName(columnName);
+        return javaClass.cast(columns[index]);
+    }
+
+    /**
+     * Gets a column value as a Java class using the default mapping.
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param columnName The name of the column
+     * @return The column value as a Java class
+     */
+    public <T> T getColumnByName(String columnName) {
+        int index =  this.getRowSet().getColumnIndexByName(columnName);
+        Class<T> javaClass = this.originalSet.mappings[index].getJavaClass();
+        return javaClass.cast(columns[index]);
+    }
+
+    /**
+     * Sets a column value as a Java class. Warning - this method does not override the contents in the database!
      *
      * @param <T> A Java class mapped to a MonetDB data type
      * @param index The index of the column
@@ -91,7 +125,7 @@ public class MonetDBRow implements Iterable {
     }
 
     /**
-     * Sets a column value as a Java class.
+     * Sets a column value as a Java class. Warning - this method does not override the contents in the database!
      *
      * @param <T> A Java class mapped to a MonetDB data type
      * @param index The index of the column
@@ -99,6 +133,31 @@ public class MonetDBRow implements Iterable {
      * @param value The value to set
      */
     public <T> void setColumnByIndex(int index, Class<T> javaClass, T value) {
+        this.columns[index] = javaClass.cast(value);
+    }
+
+    /**
+     * Sets a column value as a Java class. Warning - this method does not override the contents in the database!
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param columnName The name of the column
+     * @param value The value to set
+     */
+    public <T> void setColumnByName(String columnName, T value) {
+        int index =  this.getRowSet().getColumnIndexByName(columnName);
+        this.columns[index] = this.originalSet.mappings[index].getJavaClass().cast(value);
+    }
+
+    /**
+     * Sets a column value as a Java class. Warning - this method does not override the contents in the database!
+     *
+     * @param <T> A Java class mapped to a MonetDB data type
+     * @param columnName The name of the column
+     * @param javaClass The Java class
+     * @param value The value to set
+     */
+    public <T> void setColumnByName(String columnName, Class<T> javaClass, T value) {
+        int index =  this.getRowSet().getColumnIndexByName(columnName);
         this.columns[index] = javaClass.cast(value);
     }
 

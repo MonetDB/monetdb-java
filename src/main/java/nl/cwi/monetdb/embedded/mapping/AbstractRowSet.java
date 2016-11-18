@@ -1,3 +1,11 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.embedded.mapping;
 
 /**
@@ -9,6 +17,11 @@ package nl.cwi.monetdb.embedded.mapping;
 public abstract class AbstractRowSet {
 
     /**
+     * The original query result set this row set belongs.
+     */
+    private final AbstractResultTable table;
+
+    /**
      * The MonetDB-To-Java mappings of the columns.
      */
     protected final MonetDBToJavaMapping[] mappings;
@@ -18,7 +31,8 @@ public abstract class AbstractRowSet {
      */
     protected final MonetDBRow[] rows;
 
-    protected AbstractRowSet(MonetDBToJavaMapping[] mappings, Object[][] rows) {
+    protected AbstractRowSet(AbstractResultTable table, MonetDBToJavaMapping[] mappings, Object[][] rows) {
+        this.table = table;
         this.mappings = mappings;
         this.rows = new MonetDBRow[rows.length];
         for(int i = 0 ; i < rows.length ; i++) {
@@ -27,9 +41,23 @@ public abstract class AbstractRowSet {
     }
 
     /**
+     * Gets the original query result set this row set belongs.
+     *
+     * @return The original query result set this row set belongs
+     */
+    public AbstractResultTable getQueryResultTable() { return table; }
+
+    /**
      * Gets the number of columns in this set.
      *
      * @return The number of columns in this set
      */
     public int getNumberOfColumns() { return mappings.length; }
+
+    /**
+     * Gets a column index in the result set by name.
+     *
+     * @return The index number
+     */
+    public abstract int getColumnIndexByName(String columnName);
 }

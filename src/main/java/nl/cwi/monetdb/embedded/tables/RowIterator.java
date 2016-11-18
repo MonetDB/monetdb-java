@@ -1,3 +1,11 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.embedded.tables;
 
 import nl.cwi.monetdb.embedded.mapping.AbstractRowSet;
@@ -10,11 +18,6 @@ import nl.cwi.monetdb.embedded.mapping.MonetDBRow;
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
 public class RowIterator extends AbstractRowSet {
-
-    /**
-     * The original table of this iterator.
-     */
-    protected final MonetDBTable table;
 
     /**
      * The current table row number on the fetched set.
@@ -32,11 +35,23 @@ public class RowIterator extends AbstractRowSet {
     protected final int lastIndex;
 
     protected RowIterator(MonetDBTable table, Object[][] rows, int firstIndex, int lastIndex) {
-        super(table.getMappings(), rows);
-        this.table = table;
+        super(table, table.getMappings(), rows);
         this.firstIndex = firstIndex;
         this.lastIndex = lastIndex;
         this.currentIterationNumber = -1;
+    }
+
+    @Override
+    public int getColumnIndexByName(String columnName) {
+        String[] columnNames = this.getTable().getColumnNames();
+        int index = 0;
+        for (String colName : columnNames) {
+            if (columnName.equals(colName)) {
+                return this.getColumnByIndex(index);
+            }
+            index++;
+        }
+        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
     }
 
     /**
@@ -44,7 +59,7 @@ public class RowIterator extends AbstractRowSet {
      *
      * @return The original table of this iterator
      */
-    public MonetDBTable getTable() { return table; }
+    public MonetDBTable getTable() { return (MonetDBTable) this.getQueryResultTable(); }
 
     /**
      * Gets the first index used on this iteration.
@@ -116,39 +131,25 @@ public class RowIterator extends AbstractRowSet {
      * Gets a column value as a Java class.
      *
      * @param <T> A Java class mapped to a MonetDB data type
-     * @param name The name of the column
+     * @param columnName The name of the column
      * @param javaClass The Java class
      * @return The column value as a Java class
      */
-    public <T> T getColumnByName(String name, Class<T> javaClass) {
-        String[] colNames = this.getTable().getColumnNames();
-        int index = 0;
-        for (String colName : colNames) {
-            if (name.equals(colName)) {
-                return this.getColumnByIndex(index, javaClass);
-            }
-            index++;
-        }
-        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
+    public <T> T getColumnByName(String columnName, Class<T> javaClass) {
+        int index = this.getColumnIndexByName(columnName);
+        return this.getColumnByIndex(index, javaClass);
     }
 
     /**
      * Gets a column value as a Java class using the default mapping.
      *
      * @param <T> A Java class mapped to a MonetDB data type
-     * @param name The name of the column
+     * @param columnName The name of the column
      * @return The column value as a Java class
      */
-    public <T> T getColumnByName(String name) {
-        String[] colNames = this.getTable().getColumnNames();
-        int index = 0;
-        for (String colName : colNames) {
-            if (name.equals(colName)) {
-                return this.getColumnByIndex(index);
-            }
-            index++;
-        }
-        throw new ArrayIndexOutOfBoundsException("The column is not present in the result set!");
+    public <T> T getColumnByName(String columnName) {
+        int index = this.getColumnIndexByName(columnName);
+        return this.getColumnByIndex(index);
     }
 
     /**

@@ -39,7 +39,7 @@ public class MonetDBEmbeddedConnection {
      */
     public String getCurrentSchema() throws MonetDBEmbeddedException {
         QueryResultSet eqr = this.sendQuery("SELECT current_schema FROM sys.var();");
-        QueryResultSetColumn<String> col = eqr.getColumnByIndex(0);
+        QueryResultSetObjectColumn<String> col = eqr.getObjectColumnByIndex(0);
         String res = col.fetchFirstNColumnValues(1)[0];
         eqr.close();
         return res;
@@ -135,31 +135,6 @@ public class MonetDBEmbeddedConnection {
      */
     /*public CompletableFuture<QueryResultSet> sendQueryAsync(String query) throws MonetDBEmbeddedException {
         return CompletableFuture.supplyAsync(() -> this.sendQuery(query));
-    }*/
-
-    /**
-     * Creates a prepared query statement likewise the PreparedStatement in JDBC.
-     *
-     * @param query The SQL query with '?' indicating the parameters to replace in the query
-     * @return An instance of EmbeddedPreparedStatement
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    /*public EmbeddedPreparedStatement createPreparedStatement(String query) throws MonetDBEmbeddedException {
-        if (!query.endsWith(";")) {
-            query += ";";
-        }
-        return this.createPreparedStatementInternal(this.connectionPointer, query);
-    }*/
-
-    /**
-     * Creates a prepared query statement likewise the PreparedStatement in JDBC asynchronously.
-     *
-     * @param query The SQL query with '?' indicating the parameters to replace in the query
-     * @return An instance of EmbeddedPreparedStatement
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    /*public CompletableFuture<EmbeddedPreparedStatement> createPreparedStatementAsync(String query) throws MonetDBEmbeddedException {
-        return CompletableFuture.supplyAsync(() -> this.createPreparedStatement(query));
     }*/
 
     /**
@@ -283,9 +258,6 @@ public class MonetDBEmbeddedConnection {
      */
     private native MonetDBTable getMonetDBTableInternal(long connectionPointer, String schemaName, String tableName)
             throws MonetDBEmbeddedException;
-
-    /*private native EmbeddedPreparedStatement createPreparedStatementInternal(long connectionPointer, String query)
-            throws MonetDBEmbeddedException;*/
 
     /**
      * Internal implementation to close a connection.

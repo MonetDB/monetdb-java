@@ -74,10 +74,11 @@ public enum MonetDBToJavaMapping {
     /**
      * Get the corresponding MonetDBToJavaMapping from MonetDB internal data type.
      *
-     * @return A MonetDBToJavaMapping enum value
+     * @param sqlName The MonetDB's data type SQL name
+     * @return A MonetDBToJavaMapping enum value, or null if it has no mapping
      */
-    public static MonetDBToJavaMapping GetJavaMappingFromMonetDBString(String sqlname) {
-        return MonetDBMappings.get(sqlname);
+    public static MonetDBToJavaMapping GetJavaMappingFromMonetDBString(String sqlName) {
+        return MonetDBMappings.get(sqlName);
     }
 
     /**
