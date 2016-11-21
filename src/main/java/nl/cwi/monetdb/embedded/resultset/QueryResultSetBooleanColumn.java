@@ -20,7 +20,7 @@ public class QueryResultSetBooleanColumn extends AbstractQueryResultSetColumn<bo
     /**
      * MonetDB's boolean null constant.
      */
-        private static boolean BooleanNullConstant;
+    private static boolean BooleanNullConstant;
 
     /**
      * Gets MonetDB's boolean null constant

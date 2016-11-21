@@ -11,8 +11,6 @@ package nl.cwi.monetdb.embedded.resultset;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.embedded.mapping.AbstractColumn;
 
-import java.lang.reflect.ParameterizedType;
-
 /**
  * An abstract class for accessing materialised (Java-level) query result columns.
  *
@@ -49,10 +47,6 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
 	protected AbstractQueryResultSetColumn(String columnType, long tablePointer, int resultSetIndex, String columnName,
                                            int columnDigits, int columnScale, int numberOfRows) {
         super(columnType, columnName, columnDigits, columnScale);
-        Class<?> param = (Class<?>) ((ParameterizedType)getClass().getGenericSuperclass()).getActualTypeArguments()[0];
-        if(!param.isArray()) {
-            throw new ClassCastException("The parameter must be of array type!!");
-        }
         this.tablePointer = tablePointer;
         this.resultSetIndex = resultSetIndex;
         this.numberOfRows = numberOfRows;
@@ -67,7 +61,7 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
      */
     public int getNumberOfRows() { return this.numberOfRows; }
 
-    protected abstract void fetchMoreData(int startIndex, int endIndex) throws MonetDBEmbeddedException;
+    protected abstract void fetchMoreData(int startIndex, int numberOfRowsToRetrieve) throws MonetDBEmbeddedException;
 
     protected abstract A storeNewDataAndGetResult(int startIndex, int numberOfRowsToRetrieve);
 

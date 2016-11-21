@@ -38,7 +38,7 @@ public class QueryResultSetLongColumn extends AbstractQueryResultSetColumn<long[
                                        int columnDigits, int columnScale, int numberOfRows) {
         super(columnType, tablePointer, resultSetIndex, columnName, columnDigits, columnScale, numberOfRows);
         if(!this.getMapping().getJavaClass().equals(Long.class)) {
-            throw new ClassCastException("The parameter must be of boolean type!!");
+            throw new ClassCastException("The parameter must be of long type!!");
         }
         this.values = new long[numberOfRows];
     }

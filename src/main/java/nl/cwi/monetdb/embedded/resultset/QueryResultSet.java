@@ -139,9 +139,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
      * @param index AbstractQueryResultSetColumn index (starting from 0)
      * @return The column
      */
-    protected AbstractQueryResultSetColumn<?> getColumnByIndex(int index) {
-        return this.columns[index];
-    }
+    public AbstractQueryResultSetColumn<?> getColumnByIndex(int index) { return this.columns[index]; }
 
     /**
      * Gets a column from the result set by name.
@@ -149,7 +147,7 @@ public class QueryResultSet extends AbstractResultTable implements Iterable {
      * @param columnName AbstractQueryResultSetColumn name
      * @return The column
      */
-    protected AbstractQueryResultSetColumn<?> getColumnByName(String columnName) {
+    public AbstractQueryResultSetColumn<?> getColumnByName(String columnName) {
         int index = this.getColumnIndexByName(columnName);
         return this.columns[index];
     }

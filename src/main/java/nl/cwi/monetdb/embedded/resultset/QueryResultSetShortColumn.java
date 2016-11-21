@@ -20,14 +20,14 @@ public class QueryResultSetShortColumn extends AbstractQueryResultSetColumn<shor
     /**
      * MonetDB's short null constant.
      */
-    private static long ShortNullConstant;
+    private static short ShortNullConstant;
 
     /**
      * Gets MonetDB's short null constant
      *
      * @return MonetDB's short null constant
      */
-    public static long GetShortNullConstant() { return ShortNullConstant; }
+    public static short GetShortNullConstant() { return ShortNullConstant; }
 
     /**
      * Array with the retrieved values.

@@ -38,7 +38,7 @@ public class QueryResultSetDoubleColumn extends AbstractQueryResultSetColumn<dou
                                          int columnDigits, int columnScale, int numberOfRows) {
         super(columnType, tablePointer, resultSetIndex, columnName, columnDigits, columnScale, numberOfRows);
         if(!this.getMapping().getJavaClass().equals(Double.class)) {
-            throw new ClassCastException("The parameter must be of boolean type!!");
+            throw new ClassCastException("The parameter must be of double type!!");
         }
         this.values = new double[numberOfRows];
     }

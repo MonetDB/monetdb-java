@@ -38,7 +38,7 @@ public class QueryResultSetFloatColumn extends AbstractQueryResultSetColumn<floa
                                         int columnDigits, int columnScale, int numberOfRows) {
         super(columnType, tablePointer, resultSetIndex, columnName, columnDigits, columnScale, numberOfRows);
         if(!this.getMapping().getJavaClass().equals(Float.class)) {
-            throw new ClassCastException("The parameter must be of boolean type!!");
+            throw new ClassCastException("The parameter must be of float type!!");
         }
         this.values = new float[numberOfRows];
     }
