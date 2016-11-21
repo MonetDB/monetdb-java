@@ -61,7 +61,7 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
      */
     public int getNumberOfRows() { return this.numberOfRows; }
 
-    protected abstract void fetchMoreData(int startIndex, int numberOfRowsToRetrieve) throws MonetDBEmbeddedException;
+    protected abstract void fetchMoreData(int startIndex, int endIndex) throws MonetDBEmbeddedException;
 
     protected abstract A storeNewDataAndGetResult(int startIndex, int numberOfRowsToRetrieve);
 
