@@ -22,7 +22,7 @@ public class RowIterator extends AbstractRowSet {
     /**
      * The current table row number on the fetched set.
      */
-    protected int currentIterationNumber;
+    protected int currentIterationNumber = 0;
 
     /**
      * The first row in the table to iterate.
@@ -38,7 +38,6 @@ public class RowIterator extends AbstractRowSet {
         super(table, table.getMappings(), rows);
         this.firstIndex = firstIndex;
         this.lastIndex = lastIndex;
-        this.currentIterationNumber = -1;
     }
 
     @Override
@@ -101,7 +100,7 @@ public class RowIterator extends AbstractRowSet {
      *
      * @return There are more rows to iterate
      */
-    public boolean hasMore() { return this.currentIterationNumber + this.firstIndex < this.lastIndex; }
+    public boolean hasMore() { return this.firstIndex + this.currentIterationNumber < this.lastIndex; }
 
     /**
      * Gets a column value as a Java class.
@@ -153,15 +152,7 @@ public class RowIterator extends AbstractRowSet {
     }
 
     /**
-     * Get the next row in the table if there are more.
-     *
-     * @return A boolean indicating if there are more rows to fetch
+     * Sets the next value to iterate.
      */
-    protected boolean tryContinueIteration() {
-        if(this.hasMore()) {
-            this.currentIterationNumber++;
-            return true;
-        }
-        return false;
-    }
+    protected void setNextIteration() { this.currentIterationNumber++; }
 }

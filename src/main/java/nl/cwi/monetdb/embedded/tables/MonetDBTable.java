@@ -136,8 +136,8 @@ public class MonetDBTable extends AbstractResultTable {
             res[0] = res[1];
             res[0] = aux;
         }
-        if (res[0] < 1) {
-            res[0] = 1;
+        if (res[0] < 0) {
+            res[0] = 0;
         }
         int numberOfRows = this.getNumberOfRows();
         if (res[1] >= numberOfRows) {
@@ -155,9 +155,9 @@ public class MonetDBTable extends AbstractResultTable {
      */
     public int iterateTable(IMonetDBTableCursor cursor) throws MonetDBEmbeddedException {
         int[] limits = this.prepareIterator(cursor);
-        int res = 0, total = limits[1] - limits[0] + 1;
+        int res = 0, total = limits[1] - limits[0];
         String query = new StringBuffer("SELECT * FROM ").append(this.getTableSchema()).append(".").append(this.getTableName())
-                .append(" LIMIT ").append(total).append(" OFFSET ").append(limits[0] - 1).append(";").toString();
+                .append(" LIMIT ").append(total).append(" OFFSET ").append(limits[0]).append(";").toString();
 
         QueryResultSet eqr = this.getConnection().sendQuery(query);
         MonetDBRow[] array = eqr.fetchAllRowValues().getAllRows();
@@ -168,8 +168,9 @@ public class MonetDBTable extends AbstractResultTable {
         }
 
         RowIterator ri = new RowIterator(this, data, limits[0], limits[1]);
-        while(ri.tryContinueIteration()) {
+        while(ri.hasMore()) {
             cursor.processNextRow(ri);
+            ri.setNextIteration();
             res++;
         }
         return res;

@@ -8,7 +8,7 @@ package nl.cwi.monetdb.embedded.tables;
 public interface IMonetDBTableBaseIterator {
 
     /**
-     * Specify the first row in the table to iterate starting from 1. If a lower number is provided, then the iteration
+     * Specify the first row in the table to iterate starting from 0. If a lower number is provided, then the iteration
      * will start on the first row.
      *
      * @return The first row in the table to iterate
