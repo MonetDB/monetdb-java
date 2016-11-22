@@ -27,7 +27,7 @@ public class QueryResultSetObjectColumn<T> extends AbstractQueryResultSetColumn<
      *
      * @return A null pointer
      */
-    public static Object GetObjectNullConstant() { return null; }
+    public static <T> T GetObjectNullConstant() { return null; }
 
     /**
      * Checks if the Object value is null or not.
@@ -35,7 +35,7 @@ public class QueryResultSetObjectColumn<T> extends AbstractQueryResultSetColumn<
      * @param value The value to evaluate
      * @return If the Object value is null or not.
      */
-    public static boolean CheckObjectIsNull(Object value) { return value == null; }
+    public static <T> boolean CheckObjectIsNull(T value) { return value == null; }
 
     /**
      * Array with the retrieved values.
