@@ -18,16 +18,20 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 public class QueryResultSetBooleanColumn extends AbstractQueryResultSetColumn<boolean[]> {
 
     /**
-     * MonetDB's boolean null constant.
-     */
-    private static boolean BooleanNullConstant;
-
-    /**
      * Gets MonetDB's boolean null constant
      *
      * @return MonetDB's boolean null constant
      */
-    public static boolean GetBooleanNullConstant() { return BooleanNullConstant; }
+    public static native boolean GetBooleanNullConstant();
+
+    /**
+     * Due to restrictions on the representation of boolean values in the Java language, this method should be called
+     * to check if a boolean value is null or not.
+     *
+     * @param value The value to evaluate
+     * @return If the value is null or not
+     */
+    public static native boolean CheckBooleanIsNull(boolean value);
 
     /**
      * Array with the retrieved values.
@@ -58,17 +62,19 @@ public class QueryResultSetBooleanColumn extends AbstractQueryResultSetColumn<bo
 
     @Override
     protected boolean[] checkIfIndexesAreNullImplementation(boolean[] values, boolean[] res) throws MonetDBEmbeddedException {
+        boolean nil = GetBooleanNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == BooleanNullConstant);
+            res[i] = (values[i] == nil);
         }
         return res;
     }
 
     @Override
     protected Boolean[] mapValuesToObjectArrayImplementation(boolean[] values) throws MonetDBEmbeddedException {
+        boolean nil = GetBooleanNullConstant();
         Boolean[] res = new Boolean[values.length];
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == BooleanNullConstant) ? null : values[i];
+            res[i] = (values[i] == nil) ? null : values[i];
         }
         return res;
     }

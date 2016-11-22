@@ -12,8 +12,7 @@ import nl.cwi.monetdb.embedded.resultset.*;
 import nl.cwi.monetdb.embedded.tables.MonetDBTable;
 import nl.cwi.monetdb.embedded.utils.StringEscaper;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * A single connection to a MonetDB database instance
@@ -27,9 +26,11 @@ public class MonetDBEmbeddedConnection {
 
 	protected final long connectionPointer;
 
-    private final Set<AbstractConnectionResult> results = new HashSet<>();
+    private final ConcurrentHashMap<Long, AbstractConnectionResult> results = new ConcurrentHashMap<>();
 
 	protected MonetDBEmbeddedConnection(long connectionPointer) { this.connectionPointer = connectionPointer; }
+
+    protected long getConnectionPointer() { return connectionPointer; }
 
     /**
      * Gets the current schema set on the connection.
@@ -95,7 +96,7 @@ public class MonetDBEmbeddedConnection {
             query += ";";
         }
         UpdateResultSet res = this.sendUpdateInternal(this.connectionPointer, query, true);
-        results.add(res);
+        results.put(res.getConnectionPointer(), res);
         return res;
     }
 
@@ -122,7 +123,7 @@ public class MonetDBEmbeddedConnection {
             query += ";";
 		}
         QueryResultSet res = this.sendQueryInternal(this.connectionPointer, query, true);
-        results.add(res);
+        results.put(res.getConnectionPointer(), res);
         return res;
 	}
 
@@ -147,7 +148,7 @@ public class MonetDBEmbeddedConnection {
      */
     public MonetDBTable getMonetDBTable(String schemaName, String tableName) throws MonetDBEmbeddedException {
         MonetDBTable res = this.getMonetDBTableInternal(this.connectionPointer, schemaName, tableName);
-        results.add(res);
+        results.put(res.getConnectionPointer(), res);
         return res;
     }
 
@@ -215,7 +216,7 @@ public class MonetDBEmbeddedConnection {
      * When the database is shuts down, this method is called instead
      */
     protected void closeConnectionImplementation() {
-        for(AbstractConnectionResult res : this.results) {
+        for(AbstractConnectionResult res : this.results.values()) {
             res.closeImplementation();
         }
         this.closeConnectionInternal(this.connectionPointer);
@@ -239,7 +240,7 @@ public class MonetDBEmbeddedConnection {
     /**
      * Removes a query result from this connection.
      */
-    protected void removeQueryResult(AbstractConnectionResult res) { this.results.remove(res); }
+    protected void removeQueryResult(AbstractConnectionResult res) { this.results.remove(res.getConnectionPointer()); }
 
     /**
      * Internal implementation of sendUpdate.

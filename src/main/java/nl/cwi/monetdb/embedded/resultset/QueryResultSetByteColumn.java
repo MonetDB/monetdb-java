@@ -18,16 +18,19 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 public class QueryResultSetByteColumn extends AbstractQueryResultSetColumn<byte[]> {
 
     /**
-     * MonetDB's byte null constant.
-     */
-    private static byte ByteNullConstant;
-
-    /**
      * Gets MonetDB's byte null constant
      *
      * @return MonetDB's byte null constant
      */
-    public static byte GetByteNullConstant() { return ByteNullConstant; }
+    public static native byte GetByteNullConstant();
+
+    /**
+     * Checks if the short value is null or not.
+     *
+     * @param value The value to evaluate
+     * @return If the short value is null or not.
+     */
+    public static native boolean CheckByteIsNull(byte value);
 
     /**
      * Array with the retrieved values.
@@ -58,17 +61,19 @@ public class QueryResultSetByteColumn extends AbstractQueryResultSetColumn<byte[
 
     @Override
     protected boolean[] checkIfIndexesAreNullImplementation(byte[] values, boolean[] res) throws MonetDBEmbeddedException {
+        byte nil = GetByteNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == ByteNullConstant);
+            res[i] = (values[i] == nil);
         }
         return res;
     }
 
     @Override
     protected Byte[] mapValuesToObjectArrayImplementation(byte[] values) throws MonetDBEmbeddedException {
+        byte nil = GetByteNullConstant();
         Byte[] res = new Byte[values.length];
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == ByteNullConstant) ? null : values[i];
+            res[i] = (values[i] == nil) ? null : values[i];
         }
         return res;
     }

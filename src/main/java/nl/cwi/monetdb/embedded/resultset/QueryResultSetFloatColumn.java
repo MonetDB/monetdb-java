@@ -18,16 +18,19 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 public class QueryResultSetFloatColumn extends AbstractQueryResultSetColumn<float[]> {
 
     /**
-     * MonetDB's float null constant.
-     */
-    private static float FloatNullConstant;
-
-    /**
      * Gets MonetDB's float null constant
      *
      * @return MonetDB's float null constant
      */
-    public static float GetFloatNullConstant() { return FloatNullConstant; }
+    public static native float GetFloatNullConstant();
+
+    /**
+     * Checks if the float value is null or not.
+     *
+     * @param value The value to evaluate
+     * @return If the float value is null or not.
+     */
+    public static native boolean CheckFloatIsNull(float value);
 
     /**
      * Array with the retrieved values.
@@ -58,17 +61,19 @@ public class QueryResultSetFloatColumn extends AbstractQueryResultSetColumn<floa
 
     @Override
     protected boolean[] checkIfIndexesAreNullImplementation(float[] values, boolean[] res) throws MonetDBEmbeddedException {
+        float nil = GetFloatNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == FloatNullConstant);
+            res[i] = (values[i] == nil);
         }
         return res;
     }
 
     @Override
     protected Float[] mapValuesToObjectArrayImplementation(float[] values) throws MonetDBEmbeddedException {
+        float nil = GetFloatNullConstant();
         Float[] res = new Float[values.length];
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == FloatNullConstant) ? null : values[i];
+            res[i] = (values[i] == nil) ? null : values[i];
         }
         return res;
     }

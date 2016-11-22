@@ -18,16 +18,19 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 public class QueryResultSetLongColumn extends AbstractQueryResultSetColumn<long[]> {
 
     /**
-     * MonetDB's long null constant.
-     */
-    private static long LongNullConstant;
-
-    /**
      * Gets MonetDB's long null constant
      *
      * @return MonetDB's long null constant
      */
-    public static long GetIntegerNullConstant() { return LongNullConstant; }
+    public static native long GetLongNullConstant();
+
+    /**
+     * Checks if the long value is null or not.
+     *
+     * @param value The value to evaluate
+     * @return If the long value is null or not.
+     */
+    public static native boolean CheckLongIsNull(long value);
 
     /**
      * Array with the retrieved values.
@@ -58,17 +61,19 @@ public class QueryResultSetLongColumn extends AbstractQueryResultSetColumn<long[
 
     @Override
     protected boolean[] checkIfIndexesAreNullImplementation(long[] values, boolean[] res) throws MonetDBEmbeddedException {
+        long nil = GetLongNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == LongNullConstant);
+            res[i] = (values[i] == nil);
         }
         return res;
     }
 
     @Override
     protected Long[] mapValuesToObjectArrayImplementation(long[] values) throws MonetDBEmbeddedException {
+        long nil = GetLongNullConstant();
         Long[] res = new Long[values.length];
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == LongNullConstant) ? null : values[i];
+            res[i] = (values[i] == nil) ? null : values[i];
         }
         return res;
     }

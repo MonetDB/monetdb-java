@@ -19,7 +19,7 @@ import java.util.Collections;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class MonetDBEmbeddedBlob implements Serializable, Blob {
+public class MonetDBEmbeddedBlob implements Serializable, Blob, Comparable<MonetDBEmbeddedBlob> {
 
     /**
      * The BLOB's content as a Java byte array.
@@ -155,5 +155,15 @@ public class MonetDBEmbeddedBlob implements Serializable, Blob {
     public InputStream getBinaryStream(long pos, long length) throws SQLException {
         this.checkFreed();
         return new ByteArrayInputStream(Arrays.copyOfRange(this.blob, (int) pos, (int) length));
+    }
+
+    @Override
+    public int compareTo(MonetDBEmbeddedBlob o) {
+        byte[] first = this.blob, second = o.blob;
+        int len = Math.min(first.length, second.length), res = 0;
+        for(int i = 0; i < len ; i++) {
+            res = res + first[i] - second[i];
+        }
+        return res;
     }
 }

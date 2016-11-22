@@ -176,72 +176,27 @@ public class MonetDBTable extends AbstractResultTable {
     }
 
     /**
-     * Appends new rows to the table. As MonetDB's storage is column-wise, the method
-     * {@link nl.cwi.monetdb.embedded.tables.MonetDBTable#appendColumns(Object[][]) appendColumns} is preferable
-     * over this one.
-     *
-     * @param data An array of rows to append
-     * @return The number of rows appended
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    public int appendRows(Object[][] data) throws MonetDBEmbeddedException {
-        int numberOfRows = data.length, numberOfColumns = this.getNumberOfColumns();
-        if(numberOfRows == 0) {
-            throw new ArrayStoreException("Appending 0 rows?");
-        }
-        Object[][] transposed = new Object[numberOfColumns][numberOfRows];
-
-        for (int i = 0; i < numberOfRows; i++) {
-            if(data[i].length != numberOfColumns) {
-                throw new ArrayStoreException("The values array at row " + i + " differs from the number of columns!");
-            }
-            for (int j = 0; j < numberOfColumns; j++) {
-                transposed[j][i] = data[i][j];
-            }
-        }
-        return this.appendColumns(transposed);
-    }
-
-    /**
-     * Appends new rows to the table asynchronously.
-     *
-     * @param rows An array of rows to append
-     * @return The number of rows appended
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    /*public CompletableFuture<Integer> appendRowsAsync(Object[][] rows) throws MonetDBEmbeddedException {
-        return CompletableFuture.supplyAsync(() -> this.appendRows(schemaName, tableName));
-    }*/
-
-    /**
-     * Appends new rows to the table column-wise. As MonetDB's storage is column-wise, this method is preferable over
-     * {@link nl.cwi.monetdb.embedded.tables.MonetDBTable#appendRows(Object[][]) appendRows} method.
+     * Appends new rows to the table column-wise.
      *
      * @param data An array of columns to append
      * @return The number of rows appended
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    public int appendColumns(Object[][] data) throws MonetDBEmbeddedException {
+    public int appendColumns(Object[] data) throws MonetDBEmbeddedException {
         MonetDBToJavaMapping[] mappings = this.getMappings();
-        int numberOfRowsToInsert = data[0].length, numberOfColumns = mappings.length;
-        if (data.length != numberOfColumns) {
-            throw new ArrayStoreException("The number of columns differs from the table's number of columns!");
+        if (data.length != mappings.length) {
+            throw new ArrayStoreException("The number of columns between the data nad the classes is not consistent!");
         }
-        if(numberOfRowsToInsert == 0) {
-            throw new ArrayStoreException("Appending 0 rows?");
+        if (mappings.length != this.getNumberOfColumns()) {
+            throw new ArrayStoreException("The number of columns between data and the table is not consistent!");
         }
-        for (int i = 0; i < numberOfColumns; i++) {
-            if(data[i].length != numberOfRowsToInsert) {
-                throw new ArrayStoreException("The number of rows in each column is not consistent!");
-            }
-        }
-        Class[] jClasses = new Class[mappings.length];
         int[] javaIndexes = new int[mappings.length];
+        Class<?>[] javaClasses = new Class<?>[mappings.length];
         for (int i = 0; i < mappings.length; i++) {
-            jClasses[i] = mappings[i].getJavaClass();
             javaIndexes[i] = mappings[i].ordinal();
+            javaClasses[i] = mappings[i].getJavaClass();
         }
-        return this.appendColumnsInternal(jClasses, javaIndexes, data, numberOfRowsToInsert);
+        return this.appendColumnsInternal(data, javaIndexes, javaClasses);
     }
 
     /*
@@ -251,13 +206,13 @@ public class MonetDBTable extends AbstractResultTable {
      * @return The number of rows appended
      * @throws MonetDBEmbeddedException If an error in the database occurred
      */
-    /*public CompletableFuture<Integer> appendColumnsAsync(Object[][] data) throws MonetDBEmbeddedException {
-        return CompletableFuture.supplyAsync(() -> this.appendColumns(schemaName, tableName));
+    /*public CompletableFuture<Integer> appendColumnsAsync(Object[] data) throws MonetDBEmbeddedException {
+        return CompletableFuture.supplyAsync(() -> this.appendColumns(data));
     }*/
 
     @Override
     protected void closeImplementation() {}
 
-    private native int appendColumnsInternal(Class[] jClasses, int[] javaIndexes, Object[][] data, int numberOfRows)
+    private native int appendColumnsInternal(Object[] data, int[] javaIndexes, Class<?>[] javaClasses)
             throws MonetDBEmbeddedException;
 }

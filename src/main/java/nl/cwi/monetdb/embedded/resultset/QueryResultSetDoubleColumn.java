@@ -18,16 +18,19 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 public class QueryResultSetDoubleColumn extends AbstractQueryResultSetColumn<double[]> {
 
     /**
-     * MonetDB's double null constant.
-     */
-    private static double DoubleNullConstant;
-
-    /**
      * Gets MonetDB's double null constant
      *
      * @return MonetDB's double null constant
      */
-    public static double GetDoubleNullConstant() { return DoubleNullConstant; }
+    public static native double GetDoubleNullConstant();
+
+    /**
+     * Checks if the double value is null or not.
+     *
+     * @param value The value to evaluate
+     * @return If the double value is null or not.
+     */
+    public static native boolean CheckDoubleIsNull(double value);
 
     /**
      * Array with the retrieved values.
@@ -58,17 +61,19 @@ public class QueryResultSetDoubleColumn extends AbstractQueryResultSetColumn<dou
 
     @Override
     protected boolean[] checkIfIndexesAreNullImplementation(double[] values, boolean[] res) throws MonetDBEmbeddedException {
+        double nil = GetDoubleNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == DoubleNullConstant);
+            res[i] = (values[i] == nil);
         }
         return res;
     }
 
     @Override
     protected Double[] mapValuesToObjectArrayImplementation(double[] values) throws MonetDBEmbeddedException {
+        double nil = GetDoubleNullConstant();
         Double[] res = new Double[values.length];
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == DoubleNullConstant) ? null : values[i];
+            res[i] = (values[i] == nil) ? null : values[i];
         }
         return res;
     }

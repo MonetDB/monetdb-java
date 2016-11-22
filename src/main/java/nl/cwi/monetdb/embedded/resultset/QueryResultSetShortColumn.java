@@ -18,16 +18,19 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 public class QueryResultSetShortColumn extends AbstractQueryResultSetColumn<short[]> {
 
     /**
-     * MonetDB's short null constant.
-     */
-    private static short ShortNullConstant;
-
-    /**
      * Gets MonetDB's short null constant
      *
      * @return MonetDB's short null constant
      */
-    public static short GetShortNullConstant() { return ShortNullConstant; }
+    public static native short GetShortNullConstant();
+
+    /**
+     * Checks if the short value is null or not.
+     *
+     * @param value The value to evaluate
+     * @return If the short value is null or not.
+     */
+    public static native boolean CheckShortIsNull(short value);
 
     /**
      * Array with the retrieved values.
@@ -38,7 +41,7 @@ public class QueryResultSetShortColumn extends AbstractQueryResultSetColumn<shor
                                         int columnDigits, int columnScale, int numberOfRows) {
         super(columnType, tablePointer, resultSetIndex, columnName, columnDigits, columnScale, numberOfRows);
         if(!this.getMapping().getJavaClass().equals(Short.class)) {
-            throw new ClassCastException("The parameter must be of boolean type!!");
+            throw new ClassCastException("The parameter must be of short type!!");
         }
         this.values = new short[numberOfRows];
     }
@@ -58,17 +61,19 @@ public class QueryResultSetShortColumn extends AbstractQueryResultSetColumn<shor
 
     @Override
     protected boolean[] checkIfIndexesAreNullImplementation(short[] values, boolean[] res) throws MonetDBEmbeddedException {
+        short nil = GetShortNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == ShortNullConstant);
+            res[i] = (values[i] == nil);
         }
         return res;
     }
 
     @Override
     protected Short[] mapValuesToObjectArrayImplementation(short[] values) throws MonetDBEmbeddedException {
+        short nil = GetShortNullConstant();
         Short[] res = new Short[values.length];
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == ShortNullConstant) ? null : values[i];
+            res[i] = (values[i] == nil) ? null : values[i];
         }
         return res;
     }

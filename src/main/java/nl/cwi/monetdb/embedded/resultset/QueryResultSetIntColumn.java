@@ -18,16 +18,19 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 public class QueryResultSetIntColumn extends AbstractQueryResultSetColumn<int[]> {
 
     /**
-     * MonetDB's int null constant.
-     */
-    private static int IntNullConstant;
-
-    /**
      * Gets MonetDB's int null constant
      *
      * @return MonetDB's int null constant
      */
-    public static int GetIntNullConstant() { return IntNullConstant; }
+    public static native int GetIntNullConstant();
+
+    /**
+     * Checks if the int value is null or not.
+     *
+     * @param value The value to evaluate
+     * @return If the int value is null or not.
+     */
+    public static native boolean CheckIntIsNull(int value);
 
     /**
      * Array with the retrieved values.
@@ -58,17 +61,19 @@ public class QueryResultSetIntColumn extends AbstractQueryResultSetColumn<int[]>
 
     @Override
     protected boolean[] checkIfIndexesAreNullImplementation(int[] values, boolean[] res) throws MonetDBEmbeddedException {
+        int nil = GetIntNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == IntNullConstant);
+            res[i] = (values[i] == nil);
         }
         return res;
     }
 
     @Override
     protected Integer[] mapValuesToObjectArrayImplementation(int[] values) throws MonetDBEmbeddedException {
+        int nil = GetIntNullConstant();
         Integer[] res = new Integer[values.length];
         for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == IntNullConstant) ? null : values[i];
+            res[i] = (values[i] == nil) ? null : values[i];
         }
         return res;
     }

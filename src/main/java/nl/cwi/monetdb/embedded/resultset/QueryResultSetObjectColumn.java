@@ -23,6 +23,21 @@ import java.util.ListIterator;
 public class QueryResultSetObjectColumn<T> extends AbstractQueryResultSetColumn<T[]> implements Iterable<T> {
 
     /**
+     * A null pointer returning method.
+     *
+     * @return A null pointer
+     */
+    public static Object GetObjectNullConstant() { return null; }
+
+    /**
+     * Checks if the Object value is null or not.
+     *
+     * @param value The value to evaluate
+     * @return If the Object value is null or not.
+     */
+    public static boolean CheckObjectIsNull(Object value) { return value == null; }
+
+    /**
      * Array with the retrieved values.
      */
     private final T[] values;

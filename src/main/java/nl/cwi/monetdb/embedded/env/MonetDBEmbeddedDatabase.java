@@ -8,8 +8,7 @@
 
 package nl.cwi.monetdb.embedded.env;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * An embedded version of a MonetDB database.
@@ -68,23 +67,41 @@ public class MonetDBEmbeddedDatabase {
     /**
      * Get the database farm directory.
      *
+     * @throws MonetDBEmbeddedException If the database is not running
      * @return A String representing the farm directory
      */
-    public static String GetDatabaseDirectory() { return MonetDBEmbeddedDatabase.databaseDirectory; }
+    public static String GetDatabaseDirectory() throws MonetDBEmbeddedException {
+        if(MonetDBEmbeddedDatabase == null) {
+            throw new MonetDBEmbeddedException("The database is not running!");
+        }
+        return MonetDBEmbeddedDatabase.databaseDirectory;
+    }
 
     /**
      * Check if the Silent Flag was set while creating the database.
      *
+     * @throws MonetDBEmbeddedException If the database is not running
      * @return The Silent Flag
      */
-    public static boolean IsSilentFlagSet() { return MonetDBEmbeddedDatabase.silentFlag; }
+    public static boolean IsSilentFlagSet() throws MonetDBEmbeddedException {
+        if(MonetDBEmbeddedDatabase == null) {
+            throw new MonetDBEmbeddedException("The database is not running!");
+        }
+        return MonetDBEmbeddedDatabase.silentFlag;
+    }
 
     /**
      * Check if the Sequential Flag was set while creating the database.
      *
+     * @throws MonetDBEmbeddedException If the database is not running
      * @return The Sequential Flag
      */
-    public static boolean IsSequentialFlagSet() { return MonetDBEmbeddedDatabase.sequentialFlag; }
+    public static boolean IsSequentialFlagSet() throws MonetDBEmbeddedException {
+        if(MonetDBEmbeddedDatabase == null) {
+            throw new MonetDBEmbeddedException("The database is not running!");
+        }
+        return MonetDBEmbeddedDatabase.sequentialFlag;
+    }
 
     /**
      * Stops the database. All the pending connections will be shut down as well.
@@ -95,7 +112,7 @@ public class MonetDBEmbeddedDatabase {
         if(MonetDBEmbeddedDatabase == null) {
             throw new MonetDBEmbeddedException("The database is not running!");
         } else {
-            for(MonetDBEmbeddedConnection mdbec : MonetDBEmbeddedDatabase.connections) {
+            for(MonetDBEmbeddedConnection mdbec : MonetDBEmbeddedDatabase.connections.values()) {
                 mdbec.closeConnectionImplementation();
             }
             MonetDBEmbeddedDatabase.connections.clear();
@@ -119,7 +136,7 @@ public class MonetDBEmbeddedDatabase {
 
     private final boolean sequentialFlag;
 
-    private final Set<MonetDBEmbeddedConnection> connections = new HashSet<>();
+    private final ConcurrentHashMap<Long, MonetDBEmbeddedConnection> connections = new ConcurrentHashMap<>();
 
     private MonetDBEmbeddedDatabase(String dbDirectory, boolean silentFlag, boolean sequentialFlag) {
         this.databaseDirectory = dbDirectory;
@@ -134,7 +151,13 @@ public class MonetDBEmbeddedDatabase {
      * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
      */
     public static MonetDBEmbeddedConnection CreateConnection() throws MonetDBEmbeddedException {
-        return MonetDBEmbeddedDatabase.createConnectionInternal();
+        if(MonetDBEmbeddedDatabase == null) {
+            throw new MonetDBEmbeddedException("The database is not running!");
+        } else {
+            MonetDBEmbeddedConnection con = MonetDBEmbeddedDatabase.createConnectionInternal();
+            MonetDBEmbeddedDatabase.connections.put(con.getConnectionPointer(), con);
+            return con;
+        }
     }
 
     /**
@@ -151,7 +174,7 @@ public class MonetDBEmbeddedDatabase {
      * Removes a connection from this database.
      */
     protected static void RemoveConnection(MonetDBEmbeddedConnection con) {
-        MonetDBEmbeddedDatabase.connections.remove(con);
+        MonetDBEmbeddedDatabase.connections.remove(con.connectionPointer);
     }
 
     /**
