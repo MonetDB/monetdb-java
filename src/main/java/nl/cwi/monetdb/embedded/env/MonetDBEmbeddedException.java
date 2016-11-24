@@ -8,12 +8,14 @@
 
 package nl.cwi.monetdb.embedded.env;
 
+import java.sql.SQLException;
+
 /**
  * The exception fired from embedded methods.
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class MonetDBEmbeddedException extends Exception {
+public class MonetDBEmbeddedException extends SQLException {
 
     public MonetDBEmbeddedException(String message) { super(message); }
 }

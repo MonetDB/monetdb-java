@@ -96,7 +96,7 @@ public class MonetDBEmbeddedConnection {
             query += ";";
         }
         UpdateResultSet res = this.sendUpdateInternal(this.connectionPointer, query, true);
-        results.put(res.getConnectionPointer(), res);
+        results.put(res.getRandomIdentifier(), res);
         return res;
     }
 
@@ -123,7 +123,7 @@ public class MonetDBEmbeddedConnection {
             query += ";";
 		}
         QueryResultSet res = this.sendQueryInternal(this.connectionPointer, query, true);
-        results.put(res.getConnectionPointer(), res);
+        results.put(res.getRandomIdentifier(), res);
         return res;
 	}
 
@@ -148,7 +148,7 @@ public class MonetDBEmbeddedConnection {
      */
     public MonetDBTable getMonetDBTable(String schemaName, String tableName) throws MonetDBEmbeddedException {
         MonetDBTable res = this.getMonetDBTableInternal(this.connectionPointer, schemaName, tableName);
-        results.put(res.getConnectionPointer(), res);
+        results.put(res.getRandomIdentifier(), res);
         return res;
     }
 
@@ -240,7 +240,7 @@ public class MonetDBEmbeddedConnection {
     /**
      * Removes a query result from this connection.
      */
-    protected void removeQueryResult(AbstractConnectionResult res) { this.results.remove(res.getConnectionPointer()); }
+    protected void removeQueryResult(AbstractConnectionResult res) { this.results.remove(res.getRandomIdentifier()); }
 
     /**
      * Internal implementation of sendUpdate.

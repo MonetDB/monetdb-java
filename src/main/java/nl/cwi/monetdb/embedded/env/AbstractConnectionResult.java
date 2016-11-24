@@ -9,6 +9,7 @@
 package nl.cwi.monetdb.embedded.env;
 
 import java.io.Closeable;
+import java.util.Random;
 
 /**
  * The base class for a pending statement to a connection.
@@ -18,20 +19,38 @@ import java.io.Closeable;
 public abstract class AbstractConnectionResult implements Closeable {
 
     /**
+     * A random instance to generate the result set identifier.
+     */
+    private static final Random Randomizer = new Random();
+
+    /**
      * The corresponding connection of this result.
      */
     private final MonetDBEmbeddedConnection connection;
 
-    protected AbstractConnectionResult(MonetDBEmbeddedConnection connection) { this.connection = connection; }
+    /**
+     * A long value used to identify this result set.
+     */
+    private final long randomIdentifier;
+
+    protected AbstractConnectionResult(MonetDBEmbeddedConnection connection) {
+        this.connection = connection;
+        this.randomIdentifier = Randomizer.nextLong();
+    }
 
     /**
-     * Get the corresponding connection to this statement result.
+     * Gets the corresponding connection to this statement result.
      *
      * @return A MonetDBEmbeddedConnection instance
      */
     public MonetDBEmbeddedConnection getConnection() { return connection; }
 
-    protected long getConnectionPointer() { return connection.connectionPointer; }
+    /**
+     * Gets a long number randomly generated, used to identify the result set.
+     *
+     * @return A random long identifier
+     */
+    protected long getRandomIdentifier() { return randomIdentifier; }
 
     /**
      * To be called by the connection when is closing.
