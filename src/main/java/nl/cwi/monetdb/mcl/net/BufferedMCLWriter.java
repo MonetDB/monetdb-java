@@ -6,7 +6,9 @@
  * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.io;
+package nl.cwi.monetdb.mcl.net;
+
+import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
 
 import java.io.*;
 
@@ -29,10 +31,9 @@ import java.io.*;
  *
  * @author Fabian Groffen <Fabian.Groffen>
  * @see nl.cwi.monetdb.mcl.net.MapiSocket
- * @see nl.cwi.monetdb.mcl.io.BufferedMCLWriter
+ * @see BufferedMCLWriter
  */
-public class BufferedMCLWriter extends BufferedWriter {
-	private BufferedMCLReader reader;
+public class BufferedMCLWriter extends AbstractBufferedWriter {
 
 	/**
 	 * Create a buffered character-output stream that uses a
@@ -58,17 +59,6 @@ public class BufferedMCLWriter extends BufferedWriter {
 	}
 
 	/**
-	 * Registers the given reader in this writer.  A registered reader
-	 * receives a linetype reset when a line is written from this
-	 * writer.
-	 *
-	 * @param r an BufferedMCLReader
-	 */
-	public void registerReader(BufferedMCLReader r) {
-		reader = r;
-	}
-
-	/**
 	 * Write a line separator.  The line separator string is in this
 	 * class always the single newline character '\n'.
 	 *
@@ -76,20 +66,12 @@ public class BufferedMCLWriter extends BufferedWriter {
 	 */
 	@Override
 	public void newLine() throws IOException {
-		write('\n');
+		this.write('\n');
 	}
 
-	/**
-	 * Write a single line, terminated with a line separator, and flush
-	 * the stream.  This is a shorthand method for a call to write()
-	 * and flush().
-	 *
-	 * @param line The line to write
-	 * @throws IOException If an I/O error occurs
-	 */
 	public void writeLine(String line) throws IOException {
-		write(line);
-		flush();
+		this.write(line);
+		this.flush();
 		// reset reader state, last line isn't valid any more now
 		if (reader != null) reader.setLineType(null);
 	}

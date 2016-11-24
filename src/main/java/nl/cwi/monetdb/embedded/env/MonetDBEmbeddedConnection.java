@@ -22,15 +22,15 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class MonetDBEmbeddedConnection {
+public class MonetDBEmbeddedConnection implements IEmbeddedConnection {
 
-	protected final long connectionPointer;
+	private final long connectionPointer;
 
     private final ConcurrentHashMap<Long, AbstractConnectionResult> results = new ConcurrentHashMap<>();
 
 	protected MonetDBEmbeddedConnection(long connectionPointer) { this.connectionPointer = connectionPointer; }
 
-    protected long getConnectionPointer() { return connectionPointer; }
+    public long getConnectionPointer() { return connectionPointer; }
 
     /**
      * Gets the current schema set on the connection.
@@ -215,7 +215,7 @@ public class MonetDBEmbeddedConnection {
     /**
      * When the database is shuts down, this method is called instead
      */
-    protected void closeConnectionImplementation() {
+    public void closeConnectionImplementation() {
         for(AbstractConnectionResult res : this.results.values()) {
             res.closeImplementation();
         }

@@ -10,16 +10,12 @@ package nl.cwi.monetdb.mcl.net;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.FileWriter;
 import java.io.FilterInputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.io.Writer;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URI;
@@ -33,8 +29,9 @@ import java.util.List;
 import java.util.Set;
 
 import nl.cwi.monetdb.mcl.MCLException;
-import nl.cwi.monetdb.mcl.io.BufferedMCLReader;
-import nl.cwi.monetdb.mcl.io.BufferedMCLWriter;
+import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
+import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
+import nl.cwi.monetdb.mcl.connection.AbstractMonetDBConnection;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
 /**
@@ -84,12 +81,35 @@ import nl.cwi.monetdb.mcl.parser.MCLParseException;
  *
  * @author Fabian Groffen
  * @version 4.1
- * @see nl.cwi.monetdb.mcl.io.BufferedMCLReader
- * @see nl.cwi.monetdb.mcl.io.BufferedMCLWriter
+ * @see BufferedMCLReader
+ * @see BufferedMCLWriter
  */
-public final class MapiSocket {
+public final class MapiSocket extends AbstractMonetDBConnection {
+
+	/** The blocksize (hardcoded in compliance with stream.mx) */
+	private static final int BLOCK = 8 * 1024 - 2;
+
+	private static char hexChar(int n) { return (n > 9) ? (char) ('a' + (n - 10)) : (char) ('0' + n); }
+
+	/**
+	 * Small helper method to convert a byte string to a hexadecimal
+	 * string representation.
+	 *
+	 * @param digest the byte array to convert
+	 * @return the byte array as hexadecimal string
+	 */
+	private static String toHex(byte[] digest) {
+		char[] result = new char[digest.length * 2];
+		int pos = 0;
+		for (byte aDigest : digest) {
+			result[pos++] = hexChar((aDigest & 0xf0) >> 4);
+			result[pos++] = hexChar(aDigest & 0x0f);
+		}
+		return new String(result);
+	}
+
 	/** The TCP Socket to mserver */
-	private Socket con;
+	private Socket con = null;
 	/** Stream from the Socket for reading */
 	private InputStream fromMonet;
 	/** Stream from the Socket for writing */
@@ -101,65 +121,47 @@ public final class MapiSocket {
 	/** protocol version of the connection */
 	private int version;
 
-	/** The database to connect to */
-	private String database = null;
-	/** The language to connect with */
-	private String language = "sql";
-	/** The hash methods to use (null = default) */
-	private String hash = null;
 	/** Whether we should follow redirects */
 	private boolean followRedirects = true;
 	/** How many redirections do we follow until we're fed up with it? */
 	private int ttl = 10;
-	/** Whether we are debugging or not */
-	private boolean debug = false;
-	/** The Writer for the debug log-file */
-	private Writer log;
-
-	/** The blocksize (hardcoded in compliance with stream.mx) */
-	public final static int BLOCK = 8 * 1024 - 2;
 
 	/** A short in two bytes for holding the block size in bytes */
 	private byte[] blklen = new byte[2];
 
-	/**
-	 * Constructs a new MapiSocket.
-	 */
-	public MapiSocket() {
-		con = null;
+	public MapiSocket(String hostname, int port, String database, String username, boolean debug, String language, String hash) {
+		super(hostname, port, database, username, debug, language, hash, new String[]{"s", "\n;", "\n;\n"}, new String[]{"s", "\n;", "\n;\n"});
 	}
 
-	/**
-	 * Sets the database to connect to.  If database is null, a
-	 * connection is made to the default database of the server.  This
-	 * is also the default.
-	 *
-	 * @param db the database
-	 */
+	@Override
+	public void setHostname(String hostname) {
+		this.hostname = hostname;
+	}
+
+	@Override
+	public void setPort(int port) {
+		this.port = port;
+	}
+
+	@Override
 	public void setDatabase(String db) {
 		this.database = db;
 	}
 
-	/**
-	 * Sets the language to use for this connection.
-	 *
-	 * @param lang the language
-	 */
-	public void setLanguage(String lang) {
-		this.language = lang;
-	}
-
-	/**
-	 * Sets the hash method to use.  Note that this method is intended
-	 * for debugging purposes.  Setting a hash method can yield in
-	 * connection failures.  Multiple hash methods can be given by
-	 * separating the hashes by commas.
-	 * DON'T USE THIS METHOD if you don't know what you're doing.
-	 *
-	 * @param hash the hash method to use
-	 */
+	@Override
 	public void setHash(String hash) {
 		this.hash = hash;
+	}
+
+	@Override
+	public void setSoTimeout(int s) throws SocketException {
+		// limit time to wait on blocking operations (0 = indefinite)
+		con.setSoTimeout(s);
+	}
+
+	@Override
+	public int getSoTimeout() throws SocketException {
+		return con.getSoTimeout();
 	}
 
 	/**
@@ -189,62 +191,16 @@ public final class MapiSocket {
 		this.ttl = t;
 	}
 
-	/**
-	 * Set the SO_TIMEOUT on the underlying Socket.  When for some
-	 * reason the connection to the database hangs, this setting can be
-	 * useful to break out of this indefinite wait.
-	 * This option must be enabled prior to entering the blocking
-	 * operation to have effect.
-	 *
-	 * @param s The specified timeout, in milliseconds.  A timeout
-	 *        of zero is interpreted as an infinite timeout.
-	 * @throws SocketException Issue with the socket
-	 */
-	public void setSoTimeout(int s) throws SocketException {
-		// limit time to wait on blocking operations (0 = indefinite)
-		con.setSoTimeout(s);
-	}
-
-	/**
-	 * Gets the SO_TIMEOUT from the underlying Socket.
-	 *
-	 * @return the currently in use timeout in milliseconds
-	 * @throws SocketException Issue with the socket
-	 */
-	public int getSoTimeout() throws SocketException {
-		return con.getSoTimeout();
-	}
-	
-	/**
-	 * Enables/disables debug
-	 *
-	 * @param debug Value to set
-	 */
-	public void setDebug(boolean debug) {
-		this.debug = debug;
-	}
-
-	/**
-	 * Connects to the given host and port, logging in as the given
-	 * user.  If followRedirect is false, a RedirectionException is
-	 * thrown when a redirect is encountered.
-	 *
-	 * @param host the hostname, or null for the loopback address
-	 * @param port the port number
-	 * @param user the username
-	 * @param pass the password
-	 * @return A List with informational (warning) messages. If this 
-	 * 		list is empty; then there are no warnings.
-	 * @throws IOException if an I/O error occurs when creating the
-	 *         socket
-	 * @throws MCLParseException if bogus data is received
-	 * @throws MCLException if an MCL related error occurs
-	 */
-	public List<String> connect(String host, int port, String user, String pass)
-		throws IOException, MCLParseException, MCLException {
+	@Override
+	public List<String> connect(String user, String pass)
+			throws IOException, MCLParseException, MCLException {
 		// Wrap around the internal connect that needs to know if it
 		// should really make a TCP connection or not.
-		return connect(host, port, user, pass, true);
+		List<String> res = connect(this.hostname, this.port, user, pass, true);
+		// apply NetworkTimeout value from legacy (pre 4.1) driver
+		// so_timeout calls
+		this.setSoTimeout(this.getSoTimeout());
+		return res;
 	}
 
 	private List<String> connect(String host, int port, String user, String pass,
@@ -559,68 +515,24 @@ public final class MapiSocket {
 				return response;
 		}
 	}
-	
-	private static char hexChar(int n) {
-		return (n > 9) 
-				? (char) ('a' + (n - 10))
-				: (char) ('0' + n);
-	}
 
-	/**
-	 * Small helper method to convert a byte string to a hexadecimal
-	 * string representation.
-	 *
-	 * @param digest the byte array to convert
-	 * @return the byte array as hexadecimal string
-	 */
-	private static String toHex(byte[] digest) {
-		char[] result = new char[digest.length * 2];
-		int pos = 0;
-		for (byte aDigest : digest) {
-			result[pos++] = hexChar((aDigest & 0xf0) >> 4);
-			result[pos++] = hexChar(aDigest & 0x0f);
-		}
-		return new String(result);
-	}
-
-	/**
-	 * Returns an InputStream that reads from this open connection on
-	 * the MapiSocket.
-	 *
-	 * @return an input stream that reads from this open connection
-	 */
+	@Override
 	public InputStream getInputStream() {
 		return fromMonet;
 	}
 
-	/**
-	 * Returns an output stream for this MapiSocket.
-	 *
-	 * @return an output stream for writing bytes to this MapiSocket
-	 */
+	@Override
 	public OutputStream getOutputStream() {
 		return toMonet;
 	}
 
-	/**
-	 * Returns a Reader for this MapiSocket.  The Reader is a
-	 * BufferedMCLReader which does protocol interpretation of the
-	 * BlockInputStream produced by this MapiSocket.
-	 *
-	 * @return a BufferedMCLReader connected to this MapiSocket
-	 */
-	public BufferedMCLReader getReader() {
+	@Override
+	public AbstractBufferedReader getReader() {
 		return reader;
 	}
 
-	/**
-	 * Returns a Writer for this MapiSocket.  The Writer is a
-	 * BufferedMCLWriter which produces protocol compatible data blocks
-	 * that the BlockOutputStream can properly translate into blocks.
-	 *
-	 * @return a BufferedMCLWriter connected to this MapiSocket
-	 */
-	public BufferedMCLWriter getWriter() {
+	@Override
+	public AbstractBufferedWriter getWriter() {
 		return writer;
 	}
 
@@ -633,46 +545,6 @@ public final class MapiSocket {
 	 */
 	public int getProtocolVersion() {
 		return version;
-	}
-
-	/**
-	 * Enables logging to a file what is read and written from and to
-	 * the server.  Logging can be enabled at any time.  However, it is
-	 * encouraged to start debugging before actually connecting the
-	 * socket.
-	 *
-	 * @param filename the name of the file to write to
-	 * @throws IOException if the file could not be opened for writing
-	 */
-	public void debug(String filename) throws IOException {
-		debug(new FileWriter(filename));
-	}
-	
-	/**
-	 * Enables logging to a stream what is read and written from and to
-	 * the server.  Logging can be enabled at any time.  However, it is
-	 * encouraged to start debugging before actually connecting the
-	 * socket.
-	 *
-	 * @param out to write the log to
-	 * @throws IOException if the file could not be opened for writing
-	 */
-	public void debug(PrintStream out) throws IOException {
-		debug(new PrintWriter(out));
-	}
-	
-	/**
-	 * Enables logging to a stream what is read and written from and to
-	 * the server.  Logging can be enabled at any time.  However, it is
-	 * encouraged to start debugging before actually connecting the
-	 * socket.
-	 *
-	 * @param out to write the log to
-	 * @throws IOException if the file could not be opened for writing
-	 */
-	public void debug(Writer out) throws IOException {
-		log = out;
-		debug = true;
 	}
 
 	/**
@@ -798,7 +670,6 @@ public final class MapiSocket {
 			out.close();
 		}
 	}
-
 
 	/**
 	 * Inner class that is used to make the data on the blocked stream
@@ -1025,29 +896,13 @@ public final class MapiSocket {
 	 * possible.  If an error occurs during disconnecting it is ignored.
 	 */
 	public synchronized void close() {
+		super.close();
 		try {
-			if (reader != null) reader.close();
-			if (writer != null) writer.close();
-			if (fromMonet != null) fromMonet.close();
-			if (toMonet != null) toMonet.close();
 			if (con != null) con.close();
-			if (debug && log instanceof FileWriter) log.close();
 		} catch (IOException e) {
 			// ignore it
 		}
 	}
-
-	/**
-	 * Destructor called by garbage collector before destroying this
-	 * object tries to disconnect the MonetDB connection if it has not
-	 * been disconnected already.
-	 */
-	@Override
-	protected void finalize() throws Throwable {
-		close();
-		super.finalize();
-	}
-
 
 	/**
 	 * Writes a logline tagged with a timestamp using the given string.
@@ -1106,5 +961,18 @@ public final class MapiSocket {
 		log.write("RD " + System.currentTimeMillis() +
 			": " + message + "\n");
 		log.flush();
+	}
+
+	@Override
+	public String getJDBCURL() {
+		String language = "";
+		if (this.getLang() == AbstractMonetDBConnection.LANG_MAL)
+			language = "?language=mal";
+		return "jdbc:monetdb://" + this.getHostname() + ":" + this.getPort() + "/" + this.getDatabase() + language;
+	}
+
+	@Override
+	public int getBlockSize() {
+		return BLOCK;
 	}
 }

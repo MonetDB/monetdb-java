@@ -44,9 +44,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import nl.cwi.monetdb.jdbc.types.INET;
 import nl.cwi.monetdb.jdbc.types.URL;
 import nl.cwi.monetdb.mcl.MCLException;
-import nl.cwi.monetdb.mcl.io.BufferedMCLReader;
-import nl.cwi.monetdb.mcl.io.BufferedMCLWriter;
+import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
+import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
+import nl.cwi.monetdb.mcl.embedded.EmbeddedConnection;
 import nl.cwi.monetdb.mcl.net.MapiSocket;
+import nl.cwi.monetdb.mcl.connection.AbstractMonetDBConnection;
 import nl.cwi.monetdb.mcl.parser.HeaderLineParser;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
@@ -77,22 +79,13 @@ import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
  * @version 1.2
  */
 public class MonetConnection extends MonetWrapper implements Connection {
-	/** The hostname to connect to */
-	private final String hostname;
-	/** The port to connect on the host to */
-	private final int port;
-	/** The database to use (currently not used) */
-	private final String database;
-	/** The username to use when authenticating */
-	private final String username;
-	/** The password to use when authenticating */
-	private final String password;
-	/** A connection to mserver5 using a TCP socket */
-	private final MapiSocket server;
+
+	/** A connection to mserver5 either through MAPI with TCP or embedded */
+	private final AbstractMonetDBConnection server;
 	/** The Reader from the server */
-	private final BufferedMCLReader in;
+	private final AbstractBufferedReader in;
 	/** The Writer to the server */
-	private final BufferedMCLWriter out;
+	private final AbstractBufferedWriter out;
 
 	/** A StartOfHeaderParser  declared for reuse. */
 	private StartOfHeaderParser sohp = new StartOfHeaderParser();
@@ -125,20 +118,6 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	/** The number of results we receive from the server at once */
 	private int curReplySize = -1;	// the server by default uses -1 (all)
 
-	/** A template to apply to each query (like pre and post fixes) */
-	String[] queryTempl;
-	/** A template to apply to each command (like pre and post fixes) */
-	String[] commandTempl;
-
-	/** the SQL language */
-	final static int LANG_SQL = 0;
-	/** the MAL language (officially *NOT* supported) */
-	final static int LANG_MAL = 3;
-	/** an unknown language */
-	final static int LANG_UNKNOWN = -1;
-	/** The language which is used */
-	final int lang;
-
 	/** Whether or not BLOB is mapped to BINARY within the driver */
 	private final boolean blobIsBinary;
 
@@ -157,50 +136,58 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	MonetConnection(Properties props)
 		throws SQLException, IllegalArgumentException
 	{
-		this.hostname = props.getProperty("host");
-		int port;
-		try {
-			port = Integer.parseInt(props.getProperty("port"));
-		} catch (NumberFormatException e) {
-			port = 0;
-		}
-		this.port = port;
-		this.database = props.getProperty("database");
-		this.username = props.getProperty("user");
-		this.password = props.getProperty("password");
-		String language = props.getProperty("language");
+		String database = props.getProperty("database");
+		if (database == null || database.trim().isEmpty())
+			throw new IllegalArgumentException("database should not be null or empty");
+		boolean isEmbedded = Boolean.parseBoolean(props.getProperty("embedded"));
+		String username = props.getProperty("user");
+		String password = props.getProperty("password");
 		boolean debug = Boolean.valueOf(props.getProperty("debug"));
-		String hash = props.getProperty("hash");
 		blobIsBinary = Boolean.valueOf(props.getProperty("treat_blob_as_binary"));
-		int sockTimeout;
-		try {
-			sockTimeout = Integer.parseInt(props.getProperty("so_timeout"));
-		} catch (NumberFormatException e) {
-			sockTimeout = 0;
+
+		if(isEmbedded) {
+			String directory = props.getProperty("directory");
+			if (directory == null || directory.trim().isEmpty())
+				throw new IllegalArgumentException("directory should not be null or empty");
+
+			server = new EmbeddedConnection("localhost", -1, database, username, debug, "sql", null, directory);
+		} else {
+			String hostname = props.getProperty("host");
+			String hash = props.getProperty("hash");
+			String language = props.getProperty("language");
+			int port = 0;
+			int sockTimeout = 0;
+
+			try {
+				port = Integer.parseInt(props.getProperty("port"));
+			} catch (NumberFormatException e) {
+			}
+			try {
+				sockTimeout = Integer.parseInt(props.getProperty("so_timeout"));
+			} catch (NumberFormatException e) {
+			}
+
+			// check input arguments
+			if (hostname == null || hostname.trim().isEmpty())
+				throw new IllegalArgumentException("hostname should not be null or empty");
+			if (port == 0)
+				throw new IllegalArgumentException("port should not be 0");
+			if (username == null || username.trim().isEmpty())
+				throw new IllegalArgumentException("user should not be null or empty");
+			if (password == null || password.trim().isEmpty())
+				throw new IllegalArgumentException("password should not be null or empty");
+			if (language == null || language.trim().isEmpty()) {
+				language = "sql";
+				addWarning("No language given, defaulting to 'sql'", "M1M05");
+			}
+			server = new MapiSocket(hostname, port, database, username, debug, language, hash);
+			try {
+				server.setSoTimeout(sockTimeout);
+			} catch (SocketException e) {
+				addWarning("The socket timeout could not be set", "M1M05");
+			}
+			server.setLanguage(language);
 		}
-		// check input arguments
-		if (hostname == null || hostname.trim().isEmpty())
-			throw new IllegalArgumentException("hostname should not be null or empty");
-		if (port == 0)
-			throw new IllegalArgumentException("port should not be 0");
-		if (username == null || username.trim().isEmpty())
-			throw new IllegalArgumentException("user should not be null or empty");
-		if (password == null || password.trim().isEmpty())
-			throw new IllegalArgumentException("password should not be null or empty");
-		if (language == null || language.trim().isEmpty()) {
-			language = "sql";
-			addWarning("No language given, defaulting to 'sql'", "M1M05");
-		}
-
-		// initialise query templates (filled later, but needed below)
-		queryTempl = new String[3]; // pre, post, sep
-		commandTempl = new String[3]; // pre, post, sep
-
-		server = new MapiSocket();
-
-		if (hash != null) server.setHash(hash);
-		if (database != null) server.setDatabase(database);
-		server.setLanguage(language);
 
 		// we're debugging here... uhm, should be off in real life
 		if (debug) {
@@ -224,24 +211,20 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		}
 
 		try {
-			List<String> warnings = 
-				server.connect(hostname, port, username, password);
-			for (String warning : warnings) {
-				addWarning(warning, "01M02");
+			List<String> warnings = server.connect(username, password);
+			if(warnings != null) {
+				for (String warning : warnings) {
+					addWarning(warning, "01M02");
+				}
 			}
-			
-			// apply NetworkTimeout value from legacy (pre 4.1) driver
-			// so_timeout calls
-			server.setSoTimeout(sockTimeout);
 
 			in = server.getReader();
 			out = server.getWriter();
-
-			String error = in.waitForPrompt();
+			String error = in.waitForPrompt(); //TODO CHECK THIS
 			if (error != null)
 				throw new SQLException(error.substring(6), "08001");
 		} catch (IOException e) {
-			throw new SQLException("Unable to connect (" + hostname + ":" + port + "): " + e.getMessage(), "08006");
+			throw new SQLException("Unable to connect (" + server.getHostname() + ":" + server.getPort() + "): " + e.getMessage(), "08006");
 		} catch (MCLParseException e) {
 			throw new SQLException(e.getMessage(), "08001");
 		} catch (MCLException e) {
@@ -253,38 +236,9 @@ public class MonetConnection extends MonetWrapper implements Connection {
 			throw sqle;
 		}
 
-		// we seem to have managed to log in, let's store the
-		// language used
-		if ("sql".equals(language)) {
-			lang = LANG_SQL;
-		} else if ("mal".equals(language)) {
-			lang = LANG_MAL;
-		} else {
-			lang = LANG_UNKNOWN;
-		}
-		
-		// fill the query templates
-		if (lang == LANG_SQL) {
-			queryTempl[0] = "s";		// pre
-			queryTempl[1] = "\n;";		// post
-			queryTempl[2] = "\n;\n";	// separator
-
-			commandTempl[0] = "X";		// pre
-			commandTempl[1] = null;		// post
-			commandTempl[2] = "\nX";	// separator
-		} else if (lang == LANG_MAL) {
-			queryTempl[0] = null;
-			queryTempl[1] = ";\n";
-			queryTempl[2] = ";\n";
-
-			commandTempl[0] = null;		// pre
-			commandTempl[1] = null;		// post
-			commandTempl[2] = null;		// separator
-		}
-
 		// the following initialisers are only valid when the language
 		// is SQL...
-		if (lang == LANG_SQL) {
+		if (server.getLang() == AbstractMonetDBConnection.LANG_SQL) {
 			// enable auto commit
 			setAutoCommit(true);
 			// set our time zone on the server
@@ -297,9 +251,10 @@ public class MonetConnection extends MonetWrapper implements Connection {
 			tz += (offset < 10 ? "0" : "") + offset;
 			sendIndependentCommand("SET TIME ZONE INTERVAL '" + tz + "' HOUR TO MINUTE");
 		}
+	}
 
-		// we're absolutely not closed, since we're brand new
-		closed = false;
+	protected AbstractMonetDBConnection getServer() {
+		return server;
 	}
 
 	//== methods of interface Connection
@@ -671,7 +626,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 */
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
-		if (lang != LANG_SQL)
+		if (server.getLang() != AbstractMonetDBConnection.LANG_SQL)
 			throw new SQLException("This method is only supported in SQL mode", "M0M04");
 
 		return new MonetDatabaseMetaData(this);
@@ -1437,11 +1392,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	//== end methods of interface Connection
 
 	public String getJDBCURL() {
-		String language = "";
-		if (lang == LANG_MAL)
-			language = "?language=mal";
-		return "jdbc:monetdb://" + hostname + ":" + port + "/" +
-			database + language;
+		return server.getJDBCURL();
 	}
 
 	/**
@@ -1463,10 +1414,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	void sendIndependentCommand(String command) throws SQLException {
 		synchronized (server) {
 			try {
-				out.writeLine(
-						(queryTempl[0] == null ? "" : queryTempl[0]) +
-						command +
-						(queryTempl[1] == null ? "" : queryTempl[1]));
+				out.writeLine(server.getQueryTemplateHeader(0) + command + server.getQueryTemplateHeader(1));
 				String error = in.waitForPrompt();
 				if (error != null)
 					throw new SQLException(error.substring(6),
@@ -1493,10 +1441,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		// send X command
 		synchronized (server) {
 			try {
-				out.writeLine(
-						(commandTempl[0] == null ? "" : commandTempl[0]) +
-						command +
-						(commandTempl[1] == null ? "" : commandTempl[1]));
+				out.writeLine(server.getCommandTemplateHeader(0) + command + server.getCommandTemplateHeader(1));
 				String error = in.waitForPrompt();
 				if (error != null)
 					throw new SQLException(error.substring(6),
@@ -1713,7 +1658,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 				return resultBlocks[0].addLine(tmpLine, linetype);
 			}
 
-			if (linetype != BufferedMCLReader.HEADER)
+			if (linetype != AbstractBufferedReader.HEADER)
 				return "header expected, got: " + tmpLine;
 
 			// depending on the name of the header, we continue
@@ -1949,7 +1894,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 				// ok, need to fetch cache block first
 				parent.executeQuery(
-						commandTempl, 
+						server.getCommandHeaderTemplates(),
 						"export " + id + " " + ((block * cacheSize) + blockOffset) + " " + cacheSize 
 				);
 				rawr = resultBlocks[block];
@@ -2047,7 +1992,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 */
 		@Override
 		public String addLine(String line, int linetype) {
-			if (linetype != BufferedMCLReader.RESULT)
+			if (linetype != AbstractBufferedReader.RESULT)
 				return "protocol violation: unexpected line in data block: " + line;
 			// add to the backing array
 			data[++pos] = line;
@@ -2341,7 +2286,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 * @throws SQLException if a database error occurs
 		 */
 		void processQuery(String query) throws SQLException {
-			executeQuery(queryTempl, query);
+			executeQuery(server.getQueryHeaderTemplates(), query);
 		}
 
 		/**
@@ -2376,7 +2321,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 					int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
 					size = maxrows != 0 ? Math.min(maxrows, size) : size;
 					// don't do work if it's not needed
-					if (lang == LANG_SQL && size != curReplySize && templ != commandTempl) {
+					if (server.getLang() == AbstractMonetDBConnection.LANG_SQL && size != curReplySize && templ != server.getCommandHeaderTemplates()) {
 						sendControlCommand("reply_size " + size);
 
 						// store the reply size after a successful change
@@ -2392,7 +2337,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 					// as we are blocking an not consuming from it.  The result
 					// is a state where both client and server want to write,
 					// but block.
-					if (query.length() > MapiSocket.BLOCK) {
+					if (query.length() > server.getBlockSize()) {
 						// get a reference to the send thread
 						if (sendThread == null)
 							sendThread = new SendThread(out);
@@ -2402,21 +2347,18 @@ public class MonetConnection extends MonetWrapper implements Connection {
 					} else {
 						// this is a simple call, which is a lot cheaper and will
 						// always succeed for small queries.
-						out.writeLine(
-								(templ[0] == null ? "" : templ[0]) +
-								query +
-								(templ[1] == null ? "" : templ[1]));
+						out.writeLine((templ[0] == null ? "" : templ[0] + query + templ[1] == null ? "" : templ[1]));
 					}
 
 					// go for new results
 					String tmpLine = in.readLine();
 					int linetype = in.getLineType();
 					Response res = null;
-					while (linetype != BufferedMCLReader.PROMPT) {
+					while (linetype != AbstractBufferedReader.PROMPT) {
 						// each response should start with a start of header
 						// (or error)
 						switch (linetype) {
-							case BufferedMCLReader.SOHEADER:
+							case AbstractBufferedReader.SOHEADER:
 								// make the response object, and fill it
 								try {
 									switch (sohp.parse(tmpLine)) {
@@ -2545,7 +2487,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 								tmpLine = in.readLine();
 								linetype = in.getLineType();
 							break;
-							case BufferedMCLReader.INFO:
+							case AbstractBufferedReader.INFO:
 								addWarning(tmpLine.substring(1), "01000");
 
 								// read the next line (can be prompt, new
@@ -2560,7 +2502,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 								// message
 								tmpLine = "!M0M10!protocol violation, unexpected line: " + tmpLine;
 								// don't break; fall through...
-							case BufferedMCLReader.ERROR:
+							case AbstractBufferedReader.ERROR:
 								// read everything till the prompt (should be
 								// error) we don't know if we ignore some
 								// garbage here... but the log should reveal
@@ -2637,7 +2579,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 		private String[] templ;
 		private String query;
-		private BufferedMCLWriter out;
+		private AbstractBufferedWriter out;
 		private String error;
 		private int state = WAIT;
 		
@@ -2651,7 +2593,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 *
 		 * @param out the socket to write to
 		 */
-		public SendThread(BufferedMCLWriter out) {
+		public SendThread(AbstractBufferedWriter out) {
 			super("SendThread");
 			setDaemon(true);
 			this.out = out;
@@ -2675,10 +2617,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 					// state is QUERY here
 					try {
-						out.writeLine(
-								(templ[0] == null ? "" : templ[0]) +
-								query +
-								(templ[1] == null ? "" : templ[1]));
+						out.writeLine((templ[0] == null ? "" : templ[0]) + query + (templ[1] == null ? "" : templ[1]));
 					} catch (IOException e) {
 						error = e.getMessage();
 					}

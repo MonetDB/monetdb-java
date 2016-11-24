@@ -9,8 +9,10 @@
 import java.sql.*;
 import java.io.*;
 import java.util.*;
+
+import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
+import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
 import nl.cwi.monetdb.mcl.net.*;
-import nl.cwi.monetdb.mcl.io.*;
 
 /**
  * This example demonstrates how the MonetDB JDBC driver can facilitate
@@ -45,22 +47,22 @@ public class SQLcopyinto {
 		// of course also be done simultaneously with the JDBC
 		// connection being kept connected
 
-		MapiSocket server = new MapiSocket();
+		MapiSocket server = new MapiSocket("localhost", 50000, "monetdb", "monetdb", false, "sql", "SHA256");
 
 		server.setDatabase("database");
 		server.setLanguage("sql");
 
 		try {
 			List warning = 
-				server.connect("localhost", 50000, "monetdb", "monetdb");
+				server.connect( "monetdb", "monetdb");
 			if (warning != null) {
-				for (Iterator it = warning.iterator(); it.hasNext(); ) {
-					System.out.println(it.next().toString());
+				for (Object aWarning : warning) {
+					System.out.println(aWarning.toString());
 				}
 			}
 
-			BufferedMCLReader in = server.getReader();
-			BufferedMCLWriter out = server.getWriter();
+			AbstractBufferedReader in = server.getReader();
+			AbstractBufferedWriter out = server.getWriter();
 
 			String error = in.waitForPrompt();
 			if (error != null)

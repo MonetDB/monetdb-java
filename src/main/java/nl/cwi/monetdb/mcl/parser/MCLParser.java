@@ -31,7 +31,7 @@ public abstract class MCLParser {
 	private int colnr;
 
 	/**
-	 * Creates an MCLParser targetted at a given number of field values.
+	 * Creates an MCLParser targeted at a given number of field values.
 	 * The lines parsed by an instance of this MCLParser should have
 	 * exactly capacity field values.
 	 *

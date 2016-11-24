@@ -8,10 +8,12 @@
 
 package nl.cwi.monetdb.merovingian;
 
+import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
+import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
 import nl.cwi.monetdb.mcl.net.MapiSocket;
-import nl.cwi.monetdb.mcl.io.*;
 import nl.cwi.monetdb.mcl.MCLException;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -113,15 +115,15 @@ public class Control {
 			String database, String command, boolean hasOutput)
 		throws MerovingianException, IOException
 	{
-		BufferedMCLReader min;
-		BufferedMCLWriter mout;
-		MapiSocket ms = new MapiSocket();
+		AbstractBufferedReader min;
+		AbstractBufferedWriter mout;
+		MapiSocket ms = new MapiSocket(host, port, "monetdb", "monetdb", false, "sql", "SHA256");
 		ms.setDatabase("merovingian");
 		ms.setLanguage("control");
 		if (debug != null)
 			ms.debug(debug);
 		try {
-			ms.connect(host, port, "monetdb", passphrase);
+			ms.connect("monetdb", passphrase);
 			min = ms.getReader();
 			mout = ms.getWriter();
 		} catch (MCLParseException | MCLException e) {
@@ -203,16 +205,16 @@ public class Control {
 		ArrayList<String> l = new ArrayList<>();
 		String tmpLine = min.readLine();
 		int linetype = min.getLineType();
-		if (linetype == BufferedMCLReader.ERROR)
+		if (linetype == AbstractBufferedReader.ERROR)
 			throw new MerovingianException(tmpLine.substring(6));
-		if (linetype != BufferedMCLReader.RESULT)
+		if (linetype != AbstractBufferedReader.RESULT)
 			throw new MerovingianException("unexpected line: " + tmpLine);
 		if (!tmpLine.substring(1).equals(RESPONSE_OK))
 			throw new MerovingianException(tmpLine.substring(1));
 		tmpLine = min.readLine();
 		linetype = min.getLineType();
-		while (linetype != BufferedMCLReader.PROMPT) {
-			if (linetype != BufferedMCLReader.RESULT)
+		while (linetype != AbstractBufferedReader.PROMPT) {
+			if (linetype != AbstractBufferedReader.RESULT)
 				throw new MerovingianException("unexpected line: " +
 						tmpLine);
 

@@ -8,6 +8,8 @@
 
 package nl.cwi.monetdb.embedded.env;
 
+import nl.cwi.monetdb.mcl.embedded.EmbeddedConnection;
+
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -112,7 +114,7 @@ public class MonetDBEmbeddedDatabase {
         if(MonetDBEmbeddedDatabase == null) {
             throw new MonetDBEmbeddedException("The database is not running!");
         } else {
-            for(MonetDBEmbeddedConnection mdbec : MonetDBEmbeddedDatabase.connections.values()) {
+            for(IEmbeddedConnection mdbec : MonetDBEmbeddedDatabase.connections.values()) {
                 mdbec.closeConnectionImplementation();
             }
             MonetDBEmbeddedDatabase.connections.clear();
@@ -136,7 +138,7 @@ public class MonetDBEmbeddedDatabase {
 
     private final boolean sequentialFlag;
 
-    private final ConcurrentHashMap<Long, MonetDBEmbeddedConnection> connections = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, IEmbeddedConnection> connections = new ConcurrentHashMap<>();
 
     private MonetDBEmbeddedDatabase(String dbDirectory, boolean silentFlag, boolean sequentialFlag) {
         this.databaseDirectory = dbDirectory;
@@ -170,11 +172,20 @@ public class MonetDBEmbeddedDatabase {
         return CompletableFuture.supplyAsync(() -> this.createConnectionInternal());
     }*/
 
+    public static void AddJDBCEmbeddedConnection(EmbeddedConnection con) throws MonetDBEmbeddedException {
+        if(MonetDBEmbeddedDatabase == null) {
+            throw new MonetDBEmbeddedException("The database is not running!");
+        } else {
+            MonetDBEmbeddedDatabase.createJDBCConnectionInternal(con);
+            MonetDBEmbeddedDatabase.connections.put(con.getConnectionPointer(), con);
+        }
+    }
+
     /**
      * Removes a connection from this database.
      */
     protected static void RemoveConnection(MonetDBEmbeddedConnection con) {
-        MonetDBEmbeddedDatabase.connections.remove(con.connectionPointer);
+        MonetDBEmbeddedDatabase.connections.remove(con.getConnectionPointer());
     }
 
     /**
@@ -193,4 +204,9 @@ public class MonetDBEmbeddedDatabase {
      * Internal implementation to create a connection on this database.
      */
     private native MonetDBEmbeddedConnection createConnectionInternal() throws MonetDBEmbeddedException;
+
+    /**
+     * Internal implementation to create a JDBC embeddded connection on this database.
+     */
+    private native void createJDBCConnectionInternal(EmbeddedConnection emc) throws MonetDBEmbeddedException;
 }

@@ -8,7 +8,7 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import nl.cwi.monetdb.mcl.net.MapiSocket;
+import nl.cwi.monetdb.mcl.connection.AbstractMonetDBConnection;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.Statement;
@@ -75,7 +75,6 @@ public class MonetStatement extends MonetWrapper implements Statement {
 
 	/** A List to hold all queries of a batch */
 	private List<String> batch = new ArrayList<>();
-
 
 	/**
 	 * MonetStatement constructor which checks the arguments for validity, tries
@@ -146,7 +145,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		batch.clear();
 	}
 
-	Lock batchLock = new ReentrantLock();
+	private Lock batchLock = new ReentrantLock();
 	
 	/**
 	 * Submits a batch of commands to the database for execution and if
@@ -189,7 +188,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 */
 	@Override
 	public int[] executeBatch() throws SQLException {
-		// this method is synchronized to make sure noone gets inbetween the
+		// this method is synchronized to make sure none gets in between the
 		// operations we execute below
 
 		batchLock.lock();
@@ -203,12 +202,14 @@ public class MonetStatement extends MonetWrapper implements Statement {
 			boolean first = true;
 			boolean error = false;
 
+			AbstractMonetDBConnection server = connection.getServer();
+
 			BatchUpdateException e = new BatchUpdateException("Error(s) occurred while executing the batch, see next SQLExceptions for details", "22000", counts);
-			StringBuilder tmpBatch = new StringBuilder(MapiSocket.BLOCK);
-			String sep = connection.queryTempl[2];
+			StringBuilder tmpBatch = new StringBuilder(server.getBlockSize());
+			String sep = server.getQueryTemplateHeader(2);
 			for (int i = 0; i < batch.size(); i++) {
 				String tmp = batch.get(i);
-				if (sep.length() + tmp.length() > MapiSocket.BLOCK) {
+				if (sep.length() + tmp.length() > server.getBlockSize()) {
 					// The thing is too big.  Way too big.  Since it won't
 					// be optimal anyway, just add it to whatever we have
 					// and continue.
@@ -222,7 +223,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 					first = true;
 					continue;
 				}
-				if (tmpBatch.length() + sep.length() + tmp.length() >= MapiSocket.BLOCK) {
+				if (tmpBatch.length() + sep.length() + tmp.length() >= server.getBlockSize()) {
 					// send and receive
 					error |= internalBatch(tmpBatch.toString(), counts, offset, i + 1, e);
 					offset = i;

@@ -329,7 +329,7 @@ public final class JdbcClient {
 				// the most optimal way, but it works by just scanning
 				// every table for loops in a recursive manor
 				for (Table t : tables) {
-					Table.checkForLoop(t, new ArrayList<>());
+					Table.checkForLoop(t, new ArrayList<Table>());
 				}
 
 				// find the graph, at this point we know there are no
