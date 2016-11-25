@@ -15,8 +15,8 @@ import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import nl.cwi.monetdb.mcl.MCLException;
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
+import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
+import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
 import nl.cwi.monetdb.mcl.net.MapiSocket;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
@@ -42,11 +42,11 @@ public class SQLRestore {
 	}
 	
 	private static class ServerResponseReader implements Runnable {
-		private final AbstractBufferedReader _is;
+		private final AbstractMCLReader _is;
 		private final AtomicBoolean _errorState = new AtomicBoolean(false);
 		private String _errorMessage = null; 
 		
-		ServerResponseReader(AbstractBufferedReader is) {
+		ServerResponseReader(AbstractMCLReader is) {
 			_is = is;
 		}
 		
@@ -58,7 +58,7 @@ public class SQLRestore {
 						break;
 					int result = _is.getLineType();
 					switch (result) { 
-					case AbstractBufferedReader.ERROR:
+					case AbstractMCLReader.ERROR:
 						_errorMessage = line;
 						_errorState.set(true);
 						return;
@@ -108,8 +108,8 @@ public class SQLRestore {
 		try {
 			ms.connect(_user, _password);
 			
-			AbstractBufferedWriter os = ms.getWriter();
-			AbstractBufferedReader reader = ms.getReader();
+			AbstractMCLWriter os = ms.getWriter();
+			AbstractMCLReader reader = ms.getReader();
 			
 			ServerResponseReader srr = new ServerResponseReader(reader);
 

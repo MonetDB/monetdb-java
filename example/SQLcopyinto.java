@@ -10,8 +10,8 @@ import java.sql.*;
 import java.io.*;
 import java.util.*;
 
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
+import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
+import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
 import nl.cwi.monetdb.mcl.net.*;
 
 /**
@@ -61,8 +61,8 @@ public class SQLcopyinto {
 				}
 			}
 
-			AbstractBufferedReader in = server.getReader();
-			AbstractBufferedWriter out = server.getWriter();
+			AbstractMCLReader in = server.getReader();
+			AbstractMCLWriter out = server.getWriter();
 
 			String error = in.waitForPrompt();
 			if (error != null)

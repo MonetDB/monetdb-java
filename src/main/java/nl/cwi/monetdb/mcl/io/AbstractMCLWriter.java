@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.mcl.connection;
+package nl.cwi.monetdb.mcl.io;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -7,11 +7,11 @@ import java.io.Writer;
 /**
  * Created by ferreira on 11/24/16.
  */
-public abstract class AbstractBufferedWriter extends BufferedWriter {
+public abstract class AbstractMCLWriter extends BufferedWriter {
 
-    protected AbstractBufferedReader reader;
+    protected AbstractMCLReader reader;
 
-    public AbstractBufferedWriter(Writer out) {
+    public AbstractMCLWriter(Writer out) {
         super(out);
     }
 
@@ -20,9 +20,9 @@ public abstract class AbstractBufferedWriter extends BufferedWriter {
      * receives a linetype reset when a line is written from this
      * writer.
      *
-     * @param r an AbstractBufferedReader
+     * @param r an AbstractMCLReader
      */
-    public void registerReader(AbstractBufferedReader r) {
+    public void registerReader(AbstractMCLReader r) {
         this.reader = r;
     }
 

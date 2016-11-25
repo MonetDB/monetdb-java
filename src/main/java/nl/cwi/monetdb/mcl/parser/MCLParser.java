@@ -8,7 +8,6 @@
 
 package nl.cwi.monetdb.mcl.parser;
 
-
 /**
  * Interface for parsers in MCL.  The parser family in MCL is set up as
  * a reusable object.  This allows the same parser to be used again for
@@ -54,13 +53,13 @@ public abstract class MCLParser {
 	 * @see #nextInt()
 	 * @see #hasNext()
 	 */
-	abstract public int parse(String source) throws MCLParseException;
+	public abstract int parse(String source) throws MCLParseException;
 
 	/**
 	 * Repositions the internal field offset to the start, such that the
 	 * next call to next() will return the first field again.
 	 */
-	final public void reset() {
+	public final void reset() {
 		colnr = 0;
 	}
 
@@ -72,7 +71,7 @@ public abstract class MCLParser {
 	 * @see #next()
 	 * @see #nextInt()
 	 */
-	final public boolean hasNext() {
+	public final boolean hasNext() {
 		return colnr < values.length;
 	}
 
@@ -86,7 +85,7 @@ public abstract class MCLParser {
 	 * @see #nextInt()
 	 * @see #hasNext()
 	 */
-	final public String next() {
+	public final String next() {
 		return values[colnr++];
 	}
 
@@ -99,7 +98,7 @@ public abstract class MCLParser {
 	 * @return the current field value as integer
 	 * @see #next()
 	 */
-	final public int nextInt() {
+	public final int nextInt() {
 		return intValues[colnr++];
 	}
 }

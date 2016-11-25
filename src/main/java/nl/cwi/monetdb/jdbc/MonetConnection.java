@@ -44,14 +44,14 @@ import java.util.concurrent.locks.ReentrantLock;
 import nl.cwi.monetdb.jdbc.types.INET;
 import nl.cwi.monetdb.jdbc.types.URL;
 import nl.cwi.monetdb.mcl.MCLException;
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
-import nl.cwi.monetdb.mcl.embedded.EmbeddedConnection;
+import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
+import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
+import nl.cwi.monetdb.mcl.net.EmbeddedMonetDB;
 import nl.cwi.monetdb.mcl.net.MapiSocket;
-import nl.cwi.monetdb.mcl.connection.AbstractMonetDBConnection;
+import nl.cwi.monetdb.mcl.net.AbstractMCLConnection;
 import nl.cwi.monetdb.mcl.parser.HeaderLineParser;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
 import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
+import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
 /**
  * A {@link Connection} suitable for the MonetDB database.
@@ -81,14 +81,13 @@ import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
 public class MonetConnection extends MonetWrapper implements Connection {
 
 	/** A connection to mserver5 either through MAPI with TCP or embedded */
-	private final AbstractMonetDBConnection server;
+	private final AbstractMCLConnection server;
 	/** The Reader from the server */
-	private final AbstractBufferedReader in;
+	private final AbstractMCLReader in;
 	/** The Writer to the server */
-	private final AbstractBufferedWriter out;
-
-	/** A StartOfHeaderParser  declared for reuse. */
-	private StartOfHeaderParser sohp = new StartOfHeaderParser();
+	private final AbstractMCLWriter out;
+	/** A StartOfHeaderParser declared for reuse. */
+	private final StartOfHeaderParser sohp;
 
 	/** Whether this Connection is closed (and cannot be used anymore) */
 	private boolean closed;
@@ -150,7 +149,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 			if (directory == null || directory.trim().isEmpty())
 				throw new IllegalArgumentException("directory should not be null or empty");
 
-			server = new EmbeddedConnection("localhost", -1, database, username, debug, "sql", null, directory);
+			server = new EmbeddedMonetDB("localhost", -1, database, username, debug, "sql", null, directory);
 		} else {
 			String hostname = props.getProperty("host");
 			String hash = props.getProperty("hash");
@@ -220,9 +219,11 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 			in = server.getReader();
 			out = server.getWriter();
-			String error = in.waitForPrompt(); //TODO CHECK THIS
+			String error = in.waitForPrompt();
 			if (error != null)
 				throw new SQLException(error.substring(6), "08001");
+
+			sohp = server.getStartOfHeaderParser();
 		} catch (IOException e) {
 			throw new SQLException("Unable to connect (" + server.getHostname() + ":" + server.getPort() + "): " + e.getMessage(), "08006");
 		} catch (MCLParseException e) {
@@ -238,7 +239,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 		// the following initialisers are only valid when the language
 		// is SQL...
-		if (server.getLang() == AbstractMonetDBConnection.LANG_SQL) {
+		if (server.getLang() == AbstractMCLConnection.LANG_SQL) {
 			// enable auto commit
 			setAutoCommit(true);
 			// set our time zone on the server
@@ -253,7 +254,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		}
 	}
 
-	protected AbstractMonetDBConnection getServer() {
+	protected AbstractMCLConnection getServer() {
 		return server;
 	}
 
@@ -626,7 +627,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 */
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
-		if (server.getLang() != AbstractMonetDBConnection.LANG_SQL)
+		if (server.getLang() != AbstractMCLConnection.LANG_SQL)
 			throw new SQLException("This method is only supported in SQL mode", "M0M04");
 
 		return new MonetDatabaseMetaData(this);
@@ -1634,7 +1635,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 			this.resultBlocks =
 				new DataBlockResponse[(tuplecount / cacheSize) + 1];
 
-			hlp = new HeaderLineParser(columncount);
+			hlp = server.getHeaderLineParser(columncount);
 
 			resultBlocks[0] = new DataBlockResponse(
 				rowcount,
@@ -1658,7 +1659,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 				return resultBlocks[0].addLine(tmpLine, linetype);
 			}
 
-			if (linetype != AbstractBufferedReader.HEADER)
+			if (linetype != AbstractMCLReader.HEADER)
 				return "header expected, got: " + tmpLine;
 
 			// depending on the name of the header, we continue
@@ -1992,7 +1993,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 */
 		@Override
 		public String addLine(String line, int linetype) {
-			if (linetype != AbstractBufferedReader.RESULT)
+			if (linetype != AbstractMCLReader.RESULT)
 				return "protocol violation: unexpected line in data block: " + line;
 			// add to the backing array
 			data[++pos] = line;
@@ -2321,7 +2322,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 					int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
 					size = maxrows != 0 ? Math.min(maxrows, size) : size;
 					// don't do work if it's not needed
-					if (server.getLang() == AbstractMonetDBConnection.LANG_SQL && size != curReplySize && templ != server.getCommandHeaderTemplates()) {
+					if (server.getLang() == AbstractMCLConnection.LANG_SQL && size != curReplySize && templ != server.getCommandHeaderTemplates()) {
 						sendControlCommand("reply_size " + size);
 
 						// store the reply size after a successful change
@@ -2354,11 +2355,11 @@ public class MonetConnection extends MonetWrapper implements Connection {
 					String tmpLine = in.readLine();
 					int linetype = in.getLineType();
 					Response res = null;
-					while (linetype != AbstractBufferedReader.PROMPT) {
+					while (linetype != AbstractMCLReader.PROMPT) {
 						// each response should start with a start of header
 						// (or error)
 						switch (linetype) {
-							case AbstractBufferedReader.SOHEADER:
+							case AbstractMCLReader.SOHEADER:
 								// make the response object, and fill it
 								try {
 									switch (sohp.parse(tmpLine)) {
@@ -2487,7 +2488,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 								tmpLine = in.readLine();
 								linetype = in.getLineType();
 							break;
-							case AbstractBufferedReader.INFO:
+							case AbstractMCLReader.INFO:
 								addWarning(tmpLine.substring(1), "01000");
 
 								// read the next line (can be prompt, new
@@ -2502,7 +2503,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 								// message
 								tmpLine = "!M0M10!protocol violation, unexpected line: " + tmpLine;
 								// don't break; fall through...
-							case AbstractBufferedReader.ERROR:
+							case AbstractMCLReader.ERROR:
 								// read everything till the prompt (should be
 								// error) we don't know if we ignore some
 								// garbage here... but the log should reveal
@@ -2579,7 +2580,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 		private String[] templ;
 		private String query;
-		private AbstractBufferedWriter out;
+		private AbstractMCLWriter out;
 		private String error;
 		private int state = WAIT;
 		
@@ -2593,7 +2594,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 *
 		 * @param out the socket to write to
 		 */
-		public SendThread(AbstractBufferedWriter out) {
+		public SendThread(AbstractMCLWriter out) {
 			super("SendThread");
 			setDaemon(true);
 			this.out = out;

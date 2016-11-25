@@ -29,10 +29,17 @@ import java.util.List;
 import java.util.Set;
 
 import nl.cwi.monetdb.mcl.MCLException;
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
-import nl.cwi.monetdb.mcl.connection.AbstractMonetDBConnection;
+import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
+import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
+import nl.cwi.monetdb.mcl.io.BufferedMCLReader;
+import nl.cwi.monetdb.mcl.io.BufferedMCLWriter;
+import nl.cwi.monetdb.mcl.parser.HeaderLineParser;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
+import nl.cwi.monetdb.mcl.parser.TupleLineParser;
+import nl.cwi.monetdb.mcl.parser.socket.SocketHeaderLineParser;
+import nl.cwi.monetdb.mcl.parser.socket.SocketStartOfHeaderParser;
+import nl.cwi.monetdb.mcl.parser.socket.SocketTupleLineParser;
 
 /**
  * A Socket for communicating with the MonetDB database in MAPI block
@@ -84,7 +91,7 @@ import nl.cwi.monetdb.mcl.parser.MCLParseException;
  * @see BufferedMCLReader
  * @see BufferedMCLWriter
  */
-public final class MapiSocket extends AbstractMonetDBConnection {
+public final class MapiSocket extends AbstractMCLConnection {
 
 	/** The blocksize (hardcoded in compliance with stream.mx) */
 	private static final int BLOCK = 8 * 1024 - 2;
@@ -130,7 +137,7 @@ public final class MapiSocket extends AbstractMonetDBConnection {
 	private byte[] blklen = new byte[2];
 
 	public MapiSocket(String hostname, int port, String database, String username, boolean debug, String language, String hash) {
-		super(hostname, port, database, username, debug, language, hash, new String[]{"s", "\n;", "\n;\n"}, new String[]{"s", "\n;", "\n;\n"});
+		super(hostname, port, database, username, debug, language, hash, new String[]{"", "\n;", "\n;\n"}, new String[]{"", "\n;", "\n;\n"});
 	}
 
 	@Override
@@ -162,6 +169,39 @@ public final class MapiSocket extends AbstractMonetDBConnection {
 	@Override
 	public int getSoTimeout() throws SocketException {
 		return con.getSoTimeout();
+	}
+
+	/**
+	 * Sets the language to use for this connection.
+	 *
+	 * @param language the language
+	 */
+	public void setLanguage(String language) {
+		this.language = language;
+		if ("sql".equals(language)) {
+			lang = LANG_SQL;
+		} else if ("mal".equals(language)) {
+			lang = LANG_MAL;
+		} else {
+			lang = LANG_UNKNOWN;
+		}
+		if (lang == LANG_SQL) {
+			queryTempl[0] = "s";		// pre
+			queryTempl[1] = "\n;";		// post
+			queryTempl[2] = "\n;\n";	// separator
+
+			commandTempl[0] = "X";		// pre
+			commandTempl[1] = null;		// post
+			commandTempl[2] = "\nX";	// separator
+		} else if (lang == LANG_MAL) {
+			queryTempl[0] = null;
+			queryTempl[1] = ";\n";
+			queryTempl[2] = ";\n";
+
+			commandTempl[0] = null;		// pre
+			commandTempl[1] = null;		// post
+			commandTempl[2] = null;		// separator
+		}
 	}
 
 	/**
@@ -527,12 +567,12 @@ public final class MapiSocket extends AbstractMonetDBConnection {
 	}
 
 	@Override
-	public AbstractBufferedReader getReader() {
+	public AbstractMCLReader getReader() {
 		return reader;
 	}
 
 	@Override
-	public AbstractBufferedWriter getWriter() {
+	public AbstractMCLWriter getWriter() {
 		return writer;
 	}
 
@@ -966,7 +1006,7 @@ public final class MapiSocket extends AbstractMonetDBConnection {
 	@Override
 	public String getJDBCURL() {
 		String language = "";
-		if (this.getLang() == AbstractMonetDBConnection.LANG_MAL)
+		if (this.getLang() == AbstractMCLConnection.LANG_MAL)
 			language = "?language=mal";
 		return "jdbc:monetdb://" + this.getHostname() + ":" + this.getPort() + "/" + this.getDatabase() + language;
 	}
@@ -974,5 +1014,20 @@ public final class MapiSocket extends AbstractMonetDBConnection {
 	@Override
 	public int getBlockSize() {
 		return BLOCK;
+	}
+
+	@Override
+	public StartOfHeaderParser getStartOfHeaderParser() {
+		return new SocketStartOfHeaderParser();
+	}
+
+	@Override
+	public HeaderLineParser getHeaderLineParser(int capacity) {
+		return new SocketHeaderLineParser(capacity);
+	}
+
+	@Override
+	public TupleLineParser getTupleLineParser(int capacity) {
+		return new SocketTupleLineParser(capacity);
 	}
 }

@@ -1,13 +1,20 @@
-package nl.cwi.monetdb.mcl.embedded;
+package nl.cwi.monetdb.mcl.net;
 
 import nl.cwi.monetdb.embedded.env.IEmbeddedConnection;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedDatabase;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.mcl.MCLException;
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
-import nl.cwi.monetdb.mcl.connection.AbstractMonetDBConnection;
+import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
+import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
+import nl.cwi.monetdb.mcl.io.EmbeddedMCLReader;
+import nl.cwi.monetdb.mcl.io.EmbeddedMCLWriter;
+import nl.cwi.monetdb.mcl.parser.HeaderLineParser;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
+import nl.cwi.monetdb.mcl.parser.TupleLineParser;
+import nl.cwi.monetdb.mcl.parser.embedded.EmbeddedHeaderLineParser;
+import nl.cwi.monetdb.mcl.parser.embedded.EmbeddedStartOfHeaderParser;
+import nl.cwi.monetdb.mcl.parser.embedded.EmbeddedTupleLineParser;
 
 import java.io.*;
 import java.net.SocketException;
@@ -16,7 +23,7 @@ import java.util.List;
 /**
  * Created by ferreira on 11/23/16.
  */
-public class EmbeddedConnection extends AbstractMonetDBConnection implements IEmbeddedConnection {
+public class EmbeddedMonetDB extends AbstractMCLConnection implements IEmbeddedConnection {
 
     private long connectionPointer;
 
@@ -24,12 +31,12 @@ public class EmbeddedConnection extends AbstractMonetDBConnection implements IEm
 
     private final String directory;
 
-    private EmbeddedReader reader;
+    private EmbeddedMCLReader reader;
 
-    private EmbeddedWriter writer;
+    private EmbeddedMCLWriter writer;
 
-    public EmbeddedConnection(String hostname, int port, String database, String username, boolean debug, String language, String hash, String directory) {
-        super(hostname, port, database, username, debug, language, hash, new String[]{"s", "\n;", "\n;\n"}, new String[]{"X", null, "\nX"});
+    public EmbeddedMonetDB(String hostname, int port, String database, String username, boolean debug, String language, String hash, String directory) {
+        super(hostname, port, database, username, debug, language, hash, new String[]{"", "\n;", "\n;\n"}, new String[]{"X", null, "\nX"});
         this.directory = directory;
     }
 
@@ -57,7 +64,6 @@ public class EmbeddedConnection extends AbstractMonetDBConnection implements IEm
         if(this.lang != LANG_SQL) {
             throw new IllegalArgumentException("The embedded connection only supports the SQL language!");
         }
-        super.setLanguage(language);
     }
 
     @Override
@@ -83,8 +89,8 @@ public class EmbeddedConnection extends AbstractMonetDBConnection implements IEm
             } else {
                 MonetDBEmbeddedDatabase.StartDatabase(this.directory, true, false);
             }
-            this.reader = new EmbeddedReader();
-            this.writer = new EmbeddedWriter();
+            this.reader = new EmbeddedMCLReader();
+            this.writer = new EmbeddedMCLWriter(this.reader);
             MonetDBEmbeddedDatabase.AddJDBCEmbeddedConnection(this);
         } catch (MonetDBEmbeddedException ex) {
             throw new MCLException(ex);
@@ -103,12 +109,12 @@ public class EmbeddedConnection extends AbstractMonetDBConnection implements IEm
     }
 
     @Override
-    public AbstractBufferedReader getReader() {
+    public AbstractMCLReader getReader() {
         return this.reader;
     }
 
     @Override
-    public AbstractBufferedWriter getWriter() {
+    public AbstractMCLWriter getWriter() {
         return this.writer;
     }
 
@@ -130,6 +136,21 @@ public class EmbeddedConnection extends AbstractMonetDBConnection implements IEm
     @Override
     public int getBlockSize() {
         return BUFFER_SIZE;
+    }
+
+    @Override
+    public StartOfHeaderParser getStartOfHeaderParser() {
+        return new EmbeddedStartOfHeaderParser();
+    }
+
+    @Override
+    public HeaderLineParser getHeaderLineParser(int capacity) {
+        return new EmbeddedHeaderLineParser(capacity);
+    }
+
+    @Override
+    public TupleLineParser getTupleLineParser(int capacity) {
+        return new EmbeddedTupleLineParser(capacity);
     }
 
     @Override

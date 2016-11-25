@@ -6,9 +6,7 @@
  * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.net;
-
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
+package nl.cwi.monetdb.mcl.io;
 
 import java.io.*;
 
@@ -33,7 +31,7 @@ import java.io.*;
  * @see nl.cwi.monetdb.mcl.net.MapiSocket
  * @see BufferedMCLWriter
  */
-public class BufferedMCLWriter extends AbstractBufferedWriter {
+public class BufferedMCLWriter extends AbstractMCLWriter {
 
 	/**
 	 * Create a buffered character-output stream that uses a
@@ -69,6 +67,7 @@ public class BufferedMCLWriter extends AbstractBufferedWriter {
 		this.write('\n');
 	}
 
+	@Override
 	public void writeLine(String line) throws IOException {
 		this.write(line);
 		this.flush();

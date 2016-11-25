@@ -6,9 +6,7 @@
  * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.net;
-
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
+package nl.cwi.monetdb.mcl.io;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -42,7 +40,7 @@ import java.io.UnsupportedEncodingException;
  * @see nl.cwi.monetdb.mcl.net.MapiSocket
  * @see BufferedMCLWriter
  */
-public class BufferedMCLReader extends AbstractBufferedReader {
+public class BufferedMCLReader extends AbstractMCLReader {
 
 	/**
 	 * Create a buffering character-input stream that uses a

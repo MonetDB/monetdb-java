@@ -8,8 +8,8 @@
 
 package nl.cwi.monetdb.merovingian;
 
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedReader;
-import nl.cwi.monetdb.mcl.connection.AbstractBufferedWriter;
+import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
+import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
 import nl.cwi.monetdb.mcl.net.MapiSocket;
 import nl.cwi.monetdb.mcl.MCLException;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
@@ -115,8 +115,8 @@ public class Control {
 			String database, String command, boolean hasOutput)
 		throws MerovingianException, IOException
 	{
-		AbstractBufferedReader min;
-		AbstractBufferedWriter mout;
+		AbstractMCLReader min;
+		AbstractMCLWriter mout;
 		MapiSocket ms = new MapiSocket(host, port, "monetdb", "monetdb", false, "sql", "SHA256");
 		ms.setDatabase("merovingian");
 		ms.setLanguage("control");
@@ -205,16 +205,16 @@ public class Control {
 		ArrayList<String> l = new ArrayList<>();
 		String tmpLine = min.readLine();
 		int linetype = min.getLineType();
-		if (linetype == AbstractBufferedReader.ERROR)
+		if (linetype == AbstractMCLReader.ERROR)
 			throw new MerovingianException(tmpLine.substring(6));
-		if (linetype != AbstractBufferedReader.RESULT)
+		if (linetype != AbstractMCLReader.RESULT)
 			throw new MerovingianException("unexpected line: " + tmpLine);
 		if (!tmpLine.substring(1).equals(RESPONSE_OK))
 			throw new MerovingianException(tmpLine.substring(1));
 		tmpLine = min.readLine();
 		linetype = min.getLineType();
-		while (linetype != AbstractBufferedReader.PROMPT) {
-			if (linetype != AbstractBufferedReader.RESULT)
+		while (linetype != AbstractMCLReader.PROMPT) {
+			if (linetype != AbstractMCLReader.RESULT)
 				throw new MerovingianException("unexpected line: " +
 						tmpLine);
 

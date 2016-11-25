@@ -10,6 +10,7 @@ package nl.cwi.monetdb.jdbc;
 
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 import nl.cwi.monetdb.mcl.parser.TupleLineParser;
+
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.Reader;
@@ -134,7 +135,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		tupleCount = header.tuplecount;
 
 		// create result array
-		tlp = new TupleLineParser(columns.length);
+		tlp = ((MonetConnection)statement.getConnection()).getServer().getTupleLineParser(columns.length);
 
 		JdbcSQLTypes = new int[types.length];
 		populateJdbcSQLtypesArray();
@@ -178,7 +179,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		this.types = types;
 		this.tupleCount = results;
 
-		this.tlp = new TupleLineParser(columns.length);
+		try {
+			this.tlp = ((MonetConnection)statement.getConnection()).getServer().getTupleLineParser(columns.length);
+		} catch (SQLException e) {
+			throw new IllegalArgumentException(e);
+		}
 
 		JdbcSQLTypes = new int[types.length];
 		populateJdbcSQLtypesArray();

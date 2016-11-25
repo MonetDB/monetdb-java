@@ -1,7 +1,12 @@
-package nl.cwi.monetdb.mcl.connection;
+package nl.cwi.monetdb.mcl.net;
 
 import nl.cwi.monetdb.mcl.MCLException;
+import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
+import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
+import nl.cwi.monetdb.mcl.parser.HeaderLineParser;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
+import nl.cwi.monetdb.mcl.parser.TupleLineParser;
 
 import java.io.*;
 import java.net.SocketException;
@@ -10,7 +15,7 @@ import java.util.List;
 /**
  * Created by ferreira on 11/23/16.
  */
-public abstract class AbstractMonetDBConnection {
+public abstract class AbstractMCLConnection {
 
     /** the SQL language */
     public final static int LANG_SQL = 0;
@@ -43,16 +48,16 @@ public abstract class AbstractMonetDBConnection {
     /** A template to apply to each command (like pre and post fixes) */
     protected String[] commandTempl = new String[3]; // pre, post, sep
 
-    public AbstractMonetDBConnection(String hostname, int port, String database, String username, boolean debug, String language, String hash, String[] queryTempl, String[] commandTempl) {
+    public AbstractMCLConnection(String hostname, int port, String database, String username, boolean debug, String language, String hash, String[] queryTempl, String[] commandTempl) {
         this.hostname = hostname;
         this.port = port;
         this.database = database;
         this.username = username;
         this.debug = debug;
         this.hash = hash;
-        this.setLanguage(language);
         this.queryTempl = queryTempl;
         this.commandTempl = commandTempl;
+        this.setLanguage(language);
     }
 
     public String getHostname() {
@@ -110,33 +115,7 @@ public abstract class AbstractMonetDBConnection {
      *
      * @param language the language
      */
-    public void setLanguage(String language) {
-        this.language = language;
-        if ("sql".equals(language)) {
-            lang = LANG_SQL;
-        } else if ("mal".equals(language)) {
-            lang = LANG_MAL;
-        } else {
-            lang = LANG_UNKNOWN;
-        }
-        if (lang == LANG_SQL) {
-            queryTempl[0] = "s";		// pre
-            queryTempl[1] = "\n;";		// post
-            queryTempl[2] = "\n;\n";	// separator
-
-            commandTempl[0] = "X";		// pre
-            commandTempl[1] = null;		// post
-            commandTempl[2] = "\nX";	// separator
-        } else if (lang == LANG_MAL) {
-            queryTempl[0] = null;
-            queryTempl[1] = ";\n";
-            queryTempl[2] = ";\n";
-
-            commandTempl[0] = null;		// pre
-            commandTempl[1] = null;		// post
-            commandTempl[2] = null;		// separator
-        }
-    }
+    public abstract void setLanguage(String language);
 
     public int getLang() {
         return lang;
@@ -214,7 +193,7 @@ public abstract class AbstractMonetDBConnection {
      *
      * @return a BufferedMCLReader connected to this MapiSocket
      */
-    public abstract AbstractBufferedReader getReader();
+    public abstract AbstractMCLReader getReader();
 
     /**
      * Returns a Writer for this MapiSocket.  The Writer is a
@@ -223,7 +202,7 @@ public abstract class AbstractMonetDBConnection {
      *
      * @return a BufferedMCLWriter connected to this MapiSocket
      */
-    public abstract AbstractBufferedWriter getWriter();
+    public abstract AbstractMCLWriter getWriter();
 
     /**
      * Enables logging to a file what is read and written from and to
@@ -307,4 +286,10 @@ public abstract class AbstractMonetDBConnection {
     public abstract String getJDBCURL();
 
     public abstract int getBlockSize();
+
+    public abstract StartOfHeaderParser getStartOfHeaderParser();
+
+    public abstract HeaderLineParser getHeaderLineParser(int capacity);
+
+    public abstract TupleLineParser getTupleLineParser(int capacity);
 }

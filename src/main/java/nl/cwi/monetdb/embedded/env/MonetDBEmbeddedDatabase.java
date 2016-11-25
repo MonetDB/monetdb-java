@@ -8,7 +8,7 @@
 
 package nl.cwi.monetdb.embedded.env;
 
-import nl.cwi.monetdb.mcl.embedded.EmbeddedConnection;
+import nl.cwi.monetdb.mcl.net.EmbeddedMonetDB;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -172,7 +172,7 @@ public class MonetDBEmbeddedDatabase {
         return CompletableFuture.supplyAsync(() -> this.createConnectionInternal());
     }*/
 
-    public static void AddJDBCEmbeddedConnection(EmbeddedConnection con) throws MonetDBEmbeddedException {
+    public static void AddJDBCEmbeddedConnection(EmbeddedMonetDB con) throws MonetDBEmbeddedException {
         if(MonetDBEmbeddedDatabase == null) {
             throw new MonetDBEmbeddedException("The database is not running!");
         } else {
@@ -208,5 +208,5 @@ public class MonetDBEmbeddedDatabase {
     /**
      * Internal implementation to create a JDBC embeddded connection on this database.
      */
-    private native void createJDBCConnectionInternal(EmbeddedConnection emc) throws MonetDBEmbeddedException;
+    private native void createJDBCConnectionInternal(EmbeddedMonetDB emc) throws MonetDBEmbeddedException;
 }

@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.mcl.connection;
+package nl.cwi.monetdb.mcl.io;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -7,7 +7,7 @@ import java.io.Reader;
 /**
  * Created by ferreira on 11/24/16.
  */
-public abstract class AbstractBufferedReader extends BufferedReader {
+public abstract class AbstractMCLReader extends BufferedReader {
 
     /** The type of the last line read */
     protected int lineType;
@@ -32,7 +32,7 @@ public abstract class AbstractBufferedReader extends BufferedReader {
     /** a line starting with # indicates INFO */
     public final static int INFO      = '#';
 
-    public AbstractBufferedReader(Reader in) {
+    public AbstractMCLReader(Reader in) {
         super(in);
     }
 
