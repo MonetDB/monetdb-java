@@ -154,5 +154,5 @@ public class RowIterator extends AbstractRowSet {
     /**
      * Sets the next value to iterate.
      */
-    protected void setNextIteration() { this.currentIterationNumber++; }
+    void setNextIteration() { this.currentIterationNumber++; }
 }

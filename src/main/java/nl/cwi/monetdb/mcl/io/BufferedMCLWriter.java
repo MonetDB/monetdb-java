@@ -8,6 +8,8 @@
 
 package nl.cwi.monetdb.mcl.io;
 
+import nl.cwi.monetdb.mcl.connection.DeleteMe;
+
 import java.io.*;
 
 /**
@@ -28,7 +30,7 @@ import java.io.*;
  * class client-oriented when a reader is registered.
  *
  * @author Fabian Groffen <Fabian.Groffen>
- * @see nl.cwi.monetdb.mcl.net.MapiSocket
+ * @see DeleteMe
  * @see BufferedMCLWriter
  */
 public class BufferedMCLWriter extends AbstractMCLWriter {
@@ -72,6 +74,6 @@ public class BufferedMCLWriter extends AbstractMCLWriter {
 		this.write(line);
 		this.flush();
 		// reset reader state, last line isn't valid any more now
-		if (reader != null) reader.setLineType(null);
+		if (reader != null) ((BufferedMCLReader)reader).setLineType(null);
 	}
 }

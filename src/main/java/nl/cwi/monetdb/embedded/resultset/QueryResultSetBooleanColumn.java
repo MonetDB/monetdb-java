@@ -15,7 +15,7 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryResultSetBooleanColumn extends AbstractQueryResultSetColumn<boolean[]> {
+public final class QueryResultSetBooleanColumn extends AbstractQueryResultSetColumn<boolean[]> {
 
     /**
      * Gets MonetDB's boolean null constant

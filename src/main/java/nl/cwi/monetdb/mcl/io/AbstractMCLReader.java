@@ -9,9 +9,6 @@ import java.io.Reader;
  */
 public abstract class AbstractMCLReader extends BufferedReader {
 
-    /** The type of the last line read */
-    protected int lineType;
-
     /** "there is currently no line", or the the type is unknown is
      represented by UNKNOWN */
     public final static int UNKNOWN   = 0;
@@ -32,6 +29,9 @@ public abstract class AbstractMCLReader extends BufferedReader {
     /** a line starting with # indicates INFO */
     public final static int INFO      = '#';
 
+    /** The type of the last line read */
+    protected int lineType;
+
     public AbstractMCLReader(Reader in) {
         super(in);
     }
@@ -45,47 +45,6 @@ public abstract class AbstractMCLReader extends BufferedReader {
      */
     public int getLineType() {
         return lineType;
-    }
-
-    /**
-     * Sets the linetype to the type of the string given.  If the string
-     * is null, lineType is set to UNKNOWN.
-     *
-     * @param line the string to examine
-     */
-    public void setLineType(String line) {
-        lineType = UNKNOWN;
-        if (line == null || line.length() == 0)
-            return;
-        switch (line.charAt(0)) {
-            case '!':
-                lineType = ERROR;
-                break;
-            case '&':
-                lineType = SOHEADER;
-                break;
-            case '%':
-                lineType = HEADER;
-                break;
-            case '[':
-                lineType = RESULT;
-                break;
-            case '=':
-                lineType = RESULT;
-                break;
-            case '^':
-                lineType = REDIRECT;
-                break;
-            case '#':
-                lineType = INFO;
-                break;
-            case '.':
-                lineType = PROMPT;
-                break;
-            case ',':
-                lineType = MORE;
-                break;
-        }
     }
 
     public abstract String waitForPrompt() throws IOException;

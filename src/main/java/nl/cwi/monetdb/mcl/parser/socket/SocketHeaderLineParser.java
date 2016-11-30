@@ -11,7 +11,6 @@ package nl.cwi.monetdb.mcl.parser.socket;
 
 import nl.cwi.monetdb.mcl.parser.HeaderLineParser;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
-import nl.cwi.monetdb.mcl.parser.MCLParser;
 
 /**
  * The SocketHeaderLineParser is a generic MCLParser that extracts values from

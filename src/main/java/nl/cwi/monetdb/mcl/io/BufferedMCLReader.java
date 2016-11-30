@@ -8,6 +8,8 @@
 
 package nl.cwi.monetdb.mcl.io;
 
+import nl.cwi.monetdb.mcl.connection.DeleteMe;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -37,7 +39,7 @@ import java.io.UnsupportedEncodingException;
  * messages as the server receives them.
  *
  * @author Fabian Groffen <Fabian.Groffen>
- * @see nl.cwi.monetdb.mcl.net.MapiSocket
+ * @see DeleteMe
  * @see BufferedMCLWriter
  */
 public class BufferedMCLReader extends AbstractMCLReader {
@@ -66,6 +68,47 @@ public class BufferedMCLReader extends AbstractMCLReader {
 	}
 
 	/**
+	 * Sets the linetype to the type of the string given.  If the string
+	 * is null, lineType is set to UNKNOWN.
+	 *
+	 * @param line the string to examine
+	 */
+	void setLineType(String line) {
+		lineType = UNKNOWN;
+		if (line == null || line.length() == 0)
+			return;
+		switch (line.charAt(0)) {
+			case '!':
+				lineType = ERROR;
+				break;
+			case '&':
+				lineType = SOHEADER;
+				break;
+			case '%':
+				lineType = HEADER;
+				break;
+			case '[':
+				lineType = RESULT;
+				break;
+			case '=':
+				lineType = RESULT;
+				break;
+			case '^':
+				lineType = REDIRECT;
+				break;
+			case '#':
+				lineType = INFO;
+				break;
+			case '.':
+				lineType = PROMPT;
+				break;
+			case ',':
+				lineType = MORE;
+				break;
+		}
+	}
+
+	/**
 	 * Read a line of text.  A line is considered to be terminated by
 	 * any one of a line feed ('\n'), a carriage return ('\r'), or a
 	 * carriage return followed immediately by a linefeed.  Before this
@@ -85,7 +128,7 @@ public class BufferedMCLReader extends AbstractMCLReader {
 	@Override
 	public String readLine() throws IOException {
 		String r = super.readLine();
-		setLineType(r);
+		this.setLineType(r);
 		if (lineType == ERROR && !r.matches("^![0-9A-Z]{5}!.+"))
 			r = "!22000!" + r.substring(1);
 		return r;
@@ -109,7 +152,7 @@ public class BufferedMCLReader extends AbstractMCLReader {
 		StringBuilder res = new StringBuilder();
 		String tmp;
 		while (lineType != PROMPT) {
-			if ((tmp = readLine()) == null)
+			if ((tmp = this.readLine()) == null)
 				throw new IOException("Connection to server lost!");
 			if (lineType == ERROR)
 				res.append("\n").append(tmp.substring(1));

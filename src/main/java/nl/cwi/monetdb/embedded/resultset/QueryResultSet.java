@@ -25,7 +25,7 @@ import java.util.ListIterator;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryResultSet extends AbstractResultTable implements Iterable {
+public final class QueryResultSet extends AbstractResultTable implements Iterable {
 
     /**
      * The table C pointer.

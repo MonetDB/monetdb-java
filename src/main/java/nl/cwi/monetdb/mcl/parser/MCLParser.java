@@ -27,7 +27,8 @@ public abstract class MCLParser {
 	public final String values[];
 	/** The int values found while parsing.  Public, you may touch it. */
 	public final int intValues[];
-	private int colnr;
+
+	protected int colnr;
 
 	/**
 	 * Creates an MCLParser targeted at a given number of field values.

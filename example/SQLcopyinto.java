@@ -10,9 +10,9 @@ import java.sql.*;
 import java.io.*;
 import java.util.*;
 
+import nl.cwi.monetdb.mcl.connection.DeleteMe;
 import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
 import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
-import nl.cwi.monetdb.mcl.net.*;
 
 /**
  * This example demonstrates how the MonetDB JDBC driver can facilitate
@@ -47,7 +47,7 @@ public class SQLcopyinto {
 		// of course also be done simultaneously with the JDBC
 		// connection being kept connected
 
-		MapiSocket server = new MapiSocket("localhost", 50000, "monetdb", "monetdb", false, "sql", "SHA256");
+		DeleteMe server = new DeleteMe("localhost", 50000, "monetdb", "monetdb", false, "sql", "SHA256");
 
 		server.setDatabase("database");
 		server.setLanguage("sql");

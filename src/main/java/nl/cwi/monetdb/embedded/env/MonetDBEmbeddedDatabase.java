@@ -8,7 +8,8 @@
 
 package nl.cwi.monetdb.embedded.env;
 
-import nl.cwi.monetdb.mcl.net.EmbeddedMonetDB;
+import nl.cwi.monetdb.mcl.connection.EmbeddedMonetDB;
+import nl.cwi.monetdb.mcl.io.InternalConnection;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -21,7 +22,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class MonetDBEmbeddedDatabase {
+public final class MonetDBEmbeddedDatabase {
 
     private static MonetDBEmbeddedDatabase MonetDBEmbeddedDatabase = null;
 
@@ -123,7 +124,7 @@ public class MonetDBEmbeddedDatabase {
         }
     }
 
-    /**
+    /*
      * Stops the database asynchronously. All the pending connections will be shut down as well.
      *
      * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
@@ -162,7 +163,7 @@ public class MonetDBEmbeddedDatabase {
         }
     }
 
-    /**
+    /*
      * Creates a connection on the database, set on the default schema asynchronously.
      *
      * @return A MonetDBEmbeddedConnection instance
@@ -172,19 +173,20 @@ public class MonetDBEmbeddedDatabase {
         return CompletableFuture.supplyAsync(() -> this.createConnectionInternal());
     }*/
 
-    public static void AddJDBCEmbeddedConnection(EmbeddedMonetDB con) throws MonetDBEmbeddedException {
+    public static InternalConnection AddJDBCEmbeddedConnection() throws MonetDBEmbeddedException {
         if(MonetDBEmbeddedDatabase == null) {
             throw new MonetDBEmbeddedException("The database is not running!");
         } else {
-            MonetDBEmbeddedDatabase.createJDBCConnectionInternal(con);
-            MonetDBEmbeddedDatabase.connections.put(con.getConnectionPointer(), con);
+            InternalConnection res = MonetDBEmbeddedDatabase.createJDBCConnectionInternal();
+            MonetDBEmbeddedDatabase.connections.put(res.getConnectionPointer(), res);
+            return res;
         }
     }
 
     /**
      * Removes a connection from this database.
      */
-    protected static void RemoveConnection(MonetDBEmbeddedConnection con) {
+    static void RemoveConnection(MonetDBEmbeddedConnection con) {
         MonetDBEmbeddedDatabase.connections.remove(con.getConnectionPointer());
     }
 
@@ -208,5 +210,5 @@ public class MonetDBEmbeddedDatabase {
     /**
      * Internal implementation to create a JDBC embeddded connection on this database.
      */
-    private native void createJDBCConnectionInternal(EmbeddedMonetDB emc) throws MonetDBEmbeddedException;
+    private native InternalConnection createJDBCConnectionInternal() throws MonetDBEmbeddedException;
 }

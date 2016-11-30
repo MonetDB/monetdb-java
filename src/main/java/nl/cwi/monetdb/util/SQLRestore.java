@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import nl.cwi.monetdb.mcl.MCLException;
 import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
 import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
-import nl.cwi.monetdb.mcl.net.MapiSocket;
+import nl.cwi.monetdb.mcl.connection.DeleteMe;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
 /**
@@ -104,7 +104,7 @@ public class SQLRestore {
 	 * @throws IOException
 	 */
 	public void restore(File source) throws IOException {
-		MapiSocket ms = new MapiSocket(_host, _port, _dbName, _user, false, "sql", "SHA256");
+		DeleteMe ms = new DeleteMe(_host, _port, _dbName, _user, false, "sql", "SHA256");
 		try {
 			ms.connect(_user, _password);
 			

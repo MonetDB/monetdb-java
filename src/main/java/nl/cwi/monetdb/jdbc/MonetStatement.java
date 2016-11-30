@@ -8,7 +8,7 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import nl.cwi.monetdb.mcl.net.AbstractMCLConnection;
+import nl.cwi.monetdb.mcl.connection.AbstractMonetDBConnection;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.Statement;
@@ -202,7 +202,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 			boolean first = true;
 			boolean error = false;
 
-			AbstractMCLConnection server = connection.getServer();
+			AbstractMonetDBConnection server = connection.getServer();
 
 			BatchUpdateException e = new BatchUpdateException("Error(s) occurred while executing the batch, see next SQLExceptions for details", "22000", counts);
 			StringBuilder tmpBatch = new StringBuilder(server.getBlockSize());

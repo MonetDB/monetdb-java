@@ -31,8 +31,6 @@ public abstract class StartOfHeaderParser {
 
     protected int pos;
 
-    public StartOfHeaderParser() {}
-
     public abstract int parse(String in) throws MCLParseException;
 
     public abstract int getNextAsInt() throws MCLParseException;

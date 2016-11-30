@@ -46,9 +46,9 @@ import nl.cwi.monetdb.jdbc.types.URL;
 import nl.cwi.monetdb.mcl.MCLException;
 import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
 import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
-import nl.cwi.monetdb.mcl.net.EmbeddedMonetDB;
-import nl.cwi.monetdb.mcl.net.MapiSocket;
-import nl.cwi.monetdb.mcl.net.AbstractMCLConnection;
+import nl.cwi.monetdb.mcl.connection.EmbeddedMonetDB;
+import nl.cwi.monetdb.mcl.connection.DeleteMe;
+import nl.cwi.monetdb.mcl.connection.AbstractMonetDBConnection;
 import nl.cwi.monetdb.mcl.parser.HeaderLineParser;
 import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
@@ -81,7 +81,7 @@ import nl.cwi.monetdb.mcl.parser.MCLParseException;
 public class MonetConnection extends MonetWrapper implements Connection {
 
 	/** A connection to mserver5 either through MAPI with TCP or embedded */
-	private final AbstractMCLConnection server;
+	private final AbstractMonetDBConnection server;
 	/** The Reader from the server */
 	private final AbstractMCLReader in;
 	/** The Writer to the server */
@@ -179,7 +179,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 				language = "sql";
 				addWarning("No language given, defaulting to 'sql'", "M1M05");
 			}
-			server = new MapiSocket(hostname, port, database, username, debug, language, hash);
+			server = new DeleteMe(hostname, port, database, username, debug, language, hash);
 			try {
 				server.setSoTimeout(sockTimeout);
 			} catch (SocketException e) {
@@ -239,7 +239,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 		// the following initialisers are only valid when the language
 		// is SQL...
-		if (server.getLang() == AbstractMCLConnection.LANG_SQL) {
+		if (server.getLang() == AbstractMonetDBConnection.LANG_SQL) {
 			// enable auto commit
 			setAutoCommit(true);
 			// set our time zone on the server
@@ -254,7 +254,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		}
 	}
 
-	protected AbstractMCLConnection getServer() {
+	protected AbstractMonetDBConnection getServer() {
 		return server;
 	}
 
@@ -627,7 +627,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 */
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
-		if (server.getLang() != AbstractMCLConnection.LANG_SQL)
+		if (server.getLang() != AbstractMonetDBConnection.LANG_SQL)
 			throw new SQLException("This method is only supported in SQL mode", "M0M04");
 
 		return new MonetDatabaseMetaData(this);
@@ -1854,7 +1854,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 				///       in memory when dealing with random access to
 				///       reduce memory blow-up
 
-				// if we're running forward only, we can discard the old
+				// if we're running forward only, we can discard the oldmapi
 				// block loaded
 				if (parent.rstype == ResultSet.TYPE_FORWARD_ONLY) {
 					for (int i = 0; i < block; i++)
@@ -2322,7 +2322,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 					int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
 					size = maxrows != 0 ? Math.min(maxrows, size) : size;
 					// don't do work if it's not needed
-					if (server.getLang() == AbstractMCLConnection.LANG_SQL && size != curReplySize && templ != server.getCommandHeaderTemplates()) {
+					if (server.getLang() == AbstractMonetDBConnection.LANG_SQL && size != curReplySize && templ != server.getCommandHeaderTemplates()) {
 						sendControlCommand("reply_size " + size);
 
 						// store the reply size after a successful change
@@ -2387,7 +2387,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 											// have an additional datablock
 											if (rowcount < tuplecount) {
 												if (rsresponses == null)
-													rsresponses = new HashMap<Integer, ResultSetResponse>();
+													rsresponses = new HashMap<>();
 												rsresponses.put(
 														id,
 														(ResultSetResponse) res

@@ -15,7 +15,7 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryResultSetByteColumn extends AbstractQueryResultSetColumn<byte[]> {
+public final class QueryResultSetByteColumn extends AbstractQueryResultSetColumn<byte[]> {
 
     /**
      * Gets MonetDB's byte null constant

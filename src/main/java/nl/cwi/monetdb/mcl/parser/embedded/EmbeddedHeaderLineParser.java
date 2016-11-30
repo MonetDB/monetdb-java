@@ -8,6 +8,8 @@ import nl.cwi.monetdb.mcl.parser.MCLParseException;
  */
 public class EmbeddedHeaderLineParser extends HeaderLineParser {
 
+    private long resultSetPointer;
+
     /**
      * Creates an MCLParser targeted at a given number of field values.
      * The lines parsed by an instance of this MCLParser should have
@@ -21,6 +23,22 @@ public class EmbeddedHeaderLineParser extends HeaderLineParser {
 
     @Override
     public int parse(String source) throws MCLParseException {
-        return 0;
+        /*switch(this.colnr) {
+            case HeaderLineParser.NAME:
+                System.arraycopy(this.columnNames, 0, this.values, 0, this.values.length);
+                break;
+            case HeaderLineParser.LENGTH:
+                System.arraycopy(this.columnLengths, 0, this.intValues, 0, this.intValues.length);
+                break;
+            case HeaderLineParser.TABLE:
+                System.arraycopy(this.columnTables, 0, this.values, 0, this.values.length);
+                break;
+            case HeaderLineParser.TYPE:
+                System.arraycopy(this.columnTypes, 0, this.values, 0, this.values.length);
+                break;
+        }*/
+        return this.parseNextHeadLineInternal();
     }
+
+    private native int parseNextHeadLineInternal();
 }

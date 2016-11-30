@@ -20,7 +20,7 @@ import java.util.ListIterator;
  * @param <T> The Java class of the mapped MonetDB column
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryResultSetObjectColumn<T> extends AbstractQueryResultSetColumn<T[]> implements Iterable<T> {
+public final class QueryResultSetObjectColumn<T> extends AbstractQueryResultSetColumn<T[]> implements Iterable<T> {
 
     /**
      * A null pointer returning method.

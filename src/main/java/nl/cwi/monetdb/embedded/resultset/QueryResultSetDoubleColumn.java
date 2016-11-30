@@ -15,7 +15,7 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryResultSetDoubleColumn extends AbstractQueryResultSetColumn<double[]> {
+public final class QueryResultSetDoubleColumn extends AbstractQueryResultSetColumn<double[]> {
 
     /**
      * Gets MonetDB's double null constant

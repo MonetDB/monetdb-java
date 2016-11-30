@@ -22,7 +22,7 @@ import nl.cwi.monetdb.embedded.resultset.QueryResultSetLongColumn;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class MonetDBTable extends AbstractResultTable {
+public final class MonetDBTable extends AbstractResultTable {
 
     private final String tableSchema;
 

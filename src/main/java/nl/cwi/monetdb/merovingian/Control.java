@@ -10,7 +10,7 @@ package nl.cwi.monetdb.merovingian;
 
 import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
 import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
-import nl.cwi.monetdb.mcl.net.MapiSocket;
+import nl.cwi.monetdb.mcl.connection.DeleteMe;
 import nl.cwi.monetdb.mcl.MCLException;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
@@ -117,7 +117,7 @@ public class Control {
 	{
 		AbstractMCLReader min;
 		AbstractMCLWriter mout;
-		MapiSocket ms = new MapiSocket(host, port, "monetdb", "monetdb", false, "sql", "SHA256");
+		DeleteMe ms = new DeleteMe(host, port, "monetdb", "monetdb", false, "sql", "SHA256");
 		ms.setDatabase("merovingian");
 		ms.setLanguage("control");
 		if (debug != null)
@@ -131,7 +131,7 @@ public class Control {
 		} catch (AssertionError e) { // mcl panics
 			ms.close();
 			
-			// Try old protocol instead
+			// Try oldmapi protocol instead
 			Socket s;
 			PrintStream out;
 			BufferedReader in;

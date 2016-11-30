@@ -15,7 +15,7 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public class QueryResultSetFloatColumn extends AbstractQueryResultSetColumn<float[]> {
+public final class QueryResultSetFloatColumn extends AbstractQueryResultSetColumn<float[]> {
 
     /**
      * Gets MonetDB's float null constant

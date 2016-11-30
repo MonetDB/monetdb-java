@@ -268,8 +268,7 @@ public class MonetBlob implements Blob {
 			throw new SQLException("This Blob object has been freed", "M1M20");
 		try {
 			/* transactions? what are you talking about? */
-			for (int i = (int)pos; i < len; i++)
-				buf[i] = bytes[offset - 1 + i];
+			System.arraycopy(bytes, offset - 1 + (int) pos, buf, (int) pos, len - (int) pos);
 		} catch (IndexOutOfBoundsException e) {
 			throw new SQLException(e.getMessage(), "M0M10");
 		}
@@ -291,8 +290,7 @@ public class MonetBlob implements Blob {
 			throw new SQLException("This Blob object has been freed", "M1M20");
 		if (buf.length > len) {
 			byte[] newbuf = new byte[(int)len];
-			for (int i = 0; i < len; i++)
-				newbuf[i] = buf[i];
+			System.arraycopy(buf, 0, newbuf, 0, (int) len);
 			buf = newbuf;
 		}
 	}
