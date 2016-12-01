@@ -2,7 +2,7 @@ package nl.cwi.monetdb.mcl.connection;
 
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedDatabase;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
-import nl.cwi.monetdb.mcl.MCLException;
+import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.mcl.io.*;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
@@ -13,19 +13,15 @@ import java.util.List;
 /**
  * Created by ferreira on 11/23/16.
  */
-public final class EmbeddedMonetDB extends AbstractMonetDBConnection {
+public final class EmbeddedMonetDB extends MonetConnection {
 
     private final String directory;
 
     private InternalConnection connection;
 
-    public EmbeddedMonetDB(String database, String hash, boolean debug, MonetDBLanguage lang, String directory) throws IOException {
-        super(database, hash, debug, lang);
+    public EmbeddedMonetDB(String database, String hash, String language, boolean blobIsBinary, boolean isDebugging, String directory) throws IOException {
+        super(database, hash, language, blobIsBinary, isDebugging);
         this.directory = directory;
-    }
-
-    public String getDirectory() {
-        return directory;
     }
 
     @Override
@@ -44,18 +40,8 @@ public final class EmbeddedMonetDB extends AbstractMonetDBConnection {
     }
 
     @Override
-    public synchronized void close() {
-        super.close();
-        try {
-            MonetDBEmbeddedDatabase.StopDatabase();
-        } catch (MonetDBEmbeddedException e) {
-            // ignore it
-        }
-    }
-
-    @Override
     public String getJDBCURL() {
-        return "jdbc:monetdb://localhost@" + this.getDirectory() + "/" + this.getDatabase();
+        return "jdbc:monetdb://localhost@" + this.directory + "/" + this.database;
     }
 
     @Override
@@ -65,11 +51,20 @@ public final class EmbeddedMonetDB extends AbstractMonetDBConnection {
 
     @Override
     public int getSoTimeout() throws SocketException {
-        throw new IllegalArgumentException("Cannot get a timeout on a embedded connection!");
+        throw new SocketException("Cannot get a timeout on a embedded connection!");
     }
 
     @Override
     public void setSoTimeout(int s) throws SocketException {
-        throw new IllegalArgumentException("Cannot set a timeout on a embedded connection!");
+        throw new SocketException("Cannot set a timeout on a embedded connection!");
+    }
+
+    @Override
+    public void closeUnderlyingConnection() throws IOException {
+        try {
+            MonetDBEmbeddedDatabase.StopDatabase();
+        } catch (MonetDBEmbeddedException e) {
+            // ignore it
+        }
     }
 }

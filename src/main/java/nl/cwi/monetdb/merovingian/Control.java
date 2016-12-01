@@ -11,7 +11,7 @@ package nl.cwi.monetdb.merovingian;
 import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
 import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
 import nl.cwi.monetdb.mcl.connection.DeleteMe;
-import nl.cwi.monetdb.mcl.MCLException;
+import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
 import java.io.BufferedReader;

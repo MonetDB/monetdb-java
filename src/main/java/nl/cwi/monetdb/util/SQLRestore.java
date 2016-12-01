@@ -14,7 +14,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import nl.cwi.monetdb.mcl.MCLException;
+import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
 import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
 import nl.cwi.monetdb.mcl.connection.DeleteMe;

@@ -1,22 +1,18 @@
 package nl.cwi.monetdb.mcl.connection;
 
-import nl.cwi.monetdb.mcl.MCLException;
+import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.mcl.io.BufferedMCLReader;
 import nl.cwi.monetdb.mcl.io.BufferedMCLWriter;
 import nl.cwi.monetdb.mcl.io.SocketConnection;
-import nl.cwi.monetdb.mcl.io.SocketIOHandler;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
-import nl.cwi.monetdb.mcl.protocol.AbstractProtocolParser;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.oldmapi.OldMapiProtocol;
+import nl.cwi.monetdb.util.ChannelSecurity;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.SocketException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
 /**
@@ -69,26 +65,7 @@ import java.util.*;
  * @see BufferedMCLReader
  * @see BufferedMCLWriter
  */
-public class MapiConnection extends AbstractMonetDBConnection {
-
-    private static char hexChar(int n) { return (n > 9) ? (char) ('a' + (n - 10)) : (char) ('0' + n); }
-
-    /**
-     * Small helper method to convert a byte string to a hexadecimal
-     * string representation.
-     *
-     * @param digest the byte array to convert
-     * @return the byte array as hexadecimal string
-     */
-    private static String toHex(byte[] digest) {
-        char[] result = new char[digest.length * 2];
-        int pos = 0;
-        for (byte aDigest : digest) {
-            result[pos++] = hexChar((aDigest & 0xf0) >> 4);
-            result[pos++] = hexChar(aDigest & 0x0f);
-        }
-        return new String(result);
-    }
+public class MapiConnection extends MonetConnection {
 
     /** The hostname to connect to */
     protected final String hostname;
@@ -103,18 +80,10 @@ public class MapiConnection extends AbstractMonetDBConnection {
 
     protected OldMapiProtocol protocol;
 
-    public MapiConnection(String database, String hash, boolean debug, MonetDBLanguage lang, String hostname, int port) throws IOException {
-        super(database, hash, debug, lang);
+    public MapiConnection(String database, String hash, String language, boolean blobIsBinary, boolean isDebugging, String hostname, int port) throws IOException {
+        super(database, hash, language, blobIsBinary, isDebugging);
         this.hostname = hostname;
         this.port = port;
-    }
-
-    public String getHostname() {
-        return hostname;
-    }
-
-    public int getPort() {
-        return port;
     }
 
     /**
@@ -156,76 +125,82 @@ public class MapiConnection extends AbstractMonetDBConnection {
     }
 
     @Override
+    public int getBlockSize() {
+        return protocol.getConnection().getBlockSize();
+    }
+
+    @Override
+    public int getSoTimeout() throws SocketException {
+        return protocol.getConnection().getSoTimeout();
+    }
+
+    @Override
+    public void setSoTimeout(int s) throws SocketException {
+        protocol.getConnection().setSoTimeout(s);
+    }
+
+    @Override
+    public void closeUnderlyingConnection() throws IOException {
+        protocol.getConnection().close();
+    }
+
+    @Override
     public String getJDBCURL() {
         String language = "";
         if (this.getCurrentMonetDBLanguage() == MonetDBLanguage.LANG_MAL)
             language = "?language=mal";
-        return "jdbc:monetdb://" + this.getHostname() + ":" + this.getPort() + "/" + this.getDatabase() + language;
+        return "jdbc:monetdb://" + this.hostname + ":" + this.port + "/" + this.database + language;
     }
 
     @Override
-    public void close() {
-        super.close();
-        try {
-            protocol.getHandler().getConnection().close();
-        } catch (IOException e) {
-            // ignore it
-        }
+    public List<String> connect(String user, String pass) throws IOException, MCLParseException, MCLException {
+        // Wrap around the internal connect that needs to know if it
+        // should really make a TCP connection or not.
+        List<String> res = connect(this.hostname, this.port, user, pass, true);
+        // apply NetworkTimeout value from legacy (pre 4.1) driver
+        // so_timeout calls
+        this.setSoTimeout(this.getSoTimeout());
+        return res;
     }
 
-    public int getBlockSize() {
-        return protocol.getHandler().getConnection().getBlockSize();
-    }
-
-    public int getSoTimeout() throws SocketException {
-        return protocol.getHandler().getConnection().getSoTimeout();
-    }
-
-    public void setSoTimeout(int s) throws SocketException {
-        protocol.getHandler().getConnection().setSoTimeout(s);
-    }
-
-    @Override
-    public AbstractProtocolParser getUnderlyingProtocol() {
-        return protocol;
-    }
-
-    private List<String> connect(String user, String pass, boolean makeConnection) throws IOException, MCLParseException, MCLException {
+    private List<String> connect(String host, int port, String user, String pass, boolean makeConnection) throws IOException, MCLParseException, MCLException {
         if (ttl-- <= 0)
             throw new MCLException("Maximum number of redirects reached, aborting connection attempt.  Sorry.");
 
         if (makeConnection) {
             this.protocol = new OldMapiProtocol(new SocketConnection(this.hostname, this.port));
+            this.protocol.getConnection().setTcpNoDelay(true);
+
             // set nodelay, as it greatly speeds up small messages (like we
             // often do)
-            this.protocol.getHandler().getConnection().setTcpNoDelay(true);
-            //TODO writer.registerReader(reader);
+            //TODO writer.registerReader(reader); ??
         }
 
-        ServerResponses nextResponse;
+        this.protocol.getNextResponseHeader();
+        String test = this.getChallengeResponse(this.protocol.getEntireResponseLine(), user, pass,
+                this.currentMonetDBLanguage.getRepresentation(), this.database, this.hash);
+        this.protocol.writeNextLine(test.getBytes());
 
-        String test = getChallengeResponse(user, pass, language, database, hash);
-
-        writer.writeLine();
-
-        // read monet response till prompt
         List<String> redirects = new ArrayList<>();
         List<String> warns = new ArrayList<>();
-        String err = "", tmp;
-        int lineType;
+        String err = "";
+        ServerResponses next;
+
         do {
-            if ((tmp = reader.readLine()) == null)
-                throw new IOException("Read from " + this.getHostname() + ":" + this.getPort() + ": End of stream reached");
-            if ((lineType = reader.getLineType()) == BufferedMCLReader.ERROR) {
-                err += "\n" + tmp.substring(7);
-            } else if (lineType == BufferedMCLReader.INFO) {
-                warns.add(tmp.substring(1));
-            } else if (lineType == BufferedMCLReader.REDIRECT) {
-                redirects.add(tmp.substring(1));
+            next = this.protocol.getNextResponseHeader();
+            switch (next) {
+                case ERROR:
+                    err += "\n" + this.protocol.getRemainingResponseLine(0);
+                    break;
+                case INFO:
+                    warns.add(this.protocol.getRemainingResponseLine(0));
+                case REDIRECT:
+                    redirects.add(this.protocol.getRemainingResponseLine(0));
             }
-        } while (lineType != BufferedMCLReader.PROMPT);
+        } while (next != ServerResponses.PROMPT);
+
         if (!err.equals("")) {
-            close();
+            this.close();
             throw new MCLException(err.trim());
         }
         if (!redirects.isEmpty()) {
@@ -250,7 +225,7 @@ public class MapiConnection extends AbstractMonetDBConnection {
                     throw new MCLParseException(e.toString());
                 }
 
-                tmp = u.getQuery();
+                String tmp = u.getQuery();
                 if (tmp != null) {
                     String args[] = tmp.split("&");
                     for (String arg : args) {
@@ -261,15 +236,14 @@ public class MapiConnection extends AbstractMonetDBConnection {
                                 case "database":
                                     tmp = arg.substring(pos + 1);
                                     if (!tmp.equals(database)) {
-                                        warns.add("redirect points to different " +
-                                                "database: " + tmp);
-                                        setDatabase(tmp);
+                                        warns.add("redirect points to different " + "database: " + tmp);
+                                        this.database = tmp;
                                     }
                                     break;
                                 case "language":
                                     tmp = arg.substring(pos + 1);
                                     warns.add("redirect specifies use of different language: " + tmp);
-                                    setLanguage(tmp);
+                                     this.currentMonetDBLanguage = MonetDBLanguage.GetLanguageFromString(tmp);
                                     break;
                                 case "user":
                                     tmp = arg.substring(pos + 1);
@@ -296,20 +270,19 @@ public class MapiConnection extends AbstractMonetDBConnection {
                         // this is a redirect to another (monetdb) server,
                         // which means a full reconnect
                         // avoid the debug log being closed
-                        if (debug) {
-                            debug = false;
-                            close();
-                            debug = true;
+                        if (this.isDebugging) {
+                            this.isDebugging = false;
+                            this.close();
+                            this.isDebugging = true;
                         } else {
-                            close();
+                            this.close();
                         }
                         tmp = u.getPath();
                         if (tmp != null && tmp.length() != 0) {
                             tmp = tmp.substring(1).trim();
                             if (!tmp.isEmpty() && !tmp.equals(database)) {
-                                warns.add("redirect points to different " +
-                                        "database: " + tmp);
-                                setDatabase(tmp);
+                                warns.add("redirect points to different " + "database: " + tmp);
+                                this.database = tmp;
                             }
                         }
                         int p = u.getPort();
@@ -335,17 +308,6 @@ public class MapiConnection extends AbstractMonetDBConnection {
         return warns;
     }
 
-    @Override
-    public List<String> connect(String user, String pass) throws IOException, MCLParseException, MCLException {
-        // Wrap around the internal connect that needs to know if it
-        // should really make a TCP connection or not.
-        List<String> res = connect(user, pass, true);
-        // apply NetworkTimeout value from legacy (pre 4.1) driver
-        // so_timeout calls
-        this.setSoTimeout(this.getSoTimeout());
-        return res;
-    }
-
     /**
      * A little helper function that processes a challenge string, and
      * returns a response string for the server.  If the challenge
@@ -359,7 +321,7 @@ public class MapiConnection extends AbstractMonetDBConnection {
      * @param hash the hash method(s) to use, or NULL for all supported
      *             hashes
      */
-    private String getChallengeResponse(String username, String password, String language, String database, String hash)
+    private String getChallengeResponse(String chalstr, String username, String password, String language, String database, String hash)
             throws MCLParseException, MCLException, IOException {
         String response;
         String algo;
@@ -409,14 +371,7 @@ public class MapiConnection extends AbstractMonetDBConnection {
                         throw new MCLException("Unsupported password hash: " + chaltok[5]);
                 }
 
-                try {
-                    MessageDigest md = MessageDigest.getInstance(algo);
-                    md.update(password.getBytes("UTF-8"));
-                    byte[] digest = md.digest();
-                    password = toHex(digest);
-                } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-                    throw new AssertionError("internal error: " + e.toString());
-                }
+                password = ChannelSecurity.DigestStrings(algo, password);
 
                 // proto 7 (finally) used the challenge and works with a
                 // password hash.  The supported implementations come
@@ -454,17 +409,11 @@ public class MapiConnection extends AbstractMonetDBConnection {
                     algo = "MD5";
                     pwhash = "{MD5}";
                 } else {
-                    throw new MCLException("no supported password hashes in " + hashes);
+                    throw new MCLException("No supported password hashes in " + hashes);
                 }
-                try {
-                    MessageDigest md = MessageDigest.getInstance(algo);
-                    md.update(password.getBytes("UTF-8"));
-                    md.update(challenge.getBytes("UTF-8"));
-                    byte[] digest = md.digest();
-                    pwhash += toHex(digest);
-                } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
-                    throw new AssertionError("internal error: " + e.toString());
-                }
+
+                pwhash += ChannelSecurity.DigestStrings(algo, password, challenge);
+
                 // TODO: some day when we need this, we should store
                 // this
                 switch (chaltok[4]) {
@@ -486,5 +435,4 @@ public class MapiConnection extends AbstractMonetDBConnection {
                 return response;
         }
     }
-
 }

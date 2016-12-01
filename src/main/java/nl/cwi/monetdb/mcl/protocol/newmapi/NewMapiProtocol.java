@@ -1,7 +1,6 @@
 package nl.cwi.monetdb.mcl.protocol.newmapi;
 
 import nl.cwi.monetdb.mcl.io.SocketConnection;
-import nl.cwi.monetdb.mcl.io.SocketIOHandler;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocolParser;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
@@ -12,10 +11,10 @@ import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
  */
 public class NewMapiProtocol extends AbstractProtocolParser {
 
-    private final SocketIOHandler handler;
+    private final SocketConnection connection;
 
     public NewMapiProtocol(SocketConnection con) {
-        this.handler = new SocketIOHandler(con);
+        this.connection = con;
     }
 
     @Override

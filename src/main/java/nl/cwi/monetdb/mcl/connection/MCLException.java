@@ -6,7 +6,7 @@
  * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl;
+package nl.cwi.monetdb.mcl.connection;
 
 /**
  * A general purpose Exception class for MCL related problems.  This

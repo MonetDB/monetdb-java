@@ -5,11 +5,11 @@ package nl.cwi.monetdb.mcl.protocol;
  */
 public abstract class AbstractProtocolParser {
 
-    private ServerResponses currentServerResponseHeader = ServerResponses.UNKNOWN;
+    protected ServerResponses currentServerResponseHeader = ServerResponses.UNKNOWN;
 
-    private StarterHeaders currentStarterHeader = StarterHeaders.Q_UNKNOWN;
+    protected StarterHeaders currentStarterHeader = StarterHeaders.Q_UNKNOWN;
 
-    private TableResultHeaders currentTableResultSetHeader = TableResultHeaders.UNKNOWN;
+    protected TableResultHeaders currentTableResultSetHeader = TableResultHeaders.UNKNOWN;
 
     public ServerResponses getCurrentServerResponseHeader() {
         return currentServerResponseHeader;
