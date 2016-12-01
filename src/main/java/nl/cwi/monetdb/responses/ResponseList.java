@@ -1,6 +1,7 @@
 package nl.cwi.monetdb.responses;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
+import nl.cwi.monetdb.mcl.connection.SendThread;
 import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
@@ -38,13 +39,12 @@ public class ResponseList {
     private final int seqnr;
     /** A list of the Responses associated with the query,
      *  in the right order */
-    private List<IResponse> responses;
+    private List<IResponse> responses = new ArrayList<>();
     /** A map of ResultSetResponses, used for additional
      *  DataBlockResponse mapping */
     private Map<Integer, ResultSetResponse> rsresponses;
-
     /** The current header returned by getNextResponse() */
-    private int curResponse;
+    private int curResponse = -1;
 
     /**
      * Main constructor.  The query argument can either be a String
@@ -61,9 +61,7 @@ public class ResponseList {
         this.maxrows = maxrows;
         this.rstype = rstype;
         this.rsconcur = rsconcur;
-        responses = new ArrayList<>();
-        curResponse = -1;
-        seqnr = SeqCounter++;
+        this.seqnr = SeqCounter++;
     }
 
     /**
@@ -107,14 +105,14 @@ public class ResponseList {
     /**
      * Closes the current response.
      */
-    void closeCurrentResponse() {
+    public void closeCurrentResponse() {
         closeResponse(curResponse);
     }
 
     /**
      * Closes the current and previous responses.
      */
-    void closeCurOldResponses() {
+    public void closeCurOldResponses() {
         for (int i = curResponse; i >= 0; i--) {
             closeResponse(i);
         }
@@ -134,7 +132,7 @@ public class ResponseList {
      * Returns whether this ResponseList has still unclosed
      * Responses.
      */
-    boolean hasUnclosedResponses() {
+    public boolean hasUnclosedResponses() {
         for (IResponse r : responses) {
             if (r != null)
                 return true;

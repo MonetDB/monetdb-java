@@ -206,7 +206,7 @@ public class ResultSetResponse implements IResponse {
      * @param offset the offset number of rows for this block
      * @param rr the DataBlockResponse to add
      */
-    void addDataBlockResponse(int offset, DataBlockResponse rr) {
+    public void addDataBlockResponse(int offset, DataBlockResponse rr) {
         int block = (offset - blockOffset) / cacheSize;
         resultBlocks[block] = rr;
     }
@@ -233,7 +233,7 @@ public class ResultSetResponse implements IResponse {
      *
      * @return the names of the columns
      */
-    String[] getNames() {
+    public String[] getNames() {
         return name;
     }
 
@@ -242,7 +242,7 @@ public class ResultSetResponse implements IResponse {
      *
      * @return the types of the columns
      */
-    String[] getTypes() {
+    public String[] getTypes() {
         return type;
     }
 
@@ -251,7 +251,7 @@ public class ResultSetResponse implements IResponse {
      *
      * @return the tables of the columns
      */
-    String[] getTableNames() {
+    public String[] getTableNames() {
         return tableNames;
     }
 
@@ -260,7 +260,7 @@ public class ResultSetResponse implements IResponse {
      *
      * @return the lengths of the columns
      */
-    int[] getColumnLengths() {
+    public int[] getColumnLengths() {
         return columnLengths;
     }
 
@@ -269,7 +269,7 @@ public class ResultSetResponse implements IResponse {
      *
      * @return the cache size
      */
-    int getCacheSize() {
+    public int getCacheSize() {
         return cacheSize;
     }
 
@@ -278,7 +278,7 @@ public class ResultSetResponse implements IResponse {
      *
      * @return the current block offset
      */
-    int getBlockOffset() {
+    public int getBlockOffset() {
         return blockOffset;
     }
 
@@ -287,7 +287,7 @@ public class ResultSetResponse implements IResponse {
      *
      * @return the ResultSet type
      */
-    int getRSType() {
+    public int getRSType() {
         return parent.rstype;
     }
 
@@ -296,7 +296,7 @@ public class ResultSetResponse implements IResponse {
      *
      * @return the ResultSet concurrency
      */
-    int getRSConcur() {
+    public int getRSConcur() {
         return parent.rsconcur;
     }
 
@@ -311,7 +311,7 @@ public class ResultSetResponse implements IResponse {
      *         is out of the scope of the result set
      * @throws SQLException if an database error occurs
      */
-    String getLine(int row) throws SQLException {
+    public String getLine(int row) throws SQLException {
         if (row >= tuplecount || row < 0)
             return null;
 
@@ -403,7 +403,7 @@ public class ResultSetResponse implements IResponse {
      *
      * @return whether this Response is closed
      */
-    boolean isClosed() {
+    public boolean isClosed() {
         return closed;
     }
 }

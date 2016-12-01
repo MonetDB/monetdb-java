@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.responses;
+package nl.cwi.monetdb.mcl.connection;
 
 import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
 
@@ -20,19 +20,21 @@ import java.util.concurrent.locks.ReentrantLock;
  * high.
  */
 public class SendThread extends Thread {
-    /** The state WAIT represents this thread to be waiting for
-     *  something to do */
-    private final static int WAIT = 0;
-    /** The state QUERY represents this thread to be executing a query */
-    private final static int QUERY = 1;
-    /** The state SHUTDOWN is the final state that ends this thread */
-    private final static int SHUTDOWN = -1;
+
+    private enum SendThreadStatus {
+        /** The state WAIT represents this thread to be waiting for something to do */
+        WAIT,
+        /** The state QUERY represents this thread to be executing a query */
+        QUERY,
+        /** The state SHUTDOWN is the final state that ends this thread */
+        SHUTDOWN
+    }
 
     private String[] templ;
     private String query;
     private AbstractMCLWriter out;
     private String error;
-    private int state = WAIT;
+    private SendThreadStatus state = SendThreadStatus.WAIT;
 
     private final Lock sendLock = new ReentrantLock();
     private final Condition queryAvailable = sendLock.newCondition();
@@ -56,14 +58,14 @@ public class SendThread extends Thread {
         sendLock.lock();
         try {
             while (true) {
-                while (state == WAIT) {
+                while (state == SendThreadStatus.WAIT) {
                     try {
                         queryAvailable.await();
                     } catch (InterruptedException e) {
                         // woken up, eh?
                     }
                 }
-                if (state == SHUTDOWN)
+                if (state == SendThreadStatus.SHUTDOWN)
                     break;
 
                 // state is QUERY here
@@ -75,7 +77,7 @@ public class SendThread extends Thread {
 
                 // update our state, and notify, maybe someone is waiting
                 // for us in throwErrors
-                state = WAIT;
+                state = SendThreadStatus.WAIT;
                 waiting.signal();
             }
         } finally {
@@ -95,14 +97,14 @@ public class SendThread extends Thread {
     public void runQuery(String[] templ, String query) throws SQLException {
         sendLock.lock();
         try {
-            if (state != WAIT)
+            if (state != SendThreadStatus.WAIT)
                 throw new SQLException("SendThread already in use or shutting down!", "M0M03");
 
             this.templ = templ;
             this.query = query;
 
             // let the thread know there is some work to do
-            state = QUERY;
+            state = SendThreadStatus.QUERY;
             queryAvailable.signal();
         } finally {
             sendLock.unlock();
@@ -118,14 +120,14 @@ public class SendThread extends Thread {
         sendLock.lock();
         try {
             // make sure the thread is in WAIT state, not QUERY
-            while (state == QUERY) {
+            while (state == SendThreadStatus.QUERY) {
                 try {
                     waiting.await();
                 } catch (InterruptedException e) {
                     // just try again
                 }
             }
-            if (state == SHUTDOWN)
+            if (state == SendThreadStatus.SHUTDOWN)
                 error = "SendThread is shutting down";
         } finally {
             sendLock.unlock();
@@ -138,7 +140,7 @@ public class SendThread extends Thread {
      */
     public void shutdown() {
         sendLock.lock();
-        state = SHUTDOWN;
+        state = SendThreadStatus.SHUTDOWN;
         sendLock.unlock();
         this.interrupt();  // break any wait conditions
     }

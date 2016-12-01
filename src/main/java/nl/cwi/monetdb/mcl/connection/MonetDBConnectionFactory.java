@@ -1,11 +1,11 @@
 package nl.cwi.monetdb.mcl.connection;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
+import nl.cwi.monetdb.jdbc.MonetDriver;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.SocketException;
 import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.List;
@@ -38,7 +38,7 @@ public final class MonetDBConnectionFactory {
             if (directory == null || directory.trim().isEmpty())
                 throw new IllegalArgumentException("directory should not be null or empty");
             try {
-                res = new EmbeddedMonetDB(database, hash, language, blobIsBinary, debug, directory);
+                res = new EmbeddedConnection(props, database, hash, language, blobIsBinary, debug, directory);
             } catch (IOException e) {
                 throw new SQLException(e);
             }
@@ -46,40 +46,60 @@ public final class MonetDBConnectionFactory {
             String hostname = props.getProperty("host");
             if (hostname == null || hostname.trim().isEmpty())
                 throw new IllegalArgumentException("hostname should not be null or empty");
-            int port = 0;
-            try {
-                port = Integer.parseInt(props.getProperty("port"));
-            } catch (NumberFormatException e) {
-            }
-            if (port <= 0)
-                throw new IllegalArgumentException("port should not be 0 or less");
             if (username == null || username.trim().isEmpty())
                 throw new IllegalArgumentException("user should not be null or empty");
             if (password == null || password.trim().isEmpty())
                 throw new IllegalArgumentException("password should not be null or empty");
 
+            String portout = props.getProperty("portout");
+            boolean negative1 = false;
+            boolean failedparse1 = false;
+            int port = 0;
             try {
-                res = new MapiConnection(database, hash, language, blobIsBinary, debug, hostname, port);
-            } catch (IOException e) {
-                throw new SQLException(e);
+                port = Integer.parseInt(props.getProperty("port"));
+            } catch (NumberFormatException e) {
+                failedparse1 = true;
+                props.setProperty("port", MonetDriver.getPORT());
             }
+            if (port <= 0) {
+                negative1 = true;
+                port = Integer.parseInt(MonetDriver.getPORT());
+                props.setProperty("port", MonetDriver.getPORT());
+            }
+
             String timout = props.getProperty("so_timeout", "0");
+            boolean negative2 = false;
+            boolean failedparse2 = false;
             try {
                 sockTimeout = Integer.parseInt(timout);
             } catch (NumberFormatException e) {
-                res.addWarning("Unable to parse socket timeout number from: " + timout, "M1M05");
+                failedparse2 = true;
+                props.setProperty("so_timeout", "0");
             }
             if (sockTimeout < 0) {
-                res.addWarning("Negative socket timeout not allowed. Value ignored", "M1M05");
+                negative2 = true;
                 sockTimeout = 0;
+                props.setProperty("so_timeout", "0");
             }
             try {
-                res.setSoTimeout(sockTimeout);
-            } catch (SocketException e) {
-                res.addWarning("The socket timeout could not be set", "M1M05");
+                res = new MapiConnection(props, database, hash, language, blobIsBinary, debug, hostname, port);
+            } catch (IOException e) {
+                throw new SQLException(e);
             }
+            if(failedparse1) {
+                res.addWarning("Unable to parse port number from: " + portout, "M1M05");
+            }
+            if(negative1) {
+                res.addWarning("Negative port not allowed. Value ignored", "M1M05");
+            }
+            if(failedparse2) {
+                res.addWarning("Unable to parse socket timeout number from: " + timout, "M1M05");
+            }
+            if(negative2) {
+                res.addWarning("Negative socket timeout not allowed. Value ignored", "M1M05");
+            }
+            res.setSoTimeout(sockTimeout);
         }
-
         //initialize the debugging stuff if so
         if (debug) {
             try {
@@ -100,25 +120,24 @@ public final class MonetDBConnectionFactory {
 
         try {
             List<String> warnings = res.connect(username, password);
-            for (String warning : warnings) {
-                res.addWarning(warning, "01M02");
+            if(warnings != null) {
+                for (String warning : warnings) {
+                    res.addWarning(warning, "01M02");
+                }
             }
-
             // apply NetworkTimeout value from legacy (pre 4.1) driver
             // so_timeout calls
             if(!isEmbedded) {
                 res.setSoTimeout(sockTimeout);
             }
-
-
-            in = server.getReader();
-            out = server.getWriter();
-
-            String error = in.waitForPrompt();
-            if (error != null)
-                throw new SQLException((error.length() > 6) ? error.substring(6) : error, "08001");
         } catch (IOException e) {
-            throw new SQLException("Unable to connect (" + hostname + ":" + port + "): " + e.getMessage(), "08006");
+            if(!isEmbedded) {
+                MapiConnection con = (MapiConnection) res;
+                throw new SQLException("Unable to connect (" + con.getHostname() + ":" + con.getPort() + "): " + e.getMessage(), "08006");
+            } else {
+                EmbeddedConnection em = (EmbeddedConnection) res;
+                throw new SQLException("Unable to connect the directory " + em.getDirectory() + ": " + e.getMessage(), "08006");
+            }
         } catch (MCLParseException e) {
             throw new SQLException(e.getMessage(), "08001");
         } catch (MCLException e) {
@@ -130,7 +149,8 @@ public final class MonetDBConnectionFactory {
             throw sqle;
         }
 
-        if (res.getCurrentMonetDBLanguage() == MonetDBLanguage.LANG_SQL) {
+        //set the timezone
+        if (res.getLanguage() == MonetDBLanguage.LANG_SQL) {
             // enable auto commit
             res.setAutoCommit(true);
 

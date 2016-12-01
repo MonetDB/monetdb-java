@@ -1,5 +1,6 @@
 package nl.cwi.monetdb.mcl.connection;
 
+import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedDatabase;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.jdbc.MonetConnection;
@@ -7,21 +8,29 @@ import nl.cwi.monetdb.mcl.io.*;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
 import java.io.*;
-import java.net.SocketException;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * Created by ferreira on 11/23/16.
  */
-public final class EmbeddedMonetDB extends MonetConnection {
+public final class EmbeddedConnection extends MonetConnection {
 
     private final String directory;
 
-    private InternalConnection connection;
+    private JDBCEmbeddedConnection internalConnection;
 
-    public EmbeddedMonetDB(String database, String hash, String language, boolean blobIsBinary, boolean isDebugging, String directory) throws IOException {
-        super(database, hash, language, blobIsBinary, isDebugging);
+    public EmbeddedConnection(Properties props, String database, String hash, String language, boolean blobIsBinary, boolean isDebugging, String directory) throws IOException {
+        super(props, database, hash, language, blobIsBinary, isDebugging);
         this.directory = directory;
+    }
+
+    public String getDirectory() {
+        return directory;
+    }
+
+    public MonetDBEmbeddedConnection getAsMonetDBEmbeddedConnection() {
+        return internalConnection;
     }
 
     @Override
@@ -32,7 +41,7 @@ public final class EmbeddedMonetDB extends MonetConnection {
             } else {
                 MonetDBEmbeddedDatabase.StartDatabase(this.directory, true, false);
             }
-            this.connection = MonetDBEmbeddedDatabase.AddJDBCEmbeddedConnection();
+            this.internalConnection = MonetDBEmbeddedDatabase.CreateJDBCEmbeddedConnection();
         } catch (MonetDBEmbeddedException ex) {
             throw new MCLException(ex);
         }
@@ -50,13 +59,14 @@ public final class EmbeddedMonetDB extends MonetConnection {
     }
 
     @Override
-    public int getSoTimeout() throws SocketException {
-        throw new SocketException("Cannot get a timeout on a embedded connection!");
+    public int getSoTimeout() {
+        this.addWarning("Cannot get a timeout on a embedded connection!", "M1M05");
+        return -1;
     }
 
     @Override
-    public void setSoTimeout(int s) throws SocketException {
-        throw new SocketException("Cannot set a timeout on a embedded connection!");
+    public void setSoTimeout(int s) {
+        this.addWarning("Cannot set a timeout on a embedded connection!", "M1M05");
     }
 
     @Override

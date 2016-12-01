@@ -80,10 +80,30 @@ public class MapiConnection extends MonetConnection {
 
     protected OldMapiProtocol protocol;
 
-    public MapiConnection(String database, String hash, String language, boolean blobIsBinary, boolean isDebugging, String hostname, int port) throws IOException {
-        super(database, hash, language, blobIsBinary, isDebugging);
+    public MapiConnection(Properties props, String database, String hash, String language, boolean blobIsBinary, boolean isDebugging, String hostname, int port) throws IOException {
+        super(props, database, hash, language, blobIsBinary, isDebugging);
         this.hostname = hostname;
         this.port = port;
+    }
+
+    public String getHostname() {
+        return hostname;
+    }
+
+    public int getPort() {
+        return port;
+    }
+
+    public boolean isFollowRedirects() {
+        return followRedirects;
+    }
+
+    public int getTtl() {
+        return ttl;
+    }
+
+    public int setProtocolVersion() {
+        return version;
     }
 
     /**
@@ -130,13 +150,22 @@ public class MapiConnection extends MonetConnection {
     }
 
     @Override
-    public int getSoTimeout() throws SocketException {
-        return protocol.getConnection().getSoTimeout();
+    public int getSoTimeout()  {
+        try {
+            return protocol.getConnection().getSoTimeout();
+        } catch (SocketException e) {
+            this.addWarning("The socket timeout could not be get", "M1M05");
+        }
+        return -1;
     }
 
     @Override
-    public void setSoTimeout(int s) throws SocketException {
-        protocol.getConnection().setSoTimeout(s);
+    public void setSoTimeout(int s)  {
+        try {
+            protocol.getConnection().setSoTimeout(s);
+        } catch (SocketException e) {
+            this.addWarning("The socket timeout could not be set", "M1M05");
+        }
     }
 
     @Override
@@ -147,7 +176,7 @@ public class MapiConnection extends MonetConnection {
     @Override
     public String getJDBCURL() {
         String language = "";
-        if (this.getCurrentMonetDBLanguage() == MonetDBLanguage.LANG_MAL)
+        if (this.getLanguage() == MonetDBLanguage.LANG_MAL)
             language = "?language=mal";
         return "jdbc:monetdb://" + this.hostname + ":" + this.port + "/" + this.database + language;
     }
@@ -178,7 +207,7 @@ public class MapiConnection extends MonetConnection {
 
         this.protocol.getNextResponseHeader();
         String test = this.getChallengeResponse(this.protocol.getEntireResponseLine(), user, pass,
-                this.currentMonetDBLanguage.getRepresentation(), this.database, this.hash);
+                this.language.getRepresentation(), this.database, this.hash);
         this.protocol.writeNextLine(test.getBytes());
 
         List<String> redirects = new ArrayList<>();
@@ -243,7 +272,7 @@ public class MapiConnection extends MonetConnection {
                                 case "language":
                                     tmp = arg.substring(pos + 1);
                                     warns.add("redirect specifies use of different language: " + tmp);
-                                     this.currentMonetDBLanguage = MonetDBLanguage.GetLanguageFromString(tmp);
+                                     this.language = MonetDBLanguage.GetLanguageFromString(tmp);
                                     break;
                                 case "user":
                                     tmp = arg.substring(pos + 1);
@@ -431,6 +460,10 @@ public class MapiConnection extends MonetConnection {
                 response = "BIG:";	// JVM byte-order is big-endian
                 response += username + ":" + pwhash + ":" + language;
                 response += ":" + (database == null ? "" : database) + ":";
+
+                this.conn_props.setProperty("hash", hashes);
+                this.conn_props.setProperty("language", language);
+                this.conn_props.setProperty("database", database);
 
                 return response;
         }

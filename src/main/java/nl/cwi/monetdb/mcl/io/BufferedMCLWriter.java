@@ -8,8 +8,6 @@
 
 package nl.cwi.monetdb.mcl.io;
 
-import nl.cwi.monetdb.mcl.connection.DeleteMe;
-
 import java.io.*;
 
 /**
@@ -30,7 +28,6 @@ import java.io.*;
  * class client-oriented when a reader is registered.
  *
  * @author Fabian Groffen <Fabian.Groffen>
- * @see DeleteMe
  * @see BufferedMCLWriter
  */
 public class BufferedMCLWriter extends AbstractMCLWriter {

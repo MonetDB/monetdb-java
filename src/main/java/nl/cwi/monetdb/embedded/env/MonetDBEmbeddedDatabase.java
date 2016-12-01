@@ -8,8 +8,7 @@
 
 package nl.cwi.monetdb.embedded.env;
 
-import nl.cwi.monetdb.mcl.connection.EmbeddedMonetDB;
-import nl.cwi.monetdb.mcl.io.InternalConnection;
+import nl.cwi.monetdb.mcl.io.JDBCEmbeddedConnection;
 
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -115,7 +114,7 @@ public final class MonetDBEmbeddedDatabase {
         if(MonetDBEmbeddedDatabase == null) {
             throw new MonetDBEmbeddedException("The database is not running!");
         } else {
-            for(IEmbeddedConnection mdbec : MonetDBEmbeddedDatabase.connections.values()) {
+            for(MonetDBEmbeddedConnection mdbec : MonetDBEmbeddedDatabase.connections.values()) {
                 mdbec.closeConnectionImplementation();
             }
             MonetDBEmbeddedDatabase.connections.clear();
@@ -139,7 +138,7 @@ public final class MonetDBEmbeddedDatabase {
 
     private final boolean sequentialFlag;
 
-    private final ConcurrentHashMap<Long, IEmbeddedConnection> connections = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<Long, MonetDBEmbeddedConnection> connections = new ConcurrentHashMap<>();
 
     private MonetDBEmbeddedDatabase(String dbDirectory, boolean silentFlag, boolean sequentialFlag) {
         this.databaseDirectory = dbDirectory;
@@ -163,23 +162,13 @@ public final class MonetDBEmbeddedDatabase {
         }
     }
 
-    /*
-     * Creates a connection on the database, set on the default schema asynchronously.
-     *
-     * @return A MonetDBEmbeddedConnection instance
-     * @throws MonetDBEmbeddedException If the database is not running or an error in the database occurred
-     */
-    /*public CompletableFuture<MonetDBEmbeddedConnection> createConnectionAsync() throws MonetDBEmbeddedException {
-        return CompletableFuture.supplyAsync(() -> this.createConnectionInternal());
-    }*/
-
-    public static InternalConnection AddJDBCEmbeddedConnection() throws MonetDBEmbeddedException {
+    public static JDBCEmbeddedConnection CreateJDBCEmbeddedConnection() throws MonetDBEmbeddedException {
         if(MonetDBEmbeddedDatabase == null) {
             throw new MonetDBEmbeddedException("The database is not running!");
         } else {
-            InternalConnection res = MonetDBEmbeddedDatabase.createJDBCConnectionInternal();
-            MonetDBEmbeddedDatabase.connections.put(res.getConnectionPointer(), res);
-            return res;
+            JDBCEmbeddedConnection con = MonetDBEmbeddedDatabase.createJDBCEmbeddedConnectionInternal();
+            MonetDBEmbeddedDatabase.connections.put(con.getConnectionPointer(), con);
+            return con;
         }
     }
 
@@ -210,5 +199,5 @@ public final class MonetDBEmbeddedDatabase {
     /**
      * Internal implementation to create a JDBC embeddded connection on this database.
      */
-    private native InternalConnection createJDBCConnectionInternal() throws MonetDBEmbeddedException;
+    private native JDBCEmbeddedConnection createJDBCEmbeddedConnectionInternal() throws MonetDBEmbeddedException;
 }

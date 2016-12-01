@@ -10,6 +10,7 @@ package nl.cwi.monetdb.jdbc;
 
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 import nl.cwi.monetdb.mcl.parser.TupleLineParser;
+import nl.cwi.monetdb.responses.ResultSetResponse;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -76,7 +77,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 	// a blank final is immutable once assigned in the constructor
 	/** A Header to retrieve lines from */
-	private final MonetConnection.ResultSetResponse header;
+	private final ResultSetResponse header;
 	/** The names of the columns in this ResultSet */
 	private final String[] columns;
 	/** The MonetDB types of the columns in this ResultSet */
@@ -107,11 +108,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @param header a header containing the query, resultset type, etc.
 	 * @throws SQLException is a protocol error occurs
 	 */
-	MonetResultSet(
-		Statement statement,
-		MonetConnection.ResultSetResponse header)
-		throws SQLException
-	{
+	MonetResultSet(Statement statement, ResultSetResponse header) throws SQLException {
 		if (statement == null) {
 			throw new IllegalArgumentException("Statement may not be null!");
 		}
@@ -151,13 +148,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @param results the number of rows in the ResultSet
 	 * @throws IllegalArgumentException if communicating with monet failed
 	 */
-	MonetResultSet(
-		Statement statement,
-		String[] columns,
-		String[] types,
-		int results
-	) throws IllegalArgumentException
-	{
+	MonetResultSet(Statement statement, String[] columns, String[] types, int results) throws IllegalArgumentException {
 		if (statement == null) {
 			throw new IllegalArgumentException("Statement may not be null!");
 		}
@@ -1792,7 +1783,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * types. In the JDBC 2.0 API, the behavior of method getObject is extended
 	 * to materialize data of SQL user-defined types. When a column contains a
 	 * structured or distinct value, the behavior of this method is as if it
-	 * were a call to: getObject(columnIndex, this.getStatement().getConnection().getTypeMap()).
+	 * were a call to: getObject(columnIndex, this.getStatement().getInternalConnection().getTypeMap()).
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a java.lang.Object holding the column value or null
@@ -1964,7 +1955,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * If Connection.getTypeMap does not throw a SQLFeatureNotSupportedException, then
 	 * when a column contains a structured or distinct value, the behavior of this
 	 * method is as if it were a call to: getObject(columnIndex,
-	 * this.getStatement().getConnection().getTypeMap()).
+	 * this.getStatement().getInternalConnection().getTypeMap()).
 	 * If Connection.getTypeMap does throw a SQLFeatureNotSupportedException, then
 	 * structured values are not supported, and distinct values are mapped to the
 	 * default Java class as determined by the underlying SQL type of the DISTINCT type.

@@ -1,6 +1,6 @@
 package nl.cwi.monetdb.mcl.protocol.embedded;
 
-import nl.cwi.monetdb.mcl.io.InternalConnection;
+import nl.cwi.monetdb.mcl.io.JDBCEmbeddedConnection;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocolParser;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
@@ -11,9 +11,9 @@ import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
  */
 public class EmbeddedProtocol extends AbstractProtocolParser {
 
-    private final InternalConnection embeddedConnection;
+    private final JDBCEmbeddedConnection embeddedConnection;
 
-    public EmbeddedProtocol(InternalConnection embeddedConnection) {
+    public EmbeddedProtocol(JDBCEmbeddedConnection embeddedConnection) {
         this.embeddedConnection = embeddedConnection;
     }
 

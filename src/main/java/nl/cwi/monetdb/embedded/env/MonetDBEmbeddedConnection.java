@@ -22,9 +22,9 @@ import java.util.concurrent.ConcurrentHashMap;
  *
  * @author <a href="mailto:pedro.ferreira@monetdbsolutions.com">Pedro Ferreira</a>
  */
-public final class MonetDBEmbeddedConnection implements IEmbeddedConnection {
+public class MonetDBEmbeddedConnection {
 
-	private final long connectionPointer;
+	protected final long connectionPointer;
 
     private final ConcurrentHashMap<Long, AbstractConnectionResult> results = new ConcurrentHashMap<>();
 

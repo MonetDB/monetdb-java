@@ -280,7 +280,7 @@ public class MonetPreparedStatement
 	 *                      statement does not return a ResultSet object
 	 */
 	@Override
-	public ResultSet executeQuery() throws SQLException{
+	public ResultSet executeQuery() throws SQLException {
 		if (!execute())
 			throw new SQLException("Query did not produce a result set", "M1M19");
 
@@ -949,7 +949,7 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void setArray(int i, Array x) throws SQLException {
-		throw new SQLException("Operation setArray(int i, Array x) currently not supported!", "0A000");
+		throw newSQLFeatureNotSupportedException("setArray");
 	}
 
 	/**
@@ -1035,31 +1035,29 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setBigDecimal(int idx, BigDecimal x)
-	    throws SQLException
-	{
-	  // get array position
-	  int i = getParamIdx(idx);
+	public void setBigDecimal(int idx, BigDecimal x) throws SQLException {
+		// get array position
+		int i = getParamIdx(idx);
 
-	  // round to the scale of the DB:
-	  x = x.setScale(scale[i], RoundingMode.HALF_UP);
+		// round to the scale of the DB:
+		x = x.setScale(scale[i], RoundingMode.HALF_UP);
 
-	  // if precision is now greater than that of the db, throw an error:
-	  if (x.precision() > digits[i]) {
-	    throw new SQLDataException("DECIMAL value exceeds allowed digits/scale: " + x.toPlainString() + " (" + digits[i] + "/" + scale[i] + ")", "22003");
-	  }
+		// if precision is now greater than that of the db, throw an error:
+		if (x.precision() > digits[i]) {
+			throw new SQLDataException("DECIMAL value exceeds allowed digits/scale: " + x.toPlainString() + " (" + digits[i] + "/" + scale[i] + ")", "22003");
+		}
 
-	  // MonetDB doesn't like leading 0's, since it counts them as part of
-	  // the precision, so let's strip them off. (But be careful not to do
-	  // this to the exact number "0".)  Also strip off trailing
-	  // numbers that are inherent to the double representation.
-	  String xStr = x.toPlainString();
-	  int dot = xStr.indexOf('.');
-	  if (dot >= 0)
-	    xStr = xStr.substring(0, Math.min(xStr.length(), dot + 1 + scale[i]));
-	  while (xStr.startsWith("0") && xStr.length() > 1)
-	    xStr = xStr.substring(1);
-	  setValue(idx, xStr);
+		// MonetDB doesn't like leading 0's, since it counts them as part of
+		// the precision, so let's strip them off. (But be careful not to do
+		// this to the exact number "0".)  Also strip off trailing
+		// numbers that are inherent to the double representation.
+		String xStr = x.toPlainString();
+		int dot = xStr.indexOf('.');
+		if (dot >= 0)
+			xStr = xStr.substring(0, Math.min(xStr.length(), dot + 1 + scale[i]));
+		while (xStr.startsWith("0") && xStr.length() > 1)
+			xStr = xStr.substring(1);
+		setValue(idx, xStr);
 	}
 
 	/**

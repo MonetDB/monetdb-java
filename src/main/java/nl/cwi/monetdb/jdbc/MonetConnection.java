@@ -7,10 +7,9 @@ import nl.cwi.monetdb.mcl.connection.Debugger;
 import nl.cwi.monetdb.mcl.connection.MonetDBLanguage;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
 import nl.cwi.monetdb.responses.ResponseList;
-import nl.cwi.monetdb.responses.SendThread;
+import nl.cwi.monetdb.mcl.connection.SendThread;
 
 import java.io.*;
-import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.sql.*;
 import java.util.*;
@@ -38,16 +37,15 @@ import java.util.concurrent.Executor;
  * The current state of this connection is that it nearly implements the
  * whole Connection interface.
  *
- * @author Fabian Groffen
- * @version 1.2
+ * @author Martin van Dinther
+ * @version 1.3
  */
 public abstract class MonetConnection extends MonetWrapper implements Connection {
 
     /** the successful processed input properties */
-    private final Properties conn_props;
-
+    protected final Properties conn_props;
     /** The language to connect with */
-    protected MonetDBLanguage currentMonetDBLanguage = MonetDBLanguage.LANG_SQL;
+    protected MonetDBLanguage language;
     /** The database to connect to */
     protected String database;
     /** Authentication hash method */
@@ -96,17 +94,17 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         this.conn_props = props;
         this.database = database;
         this.hash = hash;
-        this.currentMonetDBLanguage = MonetDBLanguage.GetLanguageFromString(language);
+        this.language = MonetDBLanguage.GetLanguageFromString(language);
         this.blobIsBinary = blobIsBinary;
         this.isDebugging = isDebugging;
     }
 
-    public MonetDBLanguage getCurrentMonetDBLanguage() {
-        return currentMonetDBLanguage;
+    public MonetDBLanguage getLanguage() {
+        return language;
     }
 
-    public void setCurrentMonetDBLanguage(MonetDBLanguage currentMonetDBLanguage) {
-        this.currentMonetDBLanguage = currentMonetDBLanguage;
+    public void setLanguage(MonetDBLanguage language) {
+        this.language = language;
     }
 
     public void setDebugging(String filename) throws IOException {
@@ -129,9 +127,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
     public abstract int getBlockSize();
 
-    public abstract int getSoTimeout() throws SocketException;
+    public abstract int getSoTimeout();
 
-    public abstract void setSoTimeout(int s) throws SocketException;
+    public abstract void setSoTimeout(int s);
 
     public abstract void closeUnderlyingConnection() throws IOException;
 
@@ -227,44 +225,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Factory method for creating Array objects.
-     *
-     * Note: When createArrayOf is used to create an array object that
-     * maps to a primitive data type, then it is implementation-defined
-     * whether the Array object is an array of that primitive data type
-     * or an array of Object.
-     *
-     * Note: The JDBC driver is responsible for mapping the elements
-     * Object array to the default JDBC SQL type defined in
-     * java.sql.Types for the given class of Object. The default mapping
-     * is specified in Appendix B of the JDBC specification. If the
-     * resulting JDBC type is not the appropriate type for the given
-     * typeName then it is implementation defined whether an
-     * SQLException is thrown or the driver supports the resulting
-     * conversion.
-     *
-     * @param typeName the SQL name of the type the elements of the
-     *        array map to. The typeName is a database-specific name
-     *        which may be the name of a built-in type, a user-defined
-     *        type or a standard SQL type supported by this database.
-     *        This is the value returned by Array.getBaseTypeName
-     * @return an Array object whose elements map to the specified SQL
-     *         type
-     * @throws SQLException if a database error occurs, the JDBC type
-     *         is not appropriate for the typeName and the conversion is
-     *         not supported, the typeName is null or this method is
-     *         called on a closed connection
-     * @throws SQLFeatureNotSupportedException the JDBC driver does
-     *         not support this data type
-     *
-     * @since 1.6
-     */
-    @Override
-    public Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-        throw new SQLFeatureNotSupportedException("createArrayOf(String, Object[]) not supported", "0A000");
-    }
-
-    /**
      * Creates a Statement object for sending SQL statements to the
      * database.  SQL statements without parameters are normally
      * executed using Statement objects. If the same SQL statement is
@@ -341,88 +301,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Constructs an object that implements the Clob interface. The
-     * object returned initially contains no data. The setAsciiStream,
-     * setCharacterStream and setString methods of the Clob interface
-     * may be used to add data to the Clob.
-     *
-     * @return a MonetClob instance
-     * @throws SQLFeatureNotSupportedException the JDBC driver does
-     *         not support MonetClob objects that can be filled in
-     * @since 1.6
-     */
-    @Override
-    public Clob createClob() throws SQLException {
-        return new MonetClob("");
-    }
-
-    /**
-     * Constructs an object that implements the Blob interface. The
-     * object returned initially contains no data. The setBinaryStream
-     * and setBytes methods of the Blob interface may be used to add
-     * data to the Blob.
-     *
-     * @return a MonetBlob instance
-     * @throws SQLFeatureNotSupportedException the JDBC driver does
-     *         not support MonetBlob objects that can be filled in
-     */
-    @Override
-    public Blob createBlob() throws SQLException {
-        throw new SQLFeatureNotSupportedException("createBlob() not supported", "0A000");
-    }
-
-    /**
-     * Constructs an object that implements the NClob interface. The
-     * object returned initially contains no data. The setAsciiStream,
-     * setCharacterStream and setString methods of the NClob interface
-     * may be used to add data to the NClob.
-     *
-     * @return an NClob instance
-     * @throws SQLFeatureNotSupportedException the JDBC driver does
-     *         not support MonetClob objects that can be filled in
-     */
-    @Override
-    public NClob createNClob() throws SQLException {
-        throw new SQLFeatureNotSupportedException("createNClob() not supported", "0A000");
-    }
-
-    /**
-     * Factory method for creating Struct objects.
-     *
-     * @param typeName the SQL type name of the SQL structured type that
-     *        this Struct object maps to. The typeName is the name of a
-     *        user-defined type that has been defined for this database.
-     *        It is the value returned by Struct.getSQLTypeName.
-     * @param attributes the attributes that populate the returned
-     *        object
-     * @return a Struct object that maps to the given SQL type and is
-     *         populated with the given attributes
-     * @throws SQLException if a database error occurs, the typeName
-     *         is null or this method is called on a closed connection
-     * @throws SQLFeatureNotSupportedException the JDBC driver does
-     *         not support this data type
-     */
-    @Override
-    public Struct createStruct(String typeName, Object[] attributes) throws SQLException {
-        throw new SQLFeatureNotSupportedException("createStruct() not supported", "0A000");
-    }
-
-    /**
-     * Constructs an object that implements the SQLXML interface. The
-     * object returned initially contains no data. The
-     * createXmlStreamWriter object and setString method of the SQLXML
-     * interface may be used to add data to the SQLXML object.
-     *
-     * @return An object that implements the SQLXML interface
-     * @throws SQLFeatureNotSupportedException the JDBC driver does
-     *         not support this data type
-     */
-    @Override
-    public SQLXML createSQLXML() throws SQLException {
-        throw new SQLFeatureNotSupportedException("createSQLXML() not supported", "0A000");
-    }
-
-    /**
      * Retrieves the current auto-commit mode for this Connection
      * object.
      *
@@ -446,31 +324,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     public String getCatalog() throws SQLException {
         // MonetDB does NOT support catalogs
         return null;
-    }
-
-    /**
-     * Not implemented by MonetDB's JDBC driver.
-     *
-     * @param name The name of the client info property to retrieve
-     * @return The value of the client info property specified
-     */
-    @Override
-    public String getClientInfo(String name) {
-        // This method will also return null if the specified client
-        // info property name is not supported by the driver.
-        return null;
-    }
-
-    /**
-     * Not implemented by MonetDB's JDBC driver.
-     *
-     * @return A Properties object that contains the name and current
-     *         value of each of the client info properties supported by
-     *         the driver.
-     */
-    @Override
-    public Properties getClientInfo() {
-        return new Properties();
     }
 
     /**
@@ -500,7 +353,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        if (this.currentMonetDBLanguage != MonetDBLanguage.LANG_SQL) {
+        if (this.language != MonetDBLanguage.LANG_SQL) {
             throw new SQLException("This method is only supported in SQL mode", "M0M04");
         }
         return new MonetDatabaseMetaData(this);
@@ -587,49 +440,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     @Override
     public boolean isReadOnly() {
-        return false;
-    }
-
-    /**
-     * Returns true if the connection has not been closed and is still
-     * valid. The driver shall submit a query on the connection or use
-     * some other mechanism that positively verifies the connection is
-     * still valid when this method is called.
-     *
-     * The query submitted by the driver to validate the connection
-     * shall be executed in the context of the current transaction.
-     *
-     * @param timeout The time in seconds to wait for the database
-     *        operation used to validate the connection to complete. If
-     *        the timeout period expires before the operation completes,
-     *        this method returns false. A value of 0 indicates a
-     *        timeout is not applied to the database operation.
-     * @return true if the connection is valid, false otherwise
-     * @throws SQLException if the value supplied for timeout is less
-     *         than 0
-     */
-    @Override
-    public boolean isValid(int timeout) throws SQLException {
-        if (timeout < 0)
-            throw new SQLException("timeout is less than 0", "M1M05");
-        if (closed)
-            return false;
-        // ping db using select 1;
-        Statement stmt = null;
-        try {
-            stmt = createStatement();
-            // the timeout parameter is ignored here, since
-            // MonetStatement.setQueryTimeout(timeout) is not supported.
-            stmt.executeQuery("SELECT 1");
-            stmt.close();
-            return true;
-        } catch (Exception e) {
-            if (stmt != null) {
-                try {
-                    stmt.close();
-                } catch (Exception e2) {}
-            }
-        }
         return false;
     }
 
@@ -916,31 +726,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Not implemented by MonetDB's JDBC driver.
-     *
-     * @param name The name of the client info property to set
-     * @param value The value to set the client info property to. If the
-     *        value is null, the current value of the specified property
-     *        is cleared.
-     */
-    @Override
-    public void setClientInfo(String name, String value) {
-        addWarning("clientInfo: " + name + "is not a recognised property", "01M07");
-    }
-
-    /**
-     * Not implemented by MonetDB's JDBC driver.
-     *
-     * @param props The list of client info properties to set
-     */
-    @Override
-    public void setClientInfo(Properties props) {
-        for (Map.Entry<Object, Object> entry : props.entrySet()) {
-            setClientInfo(entry.getKey().toString(), entry.getValue().toString());
-        }
-    }
-
-    /**
      * Changes the default holdability of ResultSet objects created using this
      * Connection object to the given holdability. The default holdability of
      * ResultSet objects can be be determined by invoking DatabaseMetaData.getResultSetHoldability().
@@ -1046,7 +831,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     @Override
     public void setTransactionIsolation(int level) {
         if (level != TRANSACTION_SERIALIZABLE) {
-            addWarning("MonetDB only supports fully serializable " + "transactions, continuing with transaction level " +
+            addWarning("MonetDB only supports fully serializable " +
+                    "transactions, continuing with transaction level " +
                     "raised to TRANSACTION_SERIALIZABLE", "01M09");
         }
     }
@@ -1065,8 +851,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Returns a string identifying this Connection to the MonetDB
-     * server.
+     * Returns a string identifying this Connection to the MonetDB server.
      *
      * @return a String representing this Object
      */
@@ -1075,7 +860,325 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         return "MonetDB Connection (" + this.getJDBCURL() + ") " + (closed ? "connected" : "disconnected");
     }
 
-    //== 1.7 methods (JDBC 4.1)
+    //== Java 1.6 methods (JDBC 4.0)
+
+    /**
+     * Factory method for creating Array objects.
+     *
+     * Note: When createArrayOf is used to create an array object that
+     * maps to a primitive data type, then it is implementation-defined
+     * whether the Array object is an array of that primitive data type
+     * or an array of Object.
+     *
+     * Note: The JDBC driver is responsible for mapping the elements
+     * Object array to the default JDBC SQL type defined in
+     * java.sql.Types for the given class of Object. The default mapping
+     * is specified in Appendix B of the JDBC specification. If the
+     * resulting JDBC type is not the appropriate type for the given
+     * typeName then it is implementation defined whether an
+     * SQLException is thrown or the driver supports the resulting conversion.
+     *
+     * @param typeName the SQL name of the type the elements of the
+     *        array map to. The typeName is a database-specific name
+     *        which may be the name of a built-in type, a user-defined
+     *        type or a standard SQL type supported by this database.
+     *        This is the value returned by Array.getBaseTypeName
+     * @return an Array object whose elements map to the specified SQL type
+     * @throws SQLException if a database error occurs, the JDBC type
+     *         is not appropriate for the typeName and the conversion is
+     *         not supported, the typeName is null or this method is
+     *         called on a closed connection
+     * @throws SQLFeatureNotSupportedException the JDBC driver does
+     *         not support this data type
+     * @since 1.6
+     */
+    @Override
+    public java.sql.Array createArrayOf(String typeName, Object[] elements)
+            throws SQLException
+    {
+        throw new SQLFeatureNotSupportedException("createArrayOf() not supported", "0A000");
+    }
+
+    /**
+     * Constructs an object that implements the Clob interface. The
+     * object returned initially contains no data. The setAsciiStream,
+     * setCharacterStream and setString methods of the Clob interface
+     * may be used to add data to the Clob.
+     *
+     * @return a MonetClob instance
+     * @throws SQLFeatureNotSupportedException the JDBC driver does
+     *         not support MonetClob objects that can be filled in
+     * @since 1.6
+     */
+    @Override
+    public java.sql.Clob createClob() throws SQLException {
+        return new MonetClob("");
+    }
+
+    /**
+     * Constructs an object that implements the Blob interface. The
+     * object returned initially contains no data. The setBinaryStream
+     * and setBytes methods of the Blob interface may be used to add
+     * data to the Blob.
+     *
+     * @return a MonetBlob instance
+     * @throws SQLFeatureNotSupportedException the JDBC driver does
+     *         not support MonetBlob objects that can be filled in
+     * @since 1.6
+     */
+    @Override
+    public java.sql.Blob createBlob() throws SQLException {
+        byte[] buf = new byte[1];
+        return new MonetBlob(buf);
+    }
+
+    /**
+     * Constructs an object that implements the NClob interface. The
+     * object returned initially contains no data. The setAsciiStream,
+     * setCharacterStream and setString methods of the NClob interface
+     * may be used to add data to the NClob.
+     *
+     * @return an NClob instance
+     * @throws SQLFeatureNotSupportedException the JDBC driver does
+     *         not support MonetNClob objects that can be filled in
+     * @since 1.6
+     */
+    @Override
+    public java.sql.NClob createNClob() throws SQLException {
+        throw new SQLFeatureNotSupportedException("createNClob() not supported", "0A000");
+    }
+
+    /**
+     * Factory method for creating Struct objects.
+     *
+     * @param typeName the SQL type name of the SQL structured type that
+     *        this Struct object maps to. The typeName is the name of a
+     *        user-defined type that has been defined for this database.
+     *        It is the value returned by Struct.getSQLTypeName.
+     * @param attributes the attributes that populate the returned object
+     * @return a Struct object that maps to the given SQL type and is
+     *         populated with the given attributes
+     * @throws SQLException if a database error occurs, the typeName
+     *         is null or this method is called on a closed connection
+     * @throws SQLFeatureNotSupportedException the JDBC driver does
+     *         not support this data type
+     * @since 1.6
+     */
+    @Override
+    public java.sql.Struct createStruct(String typeName, Object[] attributes)
+            throws SQLException
+    {
+        throw new SQLFeatureNotSupportedException("createStruct() not supported", "0A000");
+    }
+
+    /**
+     * Constructs an object that implements the SQLXML interface. The
+     * object returned initially contains no data. The
+     * createXmlStreamWriter object and setString method of the SQLXML
+     * interface may be used to add data to the SQLXML object.
+     *
+     * @return An object that implements the SQLXML interface
+     * @throws SQLFeatureNotSupportedException the JDBC driver does
+     *         not support this data type
+     * @since 1.6
+     */
+    @Override
+    public java.sql.SQLXML createSQLXML() throws SQLException {
+        throw new SQLFeatureNotSupportedException("createSQLXML() not supported", "0A000");
+    }
+
+    /**
+     * Returns true if the connection has not been closed and is still
+     * valid. The driver shall submit a query on the connection or use
+     * some other mechanism that positively verifies the connection is
+     * still valid when this method is called.
+     *
+     * The query submitted by the driver to validate the connection
+     * shall be executed in the context of the current transaction.
+     *
+     * @param timeout The time in seconds to wait for the database
+     *        operation used to validate the connection to complete. If
+     *        the timeout period expires before the operation completes,
+     *        this method returns false. A value of 0 indicates a
+     *        timeout is not applied to the database operation.
+     * @return true if the connection is valid, false otherwise
+     * @throws SQLException if the value supplied for timeout is less than 0
+     * @since 1.6
+     */
+    @Override
+    public boolean isValid(int timeout) throws SQLException {
+        if (timeout < 0)
+            throw new SQLException("timeout is less than 0", "M1M05");
+        if (closed)
+            return false;
+
+        // ping db using query: select 1;
+        Statement stmt = null;
+        ResultSet rs = null;
+        try {
+            stmt = createStatement();
+            stmt.setQueryTimeout(timeout);
+            rs = stmt.executeQuery("SELECT 1");
+            rs.close();
+            rs = null;
+            stmt.close();
+            return true;
+        } catch (Exception e) {
+            if (rs != null) {
+                try {
+                    rs.close();
+                } catch (Exception e2) {}
+            }
+            if (stmt != null) {
+                try {
+                    stmt.close();
+                } catch (Exception e2) {}
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Returns the value of the client info property specified by name.
+     * This method may return null if the specified client info property
+     * has not been set and does not have a default value.
+     * This method will also return null if the specified client info
+     * property name is not supported by the driver.
+     * Applications may use the DatabaseMetaData.getClientInfoProperties method
+     * to determine the client info properties supported by the driver.
+     *
+     * @param name - The name of the client info property to retrieve
+     * @return The value of the client info property specified or null
+     * @throws SQLException - if the database server returns an error
+     *	when fetching the client info value from the database
+     *	or this method is called on a closed connection
+     * @since 1.6
+     */
+    @Override
+    public String getClientInfo(String name) throws SQLException {
+        if (name == null || name.isEmpty())
+            return null;
+        return conn_props.getProperty(name);
+    }
+
+    /**
+     * Returns a list containing the name and current value of each client info
+     * property supported by the driver. The value of a client info property may
+     * be null if the property has not been set and does not have a default value.
+     *
+     * @return A Properties object that contains the name and current value
+     *         of each of the client info properties supported by the driver.
+     * @throws SQLException - if the database server returns an error
+     *	when fetching the client info value from the database
+     *	or this method is called on a closed connection
+     * @since 1.6
+     */
+    @Override
+    public Properties getClientInfo() throws SQLException {
+        // return a clone of the connection properties object
+        return new Properties(conn_props);
+    }
+
+
+    /**
+     * Sets the value of the client info property specified by name to the value specified by value.
+     * Applications may use the DatabaseMetaData.getClientInfoProperties method to determine
+     * the client info properties supported by the driver and the maximum length that may be specified
+     * for each property.
+     *
+     * The driver stores the value specified in a suitable location in the database. For example
+     * in a special register, session parameter, or system table column. For efficiency the driver
+     * may defer setting the value in the database until the next time a statement is executed
+     * or prepared. Other than storing the client information in the appropriate place in the
+     * database, these methods shall not alter the behavior of the connection in anyway.
+     * The values supplied to these methods are used for accounting, diagnostics and debugging purposes only.
+     *
+     * The driver shall generate a warning if the client info name specified is not recognized by the driver.
+     *
+     * If the value specified to this method is greater than the maximum length for the property
+     * the driver may either truncate the value and generate a warning or generate a SQLClientInfoException.
+     * If the driver generates a SQLClientInfoException, the value specified was not set on the connection.
+     *
+     * The following are standard client info properties. Drivers are not required to support these
+     * properties however if the driver supports a client info property that can be described by one
+     * of the standard properties, the standard property name should be used.
+     *
+     *	ApplicationName - The name of the application currently utilizing the connection
+     *	ClientUser - The name of the user that the application using the connection is performing work for.
+     *		This may not be the same as the user name that was used in establishing the connection.
+     *	ClientHostname - The hostname of the computer the application using the connection is running on.
+     *
+     * @param name - The name of the client info property to set
+     * @param value - The value to set the client info property to. If the
+     *        value is null, the current value of the specified property is cleared.
+     * @throws SQLClientInfoException - if the database server returns an error
+     *         while setting the clientInfo values on the database server
+     *         or this method is called on a closed connection
+     * @since 1.6
+     */
+    @Override
+    public void setClientInfo(String name, String value) throws java.sql.SQLClientInfoException {
+        if (name == null || name.isEmpty()) {
+            addWarning("setClientInfo: missing property name", "01M07");
+            return;
+        }
+        // If the value is null, the current value of the specified property is cleared.
+        if (value == null) {
+            if (conn_props.containsKey(name))
+                conn_props.remove(name);
+            return;
+        }
+        // only set value for supported property names
+        if (name.equals("host") ||
+                name.equals("port") ||
+                name.equals("user") ||
+                name.equals("password") ||
+                name.equals("database") ||
+                name.equals("language") ||
+                name.equals("so_timeout") ||
+                name.equals("debug") ||
+                name.equals("hash") ||
+                name.equals("treat_blob_as_binary")) {
+            conn_props.setProperty(name, value);
+        } else {
+            addWarning("setClientInfo: " + name + "is not a recognised property", "01M07");
+        }
+    }
+
+    /**
+     * Sets the value of the connection's client info properties.
+     * The Properties object contains the names and values of the client info
+     * properties to be set. The set of client info properties contained in the
+     * properties list replaces the current set of client info properties on the connection.
+     * If a property that is currently set on the connection is not present in the
+     * properties list, that property is cleared. Specifying an empty properties list
+     * will clear all of the properties on the connection.
+     * See setClientInfo (String, String) for more information.
+     *
+     * If an error occurs in setting any of the client info properties, a
+     * SQLClientInfoException is thrown. The SQLClientInfoException contains information
+     * indicating which client info properties were not set. The state of the client
+     * information is unknown because some databases do not allow multiple client info
+     * properties to be set atomically. For those databases, one or more properties may
+     * have been set before the error occurred.
+     *
+     * @param props - The list of client info properties to set
+     * @throws SQLClientInfoException - if the database server returns an error
+     *	while setting the clientInfo values on the database server
+     *	or this method is called on a closed connection
+     * @since 1.6
+     */
+    @Override
+    public void setClientInfo(Properties props) throws java.sql.SQLClientInfoException {
+        if (props != null) {
+            for (Map.Entry<Object, Object> entry : props.entrySet()) {
+                setClientInfo(entry.getKey().toString(),
+                        entry.getValue().toString());
+            }
+        }
+    }
+
+    //== Java 1.7 methods (JDBC 4.1)
 
     /**
      * Sets the given schema name to access.
@@ -1083,14 +1186,20 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * @param schema the name of a schema in which to work
      * @throws SQLException if a database access error occurs or this
      *         method is called on a closed connection
+     * @since 1.7
      */
     @Override
     public void setSchema(String schema) throws SQLException {
-        if (closed) {
+        if (closed)
             throw new SQLException("Cannot call on closed Connection", "M1M20");
-        }
-        if (schema != null) {
-            createStatement().execute("SET SCHEMA \"" + schema + "\"");
+        if (schema == null)
+            throw new SQLException("Missing schema name", "M1M05");
+
+        Statement st = createStatement();
+        try {
+            st.execute("SET SCHEMA \"" + schema + "\"");
+        } finally {
+            st.close();
         }
     }
 
@@ -1178,11 +1287,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
             throw new SQLException("executor is null", "M1M05");
         if (millis < 0)
             throw new SQLException("milliseconds is less than zero", "M1M05");
-        try {
-            this.setSoTimeout(millis);
-        } catch (SocketException e) {
-            throw new SQLException(e.getMessage(), "08000");
-        }
+        this.setSoTimeout(millis);
     }
 
     /**
@@ -1200,11 +1305,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         if (closed) {
             throw new SQLException("Cannot call on closed Connection", "M1M20");
         }
-        try {
-            return this.getSoTimeout();
-        } catch (SocketException e) {
-            throw new SQLException(e.getMessage(), "08000");
-        }
+        return this.getSoTimeout();
     }
 
     //== end methods of interface Connection
@@ -1228,11 +1329,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     public void sendIndependentCommand(String command) throws SQLException {
         synchronized (this) {
             try {
-                out.writeLine(server.getQueryTemplateHeader(0) + command + server.getQueryTemplateHeader(1));
+                out.writeLine(language.getQueryTemplateIndex(0) + command + language.getQueryTemplateIndex(1));
                 String error = in.waitForPrompt();
                 if (error != null)
-                    throw new SQLException(error.substring(6),
-                            error.substring(0, 5));
+                    throw new SQLException(error.substring(6), error.substring(0, 5));
             } catch (SocketTimeoutException e) {
                 close(); // JDBC 4.1 semantics: abort()
                 throw new SQLException("connection timed out", "08M33");
@@ -1255,11 +1355,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         // send X command
         synchronized (this) {
             try {
-                out.writeLine(server.getCommandTemplateHeader(0) + command + server.getCommandTemplateHeader(1));
+                out.writeLine(language.getCommandTemplateIndex(0) + command + language.getCommandTemplateIndex(1));
                 String error = in.waitForPrompt();
                 if (error != null)
-                    throw new SQLException(error.substring(6),
-                            error.substring(0, 5));
+                    throw new SQLException(error.substring(6), error.substring(0, 5));
             } catch (SocketTimeoutException e) {
                 close(); // JDBC 4.1 semantics, abort()
                 throw new SQLException("connection timed out", "08M33");

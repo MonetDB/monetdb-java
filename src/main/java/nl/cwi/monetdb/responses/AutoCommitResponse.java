@@ -6,6 +6,7 @@ package nl.cwi.monetdb.responses;
  * <tt>&amp;4 (t|f)</tt>
  */
 public class AutoCommitResponse extends SchemaResponse {
+
     public final boolean autocommit;
 
     public AutoCommitResponse(boolean ac) {
