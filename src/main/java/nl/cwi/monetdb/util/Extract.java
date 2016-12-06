@@ -27,8 +27,6 @@ import java.io.InputStreamReader;
 public class Extract {
 	private static final int DEFAULT_BUFSIZE = 16386;
 
-    public Extract() {}
-
     /**
      * Extracts a file from the Jar package which includes this class to
      * the given destination
@@ -40,17 +38,14 @@ public class Extract {
      * @throws IOException If any error happens during
      * creating/reading/writing files.
      */
-	public static void extractFile(String fromFile, String toFile)
-		throws FileNotFoundException, IOException
-	{
+	public static void extractFile(String fromFile, String toFile) throws FileNotFoundException, IOException {
 		char[] cbuf = new char[DEFAULT_BUFSIZE];
 		int ret;
 
 		InputStream is = Extract.class.getResourceAsStream(fromFile);
 
 		if(is == null) {
-			throw new FileNotFoundException("File " + fromFile +
-					" does not exist in the JAR package.");
+			throw new FileNotFoundException("File " + fromFile + " does not exist in the JAR package.");
 		}
 
 		BufferedReader reader = new BufferedReader(new InputStreamReader(is));

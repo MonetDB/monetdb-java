@@ -1,7 +1,6 @@
 package nl.cwi.monetdb.mcl.protocol;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
 import nl.cwi.monetdb.mcl.responses.AutoCommitResponse;
 import nl.cwi.monetdb.mcl.responses.SchemaResponse;
 import nl.cwi.monetdb.mcl.responses.UpdateResponse;
@@ -35,8 +34,7 @@ public abstract class AbstractProtocol<T> {
 
     public abstract StarterHeaders getNextStarterHeader();
 
-
-    public abstract ResultSetResponse<T> getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr) throws MCLParseException;
+    public abstract ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr) throws MCLParseException;
 
     public abstract UpdateResponse getNextUpdateResponse() throws MCLParseException;
 
@@ -46,15 +44,13 @@ public abstract class AbstractProtocol<T> {
 
     public abstract AutoCommitResponse getNextAutoCommitResponse() throws MCLParseException;
 
-    public abstract DataBlockResponse<T> getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws MCLParseException;
-
+    public abstract DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws MCLParseException;
 
     public abstract TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues) throws MCLParseException;
 
-    public abstract void parseTupleLine(Object line, Object[] values) throws MCLParseException;
+    public abstract int parseTupleLine(Object line, Object[] values, int[] typesMap) throws MCLParseException;
 
     public abstract String getRemainingStringLine(int startIndex);
 
     public abstract void writeNextCommand(byte[] prefix, byte[] query, byte[] suffix) throws IOException;
-
 }

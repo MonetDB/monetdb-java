@@ -1,13 +1,14 @@
 package nl.cwi.monetdb.mcl.responses;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.jdbc.MonetDriver;
+import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
-import java.lang.reflect.Array;
-import java.lang.reflect.ParameterizedType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Types;
 
 /**
  * The ResultSetResponse represents a tabular result sent by the
@@ -21,16 +22,9 @@ import java.sql.SQLException;
  * there the first line consists out of<br />
  * <tt>&amp;"qt" "id" "tc" "cc" "rc"</tt>.
  */
-public class ResultSetResponse<T> implements IIncompleteResponse {
+public class ResultSetResponse implements IIncompleteResponse {
 
-    private static boolean CheckBooleanValuesAllTrue(boolean[] array) {
-        for (boolean anArray : array) {
-            if (!anArray) {
-                return false;
-            }
-        }
-        return true;
-    }
+    private static final byte IsSetFinalValue = 15;
 
     /** The number of columns in this result */
     private final int columncount;
@@ -46,6 +40,8 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
     private final String[] name;
     /** The types of the columns in this result */
     private final String[] type;
+    /** The JDBC SQL types of the columns in this ResultSet. The content will be derived from the MonetDB types[] */
+    private final int[] JdbcSQLTypes;
     /** The max string length for each column in this result */
     private final int[] columnLengths;
     /** The table for each column in this result */
@@ -53,7 +49,7 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
     /** The query sequence number */
     private final int seqnr;
     /** A bitmap telling whether the headers are set or not */
-    private boolean[] isSet = new boolean[4];
+    private byte isSet;
     /** Whether this Response is closed */
     private boolean closed;
 
@@ -68,7 +64,7 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
     /** the offset to be used on Xexport queries */
     private int blockOffset = 0;
     /** A List of result blocks (chunks of size fetchSize/cacheSize) */
-    private DataBlockResponse<T>[] resultBlocks;
+    private final DataBlockResponse[] resultBlocks;
 
     /**
      * Sole constructor, which requires a MonetConnection parent to
@@ -82,15 +78,13 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
      *               supply new result blocks when necessary
      * @param seq the query sequence number
      */
-    @SuppressWarnings("unchecked")
-    public ResultSetResponse(MonetConnection con, MonetConnection.ResponseList parent, int id, int seq, int rowcount, int tuplecount, int columncount) {
+    public ResultSetResponse(MonetConnection con, MonetConnection.ResponseList parent, int id, int seq, int rowcount,
+                             int tuplecount, int columncount) {
         this.con = con;
         this.parent = parent;
         if (parent.getCachesize() == 0) {
-            /* Below we have to calculate how many "chunks" we need
-             * to allocate to store the entire result.  However, if
-             * the user didn't set a cache size, as in this case, we
-             * need to stick to our defaults. */
+            /* Below we have to calculate how many "chunks" we need to allocate to store the entire result. However, if
+               the user didn't set a cache size, as in this case, we need to stick to our defaults. */
             cacheSize = MonetConnection.GetDefFetchsize();
             cacheSizeSetExplicitly = false;
         } else {
@@ -98,14 +92,10 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
             cacheSizeSetExplicitly = true;
         }
 
-        /* So far, so good.  Now the problem with EXPLAIN, DOT, etc
-         * queries is, that they don't support any block fetching,
-         * so we need to always fetch everything at once.  For that
-         * reason, the cache size is here set to the rowcount if
-         * it's larger, such that we do a full fetch at once.
-         * (Because we always set a reply_size, we can only get a
-         * larger rowcount from the server if it doesn't paginate,
-         * because it's a pseudo SQL result.) */
+        /* So far, so good.  Now the problem with EXPLAIN, DOT, etc queries is, that they don't support any block
+           fetching, so we need to always fetch everything at once.  For that reason, the cache size is here set to the
+           rowcount if it's larger, such that we do a full fetch at once. (Because we always set a reply_size, we can
+           only get a larger rowcount from the server if it doesn't paginate, because it's a pseudo SQL result.) */
         if (rowcount > cacheSize) {
             cacheSize = rowcount;
         }
@@ -122,48 +112,63 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
         this.type = new String[this.columncount];
         this.tableNames = new String[this.columncount];
         this.columnLengths = new int[this.columncount];
+        this.JdbcSQLTypes = new int[this.columncount];
 
-        Class<T> persistentClass = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
-        this.resultBlocks = (DataBlockResponse<T>[]) Array.newInstance(DataBlockResponse.class, (tuplecount / cacheSize) + 1);
-        this.resultBlocks[0] = new DataBlockResponse<>(rowcount, parent.getRstype() == ResultSet.TYPE_FORWARD_ONLY, persistentClass);
+        this.resultBlocks = new DataBlockResponse[(tuplecount / cacheSize) + 1];
+        this.resultBlocks[0] = new DataBlockResponse(rowcount, columncount,
+                parent.getRstype() == ResultSet.TYPE_FORWARD_ONLY, con.getProtocol(), this.JdbcSQLTypes);
     }
 
     /**
-     * Returns whether this ResultSetResponse needs more lines.
-     * This method returns true if not all headers are set, or the
-     * first DataBlockResponse reports to want more.
+     * Internal utility method to fill the JdbcSQLTypes array with derivable values.
+     * By doing it once (in the constructor) we can avoid doing this in many getXyz() methods again and again
+     * thereby improving getXyz() method performance.
+     */
+    private void populateJdbcSQLTypesArray() {
+        for (int i = 0; i < this.type.length; i++) {
+            int javaSQLtype = MonetDriver.getJavaType(this.type[i]);
+            this.JdbcSQLTypes[i] = javaSQLtype;
+            if (javaSQLtype == Types.BLOB && con.getBlobAsBinary()) {
+                this.JdbcSQLTypes[i] = Types.BINARY;
+            }
+        }
+    }
+
+    /**
+     * Returns whether this ResultSetResponse needs more lines. This method returns true if not all headers are set,
+     * or the first DataBlockResponse reports to want more.
      */
     @Override
     public boolean wantsMore() {
-        return !CheckBooleanValuesAllTrue(isSet) || resultBlocks[0].wantsMore();
+        return this.isSet < IsSetFinalValue || resultBlocks[0].wantsMore();
     }
 
     /**
-     * Adds the given DataBlockResponse to this ResultSetResponse at
-     * the given block position.
+     * Adds the given DataBlockResponse to this ResultSetResponse at the given block position.
      *
      * @param offset the offset number of rows for this block
-     * @param rr the DataBlockResponse to add
      */
-    public void addDataBlockResponse(int offset, DataBlockResponse<T> rr) {
+    public DataBlockResponse addDataBlockResponse(int offset, int rowcount, int columncount, AbstractProtocol proto) {
         int block = (offset - blockOffset) / cacheSize;
-        resultBlocks[block] = rr;
+        DataBlockResponse res = new DataBlockResponse(rowcount, columncount,
+                parent.getRstype() == ResultSet.TYPE_FORWARD_ONLY, proto, JdbcSQLTypes);
+        resultBlocks[block] = res;
+        return res;
     }
 
     /**
-     * Marks this Response as being completed.  A complete Response
-     * needs to be consistent with regard to its internal data.
+     * Marks this Response as being completed.  A complete Response needs to be consistent with regard to its internal
+     * data.
      *
-     * @throws SQLException if the data currently in this Response is not
-     *                      sufficient to be consistent
+     * @throws SQLException if the data currently in this Response is not sufficient to be consistent
      */
     @Override
     public void complete() throws SQLException {
         String error = "";
-        if (!isSet[0]) error += "name header missing\n";
-        if (!isSet[1]) error += "column width header missing\n";
-        if (!isSet[2]) error += "table name header missing\n";
-        if (!isSet[3]) error += "type header missing\n";
+        if ((isSet & 1) == 0) error += "name header missing\n";
+        if ((isSet & 2) == 0) error += "column width header missing\n";
+        if ((isSet & 4) == 0) error += "table name header missing\n";
+        if ((isSet & 8) == 0) error += "type header missing\n";
         if (!error.equals("")) throw new SQLException(error, "M0M10");
     }
 
@@ -199,6 +204,10 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
      */
     public String[] getTypes() {
         return type;
+    }
+
+    public int[] getJdbcSQLTypes() {
+        return JdbcSQLTypes;
     }
 
     /**
@@ -256,17 +265,15 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
     }
 
     /**
-     * Parses the given string and changes the value of the matching
-     * header appropriately, or passes it on to the underlying
-     * DataResponse.
+     * Parses the given string and changes the value of the matching header appropriately, or passes it on to the
+     * underlying DataResponse.
      *
      * @param line the string that contains the header
      * @throws MCLParseException if has a wrong header
      */
-    @SuppressWarnings("unchecked")
     public void addLine(ServerResponses response, Object line) throws MCLParseException {
-        if (CheckBooleanValuesAllTrue(isSet)) {
-            resultBlocks[0].addLine(response, line);
+        if (this.isSet >= IsSetFinalValue) {
+            this.resultBlocks[0].addLine(response, line);
         }
         if (response != ServerResponses.HEADER) {
             throw new MCLParseException("header expected, got: " + response.toString());
@@ -275,17 +282,18 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
             switch (con.getProtocol().getNextTableHeader(line, this.tableNames, this.columnLengths)) {
                 case NAME:
                     System.arraycopy(this.tableNames, 0, this.name, 0, this.columncount);
-                    isSet[0] = true;
+                    isSet |= 1;
                     break;
                 case LENGTH:
-                    isSet[1] = true;
+                    isSet |= 2;
                     break;
                 case TYPE:
                     System.arraycopy(this.tableNames, 0, this.type, 0, this.columncount);
-                    isSet[2] = true;
+                    this.populateJdbcSQLTypesArray(); //VERY IMPORTANT!
+                    isSet |= 4;
                     break;
                 case TABLE:
-                    isSet[3] = true;
+                    isSet |= 8;
                     break;
             }
         }
@@ -302,8 +310,7 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
      *         is out of the scope of the result set
      * @throws SQLException if an database error occurs
      */
-    @SuppressWarnings("unchecked")
-    public T getLine(int row) throws SQLException {
+    public Object[] getLine(int row) throws SQLException {
         if (row >= tuplecount || row < 0)
             return null;
 
@@ -311,7 +318,7 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
         int blockLine = (row - blockOffset) % cacheSize;
 
         // do we have the right block loaded? (optimistic try)
-        DataBlockResponse<T> rawr;
+        DataBlockResponse rawr;
         // load block if appropriate
         if ((rawr = resultBlocks[block]) == null) {
             /// TODO: ponder about a maximum number of blocks to keep
@@ -355,13 +362,13 @@ public class ResultSetResponse<T> implements IIncompleteResponse {
             }
 
             // ok, need to fetch cache block first
-            parent.executeQuery(con.getLanguage().getCommandTemplates(), "export " + id + " " + ((block * cacheSize) + blockOffset) + " " + cacheSize);
+            parent.executeQuery(con.getLanguage().getCommandTemplates(), "export " + id + " "
+                    + ((block * cacheSize) + blockOffset) + " " + cacheSize);
             rawr = resultBlocks[block];
             if (rawr == null) {
                 throw new AssertionError("block " + block + " should have been fetched by now :(");
             }
         }
-
         return rawr.getRow(blockLine);
     }
 

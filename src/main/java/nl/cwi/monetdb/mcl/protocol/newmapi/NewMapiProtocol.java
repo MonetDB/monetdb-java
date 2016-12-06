@@ -1,7 +1,8 @@
 package nl.cwi.monetdb.mcl.protocol.newmapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.io.SocketConnection;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
@@ -17,6 +18,12 @@ import java.util.Map;
  * Created by ferreira on 11/30/16.
  */
 public class NewMapiProtocol extends AbstractProtocol {
+
+    private final SocketConnection connection;
+
+    public NewMapiProtocol(SocketConnection con) {
+        this.connection = con;
+    }
 
     @Override
     public void fetchNextResponseData() {
@@ -54,8 +61,8 @@ public class NewMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public void parseTupleLine(Object line, Object[] values) throws MCLParseException {
-
+    public int parseTupleLine(Object line, Object[] values) throws MCLParseException {
+        return 0;
     }
 
     @Override

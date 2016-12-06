@@ -24,14 +24,8 @@ public class XMLExporter extends Exporter {
 		super(out);
 	}
 
-	public void dumpSchema(
-			DatabaseMetaData dbmd,
-			String type,
-			String catalog,
-			String schema,
-			String name)
-		throws SQLException
-	{
+	public void dumpSchema(DatabaseMetaData dbmd, String type, String catalog, String schema, String name)
+			throws SQLException {
 		if (type.contains("VIEW")) {
 			String[] types = new String[1];
 			types[0] = type;
@@ -309,10 +303,8 @@ public class XMLExporter extends Exporter {
 		out.println("</xsd:schema>");
 	}
 
-	private final static SimpleDateFormat xsd_ts =
-		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-	private final static SimpleDateFormat xsd_tstz =
-		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+	private final static SimpleDateFormat xsd_ts = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+	private final static SimpleDateFormat xsd_tstz = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
 
 	/**
 	 * Generates an XML representation of the given ResultSet.

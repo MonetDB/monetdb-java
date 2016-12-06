@@ -1,7 +1,8 @@
 package nl.cwi.monetdb.mcl.protocol.embedded;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.io.JDBCEmbeddedConnection;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
@@ -17,6 +18,16 @@ import java.util.Map;
  * Created by ferreira on 11/30/16.
  */
 public class EmbeddedProtocol extends AbstractProtocol<Object[]> {
+
+    private final JDBCEmbeddedConnection connection;
+
+    public EmbeddedProtocol(JDBCEmbeddedConnection con) {
+        this.connection = con;
+    }
+
+    public JDBCEmbeddedConnection getEmbeddedConnection() {
+        return this.connection;
+    }
 
     @Override
     public void fetchNextResponseData() {
@@ -34,7 +45,7 @@ public class EmbeddedProtocol extends AbstractProtocol<Object[]> {
     }
 
     @Override
-    public ResultSetResponse<Object[]> getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr) throws MCLParseException {
+    public ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr) throws MCLParseException {
         return null;
     }
 
@@ -49,7 +60,7 @@ public class EmbeddedProtocol extends AbstractProtocol<Object[]> {
     }
 
     @Override
-    public DataBlockResponse<Object[]> getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws MCLParseException {
+    public DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws MCLParseException {
         return null;
     }
 
@@ -59,8 +70,8 @@ public class EmbeddedProtocol extends AbstractProtocol<Object[]> {
     }
 
     @Override
-    public void parseTupleLine(Object line, Object[] values) throws MCLParseException {
-
+    public int parseTupleLine(Object line, Object[] values) throws MCLParseException {
+        return 0;
     }
 
     @Override

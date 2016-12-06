@@ -13,10 +13,8 @@ import java.sql.Statement;
  */
 public class SchemaResponse implements IResponse {
 
-    private final int state = Statement.SUCCESS_NO_INFO;
-
     public int getState() {
-        return state;
+        return Statement.SUCCESS_NO_INFO;
     }
 
     @Override

@@ -8,23 +8,7 @@
 
 package nl.cwi.monetdb.merovingian;
 
-import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
-import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
-import nl.cwi.monetdb.mcl.connection.DeleteMe;
-import nl.cwi.monetdb.mcl.connection.MCLException;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
-
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintStream;
-import java.net.Socket;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
 
 /**
  * A Control class to perform operations on a remote merovingian
@@ -44,7 +28,7 @@ import java.util.Properties;
  * @author Fabian Groffen
  * @version 1.0
  */
-public class Control {
+public class Control { //TODO make me working again
 	/** The host to connect to */
 	private final String host;
 	/** The port to connect to */
@@ -54,16 +38,13 @@ public class Control {
 	/** The file we should write MapiSocket debuglog to */
 	private String debug;
 
-
 	/**
 	 * Constructs a new Control object.
 	 *
 	 * @throws IllegalArgumentException if host, port or passphrase are
 	 * null or &lt;= 0
 	 */
-	public Control(String host, int port, String passphrase)
-		throws IllegalArgumentException
-	{
+	public Control(String host, int port, String passphrase) throws IllegalArgumentException {
 		this.host = host;
 		this.port = port;
 		this.passphrase = passphrase;
@@ -111,10 +92,8 @@ public class Control {
 	
 	final static private String RESPONSE_OK = "OK";
 
-	private List<String> sendCommand(
-			String database, String command, boolean hasOutput)
-		throws MerovingianException, IOException
-	{
+	/*private List<String> sendCommand(String database, String command, boolean hasOutput)
+			throws MerovingianException, IOException {
 		AbstractMCLReader min;
 		AbstractMCLWriter mout;
 		DeleteMe ms = new DeleteMe(host, port, "monetdb", "monetdb", false, "sql", "SHA256");
@@ -141,7 +120,7 @@ public class Control {
 					new InputStreamReader(s.getInputStream()));
 			try {
 				/* login ritual, step 1: get challenge from server */
-				String response = in.readLine();
+				/*String response = in.readLine();
 				if (response == null)
 					throw new MerovingianException("server closed the connection");
 
@@ -173,12 +152,12 @@ public class Control {
 				}
 
 				/* send command, form is simple: "<db> <cmd>\n" */
-				out.print(database + " " + command + "\n");
+				//out.print(database + " " + command + "\n");
 
 				/* Response has the first line either "OK\n" or an error
 				 * message.  In case of a command with output, the data will
 				 * follow the first line */
-				response = in.readLine();
+				/*response = in.readLine();
 				if (response == null) {
 					throw new MerovingianException("server closed the connection");
 				}
@@ -226,58 +205,42 @@ public class Control {
 
 		ms.close();
 		return l;
-	}
+	}*/
 
-	public void start(String database)
-		throws MerovingianException, IOException
-	{
+	/*public void start(String database) throws MerovingianException, IOException {
 		sendCommand(database, "start", false);
 	}
 
-	public void stop(String database)
-		throws MerovingianException, IOException 
-	{   
+	public void stop(String database) throws MerovingianException, IOException {
 		sendCommand(database, "stop", false);
 	}
 
-	public void kill(String database)
-		throws MerovingianException, IOException
-	{
+	public void kill(String database) throws MerovingianException, IOException {
 		sendCommand(database, "kill", false);
 	}
 
-	public void create(String database)
-		throws MerovingianException, IOException
-	{
+	public void create(String database) throws MerovingianException, IOException {
 		sendCommand(database, "create", false);
 	}
 
-	public void destroy(String database)
-		throws MerovingianException, IOException
-	{
+	public void destroy(String database) throws MerovingianException, IOException {
 		sendCommand(database, "destroy", false);
 	}
 
-	public void lock(String database)
-		throws MerovingianException, IOException
-	{
+	public void lock(String database) throws MerovingianException, IOException {
 		sendCommand(database, "lock", false);
 	}
 
-	public void release(String database)
-		throws MerovingianException, IOException
-	{
+	public void release(String database) throws MerovingianException, IOException {
 		sendCommand(database, "release", false);
 	}
 
-	public void rename(String database, String newname)
-		throws MerovingianException, IOException
-	{
+	public void rename(String database, String newname) throws MerovingianException, IOException {
 		if (newname == null)
 			newname = ""; /* force error from merovingian */
 
-		sendCommand(database, "name=" + newname, false);
-	}
+		/*sendCommand(database, "name=" + newname, false);
+	}*/
 
 	/**
 	 * Sets property for database to value.  If value is null, the
@@ -291,27 +254,21 @@ public class Control {
 	 * @throws IOException if connecting to or communicating with
 	 *         merovingian failed
 	 */
-	public void setProperty(String database, String property, String value)
-		throws MerovingianException, IOException
-	{
+	public void setProperty(String database, String property, String value) throws MerovingianException, IOException {
 		/* inherit: set to empty string */
 		if (value == null)
 			value = "";
 
-		sendCommand(database, property + "=" + value, false);
+		//sendCommand(database, property + "=" + value, false);
 	}
 
-	public void inheritProperty(String database, String property)
-		throws MerovingianException, IOException
-	{
+	public void inheritProperty(String database, String property) throws MerovingianException, IOException {
 		setProperty(database, property, null);
 	}
 
-	public Properties getProperties(String database)
-		throws MerovingianException, IOException
-	{
+	/*public Properties getProperties(String database) throws MerovingianException, IOException {
 		Properties ret = new Properties();
-		List<String> response = sendCommand(database, "get", true);
+		//List<String> response = sendCommand(database, "get", true);
 		for (String responseLine : response) {
 			if (responseLine.startsWith("#"))
 				continue;
@@ -325,15 +282,11 @@ public class Control {
 		return ret;
 	}
 
-	public Properties getDefaultProperties()
-		throws MerovingianException, IOException
-	{
+	public Properties getDefaultProperties() throws MerovingianException, IOException {
 		return(getProperties("#defaults"));
 	}
 
-	public SabaothDB getStatus(String database)
-		throws MerovingianException, IOException
-	{
+	public SabaothDB getStatus(String database) throws MerovingianException, IOException {
 		List<String> response = sendCommand(database, "status", true);
 		if (response.isEmpty())
 			throw new MerovingianException("communication error");
@@ -348,9 +301,7 @@ public class Control {
 	 * @throws MerovingianException
 	 * @throws IOException
 	 */
-	public boolean exists(String database)
-		throws MerovingianException, IOException
-	{
+	/*public boolean exists(String database) throws MerovingianException, IOException {
 		List<SabaothDB> all = getAllStatuses();
 		for (SabaothDB db : all) {
 			if (db.getName().equals(database)) {
@@ -360,9 +311,7 @@ public class Control {
 		return false;
 	}
 
-	public List<SabaothDB> getAllStatuses()
-		throws MerovingianException, IOException
-	{
+	public List<SabaothDB> getAllStatuses() throws MerovingianException, IOException {
 		List<SabaothDB> l = new ArrayList<>();
 		List<String> response = sendCommand("#all", "status", true);
 		try {
@@ -375,9 +324,7 @@ public class Control {
 		return Collections.unmodifiableList(l);
 	}
 
-	public List<URI> getAllNeighbours()
-		throws MerovingianException, IOException
-	{
+	public List<URI> getAllNeighbours() throws MerovingianException, IOException {
 		List<URI> l = new ArrayList<URI>();
 		List<String> response = sendCommand("anelosimus", "eximius", true);
 		try {
@@ -397,5 +344,5 @@ public class Control {
 			throw new MerovingianException(e.getMessage());
 		}
 		return Collections.unmodifiableList(l);
-	}
+	}*/
 }

@@ -1,12 +1,12 @@
 package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 
 /**
  * Created by ferreira on 12/6/16.
  */
-public class OldMapiStartOfHeaderParser {
+final class OldMapiStartOfHeaderParser {
 
     static StarterHeaders GetNextStartHeaderOnOldMapi(OldMapiProtocol protocol) {
         StarterHeaders res;

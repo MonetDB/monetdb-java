@@ -1,6 +1,6 @@
 package nl.cwi.monetdb.mcl.responses;
 
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
 import java.sql.SQLException;

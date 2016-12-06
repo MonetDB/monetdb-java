@@ -4,7 +4,7 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedDatabase;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.protocol.embedded.EmbeddedProtocol;
 
 import java.io.*;

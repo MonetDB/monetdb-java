@@ -331,7 +331,7 @@ final public class MonetDriver implements Driver {
 	 * @return the mathing java.sql.Types constant or java.sql.Types.OTHER if
 	 *         nothing matched on the given string
 	 */
-	static int getJavaType(String type) {
+	public static int getJavaType(String type) {
 		// match the currentColumns type on a java.sql.Types constant
 		Integer tp = typeMap.get(type);
 		if (tp != null) {

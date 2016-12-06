@@ -428,8 +428,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					case Types.BIGINT:
 						String monettype = getColumnTypeName(column);
 						if (monettype != null) {
-							if ("oid".equals(monettype)
-							 || "ptr".equals(monettype))
+							if ("oid".equals(monettype) || "ptr".equals(monettype))
 								return false;
 						}
 						return true;

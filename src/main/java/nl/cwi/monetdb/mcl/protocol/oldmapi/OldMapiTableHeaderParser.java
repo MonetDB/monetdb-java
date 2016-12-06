@@ -1,12 +1,12 @@
 package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
 
 /**
  * Created by ferreira on 12/6/16.
  */
-public class OldMapiTableHeaderParser {
+final class OldMapiTableHeaderParser {
 
     static TableResultHeaders GetNextTableHeader(StringBuilder builder, String[] stringValues, int[] intValues) throws MCLParseException {
         TableResultHeaders res = TableResultHeaders.UNKNOWN;

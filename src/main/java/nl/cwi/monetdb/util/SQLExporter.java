@@ -47,14 +47,8 @@ public class SQLExporter extends Exporter {
 	 * @param name the table to describe in SQL CREATE format (not null)
 	 * @throws SQLException if a database related error occurs
 	 */
-	public void dumpSchema(
-			DatabaseMetaData dbmd,
-			String type,
-			String catalog,
-			String schema,
-			String name)
-		throws SQLException
-	{
+	public void dumpSchema(DatabaseMetaData dbmd, String type, String catalog, String schema, String name)
+			throws SQLException {
 		assert dbmd != null;
 		assert type != null;
 		assert schema != null;
@@ -371,9 +365,7 @@ public class SQLExporter extends Exporter {
 	 * @param rs the ResultSet to convert into INSERT INTO statements
 	 * @throws SQLException if a database related error occurs
 	 */
-	private void resultSetToSQL(ResultSet rs)
-		throws SQLException
-	{
+	private void resultSetToSQL(ResultSet rs) throws SQLException {
 		ResultSetMetaData rsmd = rs.getMetaData();
 		String statement = "INSERT INTO ";
 		if (!useSchema) {

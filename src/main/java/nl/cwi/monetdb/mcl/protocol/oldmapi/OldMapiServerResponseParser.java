@@ -5,7 +5,7 @@ import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 /**
  * Created by ferreira on 11/30/16.
  */
-public final class OldMapiServerResponseParser {
+final class OldMapiServerResponseParser {
 
     static ServerResponses ParseOldMapiServerResponse(OldMapiProtocol protocol) {
         ServerResponses res;

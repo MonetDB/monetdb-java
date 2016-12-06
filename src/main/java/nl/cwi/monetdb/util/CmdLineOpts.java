@@ -31,21 +31,9 @@ public class CmdLineOpts {
 	public CmdLineOpts() {
 	}
 
-	public void addOption(
-			String shorta,
-			String longa,
-			int type,
-			String defaulta,
-			String descriptiona)
-		throws OptionsException {
-		OptionContainer oc =
-			new OptionContainer(
-				shorta,
-				longa,
-				type,
-				defaulta,
-				descriptiona
-			);
+	public void addOption(String shorta, String longa, int type, String defaulta, String descriptiona)
+			throws OptionsException {
+		OptionContainer oc = new OptionContainer(shorta, longa, type, defaulta, descriptiona);
 		if (shorta != null) opts.put(shorta, oc);
 		if (longa != null) opts.put(longa, oc);
 	}
@@ -287,14 +275,8 @@ public class CmdLineOpts {
 		String descriptiona;
 		boolean present;
 
-		public OptionContainer(
-				String shorta,
-				String longa,
-				int cardinality,
-				String defaulta,
-				String descriptiona)
-			throws IllegalArgumentException
-		{
+		public OptionContainer(String shorta, String longa, int cardinality, String defaulta, String descriptiona)
+				throws IllegalArgumentException {
 			this.cardinality = cardinality;
 			this.shorta = shorta;
 			this.longa = longa;
@@ -302,11 +284,8 @@ public class CmdLineOpts {
 			this.descriptiona = descriptiona;
 			this.present = false;
 
-			if (cardinality != CAR_ZERO &&
-					cardinality != CAR_ONE &&
-					cardinality != CAR_ZERO_ONE &&
-					cardinality != CAR_ZERO_MANY &&
-					cardinality != CAR_ONE_MANY)
+			if (cardinality != CAR_ZERO && cardinality != CAR_ONE && cardinality != CAR_ZERO_ONE
+					&& cardinality != CAR_ZERO_MANY && cardinality != CAR_ONE_MANY)
 				throw new IllegalArgumentException("unknown cardinality");
 			if (shorta != null && shorta.length() != 1) throw
 				new IllegalArgumentException("short option should consist of exactly one character");

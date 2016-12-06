@@ -6,7 +6,7 @@
  * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.mcl.parser;
+package nl.cwi.monetdb.mcl.protocol;
 
 import java.text.ParseException;
 
@@ -20,9 +20,7 @@ import java.text.ParseException;
  * that the error message includes the offending data read.
  */
 public class MCLParseException extends ParseException {
-	/**
-	 * 
-	 */
+
 	private static final long serialVersionUID = 1L;
 
 	public MCLParseException(String e) {

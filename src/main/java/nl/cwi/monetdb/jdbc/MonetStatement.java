@@ -60,7 +60,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	/** Whether this Statement object is closed or not */
 	protected boolean closed;
 	/** Whether the application wants this Statement object to be pooled */
-	protected boolean poolable;
+	private boolean poolable;
 	/** Whether this Statement should be closed if the last ResultSet closes */
 	private boolean closeOnCompletion = false;
 	/** The size of the blocks of results to ask for at the server */
@@ -665,16 +665,15 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 */
 	@Override
 	public ResultSet getGeneratedKeys() throws SQLException {
-		String[] columns, types;
+		String[] columns = new String[1], types = new String[1];
+		int[] jdbcTypes = new int[1];
 		String[][] results;
-
-		columns = new String[1];
-		types = new String[1];
 
 		columns[0] = "GENERATED_KEY";
 		/* the generated key should be an integer, because (wait for it) other 
 		 * frameworks such as spring expect this. */
 		types[0] = "BIGINT";
+		jdbcTypes[0] = MonetDriver.getJavaType(types[0]);
 
 		if (header instanceof UpdateResponse) {
 			String lastid = ((UpdateResponse)header).getLastid();
@@ -689,7 +688,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		}
 
 		try {
-			return new MonetVirtualResultSet(this, columns, types, results);
+			return new MonetVirtualResultSet(this, columns, types, jdbcTypes, results);
 		} catch (IllegalArgumentException e) {
 			throw new SQLException("Internal driver error: " + e.getMessage(), "M0M03");
 		}
@@ -823,7 +822,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public ResultSet getResultSet() throws SQLException{
+	public ResultSet getResultSet() throws SQLException {
 		return (header instanceof ResultSetResponse) ? new MonetResultSet(this, (ResultSetResponse)header) : null;
 	}
 
@@ -1115,8 +1114,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	}
 
 	/**
-	 * Returns a value indicating whether the Statement is poolable or
-	 * not.
+	 * Returns a value indicating whether the Statement is poolable or not.
 	 *
 	 * @return true if the Statement is poolable; false otherwise
 	 */
@@ -1207,8 +1205,9 @@ final class MonetVirtualResultSet extends MonetResultSet {
 	private String results[][];
 	private boolean closed;
 
-	MonetVirtualResultSet(Statement statement, String[] columns, String[] types, String[][] results) throws IllegalArgumentException {
-		super(statement, columns, types, results.length);
+	MonetVirtualResultSet(Statement statement, String[] columns, String[] types, int[] jdbcTypes, String[][] results)
+			throws IllegalArgumentException {
+		super(statement, columns, types, jdbcTypes, results.length);
 		this.results = results;
 		closed = false;
 	}
@@ -1250,9 +1249,8 @@ final class MonetVirtualResultSet extends MonetResultSet {
 	}
 
 	/**
-	 * Mainly here to prevent errors when the close method is called. There
-	 * is no real need for this object to close it. We simply remove our
-	 * resultset data.
+	 * Mainly here to prevent errors when the close method is called. There is no real need for this object to close it.
+	 * We simply remove our resultset data.
 	 */
 	@Override
 	public void close() {

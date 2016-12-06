@@ -2,7 +2,7 @@ package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.mcl.io.SocketConnection;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
@@ -25,13 +25,16 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
 
     private final SocketConnection connection;
 
-    StringBuilder builder;
+    final StringBuilder builder;
 
     int currentPointer = 0;
+
+    final StringBuilder tupleLineBuilder;
 
     public OldMapiProtocol(SocketConnection con) {
         this.connection = con;
         this.builder = new StringBuilder(STRING_BUILDER_INITIAL_SIZE);
+        this.tupleLineBuilder = new StringBuilder(STRING_BUILDER_INITIAL_SIZE);
     }
 
     public SocketConnection getConnection() {
@@ -78,17 +81,18 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
     }
 
     @Override
-    public ResultSetResponse<StringBuilder> getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr) throws MCLParseException {
+    public ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr)
+            throws MCLParseException {
         int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int tuplecount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int columncount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
-        return new ResultSetResponse<>(con, list, seqnr, id, rowcount, tuplecount, columncount);
+        return new ResultSetResponse(con, list, seqnr, id, rowcount, tuplecount, columncount);
     }
 
     @Override
     public UpdateResponse getNextUpdateResponse() throws MCLParseException {
-        int count = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        int count = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
         String lastId = OldMapiStartOfHeaderParser.GetNextResponseDataAsString(this);
         return new UpdateResponse(lastId, count);
     }
@@ -100,19 +104,17 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public DataBlockResponse<StringBuilder> getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws MCLParseException {
+    public DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws MCLParseException {
         int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
-        OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);	// pass the columncount --- Must do this!
+        int columncount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int offset = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
-        ResultSetResponse<StringBuilder> resultSetResponse = rsresponses.get(id);
-        if (resultSetResponse == null) {
+
+        ResultSetResponse rs = rsresponses.get(id);
+        if (rs == null) {
             return null;
         }
-        DataBlockResponse<StringBuilder> res = new DataBlockResponse<>(rowcount, resultSetResponse.getRSType() == ResultSet.TYPE_FORWARD_ONLY, StringBuilder.class);
-        resultSetResponse.addDataBlockResponse(offset, res);
-        return res;
+        return rs.addDataBlockResponse(offset, rowcount, columncount, this);
     }
 
     @Override
@@ -121,8 +123,8 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
     }
 
     @Override
-    public void parseTupleLine(Object line, Object[] values) throws MCLParseException {
-
+    public int parseTupleLine(Object line, Object[] values, int[] typesMap) throws MCLParseException {
+        return OldMapiTupleLineParser.OldMapiParseTupleLine((StringBuilder) line, values, this.tupleLineBuilder, typesMap);
     }
 
     @Override

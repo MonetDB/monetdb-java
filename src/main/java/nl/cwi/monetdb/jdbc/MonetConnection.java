@@ -5,7 +5,7 @@ import nl.cwi.monetdb.jdbc.types.URL;
 import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.connection.Debugger;
 import nl.cwi.monetdb.mcl.connection.MonetDBLanguage;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.responses.*;
@@ -1398,7 +1398,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         /** The sequence number of this ResponseList */
         private final int seqnr;
         /** A list of the Responses associated with the query, in the right order */
-        private List<IResponse> responses = new ArrayList<>();
+        private final List<IResponse> responses = new ArrayList<>();
         /** A map of ResultSetResponses, used for additional DataBlockResponse mapping */
         private Map<Integer, ResultSetResponse> rsresponses;
         /** The current header returned by getNextResponse() */
@@ -1414,7 +1414,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
          * @param rstype the type of result sets to produce
          * @param rsconcur the concurrency of result sets to produce
          */
-        public ResponseList(int cachesize, int maxrows, int rstype, int rsconcur) throws SQLException {
+        ResponseList(int cachesize, int maxrows, int rstype, int rsconcur) throws SQLException {
             this.cachesize = cachesize;
             this.maxrows = maxrows;
             this.rstype = rstype;
@@ -1439,8 +1439,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         }
 
         /**
-         * Retrieves the next available response, or null if there are
-         * no more responses.
+         * Retrieves the next available response, or null if there are no more responses.
          *
          * @return the next Response available or null
          */
@@ -1495,8 +1494,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         }
 
         /**
-         * Closes this ResponseList by closing all the Responses in this
-         * ResponseList.
+         * Closes this ResponseList by closing all the Responses in this ResponseList.
          */
         public void close() {
             for (int i = 0; i < responses.size(); i++) {
@@ -1505,10 +1503,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         }
 
         /**
-         * Returns whether this ResponseList has still unclosed
-         * Responses.
+         * Returns whether this ResponseList has still unclosed Responses.
          */
-        public boolean hasUnclosedResponses() {
+        boolean hasUnclosedResponses() {
             for (IResponse r : responses) {
                 if (r != null)
                     return true;
@@ -1517,13 +1514,12 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         }
 
         /**
-         * Executes the query contained in this ResponseList, and
-         * stores the Responses resulting from this query in this
+         * Executes the query contained in this ResponseList, and stores the Responses resulting from this query in this
          * ResponseList.
          *
          * @throws SQLException if a database error occurs
          */
-        public void processQuery(String query) throws SQLException {
+        void processQuery(String query) throws SQLException {
             this.executeQuery(language.getQueryTemplates(), query);
         }
 
@@ -1534,7 +1530,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
          * @param query the query to execute
          * @throws SQLException if a database error occurs
          */
-        @SuppressWarnings({"fallthrough", "unchecked"})
+        @SuppressWarnings("fallthrough")
         public void executeQuery(byte[][] templ, String query) throws SQLException {
             String error = null;
 
@@ -1555,7 +1551,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                 int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
                 size = maxrows != 0 ? Math.min(maxrows, size) : size;
                 // don't do work if it's not needed
-                if (language == MonetDBLanguage.LANG_SQL && size != curReplySize && !Arrays.deepEquals(templ, language.getCommandTemplates())) {
+                if (language == MonetDBLanguage.LANG_SQL && size != curReplySize &&
+                        !Arrays.deepEquals(templ, language.getCommandTemplates())) {
                     sendControlCommand("reply_size " + size);
 
                     // store the reply size after a successful change
@@ -1581,7 +1578,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                 } else {
                     // this is a simple call, which is a lot cheaper and will
                     // always succeed for small queries.
-                    protocol.writeNextCommand((templ[0] == null) ? MonetDBLanguage.EmptyString : templ[0], query.getBytes(), (templ[1] == null) ? MonetDBLanguage.EmptyString : templ[1]);
+                    protocol.writeNextCommand((templ[0] == null) ? MonetDBLanguage.EmptyString : templ[0],
+                            query.getBytes(), (templ[1] == null) ? MonetDBLanguage.EmptyString : templ[1]);
                 }
 
                 // go for new results
@@ -1589,8 +1587,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                 ServerResponses nextResponse = protocol.getCurrentServerResponseHeader();
                 IResponse res = null;
                 while (nextResponse != ServerResponses.PROMPT) {
-                    // each response should start with a start of header
-                    // (or error)
+                    // each response should start with a start of header (or error)
                     switch (nextResponse) {
                         case SOHEADER:
                             // make the response object, and fill it
@@ -1600,8 +1597,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         throw new MCLParseException("Q_PARSE header not allowed here", 1);
                                     case Q_TABLE:
                                     case Q_PREPARE: {
-                                        res = protocol.getNextResultSetResponse(MonetConnection.this, ResponseList.this, seqnr);
-                                        ResultSetResponse<?> rsreponse = (ResultSetResponse<?>) res;
+                                        res = protocol.getNextResultSetResponse(MonetConnection.this,
+                                                ResponseList.this, this.seqnr);
+                                        ResultSetResponse rsreponse = (ResultSetResponse) res;
                                         // only add this resultset to
                                         // the hashmap if it can possibly
                                         // have an additional datablock
@@ -1628,7 +1626,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         MonetConnection.this.autoCommit = isAutoCommit;
                                         break;
                                     case Q_BLOCK: {
-                                        DataBlockResponse<?> next = protocol.getNextDatablockResponse(rsresponses);
+                                        DataBlockResponse next = protocol.getNextDatablockResponse(rsresponses);
                                         if (next == null) {
                                             error = "M0M12!No ResultSetResponse for a DataBlock found";
                                             break;
@@ -1646,16 +1644,14 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                 break;
                             }
 
-                            // immediately handle errors after parsing
-                            // the header (res may be null)
+                            // immediately handle errors after parsing the header (res may be null)
                             if (error != null) {
                                protocol.waitUntilPrompt();
                                nextResponse = protocol.getCurrentServerResponseHeader();
                                break;
                             }
 
-                            // here we have a res object, which
-                            // we can start filling
+                            // here we have a res object, which we can start filling
                             if(res instanceof IIncompleteResponse) {
                                 IIncompleteResponse iter = (IIncompleteResponse) res;
                                 while (iter.wantsMore()) {
@@ -1663,8 +1659,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         protocol.fetchNextResponseData();
                                         iter.addLine(protocol.getCurrentServerResponseHeader(), protocol.getCurrentData());
                                     } catch (MCLParseException ex) {
-                                        // right, some protocol violation,
-                                        // skip the rest of the result
+                                        // right, some protocol violation, skip the rest of the result
                                         error = "M0M10!" + ex.getMessage();
                                         protocol.waitUntilPrompt();
                                         nextResponse = protocol.getCurrentServerResponseHeader();
@@ -1676,33 +1671,25 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                             if (error != null) {
                                 break;
                             }
-                            // it is of no use to store
-                            // DataBlockResponses, you never want to
+
+                            // it is of no use to store DataBlockResponses, you never want to
                             // retrieve them directly anyway
                             if (!(res instanceof DataBlockResponse)) {
                                 responses.add(res);
                             }
-
-                            // read the next line (can be prompt, new
-                            // result, error, etc.) before we start the
-                            // loop over
+                            // read the next line (can be prompt, new result, error, etc.) before we start the loop over
                             protocol.fetchNextResponseData();
                             nextResponse = protocol.getCurrentServerResponseHeader();
                             break;
                         case INFO:
                             addWarning(protocol.getRemainingStringLine(1), "01000");
-
-                            // read the next line (can be prompt, new
-                            // result, error, etc.) before we start the
-                            // loop over
+                            // read the next line (can be prompt, new result, error, etc.) before we start the loop over
                             protocol.fetchNextResponseData();
                             nextResponse = protocol.getCurrentServerResponseHeader();
                             break;
                         case ERROR:
-                            // read everything till the prompt (should be
-                            // error) we don't know if we ignore some
-                            // garbage here... but the log should reveal
-                            // that
+                            // read everything till the prompt (should be error) we don't know if we ignore some
+                            // garbage here... but the log should reveal that
                             protocol.waitUntilPrompt();
                             nextResponse = protocol.getCurrentServerResponseHeader();
                             error = protocol.getRemainingStringLine(1);

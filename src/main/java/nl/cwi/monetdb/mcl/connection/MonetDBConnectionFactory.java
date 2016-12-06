@@ -2,7 +2,7 @@ package nl.cwi.monetdb.mcl.connection;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.jdbc.MonetDriver;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 
 import java.io.File;
 import java.io.IOException;

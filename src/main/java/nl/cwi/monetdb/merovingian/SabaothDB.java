@@ -24,15 +24,13 @@ import java.util.*;
 public class SabaothDB {
 	/** The name of the database */
 	private String dbname;
-	/** The URI how to connect to this database, or null if not
-	 * shared */
+	/** The URI how to connect to this database, or null if not shared */
 	private String uri;
 	/** Whether or not the database is under maintenance */
 	private boolean locked;
 	/** The state of this database, one of SABdbState */
 	private SABdbState state;
-	/** A list of Strings representing the available scenarios of this
-	 * database */
+	/** A list of Strings representing the available scenarios of this database */
 	private String[] scenarios;
 	/** The number of times this database was started */
 	private int startCounter;
@@ -58,17 +56,12 @@ public class SabaothDB {
 	private double crashAvg10;
 	/** Average of crashes in the last 30 start attempts */
 	private double crashAvg30;
-
 	/** The serialised format header */
 	private final String sabdbhdr = "sabdb:";
 
 	/** Sabaoth state enumeration */
 	public enum SABdbState {
-		SABdbIllegal (0),
-		SABdbRunning (1),
-		SABdbCrashed (2),
-		SABdbInactive(3),
-		SABdbStarting(4);
+		SABdbIllegal (0), SABdbRunning (1), SABdbCrashed (2), SABdbInactive(3), SABdbStarting(4);
 
 		private final int cValue;
 
@@ -88,20 +81,16 @@ public class SabaothDB {
 					return(s);
 				}
 			}
-			throw new IllegalArgumentException("No such state with value: "
-					+ val);
+			throw new IllegalArgumentException("No such state with value: " + val);
 		}
 	}
 
-	
 	/**
 	 * Constructs a new SabaothDB object from a String.
 	 *
 	 * @param sabdb the serialised sabdb C-struct
 	 */
-	public SabaothDB(String sabdb)
-		throws IllegalArgumentException
-	{
+	public SabaothDB(String sabdb) throws IllegalArgumentException {
 		if (sabdb == null)
 			throw new IllegalArgumentException("String is null");
 		if (!sabdb.startsWith(sabdbhdr))

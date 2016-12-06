@@ -8,24 +8,14 @@
 
 package nl.cwi.monetdb.util;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import nl.cwi.monetdb.mcl.connection.MCLException;
-import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
-import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
-import nl.cwi.monetdb.mcl.connection.DeleteMe;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
 /**
  * Use this class to restore an SQL dump file.
  */
 public class SQLRestore {
 
-	private final String _host;
+	/*private final String _host; TODO make me working again!
 	private final int _port;
 	private final String _user;
 	private final String _password;
@@ -77,25 +67,25 @@ public class SQLRestore {
 					// ignore errors
 				}
 			}
-		}
+		}*/
 		
 		/**
 		 * @return whether the server has responded with an error. Any
 		 *         error is regarded as fatal.
 		 */
-		public boolean inErrorState() {
+		/*public boolean inErrorState() {
 			return _errorState.get();
-		}
+		}*/
 		
 		/**
 		 * @return the error message if inErrorState() is true. Behaviour is 
 		 * 		   not defined if called before inErrorState is true.
 		 */
-		public String getErrorMessage() {
+		/*public String getErrorMessage() {
 			return _errorMessage;
-		}
+		}*/
 		
-	}
+	//}
 	
 	/**
 	 * Restores a given SQL dump to the database.
@@ -103,7 +93,7 @@ public class SQLRestore {
 	 * @param source File location of the SQL dump
 	 * @throws IOException
 	 */
-	public void restore(File source) throws IOException {
+	/*public void restore(File source) throws IOException {
 		DeleteMe ms = new DeleteMe(_host, _port, _dbName, _user, false, "sql", "SHA256");
 		try {
 			ms.connect(_user, _password);
@@ -188,5 +178,5 @@ public class SQLRestore {
 		} finally {
 			md.close();
 		}
-	}
+	}*/
 }

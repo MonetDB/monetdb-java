@@ -4,7 +4,7 @@ import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.mcl.io.BufferedMCLReader;
 import nl.cwi.monetdb.mcl.io.BufferedMCLWriter;
 import nl.cwi.monetdb.mcl.io.SocketConnection;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.oldmapi.OldMapiProtocol;
@@ -63,8 +63,6 @@ import java.util.*;
  *
  * @author Fabian Groffen
  * @version 4.1
- * @see BufferedMCLReader
- * @see BufferedMCLWriter
  */
 public class MapiConnection extends MonetConnection {
 

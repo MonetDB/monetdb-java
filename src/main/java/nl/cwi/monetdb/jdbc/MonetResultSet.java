@@ -10,8 +10,7 @@ package nl.cwi.monetdb.jdbc;
 
 import nl.cwi.monetdb.jdbc.types.INET;
 import nl.cwi.monetdb.jdbc.types.URL;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
-import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
+import nl.cwi.monetdb.mcl.protocol.MCLParseException;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
 import java.io.ByteArrayInputStream;
@@ -72,7 +71,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 	/** The current position of the cursor for this ResultSet object */
 	int curRow = 0;
-
 	// a blank final is immutable once assigned in the constructor
 	/** A Header to retrieve lines from */
 	private final ResultSetResponse header;
@@ -84,10 +82,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	private final int[] JdbcSQLTypes;
 	/** The number of rows in this ResultSet */
 	final int tupleCount;
-
 	/** The parental Statement object */
 	private final Statement statement;
-
 	/** The type of this ResultSet (forward or scrollable) */
 	private int type = TYPE_FORWARD_ONLY;
 	/** The concurrency of this ResultSet (currently only read-only) */
@@ -98,10 +94,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	private boolean lastReadWasNull = true;
 	/** Just a dummy variable to keep store the fetchsize set. */
 	private int fetchSize;
+	/** The current row's values */
+	Object[] values;
 
-	final Object[] values;
-
-	private final AbstractProtocol<?> protocol;
 	/**
 	 * Main constructor backed by the given Header.
 	 *
@@ -123,20 +118,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		/* if we have a header object, the fetchSize used for this result set
 		   is the header's cacheSize */
 		this.fetchSize = header.getCacheSize();
-		// well there is only one supported concurrency, so we don't have to
-		// bother about that
-
-		// throws SQLException on getters of Header, so we find out immediately
-		// if an error occurred for this query
+		// well there is only one supported concurrency, so we don't have to bother about that
+		// throws SQLException on getters of Header, so we find out immediately if an error occurred for this query
+		this.tupleCount = header.getTuplecount();
 		this.columns = header.getNames();
 		this.types = header.getTypes();
-		this.tupleCount = header.getTuplecount();
-
-		// create result array
-		this.protocol = ((MonetConnection)statement.getConnection()).getProtocol();
-		this.values = new Object[this.columns.length];
-		this.JdbcSQLTypes = new int[types.length];
-		populateJdbcSQLtypesArray();
+		this.JdbcSQLTypes = header.getJdbcSQLTypes();
 	}
 
 	/**
@@ -149,7 +136,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @param results the number of rows in the ResultSet
 	 * @throws IllegalArgumentException if communicating with monet failed
 	 */
-	MonetResultSet(Statement statement, String[] columns, String[] types, int results) throws IllegalArgumentException {
+	MonetResultSet(Statement statement, String[] columns, String[] types, int[] JdbcSQLTypes, int results)
+			throws IllegalArgumentException {
 		if (statement == null) {
 			throw new IllegalArgumentException("Statement may not be null!");
 		}
@@ -162,42 +150,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		if (results < 0) {
 			throw new IllegalArgumentException("Negative rowcount not allowed!");
 		}
-
 		this.statement = statement;
 		this.header = null;
 		this.fetchSize = 0;
-
+		this.tupleCount = results;
 		this.columns = columns;
 		this.types = types;
-		this.tupleCount = results;
-
-		try {
-			this.protocol = ((MonetConnection)statement.getConnection()).getProtocol();
-		} catch (SQLException e) {
-			throw new IllegalArgumentException(e);
-		}
-
-		this.values = new Object[this.columns.length];
-		this.JdbcSQLTypes = new int[types.length];
-		populateJdbcSQLtypesArray();
-	}
-
-	/**
-	 * Internal utility method to fill the JdbcSQLTypes array with derivable values.
-	 * By doing it once (in the constructor) we can avoid doing this in many getXyz() methods again and again
-	 * thereby improving getXyz() method performance.
-	 */
-	private void populateJdbcSQLtypesArray() {
-		for (int i = 0; i < types.length; i++) {
-			int javaSQLtype = MonetDriver.getJavaType(types[i]);
-			JdbcSQLTypes[i] = javaSQLtype;
-			if (javaSQLtype == Types.BLOB) {
-				try {
-					if (((MonetConnection)statement.getConnection()).getBlobAsBinary())
-						JdbcSQLTypes[i] = Types.BINARY;
-				} catch (SQLException se) { /* ignore it */ }
-			}
-		}
+		this.JdbcSQLTypes = JdbcSQLTypes;
 	}
 
 	//== methods of interface ResultSet
@@ -246,19 +205,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		if (row < 0) row = 0;	// before first
 		else if (row > tupleCount + 1) row = tupleCount + 1;	// after last
 
-		Object tmpLine = header.getLine(row - 1);
-
+		this.values = header.getLine(row - 1);
 		// store it
-		curRow = row;
-
-		if (tmpLine == null) return false;
-		try {
-			protocol.parseTupleLine(tmpLine, this.values);
-		} catch (MCLParseException e) {
-			throw new SQLException(e.getMessage(), "M0M10");
-		}
-
-		return true;
+		this.curRow = row;
+		return this.values != null;
 	}
 
 	/**
@@ -305,8 +255,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		if (header != null && !header.isClosed()) {
 			header.close();
 		}
-		if (statement instanceof MonetStatement)
+		if (statement instanceof MonetStatement) {
 			((MonetStatement)statement).closeIfCompletion();
+		}
 	}
 
 	// Chapter 14.2.3 from Sun JDBC 3.0 specification
@@ -451,8 +402,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row
-	 * of this ResultSet object as a java.io.Reader object.
+	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.io.Reader
+	 * object.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a java.io.Reader object that contains the column value;
@@ -478,8 +429,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row
-	 * of this ResultSet object as a java.io.Reader object.
+	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.io.Reader
+	 * object.
 	 *
 	 * @param columnName the name of the column
 	 * @return a java.io.Reader object that contains the column value;
@@ -531,13 +482,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row
-	 * of this ResultSet object as a Blob object in the Java programming
-	 * language.
+	 * Retrieves the value of the designated column in the current row of this ResultSet object as a Blob object in
+	 * the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return a Blob object representing the SQL BLOB value in the
-	 *         specified column
+	 * @return a Blob object representing the SQL BLOB value in the specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -1418,8 +1367,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Indicates the designated column's normal maximum width in
-			 * characters.
+			 * Indicates the designated column's normal maximum width in characters.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return the normal maximum number of characters allowed as the
@@ -1619,9 +1567,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Indicates whether the designated column is definitely not
-			 * writable.  MonetDB does not support cursor updates, so
-			 * nothing is writable.
+			 * Indicates whether the designated column is definitely not writable.  MonetDB does not support
+			 * cursor updates, so nothing is writable.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
@@ -1699,9 +1646,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Gets the designated column's suggested title for use in
-			 * printouts and displays. This is currently equal to
-			 * getColumnName().
+			 * Gets the designated column's suggested title for use in printouts and displays. This is currently equal
+			 * to getColumnName().
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return the suggested column title
@@ -1713,7 +1659,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 
 			/**
-			 * Gets the designated column's name
+			 * Gets the designated column's name.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return the column name
@@ -2520,7 +2466,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @return the fractional seconds (nanos) or -1 if the value is NULL
 	 * @throws SQLException if a database error occurs
 	 */
-	private int getJavaDate(Calendar cal, int columnIndex, int type) throws SQLException {
+	private int getJavaDate(Calendar cal, int columnIndex, int type) throws SQLException { //TODO check this :(
 		if (cal == null)
 			throw new IllegalArgumentException("No Calendar object given!");
 
