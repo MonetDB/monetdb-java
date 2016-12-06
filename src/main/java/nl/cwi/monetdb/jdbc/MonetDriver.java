@@ -8,6 +8,8 @@
 
 package nl.cwi.monetdb.jdbc;
 
+import nl.cwi.monetdb.mcl.connection.MonetDBConnectionFactory;
+
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
@@ -17,10 +19,8 @@ import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
@@ -49,9 +49,9 @@ final public class MonetDriver implements Driver {
 	/** The prefix of a MonetDB url */
 	private static final String MONETURL = "jdbc:monetdb://";
 	/** Major version of this driver */
-	private static final int DRIVERMAJOR = @JDBC_MAJOR@;
+	private static final int DRIVERMAJOR = 4;
 	/** Minor version of this driver */
-	private static final int DRIVERMINOR = @JDBC_MINOR@;
+	private static final int DRIVERMINOR = 1;
 	/** Version suffix string */
 	private static final String DRIVERVERSIONSUFFIX =
 		"@JDBC_VER_SUFFIX@ based on MCL v@MCL_MAJOR@.@MCL_MINOR@";
@@ -60,8 +60,11 @@ final public class MonetDriver implements Driver {
 	private static final boolean MONETJDBCCOMPLIANT = false;
 
 	/** MonetDB default port to connect to */
-	private static final String PORT = "@JDBC_DEF_PORT@";
+	private static final String PORT = "50000";
 
+	public static String getPORT() {
+		return PORT;
+	}
 
 	// initialize this class: register it at the DriverManager
 	// Chapter 9.2 from Sun JDBC 3.0 specification
@@ -108,17 +111,10 @@ final public class MonetDriver implements Driver {
 	 * @return a Connection object that represents a connection to the URL
 	 * @throws SQLException if a database access error occurs
 	 */
-	public Connection connect(String url, Properties info)
-		throws SQLException
-	{
+	public Connection connect(String url, Properties info) throws SQLException {
 		int tmp;
 		Properties props = new Properties();
-		// set the optional properties and their defaults here
 		props.put("port", PORT);
-		props.put("debug", "false");
-		props.put("language", "sql");	// mal, sql, <future>
-		props.put("so_timeout", "0");
-
 		props.putAll(info);
 		info = props;
 
@@ -155,15 +151,15 @@ final public class MonetDriver implements Driver {
 		if (uri_query != null) {
 			// handle additional arguments
 			String args[] = uri_query.split("&");
-			for (int i = 0; i < args.length; i++) {
-				tmp = args[i].indexOf('=');
+			for (String arg : args) {
+				tmp = arg.indexOf('=');
 				if (tmp > 0)
-					info.put(args[i].substring(0, tmp), args[i].substring(tmp + 1));
+					info.put(arg.substring(0, tmp), arg.substring(tmp + 1));
 			}
 		}
 
 		// finally return the Connection as requested
-		return new MonetConnection(info);
+		return MonetDBConnectionFactory.CreateMonetDBJDBCConnection(info);
 	}
 
 	/**
@@ -205,7 +201,7 @@ final public class MonetDriver implements Driver {
 		if (!acceptsURL(url))
 			return null;
 
-		List<DriverPropertyInfo> props = new ArrayList<DriverPropertyInfo>();
+		List<DriverPropertyInfo> props = new ArrayList<>();
 
 		DriverPropertyInfo prop = new DriverPropertyInfo("user", info.getProperty("user"));
 		prop.required = true;
@@ -252,6 +248,11 @@ final public class MonetDriver implements Driver {
 		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
 		props.add(prop);
 
+		prop = new DriverPropertyInfo("embedded", "false");
+		prop.required = false;
+		prop.description = "Whether or not to use an embedded MonetDB connection";
+		props.add(prop);
+
 		DriverPropertyInfo[] dpi = new DriverPropertyInfo[props.size()];
 		return props.toArray(dpi);
 	}
@@ -284,43 +285,43 @@ final public class MonetDriver implements Driver {
 	/** A static Map containing the mapping between MonetDB types and Java SQL types */
 	/* use SELECT sqlname, * FROM sys.types order by 1, id; to view all MonetDB types */
 	/* see http://docs.oracle.com/javase/7/docs/api/java/sql/Types.html to view all supported java SQL types */
-	private static java.util.Map<String, Integer> typeMap = new java.util.HashMap<String, Integer>();
+	private static Map<String, Integer> typeMap = new HashMap<>();
 	static {
 		// fill the typeMap once
 		// typeMap.put("any", Integer.valueOf(Types.???));
-		typeMap.put("bigint", Integer.valueOf(Types.BIGINT));
-		typeMap.put("blob", Integer.valueOf(Types.BLOB));
-		typeMap.put("boolean", Integer.valueOf(Types.BOOLEAN));
-		typeMap.put("char", Integer.valueOf(Types.CHAR));
-		typeMap.put("clob", Integer.valueOf(Types.CLOB));
-		typeMap.put("date", Integer.valueOf(Types.DATE));
-		typeMap.put("decimal", Integer.valueOf(Types.DECIMAL));
-		typeMap.put("double", Integer.valueOf(Types.DOUBLE));
-		// typeMap.put("geometry", Integer.valueOf(Types.???));
-		// typeMap.put("geometrya", Integer.valueOf(Types.???));
-		typeMap.put("hugeint", Integer.valueOf(Types.NUMERIC));
-		typeMap.put("inet", Integer.valueOf(Types.VARCHAR));
-		typeMap.put("int", Integer.valueOf(Types.INTEGER));
-		typeMap.put("json", Integer.valueOf(Types.VARCHAR));
+		typeMap.put("bigint", Types.BIGINT);
+		typeMap.put("blob", Types.BLOB);
+		typeMap.put("boolean", Types.BOOLEAN);
+		typeMap.put("char", Types.CHAR);
+		typeMap.put("clob", Types.CLOB);
+		typeMap.put("date", Types.DATE);
+		typeMap.put("decimal", Types.DECIMAL);
+		typeMap.put("double", Types.DOUBLE);
+		typeMap.put("geometry", Types.VARCHAR);
+		typeMap.put("geometrya", Types.VARCHAR);
+		typeMap.put("hugeint", Types.NUMERIC);
+		typeMap.put("inet", Types.VARCHAR);
+		typeMap.put("int", Types.INTEGER);
+		typeMap.put("json", Types.VARCHAR);
 		// typeMap.put("mbr", Integer.valueOf(Types.???));
-		typeMap.put("month_interval", Integer.valueOf(Types.INTEGER));
-		typeMap.put("oid", Integer.valueOf(Types.BIGINT));
+		typeMap.put("month_interval", Types.INTEGER);
+		typeMap.put("oid", Types.BIGINT);
 		// typeMap.put("ptr", Integer.valueOf(Types.???));
-		typeMap.put("real", Integer.valueOf(Types.REAL));
-		typeMap.put("sec_interval", Integer.valueOf(Types.DECIMAL));
-		typeMap.put("smallint", Integer.valueOf(Types.SMALLINT));
+		typeMap.put("real", Types.REAL);
+		typeMap.put("sec_interval", Types.DECIMAL);
+		typeMap.put("smallint", Types.SMALLINT);
 		// typeMap.put("table", Integer.valueOf(Types.???));
-		typeMap.put("time", Integer.valueOf(Types.TIME));
-		typeMap.put("timestamp", Integer.valueOf(Types.TIMESTAMP));
-		typeMap.put("timestamptz", Integer.valueOf(Types.TIMESTAMP));
+		typeMap.put("time", Types.TIME);
+		typeMap.put("timestamp", Types.TIMESTAMP);
+		typeMap.put("timestamptz", Types.TIMESTAMP);
 // new in Java 8: Types.TIMESTAMP_WITH_TIMEZONE (value 2014). Can't use it yet as we compile for java 7
-		typeMap.put("timetz", Integer.valueOf(Types.TIME));
+		typeMap.put("timetz", Types.TIME);
 // new in Java 8: Types.TIME_WITH_TIMEZONE (value 2013). Can't use it yet as we compile for java 7
-		typeMap.put("tinyint", Integer.valueOf(Types.TINYINT));
-		typeMap.put("url", Integer.valueOf(Types.VARCHAR));
-		typeMap.put("uuid", Integer.valueOf(Types.VARCHAR));
-		typeMap.put("varchar", Integer.valueOf(Types.VARCHAR));
-		typeMap.put("wrd", Integer.valueOf(Types.BIGINT));
+		typeMap.put("tinyint", Types.TINYINT);
+		typeMap.put("url", Types.VARCHAR);
+		typeMap.put("uuid", Types.VARCHAR);
+		typeMap.put("varchar", Types.VARCHAR);
+		typeMap.put("wrd", Types.BIGINT);
 	}
 
 	/**
@@ -331,10 +332,10 @@ final public class MonetDriver implements Driver {
 	 *         nothing matched on the given string
 	 */
 	static int getJavaType(String type) {
-		// match the column type on a java.sql.Types constant
+		// match the currentColumns type on a java.sql.Types constant
 		Integer tp = typeMap.get(type);
 		if (tp != null) {
-			return tp.intValue();
+			return tp;
 		} else {
 			// this should not be able to happen
 			// do not assert, since maybe future versions introduce
@@ -343,17 +344,18 @@ final public class MonetDriver implements Driver {
 		}
 	}
 
+	private static String TypeMapppingSQL = null;	// cache to optimise getSQLTypeMap()
+
 	/**
 	 * Returns a String usable in an SQL statement to map the server types
 	 * to values of java.sql.Types using the global static type map.
 	 * The returned string will be a SQL CASE x statement where the x is
-	 * replaced with the given column name (or expression) string.
+	 * replaced with the given currentColumns name (or expression) string.
 	 *
 	 * @param column a String representing the value that should be evaluated
 	 *               in the SQL CASE statement
 	 * @return a SQL CASE statement
 	 */
-	private static String TypeMapppingSQL = null;	// cache to optimise getSQLTypeMap()
 	static String getSQLTypeMap(String column) {
 		if (TypeMapppingSQL == null) {
 			// first time, compose TypeMappping SQL string

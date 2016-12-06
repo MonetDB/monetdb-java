@@ -8,7 +8,8 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import nl.cwi.monetdb.responses.*;
+import nl.cwi.monetdb.mcl.responses.*;
+import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
@@ -51,7 +52,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	/** The parental Connection object */
 	private MonetConnection connection;
 	/** The last ResponseList object this Statement produced */
-	private ResponseList lastResponseList;
+	private MonetConnection.ResponseList lastResponseList;
 	/** The last Response that this object uses */
 	IResponse header;
 	/** The warnings this Statement object generated */
@@ -60,8 +61,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	protected boolean closed;
 	/** Whether the application wants this Statement object to be pooled */
 	protected boolean poolable;
-	/** Whether this Statement should be closed if the last ResultSet
-	 * closes */
+	/** Whether this Statement should be closed if the last ResultSet closes */
 	private boolean closeOnCompletion = false;
 	/** The size of the blocks of results to ask for at the server */
 	private int fetchSize = 0;
@@ -73,7 +73,6 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	private int resultSetType = ResultSet.TYPE_FORWARD_ONLY;
 	/** The concurrency of the ResultSet to produce */
 	private int resultSetConcurrency = ResultSet.CONCUR_READ_ONLY;
-
 	/** A List to hold all queries of a batch */
 	private List<String> batch = new ArrayList<>();
 
@@ -198,19 +197,18 @@ public class MonetStatement extends MonetWrapper implements Statement {
 			boolean first = true;
 			boolean error = false;
 
-			MonetConnection server = connection.getServer();
-
 			BatchUpdateException e = new BatchUpdateException("Error(s) occurred while executing the batch, see next SQLExceptions for details", "22000", counts);
-			StringBuilder tmpBatch = new StringBuilder(server.getBlockSize());
-			String sep = server.getQueryTemplateHeader(2);
+			StringBuilder tmpBatch = new StringBuilder(connection.getBlockSize());
+			String sep = new String(connection.getLanguage().getQueryTemplateIndex(2));
 			for (int i = 0; i < batch.size(); i++) {
 				String tmp = batch.get(i);
-				if (sep.length() + tmp.length() > server.getBlockSize()) {
+				if (sep.length() + tmp.length() > connection.getBlockSize()) {
 					// The thing is too big.  Way too big.  Since it won't
 					// be optimal anyway, just add it to whatever we have
 					// and continue.
-					if (!first)
+					if (!first) {
 						tmpBatch.append(sep);
+					}
 					tmpBatch.append(tmp);
 					// send and receive
 					error |= internalBatch(tmpBatch.toString(), counts, offset, i + 1, e);
@@ -219,7 +217,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 					first = true;
 					continue;
 				}
-				if (tmpBatch.length() + sep.length() + tmp.length() >= server.getBlockSize()) {
+				if (tmpBatch.length() + sep.length() + tmp.length() >= connection.getBlockSize()) {
 					// send and receive
 					error |= internalBatch(tmpBatch.toString(), counts, offset, i + 1, e);
 					offset = i;
@@ -252,17 +250,14 @@ public class MonetStatement extends MonetWrapper implements Statement {
 				if (offset >= max) throw
 					new SQLException("Overflow: don't use multi statements when batching (" + max + ")", "M1M16");
 				if (type) {
-					e.setNextException(
-						new SQLException("Batch query produced a ResultSet! " +
-							"Ignoring and setting update count to " +
-							"value " + EXECUTE_FAILED, "M1M17"));
+					e.setNextException(new SQLException("Batch query produced a ResultSet! " +
+							"Ignoring and setting update count to value " + EXECUTE_FAILED, "M1M17"));
 					counts[offset] = EXECUTE_FAILED;
 				} else if (count >= 0) {
 					counts[offset] = count;
 				}
 				offset++;
-			} while ((type = getMoreResults()) ||
-					(count = getUpdateCount()) != -1);
+			} while ((type = getMoreResults()) || (count = getUpdateCount()) != -1);
 		} catch (SQLException ex) {
 			e.setNextException(ex);
 			for (; offset < max; offset++) {
@@ -460,9 +455,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 *         not valid column names
 	 */
 	@Override
-	public boolean execute(String sql, String[] columnNames)
-		throws SQLException
-	{
+	public boolean execute(String sql, String[] columnNames) throws SQLException {
 		addWarning("execute: generated keys for fixed set of columns not supported", "01M18");
 		return execute(sql, Statement.RETURN_GENERATED_KEYS);
 	}
@@ -488,7 +481,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		}
 
 		// create a container for the result
-		lastResponseList = new ResponseList(fetchSize, maxRows, resultSetType, resultSetConcurrency);
+		lastResponseList = connection.new ResponseList(fetchSize, maxRows, resultSetType, resultSetConcurrency);
 		// fill the header list by processing the query
 		lastResponseList.processQuery(sql);
 
@@ -553,15 +546,11 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 *         given constant is not one of those allowed
 	 */
 	@Override
-	public int executeUpdate(String sql, int autoGeneratedKeys)
-		throws SQLException
-	{
-		if (autoGeneratedKeys != Statement.RETURN_GENERATED_KEYS &&
-				autoGeneratedKeys != Statement.NO_GENERATED_KEYS)
+	public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
+		if (autoGeneratedKeys != Statement.RETURN_GENERATED_KEYS && autoGeneratedKeys != Statement.NO_GENERATED_KEYS)
 			throw new SQLException("Invalid argument, expected RETURN_GENERATED_KEYS or NO_GENERATED_KEYS", "M1M05");
 		
-		/* MonetDB has no way to disable this, so just do the normal
-		 * thing ;) */
+		/* MonetDB has no way to disable this, so just do the normal thing ;) */
 		if (execute(sql))
 			throw new SQLException("Query produced a result set", "M1M17");
 
@@ -688,7 +677,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		types[0] = "BIGINT";
 
 		if (header instanceof UpdateResponse) {
-			String lastid = ((UpdateResponse)header).lastid;
+			String lastid = ((UpdateResponse)header).getLastid();
 			if (lastid.equals("-1")) {
 				results = new String[0][1];
 			} else {
@@ -835,9 +824,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 */
 	@Override
 	public ResultSet getResultSet() throws SQLException{
-		return (header instanceof ResultSetResponse)
-			? new MonetResultSet(this, (ResultSetResponse)header)
-			: null;
+		return (header instanceof ResultSetResponse) ? new MonetResultSet(this, (ResultSetResponse)header) : null;
 	}
 
 	/**
@@ -890,9 +877,9 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	public int getUpdateCount() throws SQLException {
 		int ret = -1;
 		if (header instanceof UpdateResponse) {
-			ret = ((UpdateResponse)header).count;
+			ret = ((UpdateResponse)header).getCount();
 		} else if (header instanceof SchemaResponse) {
-			ret = ((SchemaResponse)header).state;
+			ret = ((SchemaResponse)header).getState();
 		}
 
 		return ret;
@@ -1252,12 +1239,12 @@ final class MonetVirtualResultSet extends MonetResultSet {
 		else if (row > tupleCount + 1) row = tupleCount + 1;	// after last
 
 		// store it
-		curRow = row;
+		this.curRow = row;
 
 		// see if we have the row
 		if (row < 1 || row > tupleCount) return false;
 
-		System.arraycopy(results[row - 1], 0, tlp.values, 0, results[row - 1].length);
+		System.arraycopy(this.results[row - 1], 0, this.values, 0, this.results[row - 1].length);
 
 		return true;
 	}

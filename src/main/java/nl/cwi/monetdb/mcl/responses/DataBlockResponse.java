@@ -1,7 +1,9 @@
-package nl.cwi.monetdb.responses;
+package nl.cwi.monetdb.mcl.responses;
 
-import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
+import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
+import java.lang.reflect.Array;
 import java.sql.SQLException;
 
 /**
@@ -21,10 +23,10 @@ import java.sql.SQLException;
  * rows from it.  When multiple threads will retrieve rows from this
  * object, it is possible for threads to get the same data.
  */
-public class DataBlockResponse implements IResponse {
+public class DataBlockResponse<T> implements IIncompleteResponse {
 
     /** The String array to keep the data in */
-    private final String[] data;
+    private final T[] data;
     /** The counter which keeps the current position in the data array */
     private int pos;
     /** Whether we can discard lines as soon as we have read them */
@@ -35,9 +37,10 @@ public class DataBlockResponse implements IResponse {
      * @param size the size of the data array to create
      * @param forward whether this is a forward only result
      */
-    DataBlockResponse(int size, boolean forward) {
+    @SuppressWarnings("unchecked")
+    public DataBlockResponse(int size, boolean forward, Class<T> jClass) {
         this.pos = -1;
-        this.data = new String[size];
+        this.data = (T[]) Array.newInstance(jClass, size);
         this.forwardOnly = forward;
     }
 
@@ -48,23 +51,19 @@ public class DataBlockResponse implements IResponse {
      * specified.
      *
      * @param line the header line as String
-     * @param linetype the line type according to the MAPI protocol
-     * @return a non-null String if the line is invalid,
-     *         or additional lines are not allowed.
+     * @param response the line type according to the MAPI protocol
+     * @throws MCLParseException If the result line is not expected
      */
-    @Override
-    public String addLine(String line, int linetype) {
-        if (linetype != AbstractMCLReader.RESULT)
-            return "protocol violation: unexpected line in data block: " + line;
+    @SuppressWarnings("unchecked")
+    public void addLine(ServerResponses response, Object line) throws MCLParseException {
+        if (response != ServerResponses.RESULT)
+            throw new MCLParseException("protocol violation: unexpected line in data block: " + line.toString());
         // add to the backing array
-        data[++pos] = line;
-
-        // all is well
-        return null;
+        data[++pos] = (T) line;
     }
 
     /**
-     * Returns whether this Reponse expects more lines to be added
+     * Returns whether this Response expects more lines to be added
      * to it.
      *
      * @return true if a next line should be added, false otherwise
@@ -93,7 +92,6 @@ public class DataBlockResponse implements IResponse {
     /**
      * Instructs the Response implementation to close and do the
      * necessary clean up procedures.
-     *
      */
     @Override
     public void close() {
@@ -111,9 +109,9 @@ public class DataBlockResponse implements IResponse {
      * @param line the row to retrieve
      * @return the requested row as String
      */
-    String getRow(int line) {
+    public T getRow(int line) {
         if (forwardOnly) {
-            String ret = data[line];
+            T ret = data[line];
             data[line] = null;
             return ret;
         } else {

@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.responses;
+package nl.cwi.monetdb.mcl.responses;
 
 /**
  * The AutoCommitResponse represents a transaction message.  It
@@ -7,10 +7,14 @@ package nl.cwi.monetdb.responses;
  */
 public class AutoCommitResponse extends SchemaResponse {
 
-    public final boolean autocommit;
+    private final boolean autocommit;
 
     public AutoCommitResponse(boolean ac) {
         // fill the blank final
         this.autocommit = ac;
+    }
+
+    public boolean isAutocommit() {
+        return autocommit;
     }
 }

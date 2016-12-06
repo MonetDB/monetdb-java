@@ -6,8 +6,12 @@ import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.connection.Debugger;
 import nl.cwi.monetdb.mcl.connection.MonetDBLanguage;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
-import nl.cwi.monetdb.responses.ResponseList;
+import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
+import nl.cwi.monetdb.mcl.protocol.ServerResponses;
+import nl.cwi.monetdb.mcl.responses.*;
 import nl.cwi.monetdb.mcl.connection.SendThread;
+import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
+import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
 import java.io.*;
 import java.net.SocketTimeoutException;
@@ -41,6 +45,19 @@ import java.util.concurrent.Executor;
  * @version 1.3
  */
 public abstract class MonetConnection extends MonetWrapper implements Connection {
+
+    /** the default number of rows that are (attempted to) read at once */
+    private static int DEF_FETCHSIZE = 250;
+    /** The sequence counter */
+    private static int SeqCounter = 0;
+
+    public static int GetDefFetchsize() {
+        return DEF_FETCHSIZE;
+    }
+
+    public static int GetSeqCounter() {
+        return SeqCounter;
+    }
 
     /** the successful processed input properties */
     protected final Properties conn_props;
@@ -81,6 +98,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
     protected Debugger ourSavior;
 
+    protected AbstractProtocol<?> protocol;
+
     /**
      * Constructor of a Connection for MonetDB. At this moment the
      * current implementation limits itself to storing the given host,
@@ -103,8 +122,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         return language;
     }
 
-    public void setLanguage(MonetDBLanguage language) {
-        this.language = language;
+    public void setClosed(boolean closed) {
+        this.closed = closed;
     }
 
     public void setDebugging(String filename) throws IOException {
@@ -134,6 +153,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     public abstract void closeUnderlyingConnection() throws IOException;
 
     public abstract String getJDBCURL();
+
+    public AbstractProtocol<?> getProtocol() {
+        return this.protocol;
+    }
 
     /**
      * Releases this Connection object's database and JDBC resources
@@ -199,6 +222,17 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         warnings = null;
     }
 
+    private void createResponseList(String query) throws SQLException {
+        // create a container for the result
+        ResponseList l = new ResponseList(0, 0, ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
+        // send commit to the server
+        try {
+            l.processQuery(query);
+        } finally {
+            l.close();
+        }
+    }
+
     /**
      * Makes all changes made since the previous commit/rollback
      * permanent and releases any database locks currently held by this
@@ -213,15 +247,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     public void commit() throws SQLException {
         // note: can't use sendIndependentCommand here because we need
         // to process the auto_commit state the server gives
-
-        // create a container for the result
-        ResponseList l = new ResponseList(0, 0, ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
-        // send commit to the server
-        try {
-            l.processQuery("COMMIT");
-        } finally {
-            l.close();
-        }
+        this.createResponseList("COMMIT");
     }
 
     /**
@@ -619,13 +645,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         // note: can't use sendIndependentCommand here because we need
         // to process the auto_commit state the server gives
         // create a container for the result
-        ResponseList l = new ResponseList(0, 0, ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
-        // send the appropriate query string to the database
-        try {
-            l.processQuery("RELEASE SAVEPOINT " + sp.getName());
-        } finally {
-            l.close();
-        }
+        this.createResponseList("RELEASE SAVEPOINT " + sp.getName());
     }
 
     /**
@@ -643,13 +663,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         // note: can't use sendIndependentCommand here because we need
         // to process the auto_commit state the server gives
         // create a container for the result
-        ResponseList l = new ResponseList(0, 0, ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
-        // send rollback to the server
-        try {
-            l.processQuery("ROLLBACK");
-        } finally {
-            l.close();
-        }
+        this.createResponseList("ROLLBACK");
     }
 
     /**
@@ -673,13 +687,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         // note: can't use sendIndependentCommand here because we need
         // to process the auto_commit state the server gives
         // create a container for the result
-        ResponseList l = new ResponseList(0, 0, ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
-        // send the appropriate query string to the database
-        try {
-            l.processQuery("ROLLBACK TO SAVEPOINT " + sp.getName());
-        } finally {
-            l.close();
-        }
+        this.createResponseList("ROLLBACK TO SAVEPOINT " + sp.getName());
     }
 
     /**
@@ -710,7 +718,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     @Override
     public void setAutoCommit(boolean autoCommit) throws SQLException {
         if (this.autoCommit != autoCommit) {
-            sendControlCommand("auto_commit " + (autoCommit ? "1" : "0"));
+            this.sendControlCommand("auto_commit " + (autoCommit ? "1" : "0"));
             this.autoCommit = autoCommit;
         }
     }
@@ -774,13 +782,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         // note: can't use sendIndependentCommand here because we need
         // to process the auto_commit state the server gives
         // create a container for the result
-        ResponseList l = new ResponseList(0, 0, ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
-        // send the appropriate query string to the database
-        try {
-            l.processQuery("SAVEPOINT " + sp.getName());
-        } finally {
-            l.close();
-        }
+        this.createResponseList("SAVEPOINT " + sp.getName());
         return sp;
     }
 
@@ -806,13 +808,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         // note: can't use sendIndependentCommand here because we need
         // to process the auto_commit state the server gives
         // create a container for the result
-        ResponseList l = new ResponseList(0, 0, ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
-        // send the appropriate query string to the database
-        try {
-            l.processQuery("SAVEPOINT " + sp.getName());
-        } finally {
-            l.close();
-        }
+        this.createResponseList("SAVEPOINT " + sp.getName());
         return sp;
     }
 
@@ -893,9 +889,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * @since 1.6
      */
     @Override
-    public java.sql.Array createArrayOf(String typeName, Object[] elements)
-            throws SQLException
-    {
+    public java.sql.Array createArrayOf(String typeName, Object[] elements) throws SQLException {
         throw new SQLFeatureNotSupportedException("createArrayOf() not supported", "0A000");
     }
 
@@ -965,9 +959,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * @since 1.6
      */
     @Override
-    public java.sql.Struct createStruct(String typeName, Object[] attributes)
-            throws SQLException
-    {
+    public java.sql.Struct createStruct(String typeName, Object[] attributes) throws SQLException {
         throw new SQLFeatureNotSupportedException("createStruct() not supported", "0A000");
     }
 
@@ -1329,10 +1321,12 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     public void sendIndependentCommand(String command) throws SQLException {
         synchronized (this) {
             try {
-                out.writeLine(language.getQueryTemplateIndex(0) + command + language.getQueryTemplateIndex(1));
-                String error = in.waitForPrompt();
-                if (error != null)
+                protocol.writeNextCommand(language.getQueryTemplateIndex(0), command.getBytes(), language.getQueryTemplateIndex(1));
+                protocol.waitUntilPrompt();
+                if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
+                    String error = protocol.getRemainingStringLine(0);
                     throw new SQLException(error.substring(6), error.substring(0, 5));
+                }
             } catch (SocketTimeoutException e) {
                 close(); // JDBC 4.1 semantics: abort()
                 throw new SQLException("connection timed out", "08M33");
@@ -1355,10 +1349,12 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         // send X command
         synchronized (this) {
             try {
-                out.writeLine(language.getCommandTemplateIndex(0) + command + language.getCommandTemplateIndex(1));
-                String error = in.waitForPrompt();
-                if (error != null)
+                protocol.writeNextCommand(language.getCommandTemplateIndex(0), command.getBytes(), language.getCommandTemplateIndex(1));
+                protocol.waitUntilPrompt();
+                if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
+                    String error = protocol.getRemainingStringLine(0);
                     throw new SQLException(error.substring(6), error.substring(0, 5));
+                }
             } catch (SocketTimeoutException e) {
                 close(); // JDBC 4.1 semantics, abort()
                 throw new SQLException("connection timed out", "08M33");
@@ -1381,6 +1377,371 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
             warnings = new SQLWarning(reason, sqlstate);
         } else {
             warnings.setNextWarning(new SQLWarning(reason, sqlstate));
+        }
+    }
+
+    /**
+     * A list of Response objects.  Responses are added to this list.
+     * Methods of this class are not synchronized.  This is left as
+     * responsibility to the caller to prevent concurrent access.
+     */
+    public class ResponseList {
+
+        /** The cache size (number of rows in a DataBlockResponse object) */
+        private final int cachesize;
+        /** The maximum number of results for this query */
+        private final int maxrows;
+        /** The ResultSet type to produce */
+        private final int rstype;
+        /** The ResultSet concurrency to produce */
+        private final int rsconcur;
+        /** The sequence number of this ResponseList */
+        private final int seqnr;
+        /** A list of the Responses associated with the query, in the right order */
+        private List<IResponse> responses = new ArrayList<>();
+        /** A map of ResultSetResponses, used for additional DataBlockResponse mapping */
+        private Map<Integer, ResultSetResponse> rsresponses;
+        /** The current header returned by getNextResponse() */
+        private int curResponse = -1;
+
+        /**
+         * Main constructor.  The query argument can either be a String
+         * or List.  An SQLException is thrown if another object
+         * instance is supplied.
+         *
+         * @param cachesize overall cachesize to use
+         * @param maxrows maximum number of rows to allow in the set
+         * @param rstype the type of result sets to produce
+         * @param rsconcur the concurrency of result sets to produce
+         */
+        public ResponseList(int cachesize, int maxrows, int rstype, int rsconcur) throws SQLException {
+            this.cachesize = cachesize;
+            this.maxrows = maxrows;
+            this.rstype = rstype;
+            this.rsconcur = rsconcur;
+            this.seqnr = SeqCounter++;
+        }
+
+        public int getCachesize() {
+            return cachesize;
+        }
+
+        public int getRstype() {
+            return rstype;
+        }
+
+        public int getRsconcur() {
+            return rsconcur;
+        }
+
+        public int getMaxrows() {
+            return maxrows;
+        }
+
+        /**
+         * Retrieves the next available response, or null if there are
+         * no more responses.
+         *
+         * @return the next Response available or null
+         */
+        IResponse getNextResponse() throws SQLException {
+            if (rstype == ResultSet.TYPE_FORWARD_ONLY) {
+                // free resources if we're running forward only
+                if (curResponse >= 0 && curResponse < responses.size()) {
+                    IResponse tmp = responses.get(curResponse);
+                    if (tmp != null) {
+                        tmp.close();
+                    }
+                    responses.set(curResponse, null);
+                }
+            }
+            curResponse++;
+            if (curResponse >= responses.size()) {
+                // ResponseList is obviously completed so, there are no
+                // more responses
+                return null;
+            } else {
+                // return this response
+                return responses.get(curResponse);
+            }
+        }
+
+        /**
+         * Closes the Response at index i, if not null.
+         *
+         * @param i the index position of the header to close
+         */
+        void closeResponse(int i) {
+            if (i < 0 || i >= responses.size()) return;
+            IResponse tmp = responses.set(i, null);
+            if (tmp != null)
+                tmp.close();
+        }
+
+        /**
+         * Closes the current response.
+         */
+        void closeCurrentResponse() {
+            closeResponse(curResponse);
+        }
+
+        /**
+         * Closes the current and previous responses.
+         */
+        void closeCurOldResponses() {
+            for (int i = curResponse; i >= 0; i--) {
+                closeResponse(i);
+            }
+        }
+
+        /**
+         * Closes this ResponseList by closing all the Responses in this
+         * ResponseList.
+         */
+        public void close() {
+            for (int i = 0; i < responses.size(); i++) {
+                closeResponse(i);
+            }
+        }
+
+        /**
+         * Returns whether this ResponseList has still unclosed
+         * Responses.
+         */
+        public boolean hasUnclosedResponses() {
+            for (IResponse r : responses) {
+                if (r != null)
+                    return true;
+            }
+            return false;
+        }
+
+        /**
+         * Executes the query contained in this ResponseList, and
+         * stores the Responses resulting from this query in this
+         * ResponseList.
+         *
+         * @throws SQLException if a database error occurs
+         */
+        public void processQuery(String query) throws SQLException {
+            this.executeQuery(language.getQueryTemplates(), query);
+        }
+
+        /**
+         * Internal executor of queries.
+         *
+         * @param templ the template to fill in
+         * @param query the query to execute
+         * @throws SQLException if a database error occurs
+         */
+        @SuppressWarnings({"fallthrough", "unchecked"})
+        public void executeQuery(byte[][] templ, String query) throws SQLException {
+            String error = null;
+
+            try {
+                // make sure we're ready to send query; read data till we
+                // have the prompt it is possible (and most likely) that we
+                // already have the prompt and do not have to skip any
+                // lines.  Ignore errors from previous result sets.
+                protocol.waitUntilPrompt();
+
+                // {{{ set reply size
+                /**
+                 * Change the reply size of the server.  If the given
+                 * value is the same as the current value known to use,
+                 * then ignore this call.  If it is set to 0 we get a
+                 * prompt after the server sent it's header.
+                 */
+                int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
+                size = maxrows != 0 ? Math.min(maxrows, size) : size;
+                // don't do work if it's not needed
+                if (language == MonetDBLanguage.LANG_SQL && size != curReplySize && !Arrays.deepEquals(templ, language.getCommandTemplates())) {
+                    sendControlCommand("reply_size " + size);
+
+                    // store the reply size after a successful change
+                    curReplySize = size;
+                }
+                // }}} set reply size
+
+                // If the query is larger than the TCP buffer size, use a
+                // special send thread to avoid deadlock with the server due
+                // to blocking behaviour when the buffer is full.  Because
+                // the server will be writing back results to us, it will
+                // eventually block as well when its TCP buffer gets full,
+                // as we are blocking an not consuming from it.  The result
+                // is a state where both client and server want to write,
+                // but block.
+                if (query.length() > getBlockSize()) {
+                    // get a reference to the send thread
+                    if (sendThread == null) {
+                        sendThread = new SendThread(protocol);
+                    }
+                    // tell it to do some work!
+                    sendThread.runQuery(templ, query);
+                } else {
+                    // this is a simple call, which is a lot cheaper and will
+                    // always succeed for small queries.
+                    protocol.writeNextCommand((templ[0] == null) ? MonetDBLanguage.EmptyString : templ[0], query.getBytes(), (templ[1] == null) ? MonetDBLanguage.EmptyString : templ[1]);
+                }
+
+                // go for new results
+                protocol.fetchNextResponseData();
+                ServerResponses nextResponse = protocol.getCurrentServerResponseHeader();
+                IResponse res = null;
+                while (nextResponse != ServerResponses.PROMPT) {
+                    // each response should start with a start of header
+                    // (or error)
+                    switch (nextResponse) {
+                        case SOHEADER:
+                            // make the response object, and fill it
+                            try {
+                                switch (protocol.getNextStarterHeader()) {
+                                    case Q_PARSE:
+                                        throw new MCLParseException("Q_PARSE header not allowed here", 1);
+                                    case Q_TABLE:
+                                    case Q_PREPARE: {
+                                        res = protocol.getNextResultSetResponse(MonetConnection.this, ResponseList.this, seqnr);
+                                        ResultSetResponse<?> rsreponse = (ResultSetResponse<?>) res;
+                                        // only add this resultset to
+                                        // the hashmap if it can possibly
+                                        // have an additional datablock
+                                        if (rsreponse.getRowcount() < rsreponse.getTuplecount()) {
+                                            if (rsresponses == null) {
+                                                rsresponses = new HashMap<>();
+                                            }
+                                            rsresponses.put(rsreponse.getId(), rsreponse);
+                                        }
+                                    } break;
+                                    case Q_UPDATE:
+                                        res = protocol.getNextUpdateResponse();
+                                        break;
+                                    case Q_SCHEMA:
+                                        res = protocol.getNextSchemaResponse();
+                                        break;
+                                    case Q_TRANS:
+                                        res = protocol.getNextAutoCommitResponse();
+                                        boolean isAutoCommit = ((AutoCommitResponse)res).isAutocommit();
+
+                                        if (MonetConnection.this.getAutoCommit() && isAutoCommit) {
+                                            MonetConnection.this.addWarning("Server enabled auto commit mode while local state already was auto commit.", "01M11");
+                                        }
+                                        MonetConnection.this.autoCommit = isAutoCommit;
+                                        break;
+                                    case Q_BLOCK: {
+                                        DataBlockResponse<?> next = protocol.getNextDatablockResponse(rsresponses);
+                                        if (next == null) {
+                                            error = "M0M12!No ResultSetResponse for a DataBlock found";
+                                            break;
+                                        }
+                                        res = next;
+                                    } break;
+                                }
+                            } catch (MCLParseException e) {
+                                error = "M0M10!error while parsing start of header:\n" + e.getMessage() +
+                                        " found: '" + protocol.getRemainingStringLine(0).charAt(e.getErrorOffset()) + "'" +
+                                        " in: \"" +  protocol.getRemainingStringLine(0) + "\"" + " at pos: " + e.getErrorOffset();
+                                // flush all the rest
+                                protocol.waitUntilPrompt();
+                                nextResponse = protocol.getCurrentServerResponseHeader();
+                                break;
+                            }
+
+                            // immediately handle errors after parsing
+                            // the header (res may be null)
+                            if (error != null) {
+                               protocol.waitUntilPrompt();
+                               nextResponse = protocol.getCurrentServerResponseHeader();
+                               break;
+                            }
+
+                            // here we have a res object, which
+                            // we can start filling
+                            if(res instanceof IIncompleteResponse) {
+                                IIncompleteResponse iter = (IIncompleteResponse) res;
+                                while (iter.wantsMore()) {
+                                    try {
+                                        protocol.fetchNextResponseData();
+                                        iter.addLine(protocol.getCurrentServerResponseHeader(), protocol.getCurrentData());
+                                    } catch (MCLParseException ex) {
+                                        // right, some protocol violation,
+                                        // skip the rest of the result
+                                        error = "M0M10!" + ex.getMessage();
+                                        protocol.waitUntilPrompt();
+                                        nextResponse = protocol.getCurrentServerResponseHeader();
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (error != null) {
+                                break;
+                            }
+                            // it is of no use to store
+                            // DataBlockResponses, you never want to
+                            // retrieve them directly anyway
+                            if (!(res instanceof DataBlockResponse)) {
+                                responses.add(res);
+                            }
+
+                            // read the next line (can be prompt, new
+                            // result, error, etc.) before we start the
+                            // loop over
+                            protocol.fetchNextResponseData();
+                            nextResponse = protocol.getCurrentServerResponseHeader();
+                            break;
+                        case INFO:
+                            addWarning(protocol.getRemainingStringLine(1), "01000");
+
+                            // read the next line (can be prompt, new
+                            // result, error, etc.) before we start the
+                            // loop over
+                            protocol.fetchNextResponseData();
+                            nextResponse = protocol.getCurrentServerResponseHeader();
+                            break;
+                        case ERROR:
+                            // read everything till the prompt (should be
+                            // error) we don't know if we ignore some
+                            // garbage here... but the log should reveal
+                            // that
+                            protocol.waitUntilPrompt();
+                            nextResponse = protocol.getCurrentServerResponseHeader();
+                            error = protocol.getRemainingStringLine(1);
+                            break;
+                        default:
+                            throw new SQLException("!M0M10!protocol violation, unexpected line!");
+                    }
+                }
+
+                // if we used the sendThread, make sure it has finished
+                if (sendThread != null) {
+                    String tmp = sendThread.getErrors();
+                    if (tmp != null) {
+                        if (error == null) {
+                            error = "08000!" + tmp;
+                        } else {
+                            error += "\n08000!" + tmp;
+                        }
+                    }
+                }
+                if (error != null) {
+                    SQLException ret = null;
+                    String[] errors = error.split("\n");
+                    for (String error1 : errors) {
+                        if (ret == null) {
+                            ret = new SQLException(error1.substring(6), error1.substring(0, 5));
+                        } else {
+                            ret.setNextException(new SQLException(error1.substring(6), error1.substring(0, 5)));
+                        }
+                    }
+                    throw ret;
+                }
+            } catch (SocketTimeoutException e) {
+                this.close(); // JDBC 4.1 semantics, abort()
+                throw new SQLException("connection timed out", "08M33");
+            } catch (IOException e) {
+                closed = true;
+                throw new SQLException(e.getMessage() + " (mserver still alive?)", "08000");
+            }
         }
     }
 }

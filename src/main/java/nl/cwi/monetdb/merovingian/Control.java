@@ -131,7 +131,7 @@ public class Control {
 		} catch (AssertionError e) { // mcl panics
 			ms.close();
 			
-			// Try oldmapi protocol instead
+			// Try resultset protocol instead
 			Socket s;
 			PrintStream out;
 			BufferedReader in;

@@ -23,20 +23,20 @@ import java.io.*;
  * @author Fabian Groffen
  */
 public class MonetBlob implements Blob {
+
 	private byte[] buf;
 
-	public MonetBlob(byte[] data) {
-		buf = data;
+	MonetBlob(byte[] buf) {
+		this.buf = buf;
 	}
-	
-	static MonetBlob create(String in) {
+
+	MonetBlob(String in) {
 		int len = in.length() / 2;
-		byte[] buf = new byte[len];
-		for (int i = 0; i < len; i++)
-			buf[i] = (byte)Integer.parseInt(in.substring(2 * i, (2 * i) + 2), 16);
-		return new MonetBlob(buf);
+		this.buf = new byte[len];
+		for (int i = 0; i < len; i++) {
+			this.buf[i] = (byte) Integer.parseInt(in.substring(2 * i, (2 * i) + 2), 16);
+		}
 	}
-	
 
 	//== begin interface Blob
 	
@@ -93,9 +93,7 @@ public class MonetBlob implements Blob {
 	 *         not support this method
 	 */
 	@Override
-	public InputStream getBinaryStream(long pos, long length)
-		throws SQLException
-	{
+	public InputStream getBinaryStream(long pos, long length) throws SQLException {
 		if (buf == null)
 			throw new SQLException("This Blob object has been freed", "M1M20");
 		if (pos < 1)
@@ -261,9 +259,7 @@ public class MonetBlob implements Blob {
 	 *         BLOB value
 	 */
 	@Override
-	public int setBytes(long pos, byte[] bytes, int offset, int len)
-		throws SQLException
-	{
+	public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
 		if (buf == null)
 			throw new SQLException("This Blob object has been freed", "M1M20");
 		try {

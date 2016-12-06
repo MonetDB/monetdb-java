@@ -8,6 +8,8 @@
 
 package nl.cwi.monetdb.jdbc;
 
+import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
+
 import java.io.InputStream;
 import java.io.Reader;
 import java.io.IOException;
@@ -63,10 +65,7 @@ import java.util.Map;
  * @author Fabian Groffen, Martin van Dinther
  * @version 0.4
  */
-public class MonetPreparedStatement
-	extends MonetStatement
-	implements PreparedStatement
-{
+public class MonetPreparedStatement extends MonetStatement implements PreparedStatement {
 	private final String[] monetdbType;
 	private final int[] javaType;
 	private final int[] digits;
@@ -84,20 +83,15 @@ public class MonetPreparedStatement
 
 	/* only parse the date patterns once, use multiple times */
 	/** Format of a timestamp with RFC822 time zone */
-	final SimpleDateFormat mTimestampZ =
-		new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+	private final SimpleDateFormat mTimestampZ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
 	/** Format of a timestamp */
-	final SimpleDateFormat mTimestamp =
-		new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+	private final SimpleDateFormat mTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
 	/** Format of a time with RFC822 time zone */
-	final SimpleDateFormat mTimeZ =
-		new SimpleDateFormat("HH:mm:ss.SSSZ");
+	private final SimpleDateFormat mTimeZ = new SimpleDateFormat("HH:mm:ss.SSSZ");
 	/** Format of a time */
-	final SimpleDateFormat mTime =
-		new SimpleDateFormat("HH:mm:ss.SSS");
+	private final SimpleDateFormat mTime = new SimpleDateFormat("HH:mm:ss.SSS");
 	/** Format of a date used by mserver */
-	final SimpleDateFormat mDate =
-		new SimpleDateFormat("yyyy-MM-dd");
+	private final SimpleDateFormat mDate = new SimpleDateFormat("yyyy-MM-dd");
 
 	/**
 	 * MonetPreparedStatement constructor which checks the arguments for
@@ -112,28 +106,17 @@ public class MonetPreparedStatement
 	 * @throws SQLException if an error occurs during login
 	 * @throws IllegalArgumentException is one of the arguments is null or empty
 	 */
-	MonetPreparedStatement(
-			MonetConnection connection,
-			int resultSetType,
-			int resultSetConcurrency,
-			int resultSetHoldability,
-			String prepareQuery)
-		throws SQLException, IllegalArgumentException
-	{
-		super(
-			connection,
-			resultSetType,
-			resultSetConcurrency,
-			resultSetHoldability
-		);
+	MonetPreparedStatement(MonetConnection connection, int resultSetType, int resultSetConcurrency,
+						   int resultSetHoldability, String prepareQuery) throws SQLException, IllegalArgumentException {
+		super(connection, resultSetType, resultSetConcurrency, resultSetHoldability);
 
 		if (!super.execute("PREPARE " + prepareQuery))
 			throw new SQLException("Unexpected server response", "M0M10");
 
 		// cheat a bit to get the ID and the number of columns
-		id = ((MonetConnection.ResultSetResponse)header).id;
-		size = ((MonetConnection.ResultSetResponse)header).tuplecount;
-		rscolcnt = ((MonetConnection.ResultSetResponse)header).columncount;
+		id = ((ResultSetResponse)header).getId();
+		size = ((ResultSetResponse)header).getTuplecount();
+		rscolcnt = ((ResultSetResponse)header).getColumncount();
 
 		// initialise blank finals
 		monetdbType = new String[size];
@@ -165,47 +148,6 @@ public class MonetPreparedStatement
 		// PreparedStatements are by default poolable
 		poolable = true;
 	}
-
-	/**
-	 * Constructs an empty MonetPreparedStatement.  This constructor is
-	 * in particular useful for extensions of this class.
-	 *
-	 * @param connection the connection that created this Statement
-	 * @param resultSetType type of ResultSet to produce
-	 * @param resultSetConcurrency concurrency of ResultSet to produce
-	 * @throws SQLException if an error occurs during login
-	 */
-	/* Disabled this constructor code as it is not part of the JDBC interface
-	   It may be enabled again when a subclass is constructed which needs it.
-	MonetPreparedStatement(
-			MonetConnection connection,
-			int resultSetType,
-			int resultSetConcurrency,
-			int resultSetHoldability)
-		throws SQLException
-	{
-		super(
-			connection,
-			resultSetType,
-			resultSetConcurrency,
-			resultSetHoldability
-		);
-		// initialise blank finals
-		monetdbType = null;
-		javaType = null;
-		digits = null;
-		scale = null;
-		schema = null;
-		table = null;
-		column = null;
-		values = null;
-		id = -1;
-		size = -1;
-		rscolcnt = -1;
-
-		this.connection = connection;
-	}
-	*/
 
 	//== methods interface PreparedStatement
 
@@ -424,8 +366,7 @@ public class MonetPreparedStatement
 						String monettype = getColumnTypeName(column);
 						if (monettype != null) {
 							// data of type inet or uuid is not case sensitive
-							if ("inet".equals(monettype)
-							 || "uuid".equals(monettype))
+							if ("inet".equals(monettype) || "uuid".equals(monettype))
 								return false;
 						}
 						return true;
@@ -912,7 +853,7 @@ public class MonetPreparedStatement
 				Map<String,Class<?>> map = getConnection().getTypeMap();
 				Class<?> c;
 				if (map.containsKey(typeName)) {
-					c = (Class)map.get(typeName);
+					c = map.get(typeName);
 				} else {
 					c = MonetResultSet.getClassForType(getParameterType(param));
 				}
@@ -970,9 +911,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x)
-		throws SQLException
-	{
+	public void setAsciiStream(int parameterIndex, InputStream x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setAsciiStream");
 	}
 
@@ -993,9 +932,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x, int length)
-		throws SQLException
-	{
+	public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setAsciiStream");
 	}
 
@@ -1019,9 +956,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x, long length)
-		throws SQLException
-	{
+	public void setAsciiStream(int parameterIndex, InputStream x, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setAsciiStream");
 	}
 
@@ -1077,9 +1012,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x)
-		throws SQLException
-	{
+	public void setBinaryStream(int parameterIndex, InputStream x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setBinaryStream");
 	}
 
@@ -1101,9 +1034,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x, int length)
-		throws SQLException
-	{
+	public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setBinaryStream");
 	}
 
@@ -1125,9 +1056,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x, long length)
-		throws SQLException
-	{
+	public void setBinaryStream(int parameterIndex, InputStream x, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setBinaryStream");
 	}
 
@@ -1254,12 +1183,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setCharacterStream(
-		int parameterIndex,
-		Reader reader,
-		int length)
-		throws SQLException
-	{
+	public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException {
 		if (reader == null) {
 			setNull(parameterIndex, -1);
 			return;
@@ -1292,9 +1216,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setCharacterStream(int parameterIndex, Reader reader)
-		throws SQLException
-	{
+	public void setCharacterStream(int parameterIndex, Reader reader) throws SQLException {
 		setCharacterStream(parameterIndex, reader, 0);
 	}
 
@@ -1315,12 +1237,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setCharacterStream(
-		int parameterIndex,
-		Reader reader,
-		long length)
-		throws SQLException
-	{
+	public void setCharacterStream(int parameterIndex, Reader reader, long length) throws SQLException {
 		// given the implementation of the int-version, downcast is ok
 		setCharacterStream(parameterIndex, reader, (int)length);
 	}
@@ -1424,9 +1341,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setDate(int parameterIndex, java.sql.Date x)
-		throws SQLException
-	{
+	public void setDate(int parameterIndex, java.sql.Date x) throws SQLException {
 		setDate(parameterIndex, x, null);
 	}
 
@@ -1445,9 +1360,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setDate(int parameterIndex, java.sql.Date x, Calendar cal)
-		throws SQLException
-	{
+	public void setDate(int parameterIndex, java.sql.Date x, Calendar cal) throws SQLException {
 		if (x == null) {
 			setNull(parameterIndex, -1);
 			return;
@@ -1544,9 +1457,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setNCharacterStream(int i, Reader value, long length)
-		throws SQLException
-	{
+	public void setNCharacterStream(int i, Reader value, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNCharacterStream");
 	}
 
@@ -1663,9 +1574,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setNull(int paramIndex, int sqlType, String typeName)
-		throws SQLException
-	{
+	public void setNull(int paramIndex, int sqlType, String typeName) throws SQLException {
 		// MonetDB/SQL's NULL needs no type
 		setNull(paramIndex, sqlType);
 	}
@@ -1714,9 +1623,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setObject(int parameterIndex, Object x, int targetSqlType)
-		throws SQLException
-	{
+	public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
 		setObject(parameterIndex, x, targetSqlType, 0);
 	}
 
@@ -1754,13 +1661,7 @@ public class MonetPreparedStatement
 	 * @see Types
 	 */
 	@Override
-	public void setObject(
-		int parameterIndex,
-		Object x,
-		int targetSqlType,
-		int scale)
-		throws SQLException
-	{
+	public void setObject(int parameterIndex, Object x, int targetSqlType, int scale) throws SQLException {
 		// this is according to table B-5
 		if (x instanceof String) {
 			switch (targetSqlType) {
@@ -1874,14 +1775,7 @@ public class MonetPreparedStatement
 				default:
 					throw new SQLException("Conversion not allowed", "M1M05");
 			}
-		} else if (x instanceof BigDecimal ||
-				x instanceof Byte ||
-				x instanceof Short ||
-				x instanceof Integer ||
-				x instanceof Long ||
-				x instanceof Float ||
-				x instanceof Double)
-		{
+		} else if (x instanceof BigDecimal || x instanceof Byte || x instanceof Short || x instanceof Integer || x instanceof Long || x instanceof Float || x instanceof Double) {
 			Number num = (Number)x;
 			switch (targetSqlType) {
 				case Types.TINYINT:
@@ -2002,12 +1896,7 @@ public class MonetPreparedStatement
 				default:
 					throw new SQLException("Conversion not allowed", "M1M05");
 			}
-		} else if (x instanceof java.sql.Date ||
-				x instanceof Timestamp ||
-				x instanceof Time ||
-				x instanceof Calendar ||
-				x instanceof java.util.Date)
-		{
+		} else if (x instanceof java.sql.Date || x instanceof Timestamp || x instanceof Time || x instanceof Calendar || x instanceof java.util.Date) {
 			switch (targetSqlType) {
 				case Types.CHAR:
 				case Types.VARCHAR:
@@ -2296,10 +2185,7 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		setValue(
-			parameterIndex,
-			"'" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'"
-		);
+		setValue(parameterIndex, "'" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
 	}
 
 	/**
@@ -2348,9 +2234,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTime(int index, Time x, Calendar cal)
-		throws SQLException
-	{
+	public void setTime(int index, Time x, Calendar cal) throws SQLException {
 		if (x == null) {
 			setNull(index, -1);
 			return;
@@ -2361,8 +2245,7 @@ public class MonetPreparedStatement
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
 			String RFC822 = mTimeZ.format(x);
-			setValue(index, "timetz '" +
-					RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
+			setValue(index, "timetz '" + RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
 			// calendar given, since we told the server our timezone at
@@ -2387,9 +2270,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTimestamp(int index, Timestamp x)
-		throws SQLException
-	{
+	public void setTimestamp(int index, Timestamp x) throws SQLException {
 		setTimestamp(index, x, null);
 	}
 
@@ -2410,9 +2291,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTimestamp(int index, Timestamp x, Calendar cal)
-		throws SQLException
-	{
+	public void setTimestamp(int index, Timestamp x, Calendar cal) throws SQLException {
 		if (x == null) {
 			setNull(index, -1);
 			return;
@@ -2423,8 +2302,7 @@ public class MonetPreparedStatement
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
 			String RFC822 = mTimestampZ.format(x);
-			setValue(index, "timestamptz '" +
-					RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
+			setValue(index, "timestamptz '" + RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
 			// calendar given, since we told the server our timezone at
@@ -2461,9 +2339,7 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	@Deprecated
-	public void setUnicodeStream(int parameterIndex, InputStream x, int length)
-		throws SQLException
-	{
+	public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setUnicodeStream");
 	}
 
@@ -2526,7 +2402,7 @@ public class MonetPreparedStatement
 	 * @param val the exact String representation to set
 	 * @throws SQLException if the given index is out of bounds
 	 */
-	void setValue(int index, String val) throws SQLException {
+	private void setValue(int index, String val) throws SQLException {
 		values[getParamIdx(index)] = val;
 	}
 

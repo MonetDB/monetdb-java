@@ -1,6 +1,6 @@
 package nl.cwi.monetdb.mcl.connection;
 
-import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
+import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 
 import java.io.IOException;
 import java.sql.SQLException;
@@ -30,9 +30,9 @@ public class SendThread extends Thread {
         SHUTDOWN
     }
 
-    private String[] templ;
-    private String query;
-    private AbstractMCLWriter out;
+    private byte[][] templ;
+    private byte[] query;
+    private AbstractProtocol protocol;
     private String error;
     private SendThreadStatus state = SendThreadStatus.WAIT;
 
@@ -46,10 +46,10 @@ public class SendThread extends Thread {
      *
      * @param out the socket to write to
      */
-    public SendThread(AbstractMCLWriter out) {
+    public SendThread(AbstractProtocol out) {
         super("SendThread");
         this.setDaemon(true);
-        this.out = out;
+        this.protocol = out;
         this.start();
     }
 
@@ -70,7 +70,7 @@ public class SendThread extends Thread {
 
                 // state is QUERY here
                 try {
-                    out.writeLine((templ[0] == null ? "" : templ[0]) + query + (templ[1] == null ? "" : templ[1]));
+                    protocol.writeNextCommand((templ[0] == null ? MonetDBLanguage.EmptyString : templ[0]), query, (templ[1] == null ? MonetDBLanguage.EmptyString : templ[1]));
                 } catch (IOException e) {
                     error = e.getMessage();
                 }
@@ -94,14 +94,15 @@ public class SendThread extends Thread {
      * @param query the query itself
      * @throws SQLException if this SendThread is already in use
      */
-    public void runQuery(String[] templ, String query) throws SQLException {
+    public void runQuery(byte[][] templ, String query) throws SQLException {
         sendLock.lock();
         try {
-            if (state != SendThreadStatus.WAIT)
+            if (state != SendThreadStatus.WAIT) {
                 throw new SQLException("SendThread already in use or shutting down!", "M0M03");
+            }
 
             this.templ = templ;
-            this.query = query;
+            this.query = query.getBytes();
 
             // let the thread know there is some work to do
             state = SendThreadStatus.QUERY;

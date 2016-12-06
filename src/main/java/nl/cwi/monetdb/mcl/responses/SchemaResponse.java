@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.responses;
+package nl.cwi.monetdb.mcl.responses;
 
 import java.sql.Statement;
 
@@ -13,21 +13,10 @@ import java.sql.Statement;
  */
 public class SchemaResponse implements IResponse {
 
-    public final int state = Statement.SUCCESS_NO_INFO;
+    private final int state = Statement.SUCCESS_NO_INFO;
 
-    @Override
-    public String addLine(String line, int linetype) {
-        return "Header lines are not supported for a SchemaResponse";
-    }
-
-    @Override
-    public boolean wantsMore() {
-        return false;
-    }
-
-    @Override
-    public void complete() {
-        // empty, because there is nothing to check
+    public int getState() {
+        return state;
     }
 
     @Override

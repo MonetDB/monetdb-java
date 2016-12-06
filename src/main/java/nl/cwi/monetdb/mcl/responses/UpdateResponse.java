@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.responses;
+package nl.cwi.monetdb.mcl.responses;
 
 /**
  * The UpdateResponse represents an update statement response.  It
@@ -9,28 +9,23 @@ package nl.cwi.monetdb.responses;
  * <tt>&amp;2 0 -1</tt>
  */
 public class UpdateResponse implements IResponse {
-    public final int count;
-    public final String lastid;
 
-    public UpdateResponse(int cnt, String id) {
+    private final String lastid;
+
+    private final int count;
+
+    public UpdateResponse(String id, int cnt) {
         // fill the blank finals
-        this.count = cnt;
         this.lastid = id;
+        this.count = cnt;
     }
 
-    @Override
-    public String addLine(String line, int linetype) {
-        return "Header lines are not supported for an UpdateResponse";
+    public String getLastid() {
+        return lastid;
     }
 
-    @Override
-    public boolean wantsMore() {
-        return false;
-    }
-
-    @Override
-    public void complete() {
-        // empty, because there is nothing to check
+    public int getCount() {
+        return count;
     }
 
     @Override

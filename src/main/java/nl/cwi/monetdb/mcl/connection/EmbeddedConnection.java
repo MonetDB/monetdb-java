@@ -4,8 +4,8 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedDatabase;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.io.*;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.embedded.EmbeddedProtocol;
 
 import java.io.*;
 import java.util.List;
@@ -18,8 +18,6 @@ public final class EmbeddedConnection extends MonetConnection {
 
     private final String directory;
 
-    private JDBCEmbeddedConnection internalConnection;
-
     public EmbeddedConnection(Properties props, String database, String hash, String language, boolean blobIsBinary, boolean isDebugging, String directory) throws IOException {
         super(props, database, hash, language, blobIsBinary, isDebugging);
         this.directory = directory;
@@ -30,7 +28,7 @@ public final class EmbeddedConnection extends MonetConnection {
     }
 
     public MonetDBEmbeddedConnection getAsMonetDBEmbeddedConnection() {
-        return internalConnection;
+        return ((EmbeddedProtocol)protocol).getEmbeddedConnection();
     }
 
     @Override
@@ -41,7 +39,7 @@ public final class EmbeddedConnection extends MonetConnection {
             } else {
                 MonetDBEmbeddedDatabase.StartDatabase(this.directory, true, false);
             }
-            this.internalConnection = MonetDBEmbeddedDatabase.CreateJDBCEmbeddedConnection();
+            this.protocol = new EmbeddedProtocol(MonetDBEmbeddedDatabase.CreateJDBCEmbeddedConnection());
         } catch (MonetDBEmbeddedException ex) {
             throw new MCLException(ex);
         }

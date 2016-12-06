@@ -5,6 +5,7 @@ import nl.cwi.monetdb.mcl.io.BufferedMCLReader;
 import nl.cwi.monetdb.mcl.io.BufferedMCLWriter;
 import nl.cwi.monetdb.mcl.io.SocketConnection;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.oldmapi.OldMapiProtocol;
 import nl.cwi.monetdb.util.ChannelSecurity;
@@ -78,8 +79,6 @@ public class MapiConnection extends MonetConnection {
     /** protocol version of the connection */
     protected int version;
 
-    protected OldMapiProtocol protocol;
-
     public MapiConnection(Properties props, String database, String hash, String language, boolean blobIsBinary, boolean isDebugging, String hostname, int port) throws IOException {
         super(props, database, hash, language, blobIsBinary, isDebugging);
         this.hostname = hostname;
@@ -146,13 +145,13 @@ public class MapiConnection extends MonetConnection {
 
     @Override
     public int getBlockSize() {
-        return protocol.getConnection().getBlockSize();
+        return ((OldMapiProtocol)protocol).getConnection().getBlockSize();
     }
 
     @Override
     public int getSoTimeout()  {
         try {
-            return protocol.getConnection().getSoTimeout();
+            return ((OldMapiProtocol)protocol).getConnection().getSoTimeout();
         } catch (SocketException e) {
             this.addWarning("The socket timeout could not be get", "M1M05");
         }
@@ -162,7 +161,7 @@ public class MapiConnection extends MonetConnection {
     @Override
     public void setSoTimeout(int s)  {
         try {
-            protocol.getConnection().setSoTimeout(s);
+            ((OldMapiProtocol)protocol).getConnection().setSoTimeout(s);
         } catch (SocketException e) {
             this.addWarning("The socket timeout could not be set", "M1M05");
         }
@@ -170,7 +169,7 @@ public class MapiConnection extends MonetConnection {
 
     @Override
     public void closeUnderlyingConnection() throws IOException {
-        protocol.getConnection().close();
+        ((OldMapiProtocol)protocol).getConnection().close();
     }
 
     @Override
@@ -179,6 +178,11 @@ public class MapiConnection extends MonetConnection {
         if (this.getLanguage() == MonetDBLanguage.LANG_MAL)
             language = "?language=mal";
         return "jdbc:monetdb://" + this.hostname + ":" + this.port + "/" + this.database + language;
+    }
+
+    @Override
+    public AbstractProtocol getProtocol() {
+        return this.protocol;
     }
 
     @Override
@@ -194,21 +198,28 @@ public class MapiConnection extends MonetConnection {
 
     private List<String> connect(String host, int port, String user, String pass, boolean makeConnection) throws IOException, MCLParseException, MCLException {
         if (ttl-- <= 0)
-            throw new MCLException("Maximum number of redirects reached, aborting connection attempt.  Sorry.");
+            throw new MCLException("Maximum number of redirects reached, aborting connection attempt. Sorry.");
+
+        AbstractProtocol<?> pro;
 
         if (makeConnection) {
-            this.protocol = new OldMapiProtocol(new SocketConnection(this.hostname, this.port));
-            this.protocol.getConnection().setTcpNoDelay(true);
+            pro = new OldMapiProtocol(new SocketConnection(this.hostname, this.port));
+            this.protocol = pro;
+            ((OldMapiProtocol)pro).getConnection().setTcpNoDelay(true);
 
             // set nodelay, as it greatly speeds up small messages (like we
             // often do)
             //TODO writer.registerReader(reader); ??
+        } else {
+            pro = this.protocol;
         }
 
-        this.protocol.getNextResponseHeader();
-        String test = this.getChallengeResponse(this.protocol.getEntireResponseLine(), user, pass,
-                this.language.getRepresentation(), this.database, this.hash);
-        this.protocol.writeNextLine(test.getBytes());
+        pro.fetchNextResponseData();
+        pro.waitUntilPrompt();
+        String firstLine = pro.getRemainingStringLine(0);
+
+        String test = this.getChallengeResponse(firstLine, user, pass, this.language.getRepresentation(), this.database, this.hash);
+        pro.writeNextCommand(MonetDBLanguage.EmptyString, test.getBytes(), MonetDBLanguage.EmptyString);
 
         List<String> redirects = new ArrayList<>();
         List<String> warns = new ArrayList<>();
@@ -216,15 +227,16 @@ public class MapiConnection extends MonetConnection {
         ServerResponses next;
 
         do {
-            next = this.protocol.getNextResponseHeader();
+            pro.fetchNextResponseData();
+            next = pro.getCurrentServerResponseHeader();
             switch (next) {
                 case ERROR:
-                    err += "\n" + this.protocol.getRemainingResponseLine(0);
+                    err += "\n" + pro.getRemainingStringLine(7);
                     break;
                 case INFO:
-                    warns.add(this.protocol.getRemainingResponseLine(0));
+                    warns.add(pro.getRemainingStringLine(1));
                 case REDIRECT:
-                    redirects.add(this.protocol.getRemainingResponseLine(0));
+                    redirects.add(pro.getRemainingStringLine(1));
             }
         } while (next != ServerResponses.PROMPT);
 

@@ -79,9 +79,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 * @throws SQLException if connecting to the database fails
 	 */
 	@Override
-	public Connection getConnection(String username, String password)
-		throws SQLException
-	{
+	public Connection getConnection(String username, String password) throws SQLException {
 		if (loginTimeout > 0) {
 			/// could enable Socket.setSoTimeout(int timeout) here...
 		}
@@ -91,7 +89,6 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 
 		return driver.connect(url, props);
 	}
-
 
 	/**
 	 * Gets the maximum time in seconds that this data source can wait while
@@ -132,8 +129,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 * @param out a PrintWriter - ignored
 	 */
 	@Override
-	public void setLogWriter(PrintWriter out) {
-	}
+	public void setLogWriter(PrintWriter out) {}
 
 	/**
 	 * Sets the password to use when connecting.  There is no getter

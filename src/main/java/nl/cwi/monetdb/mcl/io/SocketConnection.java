@@ -144,7 +144,6 @@ public class SocketConnection implements Closeable {
     }
 
     public int readUntilChar(StringBuilder builder, char limit) throws IOException {
-        builder.setLength(0);
         boolean found = false;
 
         while(!found) {
@@ -160,19 +159,10 @@ public class SocketConnection implements Closeable {
         return builder.length();
     }
 
-    public void writeNextLine(byte[] line) throws IOException {
-        bufferOut.clear();
-        this.writeNextBlock(line);
-        if (bufferOut.hasRemaining()) {
-            bufferOut.flip();
-            connection.write(this.bufferOut);
-        }
-    }
-
-    public void writeNextLine(byte[] prefix, String line, byte[] suffix) throws IOException {
+    public void writeNextLine(byte[] prefix, byte[] line, byte[] suffix) throws IOException {
         bufferOut.clear();
         this.writeNextBlock(prefix);
-        this.writeNextBlock(line.getBytes());
+        this.writeNextBlock(line);
         this.writeNextBlock(suffix);
         if (bufferOut.hasRemaining()) {
             bufferOut.flip();

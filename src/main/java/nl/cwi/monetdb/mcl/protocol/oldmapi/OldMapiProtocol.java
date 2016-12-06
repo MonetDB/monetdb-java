@@ -1,84 +1,137 @@
 package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
+import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.mcl.io.SocketConnection;
-import nl.cwi.monetdb.mcl.protocol.AbstractProtocolParser;
+import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
+import nl.cwi.monetdb.mcl.responses.AutoCommitResponse;
+import nl.cwi.monetdb.mcl.responses.UpdateResponse;
+import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
+import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
 import java.io.IOException;
+import java.sql.ResultSet;
+import java.util.Map;
 
 /**
  * Created by ferreira on 11/30/16.
  */
-public class OldMapiProtocol extends AbstractProtocolParser {
+public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
 
     private static final int STRING_BUILDER_INITIAL_SIZE = 128;
 
     private final SocketConnection connection;
 
-    private int builderPointer;
+    StringBuilder builder;
 
-    private final StringBuilder builder = new StringBuilder(STRING_BUILDER_INITIAL_SIZE);
+    int currentPointer = 0;
 
     public OldMapiProtocol(SocketConnection con) {
         this.connection = con;
+        this.builder = new StringBuilder(STRING_BUILDER_INITIAL_SIZE);
     }
 
     public SocketConnection getConnection() {
         return connection;
     }
 
+    boolean hasRemaining() {
+        return this.currentPointer < this.builder.length();
+    }
+
     @Override
-    public ServerResponses getNextResponseHeaderImplementation() {
-        ServerResponses res = ServerResponses.UNKNOWN;
+    public ServerResponses waitUntilPrompt() {
+        this.builder.setLength(0);
+        this.currentPointer = 0;
+        return super.waitUntilPrompt();
+    }
+
+    @Override
+    public void fetchNextResponseData() {
+        ServerResponses res;
         try {
-            while(res != ServerResponses.PROMPT) {
-                connection.readUntilChar(this.builder, '\n');
-                res = OldMapiConverter.GetNextResponseOnOldMapi(this.builder.charAt(0));
-                if(res == ServerResponses.ERROR && !this.builder.toString().matches("^![0-9A-Z]{5}!.+")) {
-                    this.builder.insert(1, "!22000!");
-                }
+            int bytesRead = connection.readUntilChar(this.builder, '\n');
+            res = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
+            if(res == ServerResponses.ERROR && !this.builder.substring(bytesRead).matches("^![0-9A-Z]{5}!.+")) {
+                this.builder.insert(bytesRead, "!22000!");
             }
-            this.builderPointer = 1;
         } catch (IOException e) {
             res = ServerResponses.ERROR;
             this.builder.setLength(0);
-            this.builderPointer = 0;
+            this.currentPointer = 0;
             this.builder.append("!22000!").append(e.getMessage());
         }
-        return res;
-    }
-
-    public String getEntireResponseLine() {
-        String res = this.builder.toString();
-        this.builderPointer = this.builder.length();
-        return res;
-    }
-
-    public String getRemainingResponseLine(int startIndex) {
-        String res = this.builder.substring(this.builderPointer + startIndex);
-        this.builderPointer = this.builder.length();
-        return res;
+        this.currentServerResponseHeader = res;
     }
 
     @Override
-    public StarterHeaders getNextStarterHeaderImplementation() {
-        try {
-            char nextToken = connection.readNextChar();
-            return OldMapiConverter.GetNextStartHeaderOnOldMapi(nextToken);
-        } catch (IOException e) {
-            return StarterHeaders.Q_UNKNOWN;
+    public StringBuilder getCurrentData() {
+        return this.builder;
+    }
+
+    @Override
+    public StarterHeaders getNextStarterHeader() {
+        return OldMapiStartOfHeaderParser.GetNextStartHeaderOnOldMapi(this);
+    }
+
+    @Override
+    public ResultSetResponse<StringBuilder> getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr) throws MCLParseException {
+        int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        int tuplecount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        int columncount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        return new ResultSetResponse<>(con, list, seqnr, id, rowcount, tuplecount, columncount);
+    }
+
+    @Override
+    public UpdateResponse getNextUpdateResponse() throws MCLParseException {
+        int count = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        String lastId = OldMapiStartOfHeaderParser.GetNextResponseDataAsString(this);
+        return new UpdateResponse(lastId, count);
+    }
+
+    @Override
+    public AutoCommitResponse getNextAutoCommitResponse() throws MCLParseException {
+        boolean ac = OldMapiStartOfHeaderParser.GetNextResponseDataAsString(this).equals("t");
+        return new AutoCommitResponse(ac);
+    }
+
+    @Override
+    @SuppressWarnings("unchecked")
+    public DataBlockResponse<StringBuilder> getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws MCLParseException {
+        int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);	// pass the columncount --- Must do this!
+        int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        int offset = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        ResultSetResponse<StringBuilder> resultSetResponse = rsresponses.get(id);
+        if (resultSetResponse == null) {
+            return null;
         }
+        DataBlockResponse<StringBuilder> res = new DataBlockResponse<>(rowcount, resultSetResponse.getRSType() == ResultSet.TYPE_FORWARD_ONLY, StringBuilder.class);
+        resultSetResponse.addDataBlockResponse(offset, res);
+        return res;
     }
 
     @Override
-    public TableResultHeaders getNextTableHeaderImplementation() {
-        return null;
+    public TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues) throws MCLParseException {
+        return OldMapiTableHeaderParser.GetNextTableHeader((StringBuilder) line, stringValues, intValues);
     }
 
+    @Override
+    public void parseTupleLine(Object line, Object[] values) throws MCLParseException {
 
-    public void writeNextLine(byte[] line) throws IOException {
-        connection.writeNextLine(line);
+    }
+
+    @Override
+    public String getRemainingStringLine(int startIndex) {
+        return this.builder.substring(startIndex);
+    }
+
+    @Override
+    public void writeNextCommand(byte[] prefix, byte[] query, byte[] suffix) throws IOException {
+        this.connection.writeNextLine(prefix, query, suffix);
     }
 }

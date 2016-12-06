@@ -8,9 +8,11 @@
 
 package nl.cwi.monetdb.jdbc;
 
+import nl.cwi.monetdb.jdbc.types.INET;
+import nl.cwi.monetdb.jdbc.types.URL;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
-import nl.cwi.monetdb.mcl.parser.TupleLineParser;
-import nl.cwi.monetdb.responses.ResultSetResponse;
+import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
+import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
@@ -20,12 +22,12 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.NClob;
 import java.sql.Ref;
 import java.sql.ResultSet;
@@ -43,9 +45,7 @@ import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
 
 /**
  * A ResultSet suitable for the MonetDB database.
@@ -69,9 +69,7 @@ import java.util.TimeZone;
  * @version 0.8
  */
 public class MonetResultSet extends MonetWrapper implements ResultSet {
-	// the following have default access modifier for the MonetVirtualResultSet subclass
-	/** The current line of the buffer split in columns */
-	final TupleLineParser tlp;
+
 	/** The current position of the cursor for this ResultSet object */
 	int curRow = 0;
 
@@ -101,6 +99,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	/** Just a dummy variable to keep store the fetchsize set. */
 	private int fetchSize;
 
+	final Object[] values;
+
+	private final AbstractProtocol<?> protocol;
 	/**
 	 * Main constructor backed by the given Header.
 	 *
@@ -127,14 +128,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 		// throws SQLException on getters of Header, so we find out immediately
 		// if an error occurred for this query
-		columns = header.getNames();
-		types = header.getTypes();
-		tupleCount = header.tuplecount;
+		this.columns = header.getNames();
+		this.types = header.getTypes();
+		this.tupleCount = header.getTuplecount();
 
 		// create result array
-		tlp = ((MonetConnection)statement.getConnection()).getServer().getTupleLineParser(columns.length);
-
-		JdbcSQLTypes = new int[types.length];
+		this.protocol = ((MonetConnection)statement.getConnection()).getProtocol();
+		this.values = new Object[this.columns.length];
+		this.JdbcSQLTypes = new int[types.length];
 		populateJdbcSQLtypesArray();
 	}
 
@@ -171,12 +172,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		this.tupleCount = results;
 
 		try {
-			this.tlp = ((MonetConnection)statement.getConnection()).getServer().getTupleLineParser(columns.length);
+			this.protocol = ((MonetConnection)statement.getConnection()).getProtocol();
 		} catch (SQLException e) {
 			throw new IllegalArgumentException(e);
 		}
 
-		JdbcSQLTypes = new int[types.length];
+		this.values = new Object[this.columns.length];
+		this.JdbcSQLTypes = new int[types.length];
 		populateJdbcSQLtypesArray();
 	}
 
@@ -197,7 +199,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 		}
 	}
-
 
 	//== methods of interface ResultSet
 
@@ -245,14 +246,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		if (row < 0) row = 0;	// before first
 		else if (row > tupleCount + 1) row = tupleCount + 1;	// after last
 
-		String tmpLine = header.getLine(row - 1);
+		Object tmpLine = header.getLine(row - 1);
 
 		// store it
 		curRow = row;
 
 		if (tmpLine == null) return false;
 		try {
-			tlp.parse(tmpLine);
+			protocol.parseTupleLine(tmpLine, this.values);
 		} catch (MCLParseException e) {
 			throw new SQLException(e.getMessage(), "M0M10");
 		}
@@ -462,13 +463,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public Reader getCharacterStream(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return null;
 			}
 			lastReadWasNull = false;
-			return new StringReader(val);
+			return new StringReader((String) val);
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -540,13 +543,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public Blob getBlob(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return null;
 			}
 			lastReadWasNull = false;
-			return MonetBlob.create(val);
+			return new MonetBlob((byte[]) val);
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -581,13 +586,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public Clob getClob(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return null;
 			}
 			lastReadWasNull = false;
-			return new MonetClob(val);
+			return new MonetClob((String) val);
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -656,15 +663,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return null;
 			}
 			lastReadWasNull = false;
-			return new BigDecimal(val);
-		} catch (NumberFormatException e) {
-			throw newSQLNumberFormatException(e);
+			return (BigDecimal) val;
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -682,22 +689,20 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	@Deprecated
-	public BigDecimal getBigDecimal(int columnIndex, int scale)
-		throws SQLException
-	{
+	public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return null;
 			}
 			lastReadWasNull = false;
 
-			BigDecimal bd = new BigDecimal(val);
+			BigDecimal bd = (BigDecimal) val;
 			bd.setScale(scale);
 			return bd;
-		} catch (NumberFormatException e) {
-			throw newSQLNumberFormatException(e);
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -729,9 +734,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	@Deprecated
-	public BigDecimal getBigDecimal(String columnName, int scale)
-		throws SQLException
-	{
+	public BigDecimal getBigDecimal(String columnName, int scale) throws SQLException {
 		return getBigDecimal(findColumn(columnName), scale);
 	}
 
@@ -748,28 +751,26 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public boolean getBoolean(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return false;	// if the value is SQL NULL, the value returned is false
 			}
 			lastReadWasNull = false;
-
-			// match common cases first
-			if ("false".equalsIgnoreCase(val) || "0".equals(val))
-				return false;
-			if ("true".equalsIgnoreCase(val) || "1".equals(val))
-				return true;
-
 			// match type specific values
 			switch (JdbcSQLTypes[columnIndex - 1]) {
 				case Types.BOOLEAN:
+					return (Boolean) val;
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
 				case Types.CLOB:
-					// check if string value equals "true" (case insensitive) or not
-					return Boolean.parseBoolean(val);
+					String other = (String) val;
+					if ("false".equalsIgnoreCase(other) || "0".equals(val))
+						return false;
+					if ("true".equalsIgnoreCase(other) || "1".equals(val))
+						return true;
+					throw newSQLInvalidColumnIndexException(columnIndex);
 				case Types.BIT: // MonetDB doesn't use type BinaryDigit, it's here for completeness
 				case Types.TINYINT:
 				case Types.SMALLINT:
@@ -787,6 +788,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				default:
 					throw new SQLException("Conversion from " + types[columnIndex - 1] + " to boolean type not supported", "M1M05");
 			}
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -818,15 +821,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return (byte) 0;
 			}
 			lastReadWasNull = false;
-			return Byte.parseByte(val);
-		} catch (NumberFormatException e) {
-			throw newSQLNumberFormatException(e);
+			return (Byte) val;
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -859,7 +862,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public byte[] getBytes(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return null;
@@ -873,19 +876,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.VARBINARY:
 				case Types.LONGVARBINARY:
 					// unpack the HEX (BLOB) notation to real bytes
-					int len = val.length() / 2;
-					byte[] buf = new byte[len];
-					int offset;
-					for (int j = 0; j < len; j++) {
-						offset = j * 2;
-						buf[j] = (byte)Integer.parseInt(val.substring(offset, offset + 2), 16);
-					}
-					return buf;
+					return (byte[]) val;
 				default:
 					throw new SQLException("Cannot operate on " + types[columnIndex - 1] + " type", "M1M05");
 			}
-		} catch (NumberFormatException e) {
-			throw newSQLNumberFormatException(e);
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -950,7 +946,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public String getCursorName() throws SQLException {
 		throw new SQLException("Positioned updates not supported for this " +
-				   "cursor (" + (header != null ? header.id : "") + ")", "0AM21");
+				   "cursor (" + (header != null ? header.getId() : "") + ")", "0AM21");
 	}
 
 	/**
@@ -965,15 +961,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public double getDouble(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return 0;
 			}
 			lastReadWasNull = false;
-			return Double.parseDouble(val);
-		} catch (NumberFormatException e) {
-			throw newSQLNumberFormatException(e);
+			return (Double) val;
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -1085,15 +1081,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public float getFloat(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return 0;
 			}
 			lastReadWasNull = false;
-			return Float.parseFloat(val);
-		} catch (NumberFormatException e) {
-			throw newSQLNumberFormatException(e);
+			return (Float) val;
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -1122,30 +1118,33 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
-		String val = "";
+		Object val;
 		try {
-			val = tlp.values[columnIndex - 1];
+			val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return 0;
 			}
 			lastReadWasNull = false;
-			return Integer.parseInt(val);
+			return (Integer) val;
 		} catch (NumberFormatException e) {
 			// The oid datatype values (as string) have a  @0  suffix in the string value.
-			// To allow succesful parsing and conversion to int, we need to remove the suffix first
+			// To allow successful parsing and conversion to int, we need to remove the suffix first
 			if ("oid".equals(types[columnIndex - 1])) {
-				int len = val.length();
-				if (len > 2 && val.endsWith("@0")) {
-					val = val.substring(0, len-2);
+				String str = (String) this.values[columnIndex - 1];
+				int len = str.length();
+				if (len > 2 && str.endsWith("@0")) {
+					str = str.substring(0, len-2);
 					try {
-						return Integer.parseInt(val);
+						return Integer.parseInt(str);
 					} catch (NumberFormatException nfe) {
 						throw newSQLNumberFormatException(nfe);
 					}
 				}
 			}
 			throw newSQLNumberFormatException(e);
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -1174,24 +1173,25 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public long getLong(int columnIndex) throws SQLException {
-		String val = "";
+		Object val;
 		try {
-			val = tlp.values[columnIndex - 1];
+			val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return 0;
 			}
 			lastReadWasNull = false;
-			return Long.parseLong(val);
+			return (Long) val;
 		} catch (NumberFormatException e) {
 			// The oid datatype values (as string) have a  @0  suffix in the string value.
 			// To allow succesful parsing and conversion to long, we need to remove the suffix first
 			if ("oid".equals(types[columnIndex - 1])) {
-				int len = val.length();
-				if (len > 2 && val.endsWith("@0")) {
-					val = val.substring(0, len-2);
+				String str = (String) this.values[columnIndex - 1];
+				int len = str.length();
+				if (len > 2 && str.endsWith("@0")) {
+					str = str.substring(0, len-2);
 					try {
-						return Long.parseLong(val);
+						return Long.parseLong(str);
 					} catch (NumberFormatException nfe) {
 						throw newSQLNumberFormatException(nfe);
 					}
@@ -1246,8 +1246,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			 * and cache the precision, scale, isNullable and isAutoincrement values in the above array chaches.
 			 * Also we only call md.getColumns() when we have a non empty schema name and table name and column name.
 			 */
-			private void fetchColumnInfo(int column) throws SQLException
-			{
+			private void fetchColumnInfo(int column) throws SQLException {
 				if (column <= 0 || column > columns.length)
 					throw newSQLInvalidColumnIndexException(column);
 
@@ -1339,13 +1338,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 						String monettype = getColumnTypeName(column);
 						if (monettype != null && monettype.length() == 4) {
 							// data of type inet or uuid is not case sensitive
-							if ("inet".equals(monettype)
-							 || "uuid".equals(monettype))
+							if ("inet".equals(monettype) || "uuid".equals(monettype))
 								return false;
 						}
 						return true;
 				}
-
 				return false;
 			}
 
@@ -1406,8 +1403,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 						String monettype = getColumnTypeName(column);
 						if (monettype != null && monettype.length() == 3) {
 							// data of type oid or ptr is not signed
-							if ("oid".equals(monettype)
-							 || "ptr".equals(monettype))
+							if ("oid".equals(monettype) || "ptr".equals(monettype))
 								return false;
 						}
 						return true;
@@ -1794,9 +1790,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		// Many generic JDBC programs use getObject(colnr) to retrieve value objects from a resultset
 		// For speed the implementation should be as fast as possible, so avoid method calls (by inlining code) where possible
 		final int JdbcType;
-		final String val;
+		final Object val;
 		try {
-			val = tlp.values[columnIndex - 1];
+			val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return null;
@@ -1811,48 +1807,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			case Types.BIT: // MonetDB doesn't use type BInary digiT, it's here for completeness
 			case Types.TINYINT:
 			case Types.SMALLINT:
-				try {
-					return Short.valueOf(val);
-				} catch (NumberFormatException e) {
-					return val;
-				}
 			case Types.INTEGER:
-				try {
-					return Integer.valueOf(val);
-				} catch (NumberFormatException e) {
-					return val;
-				}
 			case Types.BIGINT:
-				try {
-					return Long.valueOf(val);
-				} catch (NumberFormatException e) {
-					return val;
-				}
 			case Types.DOUBLE:
 			case Types.FLOAT:
-				try {
-					return Double.valueOf(val);
-				} catch (NumberFormatException e) {
-					return val;
-				}
 			case Types.REAL:
-				try {
-					return Float.valueOf(val);
-				} catch (NumberFormatException e) {
-					return val;
-				}
 			case Types.DECIMAL:
 			case Types.NUMERIC:
-				try {
-					return new BigDecimal(val);
-				} catch (NumberFormatException e) {
-					return val;
-				}
 			case Types.BOOLEAN:
-				return Boolean.valueOf(val);
-			case Types.VARCHAR:
-			{
-
+				return val;
+			case Types.VARCHAR: {
 				// The MonetDB types: inet, json, url and uuid are all mapped to Types.VARCHAR in MonetDriver.typeMap
 				// For these MonetDB types (except json, see comments below) we try to create objects of the corresponding class.
 				String MonetDBType = types[columnIndex - 1];
@@ -1860,12 +1824,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case 3:
 					if ("url".equals(MonetDBType)) {
 						try {
-							nl.cwi.monetdb.jdbc.types.URL url_obj = new nl.cwi.monetdb.jdbc.types.URL();
-							url_obj.fromString(val);
+							URL url_obj = new URL();
+							url_obj.fromString((String) val);
 							return url_obj;
-						} catch (MalformedURLException exc) {
-							// ignore exception and just return the val String object
-							return val;
 						} catch (Exception exc) {
 							// ignore exception and just return the val String object
 							return val;
@@ -1875,8 +1836,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case 4:
 					if ("inet".equals(MonetDBType)) {
 						try {
-							nl.cwi.monetdb.jdbc.types.INET inet_obj = new nl.cwi.monetdb.jdbc.types.INET();
-							inet_obj.fromString(val);
+							INET inet_obj = new INET();
+							inet_obj.fromString((String) val);
 							return inet_obj;
 						} catch (Exception exc) {
 							// ignore exception and just return the val String object
@@ -1885,7 +1846,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					} else
 					if ("uuid".equals(MonetDBType)) {
 						try {
-							return java.util.UUID.fromString(val);
+							return UUID.fromString((String) val);
 						} catch (IllegalArgumentException exc) {
 							// ignore exception and just return the val String object
 							return val;
@@ -1908,9 +1869,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
 				return val;
 			case Types.CLOB:
-				return new MonetClob(val);
+				return new MonetClob((String) val);
 			case Types.BLOB:
-				return MonetBlob.create(val);
+				return new MonetBlob((String) val);
 			case Types.DATE:
 				return getDate(columnIndex);
 			case Types.TIME:
@@ -1969,13 +1930,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public Object getObject(int columnIndex, Map<String,Class<?>> map)
-		throws SQLException
-	{
-		final String val;
+	public Object getObject(int columnIndex, Map<String,Class<?>> map) throws SQLException {
+		final Object val;
 		final String MonetDBtype;
 		try {
-			val = tlp.values[columnIndex - 1];
+			val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return null;
@@ -2026,8 +1985,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} else if (classImplementsSQLData(type)) {
 			SQLData x;
 			try {
-				Constructor<? extends SQLData> ctor =
-					((Class)type).getConstructor();
+				Constructor<? extends SQLData> ctor = ((Class)type).getConstructor();
 				x = ctor.newInstance();
 			} catch (NoSuchMethodException | InstantiationException | InvocationTargetException | SecurityException | IllegalAccessException nsme) {
 				throw new SQLException(nsme.getMessage(), "M0M27");
@@ -2146,7 +2104,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				}
 
 				@Override
-				public URL readURL() throws SQLException {
+				public java.net.URL readURL() throws SQLException {
 					return getURL(colnum);
 				}
 
@@ -2225,9 +2183,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 *         example, if a conversion error occurs
 	 */
 	@Override
-	public <T> T getObject(String columnLabel, Class<T> type)
-		throws SQLException
-	{
+	public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
 		return getObject(findColumn(columnLabel), type);
 	}
 
@@ -2394,13 +2350,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public short getShort(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			Object val = this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return 0;
 			}
 			lastReadWasNull = false;
-			return Short.parseShort(val);
+			return (Short) val;
 		} catch (NumberFormatException e) {
 			throw newSQLNumberFormatException(e);
 		} catch (IndexOutOfBoundsException e) {
@@ -2447,7 +2403,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public String getString(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			String val = (String) this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return null;
@@ -2544,12 +2500,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	// This behaviour is according table B-6 of Sun JDBC Specification 3.0
-	private SimpleDateFormat ts =
-		new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private SimpleDateFormat t =
-		new SimpleDateFormat("HH:mm:ss");
-	private SimpleDateFormat d =
-		new SimpleDateFormat("yyyy-MM-dd");
+	private SimpleDateFormat ts = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+	private SimpleDateFormat t = new SimpleDateFormat("HH:mm:ss");
+	private SimpleDateFormat d = new SimpleDateFormat("yyyy-MM-dd");
 	/**
 	 * Helper method which parses the date/time value for columns of type
 	 * TIME, DATE and TIMESTAMP.  For the types CHAR, VARCHAR and
@@ -2567,17 +2520,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @return the fractional seconds (nanos) or -1 if the value is NULL
 	 * @throws SQLException if a database error occurs
 	 */
-	private int getJavaDate(Calendar cal, int columnIndex, int type)
-		throws SQLException
-	{
-		if (cal == null) throw
-			new IllegalArgumentException("No Calendar object given!");
+	private int getJavaDate(Calendar cal, int columnIndex, int type) throws SQLException {
+		if (cal == null)
+			throw new IllegalArgumentException("No Calendar object given!");
 
 		final String monetDate;
 		final String MonetDBType;
 		int JdbcType;
 		try {
-			monetDate = tlp.values[columnIndex - 1];
+			monetDate = (String) this.values[columnIndex - 1];
 			if (monetDate == null) {
 				lastReadWasNull = true;
 				return -1;
@@ -2587,11 +2538,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			JdbcType = JdbcSQLTypes[columnIndex - 1];
 			// If we got a string type, set the JdbcType to the given type
 			// so we attempt to parse it as the caller thinks it is.
-			if (JdbcType == Types.CHAR ||
-			    JdbcType == Types.VARCHAR ||
-			    JdbcType == Types.LONGVARCHAR ||
-			    JdbcType == Types.CLOB)
-			{
+			if (JdbcType == Types.CHAR || JdbcType == Types.VARCHAR || JdbcType == Types.LONGVARCHAR || JdbcType == Types.CLOB) {
 				JdbcType = type;
 			}
 		} catch (IndexOutOfBoundsException e) {
@@ -2637,13 +2584,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			if (epos == -1) {
 				addWarning("parsing '" + monetDate + "' failed", "01M10");
 			} else if (epos < monetDate.length()) {
-				addWarning("parsing failed," +
-						 " found: '" + monetDate.charAt(epos) + "'" +
-						 " in: \"" + monetDate + "\"" +
+				addWarning("parsing failed, found: '" + monetDate.charAt(epos) + "' in: \"" + monetDate + "\"" +
 						 " at pos: " + ppos.getErrorIndex(), "01M10");
 			} else {
-				addWarning("parsing failed, expected more data after '" +
-						monetDate + "'", "01M10");
+				addWarning("parsing failed, expected more data after '" + monetDate + "'", "01M10");
 			}
 			// default value
 			cal.clear();
@@ -2661,15 +2605,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				int ctr;
 				try {
 					nanos = getIntrinsicValue(monDate[pos], pos++);
-					for (ctr = 1;
-							pos < monDate.length &&
-							monDate[pos] >= '0' &&
-							monDate[pos] <= '9';
-							ctr++)
-					{
+					for (ctr = 1; pos < monDate.length && monDate[pos] >= '0' && monDate[pos] <= '9'; ctr++) {
 						if (ctr < 9) {
 							nanos *= 10;
-							nanos += (getIntrinsicValue(monDate[pos], pos));
+							nanos += getIntrinsicValue(monDate[pos], pos);
 						}
 						if (ctr == 2)	// we have three at this point
 							cal.set(Calendar.MILLISECOND, nanos);
@@ -2678,10 +2617,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					while (ctr++ < 9)
 						nanos *= 10;
 				} catch(MCLParseException e) {
-					addWarning(e.getMessage() +
-							" found: '" + monDate[e.getErrorOffset()] + "'" +
-							" in: \"" + monetDate + "\"" +
-							" at pos: " + e.getErrorOffset(), "01M10");
+					addWarning(e.getMessage() + " found: '" + monDate[e.getErrorOffset()] + "'" +
+							" in: \"" + monetDate + "\" at pos: " + e.getErrorOffset(), "01M10");
 					// default value
 					cal.clear();
 					nanos = 0;
@@ -2701,9 +2638,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @return the intrinsic value of the char
 	 * @throws MCLParseException if c is not a digit
 	 */
-	private final static int getIntrinsicValue(char c, int pos)
-		throws MCLParseException
-	{
+	private final static int getIntrinsicValue(char c, int pos) throws MCLParseException {
 		// note: don't use Character.isDigit() here, because
 		// we only want ISO-LATIN-1 digits
 		if (c >= '0' && c <= '9') {
@@ -2725,7 +2660,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @see #getDate(int col, Calendar cal)
 	 */
 	@Override
-	public java.sql.Date getDate(int columnIndex) throws SQLException {
+	public Date getDate(int columnIndex) throws SQLException {
 		return getDate(columnIndex, Calendar.getInstance());
 	}
 
@@ -2743,9 +2678,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public java.sql.Date getDate(int columnIndex, Calendar cal)
-		throws SQLException
-	{
+	public Date getDate(int columnIndex, Calendar cal) throws SQLException {
 		int ret = getJavaDate(cal, columnIndex, Types.DATE);
 		return ret == -1 ? null : new java.sql.Date(cal.getTimeInMillis());
 	}
@@ -2762,7 +2695,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public java.sql.Date getDate(String columnName) throws SQLException {
+	public Date getDate(String columnName) throws SQLException {
 		return getDate(findColumn(columnName), Calendar.getInstance());
 	}
 
@@ -2781,9 +2714,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public java.sql.Date getDate(String columnName, Calendar cal)
-		throws SQLException
-	{
+	public Date getDate(String columnName, Calendar cal) throws SQLException {
 		return getDate(findColumn(columnName), cal);
 	}
 
@@ -2818,9 +2749,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Time getTime(int columnIndex, Calendar cal)
-		throws SQLException
-	{
+	public Time getTime(int columnIndex, Calendar cal) throws SQLException {
 		int ret = getJavaDate(cal, columnIndex, Types.TIME);
 		return ret == -1 ? null : new Time(cal.getTimeInMillis());
 	}
@@ -2856,9 +2785,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Time getTime(String columnName, Calendar cal)
-		throws SQLException
-	{
+	public Time getTime(String columnName, Calendar cal) throws SQLException {
 		return getTime(findColumn(columnName), cal);
 	}
 
@@ -2893,9 +2820,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Timestamp getTimestamp(int columnIndex, Calendar cal)
-		throws SQLException
-	{
+	public Timestamp getTimestamp(int columnIndex, Calendar cal) throws SQLException {
 		int nanos = getJavaDate(cal, columnIndex, Types.TIMESTAMP);
 		if (nanos == -1)
 			return null;
@@ -2936,9 +2861,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Timestamp getTimestamp(String columnName, Calendar cal)
-		throws SQLException
-	{
+	public Timestamp getTimestamp(String columnName, Calendar cal) throws SQLException {
 		return getTimestamp(findColumn(columnName), cal);
 	}
 
@@ -2968,16 +2891,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 *         URL is malformed
 	 */
 	@Override
-	public URL getURL(int columnIndex) throws SQLException {
+	public java.net.URL getURL(int columnIndex) throws SQLException {
 		try {
-			String val = tlp.values[columnIndex - 1];
+			String val = (String) this.values[columnIndex - 1];
 			if (val == null) {
 				lastReadWasNull = true;
 				return null;
 			}
 			lastReadWasNull = false;
 			try {
-				return new URL(val);
+				return new java.net.URL(val);
 			} catch (MalformedURLException e) {
 				throw new SQLException(e.getMessage(), "M1M05");
 			}
@@ -2999,7 +2922,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 *         URL is malformed
 	 */
 	@Override
-	public URL getURL(String columnName) throws SQLException {
+	public java.net.URL getURL(String columnName) throws SQLException {
 		return getURL(findColumn(columnName));
 	}
 

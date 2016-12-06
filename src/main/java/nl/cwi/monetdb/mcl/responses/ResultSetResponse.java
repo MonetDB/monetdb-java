@@ -1,10 +1,11 @@
-package nl.cwi.monetdb.responses;
+package nl.cwi.monetdb.mcl.responses;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
-import nl.cwi.monetdb.mcl.parser.HeaderLineParser;
 import nl.cwi.monetdb.mcl.parser.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.ParameterizedType;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
@@ -20,50 +21,54 @@ import java.sql.SQLException;
  * there the first line consists out of<br />
  * <tt>&amp;"qt" "id" "tc" "cc" "rc"</tt>.
  */
-public class ResultSetResponse implements IResponse {
+public class ResultSetResponse<T> implements IIncompleteResponse {
+
+    private static boolean CheckBooleanValuesAllTrue(boolean[] array) {
+        for (boolean anArray : array) {
+            if (!anArray) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     /** The number of columns in this result */
-    public final int columncount;
+    private final int columncount;
+    /** The number of rows in the current block */
+    private final int rowcount;
     /** The total number of rows this result set has */
-    public final int tuplecount;
+    private final int tuplecount;
     /** The numbers of rows to retrieve per DataBlockResponse */
     private int cacheSize;
     /** The table ID of this result */
-    public final int id;
+    private final int id;
     /** The names of the columns in this result */
-    private String[] name;
+    private final String[] name;
     /** The types of the columns in this result */
-    private String[] type;
+    private final String[] type;
     /** The max string length for each column in this result */
-    private int[] columnLengths;
+    private final int[] columnLengths;
     /** The table for each column in this result */
-    private String[] tableNames;
+    private final String[] tableNames;
     /** The query sequence number */
     private final int seqnr;
-    /** A List of result blocks (chunks of size fetchSize/cacheSize) */
-    private DataBlockResponse[] resultBlocks;
-
     /** A bitmap telling whether the headers are set or not */
-    private boolean[] isSet;
+    private boolean[] isSet = new boolean[4];
     /** Whether this Response is closed */
     private boolean closed;
 
+    /** The connection belonging for this ResultSetResponse */
+    private MonetConnection con;
     /** The Connection that we should use when requesting a new block */
-    private ResponseList parent;
+    private MonetConnection.ResponseList parent;
     /** Whether the fetchSize was explitly set by the user */
     private boolean cacheSizeSetExplicitly = false;
-    /** Whether we should send an Xclose command to the server
-     *  if we close this Response */
+    /** Whether we should send an Xclose command to the server if we close this Response */
     private boolean destroyOnClose;
     /** the offset to be used on Xexport queries */
     private int blockOffset = 0;
-
-    /** A parser for header lines */
-    HeaderLineParser hlp;
-
-    private final static int NAMES	= 0;
-    private final static int TYPES	= 1;
-    private final static int TABLES	= 2;
-    private final static int LENS	= 3;
+    /** A List of result blocks (chunks of size fetchSize/cacheSize) */
+    private DataBlockResponse<T>[] resultBlocks;
 
     /**
      * Sole constructor, which requires a MonetConnection parent to
@@ -77,91 +82,51 @@ public class ResultSetResponse implements IResponse {
      *               supply new result blocks when necessary
      * @param seq the query sequence number
      */
-    ResultSetResponse(int id, int tuplecount, int columncount, int rowcount, ResponseList parent, int seq) throws SQLException {
-        isSet = new boolean[7];
+    @SuppressWarnings("unchecked")
+    public ResultSetResponse(MonetConnection con, MonetConnection.ResponseList parent, int id, int seq, int rowcount, int tuplecount, int columncount) {
+        this.con = con;
         this.parent = parent;
-        if (parent.cachesize == 0) {
-				/* Below we have to calculate how many "chunks" we need
-				 * to allocate to store the entire result.  However, if
-				 * the user didn't set a cache size, as in this case, we
-				 * need to stick to our defaults. */
-            cacheSize = ResponseList.DEF_FETCHSIZE;
+        if (parent.getCachesize() == 0) {
+            /* Below we have to calculate how many "chunks" we need
+             * to allocate to store the entire result.  However, if
+             * the user didn't set a cache size, as in this case, we
+             * need to stick to our defaults. */
+            cacheSize = MonetConnection.GetDefFetchsize();
             cacheSizeSetExplicitly = false;
         } else {
-            cacheSize = parent.cachesize;
+            cacheSize = parent.getCachesize();
             cacheSizeSetExplicitly = true;
         }
-			/* So far, so good.  Now the problem with EXPLAIN, DOT, etc
-			 * queries is, that they don't support any block fetching,
-			 * so we need to always fetch everything at once.  For that
-			 * reason, the cache size is here set to the rowcount if
-			 * it's larger, such that we do a full fetch at once.
-			 * (Because we always set a reply_size, we can only get a
-			 * larger rowcount from the server if it doesn't paginate,
-			 * because it's a pseudo SQL result.) */
-        if (rowcount > cacheSize)
+
+        /* So far, so good.  Now the problem with EXPLAIN, DOT, etc
+         * queries is, that they don't support any block fetching,
+         * so we need to always fetch everything at once.  For that
+         * reason, the cache size is here set to the rowcount if
+         * it's larger, such that we do a full fetch at once.
+         * (Because we always set a reply_size, we can only get a
+         * larger rowcount from the server if it doesn't paginate,
+         * because it's a pseudo SQL result.) */
+        if (rowcount > cacheSize) {
             cacheSize = rowcount;
-        seqnr = seq;
-        closed = false;
-        destroyOnClose = id > 0 && tuplecount > rowcount;
-
+        }
+        this.seqnr = seq;
+        this.destroyOnClose = id > 0 && tuplecount > rowcount;
         this.id = id;
-        this.tuplecount = tuplecount;
+        this.rowcount = rowcount;
+
+        int maxrows = parent.getMaxrows();
+        this.tuplecount = (maxrows != 0 && tuplecount > maxrows) ? maxrows : tuplecount;
         this.columncount = columncount;
-        this.resultBlocks = new DataBlockResponse[(tuplecount / cacheSize) + 1];
 
-        hlp = server.getHeaderLineParser(columncount);
+        this.name = new String[this.columncount];
+        this.type = new String[this.columncount];
+        this.tableNames = new String[this.columncount];
+        this.columnLengths = new int[this.columncount];
 
-        resultBlocks[0] = new DataBlockResponse(rowcount, parent.rstype == ResultSet.TYPE_FORWARD_ONLY);
+        Class<T> persistentClass = (Class<T>) ((ParameterizedType) getClass().getGenericSuperclass()).getActualTypeArguments()[0];
+        this.resultBlocks = (DataBlockResponse<T>[]) Array.newInstance(DataBlockResponse.class, (tuplecount / cacheSize) + 1);
+        this.resultBlocks[0] = new DataBlockResponse<>(rowcount, parent.getRstype() == ResultSet.TYPE_FORWARD_ONLY, persistentClass);
     }
-
-    /**
-     * Parses the given string and changes the value of the matching
-     * header appropriately, or passes it on to the underlying
-     * DataResponse.
-     *
-     * @param tmpLine the string that contains the header
-     * @return a non-null String if the header cannot be parsed or
-     *         is unknown
-     */
-    // {{{ addLine
-    @Override
-    public String addLine(String tmpLine, int linetype) {
-        if (isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES]) {
-            return resultBlocks[0].addLine(tmpLine, linetype);
-        }
-
-        if (linetype != AbstractMCLReader.HEADER)
-            return "header expected, got: " + tmpLine;
-
-        // depending on the name of the header, we continue
-        try {
-            switch (hlp.parse(tmpLine)) {
-                case HeaderLineParser.NAME:
-                    name = hlp.values.clone();
-                    isSet[NAMES] = true;
-                    break;
-                case HeaderLineParser.LENGTH:
-                    columnLengths = hlp.intValues.clone();
-                    isSet[LENS] = true;
-                    break;
-                case HeaderLineParser.TYPE:
-                    type = hlp.values.clone();
-                    isSet[TYPES] = true;
-                    break;
-                case HeaderLineParser.TABLE:
-                    tableNames = hlp.values.clone();
-                    isSet[TABLES] = true;
-                    break;
-            }
-        } catch (MCLParseException e) {
-            return e.getMessage();
-        }
-
-        // all is well
-        return null;
-    }
-    // }}}
 
     /**
      * Returns whether this ResultSetResponse needs more lines.
@@ -170,33 +135,7 @@ public class ResultSetResponse implements IResponse {
      */
     @Override
     public boolean wantsMore() {
-        return !(isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES]) || resultBlocks[0].wantsMore();
-    }
-
-    /**
-     * Returns an array of Strings containing the values between
-     * ',\t' separators.
-     *
-     * @param chrLine a character array holding the input data
-     * @param start where the relevant data starts
-     * @param stop where the relevant data stops
-     * @return an array of Strings
-     */
-    final private String[] getValues(char[] chrLine, int start, int stop) {
-        int elem = 0;
-        String[] values = new String[columncount];
-
-        for (int i = start; i < stop; i++) {
-            if (chrLine[i] == '\t' && chrLine[i - 1] == ',') {
-                values[elem++] =
-                        new String(chrLine, start, i - 1 - start);
-                start = i + 1;
-            }
-        }
-        // at the left over part
-        values[elem++] = new String(chrLine, start, stop - start);
-
-        return values;
+        return !CheckBooleanValuesAllTrue(isSet) || resultBlocks[0].wantsMore();
     }
 
     /**
@@ -206,7 +145,7 @@ public class ResultSetResponse implements IResponse {
      * @param offset the offset number of rows for this block
      * @param rr the DataBlockResponse to add
      */
-    public void addDataBlockResponse(int offset, DataBlockResponse rr) {
+    public void addDataBlockResponse(int offset, DataBlockResponse<T> rr) {
         int block = (offset - blockOffset) / cacheSize;
         resultBlocks[block] = rr;
     }
@@ -216,16 +155,32 @@ public class ResultSetResponse implements IResponse {
      * needs to be consistent with regard to its internal data.
      *
      * @throws SQLException if the data currently in this Response is not
-     *                      sufficient to be consistant
+     *                      sufficient to be consistent
      */
     @Override
     public void complete() throws SQLException {
         String error = "";
-        if (!isSet[NAMES]) error += "name header missing\n";
-        if (!isSet[TYPES]) error += "type header missing\n";
-        if (!isSet[TABLES]) error += "table name header missing\n";
-        if (!isSet[LENS]) error += "column width header missing\n";
+        if (!isSet[0]) error += "name header missing\n";
+        if (!isSet[1]) error += "column width header missing\n";
+        if (!isSet[2]) error += "table name header missing\n";
+        if (!isSet[3]) error += "type header missing\n";
         if (!error.equals("")) throw new SQLException(error, "M0M10");
+    }
+
+    public int getId() {
+        return id;
+    }
+
+    public int getColumncount() {
+        return columncount;
+    }
+
+    public int getTuplecount() {
+        return tuplecount;
+    }
+
+    public int getRowcount() {
+        return rowcount;
     }
 
     /**
@@ -288,7 +243,7 @@ public class ResultSetResponse implements IResponse {
      * @return the ResultSet type
      */
     public int getRSType() {
-        return parent.rstype;
+        return parent.getRstype();
     }
 
     /**
@@ -297,12 +252,48 @@ public class ResultSetResponse implements IResponse {
      * @return the ResultSet concurrency
      */
     public int getRSConcur() {
-        return parent.rsconcur;
+        return parent.getRsconcur();
+    }
+
+    /**
+     * Parses the given string and changes the value of the matching
+     * header appropriately, or passes it on to the underlying
+     * DataResponse.
+     *
+     * @param line the string that contains the header
+     * @throws MCLParseException if has a wrong header
+     */
+    @SuppressWarnings("unchecked")
+    public void addLine(ServerResponses response, Object line) throws MCLParseException {
+        if (CheckBooleanValuesAllTrue(isSet)) {
+            resultBlocks[0].addLine(response, line);
+        }
+        if (response != ServerResponses.HEADER) {
+            throw new MCLParseException("header expected, got: " + response.toString());
+        } else {
+            //we will always pass the tableNames pointer
+            switch (con.getProtocol().getNextTableHeader(line, this.tableNames, this.columnLengths)) {
+                case NAME:
+                    System.arraycopy(this.tableNames, 0, this.name, 0, this.columncount);
+                    isSet[0] = true;
+                    break;
+                case LENGTH:
+                    isSet[1] = true;
+                    break;
+                case TYPE:
+                    System.arraycopy(this.tableNames, 0, this.type, 0, this.columncount);
+                    isSet[2] = true;
+                    break;
+                case TABLE:
+                    isSet[3] = true;
+                    break;
+            }
+        }
     }
 
     /**
      * Returns a line from the cache. If the line is already present in the
-     * cache, it is returned, if not apropriate actions are taken to make
+     * cache, it is returned, if not appropriate actions are taken to make
      * sure the right block is being fetched and as soon as the requested
      * line is fetched it is returned.
      *
@@ -311,7 +302,8 @@ public class ResultSetResponse implements IResponse {
      *         is out of the scope of the result set
      * @throws SQLException if an database error occurs
      */
-    public String getLine(int row) throws SQLException {
+    @SuppressWarnings("unchecked")
+    public T getLine(int row) throws SQLException {
         if (row >= tuplecount || row < 0)
             return null;
 
@@ -319,21 +311,21 @@ public class ResultSetResponse implements IResponse {
         int blockLine = (row - blockOffset) % cacheSize;
 
         // do we have the right block loaded? (optimistic try)
-        DataBlockResponse rawr;
+        DataBlockResponse<T> rawr;
         // load block if appropriate
         if ((rawr = resultBlocks[block]) == null) {
             /// TODO: ponder about a maximum number of blocks to keep
             ///       in memory when dealing with random access to
             ///       reduce memory blow-up
 
-            // if we're running forward only, we can discard the oldmapi
+            // if we're running forward only, we can discard the resultset
             // block loaded
-            if (parent.rstype == ResultSet.TYPE_FORWARD_ONLY) {
+            if (parent.getRstype() == ResultSet.TYPE_FORWARD_ONLY) {
                 for (int i = 0; i < block; i++)
                     resultBlocks[i] = null;
 
-                if (ResponseList.SeqCounter - 1 == seqnr && !cacheSizeSetExplicitly &&
-                        tuplecount - row > cacheSize && cacheSize < ResponseList.DEF_FETCHSIZE * 10) {
+                if (MonetConnection.GetSeqCounter() - 1 == seqnr && !cacheSizeSetExplicitly &&
+                        tuplecount - row > cacheSize && cacheSize < MonetConnection.GetDefFetchsize() * 10) {
                     // there has no query been issued after this
                     // one, so we can consider this an uninterrupted
                     // continuation request.  Let's once increase
@@ -363,11 +355,11 @@ public class ResultSetResponse implements IResponse {
             }
 
             // ok, need to fetch cache block first
-            parent.executeQuery(server.getCommandHeaderTemplates(),
-                    "export " + id + " " + ((block * cacheSize) + blockOffset) + " " + cacheSize);
+            parent.executeQuery(con.getLanguage().getCommandTemplates(), "export " + id + " " + ((block * cacheSize) + blockOffset) + " " + cacheSize);
             rawr = resultBlocks[block];
-            if (rawr == null) throw
-                    new AssertionError("block " + block + " should have been fetched by now :(");
+            if (rawr == null) {
+                throw new AssertionError("block " + block + " should have been fetched by now :(");
+            }
         }
 
         return rawr.getRow(blockLine);
@@ -384,7 +376,9 @@ public class ResultSetResponse implements IResponse {
         // result only if we had an ID in the header and this result
         // was larger than the reply size
         try {
-            if (destroyOnClose) sendControlCommand("close " + id);
+            if (destroyOnClose) {
+                con.sendControlCommand("close " + id);
+            }
         } catch (SQLException e) {
             // probably a connection error...
         }

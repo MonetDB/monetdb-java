@@ -32,9 +32,19 @@ public enum MonetDBLanguage {
         return commandTemplates[index];
     }
 
+    public byte[][] getQueryTemplates() {
+        return queryTemplates;
+    }
+
+    public byte[][] getCommandTemplates() {
+        return commandTemplates;
+    }
+
     public String getRepresentation() {
         return representation;
     }
+
+    public static final byte[] EmptyString = "".getBytes();
 
     public static MonetDBLanguage GetLanguageFromString(String language) {
         switch (language) {

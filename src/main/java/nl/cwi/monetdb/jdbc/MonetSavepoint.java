@@ -52,7 +52,6 @@ public class MonetSavepoint implements Savepoint {
 		this.name = null;
 	}
 
-
 	/**
 	 * Retrieves the generated ID for the savepoint that this Savepoint object
 	 * represents.
