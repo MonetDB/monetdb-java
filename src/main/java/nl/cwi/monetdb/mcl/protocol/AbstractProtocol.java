@@ -34,21 +34,24 @@ public abstract class AbstractProtocol<T> {
 
     public abstract StarterHeaders getNextStarterHeader();
 
-    public abstract ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr) throws MCLParseException;
+    public abstract ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list,
+                                                               int seqnr) throws ProtocolException;
 
-    public abstract UpdateResponse getNextUpdateResponse() throws MCLParseException;
+    public abstract UpdateResponse getNextUpdateResponse() throws ProtocolException;
 
     public SchemaResponse getNextSchemaResponse() {
         return new SchemaResponse();
     }
 
-    public abstract AutoCommitResponse getNextAutoCommitResponse() throws MCLParseException;
+    public abstract AutoCommitResponse getNextAutoCommitResponse() throws ProtocolException;
 
-    public abstract DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws MCLParseException;
+    public abstract DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
+            throws ProtocolException;
 
-    public abstract TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues) throws MCLParseException;
+    public abstract TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues)
+            throws ProtocolException;
 
-    public abstract int parseTupleLine(Object line, Object[] values, int[] typesMap) throws MCLParseException;
+    public abstract int parseTupleLine(Object line, Object[] values, int[] typesMap) throws ProtocolException;
 
     public abstract String getRemainingStringLine(int startIndex);
 

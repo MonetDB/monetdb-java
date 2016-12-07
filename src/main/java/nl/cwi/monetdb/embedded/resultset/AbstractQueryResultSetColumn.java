@@ -37,12 +37,12 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
     /**
      * The index of the first value mapped to a Java class.
      */
-    protected int firstRetrievedIndex;
+    private int firstRetrievedIndex;
 
     /**
      * The index of the last value mapped to a Java class.
      */
-    protected int lastRetrievedIndex;
+    private int lastRetrievedIndex;
 
 	protected AbstractQueryResultSetColumn(String columnType, long tablePointer, int resultSetIndex, String columnName,
                                            int columnDigits, int columnScale, int numberOfRows) {
@@ -53,6 +53,15 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
         this.firstRetrievedIndex = numberOfRows;
         this.lastRetrievedIndex = 0;
  	}
+
+    /**
+     * Gets the result set index of the column.
+     *
+     * @return The result set index of the column
+     */
+    public int getResultSetIndex() {
+        return resultSetIndex;
+    }
 
     /**
      * Gets the number of rows in this column.

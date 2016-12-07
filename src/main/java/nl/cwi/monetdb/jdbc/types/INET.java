@@ -36,8 +36,7 @@ public class INET implements SQLData {
 	@Override
 	public void readSQL(SQLInput stream, String typeName) throws SQLException {
 		if (typeName.compareTo("inet") != 0)
-			throw new SQLException("can only use this class with 'inet' type",
-					"M1M05");
+			throw new SQLException("can only use this class with 'inet' type", "M1M05");
 		inet = stream.readString();
 	}
 
@@ -53,7 +52,7 @@ public class INET implements SQLData {
 
 	public void fromString(String newinet) throws Exception {
 		if (newinet == null) {
-			inet = newinet;
+			inet = null;
 			return;
 		}
 		int slash = newinet.indexOf('/');
@@ -64,8 +63,7 @@ public class INET implements SQLData {
 			try {
 				netmask = Integer.parseInt(newinet.substring(slash + 1));
 			} catch (NumberFormatException nfe) {
-				throw new Exception("cannot parse netmask bits: " +
-						newinet.substring(slash + 1));
+				throw new Exception("cannot parse netmask bits: " + newinet.substring(slash + 1));
 			}
 			if (netmask <= 0 || netmask > 32)
 				throw new Exception("netmask must be >0 and <32");
@@ -83,8 +81,7 @@ public class INET implements SQLData {
 				throw new Exception("cannot parse number: " + quads[i]);
 			}
 			if (quadv < 0 || quadv > 255)
-				throw new Exception("value must be between 0 and 255: " +
-						quads[i]);
+				throw new Exception("value must be between 0 and 255: " + quads[i]);
 		}
 		// everything is fine
 		inet = newinet;
@@ -103,12 +100,11 @@ public class INET implements SQLData {
 
 	public void setAddress(String newinet) throws Exception {
 		if (newinet == null) {
-			inet = newinet;
+			inet = null;
 			return;
 		}
 		if (newinet.indexOf('/') != -1)
-			throw new Exception("IPv4 address cannot contain '/' " +
-					"(use fromString() instead)");
+			throw new Exception("IPv4 address cannot contain '/' (use fromString() instead)");
 		fromString(newinet);
 	}
 
@@ -123,8 +119,7 @@ public class INET implements SQLData {
 		try {
 			return Integer.parseInt(inet.substring(slash + 1));
 		} catch (NumberFormatException nfe) {
-			throw new SQLException("cannot parse netmask bits: " +
-					inet.substring(slash + 1), "M0M27");
+			throw new SQLException("cannot parse netmask bits: " + inet.substring(slash + 1), "M0M27");
 		}
 	}
 

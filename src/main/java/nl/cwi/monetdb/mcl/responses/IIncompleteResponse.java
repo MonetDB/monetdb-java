@@ -1,6 +1,6 @@
 package nl.cwi.monetdb.mcl.responses;
 
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
 import java.sql.SQLException;
@@ -26,5 +26,5 @@ public interface IIncompleteResponse extends IResponse {
      */
     void complete() throws SQLException;
 
-    void addLine(ServerResponses response, Object line) throws MCLParseException;
+    void addLine(ServerResponses response, Object line) throws ProtocolException;
 }

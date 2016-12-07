@@ -1,19 +1,29 @@
 package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.jdbc.MonetBlob;
+import nl.cwi.monetdb.jdbc.MonetClob;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
+
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.sql.Date;
+import java.sql.Types;
+import java.text.ParseException;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
 
 /**
  * Created by ferreira on 12/6/16.
  */
 final class OldMapiTupleLineParser {
 
-    static int OldMapiParseTupleLine(StringBuilder line, Object[] values, StringBuilder helper, int[] typesMap) throws MCLParseException {
+    static int OldMapiParseTupleLine(StringBuilder line, Object[] values, StringBuilder helper, int[] jDBCTypesMap) throws ProtocolException {
         int len = line.length();
 
         // first detect whether this is a single value line (=) or a real tuple ([)
         if (line.charAt(0) == '=') {
             if (values.length != 1) {
-                throw new MCLParseException(values.length + " columns expected, but only single value found");
+                throw new ProtocolException(values.length + " columns expected, but only single value found");
             }
             // return the whole string but the leading =
             values[0] = line.substring(1);
@@ -109,12 +119,13 @@ final class OldMapiTupleLineParser {
                             }
 
                             // put the unescaped string in the right place
-                            values[column++] = helper.toString();
+                            values[column] = OldMapiStringToJavaObjectConverter(helper.toString(), jDBCTypesMap[column]);
                         } else if ((i - 1) - cursor == 4 && line.indexOf("NULL", cursor) == cursor) {
-                            values[column++] = null;
+                            values[column] = null;
                         } else {
-                            values[column++] = line.substring(cursor, i - 1);
+                            values[column] = OldMapiStringToJavaObjectConverter(line.substring(cursor, i - 1), jDBCTypesMap[column]);
                         }
+                        column++;
                         cursor = i + 1;
                     }
                     // reset escaped flag
@@ -124,8 +135,75 @@ final class OldMapiTupleLineParser {
         }
         // check if this result is of the size we expected it to be
         if (column != values.length)
-            throw new MCLParseException("illegal result length: " + column + "\nlast read: " + (column > 0 ? values[column - 1] : "<none>"));
-
+            throw new ProtocolException("illegal result length: " + column + "\nlast read: " + (column > 0 ? values[column - 1] : "<none>"));
         return column;
+    }
+
+    private static final SimpleDateFormat DateParser = new SimpleDateFormat("yyyy-MM-dd");
+
+    private static final SimpleDateFormat TimeParser = new SimpleDateFormat("HH:mm:ss");
+
+    private static final SimpleDateFormat TimestampParser = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    private static byte[] BinaryBlobConverter(String toParse) {
+        int len = toParse.length() / 2;
+        byte[] res = new byte[len];
+        for (int i = 0; i < len; i++) {
+            res[i] = (byte) Integer.parseInt(toParse.substring(2 * i, (2 * i) + 2), 16);
+        }
+        return res;
+    }
+
+    private static Object OldMapiStringToJavaObjectConverter(String toParse, int jDBCMapping) throws ProtocolException {
+        switch (jDBCMapping) {
+            case Types.BIGINT:
+                return Long.parseLong(toParse);
+            case Types.BLOB:
+                return new MonetBlob(BinaryBlobConverter(toParse));
+            case Types.BINARY:
+                return BinaryBlobConverter(toParse);
+            case Types.BOOLEAN:
+                return Boolean.parseBoolean(toParse);
+            case Types.CHAR:
+                return toParse;
+            case Types.CLOB:
+                return new MonetClob(toParse);
+            case Types.DATE:
+                try {
+                    return DateParser.parse(toParse);
+                } catch (ParseException e) {
+                    throw new ProtocolException(e.getMessage());
+                }
+            case Types.DECIMAL:
+                return new BigDecimal(toParse);
+            case Types.DOUBLE:
+                return Double.parseDouble(toParse);
+            case Types.NUMERIC:
+                return new BigInteger(toParse);
+            case Types.INTEGER:
+                return Integer.parseInt(toParse);
+            case Types.REAL:
+                return Float.parseFloat(toParse);
+            case Types.SMALLINT:
+                return Short.parseShort(toParse);
+            case Types.TIME:
+                try {
+                    return TimeParser.parse(toParse);
+                } catch (ParseException e) {
+                    throw new ProtocolException(e.getMessage());
+                }
+            case Types.TIMESTAMP:
+                try {
+                    return TimestampParser.parse(toParse);
+                } catch (ParseException e) {
+                    throw new ProtocolException(e.getMessage());
+                }
+            case Types.TINYINT:
+                return Byte.parseByte(toParse);
+            case Types.VARCHAR:
+                return toParse;
+            default:
+                return null;
+        }
     }
 }

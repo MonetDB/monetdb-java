@@ -2,7 +2,7 @@ package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.mcl.io.SocketConnection;
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
@@ -13,7 +13,6 @@ import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
 import java.io.IOException;
-import java.sql.ResultSet;
 import java.util.Map;
 
 /**
@@ -29,7 +28,7 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
 
     int currentPointer = 0;
 
-    final StringBuilder tupleLineBuilder;
+    private final StringBuilder tupleLineBuilder;
 
     public OldMapiProtocol(SocketConnection con) {
         this.connection = con;
@@ -82,8 +81,8 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
 
     @Override
     public ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr)
-            throws MCLParseException {
-        int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+            throws ProtocolException {
+        int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
         int tuplecount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int columncount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
@@ -91,20 +90,21 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
     }
 
     @Override
-    public UpdateResponse getNextUpdateResponse() throws MCLParseException {
+    public UpdateResponse getNextUpdateResponse() throws ProtocolException {
         int count = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
         String lastId = OldMapiStartOfHeaderParser.GetNextResponseDataAsString(this);
         return new UpdateResponse(lastId, count);
     }
 
     @Override
-    public AutoCommitResponse getNextAutoCommitResponse() throws MCLParseException {
+    public AutoCommitResponse getNextAutoCommitResponse() throws ProtocolException {
         boolean ac = OldMapiStartOfHeaderParser.GetNextResponseDataAsString(this).equals("t");
         return new AutoCommitResponse(ac);
     }
 
     @Override
-    public DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws MCLParseException {
+    public DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
+            throws ProtocolException {
         int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int columncount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
@@ -118,13 +118,15 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
     }
 
     @Override
-    public TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues) throws MCLParseException {
+    public TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues)
+            throws ProtocolException {
         return OldMapiTableHeaderParser.GetNextTableHeader((StringBuilder) line, stringValues, intValues);
     }
 
     @Override
-    public int parseTupleLine(Object line, Object[] values, int[] typesMap) throws MCLParseException {
-        return OldMapiTupleLineParser.OldMapiParseTupleLine((StringBuilder) line, values, this.tupleLineBuilder, typesMap);
+    public int parseTupleLine(Object line, Object[] values, int[] typesMap) throws ProtocolException {
+        return OldMapiTupleLineParser.OldMapiParseTupleLine((StringBuilder) line, values, this.tupleLineBuilder,
+                typesMap);
     }
 
     @Override

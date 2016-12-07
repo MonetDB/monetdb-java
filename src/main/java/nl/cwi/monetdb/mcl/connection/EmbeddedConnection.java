@@ -4,7 +4,7 @@ import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedDatabase;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.embedded.EmbeddedProtocol;
 
 import java.io.*;
@@ -18,7 +18,8 @@ public final class EmbeddedConnection extends MonetConnection {
 
     private final String directory;
 
-    public EmbeddedConnection(Properties props, String database, String hash, String language, boolean blobIsBinary, boolean isDebugging, String directory) throws IOException {
+    EmbeddedConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
+                       boolean isDebugging, String directory) throws IOException {
         super(props, database, hash, language, blobIsBinary, isDebugging);
         this.directory = directory;
     }
@@ -32,9 +33,10 @@ public final class EmbeddedConnection extends MonetConnection {
     }
 
     @Override
-    public List<String> connect(String user, String pass) throws IOException, MCLParseException, MCLException {
+    public List<String> connect(String user, String pass) throws IOException, ProtocolException, MCLException {
         try {
-            if(MonetDBEmbeddedDatabase.IsDatabaseRunning() && !MonetDBEmbeddedDatabase.GetDatabaseDirectory().equals(this.directory)) {
+            if(MonetDBEmbeddedDatabase.IsDatabaseRunning() &&
+                    !MonetDBEmbeddedDatabase.GetDatabaseDirectory().equals(this.directory)) {
                 throw new MCLException("The embedded database is already running on a different directory!");
             } else {
                 MonetDBEmbeddedDatabase.StartDatabase(this.directory, true, false);
@@ -69,10 +71,6 @@ public final class EmbeddedConnection extends MonetConnection {
 
     @Override
     public void closeUnderlyingConnection() throws IOException {
-        try {
-            MonetDBEmbeddedDatabase.StopDatabase();
-        } catch (MonetDBEmbeddedException e) {
-            // ignore it
-        }
+        ((EmbeddedProtocol)protocol).getEmbeddedConnection().closeConnection();
     }
 }

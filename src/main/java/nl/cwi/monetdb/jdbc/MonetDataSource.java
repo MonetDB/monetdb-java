@@ -42,24 +42,20 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	// private String serverName;
 	// private String role;
 
-
 	private final MonetDriver driver;
 
 	/**
-	 * Constructor of a MonetDataSource which uses default settings for a
-	 * connection.  You probably want to change this setting using the
-	 * method setURL.
+	 * Constructor of a MonetDataSource which uses default settings for a connection.  You probably want to change this
+	 * setting using the method setURL.
 	 */
 	public MonetDataSource() {
 		description = "MonetDB database";
 		url = "jdbc:monetdb://localhost/";
-
 		driver = new MonetDriver();
 	}
 
 	/**
-	 * Attempts to establish a connection with the data source that this
-	 * DataSource object represents.
+	 * Attempts to establish a connection with the data source that this DataSource object represents.
 	 *
 	 * @return a MonetConnection
 	 * @throws SQLException if connecting to the database fails
@@ -70,8 +66,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	}
 
 	/**
-	 * Attempts to establish a connection with the data source that this
-	 * DataSource object represents.
+	 * Attempts to establish a connection with the data source that this DataSource object represents.
 	 *
 	 * @param username the username to use
 	 * @param password the password to use
@@ -86,13 +81,11 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 		Properties props = new Properties();
 		props.put("user", username);
 		props.put("password", password);
-
 		return driver.connect(url, props);
 	}
 
 	/**
-	 * Gets the maximum time in seconds that this data source can wait while
-	 * attempting to connect to a database.
+	 * Gets the maximum time in seconds that this data source can wait while attempting to connect to a database.
 	 *
 	 * @return login timeout default is 0 (infinite)
 	 */
@@ -102,8 +95,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	}
 
 	/**
-	 * Sets the maximum time in seconds that this data source will wait while
-	 * attempting to connect to a database.
+	 * Sets the maximum time in seconds that this data source will wait while attempting to connect to a database.
 	 *
 	 * @param seconds the number of seconds to wait before aborting the connect
 	 */
@@ -123,8 +115,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	}
 
 	/**
-	 * Sets the log writer for this DataSource object to the given
-	 * java.io.PrintWriter object.
+	 * Sets the log writer for this DataSource object to the given java.io.PrintWriter object.
 	 *
 	 * @param out a PrintWriter - ignored
 	 */
@@ -204,8 +195,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 * may be the root Logger.
 	 *
 	 * @return the parent Logger for this data source
-	 * @throws SQLFeatureNotSupportedException if the data source does
-	 *         not use java.util.logging
+	 * @throws SQLFeatureNotSupportedException if the data source does not use java.util.logging
 	 */
 	@Override
 	public Logger getParentLogger() throws SQLFeatureNotSupportedException {

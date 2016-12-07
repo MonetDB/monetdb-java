@@ -8,6 +8,8 @@
 
 package nl.cwi.monetdb.embedded.mapping;
 
+import nl.cwi.monetdb.jdbc.MonetBlob;
+
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.net.Inet4Address;
@@ -31,9 +33,8 @@ public enum MonetDBToJavaMapping {
     Tinyint(Byte.class), Smallint(Short.class), Int(Integer.class), Wrd(Long.class), Bigint(Long.class),
     Hugeint(BigInteger.class), Decimal(BigDecimal.class), Real(Float.class), Double(Double.class),
     MonthInterval(Integer.class), SecondInterval(Long.class), Time(Time.class), TimeTz(Time.class), Date(Date.class),
-    Timestamp(Timestamp.class), TimestampTz(Timestamp.class), Blob(MonetDBEmbeddedBlob.class),
-    Geometry(MonetDBEmbeddedBlob.class), GeometryA(MonetDBEmbeddedBlob.class), URL(URL.class), Inet(Inet4Address.class),
-    JSON(MonetDBEmbeddedBlob.class), UUID(UUID.class);
+    Timestamp(Timestamp.class), TimestampTz(Timestamp.class), Blob(MonetBlob.class), Geometry(String.class),
+    GeometryA(String.class), URL(URL.class), Inet(Inet4Address.class), JSON(String.class), UUID(UUID.class);
 
     /**
      * The mapping between MonetDB data types and enum values.
@@ -98,12 +99,12 @@ public enum MonetDBToJavaMapping {
         AppendMappings.put(Date, Date[].class);
         AppendMappings.put(Timestamp, Timestamp[].class);
         AppendMappings.put(TimestampTz, Timestamp[].class);
-        AppendMappings.put(Blob, MonetDBEmbeddedBlob[].class);
-        AppendMappings.put(Geometry, MonetDBEmbeddedBlob[].class);
-        AppendMappings.put(GeometryA, MonetDBEmbeddedBlob[].class);
+        AppendMappings.put(Blob, MonetBlob[].class);
+        AppendMappings.put(Geometry, String[].class);
+        AppendMappings.put(GeometryA, String[].class);
         AppendMappings.put(URL, URL[].class);
         AppendMappings.put(Inet, Inet4Address[].class);
-        AppendMappings.put(JSON, MonetDBEmbeddedBlob[].class);
+        AppendMappings.put(JSON, String[].class);
         AppendMappings.put(UUID, UUID[].class);
     }
 

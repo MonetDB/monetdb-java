@@ -27,8 +27,7 @@ public class URL implements SQLData {
 	@Override
 	public void readSQL(SQLInput stream, String typeName) throws SQLException {
 		if (typeName.compareTo("url") != 0)
-			throw new SQLException("can only use this class with 'url' type",
-					"M1M05");
+			throw new SQLException("can only use this class with 'url' type", "M1M05");
 		url = stream.readString();
 	}
 
@@ -44,7 +43,7 @@ public class URL implements SQLData {
 
 	public void fromString(String newurl) throws Exception {
 		if (newurl == null) {
-			url = newurl;
+			url = null;
 			return;
 		}
 		new java.net.URL(newurl);

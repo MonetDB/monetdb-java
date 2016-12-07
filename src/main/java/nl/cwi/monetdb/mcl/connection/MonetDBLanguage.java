@@ -6,7 +6,8 @@ package nl.cwi.monetdb.mcl.connection;
 public enum MonetDBLanguage {
 
     /** the SQL language */
-    LANG_SQL(new byte[][]{"s".getBytes(), "\n;".getBytes(), "\n;\n".getBytes()}, new byte[][]{"X".getBytes(), null, "\nX".getBytes()}, "sql"),
+    LANG_SQL(new byte[][]{"s".getBytes(), "\n;".getBytes(), "\n;\n".getBytes()}, new byte[][]{"X".getBytes(), null,
+            "\nX".getBytes()}, "sql"),
     /** the MAL language (officially *NOT* supported) */
     LANG_MAL(new byte[][]{null, ";\n".getBytes(), ";\n".getBytes()}, new byte[][]{null, null, null}, "mal"),
     /** an unknown language */

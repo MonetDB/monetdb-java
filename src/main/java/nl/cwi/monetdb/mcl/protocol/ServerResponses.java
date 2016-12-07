@@ -5,6 +5,8 @@ package nl.cwi.monetdb.mcl.protocol;
  */
 public enum ServerResponses {
 
+    /* Please don't change the order */
+
     /** "there is currently no line", or the the type is unknown is represented by UNKNOWN */
     UNKNOWN,
     /** a line starting with ! indicates ERROR */

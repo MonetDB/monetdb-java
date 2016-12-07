@@ -2,7 +2,7 @@ package nl.cwi.monetdb.mcl.connection;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.jdbc.MonetDriver;
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 
 import java.io.File;
 import java.io.IOException;
@@ -16,7 +16,8 @@ import java.util.Properties;
  */
 public final class MonetDBConnectionFactory {
 
-    public static MonetConnection CreateMonetDBJDBCConnection(Properties props) throws SQLException, IllegalArgumentException {
+    public static MonetConnection CreateMonetDBJDBCConnection(Properties props)
+            throws SQLException, IllegalArgumentException {
         MonetConnection res;
 
         boolean isEmbedded = Boolean.parseBoolean(props.getProperty("embedded", "false"));
@@ -103,7 +104,8 @@ public final class MonetDBConnectionFactory {
         //initialize the debugging stuff if so
         if (debug) {
             try {
-                String fname = props.getProperty("logfile", "monet_" + System.currentTimeMillis() + ".log");
+                String fname = props.getProperty("logfile", "monet_" +
+                        System.currentTimeMillis() + ".log");
                 File f = new File(fname);
                 int ext = fname.lastIndexOf('.');
                 if (ext < 0) ext = fname.length();
@@ -133,12 +135,14 @@ public final class MonetDBConnectionFactory {
         } catch (IOException e) {
             if(!isEmbedded) {
                 MapiConnection con = (MapiConnection) res;
-                throw new SQLException("Unable to connect (" + con.getHostname() + ":" + con.getPort() + "): " + e.getMessage(), "08006");
+                throw new SQLException("Unable to connect (" + con.getHostname() + ":"
+                        + con.getPort() + "): " + e.getMessage(), "08006");
             } else {
                 EmbeddedConnection em = (EmbeddedConnection) res;
-                throw new SQLException("Unable to connect the directory " + em.getDirectory() + ": " + e.getMessage(), "08006");
+                throw new SQLException("Unable to connect the directory " + em.getDirectory() + ": "
+                        + e.getMessage(), "08006");
             }
-        } catch (MCLParseException e) {
+        } catch (ProtocolException e) {
             throw new SQLException(e.getMessage(), "08001");
         } catch (MCLException e) {
             String[] connex = e.getMessage().split("\n");

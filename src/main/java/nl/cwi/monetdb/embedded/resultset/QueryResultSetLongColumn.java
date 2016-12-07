@@ -60,7 +60,8 @@ public final class QueryResultSetLongColumn extends AbstractQueryResultSetColumn
     }
 
     @Override
-    protected boolean[] checkIfIndexesAreNullImplementation(long[] values, boolean[] res) throws MonetDBEmbeddedException {
+    protected boolean[] checkIfIndexesAreNullImplementation(long[] values, boolean[] res)
+            throws MonetDBEmbeddedException {
         long nil = GetLongNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
             res[i] = (values[i] == nil);

@@ -3,7 +3,7 @@ package nl.cwi.monetdb.mcl.responses;
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.jdbc.MonetDriver;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
 import java.sql.ResultSet;
@@ -52,7 +52,6 @@ public class ResultSetResponse implements IIncompleteResponse {
     private byte isSet;
     /** Whether this Response is closed */
     private boolean closed;
-
     /** The connection belonging for this ResultSetResponse */
     private MonetConnection con;
     /** The Connection that we should use when requesting a new block */
@@ -67,8 +66,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     private final DataBlockResponse[] resultBlocks;
 
     /**
-     * Sole constructor, which requires a MonetConnection parent to
-     * be given.
+     * Sole constructor, which requires a MonetConnection parent to be given.
      *
      * @param id the ID of the result set
      * @param tuplecount the total number of tuples in the result set
@@ -127,10 +125,10 @@ public class ResultSetResponse implements IIncompleteResponse {
     private void populateJdbcSQLTypesArray() {
         for (int i = 0; i < this.type.length; i++) {
             int javaSQLtype = MonetDriver.getJavaType(this.type[i]);
-            this.JdbcSQLTypes[i] = javaSQLtype;
             if (javaSQLtype == Types.BLOB && con.getBlobAsBinary()) {
-                this.JdbcSQLTypes[i] = Types.BINARY;
+                javaSQLtype = Types.BINARY;
             }
+            this.JdbcSQLTypes[i] = javaSQLtype;
         }
     }
 
@@ -269,14 +267,15 @@ public class ResultSetResponse implements IIncompleteResponse {
      * underlying DataResponse.
      *
      * @param line the string that contains the header
-     * @throws MCLParseException if has a wrong header
+     * @throws ProtocolException if has a wrong header
      */
-    public void addLine(ServerResponses response, Object line) throws MCLParseException {
+    @Override
+    public void addLine(ServerResponses response, Object line) throws ProtocolException {
         if (this.isSet >= IsSetFinalValue) {
             this.resultBlocks[0].addLine(response, line);
         }
         if (response != ServerResponses.HEADER) {
-            throw new MCLParseException("header expected, got: " + response.toString());
+            throw new ProtocolException("header expected, got: " + response.toString());
         } else {
             //we will always pass the tableNames pointer
             switch (con.getProtocol().getNextTableHeader(line, this.tableNames, this.columnLengths)) {
@@ -300,14 +299,12 @@ public class ResultSetResponse implements IIncompleteResponse {
     }
 
     /**
-     * Returns a line from the cache. If the line is already present in the
-     * cache, it is returned, if not appropriate actions are taken to make
-     * sure the right block is being fetched and as soon as the requested
-     * line is fetched it is returned.
+     * Returns a line from the cache. If the line is already present in the cache, it is returned, if not appropriate
+     * actions are taken to make sure the right block is being fetched and as soon as the requested line is fetched it
+     * is returned.
      *
      * @param row the row in the result set to return
-     * @return the exact row read as requested or null if the requested row
-     *         is out of the scope of the result set
+     * @return the exact row read as requested or null if the requested row is out of the scope of the result set
      * @throws SQLException if an database error occurs
      */
     public Object[] getLine(int row) throws SQLException {
@@ -321,41 +318,30 @@ public class ResultSetResponse implements IIncompleteResponse {
         DataBlockResponse rawr;
         // load block if appropriate
         if ((rawr = resultBlocks[block]) == null) {
-            /// TODO: ponder about a maximum number of blocks to keep
-            ///       in memory when dealing with random access to
-            ///       reduce memory blow-up
+            // TODO: ponder about a maximum number of blocks to keep in memory when dealing with random access to
+            // reduce memory blow-up
 
-            // if we're running forward only, we can discard the resultset
-            // block loaded
+            // if we're running forward only, we can discard the resultset block loaded
             if (parent.getRstype() == ResultSet.TYPE_FORWARD_ONLY) {
                 for (int i = 0; i < block; i++)
                     resultBlocks[i] = null;
 
                 if (MonetConnection.GetSeqCounter() - 1 == seqnr && !cacheSizeSetExplicitly &&
                         tuplecount - row > cacheSize && cacheSize < MonetConnection.GetDefFetchsize() * 10) {
-                    // there has no query been issued after this
-                    // one, so we can consider this an uninterrupted
-                    // continuation request.  Let's once increase
-                    // the cacheSize as it was not explicitly set,
-                    // since the chances are high that we won't
-                    // bother anyone else by doing so, and just
-                    // gaining some performance.
+                    // there has no query been issued after this one, so we can consider this an uninterrupted
+                    // continuation request.  Let's once increase the cacheSize as it was not explicitly set,
+                    // since the chances are high that we won't bother anyone else by doing so, and just gaining
+                    // some performance.
 
-                    // store the previous position in the
-                    // blockOffset variable
+                    // store the previous position in the blockOffset variable
                     blockOffset += cacheSize;
 
                     // increase the cache size (a lot)
                     cacheSize *= 10;
 
-                    // by changing the cacheSize, we also
-                    // change the block measures.  Luckily
-                    // we don't care about previous blocks
-                    // because we have a forward running
-                    // pointer only.  However, we do have
-                    // to recalculate the block number, to
-                    // ensure the next call to find this
-                    // new block.
+                    // by changing the cacheSize, we also change the block measures. Luckily we don't care about
+                    // previous blocks because we have a forward running pointer only. However, we do have to
+                    // recalculate the block number, to ensure the next call to find this new block.
                     block = (row - blockOffset) / cacheSize;
                     blockLine = (row - blockOffset) % cacheSize;
                 }
@@ -373,15 +359,14 @@ public class ResultSetResponse implements IIncompleteResponse {
     }
 
     /**
-     * Closes this Response by sending an Xclose to the server indicating
-     * that the result can be closed at the server side as well.
+     * Closes this Response by sending an Xclose to the server indicating that the result can be closed at the server
+     * side as well.
      */
     @Override
     public void close() {
         if (closed) return;
-        // send command to server indicating we're done with this
-        // result only if we had an ID in the header and this result
-        // was larger than the reply size
+        // send command to server indicating we're done with this result only if we had an ID in the header and this
+        // result was larger than the reply size
         try {
             if (destroyOnClose) {
                 con.sendControlCommand("close " + id);

@@ -22,19 +22,19 @@ public class RowIterator extends AbstractRowSet {
     /**
      * The current table row number on the fetched set.
      */
-    protected int currentIterationNumber = 0;
+    private int currentIterationNumber = 0;
 
     /**
      * The first row in the table to iterate.
      */
-    protected final int firstIndex;
+    private final int firstIndex;
 
     /**
      * The last row in the table to iterate.
      */
-    protected final int lastIndex;
+    private final int lastIndex;
 
-    protected RowIterator(MonetDBTable table, Object[][] rows, int firstIndex, int lastIndex) {
+    RowIterator(MonetDBTable table, Object[][] rows, int firstIndex, int lastIndex) {
         super(table, table.getMappings(), rows);
         this.firstIndex = firstIndex;
         this.lastIndex = lastIndex;

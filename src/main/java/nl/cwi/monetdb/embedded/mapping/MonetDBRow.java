@@ -28,7 +28,7 @@ public class MonetDBRow implements Iterable {
      */
     private Object[] columns;
 
-    protected MonetDBRow(AbstractRowSet originalSet, Object[] columns) {
+    MonetDBRow(AbstractRowSet originalSet, Object[] columns) {
         this.originalSet = originalSet;
         this.columns = columns;
     }

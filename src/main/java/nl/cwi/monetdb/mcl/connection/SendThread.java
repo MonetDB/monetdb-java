@@ -41,8 +41,7 @@ public class SendThread extends Thread {
     private final Condition waiting = sendLock.newCondition();
 
     /**
-     * Constructor which immediately starts this thread and sets it
-     * into daemon mode.
+     * Constructor which immediately starts this thread and sets it into daemon mode.
      *
      * @param out the socket to write to
      */
@@ -70,7 +69,8 @@ public class SendThread extends Thread {
 
                 // state is QUERY here
                 try {
-                    protocol.writeNextCommand((templ[0] == null ? MonetDBLanguage.EmptyString : templ[0]), query, (templ[1] == null ? MonetDBLanguage.EmptyString : templ[1]));
+                    protocol.writeNextCommand((templ[0] == null ? MonetDBLanguage.EmptyString : templ[0]), query,
+                            (templ[1] == null ? MonetDBLanguage.EmptyString : templ[1]));
                 } catch (IOException e) {
                     error = e.getMessage();
                 }
@@ -86,9 +86,8 @@ public class SendThread extends Thread {
     }
 
     /**
-     * Starts sending the given query over the given socket.  Beware
-     * that the thread should be finished (can be assured by calling
-     * throwErrors()) before this method is called!
+     * Starts sending the given query over the given socket. Beware that the thread should be finished (can be assured
+     * by calling throwErrors()) before this method is called!
      *
      * @param templ the query template
      * @param query the query itself

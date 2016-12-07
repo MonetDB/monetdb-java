@@ -53,8 +53,7 @@ final public class MonetDriver implements Driver {
 	/** Minor version of this driver */
 	private static final int DRIVERMINOR = 1;
 	/** Version suffix string */
-	private static final String DRIVERVERSIONSUFFIX =
-		"@JDBC_VER_SUFFIX@ based on MCL v@MCL_MAJOR@.@MCL_MINOR@";
+	private static final String DRIVERVERSIONSUFFIX = "@JDBC_VER_SUFFIX@ based on MCL v@MCL_MAJOR@.@MCL_MINOR@";
 	// We're not fully compliant, but what we support is compliant
 	/** Whether this driver is JDBC compliant or not */
 	private static final boolean MONETJDBCCOMPLIANT = false;
@@ -191,11 +190,9 @@ final public class MonetDriver implements Driver {
 	 * getPropertyInfo method.
 	 *
 	 * @param url the URL of the database to which to connect
-	 * @param info a proposed list of tag/value pairs that will be sent on
-	 *        connect open
-	 * @return an array of DriverPropertyInfo objects describing possible
-	 *         properties. This array may be an empty array if no properties
-	 *         are required.
+	 * @param info a proposed list of tag/value pairs that will be sent on connect open
+	 * @return an array of DriverPropertyInfo objects describing possible properties. This array may be an empty array
+	 * if no properties are required.
 	 */
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
 		if (!acceptsURL(url))
@@ -281,14 +278,13 @@ final public class MonetDriver implements Driver {
 
 	//== end methods of interface driver
 
-
 	/** A static Map containing the mapping between MonetDB types and Java SQL types */
 	/* use SELECT sqlname, * FROM sys.types order by 1, id; to view all MonetDB types */
 	/* see http://docs.oracle.com/javase/7/docs/api/java/sql/Types.html to view all supported java SQL types */
 	private static Map<String, Integer> typeMap = new HashMap<>();
 	static {
 		// fill the typeMap once
-		// typeMap.put("any", Integer.valueOf(Types.???));
+		// typeMap.put("any", Types.???);
 		typeMap.put("bigint", Types.BIGINT);
 		typeMap.put("blob", Types.BLOB);
 		typeMap.put("boolean", Types.BOOLEAN);
@@ -299,24 +295,24 @@ final public class MonetDriver implements Driver {
 		typeMap.put("double", Types.DOUBLE);
 		typeMap.put("geometry", Types.VARCHAR);
 		typeMap.put("geometrya", Types.VARCHAR);
-		typeMap.put("hugeint", Types.NUMERIC);
+		typeMap.put("hugeint", Types.NUMERIC); //but we will convert to java.math.BigInteger
 		typeMap.put("inet", Types.VARCHAR);
 		typeMap.put("int", Types.INTEGER);
 		typeMap.put("json", Types.VARCHAR);
-		// typeMap.put("mbr", Integer.valueOf(Types.???));
+		// typeMap.put("mbr", Types.???);
 		typeMap.put("month_interval", Types.INTEGER);
-		typeMap.put("oid", Types.BIGINT);
-		// typeMap.put("ptr", Integer.valueOf(Types.???));
+		// typeMap.put("oid", Types.BIGINT);
+		// typeMap.put("ptr", Types.???);
 		typeMap.put("real", Types.REAL);
-		typeMap.put("sec_interval", Types.DECIMAL);
+		typeMap.put("sec_interval", Types.BIGINT);
 		typeMap.put("smallint", Types.SMALLINT);
-		// typeMap.put("table", Integer.valueOf(Types.???));
+		// typeMap.put("table", Types.???);
 		typeMap.put("time", Types.TIME);
 		typeMap.put("timestamp", Types.TIMESTAMP);
 		typeMap.put("timestamptz", Types.TIMESTAMP);
-// new in Java 8: Types.TIMESTAMP_WITH_TIMEZONE (value 2014). Can't use it yet as we compile for java 7
+        // new in Java 8: Types.TIMESTAMP_WITH_TIMEZONE (value 2014). Can't use it yet as we compile for java 7
 		typeMap.put("timetz", Types.TIME);
-// new in Java 8: Types.TIME_WITH_TIMEZONE (value 2013). Can't use it yet as we compile for java 7
+        // new in Java 8: Types.TIME_WITH_TIMEZONE (value 2013). Can't use it yet as we compile for java 7
 		typeMap.put("tinyint", Types.TINYINT);
 		typeMap.put("url", Types.VARCHAR);
 		typeMap.put("uuid", Types.VARCHAR);
@@ -328,8 +324,7 @@ final public class MonetDriver implements Driver {
 	 * Returns the java.sql.Types equivalent of the given MonetDB type.
 	 *
 	 * @param type the type as used by MonetDB
-	 * @return the mathing java.sql.Types constant or java.sql.Types.OTHER if
-	 *         nothing matched on the given string
+	 * @return the matching java.sql.Types constant or java.sql.Types.OTHER if nothing matched on the given string
 	 */
 	public static int getJavaType(String type) {
 		// match the currentColumns type on a java.sql.Types constant
@@ -337,14 +332,12 @@ final public class MonetDriver implements Driver {
 		if (tp != null) {
 			return tp;
 		} else {
-			// this should not be able to happen
-			// do not assert, since maybe future versions introduce
-			// new types
+			// this should not be able to happen do not assert, since maybe future versions introduce new types
 			return Types.OTHER;
 		}
 	}
 
-	private static String TypeMapppingSQL = null;	// cache to optimise getSQLTypeMap()
+	private static String TypeMapppingSQL = null; // cache to optimise getSQLTypeMap()
 
 	/**
 	 * Returns a String usable in an SQL statement to map the server types
@@ -352,8 +345,7 @@ final public class MonetDriver implements Driver {
 	 * The returned string will be a SQL CASE x statement where the x is
 	 * replaced with the given currentColumns name (or expression) string.
 	 *
-	 * @param column a String representing the value that should be evaluated
-	 *               in the SQL CASE statement
+	 * @param column a String representing the value that should be evaluated in the SQL CASE statement
 	 * @return a SQL CASE statement
 	 */
 	static String getSQLTypeMap(String column) {
@@ -396,8 +388,7 @@ final public class MonetDriver implements Driver {
 	 * may be the root Logger.
 	 *
 	 * @return the parent Logger for this data source
-	 * @throws SQLFeatureNotSupportedException if the data source does
-	 *         not use java.util.logging
+	 * @throws SQLFeatureNotSupportedException if the data source does not use java.util.logging
 	 */
 	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
 		throw new SQLFeatureNotSupportedException("java.util.logging not in use", "0A000");

@@ -156,8 +156,8 @@ public final class MonetDBTable extends AbstractResultTable {
     public int iterateTable(IMonetDBTableCursor cursor) throws MonetDBEmbeddedException {
         int[] limits = this.prepareIterator(cursor);
         int res = 0, total = limits[1] - limits[0];
-        String query = new StringBuffer("SELECT * FROM ").append(this.getTableSchema()).append(".").append(this.getTableName())
-                .append(" LIMIT ").append(total).append(" OFFSET ").append(limits[0]).append(";").toString();
+        String query = "SELECT * FROM " + this.getTableSchema() + "." + this.getTableName() + " LIMIT " + total
+                + " OFFSET " + limits[0] + ";";
 
         QueryResultSet eqr = this.getConnection().sendQuery(query);
         MonetDBRow[] array = eqr.fetchAllRowValues().getAllRows();

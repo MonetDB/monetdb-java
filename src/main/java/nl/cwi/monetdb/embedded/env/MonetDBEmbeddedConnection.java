@@ -215,7 +215,7 @@ public class MonetDBEmbeddedConnection {
     /**
      * When the database is shuts down, this method is called instead
      */
-    public void closeConnectionImplementation() {
+    void closeConnectionImplementation() {
         for(AbstractConnectionResult res : this.results.values()) {
             res.closeImplementation();
         }
@@ -240,7 +240,7 @@ public class MonetDBEmbeddedConnection {
     /**
      * Removes a query result from this connection.
      */
-    protected void removeQueryResult(AbstractConnectionResult res) { this.results.remove(res.getRandomIdentifier()); }
+    void removeQueryResult(AbstractConnectionResult res) { this.results.remove(res.getRandomIdentifier()); }
 
     /**
      * Internal implementation of sendUpdate.

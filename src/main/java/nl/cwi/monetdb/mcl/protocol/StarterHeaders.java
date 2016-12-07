@@ -5,6 +5,8 @@ package nl.cwi.monetdb.mcl.protocol;
  */
 public enum StarterHeaders {
 
+    /* Please don't change the order */
+
     /** A parse response (not handled) */
     Q_PARSE,
     /** A tabular response (typical ResultSet) */

@@ -2,7 +2,7 @@ package nl.cwi.monetdb.mcl.protocol.embedded;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.mcl.io.JDBCEmbeddedConnection;
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
@@ -45,32 +45,32 @@ public class EmbeddedProtocol extends AbstractProtocol<Object[]> {
     }
 
     @Override
-    public ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr) throws MCLParseException {
+    public ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr) throws ProtocolException {
         return null;
     }
 
     @Override
-    public UpdateResponse getNextUpdateResponse() throws MCLParseException {
+    public UpdateResponse getNextUpdateResponse() throws ProtocolException {
         return null;
     }
 
     @Override
-    public AutoCommitResponse getNextAutoCommitResponse() throws MCLParseException {
+    public AutoCommitResponse getNextAutoCommitResponse() throws ProtocolException {
         return null;
     }
 
     @Override
-    public DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws MCLParseException {
+    public DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses) throws ProtocolException {
         return null;
     }
 
     @Override
-    public TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues) throws MCLParseException {
+    public TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues) throws ProtocolException {
         return null;
     }
 
     @Override
-    public int parseTupleLine(Object line, Object[] values) throws MCLParseException {
+    public int parseTupleLine(Object line, Object[] values, int[] typesMap) throws ProtocolException {
         return 0;
     }
 

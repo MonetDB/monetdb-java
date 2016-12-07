@@ -1,10 +1,8 @@
 package nl.cwi.monetdb.mcl.connection;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.io.BufferedMCLReader;
-import nl.cwi.monetdb.mcl.io.BufferedMCLWriter;
 import nl.cwi.monetdb.mcl.io.SocketConnection;
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.oldmapi.OldMapiProtocol;
@@ -67,17 +65,18 @@ import java.util.*;
 public class MapiConnection extends MonetConnection {
 
     /** The hostname to connect to */
-    protected final String hostname;
+    private final String hostname;
     /** The port to connect on the host to */
-    protected final int port;
+    private final int port;
     /** Whether we should follow redirects */
-    protected boolean followRedirects = true;
+    private boolean followRedirects = true;
     /** How many redirections do we follow until we're fed up with it? */
-    protected int ttl = 10;
+    private int ttl = 10;
     /** protocol version of the connection */
-    protected int version;
+    private int version;
 
-    public MapiConnection(Properties props, String database, String hash, String language, boolean blobIsBinary, boolean isDebugging, String hostname, int port) throws IOException {
+    MapiConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
+                   boolean isDebugging, String hostname, int port) throws IOException {
         super(props, database, hash, language, blobIsBinary, isDebugging);
         this.hostname = hostname;
         this.port = port;
@@ -184,7 +183,7 @@ public class MapiConnection extends MonetConnection {
     }
 
     @Override
-    public List<String> connect(String user, String pass) throws IOException, MCLParseException, MCLException {
+    public List<String> connect(String user, String pass) throws IOException, ProtocolException, MCLException {
         // Wrap around the internal connect that needs to know if it
         // should really make a TCP connection or not.
         List<String> res = connect(this.hostname, this.port, user, pass, true);
@@ -194,7 +193,8 @@ public class MapiConnection extends MonetConnection {
         return res;
     }
 
-    private List<String> connect(String host, int port, String user, String pass, boolean makeConnection) throws IOException, MCLParseException, MCLException {
+    private List<String> connect(String host, int port, String user, String pass, boolean makeConnection)
+            throws IOException, ProtocolException, MCLException {
         if (ttl-- <= 0)
             throw new MCLException("Maximum number of redirects reached, aborting connection attempt. Sorry.");
 
@@ -216,7 +216,8 @@ public class MapiConnection extends MonetConnection {
         pro.waitUntilPrompt();
         String firstLine = pro.getRemainingStringLine(0);
 
-        String test = this.getChallengeResponse(firstLine, user, pass, this.language.getRepresentation(), this.database, this.hash);
+        String test = this.getChallengeResponse(firstLine, user, pass, this.language.getRepresentation(),
+                this.database, this.hash);
         pro.writeNextCommand(MonetDBLanguage.EmptyString, test.getBytes(), MonetDBLanguage.EmptyString);
 
         List<String> redirects = new ArrayList<>();
@@ -261,7 +262,7 @@ public class MapiConnection extends MonetConnection {
                 try {
                     u = new URI(suri.substring(5));
                 } catch (URISyntaxException e) {
-                    throw new MCLParseException(e.toString());
+                    throw new ProtocolException(e.toString());
                 }
 
                 String tmp = u.getQuery();
@@ -360,15 +361,17 @@ public class MapiConnection extends MonetConnection {
      * @param hash the hash method(s) to use, or NULL for all supported
      *             hashes
      */
-    private String getChallengeResponse(String chalstr, String username, String password, String language, String database, String hash)
-            throws MCLParseException, MCLException, IOException {
+    private String getChallengeResponse(String chalstr, String username, String password, String language,
+                                        String database, String hash)
+            throws ProtocolException, MCLException, IOException {
         String response;
         String algo;
 
         // parse the challenge string, split it on ':'
         String[] chaltok = chalstr.split(":");
-        if (chaltok.length <= 4) throw
-                new MCLParseException("Server challenge string unusable!  Challenge contains too few tokens: " + chalstr);
+        if (chaltok.length <= 4)
+            throw new ProtocolException("Server challenge string unusable!  Challenge contains too few tokens: "
+                    + chalstr);
 
         // challenge string to use as salt/key
         String challenge = chaltok[0];
@@ -376,7 +379,7 @@ public class MapiConnection extends MonetConnection {
         try {
             version = Integer.parseInt(chaltok[2].trim());	// protocol version
         } catch (NumberFormatException e) {
-            throw new MCLParseException("Protocol version unparseable: " + chaltok[3]);
+            throw new ProtocolException("Protocol version unparseable: " + chaltok[3]);
         }
 
         // handle the challenge according to the version it is
@@ -463,7 +466,7 @@ public class MapiConnection extends MonetConnection {
                         // byte-order of server is little-endian
                         break;
                     default:
-                        throw new MCLParseException("Invalid byte-order: " + chaltok[5]);
+                        throw new ProtocolException("Invalid byte-order: " + chaltok[5]);
                 }
 
                 // generate response

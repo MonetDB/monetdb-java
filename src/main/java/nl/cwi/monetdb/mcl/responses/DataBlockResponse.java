@@ -1,7 +1,7 @@
 package nl.cwi.monetdb.mcl.responses;
 
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
 import java.sql.SQLException;
@@ -37,7 +37,8 @@ public class DataBlockResponse implements IIncompleteResponse {
     private final int[] jdbcSQLTypes;
 
     /**
-     * Constructs a DataBlockResponse object
+     * Constructs a DataBlockResponse object.
+     *
      * @param rowcount the number of rows
      * @param columncount the number of columns
      * @param forward whether this is a forward only result
@@ -56,11 +57,12 @@ public class DataBlockResponse implements IIncompleteResponse {
      *
      * @param line the header line as String
      * @param response the line type according to the MAPI protocol
-     * @throws MCLParseException If the result line is not expected
+     * @throws ProtocolException If the result line is not expected
      */
-    public void addLine(ServerResponses response, Object line) throws MCLParseException {
+    @Override
+    public void addLine(ServerResponses response, Object line) throws ProtocolException {
         if (response != ServerResponses.RESULT)
-            throw new MCLParseException("protocol violation: unexpected line in data block: " + line.toString());
+            throw new ProtocolException("protocol violation: unexpected line in data block: " + line.toString());
         // add to the backing array
         Object[] next = this.data[++this.pos];
         this.protocol.parseTupleLine(line, next, this.jdbcSQLTypes);
@@ -79,15 +81,16 @@ public class DataBlockResponse implements IIncompleteResponse {
 
     /**
      * Indicates that no more header lines will be added to this Response implementation. In most cases this is a
-     * redundant operation because the data array is full.  However... it can happen that this is NOT the case!
+     * redundant operation because the data array is full. However... it can happen that this is NOT the case!
      *
      * @throws SQLException if not all rows are filled
      */
     @Override
     public void complete() throws SQLException {
-        if ((pos + 1) != data.length)
-            throw new SQLException("Inconsistent state detected!  Current block capacity: " + data.length +
-                    ", block usage: " + (pos + 1) + ".  Did MonetDB send what it promised to?", "M0M10");
+        if ((pos + 1) != data.length) {
+            throw new SQLException("Inconsistent state detected! Current block capacity: " + data.length +
+                    ", block usage: " + (pos + 1) + ". Did MonetDB send what it promised to?", "M0M10");
+        }
     }
 
     /**
@@ -102,7 +105,7 @@ public class DataBlockResponse implements IIncompleteResponse {
     }
 
     /**
-     * Retrieves the required row.  Warning: if the requested rows is out of bounds, an IndexOutOfBoundsException will
+     * Retrieves the required row. Warning: if the requested rows is out of bounds, an IndexOutOfBoundsException will
      * be thrown.
      *
      * @param line the row to retrieve

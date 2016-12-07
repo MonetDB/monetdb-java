@@ -5,7 +5,7 @@ import nl.cwi.monetdb.jdbc.types.URL;
 import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.connection.Debugger;
 import nl.cwi.monetdb.mcl.connection.MonetDBLanguage;
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.responses.*;
@@ -96,7 +96,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
     protected boolean isDebugging;
 
-    protected Debugger ourSavior;
+    private Debugger ourSavior;
 
     protected AbstractProtocol<?> protocol;
 
@@ -109,7 +109,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      *
      * @throws IOException if an error occurs
      */
-    public MonetConnection(Properties props, String database, String hash, String language, boolean blobIsBinary, boolean isDebugging) throws IOException {
+    public MonetConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
+                           boolean isDebugging) throws IOException {
         this.conn_props = props;
         this.database = database;
         this.hash = hash;
@@ -139,10 +140,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * 		list is empty; then there are no warnings.
      * @throws IOException if an I/O error occurs when creating the
      *         socket
-     * @throws MCLParseException if bogus data is received
+     * @throws ProtocolException if bogus data is received
      * @throws MCLException if an MCL related error occurs
      */
-    public abstract List<String> connect(String user, String pass) throws IOException, MCLParseException, MCLException;
+    public abstract List<String> connect(String user, String pass) throws IOException, ProtocolException, MCLException;
 
     public abstract int getBlockSize();
 
@@ -1594,7 +1595,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                             try {
                                 switch (protocol.getNextStarterHeader()) {
                                     case Q_PARSE:
-                                        throw new MCLParseException("Q_PARSE header not allowed here", 1);
+                                        throw new ProtocolException("Q_PARSE header not allowed here", 1);
                                     case Q_TABLE:
                                     case Q_PREPARE: {
                                         res = protocol.getNextResultSetResponse(MonetConnection.this,
@@ -1621,7 +1622,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         boolean isAutoCommit = ((AutoCommitResponse)res).isAutocommit();
 
                                         if (MonetConnection.this.getAutoCommit() && isAutoCommit) {
-                                            MonetConnection.this.addWarning("Server enabled auto commit mode while local state already was auto commit.", "01M11");
+                                            MonetConnection.this.addWarning("Server enabled auto commit mode " +
+                                                    "while local state already was auto commit.", "01M11");
                                         }
                                         MonetConnection.this.autoCommit = isAutoCommit;
                                         break;
@@ -1634,10 +1636,11 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         res = next;
                                     } break;
                                 }
-                            } catch (MCLParseException e) {
-                                error = "M0M10!error while parsing start of header:\n" + e.getMessage() +
-                                        " found: '" + protocol.getRemainingStringLine(0).charAt(e.getErrorOffset()) + "'" +
-                                        " in: \"" +  protocol.getRemainingStringLine(0) + "\"" + " at pos: " + e.getErrorOffset();
+                            } catch (ProtocolException e) {
+                                error = "M0M10!error while parsing start of header:\n" + e.getMessage() + " found: '"
+                                        + protocol.getRemainingStringLine(0).charAt(e.getErrorOffset()) + "'" +
+                                        " in: \"" +  protocol.getRemainingStringLine(0) + "\"" + " at pos: "
+                                        + e.getErrorOffset();
                                 // flush all the rest
                                 protocol.waitUntilPrompt();
                                 nextResponse = protocol.getCurrentServerResponseHeader();
@@ -1658,7 +1661,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                     try {
                                         protocol.fetchNextResponseData();
                                         iter.addLine(protocol.getCurrentServerResponseHeader(), protocol.getCurrentData());
-                                    } catch (MCLParseException ex) {
+                                    } catch (ProtocolException ex) {
                                         // right, some protocol violation, skip the rest of the result
                                         error = "M0M10!" + ex.getMessage();
                                         protocol.waitUntilPrompt();

@@ -60,7 +60,8 @@ public final class QueryResultSetShortColumn extends AbstractQueryResultSetColum
     }
 
     @Override
-    protected boolean[] checkIfIndexesAreNullImplementation(short[] values, boolean[] res) throws MonetDBEmbeddedException {
+    protected boolean[] checkIfIndexesAreNullImplementation(short[] values, boolean[] res)
+            throws MonetDBEmbeddedException {
         short nil = GetShortNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
             res[i] = (values[i] == nil);

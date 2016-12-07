@@ -16,11 +16,11 @@ public class MCLException extends Exception {
 
 	private static final long serialVersionUID = 1L;
 
-	public MCLException(String e) {
+	MCLException(String e) {
 		super(e);
 	}
 
-	public MCLException(Throwable t) {
+	MCLException(Throwable t) {
 		super(t);
 	}
 }

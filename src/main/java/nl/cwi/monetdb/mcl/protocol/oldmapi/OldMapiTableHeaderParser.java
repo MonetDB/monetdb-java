@@ -1,6 +1,6 @@
 package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
 
 /**
@@ -8,7 +8,7 @@ import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
  */
 final class OldMapiTableHeaderParser {
 
-    static TableResultHeaders GetNextTableHeader(StringBuilder builder, String[] stringValues, int[] intValues) throws MCLParseException {
+    static TableResultHeaders GetNextTableHeader(StringBuilder builder, String[] stringValues, int[] intValues) throws ProtocolException {
         TableResultHeaders res = TableResultHeaders.UNKNOWN;
         int len = builder.length(), pos = 0;
         boolean foundChar = false, nameFound = false;
@@ -39,7 +39,7 @@ final class OldMapiTableHeaderParser {
             }
         }
         if (!nameFound)
-            throw new MCLParseException("invalid header, no header name found", pos);
+            throw new ProtocolException("invalid header, no header name found", pos);
 
         // depending on the name of the header, we continue
         switch (builder.charAt(pos)) {
@@ -65,7 +65,7 @@ final class OldMapiTableHeaderParser {
                 }
                 break;
             default:
-                throw new MCLParseException("unknown header: " + builder.substring(pos, len - pos));
+                throw new ProtocolException("unknown header: " + builder.substring(pos, len - pos));
         }
         return res;
     }
@@ -83,7 +83,7 @@ final class OldMapiTableHeaderParser {
         stringValues[elem + 1] = builder.substring(start, stop - start);
     }
 
-    private static void GetIntValues(StringBuilder builder, int stop, int[] intValues) throws MCLParseException {
+    private static void GetIntValues(StringBuilder builder, int stop, int[] intValues) throws ProtocolException {
         int elem = 0, tmp = 0, start = 2;
 
         for (int i = start; i < stop; i++) {
@@ -97,7 +97,7 @@ final class OldMapiTableHeaderParser {
                 if (builder.charAt(i) >= '0' && builder.charAt(i) <= '9') {
                     tmp += (int) builder.charAt(i) - (int)'0';
                 } else {
-                    throw new MCLParseException("expected a digit in " + builder.toString() + " at " + i);
+                    throw new ProtocolException("expected a digit in " + builder.toString() + " at " + i);
                 }
             }
         }

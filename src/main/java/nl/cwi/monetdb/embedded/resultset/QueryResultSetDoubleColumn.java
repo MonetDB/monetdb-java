@@ -60,7 +60,8 @@ public final class QueryResultSetDoubleColumn extends AbstractQueryResultSetColu
     }
 
     @Override
-    protected boolean[] checkIfIndexesAreNullImplementation(double[] values, boolean[] res) throws MonetDBEmbeddedException {
+    protected boolean[] checkIfIndexesAreNullImplementation(double[] values, boolean[] res)
+            throws MonetDBEmbeddedException {
         double nil = GetDoubleNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
             res[i] = (values[i] == nil);

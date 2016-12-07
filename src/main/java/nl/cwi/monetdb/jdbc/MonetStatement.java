@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 public class MonetStatement extends MonetWrapper implements Statement {
 	/** the default value of maxRows, 0 indicates unlimited */
-	static final int DEF_MAXROWS = 0;
+	private static final int DEF_MAXROWS = 0;
 
 	/** The parental Connection object */
 	private MonetConnection connection;
@@ -60,7 +60,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	/** Whether this Statement object is closed or not */
 	protected boolean closed;
 	/** Whether the application wants this Statement object to be pooled */
-	private boolean poolable;
+	boolean poolable;
 	/** Whether this Statement should be closed if the last ResultSet closes */
 	private boolean closeOnCompletion = false;
 	/** The size of the blocks of results to ask for at the server */
@@ -823,7 +823,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 */
 	@Override
 	public ResultSet getResultSet() throws SQLException {
-		return (header instanceof ResultSetResponse) ? new MonetResultSet(this, (ResultSetResponse)header) : null;
+		return (header instanceof ResultSetResponse) ? new MonetResultSet(this, (ResultSetResponse)header)
+				: null;
 	}
 
 	/**
@@ -880,7 +881,6 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		} else if (header instanceof SchemaResponse) {
 			ret = ((SchemaResponse)header).getState();
 		}
-
 		return ret;
 	}
 
@@ -958,7 +958,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	@Override
 	public void setEscapeProcessing(boolean enable) throws SQLException {
 		if (enable) {
-			addWarning("setEscapeProcessing: JDBC escape syntax is not supported by this driver", "01M22");
+			addWarning("setEscapeProcessing: JDBC escape syntax is not supported by this driver",
+					"01M22");
 		}
 	}
 
@@ -978,7 +979,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 */
 	@Override
 	public void setFetchDirection(int direction) throws SQLException {
-		if (direction == ResultSet.FETCH_FORWARD || direction == ResultSet.FETCH_REVERSE || direction == ResultSet.FETCH_UNKNOWN) {
+		if (direction == ResultSet.FETCH_FORWARD || direction == ResultSet.FETCH_REVERSE
+				|| direction == ResultSet.FETCH_UNKNOWN) {
 			fetchDirection = direction;
 		} else {
 			throw new SQLException("Illegal direction: " + direction, "M1M05");

@@ -60,7 +60,8 @@ public final class QueryResultSetByteColumn extends AbstractQueryResultSetColumn
     }
 
     @Override
-    protected boolean[] checkIfIndexesAreNullImplementation(byte[] values, boolean[] res) throws MonetDBEmbeddedException {
+    protected boolean[] checkIfIndexesAreNullImplementation(byte[] values, boolean[] res)
+            throws MonetDBEmbeddedException {
         byte nil = GetByteNullConstant();
         for(int i = 0 ; i < values.length ; i++) {
             res[i] = (values[i] == nil);

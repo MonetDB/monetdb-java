@@ -424,13 +424,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					case Types.REAL:
 					case Types.FLOAT:
 					case Types.DOUBLE:
-						return true;
 					case Types.BIGINT:
-						String monettype = getColumnTypeName(column);
-						if (monettype != null) {
-							if ("oid".equals(monettype) || "ptr".equals(monettype))
-								return false;
-						}
 						return true;
 					case Types.BIT: // we don't use type BIT, it's here for completeness
 					case Types.BOOLEAN:
@@ -978,7 +972,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 
 		// if precision is now greater than that of the db, throw an error:
 		if (x.precision() > digits[i]) {
-			throw new SQLDataException("DECIMAL value exceeds allowed digits/scale: " + x.toPlainString() + " (" + digits[i] + "/" + scale[i] + ")", "22003");
+			throw new SQLDataException("DECIMAL value exceeds allowed digits/scale: " + x.toPlainString() +
+					" (" + digits[i] + "/" + scale[i] + ")", "22003");
 		}
 
 		// MonetDB doesn't like leading 0's, since it counts them as part of
@@ -2183,7 +2178,6 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			setNull(parameterIndex, -1);
 			return;
 		}
-
 		setValue(parameterIndex, "'" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
 	}
 
@@ -2444,7 +2438,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @param paramIdx the parameter index number
 	 * @return a new created SQLException object with SQLState M1M05
 	 */
-	private final static SQLException newSQLInvalidParameterIndexException(int paramIdx) {
+	private static SQLException newSQLInvalidParameterIndexException(int paramIdx) {
 		return new SQLException("Invalid Parameter Index number: " + paramIdx, "M1M05");
 	}
 
@@ -2456,7 +2450,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @param name the method name
 	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000
 	 */
-	private final static SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
+	private static SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
 		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 }

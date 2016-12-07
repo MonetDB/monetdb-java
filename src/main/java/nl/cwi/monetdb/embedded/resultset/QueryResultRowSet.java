@@ -23,7 +23,7 @@ import java.util.ListIterator;
  */
 public class QueryResultRowSet extends AbstractRowSet implements Iterable {
 
-    protected QueryResultRowSet(QueryResultSet queryResultSet, MonetDBToJavaMapping[] mappings, Object[][] rows) {
+    QueryResultRowSet(QueryResultSet queryResultSet, MonetDBToJavaMapping[] mappings, Object[][] rows) {
         super(queryResultSet, mappings, rows);
     }
 

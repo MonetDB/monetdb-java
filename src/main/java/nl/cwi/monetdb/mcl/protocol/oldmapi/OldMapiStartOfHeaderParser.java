@@ -1,6 +1,6 @@
 package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
-import nl.cwi.monetdb.mcl.protocol.MCLParseException;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 
 /**
@@ -38,10 +38,10 @@ final class OldMapiStartOfHeaderParser {
         return res;
     }
 
-    static int GetNextResponseDataAsInt(OldMapiProtocol protocol) throws MCLParseException {
+    static int GetNextResponseDataAsInt(OldMapiProtocol protocol) throws ProtocolException {
         protocol.currentPointer++;
         if (!protocol.hasRemaining()) {
-            throw new MCLParseException("unexpected end of string", protocol.currentPointer - 1);
+            throw new ProtocolException("unexpected end of string", protocol.currentPointer - 1);
         }
         int tmp;
         char chr = protocol.builder.charAt(protocol.currentPointer);
@@ -50,7 +50,7 @@ final class OldMapiStartOfHeaderParser {
         if (chr >= '0' && chr <= '9') {
             tmp = (int)chr - (int)'0';
         } else {
-            throw new MCLParseException("expected a digit", protocol.currentPointer - 1);
+            throw new ProtocolException("expected a digit", protocol.currentPointer - 1);
         }
 
         while (protocol.hasRemaining()) {
@@ -63,16 +63,16 @@ final class OldMapiStartOfHeaderParser {
             if (chr >= '0' && chr <= '9') {
                 tmp += (int)chr - (int)'0';
             } else {
-                throw new MCLParseException("expected a digit", protocol.currentPointer - 1);
+                throw new ProtocolException("expected a digit", protocol.currentPointer - 1);
             }
         }
         return tmp;
     }
 
-    static String GetNextResponseDataAsString(OldMapiProtocol protocol) throws MCLParseException {
+    static String GetNextResponseDataAsString(OldMapiProtocol protocol) throws ProtocolException {
         protocol.currentPointer++;
         if (!protocol.hasRemaining()) {
-            throw new MCLParseException("unexpected end of string", protocol.currentPointer - 1);
+            throw new ProtocolException("unexpected end of string", protocol.currentPointer - 1);
         }
         int cnt = 0, mark = protocol.currentPointer;
         char chr;

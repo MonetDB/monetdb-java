@@ -11,23 +11,23 @@ package nl.cwi.monetdb.mcl.protocol;
 import java.text.ParseException;
 
 /**
- * When an MCLParseException is thrown, the MCL protocol is violated by
+ * When an ProtocolException is thrown, the MCL protocol is violated by
  * the sender.  In general a stream reader throws an
- * MCLParseException as soon as something that is read cannot be
+ * ProtocolException as soon as something that is read cannot be
  * understood or does not conform to the specifications (e.g. a
  * missing field).  The instance that throws the exception will try to
  * give an error offset whenever possible.  Alternatively it makes sure
  * that the error message includes the offending data read.
  */
-public class MCLParseException extends ParseException {
+public class ProtocolException extends ParseException {
 
 	private static final long serialVersionUID = 1L;
 
-	public MCLParseException(String e) {
+	public ProtocolException(String e) {
 		super(e, -1);
 	}
 
-	public MCLParseException(String e, int offset) {
+	public ProtocolException(String e, int offset) {
 		super(e, offset);
 	}
 }
