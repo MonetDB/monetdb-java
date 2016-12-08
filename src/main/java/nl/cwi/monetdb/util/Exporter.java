@@ -8,10 +8,11 @@
 
 package nl.cwi.monetdb.util;
 
-import java.io.*;
-import java.sql.*;
+import java.io.PrintWriter;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Arrays;
-
 
 public abstract class Exporter {
 	protected PrintWriter out;
@@ -32,13 +33,13 @@ public abstract class Exporter {
 
 	public abstract void setProperty(int type, int value) throws Exception;
 	public abstract int getProperty(int type) throws Exception;
-	
+
 	//=== shared utilities
-	
+
 	public void useSchemas(boolean use) {
 		useSchema = use;
 	}
-	
+
 	/**
 	 * returns the given string between two double quotes for usage as
 	 * identifier such as column or table name in SQL queries.

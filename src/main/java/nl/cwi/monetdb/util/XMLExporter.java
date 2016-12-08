@@ -8,10 +8,16 @@
 
 package nl.cwi.monetdb.util;
 
-import java.io.*;
-import java.sql.*;
-import java.util.*;
-import java.text.*;
+import java.io.PrintWriter;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.sql.Types;
+import java.text.SimpleDateFormat;
+import java.util.HashSet;
+import java.util.Set;
 
 public class XMLExporter extends Exporter {
 	private boolean useNil;
@@ -42,7 +48,7 @@ public class XMLExporter extends Exporter {
 			out.print("<!-- unable to represent: CREATE " + type + " " +
 				(!useSchema ? dq(schema) + "." : "") + dq(name));
 			out.print(" AS ");
-		 	out.print(tbl.getString("REMARKS").trim());
+			out.print(tbl.getString("REMARKS").trim());
 			out.print(" -->");
 			return;
 		}
@@ -57,7 +63,7 @@ public class XMLExporter extends Exporter {
 		// http://books.xmlschemata.org/relaxng/relax-CHP-19.html
 		while (cols.next()) {
 			switch (cols.getInt("DATA_TYPE")) {
-				case java.sql.Types.CHAR:
+				case Types.CHAR:
 					ident = "CHAR_" + cols.getString("COLUMN_SIZE");
 					if (types.contains(ident)) break;
 					types.add(ident);
@@ -72,8 +78,8 @@ public class XMLExporter extends Exporter {
 					out.println("    </xsd:restriction>");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.VARCHAR:
-				case java.sql.Types.LONGVARCHAR:
+				case Types.VARCHAR:
+				case Types.LONGVARCHAR:
 					ident = "VARCHAR_" + cols.getString("COLUMN_SIZE");
 					if (types.contains(ident)) break;
 					types.add(ident);
@@ -88,7 +94,7 @@ public class XMLExporter extends Exporter {
 					out.println("    </xsd:restriction>");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.CLOB:
+				case Types.CLOB:
 					ident = "CLOB";
 					if (types.contains(ident)) break;
 					types.add(ident);
@@ -99,8 +105,8 @@ public class XMLExporter extends Exporter {
 					out.println("    <xsd:restriction base=\"xsd:string\" />");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.DECIMAL:
-				case java.sql.Types.NUMERIC:
+				case Types.DECIMAL:
+				case Types.NUMERIC:
 					ident = "DECIMAL_" + cols.getString("COLUMN_SIZE") +
 						"_" + cols.getString("DECIMAL_DIGITS");
 					if (types.contains(ident)) break;
@@ -119,7 +125,7 @@ public class XMLExporter extends Exporter {
 					out.println("    </xsd:restriction>");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.TINYINT:
+				case Types.TINYINT:
 					ident = "TINYINT";
 					if (types.contains(ident)) break;
 					types.add(ident);
@@ -130,7 +136,7 @@ public class XMLExporter extends Exporter {
 					out.println("    <xsd:restriction base=\"xsd:byte\" />");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.SMALLINT:
+				case Types.SMALLINT:
 					ident = "SMALLINT";
 					if (types.contains(ident)) break;
 					types.add(ident);
@@ -141,7 +147,7 @@ public class XMLExporter extends Exporter {
 					out.println("    <xsd:restriction base=\"xsd:short\" />");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.INTEGER:
+				case Types.INTEGER:
 					ident = "INTEGER";
 					if (types.contains(ident)) break;
 					types.add(ident);
@@ -152,7 +158,7 @@ public class XMLExporter extends Exporter {
 					out.println("    <xsd:restriction base=\"xsd:integer\" />");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.BIGINT:
+				case Types.BIGINT:
 					ident = "BIGINT";
 					if (types.contains(ident)) break;
 					types.add(ident);
@@ -163,8 +169,18 @@ public class XMLExporter extends Exporter {
 					out.println("    <xsd:restriction base=\"xsd:long\" />");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.BIT:
-				case java.sql.Types.BOOLEAN:
+				case Types.BIT:
+					ident = "BIT";
+					if (types.contains(ident)) break;
+					types.add(ident);
+
+					out.print("  <xsd:simpleType name=");
+					out.print(dq(ident));
+					out.println(">");
+					out.println("    <xsd:restriction base=\"xsd:bit\" />");
+					out.println("  </xsd:simpleType>");
+				break;
+				case Types.BOOLEAN:
 					ident = "BOOLEAN";
 					if (types.contains(ident)) break;
 					types.add(ident);
@@ -175,7 +191,7 @@ public class XMLExporter extends Exporter {
 					out.println("    <xsd:restriction base=\"xsd:boolean\" />");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.DATE:
+				case Types.DATE:
 					ident = "DATE";
 					if (types.contains(ident)) break;
 					types.add(ident);
@@ -186,7 +202,7 @@ public class XMLExporter extends Exporter {
 					out.println("    <xsd:restriction base=\"xsd:date\" />");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.TIME:
+				case Types.TIME:
 					if ("timetz".equals(cols.getString("TYPE_NAME"))) {
 						ident = "TIME_WTZ";
 					} else {
@@ -201,7 +217,7 @@ public class XMLExporter extends Exporter {
 					out.println("    <xsd:restriction base=\"xsd:time\" />");
 					out.println("  </xsd:simpleType>");
 				break;
-				case java.sql.Types.TIMESTAMP:
+				case Types.TIMESTAMP:
 					if ("timestamptz".equals(cols.getString("TYPE_NAME"))) {
 						ident = "TIMESTAMP_WTZ";
 					} else {
@@ -234,48 +250,50 @@ public class XMLExporter extends Exporter {
 			out.print(dq(cols.getString("COLUMN_NAME")));
 			out.print(" type=");
 			switch (cols.getInt("DATA_TYPE")) {
-				case java.sql.Types.CHAR:
+				case Types.CHAR:
 					ident = "CHAR_" + cols.getString("COLUMN_SIZE");
 				break;
-				case java.sql.Types.VARCHAR:
-				case java.sql.Types.LONGVARCHAR:
+				case Types.VARCHAR:
+				case Types.LONGVARCHAR:
 					ident = "VARCHAR_" + cols.getString("COLUMN_SIZE");
 				break;
-				case java.sql.Types.CLOB:
+				case Types.CLOB:
 					ident = "CLOB";
 				break;
-				case java.sql.Types.DECIMAL:
-				case java.sql.Types.NUMERIC:
+				case Types.DECIMAL:
+				case Types.NUMERIC:
 					ident = "DECIMAL_" + cols.getString("COLUMN_SIZE") +
 						"_" + cols.getString("DECIMAL_DIGITS");
 				break;
-				case java.sql.Types.TINYINT:
+				case Types.TINYINT:
 					ident = "TINYINT";
 				break;
-				case java.sql.Types.SMALLINT:
+				case Types.SMALLINT:
 					ident = "SMALLINT";
 				break;
-				case java.sql.Types.INTEGER:
+				case Types.INTEGER:
 					ident = "INTEGER";
 				break;
-				case java.sql.Types.BIGINT:
+				case Types.BIGINT:
 					ident = "BIGINT";
 				break;
-				case java.sql.Types.BIT:
-				case java.sql.Types.BOOLEAN:
+				case Types.BIT:
+					ident = "BIT";
+				break;
+				case Types.BOOLEAN:
 					ident = "BOOLEAN";
 				break;
-				case java.sql.Types.DATE:
+				case Types.DATE:
 					ident = "DATE";
 				break;
-				case java.sql.Types.TIME:
+				case Types.TIME:
 					if ("timetz".equals(cols.getString("TYPE_NAME"))) {
 						ident = "TIME_WTZ";
 					} else {
 						ident = "TIME";
 					}
 				break;
-				case java.sql.Types.TIMESTAMP:
+				case Types.TIMESTAMP:
 					if ("timestamptz".equals(cols.getString("TYPE_NAME"))) {
 						ident = "TIMESTAMP_WTZ";
 					} else {
@@ -322,14 +340,15 @@ public class XMLExporter extends Exporter {
 	public void dumpResultSet(ResultSet rs) throws SQLException {
 		// write simple XML serialisation
 		ResultSetMetaData rsmd = rs.getMetaData();
-		if (!useSchema) out.println("<" + rsmd.getSchemaName(1) + ">");
+		if (!useSchema)
+			out.println("<" + rsmd.getSchemaName(1) + ">");
 		out.println("<" + rsmd.getTableName(1) + ">");
 		String data;
 		while (rs.next()) {
 			out.println("  <row>");
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
 				switch (rsmd.getColumnType(i)) {
-					case java.sql.Types.TIMESTAMP:
+					case Types.TIMESTAMP:
 						Timestamp ts = rs.getTimestamp(i);
 						if ("timestamptz".equals(rsmd.getColumnTypeName(i))) {
 							data = xsd_tstz.format(ts).toString();

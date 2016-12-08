@@ -8,12 +8,36 @@
 
 package nl.cwi.monetdb.client;
 
-import nl.cwi.monetdb.util.*;
-import java.sql.*;
-import java.io.*;
-import java.util.*;
-import java.util.zip.*;
-import java.net.*;
+import nl.cwi.monetdb.util.CmdLineOpts;
+import nl.cwi.monetdb.util.Exporter;
+import nl.cwi.monetdb.util.OptionsException;
+import nl.cwi.monetdb.util.SQLExporter;
+import nl.cwi.monetdb.util.XMLExporter;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.zip.GZIPInputStream;
 
 /**
  * This program acts like an extended client program for MonetDB. Its
@@ -250,7 +274,7 @@ public final class JdbcClient {
 			dbmd = null;
 		}
 		stmt = con.createStatement();
-		
+
 		// see if we will have to perform a database dump (only in SQL mode)
 		if ("sql".equals(lang) && copts.getOption("dump").isPresent()) {
 			ResultSet tbl;
@@ -1170,7 +1194,6 @@ class Table {
 	public String toString() {
 		return fqname;
 	}
-
 
 	static Table findTable(String fqname, List<Table> list) {
 		for (Table l : list) {

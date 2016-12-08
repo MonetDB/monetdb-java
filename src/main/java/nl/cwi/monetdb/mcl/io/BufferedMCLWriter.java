@@ -8,7 +8,12 @@
 
 package nl.cwi.monetdb.mcl.io;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.io.UnsupportedEncodingException;
+import java.io.Writer;
 
 /**
  * Write text to a character-output stream, buffering characters so as

@@ -8,10 +8,17 @@
 
 package nl.cwi.monetdb.client;
 
-import nl.cwi.monetdb.util.*;
-import nl.cwi.monetdb.merovingian.*;
-import java.io.*;
-import java.util.*;
+import nl.cwi.monetdb.merovingian.Control;
+import nl.cwi.monetdb.merovingian.SabaothDB;
+import nl.cwi.monetdb.util.CmdLineOpts;
+import nl.cwi.monetdb.util.OptionsException;
+
+import java.io.BufferedWriter;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 /**
  * This program mimics the monetdb tool.  It is meant as demonstration

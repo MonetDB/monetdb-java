@@ -30,7 +30,7 @@ public class SQLRestore {
 	private final String _user;
 	private final String _password;
 	private final String _dbName;
-	
+
 	public SQLRestore(String host, int port, String user, String password, String dbName) throws IOException {
 		if (host == null || user == null || password == null || dbName == null)
 			throw new NullPointerException();
@@ -40,16 +40,16 @@ public class SQLRestore {
 		_password = password;
 		_dbName = dbName;
 	}
-	
+
 	private static class ServerResponseReader implements Runnable {
 		private final BufferedMCLReader _is;
 		private final AtomicBoolean _errorState = new AtomicBoolean(false);
-		private String _errorMessage = null; 
-		
-		ServerResponseReader(BufferedMCLReader is) {			
+		private String _errorMessage = null;
+
+		ServerResponseReader(BufferedMCLReader is) {
 			_is = is;
 		}
-		
+
 		public void run() {
 			try {
 				while (true) {
@@ -57,7 +57,7 @@ public class SQLRestore {
 					if (line == null)
 						break;
 					int result = _is.getLineType();
-					switch (result) { 
+					switch (result) {
 					case BufferedMCLReader.ERROR:
 						_errorMessage = line;
 						_errorState.set(true);
@@ -66,7 +66,6 @@ public class SQLRestore {
 						// do nothing...
 					}
 				}
-				
 			} catch (IOException e) {
 				_errorMessage = e.getMessage();
 				_errorState.set(true);
@@ -78,7 +77,7 @@ public class SQLRestore {
 				}
 			}
 		}
-		
+
 		/**
 		 * @return whether the server has responded with an error. Any
 		 *         error is regarded as fatal.
@@ -86,20 +85,19 @@ public class SQLRestore {
 		public boolean inErrorState() {
 			return _errorState.get();
 		}
-		
+
 		/**
-		 * @return the error message if inErrorState() is true. Behaviour is 
-		 * 		   not defined if called before inErrorState is true.
+		 * @return the error message if inErrorState() is true. Behaviour is
+		 *		not defined if called before inErrorState is true.
 		 */
 		public String getErrorMessage() {
 			return _errorMessage;
 		}
-		
 	}
-	
+
 	/**
 	 * Restores a given SQL dump to the database.
-	 * 
+	 *
 	 * @param source
 	 * @throws IOException
 	 */
@@ -109,10 +107,10 @@ public class SQLRestore {
 			ms.setLanguage("sql");
 			ms.setDatabase(_dbName);
 			ms.connect(_host, _port, _user, _password);
-			
+
 			BufferedMCLWriter os = ms.getWriter();
 			BufferedMCLReader reader = ms.getReader();
-			
+
 			ServerResponseReader srr = new ServerResponseReader(reader);
 
 			Thread responseReaderThread = new Thread(srr);
@@ -120,16 +118,16 @@ public class SQLRestore {
 			try {
 				// FIXME: we assume here that the dump is in system's default encoding
 				BufferedReader sourceData = new BufferedReader(new FileReader(source));
-				try { 
+				try {
 					os.write('s'); // signal that a new statement (or series of) is coming
 					while(!srr.inErrorState()) {
 						char[] buf = new char[4096];
 						int result = sourceData.read(buf);
-						if (result < 0) 
-							break;				
+						if (result < 0)
+							break;
 						os.write(buf, 0, result);
 					}
-					
+
 					os.flush(); // mark the end of the statement (or series of)
 					os.close();
 				} finally {
@@ -141,8 +139,8 @@ public class SQLRestore {
 				} catch (InterruptedException e) {
 					throw new IOException(e.getMessage());
 				}
-				
-				// if the server signalled an error, we should respect it... 
+
+				// if the server signalled an error, we should respect it...
 				if (srr.inErrorState()) {
 					throw new IOException(srr.getErrorMessage());
 				}
@@ -155,19 +153,19 @@ public class SQLRestore {
 			ms.close();
 		}
 	}
-	
+
 	public void close() {
 		// do nothing at the moment...
 	}
-	
-	
+
+
 	public static void main(String[] args) throws IOException {
 		if (args.length != 6) {
-			System.err.println("USAGE: java " + SQLRestore.class.getName() + 
+			System.err.println("USAGE: java " + SQLRestore.class.getName() +
 					" <host> <port> <user> <password> <dbname> <dumpfile>");
 			System.exit(1);
 		}
-		
+
 		// parse arguments
 		String host = args[0];
 		int port = Integer.parseInt(args[1]); // FIXME: catch NumberFormatException
@@ -175,13 +173,13 @@ public class SQLRestore {
 		String password = args[3];
 		String dbName = args[4];
 		File dumpFile = new File(args[5]);
-		
+
 		// check arguments
 		if (!dumpFile.isFile() || !dumpFile.canRead()) {
 			System.err.println("Cannot read: " + dumpFile);
 			System.exit(1);
 		}
-		
+
 		SQLRestore md = new SQLRestore(host, port, user, password, dbName);
 		try {
 			System.out.println("Start restoring " + dumpFile);
