@@ -8,7 +8,8 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import java.sql.*;
+import java.sql.SQLException;
+import java.sql.Savepoint;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**

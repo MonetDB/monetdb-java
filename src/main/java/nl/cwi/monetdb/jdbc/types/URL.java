@@ -8,8 +8,11 @@
 
 package nl.cwi.monetdb.jdbc.types;
 
-import java.sql.*;
-import java.net.*;
+import java.net.MalformedURLException;
+import java.sql.SQLData;
+import java.sql.SQLException;
+import java.sql.SQLInput;
+import java.sql.SQLOutput;
 
 /**
  * The URL class represents the URL datatype in MonetDB.  It
@@ -27,8 +30,7 @@ public class URL implements SQLData {
 	@Override
 	public void readSQL(SQLInput stream, String typeName) throws SQLException {
 		if (typeName.compareTo("url") != 0)
-			throw new SQLException("can only use this class with 'url' type",
-					"M1M05");
+			throw new SQLException("can only use this class with 'url' type", "M1M05");
 		url = stream.readString();
 	}
 
@@ -64,6 +66,6 @@ public class URL implements SQLData {
 	}
 
 	public void setURL(java.net.URL nurl) throws Exception {
-		url = nurl.toString();	
+		url = nurl.toString();
 	}
 }

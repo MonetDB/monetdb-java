@@ -8,21 +8,23 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import java.sql.*;
-import javax.sql.*;
-import java.util.*;
-import java.io.*;
+import java.io.PrintWriter;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import javax.sql.DataSource;
+import java.util.Properties;
 import java.util.logging.Logger;
 
 /**
  * A DataSource suitable for the MonetDB database.
- * 
+ *
  * This DataSource allows retrieval of a Connection using the JNDI bean like
  * framework.  A DataSource has numerous advantages over using the DriverManager
  * to retrieve a Connection object.  Using the DataSource interface enables a
  * more transparent application where the location or database can be changed
  * without changing any application code.
- * 
+ *
  * Additionally, pooled connections can be used when using a DataSource.
  *
  * @author Fabian Groffen

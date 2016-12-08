@@ -8,9 +8,13 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import java.sql.*;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.sql.Blob;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
-import java.io.*;
 
 /**
  * The MonetBlob class implements the {@link java.sql.Blob} interface.  Because

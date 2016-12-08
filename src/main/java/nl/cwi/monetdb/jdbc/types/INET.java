@@ -8,8 +8,13 @@
 
 package nl.cwi.monetdb.jdbc.types;
 
-import java.sql.*;
-import java.net.*;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.sql.SQLData;
+import java.sql.SQLException;
+import java.sql.SQLInput;
+import java.sql.SQLOutput;
 
 /**
  * The INET class represents the INET datatype in MonetDB.  It
