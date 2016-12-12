@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.mcl.io;
+package nl.cwi.monetdb.mcl.connection.embedded;
 
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 

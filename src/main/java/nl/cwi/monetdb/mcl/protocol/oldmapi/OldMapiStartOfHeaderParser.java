@@ -39,12 +39,12 @@ final class OldMapiStartOfHeaderParser {
     }
 
     static int GetNextResponseDataAsInt(OldMapiProtocol protocol) throws ProtocolException {
-        protocol.currentPointer++;
         if (!protocol.hasRemaining()) {
             throw new ProtocolException("unexpected end of string", protocol.currentPointer - 1);
         }
         int tmp;
         char chr = protocol.builder.charAt(protocol.currentPointer);
+        protocol.currentPointer++;
         // note: don't use Character.isDigit() here, because
         // we only want ISO-LATIN-1 digits
         if (chr >= '0' && chr <= '9') {
@@ -70,7 +70,6 @@ final class OldMapiStartOfHeaderParser {
     }
 
     static String GetNextResponseDataAsString(OldMapiProtocol protocol) throws ProtocolException {
-        protocol.currentPointer++;
         if (!protocol.hasRemaining()) {
             throw new ProtocolException("unexpected end of string", protocol.currentPointer - 1);
         }

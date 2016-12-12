@@ -8,6 +8,7 @@
 
 package nl.cwi.monetdb.jdbc;
 
+import nl.cwi.monetdb.mcl.connection.ControlCommands;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
 import java.io.InputStream;
@@ -2368,7 +2369,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	public void close() {
 		try {
 			if (!closed && id != -1)
-				connection.sendControlCommand("release " + id);
+				connection.sendControlCommand(ControlCommands.RELEASE, id);
 		} catch (SQLException e) {
 			// probably server closed connection
 		}

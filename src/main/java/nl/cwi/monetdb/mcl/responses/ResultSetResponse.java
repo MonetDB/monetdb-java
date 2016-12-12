@@ -2,6 +2,7 @@ package nl.cwi.monetdb.mcl.responses;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.jdbc.MonetDriver;
+import nl.cwi.monetdb.mcl.connection.ControlCommands;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
@@ -369,7 +370,7 @@ public class ResultSetResponse implements IIncompleteResponse {
         // result was larger than the reply size
         try {
             if (destroyOnClose) {
-                con.sendControlCommand("close " + id);
+                con.sendControlCommand(ControlCommands.CLOSE, id);
             }
         } catch (SQLException e) {
             // probably a connection error...

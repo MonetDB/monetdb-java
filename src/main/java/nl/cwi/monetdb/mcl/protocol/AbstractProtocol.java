@@ -17,14 +17,9 @@ public abstract class AbstractProtocol<T> {
 
     protected ServerResponses currentServerResponseHeader = ServerResponses.UNKNOWN;
 
-    public ServerResponses waitUntilPrompt() {
-        while(this.currentServerResponseHeader != ServerResponses.PROMPT) {
-           this.fetchNextResponseData();
-        }
-        return this.currentServerResponseHeader;
-    }
+    public abstract ServerResponses waitUntilPrompt() throws IOException;
 
-    public abstract void fetchNextResponseData(); //UPDATE currentData!!!
+    public abstract void fetchNextResponseData() throws IOException; //UPDATE currentData!!!
 
     public ServerResponses getCurrentServerResponseHeader() {
         return currentServerResponseHeader;
@@ -55,5 +50,5 @@ public abstract class AbstractProtocol<T> {
 
     public abstract String getRemainingStringLine(int startIndex);
 
-    public abstract void writeNextCommand(byte[] prefix, byte[] query, byte[] suffix) throws IOException;
+    public abstract void writeNextQuery(String prefix, String query, String suffix) throws IOException;
 }

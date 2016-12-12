@@ -1,6 +1,5 @@
-package nl.cwi.monetdb.util;
+package nl.cwi.monetdb.mcl.connection;
 
-import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -12,8 +11,7 @@ public class ChannelSecurity {
     private static char HexChar(int n) { return (n > 9) ? (char) ('a' + (n - 10)) : (char) ('0' + n); }
 
     /**
-     * Small helper method to convert a byte string to a hexadecimal
-     * string representation.
+     * Small helper method to convert a byte string to a hexadecimalstring representation.
      *
      * @param digest the byte array to convert
      * @return the byte array as hexadecimal string
@@ -28,15 +26,14 @@ public class ChannelSecurity {
         return new String(result);
     }
 
-    public static String DigestStrings(String algorithm, String... toDigests) {
+    public static String DigestStrings(String algorithm, byte[]... toDigests) {
         try {
             MessageDigest md = MessageDigest.getInstance(algorithm);
-            for (String str : toDigests) {
-                md.update(str.getBytes("UTF-8"));
+            for (byte[] str : toDigests) {
+                md.update(str);
             }
-            byte[] digest = md.digest();
-            return ToHex(digest);
-        } catch (NoSuchAlgorithmException | UnsupportedEncodingException e) {
+            return ToHex(md.digest());
+        } catch (NoSuchAlgorithmException e) {
             throw new AssertionError("internal error: " + e.toString());
         }
     }

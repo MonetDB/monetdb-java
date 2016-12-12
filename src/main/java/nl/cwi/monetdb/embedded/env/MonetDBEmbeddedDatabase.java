@@ -8,7 +8,7 @@
 
 package nl.cwi.monetdb.embedded.env;
 
-import nl.cwi.monetdb.mcl.io.JDBCEmbeddedConnection;
+import nl.cwi.monetdb.mcl.connection.embedded.JDBCEmbeddedConnection;
 
 import java.util.concurrent.ConcurrentHashMap;
 

@@ -2,6 +2,9 @@ package nl.cwi.monetdb.mcl.connection;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.jdbc.MonetDriver;
+import nl.cwi.monetdb.mcl.connection.embedded.EmbeddedConnection;
+import nl.cwi.monetdb.mcl.connection.socket.MapiConnection;
+import nl.cwi.monetdb.mcl.connection.socket.MapiLanguage;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 
 import java.io.File;
@@ -74,6 +77,7 @@ public final class MonetDBConnectionFactory {
             try {
                 sockTimeout = Integer.parseInt(timout);
             } catch (NumberFormatException e) {
+                sockTimeout = 0;
                 failedparse2 = true;
                 props.setProperty("so_timeout", "0");
             }
@@ -154,7 +158,7 @@ public final class MonetDBConnectionFactory {
         }
 
         //set the timezone
-        if (res.getLanguage() == MonetDBLanguage.LANG_SQL) {
+        if (res.getLanguage() == MapiLanguage.LANG_SQL) {
             // enable auto commit
             res.setAutoCommit(true);
 
@@ -167,7 +171,6 @@ public final class MonetDBConnectionFactory {
             offset -= (offset / 60) * 60;
             tz += (offset < 10 ? "0" : "") + offset;
 
-            // TODO check this
             res.sendIndependentCommand("SET TIME ZONE INTERVAL '" + tz + "' HOUR TO MINUTE");
         }
 

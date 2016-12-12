@@ -1,13 +1,16 @@
-package nl.cwi.monetdb.mcl.connection;
+package nl.cwi.monetdb.mcl.connection.embedded;
 
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedDatabase;
 import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.jdbc.MonetConnection;
+import nl.cwi.monetdb.mcl.connection.ControlCommands;
+import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.embedded.EmbeddedProtocol;
 
 import java.io.*;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Properties;
 
@@ -18,9 +21,9 @@ public final class EmbeddedConnection extends MonetConnection {
 
     private final String directory;
 
-    EmbeddedConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
-                       boolean isDebugging, String directory) throws IOException {
-        super(props, database, hash, language, blobIsBinary, isDebugging);
+    public EmbeddedConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
+                              boolean isDebugging, String directory) throws IOException {
+        super(props, database, hash, EmbeddedLanguage.GetLanguageFromString(language), blobIsBinary, isDebugging);
         this.directory = directory;
     }
 
@@ -33,7 +36,7 @@ public final class EmbeddedConnection extends MonetConnection {
     }
 
     @Override
-    public List<String> connect(String user, String pass) throws IOException, ProtocolException, MCLException {
+    public List<String> connect(String username, String password) throws IOException, ProtocolException, MCLException {
         try {
             if(MonetDBEmbeddedDatabase.IsDatabaseRunning() &&
                     !MonetDBEmbeddedDatabase.GetDatabaseDirectory().equals(this.directory)) {
@@ -72,5 +75,12 @@ public final class EmbeddedConnection extends MonetConnection {
     @Override
     public void closeUnderlyingConnection() throws IOException {
         ((EmbeddedProtocol)protocol).getEmbeddedConnection().closeConnection();
+    }
+
+    @Override
+    public void sendControlCommand(ControlCommands con, int data) throws SQLException {
+        synchronized (protocol) {
+
+        }
     }
 }

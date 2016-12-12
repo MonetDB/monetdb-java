@@ -1,83 +1,45 @@
-package nl.cwi.monetdb.mcl.connection;
+package nl.cwi.monetdb.mcl.connection.socket;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.io.SocketConnection;
+import nl.cwi.monetdb.mcl.connection.ChannelSecurity;
+import nl.cwi.monetdb.mcl.connection.ControlCommands;
+import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.oldmapi.OldMapiProtocol;
-import nl.cwi.monetdb.util.ChannelSecurity;
 
 import java.io.IOException;
 import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteOrder;
+import java.sql.SQLException;
 import java.util.*;
 
-/**
- * A Socket for communicating with the MonetDB database in MAPI block
- * mode.
- *
- * The MapiSocket implements the protocol specifics of the MAPI block
- * mode protocol, and interfaces it as a socket that delivers a
- * BufferedReader and a BufferedWriter.  Because logging in is an
- * integral part of the MAPI protocol, the MapiSocket performs the login
- * procedure.  Like the Socket class, various options can be set before
- * calling the connect() method to influence the login process.  Only
- * after a successful call to connect() the BufferedReader and
- * BufferedWriter can be retrieved.
- * <br />
- * For each line read, it is determined what type of line it is
- * according to the MonetDB MAPI protocol.  This results in a line to be
- * PROMPT, HEADER, RESULT, ERROR or UNKNOWN.  Use the getLineType()
- * method on the BufferedMCLReader to retrieve the type of the last
- * line read.
- *
- * For debugging purposes a socket level debugging is implemented where
- * each and every interaction to and from the MonetDB server is logged
- * to a file on disk.<br />
- * Incoming messages are prefixed by "RX" (received by the driver),
- * outgoing messages by "TX" (transmitted by the driver).  Special
- * decoded non-human readable messages are prefixed with "RD" and "TD"
- * instead.  Following this two char prefix, a timestamp follows as the
- * number of milliseconds since the UNIX epoch.  The rest of the line is
- * a String representation of the data sent or received.
- *
- * The general use of this Socket must be seen only in the full context
- * of a MAPI connection to a server.  It has the same ingredients as a
- * normal Socket, allowing for seamless plugging.
- * <pre>
- *    Socket   \     /  InputStream  ----&gt; (BufferedMCL)Reader
- *              &gt; o &lt;
- *  MapiSocket /     \ OutputStream  ----&gt; (BufferedMCL)Writer
- * </pre>
- * The MapiSocket allows to retrieve Streams for communicating.  They
- * are interfaced, so they can be chained in any way.  While the Socket
- * transparently deals with how data is sent over the wire, the actual
- * data read needs to be interpreted, for which a Reader/Writer
- * interface is most sufficient.  In particular the BufferedMCL*
- * implementations of those interfaces supply some extra functionality
- * geared towards the format of the data.
- *
- * @author Fabian Groffen
- * @version 4.1
- */
 public class MapiConnection extends MonetConnection {
+
+    public static final char PROMPT_CHAR = '.';
 
     /** The hostname to connect to */
     private final String hostname;
     /** The port to connect on the host to */
     private final int port;
+    /** The TCP Socket timeout in milliseconds. Default is 0 meaning the timeout is disabled (i.e., timeout of infinity) */
+    private int soTimeout = 0;
     /** Whether we should follow redirects */
     private boolean followRedirects = true;
     /** How many redirections do we follow until we're fed up with it? */
     private int ttl = 10;
-    /** protocol version of the connection */
+    /** Protocol version of the connection */
     private int version;
+    /** Endianness of the server */
+    private ByteOrder serverEndianness;
 
-    MapiConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
-                   boolean isDebugging, String hostname, int port) throws IOException {
-        super(props, database, hash, language, blobIsBinary, isDebugging);
+    public MapiConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
+                          boolean isDebugging, String hostname, int port) throws IOException {
+        super(props, database, hash, MapiLanguage.GetLanguageFromString(language), blobIsBinary, isDebugging);
         this.hostname = hostname;
         this.port = port;
     }
@@ -96,10 +58,6 @@ public class MapiConnection extends MonetConnection {
 
     public int getTtl() {
         return ttl;
-    }
-
-    public int setProtocolVersion() {
-        return version;
     }
 
     /**
@@ -140,25 +98,54 @@ public class MapiConnection extends MonetConnection {
         return this.version;
     }
 
-    @Override
-    public int getBlockSize() {
-        return ((OldMapiProtocol)protocol).getConnection().getBlockSize();
+    public int getVersion() {
+        return version;
+    }
+
+    public ByteOrder getServerEndianness() {
+        return serverEndianness;
     }
 
     @Override
+    public int getBlockSize() {
+        return ((OldMapiProtocol)protocol).getSocket().getBlockSize();
+    }
+
+    /**
+     * Gets the SO_TIMEOUT from the underlying Socket.
+     *
+     * @return the currently in use timeout in milliseconds
+     */
+    @Override
     public int getSoTimeout()  {
         try {
-            return ((OldMapiProtocol)protocol).getConnection().getSoTimeout();
+            if(protocol != null) {
+                this.soTimeout = ((OldMapiProtocol)protocol).getSocket().getSoTimeout();
+            }
+            return this.soTimeout;
         } catch (SocketException e) {
             this.addWarning("The socket timeout could not be get", "M1M05");
         }
         return -1;
     }
 
+    /**
+     * Set the SO_TIMEOUT on the underlying Socket.  When for some reason the connection to the database hangs, this
+     * setting can be useful to break out of this indefinite wait. This option must be enabled prior to entering the
+     * blocking operation to have effect.
+     *
+     * @param s The specified timeout, in milliseconds.  A timeout of zero is interpreted as an infinite timeout.
+     */
     @Override
     public void setSoTimeout(int s)  {
+        if (s < 0) {
+            throw new IllegalArgumentException("Timeout can't be negative");
+        }
         try {
-            ((OldMapiProtocol)protocol).getConnection().setSoTimeout(s);
+            if(protocol != null) {
+                ((OldMapiProtocol)protocol).getSocket().setSoTimeout(s);
+            }
+            this.soTimeout = s;
         } catch (SocketException e) {
             this.addWarning("The socket timeout could not be set", "M1M05");
         }
@@ -166,15 +153,15 @@ public class MapiConnection extends MonetConnection {
 
     @Override
     public void closeUnderlyingConnection() throws IOException {
-        ((OldMapiProtocol)protocol).getConnection().close();
+        ((OldMapiProtocol)protocol).getSocket().close();
     }
 
     @Override
     public String getJDBCURL() {
-        String language = "";
-        if (this.getLanguage() == MonetDBLanguage.LANG_MAL)
-            language = "?language=mal";
-        return "jdbc:monetdb://" + this.hostname + ":" + this.port + "/" + this.database + language;
+        String res = "jdbc:monetdb://" + this.hostname + ":" + this.port + "/" + this.database;
+        if (this.getLanguage() == MapiLanguage.LANG_MAL)
+            res += "?language=mal";
+        return  res;
     }
 
     @Override
@@ -182,13 +169,53 @@ public class MapiConnection extends MonetConnection {
         return this.protocol;
     }
 
+    /**
+     * Sends the given string to MonetDB as control statement, making
+     * sure there is a prompt after the command is sent.  All possible
+     * returned information is discarded.  Encountered errors are
+     * reported.
+     *
+     * @param con the command to send
+     * @throws SQLException if an IO exception or a database error occurs
+     */
+    @Override
+    public void sendControlCommand(ControlCommands con, int data) throws SQLException {
+        String command = null;
+        switch (con) {
+            case AUTO_COMMIT:
+                command = "auto_commit " + ((data == 1) ? "1" : "0");
+                break;
+            case REPLY_SIZE:
+                command = "reply_size " + data;
+                break;
+            case RELEASE:
+                command = "release " + data;
+                break;
+            case CLOSE:
+                command = "close " + data;
+        }
+        synchronized (protocol) {
+            try {
+                protocol.writeNextQuery(language.getCommandTemplateIndex(0), command, language.getCommandTemplateIndex(1));
+                protocol.waitUntilPrompt();
+                if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
+                    String error = protocol.getRemainingStringLine(0);
+                    throw new SQLException(error.substring(6), error.substring(0, 5));
+                }
+            } catch (SocketTimeoutException e) {
+                close(); // JDBC 4.1 semantics, abort()
+                throw new SQLException("connection timed out", "08M33");
+            } catch (IOException e) {
+                throw new SQLException(e.getMessage(), "08000");
+            }
+        }
+    }
+
     @Override
     public List<String> connect(String user, String pass) throws IOException, ProtocolException, MCLException {
-        // Wrap around the internal connect that needs to know if it
-        // should really make a TCP connection or not.
+        // Wrap around the internal connect that needs to know if it should really make a TCP connection or not.
         List<String> res = connect(this.hostname, this.port, user, pass, true);
-        // apply NetworkTimeout value from legacy (pre 4.1) driver
-        // so_timeout calls
+        // apply NetworkTimeout value from legacy (pre 4.1) driver so_timeout calls
         this.setSoTimeout(this.getSoTimeout());
         return res;
     }
@@ -198,27 +225,19 @@ public class MapiConnection extends MonetConnection {
         if (ttl-- <= 0)
             throw new MCLException("Maximum number of redirects reached, aborting connection attempt. Sorry.");
 
-        AbstractProtocol<?> pro;
-
         if (makeConnection) {
-            pro = new OldMapiProtocol(new SocketConnection(this.hostname, this.port));
-            this.protocol = pro;
-            ((OldMapiProtocol)pro).getConnection().setTcpNoDelay(true);
-
-            // set nodelay, as it greatly speeds up small messages (like we
-            // often do)
-            //TODO writer.registerReader(reader); ??
-        } else {
-            pro = this.protocol;
+            this.protocol = new OldMapiProtocol(new OldMapiSocket(this.hostname, this.port, this));
+            //set nodelay, as it greatly speeds up small messages (like we often do)
+            ((OldMapiProtocol)this.protocol).getSocket().setTcpNoDelay(true);
+            ((OldMapiProtocol)this.protocol).getSocket().setSoTimeout(this.soTimeout);
         }
 
-        pro.fetchNextResponseData();
-        pro.waitUntilPrompt();
-        String firstLine = pro.getRemainingStringLine(0);
-
-        String test = this.getChallengeResponse(firstLine, user, pass, this.language.getRepresentation(),
+        this.protocol.fetchNextResponseData();
+        String nextLine = this.protocol.getCurrentData().toString();
+        this.protocol.waitUntilPrompt();
+        String test = this.getChallengeResponse(nextLine, user, pass, this.language.getRepresentation(),
                 this.database, this.hash);
-        pro.writeNextCommand(MonetDBLanguage.EmptyString, test.getBytes(), MonetDBLanguage.EmptyString);
+        this.protocol.writeNextQuery("", test, "");
 
         List<String> redirects = new ArrayList<>();
         List<String> warns = new ArrayList<>();
@@ -226,16 +245,17 @@ public class MapiConnection extends MonetConnection {
         ServerResponses next;
 
         do {
-            pro.fetchNextResponseData();
-            next = pro.getCurrentServerResponseHeader();
+            this.protocol.fetchNextResponseData();
+            next = this.protocol.getCurrentServerResponseHeader();
             switch (next) {
                 case ERROR:
-                    err += "\n" + pro.getRemainingStringLine(7);
+                    err += "\n" + this.protocol.getRemainingStringLine(7);
                     break;
                 case INFO:
-                    warns.add(pro.getRemainingStringLine(1));
+                    warns.add(this.protocol.getRemainingStringLine(1));
+                    break;
                 case REDIRECT:
-                    redirects.add(pro.getRemainingStringLine(1));
+                    redirects.add(this.protocol.getRemainingStringLine(1));
             }
         } while (next != ServerResponses.PROMPT);
 
@@ -245,15 +265,10 @@ public class MapiConnection extends MonetConnection {
         }
         if (!redirects.isEmpty()) {
             if (followRedirects) {
-                // Ok, server wants us to go somewhere else.  The list
-                // might have multiple clues on where to go.  For now we
-                // don't support anything intelligent but trying the
-                // first one.  URI should be in form of:
-                // "mapi:monetdb://host:port/database?arg=value&..."
-                // or
-                // "mapi:merovingian://proxy?arg=value&..."
-                // note that the extra arguments must be obeyed in both
-                // cases
+                // Ok, server wants us to go somewhere else. The list might have multiple clues on where to go. For now
+                // we don't support anything intelligent but trying the first one. URI should be in form of:
+                // "mapi:monetdb://host:port/database?arg=value&..." or "mapi:merovingian://proxy?arg=value&..." note
+                // that the extra arguments must be obeyed in both cases
                 String suri = redirects.get(0);
                 if (!suri.startsWith("mapi:"))
                     throw new MCLException("unsupported redirect: " + suri);
@@ -264,7 +279,6 @@ public class MapiConnection extends MonetConnection {
                 } catch (URISyntaxException e) {
                     throw new ProtocolException(e.toString());
                 }
-
                 String tmp = u.getQuery();
                 if (tmp != null) {
                     String args[] = tmp.split("&");
@@ -283,7 +297,7 @@ public class MapiConnection extends MonetConnection {
                                 case "language":
                                     tmp = arg.substring(pos + 1);
                                     warns.add("redirect specifies use of different language: " + tmp);
-                                     this.language = MonetDBLanguage.GetLanguageFromString(tmp);
+                                     this.language = MapiLanguage.GetLanguageFromString(tmp);
                                     break;
                                 case "user":
                                     tmp = arg.substring(pos + 1);
@@ -307,9 +321,8 @@ public class MapiConnection extends MonetConnection {
 
                 switch (u.getScheme()) {
                     case "monetdb":
-                        // this is a redirect to another (monetdb) server,
-                        // which means a full reconnect
-                        // avoid the debug log being closed
+                        // this is a redirect to another (monetdb) server, which means a full reconnect avoid the debug
+                        // log being closed
                         if (this.isDebugging) {
                             this.isDebugging = false;
                             this.close();
@@ -330,8 +343,7 @@ public class MapiConnection extends MonetConnection {
                         warns.add("Redirect by " + host + ":" + port + " to " + suri);
                         break;
                     case "merovingian":
-                        // reuse this connection to inline connect to the
-                        // right database that Merovingian proxies for us
+                        // reuse this connection to inline connect to the right database that Merovingian proxies for us
                         warns.addAll(connect(host, port, user, pass, false));
                         break;
                     default:
@@ -349,17 +361,15 @@ public class MapiConnection extends MonetConnection {
     }
 
     /**
-     * A little helper function that processes a challenge string, and
-     * returns a response string for the server.  If the challenge
-     * string is null, a challengeless response is returned.
+     * A little helper function that processes a challenge string, and returns a response string for the server.
+     * If the challenge string is null, a challengeless response is returned.
      *
      * @param chalstr the challenge string
      * @param username the username to use
      * @param password the password to use
      * @param language the language to use
      * @param database the database to connect to
-     * @param hash the hash method(s) to use, or NULL for all supported
-     *             hashes
+     * @param hash the hash method(s) to use, or NULL for all supported hashes
      */
     private String getChallengeResponse(String chalstr, String username, String password, String language,
                                         String database, String hash)
@@ -370,27 +380,35 @@ public class MapiConnection extends MonetConnection {
         // parse the challenge string, split it on ':'
         String[] chaltok = chalstr.split(":");
         if (chaltok.length <= 4)
-            throw new ProtocolException("Server challenge string unusable!  Challenge contains too few tokens: "
+            throw new ProtocolException("Server challenge string unusable! Challenge contains too few tokens: "
                     + chalstr);
 
         // challenge string to use as salt/key
         String challenge = chaltok[0];
         String servert = chaltok[1];
         try {
-            version = Integer.parseInt(chaltok[2].trim());	// protocol version
+            this.version = Integer.parseInt(chaltok[2].trim()); // protocol version
         } catch (NumberFormatException e) {
-            throw new ProtocolException("Protocol version unparseable: " + chaltok[3]);
+            throw new ProtocolException("Protocol version unparseable: " + chaltok[2]);
         }
 
-        // handle the challenge according to the version it is
-        switch (version) {
+        switch (chaltok[4]) {
+            case "BIG":
+                this.serverEndianness = ByteOrder.BIG_ENDIAN;
+                break;
+            case "LIT":
+                this.serverEndianness = ByteOrder.LITTLE_ENDIAN;
+                break;
             default:
-                throw new MCLException("Unsupported protocol version: " + version);
-            case 9:
-                // proto 9 is like 8, but uses a hash instead of the
-                // plain password, the server tells us which hash in the
-                // challenge after the byte-order
+                throw new ProtocolException("Invalid byte-order: " + chaltok[4]);
+        }
+        ((OldMapiProtocol)protocol).getSocket().setSocketChannelEndianness(this.serverEndianness);
 
+        // handle the challenge according to the version it is
+        switch (this.version) {
+            case 9:
+                // proto 9 is like 8, but uses a hash instead of the plain password, the server tells us which hash in
+                // the challenge after the byte-order
 				/* NOTE: Java doesn't support RIPEMD160 :( */
                 switch (chaltok[5]) {
                     case "SHA512":
@@ -401,7 +419,7 @@ public class MapiConnection extends MonetConnection {
                         break;
                     case "SHA256":
                         algo = "SHA-256";
-				/* NOTE: Java doesn't support SHA-224 */
+				/* NOTE: Java supports SHA-224 only on 8 */
                         break;
                     case "SHA1":
                         algo = "SHA-1";
@@ -413,18 +431,13 @@ public class MapiConnection extends MonetConnection {
                         throw new MCLException("Unsupported password hash: " + chaltok[5]);
                 }
 
-                password = ChannelSecurity.DigestStrings(algo, password);
+                password = ChannelSecurity.DigestStrings(algo, password.getBytes("UTF-8"));
 
-                // proto 7 (finally) used the challenge and works with a
-                // password hash.  The supported implementations come
-                // from the server challenge.  We chose the best hash
-                // we can find, in the order SHA1, MD5, plain.  Also,
-                // the byte-order is reported in the challenge string,
-                // which makes sense, since only blockmode is supported.
-                // proto 8 made this obsolete, but retained the
-                // byte-order report for future "binary" transports.  In
-                // proto 8, the byte-order of the blocks is always little
-                // endian because most machines today are.
+                // proto 7 (finally) used the challenge and works with a password hash. The supported implementations
+                // come from the server challenge. We chose the best hash we can find, in the order SHA1, MD5, plain.
+                // Also, the byte-order is reported in the challenge string. proto 8 made this obsolete, but retained
+                // the byte-order report for future "binary" transports. In proto 8, the byte-order of the blocks is
+                // always little endian because most machines today are.
                 String hashes = (hash == null ? chaltok[3] : hash);
                 Set<String> hashesSet = new HashSet<>(Arrays.asList(hashes.toUpperCase().split("[, ]")));
 
@@ -454,20 +467,8 @@ public class MapiConnection extends MonetConnection {
                     throw new MCLException("No supported password hashes in " + hashes);
                 }
 
-                pwhash += ChannelSecurity.DigestStrings(algo, password, challenge);
-
-                // TODO: some day when we need this, we should store
-                // this
-                switch (chaltok[4]) {
-                    case "BIG":
-                        // byte-order of server is big-endian
-                        break;
-                    case "LIT":
-                        // byte-order of server is little-endian
-                        break;
-                    default:
-                        throw new ProtocolException("Invalid byte-order: " + chaltok[5]);
-                }
+                pwhash += ChannelSecurity.DigestStrings(algo, password.getBytes("UTF-8"),
+                        challenge.getBytes("UTF-8"));
 
                 // generate response
                 response = "BIG:";	// JVM byte-order is big-endian
@@ -479,6 +480,8 @@ public class MapiConnection extends MonetConnection {
                 this.conn_props.setProperty("database", database);
 
                 return response;
+            default:
+                throw new MCLException("Unsupported protocol version: " + version);
         }
     }
 }

@@ -30,12 +30,11 @@ public class SendThread extends Thread {
         SHUTDOWN
     }
 
-    private byte[][] templ;
-    private byte[] query;
+    private String[] templ;
+    private String query;
     private AbstractProtocol protocol;
     private String error;
     private SendThreadStatus state = SendThreadStatus.WAIT;
-
     private final Lock sendLock = new ReentrantLock();
     private final Condition queryAvailable = sendLock.newCondition();
     private final Condition waiting = sendLock.newCondition();
@@ -54,34 +53,34 @@ public class SendThread extends Thread {
 
     @Override
     public void run() {
-        sendLock.lock();
+        this.sendLock.lock();
         try {
             while (true) {
-                while (state == SendThreadStatus.WAIT) {
+                while (this.state == SendThreadStatus.WAIT) {
                     try {
-                        queryAvailable.await();
+                        this.queryAvailable.await();
                     } catch (InterruptedException e) {
                         // woken up, eh?
                     }
                 }
-                if (state == SendThreadStatus.SHUTDOWN)
+                if (this.state == SendThreadStatus.SHUTDOWN)
                     break;
 
                 // state is QUERY here
                 try {
-                    protocol.writeNextCommand((templ[0] == null ? MonetDBLanguage.EmptyString : templ[0]), query,
-                            (templ[1] == null ? MonetDBLanguage.EmptyString : templ[1]));
+                    this.protocol.writeNextQuery((templ[0] == null ? "" : templ[0]), query,
+                            (templ[1] == null ? "" : templ[1]));
                 } catch (IOException e) {
-                    error = e.getMessage();
+                    this.error = e.getMessage();
                 }
 
                 // update our state, and notify, maybe someone is waiting
                 // for us in throwErrors
-                state = SendThreadStatus.WAIT;
-                waiting.signal();
+                this.state = SendThreadStatus.WAIT;
+                this.waiting.signal();
             }
         } finally {
-            sendLock.unlock();
+            this.sendLock.unlock();
         }
     }
 
@@ -93,21 +92,19 @@ public class SendThread extends Thread {
      * @param query the query itself
      * @throws SQLException if this SendThread is already in use
      */
-    public void runQuery(byte[][] templ, String query) throws SQLException {
-        sendLock.lock();
+    public void runQuery(String[] templ, String query) throws SQLException {
+        this.sendLock.lock();
         try {
-            if (state != SendThreadStatus.WAIT) {
+            if (this.state != SendThreadStatus.WAIT) {
                 throw new SQLException("SendThread already in use or shutting down!", "M0M03");
             }
-
             this.templ = templ;
-            this.query = query.getBytes();
-
+            this.query = query;
             // let the thread know there is some work to do
-            state = SendThreadStatus.QUERY;
-            queryAvailable.signal();
+            this.state = SendThreadStatus.QUERY;
+            this.queryAvailable.signal();
         } finally {
-            sendLock.unlock();
+            this.sendLock.unlock();
         }
     }
 
@@ -117,20 +114,20 @@ public class SendThread extends Thread {
      * @return the errors or null if none
      */
     public String getErrors() {
-        sendLock.lock();
+        this.sendLock.lock();
         try {
             // make sure the thread is in WAIT state, not QUERY
-            while (state == SendThreadStatus.QUERY) {
+            while (this.state == SendThreadStatus.QUERY) {
                 try {
-                    waiting.await();
+                    this.waiting.await();
                 } catch (InterruptedException e) {
                     // just try again
                 }
             }
-            if (state == SendThreadStatus.SHUTDOWN)
-                error = "SendThread is shutting down";
+            if (this.state == SendThreadStatus.SHUTDOWN)
+                this.error = "SendThread is shutting down";
         } finally {
-            sendLock.unlock();
+            this.sendLock.unlock();
         }
         return error;
     }

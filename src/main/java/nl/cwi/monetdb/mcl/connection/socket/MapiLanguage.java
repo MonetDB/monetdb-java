@@ -1,53 +1,57 @@
-package nl.cwi.monetdb.mcl.connection;
+package nl.cwi.monetdb.mcl.connection.socket;
+
+import nl.cwi.monetdb.mcl.connection.IMonetDBLanguage;
 
 /**
  * Created by ferreira on 11/30/16.
  */
-public enum MonetDBLanguage {
+public enum MapiLanguage implements IMonetDBLanguage {
 
     /** the SQL language */
-    LANG_SQL(new byte[][]{"s".getBytes(), "\n;".getBytes(), "\n;\n".getBytes()}, new byte[][]{"X".getBytes(), null,
-            "\nX".getBytes()}, "sql"),
+    LANG_SQL(new String[]{"s", "\n;", "\n;\n"}, new String[]{"X", null, "\nX"}, "sql"),
     /** the MAL language (officially *NOT* supported) */
-    LANG_MAL(new byte[][]{null, ";\n".getBytes(), ";\n".getBytes()}, new byte[][]{null, null, null}, "mal"),
+    LANG_MAL(new String[]{null, ";\n", ";\n"}, new String[]{null, null, null}, "mal"),
     /** an unknown language */
     LANG_UNKNOWN(null, null, "unknown");
 
-    MonetDBLanguage(byte[][] queryTemplates, byte[][] commandTemplates, String representation) {
+    MapiLanguage(String[] queryTemplates, String[] commandTemplates, String representation) {
         this.queryTemplates = queryTemplates;
         this.commandTemplates = commandTemplates;
         this.representation = representation;
     }
 
-    private final byte[][] queryTemplates;
+    private final String[] queryTemplates;
 
-    private final byte[][] commandTemplates;
+    private final String[] commandTemplates;
 
     private final String representation;
 
-    public byte[] getQueryTemplateIndex(int index) {
+    @Override
+    public String getQueryTemplateIndex(int index) {
         return queryTemplates[index];
     }
 
-    public byte[] getCommandTemplateIndex(int index) {
+    @Override
+    public String getCommandTemplateIndex(int index) {
         return commandTemplates[index];
     }
 
-    public byte[][] getQueryTemplates() {
+    @Override
+    public String[] getQueryTemplates() {
         return queryTemplates;
     }
 
-    public byte[][] getCommandTemplates() {
+    @Override
+    public String[] getCommandTemplates() {
         return commandTemplates;
     }
 
+    @Override
     public String getRepresentation() {
         return representation;
     }
 
-    public static final byte[] EmptyString = "".getBytes();
-
-    public static MonetDBLanguage GetLanguageFromString(String language) {
+    public static MapiLanguage GetLanguageFromString(String language) {
         switch (language) {
             case "sql":
                 return LANG_SQL;

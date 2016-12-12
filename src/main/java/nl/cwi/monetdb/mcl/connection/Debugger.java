@@ -22,6 +22,10 @@ public class Debugger implements Closeable {
         this.log = log;
     }
 
+    public Writer getLog() {
+        return log;
+    }
+
     /**
      * Enables logging to a file what is read and written from and to
      * the server.  Logging can be enabled at any time.  However, it is
@@ -56,7 +60,7 @@ public class Debugger implements Closeable {
      * @param message the message to log
      * @throws IOException if an IO error occurs while writing to the logfile
      */
-    private void logTx(String message) throws IOException {
+    public void logTx(String message) throws IOException {
         log.write("TX " + System.currentTimeMillis() + ": " + message + "\n");
     }
 
@@ -68,7 +72,7 @@ public class Debugger implements Closeable {
      * @param message the message to log
      * @throws IOException if an IO error occurs while writing to the logfile
      */
-    private void logTd(String message) throws IOException {
+    public void logTd(String message) throws IOException {
         log.write("TD " + System.currentTimeMillis() + ": " + message + "\n");
     }
 
@@ -83,7 +87,7 @@ public class Debugger implements Closeable {
      * @param message the message to log
      * @throws IOException if an IO error occurs while writing to the logfile
      */
-    private void logRx(String message) throws IOException {
+    public void logRx(String message) throws IOException {
         log.write("RX " + System.currentTimeMillis() + ": " + message + "\n");
         log.flush();
     }
@@ -97,7 +101,7 @@ public class Debugger implements Closeable {
      * @param message the message to log
      * @throws IOException if an IO error occurs while writing to the logfile
      */
-    private void logRd(String message) throws IOException {
+    public void logRd(String message) throws IOException {
         log.write("RD " + System.currentTimeMillis() + ": " + message + "\n");
         log.flush();
     }

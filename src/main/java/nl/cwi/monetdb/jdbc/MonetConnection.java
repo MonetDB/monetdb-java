@@ -2,14 +2,12 @@ package nl.cwi.monetdb.jdbc;
 
 import nl.cwi.monetdb.jdbc.types.INET;
 import nl.cwi.monetdb.jdbc.types.URL;
-import nl.cwi.monetdb.mcl.connection.MCLException;
-import nl.cwi.monetdb.mcl.connection.Debugger;
-import nl.cwi.monetdb.mcl.connection.MonetDBLanguage;
+import nl.cwi.monetdb.mcl.connection.*;
+import nl.cwi.monetdb.mcl.connection.socket.MapiLanguage;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.responses.*;
-import nl.cwi.monetdb.mcl.connection.SendThread;
 import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
@@ -62,7 +60,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     /** the successful processed input properties */
     protected final Properties conn_props;
     /** The language to connect with */
-    protected MonetDBLanguage language;
+    protected IMonetDBLanguage language;
     /** The database to connect to */
     protected String database;
     /** Authentication hash method */
@@ -83,8 +81,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         }
     };
 
-    // See javadoc for documentation about WeakHashMap if you don't know what
-    // it does !!!NOW!!! (only when you deal with it of course)
+    // See javadoc for documentation about WeakHashMap if you don't know what it does !!!NOW!!!
+    // (only when you deal with it of course)
     /** A Map containing all (active) Statements created from this Connection */
     private Map<Statement,?> statements = new WeakHashMap<Statement, Object>();
 
@@ -101,25 +99,23 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     protected AbstractProtocol<?> protocol;
 
     /**
-     * Constructor of a Connection for MonetDB. At this moment the
-     * current implementation limits itself to storing the given host,
-     * database, username and password for later use by the
-     * createStatement() call.  This constructor is only accessible to
-     * classes from the jdbc package.
+     * Constructor of a Connection for MonetDB. At this moment the current implementation limits itself to storing the
+     * given host, database, username and password for later use by the createStatement() call.  This constructor is
+     * only accessible to classes from the jdbc package.
      *
      * @throws IOException if an error occurs
      */
-    public MonetConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
-                           boolean isDebugging) throws IOException {
+    public MonetConnection(Properties props, String database, String hash, IMonetDBLanguage language,
+                           boolean blobIsBinary, boolean isDebugging) throws IOException {
         this.conn_props = props;
         this.database = database;
         this.hash = hash;
-        this.language = MonetDBLanguage.GetLanguageFromString(language);
+        this.language = language;
         this.blobIsBinary = blobIsBinary;
         this.isDebugging = isDebugging;
     }
 
-    public MonetDBLanguage getLanguage() {
+    public IMonetDBLanguage getLanguage() {
         return language;
     }
 
@@ -127,19 +123,24 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         this.closed = closed;
     }
 
+    public boolean isDebugging() {
+        return isDebugging;
+    }
+
     public void setDebugging(String filename) throws IOException {
         ourSavior = new Debugger(filename);
     }
 
+    public Debugger getOurSavior() {
+        return ourSavior;
+    }
+
     /**
-     * Connects to the given host and port, logging in as the given
-     * user.  If followRedirect is false, a RedirectionException is
-     * thrown when a redirect is encountered.
+     * Connects to the given host and port, logging in as the given user. If followRedirect is false, a
+     * RedirectionException is thrown when a redirect is encountered.
      *
-     * @return A List with informational (warning) messages. If this
-     * 		list is empty; then there are no warnings.
-     * @throws IOException if an I/O error occurs when creating the
-     *         socket
+     * @return A List with informational (warning) messages. If this list is empty; then there are no warnings.
+     * @throws IOException if an I/O error occurs when creating the socket
      * @throws ProtocolException if bogus data is received
      * @throws MCLException if an MCL related error occurs
      */
@@ -159,51 +160,51 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         return this.protocol;
     }
 
+    public abstract void sendControlCommand(ControlCommands con, int data) throws SQLException;
+
     /**
-     * Releases this Connection object's database and JDBC resources
-     * immediately instead of waiting for them to be automatically
-     * released. All Statements created from this Connection will be
-     * closed when this method is called.
+     * Releases this Connection object's database and JDBC resources immediately instead of waiting for them to be
+     * automatically released. All Statements created from this Connection will be closed when this method is called.
      *
-     * Calling the method close on a Connection object that is already
-     * closed is a no-op.
+     * Calling the method close on a Connection object that is already closed is a no-op.
      */
     @Override
-    public synchronized void close() {
-        for (Statement st : statements.keySet()) {
+    public void close() {
+        synchronized(protocol) {
+            for (Statement st : statements.keySet()) {
+                try {
+                    st.close();
+                } catch (SQLException e) {
+                    // better luck next time!
+                }
+            }
+            //close the debugger
             try {
-                st.close();
-            } catch (SQLException e) {
-                // better luck next time!
+                if (ourSavior != null) {
+                    ourSavior.close();
+                }
+            } catch (IOException e) {
+                // ignore it
             }
-        }
-        //close the debugger
-        try {
-            if (ourSavior != null) {
-                ourSavior.close();
+            // close the socket or the embedded server
+            try {
+                this.closeUnderlyingConnection();
+            } catch (IOException e) {
+                // ignore it
             }
-        } catch (IOException e) {
-            // ignore it
+            // close active SendThread if any
+            if (sendThread != null) {
+                sendThread.shutdown();
+                sendThread = null;
+            }
+            // report ourselves as closed
+            closed = true;
         }
-        // close the socket or the embedded server
-        try {
-            this.closeUnderlyingConnection();
-        } catch (IOException e) {
-            // ignore it
-        }
-        // close active SendThread if any
-        if (sendThread != null) {
-            sendThread.shutdown();
-            sendThread = null;
-        }
-        // report ourselves as closed
-        closed = true;
     }
 
     /**
-     * Destructor called by garbage collector before destroying this
-     * object tries to disconnect the MonetDB connection if it has not
-     * been disconnected already.
+     * Destructor called by garbage collector before destroying this object tries to disconnect the MonetDB connection
+     * if it has not been disconnected already.
      */
     @Override
     protected void finalize() throws Throwable {
@@ -214,9 +215,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     //== methods of interface Connection
 
     /**
-     * Clears all warnings reported for this Connection object. After a
-     * call to this method, the method getWarnings returns null until a
-     * new warning is reported for this Connection object.
+     * Clears all warnings reported for this Connection object. After a call to this method, the method getWarnings
+     * returns null until a new warning is reported for this Connection object.
      */
     @Override
     public void clearWarnings() {
@@ -235,54 +235,44 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Makes all changes made since the previous commit/rollback
-     * permanent and releases any database locks currently held by this
-     * Connection object.  This method should be used only when
-     * auto-commit mode has been disabled.
+     * Makes all changes made since the previous commit/rollback permanent and releases any database locks currently
+     * held by this Connection object. This method should be used only when auto-commit mode has been disabled.
      *
-     * @throws SQLException if a database access error occurs or this
-     *         Connection object is in auto-commit mode
+     * @throws SQLException if a database access error occurs or this Connection object is in auto-commit mode
      * @see #setAutoCommit(boolean)
      */
     @Override
     public void commit() throws SQLException {
-        // note: can't use sendIndependentCommand here because we need
-        // to process the auto_commit state the server gives
+        // note: can't use sendIndependentCommand here because we need to process the auto_commit state the server gives
         this.createResponseList("COMMIT");
     }
 
     /**
-     * Creates a Statement object for sending SQL statements to the
-     * database.  SQL statements without parameters are normally
-     * executed using Statement objects. If the same SQL statement is
-     * executed many times, it may be more efficient to use a
-     * PreparedStatement object.
+     * Creates a Statement object for sending SQL statements to the database. SQL statements without parameters are
+     * normally executed using Statement objects. If the same SQL statement is executed many times, it may be more
+     * efficient to use a PreparedStatement object.
      *
-     * Result sets created using the returned Statement object will by
-     * default be type TYPE_FORWARD_ONLY and have a concurrency level of
-     * CONCUR_READ_ONLY.
+     * Result sets created using the returned Statement object will by default be type TYPE_FORWARD_ONLY and have a
+     * concurrency level of CONCUR_READ_ONLY.
      *
      * @return a new default Statement object
      * @throws SQLException if a database access error occurs
      */
     @Override
     public Statement createStatement() throws SQLException {
-        return createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
+        return createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY,
+                ResultSet.HOLD_CURSORS_OVER_COMMIT);
     }
 
     /**
-     * Creates a Statement object that will generate ResultSet objects
-     * with the given type and concurrency. This method is the same as
-     * the createStatement method above, but it allows the default
-     * result set type and concurrency to be overridden.
+     * Creates a Statement object that will generate ResultSet objects with the given type and concurrency. This method
+     * is the same as the createStatement method above, but it allows the default result set type and concurrency to be
+     * overridden.
      *
-     * @param resultSetType a result set type; one of
-     *        ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE,
-     *        or ResultSet.TYPE_SCROLL_SENSITIVE
-     * @param resultSetConcurrency a concurrency type; one of
-     *        ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
-     * @return a new Statement object that will generate ResultSet objects with
-     *         the given type and concurrency
+     * @param resultSetType a result set type; one of ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE,
+     * or ResultSet.TYPE_SCROLL_SENSITIVE
+     * @param resultSetConcurrency a concurrency type; one of ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
+     * @return a new Statement object that will generate ResultSet objects with the given type and concurrency
      * @throws SQLException if a database access error occurs
      */
     @Override
@@ -380,7 +370,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        if (this.language != MonetDBLanguage.LANG_SQL) {
+        if (this.language != MapiLanguage.LANG_SQL) {
             throw new SQLException("This method is only supported in SQL mode", "M0M04");
         }
         return new MonetDatabaseMetaData(this);
@@ -719,7 +709,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     @Override
     public void setAutoCommit(boolean autoCommit) throws SQLException {
         if (this.autoCommit != autoCommit) {
-            this.sendControlCommand("auto_commit " + (autoCommit ? "1" : "0"));
+            this.sendControlCommand(ControlCommands.AUTO_COMMIT, (autoCommit ? 1 : 0));
             this.autoCommit = autoCommit;
         }
     }
@@ -1320,9 +1310,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * @throws SQLException if an IO exception or a database error occurs
      */
     public void sendIndependentCommand(String command) throws SQLException {
-        synchronized (this) {
+        synchronized (protocol) {
             try {
-                protocol.writeNextCommand(language.getQueryTemplateIndex(0), command.getBytes(), language.getQueryTemplateIndex(1));
+                protocol.writeNextQuery(language.getQueryTemplateIndex(0), command, language.getQueryTemplateIndex(1));
                 protocol.waitUntilPrompt();
                 if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
                     String error = protocol.getRemainingStringLine(0);
@@ -1330,34 +1320,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                 }
             } catch (SocketTimeoutException e) {
                 close(); // JDBC 4.1 semantics: abort()
-                throw new SQLException("connection timed out", "08M33");
-            } catch (IOException e) {
-                throw new SQLException(e.getMessage(), "08000");
-            }
-        }
-    }
-
-    /**
-     * Sends the given string to MonetDB as control statement, making
-     * sure there is a prompt after the command is sent.  All possible
-     * returned information is discarded.  Encountered errors are
-     * reported.
-     *
-     * @param command the exact string to send to MonetDB
-     * @throws SQLException if an IO exception or a database error occurs
-     */
-    public void sendControlCommand(String command) throws SQLException {
-        // send X command
-        synchronized (this) {
-            try {
-                protocol.writeNextCommand(language.getCommandTemplateIndex(0), command.getBytes(), language.getCommandTemplateIndex(1));
-                protocol.waitUntilPrompt();
-                if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
-                    String error = protocol.getRemainingStringLine(0);
-                    throw new SQLException(error.substring(6), error.substring(0, 5));
-                }
-            } catch (SocketTimeoutException e) {
-                close(); // JDBC 4.1 semantics, abort()
                 throw new SQLException("connection timed out", "08M33");
             } catch (IOException e) {
                 throw new SQLException(e.getMessage(), "08000");
@@ -1532,198 +1494,202 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
          * @throws SQLException if a database error occurs
          */
         @SuppressWarnings("fallthrough")
-        public void executeQuery(byte[][] templ, String query) throws SQLException {
+        public void executeQuery(String[] templ, String query) throws SQLException {
             String error = null;
 
             try {
-                // make sure we're ready to send query; read data till we
-                // have the prompt it is possible (and most likely) that we
-                // already have the prompt and do not have to skip any
-                // lines.  Ignore errors from previous result sets.
-                protocol.waitUntilPrompt();
+                synchronized (protocol) {
+                    // make sure we're ready to send query; read data till we
+                    // have the prompt it is possible (and most likely) that we
+                    // already have the prompt and do not have to skip any
+                    // lines.  Ignore errors from previous result sets.
+                    protocol.waitUntilPrompt();
 
-                // {{{ set reply size
-                /**
-                 * Change the reply size of the server.  If the given
-                 * value is the same as the current value known to use,
-                 * then ignore this call.  If it is set to 0 we get a
-                 * prompt after the server sent it's header.
-                 */
-                int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
-                size = maxrows != 0 ? Math.min(maxrows, size) : size;
-                // don't do work if it's not needed
-                if (language == MonetDBLanguage.LANG_SQL && size != curReplySize &&
-                        !Arrays.deepEquals(templ, language.getCommandTemplates())) {
-                    sendControlCommand("reply_size " + size);
+                    // {{{ set reply size
+                    /**
+                     * Change the reply size of the server.  If the given
+                     * value is the same as the current value known to use,
+                     * then ignore this call.  If it is set to 0 we get a
+                     * prompt after the server sent it's header.
+                     */
+                    int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
+                    size = maxrows != 0 ? Math.min(maxrows, size) : size;
+                    // don't do work if it's not needed
+                    if (language == MapiLanguage.LANG_SQL && size != curReplySize &&
+                            !Arrays.deepEquals(templ, language.getCommandTemplates())) {
+                        sendControlCommand(ControlCommands.REPLY_SIZE, size);
 
-                    // store the reply size after a successful change
-                    curReplySize = size;
-                }
-                // }}} set reply size
-
-                // If the query is larger than the TCP buffer size, use a
-                // special send thread to avoid deadlock with the server due
-                // to blocking behaviour when the buffer is full.  Because
-                // the server will be writing back results to us, it will
-                // eventually block as well when its TCP buffer gets full,
-                // as we are blocking an not consuming from it.  The result
-                // is a state where both client and server want to write,
-                // but block.
-                if (query.length() > getBlockSize()) {
-                    // get a reference to the send thread
-                    if (sendThread == null) {
-                        sendThread = new SendThread(protocol);
+                        // store the reply size after a successful change
+                        curReplySize = size;
                     }
-                    // tell it to do some work!
-                    sendThread.runQuery(templ, query);
-                } else {
-                    // this is a simple call, which is a lot cheaper and will
-                    // always succeed for small queries.
-                    protocol.writeNextCommand((templ[0] == null) ? MonetDBLanguage.EmptyString : templ[0],
-                            query.getBytes(), (templ[1] == null) ? MonetDBLanguage.EmptyString : templ[1]);
-                }
+                    // }}} set reply size
 
-                // go for new results
-                protocol.fetchNextResponseData();
-                ServerResponses nextResponse = protocol.getCurrentServerResponseHeader();
-                IResponse res = null;
-                while (nextResponse != ServerResponses.PROMPT) {
-                    // each response should start with a start of header (or error)
-                    switch (nextResponse) {
-                        case SOHEADER:
-                            // make the response object, and fill it
-                            try {
-                                switch (protocol.getNextStarterHeader()) {
-                                    case Q_PARSE:
-                                        throw new ProtocolException("Q_PARSE header not allowed here", 1);
-                                    case Q_TABLE:
-                                    case Q_PREPARE: {
-                                        res = protocol.getNextResultSetResponse(MonetConnection.this,
-                                                ResponseList.this, this.seqnr);
-                                        ResultSetResponse rsreponse = (ResultSetResponse) res;
-                                        // only add this resultset to
-                                        // the hashmap if it can possibly
-                                        // have an additional datablock
-                                        if (rsreponse.getRowcount() < rsreponse.getTuplecount()) {
-                                            if (rsresponses == null) {
-                                                rsresponses = new HashMap<>();
+                    // If the query is larger than the TCP buffer size, use a
+                    // special send thread to avoid deadlock with the server due
+                    // to blocking behaviour when the buffer is full.  Because
+                    // the server will be writing back results to us, it will
+                    // eventually block as well when its TCP buffer gets full,
+                    // as we are blocking an not consuming from it.  The result
+                    // is a state where both client and server want to write,
+                    // but block.
+                    if (query.length() > getBlockSize()) {
+                        // get a reference to the send thread
+                        if (sendThread == null) {
+                            sendThread = new SendThread(protocol);
+                        }
+                        // tell it to do some work!
+                        sendThread.runQuery(templ, query);
+                    } else {
+                        // this is a simple call, which is a lot cheaper and will
+                        // always succeed for small queries.
+                        protocol.writeNextQuery((templ[0] == null) ? "" : templ[0], query,
+                                (templ[1] == null) ? "" : templ[1]);
+                    }
+
+                    // go for new results
+                    protocol.fetchNextResponseData(); //&1 0 27 1 27
+                    ServerResponses nextResponse = protocol.getCurrentServerResponseHeader();
+                    IResponse res = null;
+                    while (nextResponse != ServerResponses.PROMPT) {
+                        // each response should start with a start of header (or error)
+                        switch (nextResponse) {
+                            case SOHEADER:
+                                // make the response object, and fill it
+                                try {
+                                    switch (protocol.getNextStarterHeader()) {
+                                        case Q_PARSE:
+                                            throw new ProtocolException("Q_PARSE header not allowed here", 1);
+                                        case Q_TABLE:
+                                        case Q_PREPARE: {
+                                            res = protocol.getNextResultSetResponse(MonetConnection.this,
+                                                    ResponseList.this, this.seqnr);
+                                            ResultSetResponse rsreponse = (ResultSetResponse) res;
+                                            // only add this resultset to
+                                            // the hashmap if it can possibly
+                                            // have an additional datablock
+                                            if (rsreponse.getRowcount() < rsreponse.getTuplecount()) {
+                                                if (rsresponses == null) {
+                                                    rsresponses = new HashMap<>();
+                                                }
+                                                rsresponses.put(rsreponse.getId(), rsreponse);
                                             }
-                                            rsresponses.put(rsreponse.getId(), rsreponse);
                                         }
-                                    } break;
-                                    case Q_UPDATE:
-                                        res = protocol.getNextUpdateResponse();
                                         break;
-                                    case Q_SCHEMA:
-                                        res = protocol.getNextSchemaResponse();
-                                        break;
-                                    case Q_TRANS:
-                                        res = protocol.getNextAutoCommitResponse();
-                                        boolean isAutoCommit = ((AutoCommitResponse)res).isAutocommit();
+                                        case Q_UPDATE:
+                                            res = protocol.getNextUpdateResponse();
+                                            break;
+                                        case Q_SCHEMA:
+                                            res = protocol.getNextSchemaResponse();
+                                            break;
+                                        case Q_TRANS:
+                                            res = protocol.getNextAutoCommitResponse();
+                                            boolean isAutoCommit = ((AutoCommitResponse) res).isAutocommit();
 
-                                        if (MonetConnection.this.getAutoCommit() && isAutoCommit) {
-                                            MonetConnection.this.addWarning("Server enabled auto commit mode " +
-                                                    "while local state already was auto commit.", "01M11");
+                                            if (MonetConnection.this.getAutoCommit() && isAutoCommit) {
+                                                MonetConnection.this.addWarning("Server enabled auto commit mode " +
+                                                        "while local state already was auto commit.", "01M11");
+                                            }
+                                            MonetConnection.this.autoCommit = isAutoCommit;
+                                            break;
+                                        case Q_BLOCK: {
+                                            DataBlockResponse next = protocol.getNextDatablockResponse(rsresponses);
+                                            if (next == null) {
+                                                error = "M0M12!No ResultSetResponse for a DataBlock found";
+                                                break;
+                                            }
+                                            res = next;
                                         }
-                                        MonetConnection.this.autoCommit = isAutoCommit;
                                         break;
-                                    case Q_BLOCK: {
-                                        DataBlockResponse next = protocol.getNextDatablockResponse(rsresponses);
-                                        if (next == null) {
-                                            error = "M0M12!No ResultSetResponse for a DataBlock found";
+                                    }
+                                } catch (ProtocolException e) {
+                                    error = "M0M10!error while parsing start of header:\n" + e.getMessage() + " found: '"
+                                            + protocol.getRemainingStringLine(0).charAt(e.getErrorOffset()) + "'" +
+                                            " in: \"" + protocol.getRemainingStringLine(0) + "\"" + " at pos: "
+                                            + e.getErrorOffset();
+                                    // flush all the rest
+                                    protocol.waitUntilPrompt();
+                                    nextResponse = protocol.getCurrentServerResponseHeader();
+                                    break;
+                                }
+
+                                // immediately handle errors after parsing the header (res may be null)
+                                if (error != null) {
+                                    protocol.waitUntilPrompt();
+                                    nextResponse = protocol.getCurrentServerResponseHeader();
+                                    break;
+                                }
+
+                                // here we have a res object, which we can start filling
+                                if (res instanceof IIncompleteResponse) {
+                                    IIncompleteResponse iter = (IIncompleteResponse) res;
+                                    while (iter.wantsMore()) {
+                                        try {
+                                            protocol.fetchNextResponseData();
+                                            iter.addLine(protocol.getCurrentServerResponseHeader(), protocol.getCurrentData());
+                                        } catch (ProtocolException ex) {
+                                            // right, some protocol violation, skip the rest of the result
+                                            error = "M0M10!" + ex.getMessage();
+                                            protocol.waitUntilPrompt();
+                                            nextResponse = protocol.getCurrentServerResponseHeader();
                                             break;
                                         }
-                                        res = next;
-                                    } break;
+                                    }
                                 }
-                            } catch (ProtocolException e) {
-                                error = "M0M10!error while parsing start of header:\n" + e.getMessage() + " found: '"
-                                        + protocol.getRemainingStringLine(0).charAt(e.getErrorOffset()) + "'" +
-                                        " in: \"" +  protocol.getRemainingStringLine(0) + "\"" + " at pos: "
-                                        + e.getErrorOffset();
-                                // flush all the rest
+
+                                if (error != null) {
+                                    break;
+                                }
+
+                                // it is of no use to store DataBlockResponses, you never want to
+                                // retrieve them directly anyway
+                                if (!(res instanceof DataBlockResponse)) {
+                                    responses.add(res);
+                                }
+                                // read the next line (can be prompt, new result, error, etc.) before we start the loop over
+                                protocol.fetchNextResponseData();
+                                nextResponse = protocol.getCurrentServerResponseHeader();
+                                break;
+                            case INFO:
+                                addWarning(protocol.getRemainingStringLine(1), "01000");
+                                // read the next line (can be prompt, new result, error, etc.) before we start the loop over
+                                protocol.fetchNextResponseData();
+                                nextResponse = protocol.getCurrentServerResponseHeader();
+                                break;
+                            case ERROR:
+                                // read everything till the prompt (should be error) we don't know if we ignore some
+                                // garbage here... but the log should reveal that
+                                error = protocol.getRemainingStringLine(1);
                                 protocol.waitUntilPrompt();
                                 nextResponse = protocol.getCurrentServerResponseHeader();
                                 break;
-                            }
-
-                            // immediately handle errors after parsing the header (res may be null)
-                            if (error != null) {
-                               protocol.waitUntilPrompt();
-                               nextResponse = protocol.getCurrentServerResponseHeader();
-                               break;
-                            }
-
-                            // here we have a res object, which we can start filling
-                            if(res instanceof IIncompleteResponse) {
-                                IIncompleteResponse iter = (IIncompleteResponse) res;
-                                while (iter.wantsMore()) {
-                                    try {
-                                        protocol.fetchNextResponseData();
-                                        iter.addLine(protocol.getCurrentServerResponseHeader(), protocol.getCurrentData());
-                                    } catch (ProtocolException ex) {
-                                        // right, some protocol violation, skip the rest of the result
-                                        error = "M0M10!" + ex.getMessage();
-                                        protocol.waitUntilPrompt();
-                                        nextResponse = protocol.getCurrentServerResponseHeader();
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (error != null) {
-                                break;
-                            }
-
-                            // it is of no use to store DataBlockResponses, you never want to
-                            // retrieve them directly anyway
-                            if (!(res instanceof DataBlockResponse)) {
-                                responses.add(res);
-                            }
-                            // read the next line (can be prompt, new result, error, etc.) before we start the loop over
-                            protocol.fetchNextResponseData();
-                            nextResponse = protocol.getCurrentServerResponseHeader();
-                            break;
-                        case INFO:
-                            addWarning(protocol.getRemainingStringLine(1), "01000");
-                            // read the next line (can be prompt, new result, error, etc.) before we start the loop over
-                            protocol.fetchNextResponseData();
-                            nextResponse = protocol.getCurrentServerResponseHeader();
-                            break;
-                        case ERROR:
-                            // read everything till the prompt (should be error) we don't know if we ignore some
-                            // garbage here... but the log should reveal that
-                            protocol.waitUntilPrompt();
-                            nextResponse = protocol.getCurrentServerResponseHeader();
-                            error = protocol.getRemainingStringLine(1);
-                            break;
-                        default:
-                            throw new SQLException("!M0M10!protocol violation, unexpected line!");
-                    }
-                }
-
-                // if we used the sendThread, make sure it has finished
-                if (sendThread != null) {
-                    String tmp = sendThread.getErrors();
-                    if (tmp != null) {
-                        if (error == null) {
-                            error = "08000!" + tmp;
-                        } else {
-                            error += "\n08000!" + tmp;
+                            default:
+                                throw new SQLException("Protocol violation, unexpected line!", "M0M10");
                         }
                     }
-                }
-                if (error != null) {
-                    SQLException ret = null;
-                    String[] errors = error.split("\n");
-                    for (String error1 : errors) {
-                        if (ret == null) {
-                            ret = new SQLException(error1.substring(6), error1.substring(0, 5));
-                        } else {
-                            ret.setNextException(new SQLException(error1.substring(6), error1.substring(0, 5)));
+
+                    // if we used the sendThread, make sure it has finished
+                    if (sendThread != null) {
+                        String tmp = sendThread.getErrors();
+                        if (tmp != null) {
+                            if (error == null) {
+                                error = "08000!" + tmp;
+                            } else {
+                                error += "\n08000!" + tmp;
+                            }
                         }
                     }
-                    throw ret;
+                    if (error != null) {
+                        SQLException ret = null;
+                        String[] errors = error.split("\n");
+                        for (String error1 : errors) {
+                            if (ret == null) {
+                                ret = new SQLException(error1.substring(6), error1.substring(0, 5));
+                            } else {
+                                ret.setNextException(new SQLException(error1.substring(6), error1.substring(0, 5)));
+                            }
+                        }
+                        throw ret;
+                    }
                 }
             } catch (SocketTimeoutException e) {
                 this.close(); // JDBC 4.1 semantics, abort()

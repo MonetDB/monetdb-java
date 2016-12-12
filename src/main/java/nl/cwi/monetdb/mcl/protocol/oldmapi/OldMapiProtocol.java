@@ -1,7 +1,7 @@
 package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.io.SocketConnection;
+import nl.cwi.monetdb.mcl.connection.socket.OldMapiSocket;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
@@ -22,7 +22,7 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
 
     private static final int STRING_BUILDER_INITIAL_SIZE = 128;
 
-    private final SocketConnection connection;
+    private final OldMapiSocket socket;
 
     final StringBuilder builder;
 
@@ -30,14 +30,14 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
 
     private final StringBuilder tupleLineBuilder;
 
-    public OldMapiProtocol(SocketConnection con) {
-        this.connection = con;
+    public OldMapiProtocol(OldMapiSocket socket) {
+        this.socket = socket;
         this.builder = new StringBuilder(STRING_BUILDER_INITIAL_SIZE);
         this.tupleLineBuilder = new StringBuilder(STRING_BUILDER_INITIAL_SIZE);
     }
 
-    public SocketConnection getConnection() {
-        return connection;
+    public OldMapiSocket getSocket() {
+        return socket;
     }
 
     boolean hasRemaining() {
@@ -45,28 +45,30 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
     }
 
     @Override
-    public ServerResponses waitUntilPrompt() {
-        this.builder.setLength(0);
-        this.currentPointer = 0;
-        return super.waitUntilPrompt();
+    public ServerResponses waitUntilPrompt() throws IOException {
+        while(this.currentServerResponseHeader != ServerResponses.PROMPT) {
+            if(this.socket.readLine(this.builder) == 0) {
+                throw new IOException("Connection to server lost!");
+            }
+            this.currentPointer = 0;
+            this.currentServerResponseHeader = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
+            if (this.currentServerResponseHeader == ServerResponses.ERROR) {
+                this.currentPointer = 1;
+            }
+        }
+        return this.currentServerResponseHeader;
     }
 
     @Override
-    public void fetchNextResponseData() {
-        ServerResponses res;
-        try {
-            int bytesRead = connection.readUntilChar(this.builder, '\n');
-            res = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
-            if(res == ServerResponses.ERROR && !this.builder.substring(bytesRead).matches("^![0-9A-Z]{5}!.+")) {
-                this.builder.insert(bytesRead, "!22000!");
-            }
-        } catch (IOException e) {
-            res = ServerResponses.ERROR;
-            this.builder.setLength(0);
-            this.currentPointer = 0;
-            this.builder.append("!22000!").append(e.getMessage());
+    public void fetchNextResponseData() throws IOException { //readLine equivalent
+        this.socket.readLine(this.builder);
+        this.currentPointer = 0;
+        this.currentServerResponseHeader = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
+        if (this.currentServerResponseHeader == ServerResponses.ERROR && !this.builder.toString().matches("^![0-9A-Z]{5}!.+")) {
+            //this.builder.deleteCharAt(0);
+            this.builder.insert(0, "!22000!");
         }
-        this.currentServerResponseHeader = res;
+        this.currentPointer = 1;
     }
 
     @Override
@@ -76,7 +78,9 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
 
     @Override
     public StarterHeaders getNextStarterHeader() {
-        return OldMapiStartOfHeaderParser.GetNextStartHeaderOnOldMapi(this);
+        StarterHeaders res = OldMapiStartOfHeaderParser.GetNextStartHeaderOnOldMapi(this);
+        this.currentPointer += 2;
+        return res;
     }
 
     @Override
@@ -135,7 +139,8 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
     }
 
     @Override
-    public void writeNextCommand(byte[] prefix, byte[] query, byte[] suffix) throws IOException {
-        this.connection.writeNextLine(prefix, query, suffix);
+    public void writeNextQuery(String prefix, String query, String suffix) throws IOException {
+        this.socket.writeNextLine(prefix, query, suffix);
+        this.currentServerResponseHeader = ServerResponses.UNKNOWN; //reset reader state
     }
 }

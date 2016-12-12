@@ -1,11 +1,8 @@
 package nl.cwi.monetdb.mcl.protocol.embedded;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.io.JDBCEmbeddedConnection;
-import nl.cwi.monetdb.mcl.protocol.ProtocolException;
-import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
-import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
-import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
+import nl.cwi.monetdb.mcl.connection.embedded.JDBCEmbeddedConnection;
+import nl.cwi.monetdb.mcl.protocol.*;
 import nl.cwi.monetdb.mcl.responses.AutoCommitResponse;
 import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
@@ -30,7 +27,12 @@ public class EmbeddedProtocol extends AbstractProtocol<Object[]> {
     }
 
     @Override
-    public void fetchNextResponseData() {
+    public ServerResponses waitUntilPrompt() throws IOException {
+        return null;
+    }
+
+    @Override
+    public void fetchNextResponseData() throws IOException {
 
     }
 
@@ -80,7 +82,7 @@ public class EmbeddedProtocol extends AbstractProtocol<Object[]> {
     }
 
     @Override
-    public void writeNextCommand(byte[] prefix, byte[] query, byte[] suffix) throws IOException {
+    public void writeNextQuery(String prefix, String query, String suffix) throws IOException {
 
     }
 }

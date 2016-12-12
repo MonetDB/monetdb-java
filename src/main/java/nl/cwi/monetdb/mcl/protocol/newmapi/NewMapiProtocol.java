@@ -1,11 +1,7 @@
 package nl.cwi.monetdb.mcl.protocol.newmapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.io.SocketConnection;
-import nl.cwi.monetdb.mcl.protocol.ProtocolException;
-import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
-import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
-import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
+import nl.cwi.monetdb.mcl.protocol.*;
 import nl.cwi.monetdb.mcl.responses.AutoCommitResponse;
 import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
@@ -19,14 +15,14 @@ import java.util.Map;
  */
 public class NewMapiProtocol extends AbstractProtocol<Object[]> {
 
-    private final SocketConnection connection;
-
-    public NewMapiProtocol(SocketConnection con) {
-        this.connection = con;
+    @Override
+    public ServerResponses waitUntilPrompt() throws IOException {
+        return null;
     }
 
     @Override
-    public void fetchNextResponseData() {
+    public void fetchNextResponseData() throws IOException {
+
     }
 
     @Override
@@ -75,7 +71,7 @@ public class NewMapiProtocol extends AbstractProtocol<Object[]> {
     }
 
     @Override
-    public void writeNextCommand(byte[] prefix, byte[] query, byte[] suffix) throws IOException {
+    public void writeNextQuery(String prefix, String query, String suffix) throws IOException {
 
     }
 }

@@ -199,7 +199,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 
 			BatchUpdateException e = new BatchUpdateException("Error(s) occurred while executing the batch, see next SQLExceptions for details", "22000", counts);
 			StringBuilder tmpBatch = new StringBuilder(connection.getBlockSize());
-			String sep = new String(connection.getLanguage().getQueryTemplateIndex(2));
+			String sep = connection.getLanguage().getQueryTemplateIndex(2);
 			for (int i = 0; i < batch.size(); i++) {
 				String tmp = batch.get(i);
 				if (sep.length() + tmp.length() > connection.getBlockSize()) {
