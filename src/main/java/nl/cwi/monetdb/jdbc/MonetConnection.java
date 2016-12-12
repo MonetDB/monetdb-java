@@ -1499,18 +1499,16 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
             try {
                 synchronized (protocol) {
-                    // make sure we're ready to send query; read data till we
-                    // have the prompt it is possible (and most likely) that we
-                    // already have the prompt and do not have to skip any
-                    // lines.  Ignore errors from previous result sets.
+                    // make sure we're ready to send query; read data till we have the prompt it is possible (and most
+                    // likely) that we already have the prompt and do not have to skip any lines. Ignore errors from
+                    // previous result sets.
                     protocol.waitUntilPrompt();
 
                     // {{{ set reply size
                     /**
-                     * Change the reply size of the server.  If the given
-                     * value is the same as the current value known to use,
-                     * then ignore this call.  If it is set to 0 we get a
-                     * prompt after the server sent it's header.
+                     * Change the reply size of the server.  If the given value is the same as the current value known
+                     * to use, then ignore this call.  If it is set to 0 we get a prompt after the server sent it's
+                     * header.
                      */
                     int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
                     size = maxrows != 0 ? Math.min(maxrows, size) : size;
@@ -1524,14 +1522,11 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                     }
                     // }}} set reply size
 
-                    // If the query is larger than the TCP buffer size, use a
-                    // special send thread to avoid deadlock with the server due
-                    // to blocking behaviour when the buffer is full.  Because
-                    // the server will be writing back results to us, it will
-                    // eventually block as well when its TCP buffer gets full,
-                    // as we are blocking an not consuming from it.  The result
-                    // is a state where both client and server want to write,
-                    // but block.
+                    // If the query is larger than the TCP buffer size, use a special send thread to avoid deadlock with
+                    // the server due to blocking behaviour when the buffer is full. Because the server will be writing
+                    // back results to us, it will eventually block as well when its TCP buffer gets full, as we are
+                    // blocking an not consuming from it. The result is a state where both client and server want to
+                    // write, but block.
                     if (query.length() > getBlockSize()) {
                         // get a reference to the send thread
                         if (sendThread == null) {
@@ -1547,7 +1542,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                     }
 
                     // go for new results
-                    protocol.fetchNextResponseData(); //&1 0 27 1 27
+                    protocol.fetchNextResponseData();
                     ServerResponses nextResponse = protocol.getCurrentServerResponseHeader();
                     IResponse res = null;
                     while (nextResponse != ServerResponses.PROMPT) {
@@ -1564,8 +1559,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                             res = protocol.getNextResultSetResponse(MonetConnection.this,
                                                     ResponseList.this, this.seqnr);
                                             ResultSetResponse rsreponse = (ResultSetResponse) res;
-                                            // only add this resultset to
-                                            // the hashmap if it can possibly
+                                            // only add this resultset to the hashmap if it can possibly
                                             // have an additional datablock
                                             if (rsreponse.getRowcount() < rsreponse.getTuplecount()) {
                                                 if (rsresponses == null) {

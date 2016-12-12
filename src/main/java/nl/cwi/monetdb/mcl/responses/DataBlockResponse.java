@@ -76,7 +76,7 @@ public class DataBlockResponse implements IIncompleteResponse {
     @Override
     public boolean wantsMore() {
         // remember: pos is the value already stored
-        return pos + 1 < data.length;
+        return (this.pos + 1) < this.data.length;
     }
 
     /**
@@ -87,9 +87,9 @@ public class DataBlockResponse implements IIncompleteResponse {
      */
     @Override
     public void complete() throws SQLException {
-        if ((pos + 1) != data.length) {
-            throw new SQLException("Inconsistent state detected! Current block capacity: " + data.length +
-                    ", block usage: " + (pos + 1) + ". Did MonetDB send what it promised to?", "M0M10");
+        if ((this.pos + 1) != this.data.length) {
+            throw new SQLException("Inconsistent state detected! Current block capacity: " + this.data.length +
+                    ", block usage: " + (this.pos + 1) + ". Did MonetDB send what it promised to?", "M0M10");
         }
     }
 
@@ -100,6 +100,9 @@ public class DataBlockResponse implements IIncompleteResponse {
     public void close() {
         // feed all rows to the garbage collector
         for (int i = 0; i < data.length; i++) {
+            for (int j = 0; j < data[0].length; j++) {
+                data[i][j] = null;
+            }
             data[i] = null;
         }
     }

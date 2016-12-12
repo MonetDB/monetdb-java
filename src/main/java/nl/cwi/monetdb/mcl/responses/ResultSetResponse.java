@@ -274,8 +274,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     public void addLine(ServerResponses response, Object line) throws ProtocolException {
         if (this.isSet >= IsSetFinalValue) {
             this.resultBlocks[0].addLine(response, line);
-        }
-        if (response != ServerResponses.HEADER) {
+        } else if (response != ServerResponses.HEADER) {
             throw new ProtocolException("header expected, got: " + response.toString());
         } else {
             //we will always pass the tableNames pointer

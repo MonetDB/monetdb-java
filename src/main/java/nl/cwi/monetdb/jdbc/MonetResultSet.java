@@ -120,6 +120,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		this.columns = header.getNames();
 		this.types = header.getTypes();
 		this.JdbcSQLTypes = header.getJdbcSQLTypes();
+		this.values = header.getLine(this.curRow);
 	}
 
 	/**

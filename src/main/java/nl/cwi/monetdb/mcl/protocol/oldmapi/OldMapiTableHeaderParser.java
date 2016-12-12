@@ -65,7 +65,7 @@ final class OldMapiTableHeaderParser {
                 }
                 break;
             default:
-                throw new ProtocolException("unknown header: " + builder.substring(pos, len - pos));
+                throw new ProtocolException("unknown header: " + builder.substring(pos, len));
         }
         return res;
     }
@@ -75,12 +75,12 @@ final class OldMapiTableHeaderParser {
 
         for (int i = start + 1; i < stop; i++) {
             if (builder.charAt(i) == '\t' && builder.charAt(i - 1) == ',') {
-                stringValues[elem++] = builder.substring(start, i - 1 - start);
+                stringValues[elem++] = builder.substring(start, i - 1);
                 start = i + 1;
             }
         }
         // add the left over part
-        stringValues[elem + 1] = builder.substring(start, stop - start);
+        stringValues[elem] = builder.substring(start, stop);
     }
 
     private static void GetIntValues(StringBuilder builder, int stop, int[] intValues) throws ProtocolException {
@@ -102,6 +102,6 @@ final class OldMapiTableHeaderParser {
             }
         }
         // add the left over part
-        intValues[elem + 1] = tmp;
+        intValues[elem] = tmp;
     }
 }
