@@ -90,10 +90,10 @@ final class OldMapiTableHeaderParser {
             if (builder.charAt(i) == ',' && builder.charAt(i + 1) == '\t') {
                 intValues[elem++] = tmp;
                 tmp = 0;
+                i++;
             } else {
                 tmp *= 10;
-                // note: don't use Character.isDigit() here, because
-                // we only want ISO-LATIN-1 digits
+                // note: don't use Character.isDigit() here, because we only want ISO-LATIN-1 digits
                 if (builder.charAt(i) >= '0' && builder.charAt(i) <= '9') {
                     tmp += (int) builder.charAt(i) - (int)'0';
                 } else {

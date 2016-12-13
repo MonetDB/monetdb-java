@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.mcl.connection.socket;
+package nl.cwi.monetdb.mcl.connection.mapi;
 
 import nl.cwi.monetdb.mcl.connection.IMonetDBLanguage;
 

@@ -3,8 +3,8 @@ package nl.cwi.monetdb.mcl.connection;
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.jdbc.MonetDriver;
 import nl.cwi.monetdb.mcl.connection.embedded.EmbeddedConnection;
-import nl.cwi.monetdb.mcl.connection.socket.MapiConnection;
-import nl.cwi.monetdb.mcl.connection.socket.MapiLanguage;
+import nl.cwi.monetdb.mcl.connection.mapi.MapiConnection;
+import nl.cwi.monetdb.mcl.connection.mapi.MapiLanguage;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 
 import java.io.File;

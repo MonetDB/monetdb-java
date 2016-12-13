@@ -25,7 +25,7 @@ import java.sql.Types;
  */
 public class ResultSetResponse implements IIncompleteResponse {
 
-    private static final byte IsSetFinalValue = 15;
+    private static final byte IS_SET_FINAL_VALUE = 15;
 
     /** The number of columns in this result */
     private final int columncount;
@@ -73,8 +73,7 @@ public class ResultSetResponse implements IIncompleteResponse {
      * @param tuplecount the total number of tuples in the result set
      * @param columncount the number of columns in the result set
      * @param rowcount the number of rows in the current block
-     * @param parent the parent that created this Response and will
-     *               supply new result blocks when necessary
+     * @param parent the parent that created this Response and will supply new result blocks when necessary
      * @param seq the query sequence number
      */
     public ResultSetResponse(MonetConnection con, MonetConnection.ResponseList parent, int id, int seq, int rowcount,
@@ -139,7 +138,7 @@ public class ResultSetResponse implements IIncompleteResponse {
      */
     @Override
     public boolean wantsMore() {
-        return this.isSet < IsSetFinalValue || resultBlocks[0].wantsMore();
+        return this.isSet < IS_SET_FINAL_VALUE || resultBlocks[0].wantsMore();
     }
 
     /**
@@ -205,6 +204,11 @@ public class ResultSetResponse implements IIncompleteResponse {
         return type;
     }
 
+    /**
+     * Returns the JDBC types of the columns
+     *
+     * @return the JDBC types of the columns
+     */
     public int[] getJdbcSQLTypes() {
         return JdbcSQLTypes;
     }
@@ -272,7 +276,7 @@ public class ResultSetResponse implements IIncompleteResponse {
      */
     @Override
     public void addLine(ServerResponses response, Object line) throws ProtocolException {
-        if (this.isSet >= IsSetFinalValue) {
+        if (this.isSet >= IS_SET_FINAL_VALUE) {
             this.resultBlocks[0].addLine(response, line);
         } else if (response != ServerResponses.HEADER) {
             throw new ProtocolException("header expected, got: " + response.toString());
@@ -307,7 +311,7 @@ public class ResultSetResponse implements IIncompleteResponse {
      * @return the exact row read as requested or null if the requested row is out of the scope of the result set
      * @throws SQLException if an database error occurs
      */
-    public Object[] getLine(int row) throws SQLException {
+    public DataBlockResponse getDataBlockCorrespondingToLine(int row) throws SQLException {
         if (row >= tuplecount || row < 0)
             return null;
 
@@ -355,7 +359,8 @@ public class ResultSetResponse implements IIncompleteResponse {
                 throw new AssertionError("block " + block + " should have been fetched by now :(");
             }
         }
-        return rawr.getRow(blockLine);
+        rawr.setBlockLine(blockLine);
+        return rawr;
     }
 
     /**

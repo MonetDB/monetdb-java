@@ -3,7 +3,7 @@ package nl.cwi.monetdb.jdbc;
 import nl.cwi.monetdb.jdbc.types.INET;
 import nl.cwi.monetdb.jdbc.types.URL;
 import nl.cwi.monetdb.mcl.connection.*;
-import nl.cwi.monetdb.mcl.connection.socket.MapiLanguage;
+import nl.cwi.monetdb.mcl.connection.mapi.MapiLanguage;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
@@ -1344,9 +1344,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * A list of Response objects.  Responses are added to this list.
-     * Methods of this class are not synchronized.  This is left as
-     * responsibility to the caller to prevent concurrent access.
+     * A list of Response objects. Responses are added to this list. Methods of this class are not synchronized. This is
+     * left as responsibility to the caller to prevent concurrent access.
      */
     public class ResponseList {
 
@@ -1368,9 +1367,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         private int curResponse = -1;
 
         /**
-         * Main constructor.  The query argument can either be a String
-         * or List.  An SQLException is thrown if another object
-         * instance is supplied.
+         * Main constructor. The query argument can either be a String or List.  An SQLException is thrown if another
+         * object instance is supplied.
          *
          * @param cachesize overall cachesize to use
          * @param maxrows maximum number of rows to allow in the set
@@ -1419,8 +1417,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
             }
             curResponse++;
             if (curResponse >= responses.size()) {
-                // ResponseList is obviously completed so, there are no
-                // more responses
+                // ResponseList is obviously completed so, there are no more responses
                 return null;
             } else {
                 // return this response

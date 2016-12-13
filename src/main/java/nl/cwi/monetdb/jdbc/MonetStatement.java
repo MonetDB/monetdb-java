@@ -678,13 +678,13 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		if (header instanceof UpdateResponse) {
 			String lastid = ((UpdateResponse)header).getLastid();
 			if (lastid.equals("-1")) {
-				results = new String[0][1];
+				results = new String[1][1];
 			} else {
 				results = new String[1][1];
 				results[0][0] = lastid;
 			}
 		} else {
-			results = new String[0][1];
+			results = new String[1][1];
 		}
 
 		try {
@@ -1211,17 +1211,17 @@ final class MonetVirtualResultSet extends MonetResultSet {
 			throws IllegalArgumentException {
 		super(statement, columns, types, jdbcTypes, results.length);
 		this.results = results;
-		closed = false;
+		this.closed = false;
+        this.currentBlock.setData(results);
 	}
 
 	/**
-	 * This method is overridden in order to let it use the results array
-	 * instead of the cache in the Statement object that created it.
+	 * This method is overridden in order to let it use the results array instead of the cache in the Statement object
+     * that created it.
 	 *
-	 * @param row the number of the row to which the cursor should move. A
-	 *        positive number indicates the row number counting from the
-	 *        beginning of the result set; a negative number indicates the row
-	 *        number counting from the end of the result set
+	 * @param row the number of the row to which the cursor should move. A positive number indicates the row number
+     * counting from the beginning of the result set; a negative number indicates the row number counting from the end
+     * of the result set
 	 * @return true if the cursor is on the result set; false otherwise
 	 * @throws SQLException if a database error occurs
 	 */
@@ -1245,7 +1245,9 @@ final class MonetVirtualResultSet extends MonetResultSet {
 		// see if we have the row
 		if (row < 1 || row > tupleCount) return false;
 
-		System.arraycopy(this.results[row - 1], 0, this.values, 0, this.results[row - 1].length);
+		String[] values = (String[]) this.currentBlock.getData()[0];
+
+		System.arraycopy(this.results[row - 1], 0, values, 0, this.results[row - 1].length);
 
 		return true;
 	}

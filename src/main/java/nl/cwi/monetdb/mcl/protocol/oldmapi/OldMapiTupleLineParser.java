@@ -17,16 +17,17 @@ import java.text.SimpleDateFormat;
  */
 final class OldMapiTupleLineParser {
 
-    static int OldMapiParseTupleLine(StringBuilder line, Object[] values, StringBuilder helper, int[] jDBCTypesMap) throws ProtocolException {
+    static int OldMapiParseTupleLine(int lineNumber, StringBuilder line, StringBuilder helper, int[] typesMap,
+                                     Object[] values, boolean[] nulls) throws ProtocolException {
         int len = line.length();
 
         // first detect whether this is a single value line (=) or a real tuple ([)
         if (line.charAt(0) == '=') {
-            if (values.length != 1) {
-                throw new ProtocolException(values.length + " columns expected, but only single value found");
+            if (typesMap.length != 1) {
+                throw new ProtocolException(typesMap.length + " columns expected, but only single value found");
             }
             // return the whole string but the leading =
-            values[0] = line.substring(1);
+            OldMapiStringToJavaObjectConverter(line.substring(1), lineNumber, values[0], typesMap[0]);
             return 1;
         }
 
@@ -119,11 +120,14 @@ final class OldMapiTupleLineParser {
                             }
 
                             // put the unescaped string in the right place
-                            values[column] = OldMapiStringToJavaObjectConverter(helper.toString(), jDBCTypesMap[column]);
+                            OldMapiStringToJavaObjectConverter(helper.toString(), lineNumber, values[column], typesMap[column]);
+                            nulls[column] = false;
                         } else if ((i - 1) - cursor == 4 && line.indexOf("NULL", cursor) == cursor) {
-                            values[column] = null;
+                            SetNullValue(lineNumber, values[column], typesMap[column]);
+                            nulls[column] = true;
                         } else {
-                            values[column] = OldMapiStringToJavaObjectConverter(line.substring(cursor, i - 1), jDBCTypesMap[column]);
+                            OldMapiStringToJavaObjectConverter(line.substring(cursor, i - 1), lineNumber, values[column], typesMap[column]);
+                            nulls[column] = false;
                         }
                         column++;
                         cursor = i + 1;
@@ -134,7 +138,7 @@ final class OldMapiTupleLineParser {
             }
         }
         // check if this result is of the size we expected it to be
-        if (column != values.length)
+        if (column != typesMap.length)
             throw new ProtocolException("illegal result length: " + column + "\nlast read: " + (column > 0 ? values[column - 1] : "<none>"));
         return column;
     }
@@ -154,56 +158,101 @@ final class OldMapiTupleLineParser {
         return res;
     }
 
-    private static Object OldMapiStringToJavaObjectConverter(String toParse, int jDBCMapping) throws ProtocolException {
+    private static void OldMapiStringToJavaObjectConverter(String toParse, int lineNumber, Object columnArray,
+                                                           int jDBCMapping) throws ProtocolException {
         switch (jDBCMapping) {
-            case Types.BIGINT:
-                return Long.parseLong(toParse);
-            case Types.BLOB:
-                return new MonetBlob(BinaryBlobConverter(toParse));
-            case Types.BINARY:
-                return BinaryBlobConverter(toParse);
             case Types.BOOLEAN:
-                return Boolean.parseBoolean(toParse);
+                ((boolean[]) columnArray)[lineNumber] = Boolean.parseBoolean(toParse);
+                break;
+            case Types.TINYINT:
+                ((byte[]) columnArray)[lineNumber] = Byte.parseByte(toParse);
+                break;
+            case Types.SMALLINT:
+                ((short[]) columnArray)[lineNumber] = Short.parseShort(toParse);
+                break;
+            case Types.INTEGER:
+                ((int[]) columnArray)[lineNumber] = Integer.parseInt(toParse);
+                break;
+            case Types.BIGINT:
+                ((long[]) columnArray)[lineNumber] = Long.parseLong(toParse);
+                break;
+            case Types.REAL:
+                ((float[]) columnArray)[lineNumber] = Float.parseFloat(toParse);
+                break;
+            case Types.DOUBLE:
+                ((double[]) columnArray)[lineNumber] = Double.parseDouble(toParse);
+                break;
+            case Types.DECIMAL:
+                ((Object[]) columnArray)[lineNumber] = new BigDecimal(toParse);
+                break;
+            case Types.NUMERIC:
+                ((Object[]) columnArray)[lineNumber] = new BigInteger(toParse);
+                break;
             case Types.CHAR:
-                return toParse;
-            case Types.CLOB:
-                return new MonetClob(toParse);
+            case Types.VARCHAR:
+            case Types.OTHER:
+                ((Object[]) columnArray)[lineNumber] = toParse;
+                break;
             case Types.DATE:
                 try {
-                    return DateParser.parse(toParse);
+                    ((Object[]) columnArray)[lineNumber] = DateParser.parse(toParse);
                 } catch (ParseException e) {
                     throw new ProtocolException(e.getMessage());
                 }
-            case Types.DECIMAL:
-                return new BigDecimal(toParse);
-            case Types.DOUBLE:
-                return Double.parseDouble(toParse);
-            case Types.NUMERIC:
-                return new BigInteger(toParse);
-            case Types.INTEGER:
-                return Integer.parseInt(toParse);
-            case Types.REAL:
-                return Float.parseFloat(toParse);
-            case Types.SMALLINT:
-                return Short.parseShort(toParse);
+                break;
             case Types.TIME:
                 try {
-                    return TimeParser.parse(toParse);
+                    ((Object[]) columnArray)[lineNumber] = TimeParser.parse(toParse);
                 } catch (ParseException e) {
                     throw new ProtocolException(e.getMessage());
                 }
+                break;
             case Types.TIMESTAMP:
                 try {
-                    return TimestampParser.parse(toParse);
+                    ((Object[]) columnArray)[lineNumber] = TimestampParser.parse(toParse);
                 } catch (ParseException e) {
                     throw new ProtocolException(e.getMessage());
                 }
-            case Types.TINYINT:
-                return Byte.parseByte(toParse);
-            case Types.VARCHAR:
-                return toParse;
+                break;
+            case Types.CLOB:
+                ((Object[]) columnArray)[lineNumber] = new MonetClob(toParse);
+                break;
+            case Types.BLOB:
+                ((Object[]) columnArray)[lineNumber] = new MonetBlob(BinaryBlobConverter(toParse));
+                break;
+            case Types.BINARY:
+                ((Object[]) columnArray)[lineNumber] = BinaryBlobConverter(toParse);
+                break;
             default:
-                return null;
+                throw new ProtocolException("Unknown type!");
+        }
+    }
+
+    private static void SetNullValue(int lineNumber, Object columnArray, int jDBCMapping) throws ProtocolException {
+        switch (jDBCMapping) {
+            case Types.BOOLEAN:
+                ((boolean[]) columnArray)[lineNumber] = false;
+                break;
+            case Types.TINYINT:
+                ((byte[]) columnArray)[lineNumber] = Byte.MIN_VALUE;
+                break;
+            case Types.SMALLINT:
+                ((short[]) columnArray)[lineNumber] = Short.MIN_VALUE;
+                break;
+            case Types.INTEGER:
+                ((int[]) columnArray)[lineNumber] = Integer.MIN_VALUE;
+                break;
+            case Types.BIGINT:
+                ((long[]) columnArray)[lineNumber] = Long.MIN_VALUE;
+                break;
+            case Types.REAL:
+                ((float[]) columnArray)[lineNumber] = Float.MIN_VALUE;
+                break;
+            case Types.DOUBLE:
+                ((double[]) columnArray)[lineNumber] = Double.MIN_VALUE;
+                break;
+            default:
+                ((Object[]) columnArray)[lineNumber] = null;
         }
     }
 }

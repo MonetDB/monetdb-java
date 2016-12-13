@@ -293,12 +293,12 @@ final public class MonetDriver implements Driver {
 		typeMap.put("date", Types.DATE);
 		typeMap.put("decimal", Types.DECIMAL);
 		typeMap.put("double", Types.DOUBLE);
-		typeMap.put("geometry", Types.VARCHAR);
-		typeMap.put("geometrya", Types.VARCHAR);
+		typeMap.put("geometry", Types.OTHER);
+		typeMap.put("geometrya", Types.OTHER);
 		typeMap.put("hugeint", Types.NUMERIC); //but we will convert to java.math.BigInteger
-		typeMap.put("inet", Types.VARCHAR);
+		typeMap.put("inet", Types.OTHER);
 		typeMap.put("int", Types.INTEGER);
-		typeMap.put("json", Types.VARCHAR);
+		typeMap.put("json", Types.OTHER);
 		// typeMap.put("mbr", Types.???);
 		typeMap.put("month_interval", Types.INTEGER);
 		// typeMap.put("oid", Types.BIGINT);
@@ -314,8 +314,8 @@ final public class MonetDriver implements Driver {
 		typeMap.put("timetz", Types.TIME);
         // new in Java 8: Types.TIME_WITH_TIMEZONE (value 2013). Can't use it yet as we compile for java 7
 		typeMap.put("tinyint", Types.TINYINT);
-		typeMap.put("url", Types.VARCHAR);
-		typeMap.put("uuid", Types.VARCHAR);
+		typeMap.put("url", Types.OTHER);
+		typeMap.put("uuid", Types.OTHER);
 		typeMap.put("varchar", Types.VARCHAR);
 		typeMap.put("wrd", Types.BIGINT);
 	}

@@ -46,7 +46,8 @@ public abstract class AbstractProtocol<T> {
     public abstract TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues)
             throws ProtocolException;
 
-    public abstract int parseTupleLine(Object line, Object[] values, int[] typesMap) throws ProtocolException;
+    public abstract int parseTupleLine(int lineNumber, Object line, int[] typesMap, Object[] values, boolean[] nulls)
+            throws ProtocolException;
 
     public abstract String getRemainingStringLine(int startIndex);
 

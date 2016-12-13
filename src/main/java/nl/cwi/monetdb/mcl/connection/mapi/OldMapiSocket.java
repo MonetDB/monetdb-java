@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.mcl.connection.socket;
+package nl.cwi.monetdb.mcl.connection.mapi;
 
 import java.io.IOException;
 import java.io.InputStream;

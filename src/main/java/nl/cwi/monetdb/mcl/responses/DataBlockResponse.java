@@ -5,6 +5,7 @@ import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
 import java.sql.SQLException;
+import java.sql.Types;
 
 /**
  * The DataBlockResponse is tabular data belonging to a
@@ -26,15 +27,17 @@ import java.sql.SQLException;
 public class DataBlockResponse implements IIncompleteResponse {
 
     /** The array to keep the data in */
-    private final Object[][] data;
+    private Object[] data;
     /** The counter which keeps the current position in the data array */
     private int pos;
-    /** Whether we can discard lines as soon as we have read them */
-    private boolean forwardOnly;
     /** The connection protocol to parse the tuple lines */
     private final AbstractProtocol<?> protocol;
     /** The JdbcSQLTypes mapping */
     private final int[] jdbcSQLTypes;
+    /** A mapping of null values of the current Row */
+    private boolean[][] nullMappings;
+    /** A 'pointer' to the current line */
+    private int blockLine;
 
     /**
      * Constructs a DataBlockResponse object.
@@ -45,8 +48,8 @@ public class DataBlockResponse implements IIncompleteResponse {
      */
     DataBlockResponse(int rowcount, int columncount, boolean forward, AbstractProtocol<?> protocol, int[] JdbcSQLTypes) {
         this.pos = -1;
-        this.forwardOnly = forward;
-        this.data = new Object[rowcount][columncount];
+        this.data = new Object[columncount];
+        this.nullMappings = new boolean[rowcount][columncount];
         this.protocol = protocol;
         this.jdbcSQLTypes = JdbcSQLTypes;
     }
@@ -63,9 +66,41 @@ public class DataBlockResponse implements IIncompleteResponse {
     public void addLine(ServerResponses response, Object line) throws ProtocolException {
         if (response != ServerResponses.RESULT)
             throw new ProtocolException("protocol violation: unexpected line in data block: " + line.toString());
+
+        if(this.pos == -1) { //if it's the first line, initialize the matrix
+            int numberOfColumns = this.data.length, numberOfRows = this.nullMappings.length;
+            for (int i = 0 ; i < numberOfColumns ; i++) {
+                switch (this.jdbcSQLTypes[i]) {
+                    case Types.BOOLEAN:
+                        this.data[i] = new boolean[numberOfRows];
+                        break;
+                    case Types.TINYINT:
+                        this.data[i] = new byte[numberOfRows];
+                        break;
+                    case Types.SMALLINT:
+                        this.data[i] = new short[numberOfRows];
+                        break;
+                    case Types.INTEGER:
+                        this.data[i] = new int[numberOfRows];
+                        break;
+                    case Types.BIGINT:
+                        this.data[i] = new long[numberOfRows];
+                        break;
+                    case Types.REAL:
+                        this.data[i] = new float[numberOfRows];
+                        break;
+                    case Types.DOUBLE:
+                        this.data[i] = new double[numberOfRows];
+                        break;
+                    default:
+                        this.data[i] = new Object[numberOfRows];
+                }
+            }
+        }
+
         // add to the backing array
-        Object[] next = this.data[++this.pos];
-        this.protocol.parseTupleLine(line, next, this.jdbcSQLTypes);
+        int nextPos = ++this.pos;
+        this.protocol.parseTupleLine(nextPos, line, this.jdbcSQLTypes, this.data, this.nullMappings[nextPos]);
     }
 
     /**
@@ -76,7 +111,7 @@ public class DataBlockResponse implements IIncompleteResponse {
     @Override
     public boolean wantsMore() {
         // remember: pos is the value already stored
-        return (this.pos + 1) < this.data.length;
+        return (this.pos + 1) < this.nullMappings.length;
     }
 
     /**
@@ -87,8 +122,8 @@ public class DataBlockResponse implements IIncompleteResponse {
      */
     @Override
     public void complete() throws SQLException {
-        if ((this.pos + 1) != this.data.length) {
-            throw new SQLException("Inconsistent state detected! Current block capacity: " + this.data.length +
+        if ((this.pos + 1) != this.nullMappings.length) {
+            throw new SQLException("Inconsistent state detected! Current block capacity: " + this.nullMappings.length +
                     ", block usage: " + (this.pos + 1) + ". Did MonetDB send what it promised to?", "M0M10");
         }
     }
@@ -99,28 +134,109 @@ public class DataBlockResponse implements IIncompleteResponse {
     @Override
     public void close() {
         // feed all rows to the garbage collector
-        for (int i = 0; i < data.length; i++) {
-            for (int j = 0; j < data[0].length; j++) {
-                data[i][j] = null;
-            }
+        int numberOfColumns = this.data.length;
+        for (int i = 0; i < numberOfColumns; i++) {
             data[i] = null;
+            nullMappings[i] = null;
+        }
+        data = null;
+        nullMappings = null;
+    }
+
+    /* Methods to be called after the block construction has been completed */
+
+    void setBlockLine(int blockLine) {
+        this.blockLine = blockLine;
+    }
+
+    public void setData(Object[] data) { /* For VirtualResultSet :( */
+        this.data = data;
+    }
+
+    public Object[] getData() { /* For VirtualResultSet :( */
+        return data;
+    }
+
+    public boolean checkValueIsNull(int column) {
+        return this.nullMappings[this.blockLine][column];
+    }
+
+    public boolean getBooleanValue(int column) {
+        return ((boolean[]) this.data[column])[this.blockLine];
+    }
+
+    public byte getByteValue(int column) {
+        return ((byte[]) this.data[column])[this.blockLine];
+    }
+
+    public short getShortValue(int column) {
+        return ((short[]) this.data[column])[this.blockLine];
+    }
+
+    public int getIntValue(int column) {
+        return ((int[]) this.data[column])[this.blockLine];
+    }
+
+    public long getLongValue(int column) {
+        return ((long[]) this.data[column])[this.blockLine];
+    }
+
+    public float getFloatValue(int column) {
+        return ((float[]) this.data[column])[this.blockLine];
+    }
+
+    public double getDoubleValue(int column) {
+        return ((double[]) this.data[column])[this.blockLine];
+    }
+
+    public Object getObjectValue(int column) {
+        return ((Object[]) this.data[column])[this.blockLine];
+    }
+
+    public String getValueAsString(int column) {
+        switch (this.jdbcSQLTypes[column]) {
+            case Types.BOOLEAN:
+                return Boolean.toString(((boolean[]) this.data[column])[this.blockLine]);
+            case Types.TINYINT:
+                return Byte.toString(((byte[]) this.data[column])[this.blockLine]);
+            case Types.SMALLINT:
+                return Short.toString(((short[]) this.data[column])[this.blockLine]);
+            case Types.INTEGER:
+                return Integer.toString(((int[]) this.data[column])[this.blockLine]);
+            case Types.BIGINT:
+                return Long.toString(((long[]) this.data[column])[this.blockLine]);
+            case Types.REAL:
+                return Float.toString(((float[]) this.data[column])[this.blockLine]);
+            case Types.DOUBLE:
+                return Double.toString(((double[]) this.data[column])[this.blockLine]);
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.CLOB:
+            case Types.OTHER:
+                return (String) ((Object[]) this.data[column])[this.blockLine];
+            default:
+                return ((Object[]) this.data[column])[this.blockLine].toString();
         }
     }
 
-    /**
-     * Retrieves the required row. Warning: if the requested rows is out of bounds, an IndexOutOfBoundsException will
-     * be thrown.
-     *
-     * @param line the row to retrieve
-     * @return the requested row as String
-     */
-    Object[] getRow(int line) {
-        if (forwardOnly) {
-            Object[] ret = data[line];
-            data[line] = null;
-            return ret;
-        } else {
-            return data[line];
+    public Object getValueAsObject(int column) {
+        switch (this.jdbcSQLTypes[column]) {
+            case Types.BOOLEAN:
+                return ((boolean[]) this.data[column])[this.blockLine];
+            case Types.TINYINT:
+                return (((byte[]) this.data[column])[this.blockLine]);
+            case Types.SMALLINT:
+                return (((short[]) this.data[column])[this.blockLine]);
+            case Types.INTEGER:
+                return (((int[]) this.data[column])[this.blockLine]);
+            case Types.BIGINT:
+                return (((long[]) this.data[column])[this.blockLine]);
+            case Types.REAL:
+                return (((float[]) this.data[column])[this.blockLine]);
+            case Types.DOUBLE:
+                return (((double[]) this.data[column])[this.blockLine]);
+            default:
+                return ((Object[]) this.data[column])[this.blockLine];
         }
     }
 }

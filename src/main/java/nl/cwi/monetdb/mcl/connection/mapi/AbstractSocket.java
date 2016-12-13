@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.mcl.connection.socket;
+package nl.cwi.monetdb.mcl.connection.mapi;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -85,18 +85,23 @@ public abstract class AbstractSocket implements Closeable {
     public int readLine(StringBuilder builder) throws IOException {
         builder.setLength(0);
         boolean found = false;
+        char[] array = this.stringsDecoded.array();
+        int position = this.stringsDecoded.position();
 
         while(!found) {
             if(!this.stringsDecoded.hasRemaining()) {
                 this.readToBuffer();
+                array = this.stringsDecoded.array();
+                position = 0;
             }
-            char c = this.stringsDecoded.get();
+            char c = array[position++];
             if(c == '\n') {
                 found = true;
             } else {
                 builder.append(c);
             }
         }
+        this.stringsDecoded.position(position);
         return builder.length();
     }
 

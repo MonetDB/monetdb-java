@@ -1,7 +1,7 @@
 package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.connection.socket.OldMapiSocket;
+import nl.cwi.monetdb.mcl.connection.mapi.OldMapiSocket;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
@@ -128,9 +128,10 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
     }
 
     @Override
-    public int parseTupleLine(Object line, Object[] values, int[] typesMap) throws ProtocolException {
-        return OldMapiTupleLineParser.OldMapiParseTupleLine((StringBuilder) line, values, this.tupleLineBuilder,
-                typesMap);
+    public int parseTupleLine(int lineNumber, Object line, int[] typesMap, Object[] data, boolean[] nulls)
+            throws ProtocolException {
+        return OldMapiTupleLineParser.OldMapiParseTupleLine(lineNumber, (StringBuilder) line,
+                this.tupleLineBuilder, typesMap, data, nulls);
     }
 
     @Override
