@@ -396,20 +396,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	public void commit() throws SQLException {
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-
-		// create a container for the result
-		ResponseList l = new ResponseList(
-			0,
-			0,
-			ResultSet.FETCH_FORWARD,
-			ResultSet.CONCUR_READ_ONLY
-		);
-		// send commit to the server
-		try {
-			l.processQuery("COMMIT");
-		} finally {
-			l.close();
-		}
+		sendTransactionCommand("COMMIT");
 	}
 
 	/**
@@ -428,10 +415,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 */
 	@Override
 	public Statement createStatement() throws SQLException {
-		return createStatement(
-					ResultSet.TYPE_FORWARD_ONLY,
-					ResultSet.CONCUR_READ_ONLY,
-					ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		return createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
 	}
 
 	/**
@@ -450,15 +434,8 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Statement createStatement(
-			int resultSetType,
-			int resultSetConcurrency)
-		throws SQLException
-	{
-		return createStatement(
-					resultSetType,
-					resultSetConcurrency,
-					ResultSet.HOLD_CURSORS_OVER_COMMIT);
+	public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
+		return createStatement(resultSetType, resultSetConcurrency, ResultSet.HOLD_CURSORS_OVER_COMMIT);
 	}
 
 	/**
@@ -485,20 +462,9 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * concurrency, and holdability
 	 */
 	@Override
-	public Statement createStatement(
-			int resultSetType,
-			int resultSetConcurrency,
-			int resultSetHoldability)
-		throws SQLException
-	{
+	public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
 		try {
-			Statement ret =
-				new MonetStatement(
-					this,
-					resultSetType,
-					resultSetConcurrency,
-					resultSetHoldability
-				);
+			Statement ret = new MonetStatement(this, resultSetType, resultSetConcurrency, resultSetHoldability);
 			// store it in the map for when we close...
 			statements.put(ret, null);
 			return ret;
@@ -510,11 +476,9 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	}
 
 	/**
-	 * Retrieves the current auto-commit mode for this Connection
-	 * object.
+	 * Retrieves the current auto-commit mode for this Connection object.
 	 *
-	 * @return the current state of this Connection object's auto-commit
-	 *         mode
+	 * @return the current state of this Connection object's auto-commit mode
 	 * @see #setAutoCommit(boolean)
 	 */
 	@Override
@@ -534,7 +498,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		// MonetDB does NOT support catalogs
 		return null;
 	}
-	
+
 	/**
 	 * Retrieves the current holdability of ResultSet objects created
 	 * using this Connection object.
@@ -654,16 +618,29 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	}
 
 	@Override
-	public String nativeSQL(String sql) {return sql;}
+	public String nativeSQL(String sql) {
+		/* there is currently no way to get the native MonetDB rewritten SQL string back, so just return the original string */
+		/* in future we may replace/remove the escape sequences { <escape-type> ...} before sending it to the server */
+		return sql;
+	}
 
 	@Override
-	public CallableStatement prepareCall(String sql) {return null;}
+	public CallableStatement prepareCall(String sql) {
+		/* not implemented yet */
+		return null;
+	}
 
 	@Override
-	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) {return null;}
+	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) {
+		/* not implemented yet */
+		return null;
+	}
 
 	@Override
-	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) {return null;}
+	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) {
+		/* not implemented yet */
+		return null;
+	}
 
 	/**
 	 * Creates a PreparedStatement object for sending parameterized SQL
@@ -694,12 +671,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 */
 	@Override
 	public PreparedStatement prepareStatement(String sql) throws SQLException {
-		return prepareStatement(
-					sql,
-					ResultSet.TYPE_FORWARD_ONLY,
-					ResultSet.CONCUR_READ_ONLY,
-					ResultSet.HOLD_CURSORS_OVER_COMMIT
-		);
+		return prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
 	}
 
 	/**
@@ -723,18 +695,8 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 *                      type and concurrency
 	 */
 	@Override
-	public PreparedStatement prepareStatement(
-			String sql,
-			int resultSetType,
-			int resultSetConcurrency)
-		throws SQLException
-	{
-		return prepareStatement(
-					sql,
-					resultSetType,
-					resultSetConcurrency,
-					ResultSet.HOLD_CURSORS_OVER_COMMIT
-		);
+	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+		return prepareStatement(sql, resultSetType, resultSetConcurrency, ResultSet.HOLD_CURSORS_OVER_COMMIT);
 	}
 
 	/**
@@ -764,11 +726,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * concurrency, and holdability
 	 */
 	@Override
-	public PreparedStatement prepareStatement(
-			String sql,
-			int resultSetType,
-			int resultSetConcurrency,
-			int resultSetHoldability)
+	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
 		throws SQLException
 	{
 		try {
@@ -823,29 +781,79 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 *         whether auto-generated keys should be returned
 	 */
 	@Override
-	public PreparedStatement prepareStatement(
-			String sql,
-			int autoGeneratedKeys)
-		throws SQLException
-	{
+	public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
 		if (autoGeneratedKeys != Statement.RETURN_GENERATED_KEYS &&
-				autoGeneratedKeys != Statement.NO_GENERATED_KEYS)
+			autoGeneratedKeys != Statement.NO_GENERATED_KEYS)
 			throw new SQLException("Invalid argument, expected RETURN_GENERATED_KEYS or NO_GENERATED_KEYS", "M1M05");
-		
+
 		/* MonetDB has no way to disable this, so just do the normal
 		 * thing ;) */
-		return prepareStatement(
-					sql,
-					ResultSet.TYPE_FORWARD_ONLY,
-					ResultSet.CONCUR_READ_ONLY
-		);
+		return prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 	}
 
+	/**
+	 * Creates a default PreparedStatement object capable of returning the auto-generated keys designated by the given array.
+	 * This array contains the indexes of the columns in the target table that contain the auto-generated keys that should be made available.
+	 * The driver will ignore the array if the SQL statement is not an INSERT statement, or an SQL statement able to
+	 * return auto-generated keys (the list of such statements is vendor-specific).
+	 *
+	 * An SQL statement with or without IN parameters can be pre-compiled and stored in a PreparedStatement object.
+	 * This object can then be used to efficiently execute this statement multiple times.
+	 *
+	 * Note: This method is optimized for handling parametric SQL statements that benefit from precompilation.
+	 * If the driver supports precompilation, the method prepareStatement will send the statement to the database for precompilation.
+	 * Some drivers may not support precompilation. In this case, the statement may not be sent to the database until the PreparedStatement
+	 * object is executed. This has no direct effect on users; however, it does affect which methods throw certain SQLExceptions.
+	 *
+	 * Result sets created using the returned PreparedStatement object will by default be type TYPE_FORWARD_ONLY and have
+	 * a concurrency level of CONCUR_READ_ONLY. The holdability of the created result sets can be determined by calling getHoldability().
+	 *
+	 * Parameters:
+	 *     sql - an SQL statement that may contain one or more '?' IN parameter placeholders
+	 *     columnIndexes - an array of column indexes indicating the columns that should be returned from the inserted row or rows
+	 * Returns:
+	 *     a new PreparedStatement object, containing the pre-compiled statement, that is capable of
+	 *     returning the auto-generated keys designated by the given array of column indexes
+	 * Throws:
+	 *     SQLException - if a database access error occurs or this method is called on a closed connection
+	 *     SQLFeatureNotSupportedException - if the JDBC driver does not support this method
+	 */
 	@Override
-	public PreparedStatement prepareStatement(String sql, int[] columnIndexes) {return null;}
+	public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
+		throw new SQLFeatureNotSupportedException("prepareStatement(String sql, int[] columnIndexes) not supported", "0A000");
+	}
 
+	/**
+	 * Creates a default PreparedStatement object capable of returning the auto-generated keys designated by the given array.
+	 * This array contains the names of the columns in the target table that contain the auto-generated keys that should be returned.
+	 * The driver will ignore the array if the SQL statement is not an INSERT statement, or an SQL statement able to
+	 * return auto-generated keys (the list of such statements is vendor-specific).
+	 *
+	 * An SQL statement with or without IN parameters can be pre-compiled and stored in a PreparedStatement object.
+	 * This object can then be used to efficiently execute this statement multiple times.
+	 *
+	 * Note: This method is optimized for handling parametric SQL statements that benefit from precompilation.
+	 * If the driver supports precompilation, the method prepareStatement will send the statement to the database for precompilation.
+	 * Some drivers may not support precompilation. In this case, the statement may not be sent to the database until the PreparedStatement
+	 * object is executed. This has no direct effect on users; however, it does affect which methods throw certain SQLExceptions.
+	 *
+	 * Result sets created using the returned PreparedStatement object will by default be type TYPE_FORWARD_ONLY and have
+	 * a concurrency level of CONCUR_READ_ONLY. The holdability of the created result sets can be determined by calling getHoldability().
+	 *
+	 * Parameters:
+	 *     sql - an SQL statement that may contain one or more '?' IN parameter placeholders
+	 *     columnNames - an array of column names indicating the columns that should be returned from the inserted row or rows
+	 * Returns:
+	 *     a new PreparedStatement object, containing the pre-compiled statement, that is capable of
+	 *     returning the auto-generated keys designated by the given array of column names
+	 * Throws:
+	 *     SQLException - if a database access error occurs or this method is called on a closed connection
+	 *     SQLFeatureNotSupportedException - if the JDBC driver does not support this method
+	 */
 	@Override
-	public PreparedStatement prepareStatement(String sql, String[] columnNames) {return null;}
+	public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
+		throw new SQLFeatureNotSupportedException("prepareStatement(String sql, String[] columnNames) not supported", "0A000");
+	}
 
 	/**
 	 * Removes the given Savepoint object from the current transaction.
@@ -866,20 +874,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-
-		// create a container for the result
-		ResponseList l = new ResponseList(
-			0,
-			0,
-			ResultSet.FETCH_FORWARD,
-			ResultSet.CONCUR_READ_ONLY
-		);
-		// send the appropriate query string to the database
-		try {
-			l.processQuery("RELEASE SAVEPOINT " + sp.getName());
-		} finally {
-			l.close();
-		}
+		sendTransactionCommand("RELEASE SAVEPOINT " + sp.getName());
 	}
 
 	/**
@@ -895,20 +890,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	public void rollback() throws SQLException {
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-
-		// create a container for the result
-		ResponseList l = new ResponseList(
-			0,
-			0,
-			ResultSet.FETCH_FORWARD,
-			ResultSet.CONCUR_READ_ONLY
-		);
-		// send rollback to the server
-		try {
-			l.processQuery("ROLLBACK");
-		} finally {
-			l.close();
-		}
+		sendTransactionCommand("ROLLBACK");
 	}
 
 	/**
@@ -930,20 +912,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-
-		// create a container for the result
-		ResponseList l = new ResponseList(
-			0,
-			0,
-			ResultSet.FETCH_FORWARD,
-			ResultSet.CONCUR_READ_ONLY
-		);
-		// send the appropriate query string to the database
-		try {
-			l.processQuery("ROLLBACK TO SAVEPOINT " + sp.getName());
-		} finally {
-			l.close();
-		}
+		sendTransactionCommand("ROLLBACK TO SAVEPOINT " + sp.getName());
 	}
 
 	/**
@@ -1036,21 +1005,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-
-		// create a container for the result
-		ResponseList l = new ResponseList(
-			0,
-			0,
-			ResultSet.FETCH_FORWARD,
-			ResultSet.CONCUR_READ_ONLY
-		);
-		// send the appropriate query string to the database
-		try {
-			l.processQuery("SAVEPOINT " + sp.getName());
-		} finally {
-			l.close();
-		}
-
+		sendTransactionCommand("SAVEPOINT " + sp.getName());
 		return sp;
 	}
 
@@ -1075,21 +1030,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-
-		// create a container for the result
-		ResponseList l = new ResponseList(
-			0,
-			0,
-			ResultSet.FETCH_FORWARD,
-			ResultSet.CONCUR_READ_ONLY
-		);
-		// send the appropriate query string to the database
-		try {
-			l.processQuery("SAVEPOINT " + sp.getName());
-		} finally {
-			l.close();
-		}
-
+		sendTransactionCommand("SAVEPOINT " + sp.getName());
 		return sp;
 	}
 
@@ -1170,9 +1111,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * @since 1.6
 	 */
 	@Override
-	public java.sql.Array createArrayOf(String typeName, Object[] elements)
-		throws SQLException
-	{
+	public java.sql.Array createArrayOf(String typeName, Object[] elements) throws SQLException {
 		throw new SQLFeatureNotSupportedException("createArrayOf() not supported", "0A000");
 	}
 
@@ -1243,9 +1182,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * @since 1.6
 	 */
 	@Override
-	public java.sql.Struct createStruct(String typeName, Object[] attributes)
-		throws SQLException
-	{
+	public java.sql.Struct createStruct(String typeName, Object[] attributes) throws SQLException {
 		throw new SQLFeatureNotSupportedException("createStruct() not supported", "0A000");
 	}
 
@@ -1561,9 +1498,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * @since 1.7
 	 */
 	@Override
-	public void setNetworkTimeout(Executor executor, int millis)
-		throws SQLException
-	{
+	public void setNetworkTimeout(Executor executor, int millis) throws SQLException {
 		if (closed)
 			throw new SQLException("Cannot call on closed Connection", "M1M20");
 		if (executor == null)
@@ -1622,6 +1557,26 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 */
 	boolean getBlobAsBinary() {
 		return blobIsBinary;
+	}
+
+
+	/**
+	 * Sends the given string to MonetDB as special transaction command.
+	 * All possible returned information is discarded.
+	 * Encountered errors are reported.
+	 *
+	 * @param command the exact string to send to MonetDB
+	 * @throws SQLException if an IO exception or a database error occurs
+	 */
+	private void sendTransactionCommand(String command) throws SQLException {
+		// create a container for the result
+		ResponseList l = new ResponseList(0, 0, ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
+		// send the appropriate query string to the database
+		try {
+			l.processQuery(command);
+		} finally {
+			l.close();
+		}
 	}
 
 	/**
@@ -1945,7 +1900,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		final private String[] getValues(char[] chrLine, int start, int stop) {
 			int elem = 0;
 			String[] values = new String[columncount];
-			
+
 			for (int i = start; i < stop; i++) {
 				if (chrLine[i] == '\t' && chrLine[i - 1] == ',') {
 					values[elem++] =
@@ -2176,7 +2131,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		}
 	}
 	// }}}
-	
+
 	/**
 	 * The DataBlockResponse is tabular data belonging to a
 	 * ResultSetResponse.  Tabular data from the server typically looks
@@ -2308,7 +2263,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	static class UpdateResponse implements Response {
 		public final int count;
 		public final String lastid;
-		
+
 		public UpdateResponse(int cnt, String id) {
 			// fill the blank finals
 			this.count = cnt;
@@ -2349,7 +2304,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	// {{{ SchemaResponse class implementation
 	class SchemaResponse implements Response {
 		public final int state = Statement.SUCCESS_NO_INFO;
-		
+
 		@Override
 		public String addLine(String line, int linetype) {
 			return "Header lines are not supported for a SchemaResponse";
@@ -2380,7 +2335,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	// {{{ AutoCommitResponse class implementation
 	class AutoCommitResponse extends SchemaResponse {
 		public final boolean autocommit;
-		
+
 		public AutoCommitResponse(boolean ac) {
 			// fill the blank final
 			this.autocommit = ac;
@@ -2823,7 +2778,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		private BufferedMCLWriter out;
 		private String error;
 		private int state = WAIT;
-		
+
 		final Lock sendLock = new ReentrantLock();
 		final Condition queryAvailable = sendLock.newCondition();
 		final Condition waiting = sendLock.newCondition();
