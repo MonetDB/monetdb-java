@@ -21,6 +21,8 @@ import java.util.Map;
  */
 public class OldMapiProtocol extends AbstractProtocol {
 
+    private ServerResponses currentServerResponseHeader = ServerResponses.UNKNOWN;
+
     private final OldMapiSocket socket;
 
     CharBuffer lineBuffer;
@@ -38,7 +40,12 @@ public class OldMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public ServerResponses waitUntilPrompt() throws IOException {
+    public ServerResponses getCurrentServerResponseHeader() {
+        return currentServerResponseHeader;
+    }
+
+    @Override
+    public void waitUntilPrompt() throws IOException {
         while(this.currentServerResponseHeader != ServerResponses.PROMPT) {
             this.lineBuffer = this.socket.readLine(this.lineBuffer);
             if(this.lineBuffer.limit() == 0) {
@@ -50,7 +57,6 @@ public class OldMapiProtocol extends AbstractProtocol {
                 this.lineBuffer.position(1);
             }
         }
-        return this.currentServerResponseHeader;
     }
 
     @Override
@@ -68,11 +74,6 @@ public class OldMapiProtocol extends AbstractProtocol {
             this.lineBuffer = newbuffer;
         }
         this.lineBuffer.position(1);
-    }
-
-    @Override
-    public CharBuffer getCurrentData() {
-        return this.lineBuffer;
     }
 
     @Override
@@ -108,7 +109,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     @Override
     public DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
             throws ProtocolException {
-        int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
         int columncount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int offset = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
@@ -121,16 +122,16 @@ public class OldMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues)
-            throws ProtocolException {
-        return OldMapiTableHeaderParser.GetNextTableHeader((CharBuffer) line, stringValues, intValues);
+    public TableResultHeaders getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames) throws ProtocolException {
+        return OldMapiTableHeaderParser.GetNextTableHeader(this.lineBuffer, columnNames, columnLengths, types, tableNames);
     }
 
     @Override
-    public int parseTupleLine(int lineNumber, Object line, int[] typesMap, Object[] data, boolean[] nulls)
+    public int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] data, boolean[][] nulls)
             throws ProtocolException {
-        return OldMapiTupleLineParser.OldMapiParseTupleLine(lineNumber, (CharBuffer) line,
-                this.tupleLineBuilder, typesMap, data, nulls);
+        OldMapiTupleLineParser.OldMapiParseTupleLine(firstLineNumber, this.lineBuffer,
+                this.tupleLineBuilder, typesMap, data, nulls[firstLineNumber]);
+        return firstLineNumber;
     }
 
     @Override

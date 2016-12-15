@@ -7,6 +7,7 @@ import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.mcl.connection.ControlCommands;
 import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
+import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.embedded.EmbeddedProtocol;
 
 import java.io.*;
@@ -79,5 +80,26 @@ public final class EmbeddedConnection extends MonetConnection {
 
     @Override
     public void sendControlCommand(ControlCommands con, int data) throws SQLException {
+        try {
+            switch (con) {
+                case AUTO_COMMIT:
+                    ((EmbeddedProtocol)protocol).sendAutocommitCommand(data);
+                    break;
+                case REPLY_SIZE:
+                    ((EmbeddedProtocol)protocol).sendReplySizeCommand(data);
+                    break;
+                case RELEASE:
+                    ((EmbeddedProtocol)protocol).sendReleaseCommand(data);
+                    break;
+                case CLOSE:
+                    ((EmbeddedProtocol)protocol).sendCloseCommand(data);
+            }
+            protocol.waitUntilPrompt();
+            if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
+                throw new SQLException(protocol.getRemainingStringLine(0));
+            }
+        } catch (IOException | ProtocolException ex) {
+            throw new SQLException(ex);
+        }
     }
 }

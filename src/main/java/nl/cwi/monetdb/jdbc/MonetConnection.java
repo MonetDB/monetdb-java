@@ -1613,7 +1613,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                 while (iter.wantsMore()) {
                                     try {
                                         protocol.fetchNextResponseData();
-                                        iter.addLine(protocol.getCurrentServerResponseHeader(), protocol.getCurrentData());
+                                        iter.addLines(protocol);
                                     } catch (ProtocolException ex) {
                                         // right, some protocol violation, skip the rest of the result
                                         error = "M0M10!" + ex.getMessage();
@@ -1628,8 +1628,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                 break;
                             }
 
-                            // it is of no use to store DataBlockResponses, you never want to
-                            // retrieve them directly anyway
+                            // it is of no use to store DataBlockResponses, you never want to retrieve them directly
+                            // anyway
                             if (!(res instanceof DataBlockResponse)) {
                                 responses.add(res);
                             }

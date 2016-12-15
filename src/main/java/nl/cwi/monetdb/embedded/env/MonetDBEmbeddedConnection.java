@@ -30,7 +30,7 @@ public class MonetDBEmbeddedConnection {
 
 	protected MonetDBEmbeddedConnection(long connectionPointer) { this.connectionPointer = connectionPointer; }
 
-    public long getConnectionPointer() { return connectionPointer; }
+    long getConnectionPointer() { return connectionPointer; }
 
     /**
      * Gets the current schema set on the connection.

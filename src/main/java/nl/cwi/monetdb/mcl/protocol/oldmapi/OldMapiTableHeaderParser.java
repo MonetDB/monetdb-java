@@ -10,8 +10,8 @@ import java.nio.CharBuffer;
  */
 final class OldMapiTableHeaderParser {
 
-    static TableResultHeaders GetNextTableHeader(CharBuffer lineBuffer, String[] stringValues, int[] intValues)
-            throws ProtocolException {
+    static TableResultHeaders GetNextTableHeader(CharBuffer lineBuffer, String[] columnNames, int[] columnLengths,
+                                                 String[] types, String[] tableNames) throws ProtocolException {
         TableResultHeaders res = TableResultHeaders.UNKNOWN;
         int currentLength = lineBuffer.limit();
         char[] array = lineBuffer.array();
@@ -51,22 +51,22 @@ final class OldMapiTableHeaderParser {
         switch (array[pos]) {
             case 'n': //name
                 if (currentLength - pos == 4) {
-                    GetStringValues(array, pos - 3, stringValues);
+                    GetStringValues(array, pos - 3, columnNames);
                     res = TableResultHeaders.NAME;
                 }
                 break;
             case 'l': //length
                 if (currentLength - pos == 6) {
-                    GetIntValues(array, pos - 3, intValues);
+                    GetIntValues(array, pos - 3, columnLengths);
                     res = TableResultHeaders.LENGTH;
                 }
                 break;
             case 't':
                 if (currentLength - pos == 4) { //type
-                    GetStringValues(array, pos - 3, stringValues);
+                    GetStringValues(array, pos - 3, types);
                     res = TableResultHeaders.TYPE;
                 } else if (currentLength - pos == 10) { //table_name
-                    GetStringValues(array, pos - 3, stringValues);
+                    GetStringValues(array, pos - 3, tableNames);
                     res = TableResultHeaders.TABLE;
                 }
                 break;

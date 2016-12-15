@@ -15,17 +15,11 @@ import java.util.Map;
  */
 public abstract class AbstractProtocol {
 
-    protected ServerResponses currentServerResponseHeader = ServerResponses.UNKNOWN;
-
-    public abstract ServerResponses waitUntilPrompt() throws IOException;
+    public abstract void waitUntilPrompt() throws IOException;
 
     public abstract void fetchNextResponseData() throws IOException; //UPDATE currentData!!!
 
-    public ServerResponses getCurrentServerResponseHeader() {
-        return currentServerResponseHeader;
-    }
-
-    public abstract Object getCurrentData();
+    public abstract ServerResponses getCurrentServerResponseHeader();
 
     public abstract StarterHeaders getNextStarterHeader();
 
@@ -43,11 +37,11 @@ public abstract class AbstractProtocol {
     public abstract DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
             throws ProtocolException;
 
-    public abstract TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues)
-            throws ProtocolException;
+    public abstract TableResultHeaders getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types,
+                                                          String[] tableNames) throws ProtocolException;
 
-    public abstract int parseTupleLine(int lineNumber, Object line, int[] typesMap, Object[] values, boolean[] nulls)
-            throws ProtocolException;
+    public abstract int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] values,
+                                        boolean[][] nulls) throws ProtocolException;
 
     public abstract String getRemainingStringLine(int startIndex);
 

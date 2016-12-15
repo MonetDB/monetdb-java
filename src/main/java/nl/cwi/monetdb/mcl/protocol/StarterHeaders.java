@@ -17,8 +17,8 @@ public enum StarterHeaders {
     Q_SCHEMA,
     /** A response to a transaction statement (start, rollback, abort, commit) */
     Q_TRANS,
-    /** A tabular response in response to a PREPARE statement containing
-     * information about the wildcard values that need to be supplied */
+    /** A tabular response in response to a PREPARE statement containing information about the wildcard values that
+     * need to be supplied */
     Q_PREPARE,
     /** A tabular continuation response (for a ResultSet) */
     Q_BLOCK,

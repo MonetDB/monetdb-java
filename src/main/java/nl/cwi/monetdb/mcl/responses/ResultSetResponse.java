@@ -25,7 +25,7 @@ import java.sql.Types;
  */
 public class ResultSetResponse implements IIncompleteResponse {
 
-    private static final byte IS_SET_FINAL_VALUE = 15;
+    private static final byte IS_SET_FINAL_VALUE = 4;
 
     /** The number of columns in this result */
     private final int columncount;
@@ -113,14 +113,13 @@ public class ResultSetResponse implements IIncompleteResponse {
         this.JdbcSQLTypes = new int[this.columncount];
 
         this.resultBlocks = new DataBlockResponse[(tuplecount / cacheSize) + 1];
-        this.resultBlocks[0] = new DataBlockResponse(rowcount, columncount,
-                parent.getRstype() == ResultSet.TYPE_FORWARD_ONLY, con.getProtocol(), this.JdbcSQLTypes);
+        this.resultBlocks[0] = new DataBlockResponse(rowcount, columncount, con.getProtocol(), this.JdbcSQLTypes);
     }
 
     /**
-     * Internal utility method to fill the JdbcSQLTypes array with derivable values.
-     * By doing it once (in the constructor) we can avoid doing this in many getXyz() methods again and again
-     * thereby improving getXyz() method performance.
+     * Internal utility method to fill the JdbcSQLTypes array with derivable values. By doing it once (in the
+     * constructor) we can avoid doing this in many getXyz() methods again and again thereby improving getXyz() method
+     * performance.
      */
     private void populateJdbcSQLTypesArray() {
         for (int i = 0; i < this.type.length; i++) {
@@ -136,7 +135,6 @@ public class ResultSetResponse implements IIncompleteResponse {
      * Returns whether this ResultSetResponse needs more lines. This method returns true if not all headers are set,
      * or the first DataBlockResponse reports to want more.
      */
-    @Override
     public boolean wantsMore() {
         return this.isSet < IS_SET_FINAL_VALUE || resultBlocks[0].wantsMore();
     }
@@ -148,26 +146,9 @@ public class ResultSetResponse implements IIncompleteResponse {
      */
     public DataBlockResponse addDataBlockResponse(int offset, int rowcount, int columncount, AbstractProtocol proto) {
         int block = (offset - blockOffset) / cacheSize;
-        DataBlockResponse res = new DataBlockResponse(rowcount, columncount,
-                parent.getRstype() == ResultSet.TYPE_FORWARD_ONLY, proto, JdbcSQLTypes);
+        DataBlockResponse res = new DataBlockResponse(rowcount, columncount, proto, JdbcSQLTypes);
         resultBlocks[block] = res;
         return res;
-    }
-
-    /**
-     * Marks this Response as being completed.  A complete Response needs to be consistent with regard to its internal
-     * data.
-     *
-     * @throws SQLException if the data currently in this Response is not sufficient to be consistent
-     */
-    @Override
-    public void complete() throws SQLException {
-        String error = "";
-        if ((isSet & 1) == 0) error += "name header missing\n";
-        if ((isSet & 2) == 0) error += "column width header missing\n";
-        if ((isSet & 4) == 0) error += "table name header missing\n";
-        if ((isSet & 8) == 0) error += "type header missing\n";
-        if (!error.equals("")) throw new SQLException(error, "M0M10");
     }
 
     public int getId() {
@@ -271,32 +252,29 @@ public class ResultSetResponse implements IIncompleteResponse {
      * Parses the given string and changes the value of the matching header appropriately, or passes it on to the
      * underlying DataResponse.
      *
-     * @param line the string that contains the header
+     * @param protocol the connection's protocol
      * @throws ProtocolException if has a wrong header
      */
     @Override
-    public void addLine(ServerResponses response, Object line) throws ProtocolException {
+    public void addLines(AbstractProtocol protocol) throws ProtocolException {
         if (this.isSet >= IS_SET_FINAL_VALUE) {
-            this.resultBlocks[0].addLine(response, line);
-        } else if (response != ServerResponses.HEADER) {
-            throw new ProtocolException("header expected, got: " + response.toString());
+            this.resultBlocks[0].addLines(protocol);
+        } else if (protocol.getCurrentServerResponseHeader() != ServerResponses.HEADER) {
+            throw new ProtocolException("header expected, got: " + protocol.getRemainingStringLine(0));
         } else {
-            //we will always pass the tableNames pointer
-            switch (con.getProtocol().getNextTableHeader(line, this.tableNames, this.columnLengths)) {
+            switch (con.getProtocol().getNextTableHeader(this.name, this.columnLengths, this.type, this.tableNames)) {
                 case NAME:
-                    System.arraycopy(this.tableNames, 0, this.name, 0, this.columncount);
-                    isSet |= 1;
+                    isSet = 1;
                     break;
                 case LENGTH:
-                    isSet |= 2;
+                    isSet = 2;
                     break;
                 case TYPE:
-                    System.arraycopy(this.tableNames, 0, this.type, 0, this.columncount);
-                    this.populateJdbcSQLTypesArray(); //VERY IMPORTANT!
-                    isSet |= 4;
+                    isSet = 3;
                     break;
                 case TABLE:
-                    isSet |= 8;
+                    isSet = 4;
+                    this.populateJdbcSQLTypesArray(); //VERY IMPORTANT!
                     break;
             }
         }

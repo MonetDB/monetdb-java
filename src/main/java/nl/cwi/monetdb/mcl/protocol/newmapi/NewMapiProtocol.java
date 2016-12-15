@@ -16,18 +16,18 @@ import java.util.Map;
 public class NewMapiProtocol extends AbstractProtocol {
 
     @Override
-    public ServerResponses waitUntilPrompt() throws IOException {
+    public ServerResponses getCurrentServerResponseHeader() {
         return null;
+    }
+
+    @Override
+    public void waitUntilPrompt() throws IOException {
+
     }
 
     @Override
     public void fetchNextResponseData() throws IOException {
 
-    }
-
-    @Override
-    public Object getCurrentData() {
-        return new Object[0];
     }
 
     @Override
@@ -56,12 +56,12 @@ public class NewMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues) throws ProtocolException {
+    public TableResultHeaders getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames) throws ProtocolException {
         return null;
     }
 
     @Override
-    public int parseTupleLine(int lineNumber, Object line, int[] typesMap, Object[] values, boolean[] nulls) throws ProtocolException {
+    public int parseTupleLines(int lineNumber, int[] typesMap, Object[] values, boolean[][] nulls) throws ProtocolException {
         return 0;
     }
 

@@ -4,7 +4,6 @@ import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
-import java.sql.SQLException;
 import java.sql.Types;
 
 /**
@@ -44,9 +43,8 @@ public class DataBlockResponse implements IIncompleteResponse {
      *
      * @param rowcount the number of rows
      * @param columncount the number of columns
-     * @param forward whether this is a forward only result
      */
-    DataBlockResponse(int rowcount, int columncount, boolean forward, AbstractProtocol protocol, int[] JdbcSQLTypes) {
+    DataBlockResponse(int rowcount, int columncount, AbstractProtocol protocol, int[] JdbcSQLTypes) {
         this.pos = -1;
         this.data = new Object[columncount];
         this.nullMappings = new boolean[rowcount][columncount];
@@ -58,14 +56,15 @@ public class DataBlockResponse implements IIncompleteResponse {
      * addLine adds a String of data to this object's data array. Note that an IndexOutOfBoundsException can be thrown
      * when an attempt is made to add more than the original construction size specified.
      *
-     * @param line the header line as String
-     * @param response the line type according to the MAPI protocol
+     * @param protocol The connection's protocol
      * @throws ProtocolException If the result line is not expected
      */
     @Override
-    public void addLine(ServerResponses response, Object line) throws ProtocolException {
-        if (response != ServerResponses.RESULT)
-            throw new ProtocolException("protocol violation: unexpected line in data block: " + line.toString());
+    public void addLines(AbstractProtocol protocol) throws ProtocolException {
+        if (protocol.getCurrentServerResponseHeader() != ServerResponses.RESULT) {
+            throw new ProtocolException("protocol violation: unexpected line in data block: " +
+                    protocol.getRemainingStringLine(0));
+        }
 
         if(this.pos == -1) { //if it's the first line, initialize the matrix
             int numberOfColumns = this.data.length, numberOfRows = this.nullMappings.length;
@@ -99,8 +98,8 @@ public class DataBlockResponse implements IIncompleteResponse {
         }
 
         // add to the backing array
-        int nextPos = ++this.pos;
-        this.protocol.parseTupleLine(nextPos, line, this.jdbcSQLTypes, this.data, this.nullMappings[nextPos]);
+        int nextPos = this.pos + 1;
+        this.pos = this.protocol.parseTupleLines(nextPos, this.jdbcSQLTypes, this.data, this.nullMappings);
     }
 
     /**
@@ -112,20 +111,6 @@ public class DataBlockResponse implements IIncompleteResponse {
     public boolean wantsMore() {
         // remember: pos is the value already stored
         return (this.pos + 1) < this.nullMappings.length;
-    }
-
-    /**
-     * Indicates that no more header lines will be added to this Response implementation. In most cases this is a
-     * redundant operation because the data array is full. However... it can happen that this is NOT the case!
-     *
-     * @throws SQLException if not all rows are filled
-     */
-    @Override
-    public void complete() throws SQLException {
-        if ((this.pos + 1) != this.nullMappings.length) {
-            throw new SQLException("Inconsistent state detected! Current block capacity: " + this.nullMappings.length +
-                    ", block usage: " + (this.pos + 1) + ". Did MonetDB send what it promised to?", "M0M10");
-        }
     }
 
     /**

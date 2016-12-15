@@ -8,7 +8,7 @@ import nl.cwi.monetdb.mcl.connection.IMonetDBLanguage;
 public enum EmbeddedLanguage implements IMonetDBLanguage {
 
     /** the SQL language */
-    LANG_SQL(new String[]{"", "\n;", "\n;\n"}, "sql"),
+    LANG_SQL(null, "sql"),
     /** an unknown language */
     LANG_UNKNOWN(null, "unknown");
 
