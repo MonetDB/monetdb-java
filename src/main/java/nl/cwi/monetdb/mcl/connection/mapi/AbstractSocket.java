@@ -1,5 +1,7 @@
 package nl.cwi.monetdb.mcl.connection.mapi;
 
+import nl.cwi.monetdb.mcl.connection.helpers.BufferReallocator;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.Socket;
@@ -32,9 +34,7 @@ public abstract class AbstractSocket implements Closeable {
 
     private final CharsetDecoder asciiDecoder = StandardCharsets.UTF_8.newDecoder();
 
-    private boolean hasFinished;
-
-    public AbstractSocket(String hostname, int port, MapiConnection connection) throws IOException {
+    AbstractSocket(String hostname, int port, MapiConnection connection) throws IOException {
         this.socket = new Socket(hostname, port);
         this.connection = connection;
         this.bufferIn = ByteBuffer.wrap(new byte[getBlockSize()]);
@@ -44,19 +44,19 @@ public abstract class AbstractSocket implements Closeable {
         this.stringsDecoded.flip();
     }
 
-    public int getSoTimeout() throws SocketException {
+    int getSoTimeout() throws SocketException {
         return socket.getSoTimeout();
     }
 
-    public void setSoTimeout(int s) throws SocketException {
+    void setSoTimeout(int s) throws SocketException {
         socket.setSoTimeout(s);
     }
 
-    public void setTcpNoDelay(boolean on) throws SocketException {
+    void setTcpNoDelay(boolean on) throws SocketException {
         socket.setTcpNoDelay(on);
     }
 
-    public void setSocketChannelEndianness(ByteOrder bo) {
+    void setSocketChannelEndianness(ByteOrder bo) {
         this.bufferIn.order(bo);
         this.bufferOut.order(bo);
     }
@@ -72,8 +72,7 @@ public abstract class AbstractSocket implements Closeable {
     private void readToBuffer() throws IOException {
         int read = this.readToBufferIn(this.bufferIn);
         if(read == 0) {
-            this.hasFinished = true;
-            throw new IOException("Done!");
+            throw new IOException("The server has reached EOF!");
         }
         this.stringsDecoded.clear();
         this.asciiDecoder.reset();
@@ -82,27 +81,37 @@ public abstract class AbstractSocket implements Closeable {
         this.stringsDecoded.flip();
     }
 
-    public int readLine(StringBuilder builder) throws IOException {
-        builder.setLength(0);
+    public CharBuffer readLine(CharBuffer lineBuffer) throws IOException {
+        lineBuffer.clear();
         boolean found = false;
-        char[] array = this.stringsDecoded.array();
-        int position = this.stringsDecoded.position();
+        char[] sourceArray = this.stringsDecoded.array();
+        int sourcePosition = this.stringsDecoded.position();
+        char[] destinationArray = lineBuffer.array();
+        int destinationPosition = 0;
+        int destinationLimit = lineBuffer.limit();
 
         while(!found) {
             if(!this.stringsDecoded.hasRemaining()) {
                 this.readToBuffer();
-                array = this.stringsDecoded.array();
-                position = 0;
+                sourceArray = this.stringsDecoded.array();
+                sourcePosition = 0;
             }
-            char c = array[position++];
+            char c = sourceArray[sourcePosition++];
             if(c == '\n') {
                 found = true;
             } else {
-                builder.append(c);
+                if(destinationPosition + 1 >= destinationLimit) {
+                    lineBuffer = BufferReallocator.ReallocateBuffer(lineBuffer);
+                    destinationArray = lineBuffer.array();
+                    destinationLimit = lineBuffer.limit();
+                }
+                destinationArray[destinationPosition++] = c;
             }
         }
-        this.stringsDecoded.position(position);
-        return builder.length();
+        this.stringsDecoded.position(sourcePosition);
+        lineBuffer.position(destinationPosition);
+        lineBuffer.flip();
+        return lineBuffer;
     }
 
     private void flushOutputCharBuffer() throws IOException {
@@ -113,8 +122,7 @@ public abstract class AbstractSocket implements Closeable {
         this.stringsEncoded.clear();
         int written = this.writeFromBufferOut(this.bufferOut);
         if(written == 0) {
-            this.hasFinished = true;
-            throw new IOException("Done!");
+            throw new IOException("The query could not be sent to the server!");
         } else {
             this.flush();
         }
@@ -122,12 +130,18 @@ public abstract class AbstractSocket implements Closeable {
 
     private void writeNextBlock(String line) throws IOException {
         int limit = line.length();
+        int destinationPosition = this.stringsEncoded.position();
+        char[] destinationArray = this.stringsEncoded.array();
+
         for (int i = 0; i < limit; i++) {
             if (!this.stringsEncoded.hasRemaining()) {
                 this.flushOutputCharBuffer();
+                destinationArray = this.stringsEncoded.array();
+                destinationPosition = 0;
             }
-            this.stringsEncoded.put(line.charAt(i));
+            destinationArray[destinationPosition++] = line.charAt(i);
         }
+        this.stringsEncoded.position(destinationPosition);
     }
 
     public void writeNextLine(String prefix, String line, String suffix) throws IOException {

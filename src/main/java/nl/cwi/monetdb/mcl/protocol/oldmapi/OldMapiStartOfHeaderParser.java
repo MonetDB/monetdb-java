@@ -10,7 +10,7 @@ final class OldMapiStartOfHeaderParser {
 
     static StarterHeaders GetNextStartHeaderOnOldMapi(OldMapiProtocol protocol) {
         StarterHeaders res;
-        switch (protocol.builder.charAt(protocol.currentPointer)) {
+        switch (protocol.lineBuffer.get()) {
             case '0':
                 res = StarterHeaders.Q_PARSE;
                 break;
@@ -39,23 +39,24 @@ final class OldMapiStartOfHeaderParser {
     }
 
     static int GetNextResponseDataAsInt(OldMapiProtocol protocol) throws ProtocolException {
-        if (!protocol.hasRemaining()) {
-            throw new ProtocolException("unexpected end of string", protocol.currentPointer - 1);
+        int currentPointer = protocol.lineBuffer.position();
+        int limit = protocol.lineBuffer.limit();
+        char[] array = protocol.lineBuffer.array();
+
+        if (currentPointer >= limit) {
+            throw new ProtocolException("unexpected end of string", currentPointer - 1);
         }
         int tmp;
-        char chr = protocol.builder.charAt(protocol.currentPointer);
-        protocol.currentPointer++;
-        // note: don't use Character.isDigit() here, because
-        // we only want ISO-LATIN-1 digits
+        char chr = array[currentPointer++];
+        // note: don't use Character.isDigit() here, because we only want ISO-LATIN-1 digits
         if (chr >= '0' && chr <= '9') {
             tmp = (int)chr - (int)'0';
         } else {
-            throw new ProtocolException("expected a digit", protocol.currentPointer - 1);
+            throw new ProtocolException("expected a digit", currentPointer - 1);
         }
 
-        while (protocol.hasRemaining()) {
-            chr = protocol.builder.charAt(protocol.currentPointer);
-            protocol.currentPointer++;
+        while (currentPointer < limit) {
+            chr = array[currentPointer++];
             if(chr == ' ') {
                 break;
             }
@@ -63,29 +64,33 @@ final class OldMapiStartOfHeaderParser {
             if (chr >= '0' && chr <= '9') {
                 tmp += (int)chr - (int)'0';
             } else {
-                throw new ProtocolException("expected a digit", protocol.currentPointer - 1);
+                throw new ProtocolException("expected a digit", currentPointer - 1);
             }
         }
+        protocol.lineBuffer.position(currentPointer);
         return tmp;
     }
 
     static String GetNextResponseDataAsString(OldMapiProtocol protocol) throws ProtocolException {
-        if (!protocol.hasRemaining()) {
-            throw new ProtocolException("unexpected end of string", protocol.currentPointer - 1);
+        int currentPointer = protocol.lineBuffer.position();
+        int limit = protocol.lineBuffer.limit();
+        char[] array = protocol.lineBuffer.array();
+
+        if (currentPointer >= limit) {
+            throw new ProtocolException("unexpected end of string", currentPointer - 1);
         }
-        int cnt = 0, mark = protocol.currentPointer;
+        int cnt = 0, mark = currentPointer;
         char chr;
 
-        while (protocol.hasRemaining()) {
-            chr = protocol.builder.charAt(protocol.currentPointer);
-            protocol.currentPointer++;
+        while (currentPointer < limit) {
+            chr = array[currentPointer++];
             if(chr == ' ') {
                 break;
             }
             cnt++;
         }
 
-        protocol.currentPointer = mark;
-        return protocol.builder.subSequence(0, cnt).toString();
+        protocol.lineBuffer.position(mark);
+        return new String(array, 0, cnt);
     }
 }

@@ -31,7 +31,7 @@ public class DataBlockResponse implements IIncompleteResponse {
     /** The counter which keeps the current position in the data array */
     private int pos;
     /** The connection protocol to parse the tuple lines */
-    private final AbstractProtocol<?> protocol;
+    private final AbstractProtocol protocol;
     /** The JdbcSQLTypes mapping */
     private final int[] jdbcSQLTypes;
     /** A mapping of null values of the current Row */
@@ -46,7 +46,7 @@ public class DataBlockResponse implements IIncompleteResponse {
      * @param columncount the number of columns
      * @param forward whether this is a forward only result
      */
-    DataBlockResponse(int rowcount, int columncount, boolean forward, AbstractProtocol<?> protocol, int[] JdbcSQLTypes) {
+    DataBlockResponse(int rowcount, int columncount, boolean forward, AbstractProtocol protocol, int[] JdbcSQLTypes) {
         this.pos = -1;
         this.data = new Object[columncount];
         this.nullMappings = new boolean[rowcount][columncount];
@@ -154,7 +154,7 @@ public class DataBlockResponse implements IIncompleteResponse {
     }
 
     public Object[] getData() { /* For VirtualResultSet :( */
-        return data;
+        return this.data;
     }
 
     public boolean checkValueIsNull(int column) {

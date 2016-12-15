@@ -9,7 +9,7 @@ final class OldMapiServerResponseParser {
 
     static ServerResponses ParseOldMapiServerResponse(OldMapiProtocol protocol) {
         ServerResponses res;
-        switch (protocol.builder.charAt(protocol.currentPointer)) {
+        switch (protocol.lineBuffer.get()) {
             case '!':
                 res = ServerResponses.ERROR;
                 break;

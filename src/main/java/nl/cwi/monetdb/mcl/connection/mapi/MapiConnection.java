@@ -1,7 +1,7 @@
 package nl.cwi.monetdb.mcl.connection.mapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.connection.ChannelSecurity;
+import nl.cwi.monetdb.mcl.connection.helpers.ChannelSecurity;
 import nl.cwi.monetdb.mcl.connection.ControlCommands;
 import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
@@ -194,20 +194,18 @@ public class MapiConnection extends MonetConnection {
             case CLOSE:
                 command = "close " + data;
         }
-        synchronized (protocol) {
-            try {
-                protocol.writeNextQuery(language.getCommandTemplateIndex(0), command, language.getCommandTemplateIndex(1));
-                protocol.waitUntilPrompt();
-                if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
-                    String error = protocol.getRemainingStringLine(0);
-                    throw new SQLException(error.substring(6), error.substring(0, 5));
-                }
-            } catch (SocketTimeoutException e) {
-                close(); // JDBC 4.1 semantics, abort()
-                throw new SQLException("connection timed out", "08M33");
-            } catch (IOException e) {
-                throw new SQLException(e.getMessage(), "08000");
+        try {
+            protocol.writeNextQuery(language.getCommandTemplateIndex(0), command, language.getCommandTemplateIndex(1));
+            protocol.waitUntilPrompt();
+            if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
+                String error = protocol.getRemainingStringLine(0);
+                throw new SQLException(error.substring(6), error.substring(0, 5));
             }
+        } catch (SocketTimeoutException e) {
+            close(); // JDBC 4.1 semantics, abort()
+            throw new SQLException("connection timed out", "08M33");
+        } catch (IOException e) {
+            throw new SQLException(e.getMessage(), "08000");
         }
     }
 
@@ -233,7 +231,7 @@ public class MapiConnection extends MonetConnection {
         }
 
         this.protocol.fetchNextResponseData();
-        String nextLine = this.protocol.getCurrentData().toString();
+        String nextLine = this.protocol.getRemainingStringLine(0);
         this.protocol.waitUntilPrompt();
         String test = this.getChallengeResponse(nextLine, user, pass, this.language.getRepresentation(),
                 this.database, this.hash);

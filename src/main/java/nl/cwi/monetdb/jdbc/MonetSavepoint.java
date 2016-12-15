@@ -53,8 +53,7 @@ public class MonetSavepoint implements Savepoint {
 	}
 
 	/**
-	 * Retrieves the generated ID for the savepoint that this Savepoint object
-	 * represents.
+	 * Retrieves the generated ID for the savepoint that this Savepoint object represents.
 	 *
 	 * @return the numeric ID of this savepoint
 	 * @throws SQLException if this is a named savepoint
@@ -68,8 +67,7 @@ public class MonetSavepoint implements Savepoint {
 	}
 
 	/**
-	 * Retrieves the name of the savepoint that this Savepoint object
-	 * represents.
+	 * Retrieves the name of the savepoint that this Savepoint object represents.
 	 *
 	 * @return the name of this savepoint
 	 * @throws SQLException if this is an un-named savepoint
@@ -85,9 +83,8 @@ public class MonetSavepoint implements Savepoint {
 	//== end of methods from Savepoint interface
 
 	/**
-	 * Retrieves the savepoint id, like the getSavepointId method with the only
-	 * difference that this method will always return the id, regardless of
-	 * whether it is named or not.
+	 * Retrieves the savepoint id, like the getSavepointId method with the only difference that this method will always
+	 * return the id, regardless of whether it is named or not.
 	 *
 	 * @return the numeric ID of this savepoint
 	 */
@@ -96,9 +93,8 @@ public class MonetSavepoint implements Savepoint {
 	}
 
 	/**
-	 * Returns the name to use when referencing this save point to the MonetDB
-	 * database. The returned value is guaranteed to be unique and consists of
-	 * a prefix string and a sequence number.
+	 * Returns the name to use when referencing this save point to the MonetDB database. The returned value is
+	 * guaranteed to be unique and consists of a prefix string and a sequence number.
 	 *
 	 * @return the unique savepoint name
 	 */
@@ -114,8 +110,7 @@ public class MonetSavepoint implements Savepoint {
 	 * Therefore two successive calls to this method need not to have a
 	 * difference of 1.
 	 *
-	 * @return the next int which is guaranteed to be higher than the one
-	 *         at the last call to this method.
+	 * @return the next int which is guaranteed to be higher than the one at the last call to this method.
 	 */
 	private static int getNextId() {
 		return highestId.incrementAndGet();

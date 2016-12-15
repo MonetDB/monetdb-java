@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * Created by ferreira on 11/30/16.
  */
-public class EmbeddedProtocol extends AbstractProtocol<Object[]> {
+public class EmbeddedProtocol extends AbstractProtocol {
 
     private final JDBCEmbeddedConnection connection;
 
@@ -37,7 +37,7 @@ public class EmbeddedProtocol extends AbstractProtocol<Object[]> {
     }
 
     @Override
-    public Object[] getCurrentData() {
+    public Object getCurrentData() {
         return new Object[0];
     }
 

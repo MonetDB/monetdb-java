@@ -119,7 +119,7 @@ copts.produceHelpMessage()
 		}
 
 		String[] commands = copts.getOption("command").getArguments();
-		if (commands[0].equals("status")) {
+		/*if (commands[0].equals("status")) {
 			List<SabaothDB> sdbs;
 			if (commands.length == 1) {
 				sdbs = ctl.getAllStatuses();
@@ -131,6 +131,6 @@ copts.produceHelpMessage()
 			for (SabaothDB sdb : sdbs) {
 				System.out.println(sdb.getName() + " " + sdb.getURI());
 			}
-		}
+		}*/
 	}
 }

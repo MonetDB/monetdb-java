@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Created by ferreira on 11/30/16.
  */
-public class NewMapiProtocol extends AbstractProtocol<Object[]> {
+public class NewMapiProtocol extends AbstractProtocol {
 
     @Override
     public ServerResponses waitUntilPrompt() throws IOException {
@@ -26,7 +26,7 @@ public class NewMapiProtocol extends AbstractProtocol<Object[]> {
     }
 
     @Override
-    public Object[] getCurrentData() {
+    public Object getCurrentData() {
         return new Object[0];
     }
 

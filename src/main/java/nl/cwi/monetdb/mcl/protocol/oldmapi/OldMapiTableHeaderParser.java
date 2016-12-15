@@ -3,25 +3,31 @@ package nl.cwi.monetdb.mcl.protocol.oldmapi;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
 
+import java.nio.CharBuffer;
+
 /**
  * Created by ferreira on 12/6/16.
  */
 final class OldMapiTableHeaderParser {
 
-    static TableResultHeaders GetNextTableHeader(StringBuilder builder, String[] stringValues, int[] intValues) throws ProtocolException {
+    static TableResultHeaders GetNextTableHeader(CharBuffer lineBuffer, String[] stringValues, int[] intValues)
+            throws ProtocolException {
         TableResultHeaders res = TableResultHeaders.UNKNOWN;
-        int len = builder.length(), pos = 0;
+        int currentLength = lineBuffer.limit();
+        char[] array = lineBuffer.array();
+
+        int pos = 0;
         boolean foundChar = false, nameFound = false;
 
         // find header name
-        for (int i = len - 1; i >= 0; i--) {
-            switch (builder.charAt(i)) {
+        for (int i = currentLength - 1; i >= 0; i--) {
+            switch (array[i]) {
                 case ' ':
                 case '\n':
                 case '\t':
                 case '\r':
                     if (!foundChar) {
-                        len = i - 1;
+                        currentLength = i - 1;
                     } else {
                         pos = i + 1;
                     }
@@ -42,62 +48,62 @@ final class OldMapiTableHeaderParser {
             throw new ProtocolException("invalid header, no header name found", pos);
 
         // depending on the name of the header, we continue
-        switch (builder.charAt(pos)) {
+        switch (array[pos]) {
             case 'n': //name
-                if (len - pos == 4) {
-                    GetStringValues(builder, pos - 3, stringValues);
+                if (currentLength - pos == 4) {
+                    GetStringValues(array, pos - 3, stringValues);
                     res = TableResultHeaders.NAME;
                 }
                 break;
             case 'l': //length
-                if (len - pos == 6) {
-                    GetIntValues(builder, pos - 3, intValues);
+                if (currentLength - pos == 6) {
+                    GetIntValues(array, pos - 3, intValues);
                     res = TableResultHeaders.LENGTH;
                 }
                 break;
             case 't':
-                if (len - pos == 4) { //type
-                    GetStringValues(builder, pos - 3, stringValues);
+                if (currentLength - pos == 4) { //type
+                    GetStringValues(array, pos - 3, stringValues);
                     res = TableResultHeaders.TYPE;
-                } else if (len - pos == 10) { //table_name
-                    GetStringValues(builder, pos - 3, stringValues);
+                } else if (currentLength - pos == 10) { //table_name
+                    GetStringValues(array, pos - 3, stringValues);
                     res = TableResultHeaders.TABLE;
                 }
                 break;
             default:
-                throw new ProtocolException("unknown header: " + builder.substring(pos, len));
+                throw new ProtocolException("unknown header: " + new String(array, pos, currentLength - pos));
         }
         return res;
     }
 
-    private static void GetStringValues(StringBuilder builder, int stop, String[] stringValues) {
+    private static void GetStringValues(char[] array, int stop, String[] stringValues) {
         int elem = 0, start = 2;
 
         for (int i = start + 1; i < stop; i++) {
-            if (builder.charAt(i) == '\t' && builder.charAt(i - 1) == ',') {
-                stringValues[elem++] = builder.substring(start, i - 1);
+            if (array[i] == '\t' && array[i - 1] == ',') {
+                stringValues[elem++] = new String(array, start, i - 1 - start);
                 start = i + 1;
             }
         }
         // add the left over part
-        stringValues[elem] = builder.substring(start, stop);
+        stringValues[elem] = new String(array, start, stop - start);
     }
 
-    private static void GetIntValues(StringBuilder builder, int stop, int[] intValues) throws ProtocolException {
+    private static void GetIntValues(char[] array, int stop, int[] intValues) throws ProtocolException {
         int elem = 0, tmp = 0, start = 2;
 
         for (int i = start; i < stop; i++) {
-            if (builder.charAt(i) == ',' && builder.charAt(i + 1) == '\t') {
+            if (array[i] == ',' && array[i + 1] == '\t') {
                 intValues[elem++] = tmp;
                 tmp = 0;
                 i++;
             } else {
                 tmp *= 10;
                 // note: don't use Character.isDigit() here, because we only want ISO-LATIN-1 digits
-                if (builder.charAt(i) >= '0' && builder.charAt(i) <= '9') {
-                    tmp += (int) builder.charAt(i) - (int)'0';
+                if (array[i] >= '0' && array[i] <= '9') {
+                    tmp += (int) array[i] - (int)'0';
                 } else {
-                    throw new ProtocolException("expected a digit in " + builder.toString() + " at " + i);
+                    throw new ProtocolException("expected a digit in " + new String(array) + " at " + i);
                 }
             }
         }

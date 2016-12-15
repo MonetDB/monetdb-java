@@ -120,9 +120,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	//== methods of interface Statement
 
 	/**
-	 * Adds the given SQL command to the current list of commmands for this
-	 * Statement object.  The commands in this list can be executed as a
-	 * batch by calling the method executeBatch.
+	 * Adds the given SQL command to the current list of commands for this Statement object. The commands in this list
+	 * can be executed as a batch by calling the method executeBatch.
 	 *
 	 * @param sql typically this is a static SQL INSERT or UPDATE statement
 	 * @throws SQLException so the PreparedStatement can throw this exception
@@ -183,9 +182,6 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 */
 	@Override
 	public int[] executeBatch() throws SQLException {
-		// this method is synchronized to make sure none gets in between the
-		// operations we execute below
-
 		batchLock.lock();
 		try {
 			// don't think long if there isn't much to do

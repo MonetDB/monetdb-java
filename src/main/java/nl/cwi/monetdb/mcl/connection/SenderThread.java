@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * This thread is designed for reuse, as thread creation costs are
  * high.
  */
-public class SendThread extends Thread {
+public class SenderThread extends Thread {
 
     private enum SendThreadStatus {
         /** The state WAIT represents this thread to be waiting for something to do */
@@ -44,7 +44,7 @@ public class SendThread extends Thread {
      *
      * @param out the socket to write to
      */
-    public SendThread(AbstractProtocol out) {
+    public SenderThread(AbstractProtocol out) {
         super("SendThread");
         this.setDaemon(true);
         this.protocol = out;

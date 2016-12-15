@@ -13,47 +13,41 @@ import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
 import java.io.IOException;
+import java.nio.CharBuffer;
 import java.util.Map;
 
 /**
  * Created by ferreira on 11/30/16.
  */
-public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
-
-    private static final int STRING_BUILDER_INITIAL_SIZE = 128;
+public class OldMapiProtocol extends AbstractProtocol {
 
     private final OldMapiSocket socket;
 
-    final StringBuilder builder;
-
-    int currentPointer = 0;
+    CharBuffer lineBuffer;
 
     private final StringBuilder tupleLineBuilder;
 
     public OldMapiProtocol(OldMapiSocket socket) {
         this.socket = socket;
-        this.builder = new StringBuilder(STRING_BUILDER_INITIAL_SIZE);
-        this.tupleLineBuilder = new StringBuilder(STRING_BUILDER_INITIAL_SIZE);
+        this.lineBuffer = CharBuffer.wrap(new char[OldMapiSocket.BLOCK]);
+        this.tupleLineBuilder = new StringBuilder(OldMapiSocket.BLOCK);
     }
 
     public OldMapiSocket getSocket() {
         return socket;
     }
 
-    boolean hasRemaining() {
-        return this.currentPointer < this.builder.length();
-    }
-
     @Override
     public ServerResponses waitUntilPrompt() throws IOException {
         while(this.currentServerResponseHeader != ServerResponses.PROMPT) {
-            if(this.socket.readLine(this.builder) == 0) {
+            this.lineBuffer = this.socket.readLine(this.lineBuffer);
+            if(this.lineBuffer.limit() == 0) {
                 throw new IOException("Connection to server lost!");
             }
-            this.currentPointer = 0;
             this.currentServerResponseHeader = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
+            this.lineBuffer.position(0);
             if (this.currentServerResponseHeader == ServerResponses.ERROR) {
-                this.currentPointer = 1;
+                this.lineBuffer.position(1);
             }
         }
         return this.currentServerResponseHeader;
@@ -61,25 +55,30 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
 
     @Override
     public void fetchNextResponseData() throws IOException { //readLine equivalent
-        this.socket.readLine(this.builder);
-        this.currentPointer = 0;
-        this.currentServerResponseHeader = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
-        if (this.currentServerResponseHeader == ServerResponses.ERROR && !this.builder.toString().matches("^![0-9A-Z]{5}!.+")) {
-            //this.builder.deleteCharAt(0);
-            this.builder.insert(0, "!22000!");
+        this.lineBuffer = this.socket.readLine(this.lineBuffer);
+        if(this.lineBuffer.limit() == 0) {
+            throw new IOException("Connection to server lost!");
         }
-        this.currentPointer = 1;
+        this.currentServerResponseHeader = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
+        if (this.currentServerResponseHeader == ServerResponses.ERROR && !this.lineBuffer.toString().matches("^[0-9A-Z]{5}!.+")) {
+            CharBuffer newbuffer = CharBuffer.wrap(new char[this.lineBuffer.capacity() + 7]);
+            newbuffer.put("!22000!");
+            newbuffer.put(this.lineBuffer.array());
+            newbuffer.flip();
+            this.lineBuffer = newbuffer;
+        }
+        this.lineBuffer.position(1);
     }
 
     @Override
-    public StringBuilder getCurrentData() {
-        return this.builder;
+    public CharBuffer getCurrentData() {
+        return this.lineBuffer;
     }
 
     @Override
     public StarterHeaders getNextStarterHeader() {
         StarterHeaders res = OldMapiStartOfHeaderParser.GetNextStartHeaderOnOldMapi(this);
-        this.currentPointer += 2;
+        this.lineBuffer.position(this.lineBuffer.position() + 1);
         return res;
     }
 
@@ -124,19 +123,19 @@ public class OldMapiProtocol extends AbstractProtocol<StringBuilder> {
     @Override
     public TableResultHeaders getNextTableHeader(Object line, String[] stringValues, int[] intValues)
             throws ProtocolException {
-        return OldMapiTableHeaderParser.GetNextTableHeader((StringBuilder) line, stringValues, intValues);
+        return OldMapiTableHeaderParser.GetNextTableHeader((CharBuffer) line, stringValues, intValues);
     }
 
     @Override
     public int parseTupleLine(int lineNumber, Object line, int[] typesMap, Object[] data, boolean[] nulls)
             throws ProtocolException {
-        return OldMapiTupleLineParser.OldMapiParseTupleLine(lineNumber, (StringBuilder) line,
+        return OldMapiTupleLineParser.OldMapiParseTupleLine(lineNumber, (CharBuffer) line,
                 this.tupleLineBuilder, typesMap, data, nulls);
     }
 
     @Override
     public String getRemainingStringLine(int startIndex) {
-        return this.builder.substring(startIndex);
+        return new String(this.lineBuffer.array(), startIndex, this.lineBuffer.limit() - startIndex);
     }
 
     @Override

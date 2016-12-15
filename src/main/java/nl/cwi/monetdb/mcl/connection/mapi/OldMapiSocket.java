@@ -11,7 +11,7 @@ import java.nio.ByteBuffer;
 public class OldMapiSocket extends AbstractSocket {
 
     /** The blocksize (hardcoded in compliance with stream.mx) */
-    private final static int BLOCK = 8 * 1024 - 2;
+    public final static int BLOCK = 8 * 1024 - 2;
 
     /**
      * A short in two bytes for holding the block size in bytes

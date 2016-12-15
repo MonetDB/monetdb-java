@@ -79,8 +79,5 @@ public final class EmbeddedConnection extends MonetConnection {
 
     @Override
     public void sendControlCommand(ControlCommands con, int data) throws SQLException {
-        synchronized (protocol) {
-
-        }
     }
 }

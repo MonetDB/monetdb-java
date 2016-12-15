@@ -6,10 +6,9 @@ import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.Date;
+import java.nio.CharBuffer;
 import java.sql.Types;
 import java.text.ParseException;
-import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 
 /**
@@ -17,17 +16,49 @@ import java.text.SimpleDateFormat;
  */
 final class OldMapiTupleLineParser {
 
-    static int OldMapiParseTupleLine(int lineNumber, StringBuilder line, StringBuilder helper, int[] typesMap,
+    private static final char[] NULL_STRING = "NULL".toCharArray();
+
+    private static int CharIndexOf(char[] source, int sourceCount, char[] target, int targetCount) {
+        if (targetCount == 0) {
+            return 0;
+        }
+
+        char first = target[0];
+        int max = sourceCount - targetCount;
+
+        for (int i = 0; i <= max; i++) {
+            /* Look for first character. */
+            if (source[i] != first) {
+                while (++i <= max && source[i] != first);
+            }
+
+            /* Found first character, now look at the rest of v2 */
+            if (i <= max) {
+                int j = i + 1;
+                int end = j + targetCount - 1;
+                for (int k = 1; j < end && source[j] == target[k]; j++, k++);
+
+                if (j == end) {
+                    /* Found whole string. */
+                    return i;
+                }
+            }
+        }
+        return -1;
+    }
+
+    static int OldMapiParseTupleLine(int lineNumber, CharBuffer lineBuffer, StringBuilder helper, int[] typesMap,
                                      Object[] values, boolean[] nulls) throws ProtocolException {
-        int len = line.length();
+        int len = lineBuffer.limit();
+        char[] array = lineBuffer.array();
 
         // first detect whether this is a single value line (=) or a real tuple ([)
-        if (line.charAt(0) == '=') {
+        if (array[0] == '=') {
             if (typesMap.length != 1) {
                 throw new ProtocolException(typesMap.length + " columns expected, but only single value found");
             }
             // return the whole string but the leading =
-            OldMapiStringToJavaObjectConverter(line.substring(1), lineNumber, values[0], typesMap[0]);
+            OldMapiStringToJavaObjectConverter(new String(array, 1, len - 1), lineNumber, values[0], typesMap[0]);
             return 1;
         }
 
@@ -35,7 +66,7 @@ final class OldMapiTupleLineParser {
         boolean inString = false, escaped = false;
         int cursor = 2, column = 0, i = 2;
         for (; i < len; i++) {
-            switch(line.charAt(i)) {
+            switch(array[i]) {
                 default:
                     escaped = false;
                     break;
@@ -44,17 +75,13 @@ final class OldMapiTupleLineParser {
                     break;
                 case '"':
                     /**
-                     * If all strings are wrapped between two quotes, a \" can
-                     * never exist outside a string. Thus if we believe that we
-                     * are not within a string, we can safely assume we're about
-                     * to enter a string if we find a quote.
-                     * If we are in a string we should stop being in a string if
-                     * we find a quote which is not prefixed by a \, for that
-                     * would be an escaped quote. However, a nasty situation can
-                     * occur where the string is like "test \\" as obvious, a
-                     * test for a \ in front of a " doesn't hold here for all
-                     * cases. Because "test \\\"" can exist as well, we need to
-                     * know if a quote is prefixed by an escaping slash or not.
+                     * If all strings are wrapped between two quotes, a \" can never exist outside a string. Thus if we
+                     * believe that we are not within a string, we can safely assume we're about to enter a string if we
+                     * find a quote. If we are in a string we should stop being in a string if we find a quote which is
+                     * not prefixed by a \, for that would be an escaped quote. However, a nasty situation can occur
+                     * where the string is like "test \\" as obvious, a test for a \ in front of a " doesn't hold here
+                     * for all cases. Because "test \\\"" can exist as well, we need to know if a quote is prefixed by
+                     * an escaping slash or not.
                      */
                     if (!inString) {
                         inString = true;
@@ -66,19 +93,18 @@ final class OldMapiTupleLineParser {
                     escaped = false;
                     break;
                 case '\t':
-                    if (!inString && (i > 0 && line.charAt(i - 1) == ',') || (i + 1 == len - 1 && line.charAt(++i) == ']')) { // dirty
+                    if (!inString && (i > 0 && array[i - 1] == ',') || (i + 1 == len - 1 && array[++i] == ']')) { // dirty
                         // split!
-                        if (line.charAt(cursor) == '"' && line.charAt(i - 2) == '"') {
+                        if (array[cursor] == '"' && array[i - 2] == '"') {
                             // reuse the StringBuilder by cleaning it
                             helper.setLength(0);
                             // prevent capacity increases
                             helper.ensureCapacity((i - 2) - (cursor + 1));
                             for (int pos = cursor + 1; pos < i - 2; pos++) {
-                                if (line.charAt(pos) == '\\' && pos + 1 < i - 2) {
+                                if (array[cursor] == '\\' && pos + 1 < i - 2) {
                                     pos++;
-                                    // strToStr and strFromStr in gdk_atoms.mx only
-                                    // support \t \n \\ \" and \377
-                                    switch (line.charAt(pos)) {
+                                    // strToStr and strFromStr in gdk_atoms.mx only support \t \n \\ \" and \377
+                                    switch (array[pos]) {
                                         case '\\':
                                             helper.append('\\');
                                             break;
@@ -93,12 +119,11 @@ final class OldMapiTupleLineParser {
                                             break;
                                         case '0': case '1': case '2': case '3':
                                             // this could be an octal number, let's check it out
-                                            if (pos + 2 < i - 2 &&
-                                                    line.charAt(pos + 1) >= '0' && line.charAt(pos + 1) <= '7' &&
-                                                    line.charAt(pos + 2) >= '0' && line.charAt(pos + 2) <= '7') {
+                                            if (pos + 2 < i - 2 && array[pos + 1] >= '0' && array[pos + 1] <= '7' &&
+                                                    array[pos + 2] >= '0' && array[pos + 2] <= '7') {
                                                 // we got the number!
                                                 try {
-                                                    helper.append((char)(Integer.parseInt("" + line.charAt(pos) + line.charAt(pos + 1) + line.charAt(pos + 2), 8)));
+                                                    helper.append((char)(Integer.parseInt("" + array[pos] + array[pos + 1] + array[pos + 2], 8)));
                                                     pos += 2;
                                                 } catch (NumberFormatException e) {
                                                     // hmmm, this point should never be reached actually...
@@ -106,27 +131,26 @@ final class OldMapiTupleLineParser {
                                                 }
                                             } else {
                                                 // do default action if number seems not to be correct
-                                                helper.append(line.charAt(pos));
+                                                helper.append(array[pos]);
                                             }
                                             break;
                                         default:
                                             // this is wrong, just ignore the escape, and print the char
-                                            helper.append(line.charAt(pos));
+                                            helper.append(array[pos]);
                                             break;
                                     }
                                 } else {
-                                    helper.append(line.charAt(pos));
+                                    helper.append(array[pos]);
                                 }
                             }
-
                             // put the unescaped string in the right place
                             OldMapiStringToJavaObjectConverter(helper.toString(), lineNumber, values[column], typesMap[column]);
                             nulls[column] = false;
-                        } else if ((i - 1) - cursor == 4 && line.indexOf("NULL", cursor) == cursor) {
+                        } else if ((i - 1) - cursor == 4 && CharIndexOf(array, array.length, NULL_STRING, NULL_STRING.length) == cursor) {
                             SetNullValue(lineNumber, values[column], typesMap[column]);
                             nulls[column] = true;
                         } else {
-                            OldMapiStringToJavaObjectConverter(line.substring(cursor, i - 1), lineNumber, values[column], typesMap[column]);
+                            OldMapiStringToJavaObjectConverter(new String(array, cursor, i - 1 - cursor), lineNumber, values[column], typesMap[column]);
                             nulls[column] = false;
                         }
                         column++;

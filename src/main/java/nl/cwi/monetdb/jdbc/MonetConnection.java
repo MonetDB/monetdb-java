@@ -3,6 +3,8 @@ package nl.cwi.monetdb.jdbc;
 import nl.cwi.monetdb.jdbc.types.INET;
 import nl.cwi.monetdb.jdbc.types.URL;
 import nl.cwi.monetdb.mcl.connection.*;
+import nl.cwi.monetdb.mcl.connection.helpers.Debugger;
+import nl.cwi.monetdb.mcl.connection.SenderThread;
 import nl.cwi.monetdb.mcl.connection.mapi.MapiLanguage;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
@@ -66,7 +68,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     /** Authentication hash method */
     protected final String hash;
     /** An optional thread that is used for sending large queries */
-    private SendThread sendThread;
+    private SenderThread senderThread;
     /** Whether this Connection is closed (and cannot be used anymore) */
     private boolean closed;
     /** Whether this Connection is in autocommit mode */
@@ -96,7 +98,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
     private Debugger ourSavior;
 
-    protected AbstractProtocol<?> protocol;
+    protected AbstractProtocol protocol;
 
     /**
      * Constructor of a Connection for MonetDB. At this moment the current implementation limits itself to storing the
@@ -156,7 +158,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
     public abstract String getJDBCURL();
 
-    public AbstractProtocol<?> getProtocol() {
+    public AbstractProtocol getProtocol() {
         return this.protocol;
     }
 
@@ -170,36 +172,34 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     @Override
     public void close() {
-        synchronized(protocol) {
-            for (Statement st : statements.keySet()) {
-                try {
-                    st.close();
-                } catch (SQLException e) {
-                    // better luck next time!
-                }
-            }
-            //close the debugger
+        for (Statement st : statements.keySet()) {
             try {
-                if (ourSavior != null) {
-                    ourSavior.close();
-                }
-            } catch (IOException e) {
-                // ignore it
+                st.close();
+            } catch (SQLException e) {
+                // better luck next time!
             }
-            // close the socket or the embedded server
-            try {
-                this.closeUnderlyingConnection();
-            } catch (IOException e) {
-                // ignore it
-            }
-            // close active SendThread if any
-            if (sendThread != null) {
-                sendThread.shutdown();
-                sendThread = null;
-            }
-            // report ourselves as closed
-            closed = true;
         }
+        //close the debugger
+        try {
+            if (ourSavior != null) {
+                ourSavior.close();
+            }
+        } catch (IOException e) {
+            // ignore it
+        }
+        // close the socket or the embedded server
+        try {
+            this.closeUnderlyingConnection();
+        } catch (IOException e) {
+            // ignore it
+        }
+        // close active SendThread if any
+        if (senderThread != null) {
+            senderThread.shutdown();
+            senderThread = null;
+        }
+        // report ourselves as closed
+        closed = true;
     }
 
     /**
@@ -1310,20 +1310,18 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * @throws SQLException if an IO exception or a database error occurs
      */
     public void sendIndependentCommand(String command) throws SQLException {
-        synchronized (protocol) {
-            try {
-                protocol.writeNextQuery(language.getQueryTemplateIndex(0), command, language.getQueryTemplateIndex(1));
-                protocol.waitUntilPrompt();
-                if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
-                    String error = protocol.getRemainingStringLine(0);
-                    throw new SQLException(error.substring(6), error.substring(0, 5));
-                }
-            } catch (SocketTimeoutException e) {
-                close(); // JDBC 4.1 semantics: abort()
-                throw new SQLException("connection timed out", "08M33");
-            } catch (IOException e) {
-                throw new SQLException(e.getMessage(), "08000");
+        try {
+            protocol.writeNextQuery(language.getQueryTemplateIndex(0), command, language.getQueryTemplateIndex(1));
+            protocol.waitUntilPrompt();
+            if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
+                String error = protocol.getRemainingStringLine(0);
+                throw new SQLException(error.substring(6), error.substring(0, 5));
             }
+        } catch (SocketTimeoutException e) {
+            close(); // JDBC 4.1 semantics: abort()
+            throw new SQLException("connection timed out", "08M33");
+        } catch (IOException e) {
+            throw new SQLException(e.getMessage(), "08000");
         }
     }
 
@@ -1495,192 +1493,190 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
             String error = null;
 
             try {
-                synchronized (protocol) {
-                    // make sure we're ready to send query; read data till we have the prompt it is possible (and most
-                    // likely) that we already have the prompt and do not have to skip any lines. Ignore errors from
-                    // previous result sets.
-                    protocol.waitUntilPrompt();
+                // make sure we're ready to send query; read data till we have the prompt it is possible (and most
+                // likely) that we already have the prompt and do not have to skip any lines. Ignore errors from
+                // previous result sets.
+                protocol.waitUntilPrompt();
 
-                    // {{{ set reply size
-                    /**
-                     * Change the reply size of the server.  If the given value is the same as the current value known
-                     * to use, then ignore this call.  If it is set to 0 we get a prompt after the server sent it's
-                     * header.
-                     */
-                    int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
-                    size = maxrows != 0 ? Math.min(maxrows, size) : size;
-                    // don't do work if it's not needed
-                    if (language == MapiLanguage.LANG_SQL && size != curReplySize &&
-                            !Arrays.deepEquals(templ, language.getCommandTemplates())) {
-                        sendControlCommand(ControlCommands.REPLY_SIZE, size);
+                // {{{ set reply size
+                /**
+                 * Change the reply size of the server.  If the given value is the same as the current value known
+                 * to use, then ignore this call.  If it is set to 0 we get a prompt after the server sent it's
+                 * header.
+                 */
+                int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
+                size = maxrows != 0 ? Math.min(maxrows, size) : size;
+                // don't do work if it's not needed
+                if (language == MapiLanguage.LANG_SQL && size != curReplySize &&
+                        !Arrays.deepEquals(templ, language.getCommandTemplates())) {
+                    sendControlCommand(ControlCommands.REPLY_SIZE, size);
 
-                        // store the reply size after a successful change
-                        curReplySize = size;
+                    // store the reply size after a successful change
+                    curReplySize = size;
+                }
+                // }}} set reply size
+
+                // If the query is larger than the TCP buffer size, use a special send thread to avoid deadlock with
+                // the server due to blocking behaviour when the buffer is full. Because the server will be writing
+                // back results to us, it will eventually block as well when its TCP buffer gets full, as we are
+                // blocking an not consuming from it. The result is a state where both client and server want to
+                // write, but block.
+                if (query.length() > getBlockSize()) {
+                    // get a reference to the send thread
+                    if (senderThread == null) {
+                        senderThread = new SenderThread(protocol);
                     }
-                    // }}} set reply size
+                    // tell it to do some work!
+                    senderThread.runQuery(templ, query);
+                } else {
+                    // this is a simple call, which is a lot cheaper and will
+                    // always succeed for small queries.
+                    protocol.writeNextQuery((templ[0] == null) ? "" : templ[0], query,
+                            (templ[1] == null) ? "" : templ[1]);
+                }
 
-                    // If the query is larger than the TCP buffer size, use a special send thread to avoid deadlock with
-                    // the server due to blocking behaviour when the buffer is full. Because the server will be writing
-                    // back results to us, it will eventually block as well when its TCP buffer gets full, as we are
-                    // blocking an not consuming from it. The result is a state where both client and server want to
-                    // write, but block.
-                    if (query.length() > getBlockSize()) {
-                        // get a reference to the send thread
-                        if (sendThread == null) {
-                            sendThread = new SendThread(protocol);
-                        }
-                        // tell it to do some work!
-                        sendThread.runQuery(templ, query);
-                    } else {
-                        // this is a simple call, which is a lot cheaper and will
-                        // always succeed for small queries.
-                        protocol.writeNextQuery((templ[0] == null) ? "" : templ[0], query,
-                                (templ[1] == null) ? "" : templ[1]);
-                    }
-
-                    // go for new results
-                    protocol.fetchNextResponseData();
-                    ServerResponses nextResponse = protocol.getCurrentServerResponseHeader();
-                    IResponse res = null;
-                    while (nextResponse != ServerResponses.PROMPT) {
-                        // each response should start with a start of header (or error)
-                        switch (nextResponse) {
-                            case SOHEADER:
-                                // make the response object, and fill it
-                                try {
-                                    switch (protocol.getNextStarterHeader()) {
-                                        case Q_PARSE:
-                                            throw new ProtocolException("Q_PARSE header not allowed here", 1);
-                                        case Q_TABLE:
-                                        case Q_PREPARE: {
-                                            res = protocol.getNextResultSetResponse(MonetConnection.this,
-                                                    ResponseList.this, this.seqnr);
-                                            ResultSetResponse rsreponse = (ResultSetResponse) res;
-                                            // only add this resultset to the hashmap if it can possibly
-                                            // have an additional datablock
-                                            if (rsreponse.getRowcount() < rsreponse.getTuplecount()) {
-                                                if (rsresponses == null) {
-                                                    rsresponses = new HashMap<>();
-                                                }
-                                                rsresponses.put(rsreponse.getId(), rsreponse);
+                // go for new results
+                protocol.fetchNextResponseData();
+                ServerResponses nextResponse = protocol.getCurrentServerResponseHeader();
+                IResponse res = null;
+                while (nextResponse != ServerResponses.PROMPT) {
+                    // each response should start with a start of header (or error)
+                    switch (nextResponse) {
+                        case SOHEADER:
+                            // make the response object, and fill it
+                            try {
+                                switch (protocol.getNextStarterHeader()) {
+                                    case Q_PARSE:
+                                        throw new ProtocolException("Q_PARSE header not allowed here", 1);
+                                    case Q_TABLE:
+                                    case Q_PREPARE: {
+                                        res = protocol.getNextResultSetResponse(MonetConnection.this,
+                                                ResponseList.this, this.seqnr);
+                                        ResultSetResponse rsreponse = (ResultSetResponse) res;
+                                        // only add this resultset to the hashmap if it can possibly
+                                        // have an additional datablock
+                                        if (rsreponse.getRowcount() < rsreponse.getTuplecount()) {
+                                            if (rsresponses == null) {
+                                                rsresponses = new HashMap<>();
                                             }
-                                        }
-                                        break;
-                                        case Q_UPDATE:
-                                            res = protocol.getNextUpdateResponse();
-                                            break;
-                                        case Q_SCHEMA:
-                                            res = protocol.getNextSchemaResponse();
-                                            break;
-                                        case Q_TRANS:
-                                            res = protocol.getNextAutoCommitResponse();
-                                            boolean isAutoCommit = ((AutoCommitResponse) res).isAutocommit();
-
-                                            if (MonetConnection.this.getAutoCommit() && isAutoCommit) {
-                                                MonetConnection.this.addWarning("Server enabled auto commit mode " +
-                                                        "while local state already was auto commit.", "01M11");
-                                            }
-                                            MonetConnection.this.autoCommit = isAutoCommit;
-                                            break;
-                                        case Q_BLOCK: {
-                                            DataBlockResponse next = protocol.getNextDatablockResponse(rsresponses);
-                                            if (next == null) {
-                                                error = "M0M12!No ResultSetResponse for a DataBlock found";
-                                                break;
-                                            }
-                                            res = next;
-                                        }
-                                        break;
-                                    }
-                                } catch (ProtocolException e) {
-                                    error = "M0M10!error while parsing start of header:\n" + e.getMessage() + " found: '"
-                                            + protocol.getRemainingStringLine(0).charAt(e.getErrorOffset()) + "'" +
-                                            " in: \"" + protocol.getRemainingStringLine(0) + "\"" + " at pos: "
-                                            + e.getErrorOffset();
-                                    // flush all the rest
-                                    protocol.waitUntilPrompt();
-                                    nextResponse = protocol.getCurrentServerResponseHeader();
-                                    break;
-                                }
-
-                                // immediately handle errors after parsing the header (res may be null)
-                                if (error != null) {
-                                    protocol.waitUntilPrompt();
-                                    nextResponse = protocol.getCurrentServerResponseHeader();
-                                    break;
-                                }
-
-                                // here we have a res object, which we can start filling
-                                if (res instanceof IIncompleteResponse) {
-                                    IIncompleteResponse iter = (IIncompleteResponse) res;
-                                    while (iter.wantsMore()) {
-                                        try {
-                                            protocol.fetchNextResponseData();
-                                            iter.addLine(protocol.getCurrentServerResponseHeader(), protocol.getCurrentData());
-                                        } catch (ProtocolException ex) {
-                                            // right, some protocol violation, skip the rest of the result
-                                            error = "M0M10!" + ex.getMessage();
-                                            protocol.waitUntilPrompt();
-                                            nextResponse = protocol.getCurrentServerResponseHeader();
-                                            break;
+                                            rsresponses.put(rsreponse.getId(), rsreponse);
                                         }
                                     }
-                                }
+                                    break;
+                                    case Q_UPDATE:
+                                        res = protocol.getNextUpdateResponse();
+                                        break;
+                                    case Q_SCHEMA:
+                                        res = protocol.getNextSchemaResponse();
+                                        break;
+                                    case Q_TRANS:
+                                        res = protocol.getNextAutoCommitResponse();
+                                        boolean isAutoCommit = ((AutoCommitResponse) res).isAutocommit();
 
-                                if (error != null) {
+                                        if (MonetConnection.this.getAutoCommit() && isAutoCommit) {
+                                            MonetConnection.this.addWarning("Server enabled auto commit mode " +
+                                                    "while local state already was auto commit.", "01M11");
+                                        }
+                                        MonetConnection.this.autoCommit = isAutoCommit;
+                                        break;
+                                    case Q_BLOCK: {
+                                        DataBlockResponse next = protocol.getNextDatablockResponse(rsresponses);
+                                        if (next == null) {
+                                            error = "M0M12!No ResultSetResponse for a DataBlock found";
+                                            break;
+                                        }
+                                        res = next;
+                                    }
                                     break;
                                 }
-
-                                // it is of no use to store DataBlockResponses, you never want to
-                                // retrieve them directly anyway
-                                if (!(res instanceof DataBlockResponse)) {
-                                    responses.add(res);
-                                }
-                                // read the next line (can be prompt, new result, error, etc.) before we start the loop over
-                                protocol.fetchNextResponseData();
-                                nextResponse = protocol.getCurrentServerResponseHeader();
-                                break;
-                            case INFO:
-                                addWarning(protocol.getRemainingStringLine(1), "01000");
-                                // read the next line (can be prompt, new result, error, etc.) before we start the loop over
-                                protocol.fetchNextResponseData();
-                                nextResponse = protocol.getCurrentServerResponseHeader();
-                                break;
-                            case ERROR:
-                                // read everything till the prompt (should be error) we don't know if we ignore some
-                                // garbage here... but the log should reveal that
-                                error = protocol.getRemainingStringLine(1);
+                            } catch (ProtocolException e) {
+                                error = "M0M10!error while parsing start of header:\n" + e.getMessage() + " found: '"
+                                        + protocol.getRemainingStringLine(0).charAt(e.getErrorOffset()) + "'" +
+                                        " in: \"" + protocol.getRemainingStringLine(0) + "\"" + " at pos: "
+                                        + e.getErrorOffset();
+                                // flush all the rest
                                 protocol.waitUntilPrompt();
                                 nextResponse = protocol.getCurrentServerResponseHeader();
                                 break;
-                            default:
-                                throw new SQLException("Protocol violation, unexpected line!", "M0M10");
-                        }
-                    }
+                            }
 
-                    // if we used the sendThread, make sure it has finished
-                    if (sendThread != null) {
-                        String tmp = sendThread.getErrors();
-                        if (tmp != null) {
-                            if (error == null) {
-                                error = "08000!" + tmp;
-                            } else {
-                                error += "\n08000!" + tmp;
+                            // immediately handle errors after parsing the header (res may be null)
+                            if (error != null) {
+                                protocol.waitUntilPrompt();
+                                nextResponse = protocol.getCurrentServerResponseHeader();
+                                break;
                             }
+
+                            // here we have a res object, which we can start filling
+                            if (res instanceof IIncompleteResponse) {
+                                IIncompleteResponse iter = (IIncompleteResponse) res;
+                                while (iter.wantsMore()) {
+                                    try {
+                                        protocol.fetchNextResponseData();
+                                        iter.addLine(protocol.getCurrentServerResponseHeader(), protocol.getCurrentData());
+                                    } catch (ProtocolException ex) {
+                                        // right, some protocol violation, skip the rest of the result
+                                        error = "M0M10!" + ex.getMessage();
+                                        protocol.waitUntilPrompt();
+                                        nextResponse = protocol.getCurrentServerResponseHeader();
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (error != null) {
+                                break;
+                            }
+
+                            // it is of no use to store DataBlockResponses, you never want to
+                            // retrieve them directly anyway
+                            if (!(res instanceof DataBlockResponse)) {
+                                responses.add(res);
+                            }
+                            // read the next line (can be prompt, new result, error, etc.) before we start the loop over
+                            protocol.fetchNextResponseData();
+                            nextResponse = protocol.getCurrentServerResponseHeader();
+                            break;
+                        case INFO:
+                            addWarning(protocol.getRemainingStringLine(0), "01000");
+                            // read the next line (can be prompt, new result, error, etc.) before we start the loop over
+                            protocol.fetchNextResponseData();
+                            nextResponse = protocol.getCurrentServerResponseHeader();
+                            break;
+                        case ERROR:
+                            // read everything till the prompt (should be error) we don't know if we ignore some
+                            // garbage here... but the log should reveal that
+                            error = protocol.getRemainingStringLine(0);
+                            protocol.waitUntilPrompt();
+                            nextResponse = protocol.getCurrentServerResponseHeader();
+                            break;
+                        default:
+                            throw new SQLException("Protocol violation, unexpected line!", "M0M10");
+                    }
+                }
+
+                // if we used the senderThread, make sure it has finished
+                if (senderThread != null) {
+                    String tmp = senderThread.getErrors();
+                    if (tmp != null) {
+                        if (error == null) {
+                            error = "08000!" + tmp;
+                        } else {
+                            error += "\n08000!" + tmp;
                         }
                     }
-                    if (error != null) {
-                        SQLException ret = null;
-                        String[] errors = error.split("\n");
-                        for (String error1 : errors) {
-                            if (ret == null) {
-                                ret = new SQLException(error1.substring(6), error1.substring(0, 5));
-                            } else {
-                                ret.setNextException(new SQLException(error1.substring(6), error1.substring(0, 5)));
-                            }
+                }
+                if (error != null) {
+                    SQLException ret = null;
+                    String[] errors = error.split("\n");
+                    for (String error1 : errors) {
+                        if (ret == null) {
+                            ret = new SQLException(error1.substring(6), error1.substring(0, 5));
+                        } else {
+                            ret.setNextException(new SQLException(error1.substring(6), error1.substring(0, 5)));
                         }
-                        throw ret;
                     }
+                    throw ret;
                 }
             } catch (SocketTimeoutException e) {
                 this.close(); // JDBC 4.1 semantics, abort()

@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * Created by ferreira on 11/30/16.
  */
-public abstract class AbstractProtocol<T> {
+public abstract class AbstractProtocol {
 
     protected ServerResponses currentServerResponseHeader = ServerResponses.UNKNOWN;
 
@@ -25,7 +25,7 @@ public abstract class AbstractProtocol<T> {
         return currentServerResponseHeader;
     }
 
-    public abstract T getCurrentData();
+    public abstract Object getCurrentData();
 
     public abstract StarterHeaders getNextStarterHeader();
 

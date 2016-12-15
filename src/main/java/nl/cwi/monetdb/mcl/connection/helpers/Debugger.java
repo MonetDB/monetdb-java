@@ -1,4 +1,4 @@
-package nl.cwi.monetdb.mcl.connection;
+package nl.cwi.monetdb.mcl.connection.helpers;
 
 import java.io.*;
 
