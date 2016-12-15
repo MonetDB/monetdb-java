@@ -226,7 +226,7 @@ public final class MapiSocket {
 		}
 		return this.soTimeout;
 	}
-	
+
 	/**
 	 * Enables/disables debug
 	 *
@@ -472,8 +472,7 @@ public final class MapiSocket {
 				} else if (chaltok[5].equals("MD5")) {
 					algo = "MD5";
 				} else {
-					throw new MCLException("Unsupported password hash: " +
-							chaltok[5]);
+					throw new MCLException("Unsupported password hash: " + chaltok[5]);
 				}
 
 				try {
@@ -507,7 +506,7 @@ public final class MapiSocket {
 				}
 				String pwhash;
 				algo = null;
-				
+
 				if (hashesSet.contains("SHA512")) {
 					algo = "SHA-512";
 					pwhash = "{SHA512}";
@@ -553,11 +552,11 @@ public final class MapiSocket {
 				response = "BIG:";	// JVM byte-order is big-endian
 				response += username + ":" + pwhash + ":" + language;
 				response += ":" + (database == null ? "" : database) + ":";
-				
+
 				return response;
 		}
 	}
-	
+
 	private static char hexChar(int n) {
 		return (n > 9)
 			? (char) ('a' + (n - 10))
@@ -645,7 +644,7 @@ public final class MapiSocket {
 	public void debug(String filename) throws IOException {
 		debug(new FileWriter(filename));
 	}
-	
+
 	/**
 	 * Enables logging to a stream what is read and written from and to
 	 * the server.  Logging can be enabled at any time.  However, it is
@@ -658,7 +657,7 @@ public final class MapiSocket {
 	public void debug(PrintStream out) throws IOException {
 		debug(new PrintWriter(out));
 	}
-	
+
 	/**
 	 * Enables logging to a stream what is read and written from and to
 	 * the server.  Logging can be enabled at any time.  However, it is
@@ -957,7 +956,7 @@ public final class MapiSocket {
 				if (readBlock() == -1)
 					return(-1);
 			}
-				
+
 			if (debug)
 				logRx(new String(block, readPos, 1, "UTF-8"));
 			return (int)block[readPos++];
@@ -1054,7 +1053,7 @@ public final class MapiSocket {
 				con = null;
 			} catch (IOException e) { /* ignore it */ }
 		}
-		if (debug && log != null) {
+		if (debug && log != null && log instanceof FileWriter) {
 			try {
 				log.close();
 				log = null;
@@ -1084,8 +1083,7 @@ public final class MapiSocket {
 	 * @throws IOException if an IO error occurs while writing to the logfile
 	 */
 	private void logTx(String message) throws IOException {
-		log.write("TX " + System.currentTimeMillis() +
-			": " + message + "\n");
+		log.write("TX " + System.currentTimeMillis() + ": " + message + "\n");
 	}
 
 	/**
@@ -1097,8 +1095,7 @@ public final class MapiSocket {
 	 * @throws IOException if an IO error occurs while writing to the logfile
 	 */
 	private void logTd(String message) throws IOException {
-		log.write("TD " + System.currentTimeMillis() +
-			": " + message + "\n");
+		log.write("TD " + System.currentTimeMillis() + ": " + message + "\n");
 	}
 
 	/**
@@ -1113,8 +1110,7 @@ public final class MapiSocket {
 	 * @throws IOException if an IO error occurs while writing to the logfile
 	 */
 	private void logRx(String message) throws IOException {
-		log.write("RX " + System.currentTimeMillis() +
-			": " + message + "\n");
+		log.write("RX " + System.currentTimeMillis() + ": " + message + "\n");
 		log.flush();
 	}
 
@@ -1128,8 +1124,7 @@ public final class MapiSocket {
 	 * @throws IOException if an IO error occurs while writing to the logfile
 	 */
 	private void logRd(String message) throws IOException {
-		log.write("RD " + System.currentTimeMillis() +
-			": " + message + "\n");
+		log.write("RD " + System.currentTimeMillis() + ": " + message + "\n");
 		log.flush();
 	}
 }
