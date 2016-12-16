@@ -46,14 +46,8 @@ import java.util.concurrent.Executor;
  */
 public abstract class MonetConnection extends MonetWrapper implements Connection {
 
-    /** the default number of rows that are (attempted to) read at once */
-    private static int DEF_FETCHSIZE = 250;
     /** The sequence counter */
     private static int SeqCounter = 0;
-
-    public static int GetDefFetchsize() {
-        return DEF_FETCHSIZE;
-    }
 
     public static int GetSeqCounter() {
         return SeqCounter;
@@ -150,6 +144,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
     public abstract int getBlockSize();
 
+    public abstract int getDefFetchsize();
+
     public abstract int getSoTimeout();
 
     public abstract void setSoTimeout(int s);
@@ -163,6 +159,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     public abstract void sendControlCommand(ControlCommands con, int data) throws SQLException;
+
+    public abstract ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType, int resultSetConcurrency) throws SQLException;
+
+    public abstract void setServerMaxRows(int maxRows) throws SQLException;
 
     /**
      * Releases this Connection object's database and JDBC resources immediately instead of waiting for them to be
@@ -1167,8 +1167,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * Sets the given schema name to access.
      *
      * @param schema the name of a schema in which to work
-     * @throws SQLException if a database access error occurs or this
-     *         method is called on a closed connection
+     * @throws SQLException if a database access error occurs or this method is called on a closed connection
      * @since 1.7
      */
     @Override
@@ -1190,8 +1189,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * Retrieves this Connection object's current schema name.
      *
      * @return the current schema name or null if there is none
-     * @throws SQLException if a database access error occurs or this
-     *         method is called on a closed connection
+     * @throws SQLException if a database access error occurs or this method is called on a closed connection
      */
     @Override
     public String getSchema() throws SQLException {
@@ -1225,12 +1223,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * Calling abort marks the connection closed and releases any
      * resources. Calling abort on a closed connection is a no-op.
      *
-     * @param executor The Executor implementation which will be used by
-     *        abort
-     * @throws SQLException if a database access error occurs or the
-     *         executor is null
-     * @throws SecurityException if a security manager exists and
-     *         its checkPermission method denies calling abort
+     * @param executor The Executor implementation which will be used by abort
+     * @throws SQLException if a database access error occurs or the executor is null
+     * @throws SecurityException if a security manager exists and its checkPermission method denies calling abort
      */
     @Override
     public void abort(Executor executor) throws SQLException {
@@ -1253,13 +1248,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * isClosed or Connection.isValid methods, will result in a
      * SQLException.
      *
-     * @param executor The Executor implementation which will be used by
-     *        setNetworkTimeout
-     * @param millis The time in milliseconds to wait for the
-     *        database operation to complete
-     * @throws SQLException if a database access error occurs, this
-     *         method is called on a closed connection, the executor is
-     *         null, or the value specified for seconds is less than 0.
+     * @param executor The Executor implementation which will be used by setNetworkTimeout
+     * @param millis The time in milliseconds to wait for the database operation to complete
+     * @throws SQLException if a database access error occurs, this method is called on a closed connection, the
+     * executor is null, or the value specified for seconds is less than 0.
      */
     @Override
     public void setNetworkTimeout(Executor executor, int millis) throws SQLException {
@@ -1274,14 +1266,11 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Retrieves the number of milliseconds the driver will wait for a
-     * database request to complete. If the limit is exceeded, a
-     * SQLException is thrown.
+     * Retrieves the number of milliseconds the driver will wait for a database request to complete. If the limit is
+     * exceeded, a SQLException is thrown.
      *
-     * @return the current timeout limit in milliseconds; zero means
-     *         there is no limit
-     * @throws SQLException if a database access error occurs or
-     *         this method is called on a closed Connection
+     * @return the current timeout limit in milliseconds; zero means there is no limit
+     * @throws SQLException if a database access error occurs or this method is called on a closed Connection
      */
     @Override
     public int getNetworkTimeout() throws SQLException {
@@ -1301,10 +1290,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Sends the given string to MonetDB as regular statement, making
-     * sure there is a prompt after the command is sent.  All possible
-     * returned information is discarded.  Encountered errors are
-     * reported.
+     * Sends the given string to MonetDB as regular statement, making sure there is a prompt after the command is sent.
+     * All possible returned information is discarded. Encountered errors are reported.
      *
      * @param command the exact string to send to MonetDB
      * @throws SQLException if an IO exception or a database error occurs
@@ -1326,10 +1313,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Adds a warning to the pile of warnings this Connection object
-     * has.  If there were no warnings (or clearWarnings was called)
-     * this warning will be the first, otherwise this warning will get
-     * appended to the current warning.
+     * Adds a warning to the pile of warnings this Connection object has. If there were no warnings (or clearWarnings
+     * was called) this warning will be the first, otherwise this warning will get appended to the current warning.
      *
      * @param reason the warning message
      */
@@ -1373,7 +1358,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
          * @param rstype the type of result sets to produce
          * @param rsconcur the concurrency of result sets to produce
          */
-        ResponseList(int cachesize, int maxrows, int rstype, int rsconcur) throws SQLException {
+        public ResponseList(int cachesize, int maxrows, int rstype, int rsconcur) throws SQLException {
             this.cachesize = cachesize;
             this.maxrows = maxrows;
             this.rstype = rstype;
@@ -1504,13 +1489,12 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                  * to use, then ignore this call.  If it is set to 0 we get a prompt after the server sent it's
                  * header.
                  */
-                int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
+                int size = cachesize == 0 ? MonetConnection.this.getDefFetchsize() : cachesize;
                 size = maxrows != 0 ? Math.min(maxrows, size) : size;
                 // don't do work if it's not needed
                 if (language == MapiLanguage.LANG_SQL && size != curReplySize &&
                         !Arrays.deepEquals(templ, language.getCommandTemplates())) {
-                    sendControlCommand(ControlCommands.REPLY_SIZE, size);
-
+                    setServerMaxRows(size);
                     // store the reply size after a successful change
                     curReplySize = size;
                 }
@@ -1529,8 +1513,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                     // tell it to do some work!
                     senderThread.runQuery(templ, query);
                 } else {
-                    // this is a simple call, which is a lot cheaper and will
-                    // always succeed for small queries.
+                    // this is a simple call, which is a lot cheaper and will always succeed for small queries.
                     protocol.writeNextQuery((templ[0] == null) ? "" : templ[0], query,
                             (templ[1] == null) ? "" : templ[1]);
                 }

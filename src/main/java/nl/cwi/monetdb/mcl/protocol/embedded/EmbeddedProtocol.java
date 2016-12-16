@@ -1,6 +1,5 @@
 package nl.cwi.monetdb.mcl.protocol.embedded;
 
-import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedException;
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.mcl.connection.embedded.JDBCEmbeddedConnection;
 import nl.cwi.monetdb.mcl.protocol.*;
@@ -81,20 +80,12 @@ public class EmbeddedProtocol extends AbstractProtocol {
     @Override
     public TableResultHeaders getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types,
                                                  String[] tableNames) throws ProtocolException {
-        try {
-            return connection.fillTableHeaders(columnNames, columnLengths, types, tableNames);
-        } catch (MonetDBEmbeddedException ex) {
-            throw new ProtocolException(ex.getMessage());
-        }
+        return connection.fillTableHeaders(columnNames, columnLengths, types, tableNames);
     }
 
     @Override
     public int parseTupleLines(int lineNumber, int[] typesMap, Object[] values, boolean[][] nulls) throws ProtocolException {
-        try {
-            return connection.parseTupleLines(typesMap, values, nulls);
-        } catch (MonetDBEmbeddedException ex) {
-            throw new ProtocolException(ex.getMessage());
-        }
+        return connection.parseTupleLines(typesMap, values, nulls);
     }
 
     @Override
@@ -104,38 +95,6 @@ public class EmbeddedProtocol extends AbstractProtocol {
 
     @Override
     public void writeNextQuery(String prefix, String query, String suffix) throws IOException {
-        try {
-            connection.processNextQuery(query);
-        } catch (MonetDBEmbeddedException ex) {
-            throw new IOException(ex.getMessage());
-        }
-    }
-
-    public void sendAutocommitCommand(int flag) throws ProtocolException { //1 or 0
-        try {
-            connection.sendAutocommitCommand(flag);
-        } catch (MonetDBEmbeddedException ex) {
-            throw new ProtocolException(ex.getMessage());
-        }
-    }
-
-    public void sendReplySizeCommand(int size) throws ProtocolException {
-        //do nothing for now :)
-    }
-
-    public void sendReleaseCommand(int commandId) throws ProtocolException {
-        try {
-            connection.sendReleaseCommand(commandId);
-        } catch (MonetDBEmbeddedException ex) {
-            throw new ProtocolException(ex.getMessage());
-        }
-    }
-
-    public void sendCloseCommand(int commandId) throws ProtocolException {
-        try {
-            connection.sendCloseCommand(commandId);
-        } catch (MonetDBEmbeddedException ex) {
-            throw new ProtocolException(ex.getMessage());
-        }
+        connection.processNextQuery(query);
     }
 }

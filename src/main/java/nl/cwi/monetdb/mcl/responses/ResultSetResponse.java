@@ -6,6 +6,7 @@ import nl.cwi.monetdb.mcl.connection.ControlCommands;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
+import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -25,7 +26,7 @@ import java.sql.Types;
  */
 public class ResultSetResponse implements IIncompleteResponse {
 
-    private static final byte IS_SET_FINAL_VALUE = 4;
+    private static final byte IS_SET_FINAL_VALUE = 15;
 
     /** The number of columns in this result */
     private final int columncount;
@@ -57,7 +58,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     private MonetConnection con;
     /** The Connection that we should use when requesting a new block */
     private MonetConnection.ResponseList parent;
-    /** Whether the fetchSize was explitly set by the user */
+    /** Whether the fetchSize was explicitly set by the user */
     private boolean cacheSizeSetExplicitly = false;
     /** Whether we should send an Xclose command to the server if we close this Response */
     private boolean destroyOnClose;
@@ -83,7 +84,7 @@ public class ResultSetResponse implements IIncompleteResponse {
         if (parent.getCachesize() == 0) {
             /* Below we have to calculate how many "chunks" we need to allocate to store the entire result. However, if
                the user didn't set a cache size, as in this case, we need to stick to our defaults. */
-            cacheSize = MonetConnection.GetDefFetchsize();
+            cacheSize = con.getDefFetchsize();
             cacheSizeSetExplicitly = false;
         } else {
             cacheSize = parent.getCachesize();
@@ -135,6 +136,7 @@ public class ResultSetResponse implements IIncompleteResponse {
      * Returns whether this ResultSetResponse needs more lines. This method returns true if not all headers are set,
      * or the first DataBlockResponse reports to want more.
      */
+    @Override
     public boolean wantsMore() {
         return this.isSet < IS_SET_FINAL_VALUE || resultBlocks[0].wantsMore();
     }
@@ -262,20 +264,10 @@ public class ResultSetResponse implements IIncompleteResponse {
         } else if (protocol.getCurrentServerResponseHeader() != ServerResponses.HEADER) {
             throw new ProtocolException("header expected, got: " + protocol.getRemainingStringLine(0));
         } else {
-            switch (con.getProtocol().getNextTableHeader(this.name, this.columnLengths, this.type, this.tableNames)) {
-                case NAME:
-                    isSet = 1;
-                    break;
-                case LENGTH:
-                    isSet = 2;
-                    break;
-                case TYPE:
-                    isSet = 3;
-                    break;
-                case TABLE:
-                    isSet = 4;
-                    this.populateJdbcSQLTypesArray(); //VERY IMPORTANT!
-                    break;
+            TableResultHeaders next = con.getProtocol().getNextTableHeader(this.name, this.columnLengths, this.type, this.tableNames);
+            this.isSet |= next.getValueForBitMap();
+            if(this.isSet >= IS_SET_FINAL_VALUE) {
+                this.populateJdbcSQLTypesArray(); //VERY IMPORTANT
             }
         }
     }
@@ -309,7 +301,7 @@ public class ResultSetResponse implements IIncompleteResponse {
                     resultBlocks[i] = null;
 
                 if (MonetConnection.GetSeqCounter() - 1 == seqnr && !cacheSizeSetExplicitly &&
-                        tuplecount - row > cacheSize && cacheSize < MonetConnection.GetDefFetchsize() * 10) {
+                        tuplecount - row > cacheSize && cacheSize < con.getDefFetchsize() * 10) {
                     // there has no query been issued after this one, so we can consider this an uninterrupted
                     // continuation request.  Let's once increase the cacheSize as it was not explicitly set,
                     // since the chances are high that we won't bother anyone else by doing so, and just gaining

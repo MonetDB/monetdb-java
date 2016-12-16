@@ -19,8 +19,10 @@ import java.sql.SQLException;
 import java.util.*;
 
 public class MapiConnection extends MonetConnection {
-
-    public static final char PROMPT_CHAR = '.';
+    /** the PROMPT ASCII char sent by the server */
+    static final char PROMPT_CHAR = '.';
+    /** the default number of rows that are (attempted to) read at once */
+    private static final int DEF_FETCHSIZE = 250;
 
     /** The hostname to connect to */
     private final String hostname;
@@ -109,6 +111,11 @@ public class MapiConnection extends MonetConnection {
     @Override
     public int getBlockSize() {
         return ((OldMapiProtocol)protocol).getSocket().getBlockSize();
+    }
+
+    @Override
+    public int getDefFetchsize() {
+        return DEF_FETCHSIZE;
     }
 
     /**
@@ -207,6 +214,16 @@ public class MapiConnection extends MonetConnection {
         } catch (IOException e) {
             throw new SQLException(e.getMessage(), "08000");
         }
+    }
+
+    @Override
+    public ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType, int resultSetConcurrency) throws SQLException {
+        return new MonetConnection.ResponseList(fetchSize, maxRows, resultSetType, resultSetConcurrency);
+    }
+
+    @Override
+    public void setServerMaxRows(int maxRows) throws SQLException {
+        this.sendControlCommand(ControlCommands.REPLY_SIZE, maxRows);
     }
 
     @Override

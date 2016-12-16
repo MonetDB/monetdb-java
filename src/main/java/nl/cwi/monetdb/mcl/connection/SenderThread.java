@@ -96,7 +96,7 @@ public class SenderThread extends Thread {
         this.sendLock.lock();
         try {
             if (this.state != SendThreadStatus.WAIT) {
-                throw new SQLException("SendThread already in use or shutting down!", "M0M03");
+                throw new SQLException("Sender Thread already in use or shutting down!", "M0M03");
             }
             this.templ = templ;
             this.query = query;

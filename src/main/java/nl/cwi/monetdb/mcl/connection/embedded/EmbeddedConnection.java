@@ -63,6 +63,11 @@ public final class EmbeddedConnection extends MonetConnection {
     }
 
     @Override
+    public int getDefFetchsize() {
+        return Integer.MAX_VALUE;
+    }
+
+    @Override
     public int getSoTimeout() {
         this.addWarning("Cannot get a timeout on a embedded connection!", "M1M05");
         return -1;
@@ -83,23 +88,32 @@ public final class EmbeddedConnection extends MonetConnection {
         try {
             switch (con) {
                 case AUTO_COMMIT:
-                    ((EmbeddedProtocol)protocol).sendAutocommitCommand(data);
-                    break;
-                case REPLY_SIZE:
-                    ((EmbeddedProtocol)protocol).sendReplySizeCommand(data);
+                    ((EmbeddedProtocol)protocol).getEmbeddedConnection().sendAutocommitCommand(data);
                     break;
                 case RELEASE:
-                    ((EmbeddedProtocol)protocol).sendReleaseCommand(data);
+                    ((EmbeddedProtocol)protocol).getEmbeddedConnection().sendReleaseCommand(data);
                     break;
                 case CLOSE:
-                    ((EmbeddedProtocol)protocol).sendCloseCommand(data);
+                    ((EmbeddedProtocol)protocol).getEmbeddedConnection().sendCloseCommand(data);
+                case REPLY_SIZE:
+                    throw new SQLException("Cannot set reply size on a Embedded connection!", "M1M05");
             }
             protocol.waitUntilPrompt();
             if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
                 throw new SQLException(protocol.getRemainingStringLine(0));
             }
-        } catch (IOException | ProtocolException ex) {
+        } catch (IOException ex) {
             throw new SQLException(ex);
         }
+    }
+
+    @Override
+    public ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType, int resultSetConcurrency) throws SQLException {
+        return new MonetConnection.ResponseList(this.getDefFetchsize(), maxRows, resultSetType, resultSetConcurrency);
+    }
+
+    @Override
+    public void setServerMaxRows(int maxRows) throws SQLException {
+        ((EmbeddedProtocol)protocol).getEmbeddedConnection().setMaxRows(maxRows);
     }
 }

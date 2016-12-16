@@ -6,9 +6,20 @@ package nl.cwi.monetdb.mcl.protocol;
 public enum TableResultHeaders {
 
     /* Please don't change the order */
-    NAME,
-    LENGTH,
-    TABLE,
-    TYPE,
-    UNKNOWN
+    NAME(1),
+    LENGTH(2),
+    TABLE(4),
+    TYPE(8),
+    ALL(15),
+    UNKNOWN(0);
+
+    private final int valueForBitMap;
+
+    TableResultHeaders(int valueForBitMap) {
+        this.valueForBitMap = valueForBitMap;
+    }
+
+    public int getValueForBitMap() {
+        return valueForBitMap;
+    }
 }
