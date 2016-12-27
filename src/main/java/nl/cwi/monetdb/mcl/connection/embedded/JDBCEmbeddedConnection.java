@@ -53,13 +53,12 @@ public class JDBCEmbeddedConnection extends MonetDBEmbeddedConnection {
 
     public TableResultHeaders fillTableHeaders(String[] columnNames, int[] columnLengths, String[] types,
                                                String[] tableNames) {
-        this.getNextTableHeaderInternal(this.connectionPointer, this.lastResultSetPointer, columnNames, columnLengths,
-                types, tableNames);
+        this.getNextTableHeaderInternal(this.lastResultSetPointer, columnNames, columnLengths, types, tableNames);
         return TableResultHeaders.ALL;
     }
 
     public int parseTupleLines(int[] typesMap, Object[] values, boolean[][] nulls) {
-        return this.parseTupleLinesInternal(this.connectionPointer, this.lastResultSetPointer, typesMap, values, nulls);
+        return this.parseTupleLinesInternal(this.lastResultSetPointer, typesMap, values, nulls);
     }
 
     public String getLastError() {
@@ -86,11 +85,11 @@ public class JDBCEmbeddedConnection extends MonetDBEmbeddedConnection {
         this.sendCloseCommandInternal(this.connectionPointer, commandId);
     }
 
-    private native void getNextTableHeaderInternal(long connectionPointer, long resultSetPointer, String[] columnNames,
-                                                   int[] columnLengths, String[] types, String[] tableNames);
+    private native void getNextTableHeaderInternal(long resultSetPointer, String[] columnNames, int[] columnLengths,
+                                                   String[] types, String[] tableNames);
 
-    private native int parseTupleLinesInternal(long connectionPointer, long resultSetPointer, int[] typesMap,
-                                               Object[] values, boolean[][] nulls);
+    private native int parseTupleLinesInternal(long resultSetPointer, int[] typesMap, Object[] values,
+                                               boolean[][] nulls);
 
     private native void sendQueryInternal(long connectionPointer, String query, boolean execute);
 

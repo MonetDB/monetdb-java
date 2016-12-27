@@ -49,8 +49,7 @@ public final class QueryResultSetBooleanColumn extends AbstractQueryResultSetCol
 
     @Override
     protected void fetchMoreData(int startIndex, int endIndex) throws MonetDBEmbeddedException {
-        boolean[] values = this.fetchValuesInternal(this.tablePointer, this.resultSetIndex, startIndex, endIndex);
-        System.arraycopy(values, 0, this.values, startIndex, values.length);
+        this.fetchValuesInternal(this.tablePointer, this.resultSetIndex, startIndex, endIndex, this.values, this.nullValues);
     }
 
     @Override
@@ -61,21 +60,11 @@ public final class QueryResultSetBooleanColumn extends AbstractQueryResultSetCol
     }
 
     @Override
-    protected boolean[] checkIfIndexesAreNullImplementation(boolean[] values, boolean[] res)
-            throws MonetDBEmbeddedException {
-        boolean nil = GetBooleanNullConstant();
-        for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == nil);
-        }
-        return res;
-    }
-
-    @Override
-    protected Boolean[] mapValuesToObjectArrayImplementation(boolean[] values) throws MonetDBEmbeddedException {
-        boolean nil = GetBooleanNullConstant();
-        Boolean[] res = new Boolean[values.length];
-        for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == nil) ? null : values[i];
+    protected Boolean[] mapValuesToObjectArrayImplementation(int startIndex, int numberOfRowsToRetrieve) {
+        Boolean[] res = new Boolean[numberOfRowsToRetrieve];
+        int endIndex = startIndex + numberOfRowsToRetrieve;
+        for(int i = startIndex, j = 0 ; i < endIndex ; i++, j++) {
+            res[j] = (this.nullValues[i]) ? null : this.values[i];
         }
         return res;
     }
@@ -83,6 +72,6 @@ public final class QueryResultSetBooleanColumn extends AbstractQueryResultSetCol
     /**
      * Internal implementation to fetch values from the column.
      */
-    private native boolean[] fetchValuesInternal(long tablePointer, int resultSetIndex, int startIndex, int endIndex)
-            throws MonetDBEmbeddedException;
+    private native void fetchValuesInternal(long tablePointer, int resultSetIndex, int startIndex, int endIndex,
+                                            boolean[] values, boolean[] nullValues) throws MonetDBEmbeddedException;
 }

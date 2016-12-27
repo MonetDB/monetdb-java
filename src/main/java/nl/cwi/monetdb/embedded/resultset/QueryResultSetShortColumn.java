@@ -48,8 +48,7 @@ public final class QueryResultSetShortColumn extends AbstractQueryResultSetColum
 
     @Override
     protected void fetchMoreData(int startIndex, int endIndex) throws MonetDBEmbeddedException {
-        short[] values = this.fetchValuesInternal(this.tablePointer, this.resultSetIndex, startIndex, endIndex);
-        System.arraycopy(values, 0, this.values, startIndex, values.length);
+        this.fetchValuesInternal(this.tablePointer, this.resultSetIndex, startIndex, endIndex, this.values, this.nullValues);
     }
 
     @Override
@@ -60,21 +59,11 @@ public final class QueryResultSetShortColumn extends AbstractQueryResultSetColum
     }
 
     @Override
-    protected boolean[] checkIfIndexesAreNullImplementation(short[] values, boolean[] res)
-            throws MonetDBEmbeddedException {
-        short nil = GetShortNullConstant();
-        for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == nil);
-        }
-        return res;
-    }
-
-    @Override
-    protected Short[] mapValuesToObjectArrayImplementation(short[] values) throws MonetDBEmbeddedException {
-        short nil = GetShortNullConstant();
-        Short[] res = new Short[values.length];
-        for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == nil) ? null : values[i];
+    protected Short[] mapValuesToObjectArrayImplementation(int startIndex, int numberOfRowsToRetrieve) {
+        Short[] res = new Short[numberOfRowsToRetrieve];
+        int endIndex = startIndex + numberOfRowsToRetrieve;
+        for(int i = startIndex, j = 0 ; i < endIndex ; i++, j++) {
+            res[j] = (this.nullValues[i]) ? null : this.values[i];
         }
         return res;
     }
@@ -82,6 +71,6 @@ public final class QueryResultSetShortColumn extends AbstractQueryResultSetColum
     /**
      * Internal implementation to fetch values from the column.
      */
-    private native short[] fetchValuesInternal(long tablePointer, int resultSetIndex, int startIndex, int endIndex)
-            throws MonetDBEmbeddedException;
+    private native void fetchValuesInternal(long tablePointer, int resultSetIndex, int startIndex, int endIndex,
+                                            short[] values, boolean[] nullValues) throws MonetDBEmbeddedException;
 }

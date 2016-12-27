@@ -27,7 +27,7 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
     /**
      * The index of the column.
      */
-    protected final int resultSetIndex;
+    final int resultSetIndex;
 
     /**
      * The number of rows in this column.
@@ -44,6 +44,11 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
      */
     private int lastRetrievedIndex;
 
+    /**
+     * The null values mapping
+     */
+    final boolean[] nullValues;
+
 	protected AbstractQueryResultSetColumn(String columnType, long tablePointer, int resultSetIndex, String columnName,
                                            int columnDigits, int columnScale, int numberOfRows) {
         super(columnType, columnName, columnDigits, columnScale);
@@ -52,6 +57,7 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
         this.numberOfRows = numberOfRows;
         this.firstRetrievedIndex = numberOfRows;
         this.lastRetrievedIndex = 0;
+        this.nullValues = new boolean[numberOfRows];
  	}
 
     /**
@@ -74,30 +80,15 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
 
     protected abstract A storeNewDataAndGetResult(int startIndex, int numberOfRowsToRetrieve);
 
-    protected abstract boolean[] checkIfIndexesAreNullImplementation(A values, boolean[] res)
-            throws MonetDBEmbeddedException;
+    protected abstract Object[] mapValuesToObjectArrayImplementation(int startIndex, int numberOfRowsToRetrieve);
 
-    protected abstract Object[] mapValuesToObjectArrayImplementation(A values)
-            throws MonetDBEmbeddedException;
-
-    /**
-     * Maps columns values using the provided Java representation by the query.
-     *
-     * @param startIndex The first column index to retrieve
-     * @param endIndex The last column index to retrieve
-     * @return The column values as a Java array
-     * @throws MonetDBEmbeddedException If an error in the database occurred
-     */
-    public A fetchColumnValues(int startIndex, int endIndex) throws MonetDBEmbeddedException {
+    private int checkBoundsAndFetch(int startIndex, int endIndex) throws MonetDBEmbeddedException {
         if(endIndex < startIndex) {
-            int aux = startIndex;
-            startIndex = endIndex;
-            endIndex = aux;
-        }
-        if (startIndex < 0) {
+            throw new ArrayIndexOutOfBoundsException("The endIndex cannot be smaller than the startIndex!");
+        } else if (startIndex < 0) {
             throw new ArrayIndexOutOfBoundsException("The start index must be larger than 0!");
         } else if (endIndex > this.numberOfRows) {
-            throw new ArrayIndexOutOfBoundsException("The index must be smaller than the number of elements in the columns!");
+            throw new ArrayIndexOutOfBoundsException("The index must be smaller than the number of elements in the set!");
         } else if(startIndex == endIndex) {
             throw new ArrayIndexOutOfBoundsException("Retrieving 0 values?");
         }
@@ -119,6 +110,19 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
             }
             this.fetchMoreData(firstIndexToFetch, lastIndexToFetch);
         }
+        return numberOfRowsToRetrieve;
+    }
+
+    /**
+     * Maps columns values using the provided Java representation by the query.
+     *
+     * @param startIndex The first column index to retrieve
+     * @param endIndex The last column index to retrieve
+     * @return The column values as a Java array
+     * @throws MonetDBEmbeddedException If an error in the database occurred
+     */
+    public A fetchColumnValues(int startIndex, int endIndex) throws MonetDBEmbeddedException {
+        int numberOfRowsToRetrieve = this.checkBoundsAndFetch(startIndex, endIndex);
         return this.storeNewDataAndGetResult(startIndex, numberOfRowsToRetrieve);
     }
 
@@ -185,22 +189,10 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
      * @return If the index is null or not
      */
     public boolean[] checkIfIndexesAreNull(int startIndex, int endIndex) throws MonetDBEmbeddedException {
-        if(endIndex < startIndex) {
-            int aux = startIndex;
-            startIndex = endIndex;
-            endIndex = aux;
-        }
-        if (startIndex < 0) {
-            throw new ArrayIndexOutOfBoundsException("The start index must be larger than 0!");
-        } else if (endIndex > this.numberOfRows) {
-            throw new ArrayIndexOutOfBoundsException("The index must be smaller than the number of elements in the columns!");
-        } else if(startIndex == endIndex) {
-            throw new ArrayIndexOutOfBoundsException("Checking 0 values?");
-        }
-        int numberOfRowsToRetrieve = endIndex - startIndex;
-        A values = this.fetchColumnValues(startIndex, endIndex);
+        int numberOfRowsToRetrieve = this.checkBoundsAndFetch(startIndex, endIndex);
         boolean[] res = new boolean[numberOfRowsToRetrieve];
-        return this.checkIfIndexesAreNullImplementation(values, res);
+        System.arraycopy(this.nullValues, startIndex, res, 0, numberOfRowsToRetrieve);
+        return res;
     }
 
     /**
@@ -211,19 +203,7 @@ public abstract class AbstractQueryResultSetColumn<A> extends AbstractColumn {
      * @return The mapped Java array
      */
     public Object[] mapValuesToObjectArray(int startIndex, int endIndex) throws MonetDBEmbeddedException {
-        if(endIndex < startIndex) {
-            int aux = startIndex;
-            startIndex = endIndex;
-            endIndex = aux;
-        }
-        if (startIndex < 0) {
-            throw new ArrayIndexOutOfBoundsException("The start index must be larger than 0!");
-        } else if (endIndex > this.numberOfRows) {
-            throw new ArrayIndexOutOfBoundsException("The index must be smaller than the number of elements in the columns!");
-        } else if(startIndex == endIndex) {
-            throw new ArrayIndexOutOfBoundsException("Retrieving 0 values?");
-        }
-        A values = this.fetchColumnValues(startIndex, endIndex);
-        return this.mapValuesToObjectArrayImplementation(values);
+        int numberOfRowsToRetrieve = this.checkBoundsAndFetch(startIndex, endIndex);
+        return this.mapValuesToObjectArrayImplementation(startIndex, numberOfRowsToRetrieve);
     }
 }

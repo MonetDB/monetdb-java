@@ -52,9 +52,8 @@ public final class QueryResultSetObjectColumn<T> extends AbstractQueryResultSetC
     @Override
     @SuppressWarnings("unchecked")
     protected void fetchMoreData(int startIndex, int endIndex) throws MonetDBEmbeddedException {
-        T[] values = this.fetchValuesInternal(this.tablePointer, this.resultSetIndex,
-                (Class<T>) this.mapping.getJavaClass(), this.mapping.ordinal(), startIndex, endIndex);
-        System.arraycopy(values, 0, this.values, startIndex, values.length);
+        this.fetchValuesInternal(this.tablePointer, this.resultSetIndex, (Class<T>) this.mapping.getJavaClass(),
+                this.mapping.ordinal(), startIndex, endIndex, this.values, this.nullValues);
     }
 
     @Override
@@ -66,16 +65,11 @@ public final class QueryResultSetObjectColumn<T> extends AbstractQueryResultSetC
     }
 
     @Override
-    protected boolean[] checkIfIndexesAreNullImplementation(T[] values, boolean[] res) throws MonetDBEmbeddedException {
-        for(int i = 0 ; i < values.length ; i++) {
-            res[i] = (values[i] == null);
-        }
-        return res;
-    }
-
-    @Override
-    protected T[] mapValuesToObjectArrayImplementation(T[] values) throws MonetDBEmbeddedException {
-        return values;
+    @SuppressWarnings("unchecked")
+    protected T[] mapValuesToObjectArrayImplementation(int startIndex, int numberOfRowsToRetrieve) {
+        T[] result = (T[]) Array.newInstance(this.mapping.getJavaClass(), numberOfRowsToRetrieve);
+        System.arraycopy(this.values, startIndex, result, 0, numberOfRowsToRetrieve);
+        return result;
     }
 
     @Override
@@ -90,6 +84,7 @@ public final class QueryResultSetObjectColumn<T> extends AbstractQueryResultSetC
     /**
      * Internal implementation to fetch values from the column.
      */
-    private native T[] fetchValuesInternal(long tablePointer, int resultSetIndex, Class<T> jClass, int javaIndex,
-                                           int startIndex, int endIndex) throws MonetDBEmbeddedException;
+    private native void fetchValuesInternal(long tablePointer, int resultSetIndex, Class<T> jClass, int javaIndex,
+                                           int startIndex, int endIndex, T[] values, boolean[] nullValues)
+            throws MonetDBEmbeddedException;
 }
