@@ -131,6 +131,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         return ourSavior;
     }
 
+    public AbstractProtocol getProtocol() {
+        return this.protocol;
+    }
+
     /**
      * Connects to the given host and port, logging in as the given user. If followRedirect is false, a
      * RedirectionException is thrown when a redirect is encountered.
@@ -154,15 +158,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
     public abstract String getJDBCURL();
 
-    public AbstractProtocol getProtocol() {
-        return this.protocol;
-    }
-
     public abstract void sendControlCommand(ControlCommands con, int data) throws SQLException;
 
-    public abstract ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType, int resultSetConcurrency) throws SQLException;
-
-    public abstract void setServerMaxRows(int maxRows) throws SQLException;
+    public abstract ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType,
+                                                    int resultSetConcurrency) throws SQLException;
 
     /**
      * Releases this Connection object's database and JDBC resources immediately instead of waiting for them to be
@@ -1494,7 +1493,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                 // don't do work if it's not needed
                 if (language == MapiLanguage.LANG_SQL && size != curReplySize &&
                         !Arrays.deepEquals(templ, language.getCommandTemplates())) {
-                    setServerMaxRows(size);
+                    sendControlCommand(ControlCommands.REPLY_SIZE, size);
                     // store the reply size after a successful change
                     curReplySize = size;
                 }

@@ -93,8 +93,7 @@ public class OldMapiSocket extends AbstractSocket {
             while (len > 0) {
                 s = inStream.read(b, off, len);
                 if (s == -1) {
-                    // if we have read something before, we should have been
-                    // able to read the whole, so make this fatal
+                    // if we have read something before, we should have been able to read the whole, so make this fatal
                     if (off > 0) {
                         throw new IOException("Read from " + connection.getHostname() + ":" +
                                 connection.getPort() + ": Incomplete block read from stream");
@@ -207,7 +206,7 @@ public class OldMapiSocket extends AbstractSocket {
 
         public long skip(long n) throws IOException {
             long skip = n;
-            int t = 0;
+            int t;
             while (skip > 0) {
                 t = available();
                 if (skip > t) {
@@ -248,9 +247,8 @@ public class OldMapiSocket extends AbstractSocket {
         }
 
         /**
-         * writeBlock puts the data in the block on the stream.  The
-         * boolean last controls whether the block is sent with an
-         * indicator to note it is the last block of a sequence or not.
+         * writeBlock puts the data in the block on the stream. The boolean last controls whether the block is sent with
+         * an indicator to note it is the last block of a sequence or not.
          *
          * @param last whether this is the last block
          * @throws IOException if writing to the stream failed
@@ -259,15 +257,13 @@ public class OldMapiSocket extends AbstractSocket {
             if (last) {
                 // always fits, because of BLOCK's size
                 blocksize = (short) writePos;
-                // this is the last block, so encode least
-                // significant bit in the first byte (little-endian)
+                // this is the last block, so encode least significant bit in the first byte (little-endian)
                 blklen[0] = (byte) (blocksize << 1 & 0xFF | 1);
                 blklen[1] = (byte) (blocksize >> 7);
             } else {
                 // always fits, because of BLOCK's size
                 blocksize = (short) BLOCK;
-                // another block will follow, encode least
-                // significant bit in the first byte (little-endian)
+                // another block will follow, encode least significant bit in the first byte (little-endian)
                 blklen[0] = (byte) (blocksize << 1 & 0xFF);
                 blklen[1] = (byte) (blocksize >> 7);
             }

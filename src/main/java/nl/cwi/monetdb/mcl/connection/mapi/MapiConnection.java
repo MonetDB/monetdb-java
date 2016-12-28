@@ -222,11 +222,6 @@ public class MapiConnection extends MonetConnection {
     }
 
     @Override
-    public void setServerMaxRows(int maxRows) throws SQLException {
-        this.sendControlCommand(ControlCommands.REPLY_SIZE, maxRows);
-    }
-
-    @Override
     public List<String> connect(String user, String pass) throws IOException, ProtocolException, MCLException {
         // Wrap around the internal connect that needs to know if it should really make a TCP connection or not.
         List<String> res = connect(this.hostname, this.port, user, pass, true);

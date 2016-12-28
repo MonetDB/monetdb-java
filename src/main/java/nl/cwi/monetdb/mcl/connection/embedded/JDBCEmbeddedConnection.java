@@ -11,8 +11,6 @@ import nl.cwi.monetdb.mcl.responses.IResponse;
  */
 public class JDBCEmbeddedConnection extends MonetDBEmbeddedConnection {
 
-    private int maxRows = Integer.MAX_VALUE;
-
     private long lastResultSetPointer;
 
     private final ServerResponses[] lineResponse = new ServerResponses[4];
@@ -29,10 +27,6 @@ public class JDBCEmbeddedConnection extends MonetDBEmbeddedConnection {
 
     protected JDBCEmbeddedConnection(long connectionPointer) {
         super(connectionPointer);
-    }
-
-    void setMaxRows(int maxRows) {
-        this.maxRows = maxRows;
     }
 
     public ServerResponses getNextServerResponse() {
@@ -85,6 +79,10 @@ public class JDBCEmbeddedConnection extends MonetDBEmbeddedConnection {
         this.sendCloseCommandInternal(this.connectionPointer, commandId);
     }
 
+    void sendReplySizeCommand(int size) {
+        this.sendReplySizeCommandInternal(this.connectionPointer, size);
+    }
+
     private native void getNextTableHeaderInternal(long resultSetPointer, String[] columnNames, int[] columnLengths,
                                                    String[] types, String[] tableNames);
 
@@ -98,4 +96,6 @@ public class JDBCEmbeddedConnection extends MonetDBEmbeddedConnection {
     private native void sendReleaseCommandInternal(long connectionPointer, int commandId);
 
     private native void sendCloseCommandInternal(long connectionPointer, int commandId);
+
+    private native void sendReplySizeCommandInternal(long connectionPointer, int size);
 }

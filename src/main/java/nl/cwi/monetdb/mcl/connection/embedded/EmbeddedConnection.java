@@ -85,7 +85,6 @@ public final class EmbeddedConnection extends MonetConnection {
 
     @Override
     public void sendControlCommand(ControlCommands con, int data) throws SQLException {
-        try {
             switch (con) {
                 case AUTO_COMMIT:
                     ((EmbeddedProtocol)protocol).getEmbeddedConnection().sendAutocommitCommand(data);
@@ -95,16 +94,13 @@ public final class EmbeddedConnection extends MonetConnection {
                     break;
                 case CLOSE:
                     ((EmbeddedProtocol)protocol).getEmbeddedConnection().sendCloseCommand(data);
+                    break;
                 case REPLY_SIZE:
-                    throw new SQLException("Cannot set reply size on a Embedded connection!", "M1M05");
+                    ((EmbeddedProtocol)protocol).getEmbeddedConnection().sendReplySizeCommand(data);
             }
-            protocol.waitUntilPrompt();
             if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
                 throw new SQLException(protocol.getRemainingStringLine(0));
             }
-        } catch (IOException ex) {
-            throw new SQLException(ex);
-        }
     }
 
     @Override
@@ -112,8 +108,4 @@ public final class EmbeddedConnection extends MonetConnection {
         return new MonetConnection.ResponseList(this.getDefFetchsize(), maxRows, resultSetType, resultSetConcurrency);
     }
 
-    @Override
-    public void setServerMaxRows(int maxRows) throws SQLException {
-        ((EmbeddedProtocol)protocol).getEmbeddedConnection().setMaxRows(maxRows);
-    }
 }

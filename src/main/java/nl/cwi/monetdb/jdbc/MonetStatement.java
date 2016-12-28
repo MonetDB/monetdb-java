@@ -668,12 +668,12 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		jdbcTypes[0] = MonetDriver.getJavaType(types[0]);
 
 		if (header instanceof UpdateResponse) {
-			String lastid = ((UpdateResponse)header).getLastid();
-			if (lastid.equals("-1")) {
+			int lastid = ((UpdateResponse)header).getLastid();
+			if (lastid ==-1) {
 				results = new String[1][1];
 			} else {
 				results = new String[1][1];
-				results[0][0] = lastid;
+				results[0][0] = Integer.toString(lastid);
 			}
 		} else {
 			results = new String[1][1];
@@ -869,7 +869,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	public int getUpdateCount() throws SQLException {
 		int ret = -1;
 		if (header instanceof UpdateResponse) {
-			ret = ((UpdateResponse)header).getCount();
+			ret =  ((UpdateResponse)header).getCount();
 		} else if (header instanceof SchemaResponse) {
 			ret = ((SchemaResponse)header).getState();
 		}

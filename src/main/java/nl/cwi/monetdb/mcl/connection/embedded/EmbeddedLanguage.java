@@ -8,9 +8,9 @@ import nl.cwi.monetdb.mcl.connection.IMonetDBLanguage;
 public enum EmbeddedLanguage implements IMonetDBLanguage {
 
     /** the SQL language */
-    LANG_SQL(null, "sql"),
+    LANG_SQL(new String[]{null, null, null}, "sql"),
     /** an unknown language */
-    LANG_UNKNOWN(null, "unknown");
+    LANG_UNKNOWN(new String[]{null, null, null}, "unknown");
 
     EmbeddedLanguage(String[] queryTemplates, String representation) {
         this.queryTemplates = queryTemplates;
@@ -23,7 +23,7 @@ public enum EmbeddedLanguage implements IMonetDBLanguage {
 
     @Override
     public String getQueryTemplateIndex(int index) {
-        return queryTemplates[index];
+        return this.queryTemplates[index];
     }
 
     @Override
@@ -33,7 +33,7 @@ public enum EmbeddedLanguage implements IMonetDBLanguage {
 
     @Override
     public String[] getQueryTemplates() {
-        return queryTemplates;
+        return this.queryTemplates;
     }
 
     @Override

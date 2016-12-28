@@ -10,17 +10,17 @@ package nl.cwi.monetdb.mcl.responses;
  */
 public class UpdateResponse implements IResponse {
 
-    private final String lastid;
+    private final int lastid;
 
     private final int count;
 
-    public UpdateResponse(String id, int cnt) {
+    public UpdateResponse(int lastid, int count) {
         // fill the blank finals
-        this.lastid = id;
-        this.count = cnt;
+        this.lastid = lastid;
+        this.count = count;
     }
 
-    public String getLastid() {
+    public int getLastid() {
         return lastid;
     }
 

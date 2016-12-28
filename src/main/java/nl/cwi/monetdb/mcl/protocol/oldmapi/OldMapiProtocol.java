@@ -96,7 +96,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     @Override
     public UpdateResponse getNextUpdateResponse() throws ProtocolException {
         int count = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
-        String lastId = OldMapiStartOfHeaderParser.GetNextResponseDataAsString(this);
+        int lastId = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //TODO test this!!
         return new UpdateResponse(lastId, count);
     }
 
