@@ -10,10 +10,6 @@ import java.sql.*;
 import java.io.*;
 import java.util.*;
 
-import nl.cwi.monetdb.mcl.connection.DeleteMe;
-import nl.cwi.monetdb.mcl.io.AbstractMCLReader;
-import nl.cwi.monetdb.mcl.io.AbstractMCLWriter;
-
 /**
  * This example demonstrates how the MonetDB JDBC driver can facilitate
  * in performing COPY INTO sequences.  This is mainly meant to show how
@@ -47,7 +43,7 @@ public class SQLcopyinto {
 		// of course also be done simultaneously with the JDBC
 		// connection being kept connected
 
-		DeleteMe server = new DeleteMe("localhost", 50000, "monetdb", "monetdb", false, "sql", "SHA256");
+		/*DeleteMe server = new DeleteMe("localhost", 50000, "monetdb", "monetdb", false, "sql", "SHA256");
 
 		server.setDatabase("database");
 		server.setLanguage("sql");
@@ -107,7 +103,7 @@ public class SQLcopyinto {
 		// free resources, close the statement
 		stmt.close();
 		// close the connection with the database
-		con.close();
+		con.close();*/
 
 	}
 }

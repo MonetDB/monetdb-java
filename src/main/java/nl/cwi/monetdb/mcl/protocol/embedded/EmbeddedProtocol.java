@@ -1,7 +1,7 @@
 package nl.cwi.monetdb.mcl.protocol.embedded;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.connection.embedded.JDBCEmbeddedConnection;
+import nl.cwi.monetdb.embedded.env.JDBCEmbeddedConnection;
 import nl.cwi.monetdb.mcl.protocol.*;
 import nl.cwi.monetdb.mcl.responses.AutoCommitResponse;
 import nl.cwi.monetdb.mcl.responses.DataBlockResponse;

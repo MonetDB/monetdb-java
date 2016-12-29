@@ -55,9 +55,7 @@ public final class MonetDBConnectionFactory {
             if (password == null || password.trim().isEmpty())
                 throw new IllegalArgumentException("password should not be null or empty");
 
-            String portout = props.getProperty("portout");
-            boolean negative1 = false;
-            boolean failedparse1 = false;
+            boolean negative1 = false, failedparse1 = false;
             int port = 0;
             try {
                 port = Integer.parseInt(props.getProperty("port"));
@@ -71,11 +69,10 @@ public final class MonetDBConnectionFactory {
                 props.setProperty("port", MonetDriver.getPORT());
             }
 
-            String timout = props.getProperty("so_timeout", "0");
-            boolean negative2 = false;
-            boolean failedparse2 = false;
+            String timeout = props.getProperty("so_timeout", "0");
+            boolean negative2 = false, failedparse2 = false;
             try {
-                sockTimeout = Integer.parseInt(timout);
+                sockTimeout = Integer.parseInt(timeout);
             } catch (NumberFormatException e) {
                 sockTimeout = 0;
                 failedparse2 = true;
@@ -92,13 +89,13 @@ public final class MonetDBConnectionFactory {
                 throw new SQLException(e);
             }
             if(failedparse1) {
-                res.addWarning("Unable to parse port number from: " + portout, "M1M05");
+                res.addWarning("Unable to parse port number from: " + port, "M1M05");
             }
             if(negative1) {
                 res.addWarning("Negative port not allowed. Value ignored", "M1M05");
             }
             if(failedparse2) {
-                res.addWarning("Unable to parse socket timeout number from: " + timout, "M1M05");
+                res.addWarning("Unable to parse socket timeout number from: " + timeout, "M1M05");
             }
             if(negative2) {
                 res.addWarning("Negative socket timeout not allowed. Value ignored", "M1M05");
@@ -131,8 +128,7 @@ public final class MonetDBConnectionFactory {
                     res.addWarning(warning, "01M02");
                 }
             }
-            // apply NetworkTimeout value from legacy (pre 4.1) driver
-            // so_timeout calls
+            // apply NetworkTimeout value from legacy (pre 4.1) driver so_timeout calls
             if(!isEmbedded) {
                 res.setSoTimeout(sockTimeout);
             }

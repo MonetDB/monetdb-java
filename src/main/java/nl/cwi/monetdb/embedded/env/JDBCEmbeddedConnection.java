@@ -1,6 +1,5 @@
-package nl.cwi.monetdb.mcl.connection.embedded;
+package nl.cwi.monetdb.embedded.env;
 
-import nl.cwi.monetdb.embedded.env.MonetDBEmbeddedConnection;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
@@ -67,19 +66,19 @@ public class JDBCEmbeddedConnection extends MonetDBEmbeddedConnection {
         this.sendQueryInternal(this.connectionPointer, query, true);
     }
 
-    void sendAutocommitCommand(int flag) { //1 or 0
+    public void sendAutocommitCommand(int flag) { //1 or 0
         this.sendAutocommitCommandInternal(this.connectionPointer, flag);
     }
 
-    void sendReleaseCommand(int commandId) {
+    public void sendReleaseCommand(int commandId) {
         this.sendReleaseCommandInternal(this.connectionPointer, commandId);
     }
 
-    void sendCloseCommand(int commandId) {
+    public void sendCloseCommand(int commandId) {
         this.sendCloseCommandInternal(this.connectionPointer, commandId);
     }
 
-    void sendReplySizeCommand(int size) {
+    public void sendReplySizeCommand(int size) {
         this.sendReplySizeCommandInternal(this.connectionPointer, size);
     }
 
