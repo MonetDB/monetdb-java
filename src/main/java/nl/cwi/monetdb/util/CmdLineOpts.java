@@ -8,28 +8,34 @@
 
 package nl.cwi.monetdb.util;
 
-import java.util.*;
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 public class CmdLineOpts {
 	/** the arguments we handle */
-	private Map<String, OptionContainer> opts = new HashMap<String, OptionContainer>();
+	private Map<String, OptionContainer> opts = new HashMap<>();
 	/** the options themself */
-	private List<OptionContainer> options = new ArrayList<OptionContainer>();
-	
+	private List<OptionContainer> options = new ArrayList<>();
+
 	/** no arguments */
-	public static int CAR_ZERO		= 0;
+	public static int CAR_ZERO	= 0;
 	/** always one argument */
-	public static int CAR_ONE		= 1;
+	public static int CAR_ONE	= 1;
 	/** zero or one argument */
 	public static int CAR_ZERO_ONE	= 2;
 	/** zero or many arguments */
 	public static int CAR_ZERO_MANY	= 3;
 	/** one or many arguments */
 	public static int CAR_ONE_MANY	= 4;
-	
-	public CmdLineOpts() {
-	}
+
+	public CmdLineOpts() {}
 
 	public void addOption(String shorta, String longa, int type, String defaulta, String descriptiona)
 			throws OptionsException {
@@ -68,8 +74,8 @@ public class CmdLineOpts {
 			for (Enumeration<?> e = prop.propertyNames(); e.hasMoreElements(); ) {
 				String key = (String) e.nextElement();
 				OptionContainer option = opts.get(key);
-				if (option == null) throw
-					new OptionsException("Unknown option: " + key);
+				if (option == null)
+					throw new OptionsException("Unknown option: " + key);
 				option.resetArguments();
 				option.addArgument(prop.getProperty(key));
 			}
@@ -193,7 +199,7 @@ public class CmdLineOpts {
 			// yes, we don't care about branch mispredictions here ;)
 			if (maxlen < len) maxlen = len;
 		}
-		
+
 		// get the individual strings
 		StringBuilder ret = new StringBuilder();
 		for (OptionContainer oc : options) {
@@ -276,7 +282,7 @@ public class CmdLineOpts {
 		boolean present;
 
 		public OptionContainer(String shorta, String longa, int cardinality, String defaulta, String descriptiona)
-				throws IllegalArgumentException {
+			throws IllegalArgumentException {
 			this.cardinality = cardinality;
 			this.shorta = shorta;
 			this.longa = longa;
@@ -284,8 +290,8 @@ public class CmdLineOpts {
 			this.descriptiona = descriptiona;
 			this.present = false;
 
-			if (cardinality != CAR_ZERO && cardinality != CAR_ONE && cardinality != CAR_ZERO_ONE
-					&& cardinality != CAR_ZERO_MANY && cardinality != CAR_ONE_MANY)
+			if (cardinality != CAR_ZERO && cardinality != CAR_ONE && cardinality != CAR_ZERO_ONE &&
+					cardinality != CAR_ZERO_MANY && cardinality != CAR_ONE_MANY)
 				throw new IllegalArgumentException("unknown cardinality");
 			if (shorta != null && shorta.length() != 1) throw
 				new IllegalArgumentException("short option should consist of exactly one character");
@@ -299,7 +305,6 @@ public class CmdLineOpts {
 			}
 
 			name = (longa != null) ? longa : shorta;
-			
 			options.add(this);
 		}
 

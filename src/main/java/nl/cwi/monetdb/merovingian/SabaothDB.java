@@ -8,11 +8,11 @@
 
 package nl.cwi.monetdb.merovingian;
 
-import java.util.*;
+import java.util.Date;
 
 /**
  * Implementation of the Sabaoth C-struct as Java object.
- * 
+ *
  * This Class implements a parser for the string representation of a
  * sabaoth information struct as returned by monetdbd.
  * <br />
@@ -56,6 +56,7 @@ public class SabaothDB {
 	private double crashAvg10;
 	/** Average of crashes in the last 30 start attempts */
 	private double crashAvg30;
+
 	/** The serialised format header */
 	private final String sabdbhdr = "sabdb:";
 

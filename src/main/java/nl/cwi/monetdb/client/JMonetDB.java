@@ -8,9 +8,13 @@
 
 package nl.cwi.monetdb.client;
 
-import nl.cwi.monetdb.util.*;
-import nl.cwi.monetdb.merovingian.*;
-import java.util.*;
+import nl.cwi.monetdb.merovingian.Control;
+import nl.cwi.monetdb.merovingian.SabaothDB;
+import nl.cwi.monetdb.util.CmdLineOpts;
+import nl.cwi.monetdb.util.OptionsException;
+
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This program mimics the monetdb tool.  It is meant as demonstration
@@ -22,7 +26,7 @@ import java.util.*;
 
 public class JMonetDB {
 
-	public final static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
 		CmdLineOpts copts = new CmdLineOpts();
 
 		// arguments which take exactly one argument
@@ -59,23 +63,21 @@ public class JMonetDB {
 
 		if (copts.getOption("help").isPresent()) {
 			System.out.print(
-"Usage java -jar jmonetdb.jar\n" +
-"                  -h host[:port] -p port -P passphrase [-X<opt>] -c cmd ...\n" +
-"or using long option equivalents --host --port --passphrase.\n" +
-"Arguments may be written directly after the option like -p50000.\n" +
-"\n" +
-"If no host and port are given, localhost and 50000 are assumed.\n" +
-"\n" +
-"OPTIONS\n" +
-copts.produceHelpMessage()
-);
+				"Usage java -jar jmonetdb.jar\n" +
+				"                  -h host[:port] -p port -P passphrase [-X<opt>] -c cmd ...\n" +
+				"or using long option equivalents --host --port --passphrase.\n" +
+				"Arguments may be written directly after the option like -p50000.\n" +
+				"\n" +
+				"If no host and port are given, localhost and 50000 are assumed.\n" +
+				"\n" +
+				"OPTIONS\n" +
+				copts.produceHelpMessage());
 			System.exit(0);
 		}
 
 		String pass = copts.getOption("passphrase").getArgument();
 
-		// we need the password from the user, fetch it with a pseudo
-		// password protector
+		// we need the password from the user, fetch it with a pseudo password protector
 		if (pass == null) {
 			char[] tmp = System.console().readPassword("passphrase: ");
 			if (tmp == null) {
@@ -95,9 +97,9 @@ copts.produceHelpMessage()
 		}
 		int port = Integer.parseInt(sport);
 
-		/*String hash; TODO check this, the hash algorithm is not being used
+		String hash = null;
 		if (copts.getOption("Xhash").isPresent())
-			hash = copts.getOption("Xhash").getArgument();*/
+			hash = copts.getOption("Xhash").getArgument();
 
 		if (!copts.getOption("command").isPresent()) {
 			System.err.println("need a command to execute (-c)");
@@ -113,24 +115,19 @@ copts.produceHelpMessage()
 		}
 		// FIXME: Control needs to respect Xhash
 
-		if (copts.getOption("Xdebug").isPresent()) {
-			String fname = copts.getOption("Xdebug").getArgument();
-			ctl.setDebug(fname);
-		}
-
 		String[] commands = copts.getOption("command").getArguments();
-		/*if (commands[0].equals("status")) {
+		if (commands[0].equals("status")) {
 			List<SabaothDB> sdbs;
 			if (commands.length == 1) {
 				sdbs = ctl.getAllStatuses();
 			} else {
-				sdbs = new ArrayList<>();
+				sdbs = new ArrayList<SabaothDB>();
 				for (int i = 1; i < commands.length; i++)
 					sdbs.add(ctl.getStatus(commands[i]));
 			}
 			for (SabaothDB sdb : sdbs) {
 				System.out.println(sdb.getName() + " " + sdb.getURI());
 			}
-		}*/
+		}
 	}
 }

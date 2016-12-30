@@ -10,6 +10,9 @@ import java.sql.*;
 import java.io.*;
 import java.util.*;
 
+import nl.cwi.monetdb.mcl.connection.mapi.MapiConnection;
+import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
+
 /**
  * This example demonstrates how the MonetDB JDBC driver can facilitate
  * in performing COPY INTO sequences.  This is mainly meant to show how
@@ -20,12 +23,9 @@ import java.util.*;
 
 public class SQLcopyinto {
 	public static void main(String[] args) throws Exception {
-		// make sure the driver is loaded
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
-		// request a connection suitable for Monet from the driver manager
-		// note that the database specifier is currently not implemented, for
-		// Monet itself can't access multiple databases.
-		// turn on debugging
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// request a connection suitable for Monet from the driver manager note that the database specifier is currently
+		// not implemented, for Monet itself can't access multiple databases turn on debugging
 		Connection con = DriverManager.getConnection("jdbc:monetdb://localhost/database", "monetdb", "monetdb");
 
 		// get a statement to execute on
@@ -43,24 +43,19 @@ public class SQLcopyinto {
 		// of course also be done simultaneously with the JDBC
 		// connection being kept connected
 
-		/*DeleteMe server = new DeleteMe("localhost", 50000, "monetdb", "monetdb", false, "sql", "SHA256");
-
-		server.setDatabase("database");
-		server.setLanguage("sql");
+		MapiConnection server = new MapiConnection(null, "database",null, "sql", true,"localhost", 50000 );
 
 		try {
-			List warning = 
-				server.connect( "monetdb", "monetdb");
+			List warning = server.connect("monetdb", "monetdb");
 			if (warning != null) {
 				for (Object aWarning : warning) {
 					System.out.println(aWarning.toString());
 				}
 			}
+			AbstractProtocol oldmMapiProtocol = server.getProtocol();
 
-			AbstractMCLReader in = server.getReader();
-			AbstractMCLWriter out = server.getWriter();
-
-			String error = in.waitForPrompt();
+			oldmMapiProtocol.waitUntilPrompt();
+			String error = oldmMapiProtocol.getRemainingStringLine(0);
 			if (error != null)
 				throw new Exception(error);
 
@@ -68,15 +63,13 @@ public class SQLcopyinto {
 			// the leading 's' is essential, since it is a protocol
 			// marker that should not be omitted, likewise the
 			// trailing semicolon
-			out.write('s');
-			out.write(query);
-			out.newLine();
+			oldmMapiProtocol.writeNextQuery("s", query, "\n");
+
 			for (int i = 0; i < 100; i++) {
-				out.write("" + i + ",val_" + i);
-				out.newLine();
+				oldmMapiProtocol.writeNextQuery(null, "" + i + ",val_" + i, "\n");
 			}
-			out.writeLine(""); // need this one for synchronisation over flush()
-			error = in.waitForPrompt();
+			oldmMapiProtocol.waitUntilPrompt();
+			error = oldmMapiProtocol.getRemainingStringLine(0);
 			if (error != null)
 				throw new Exception(error);
 			// disconnect from server
@@ -103,7 +96,7 @@ public class SQLcopyinto {
 		// free resources, close the statement
 		stmt.close();
 		// close the connection with the database
-		con.close();*/
+		con.close();
 
 	}
 }

@@ -3,7 +3,6 @@ package nl.cwi.monetdb.jdbc;
 import nl.cwi.monetdb.jdbc.types.INET;
 import nl.cwi.monetdb.jdbc.types.URL;
 import nl.cwi.monetdb.mcl.connection.*;
-import nl.cwi.monetdb.mcl.connection.helpers.Debugger;
 import nl.cwi.monetdb.mcl.connection.SenderThread;
 import nl.cwi.monetdb.mcl.connection.mapi.MapiLanguage;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
@@ -88,10 +87,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     /** Whether or not BLOB is mapped to BINARY within the driver */
     private final boolean blobIsBinary;
 
-    protected boolean isDebugging;
-
-    private Debugger ourSavior;
-
     protected AbstractProtocol protocol;
 
     /**
@@ -102,13 +97,12 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * @throws IOException if an error occurs
      */
     public MonetConnection(Properties props, String database, String hash, IMonetDBLanguage language,
-                           boolean blobIsBinary, boolean isDebugging) throws IOException {
+                           boolean blobIsBinary) throws IOException {
         this.conn_props = props;
         this.database = database;
         this.hash = hash;
         this.language = language;
         this.blobIsBinary = blobIsBinary;
-        this.isDebugging = isDebugging;
     }
 
     public IMonetDBLanguage getLanguage() {
@@ -117,18 +111,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
     public void setClosed(boolean closed) {
         this.closed = closed;
-    }
-
-    public boolean isDebugging() {
-        return isDebugging;
-    }
-
-    public void setDebugging(String filename) throws IOException {
-        ourSavior = new Debugger(filename);
-    }
-
-    public Debugger getOurSavior() {
-        return ourSavior;
     }
 
     public AbstractProtocol getProtocol() {
@@ -170,21 +152,13 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * Calling the method close on a Connection object that is already closed is a no-op.
      */
     @Override
-    public void close() {
+    public synchronized void close() {
         for (Statement st : statements.keySet()) {
             try {
                 st.close();
             } catch (SQLException e) {
                 // better luck next time!
             }
-        }
-        //close the debugger
-        try {
-            if (ourSavior != null) {
-                ourSavior.close();
-            }
-        } catch (IOException e) {
-            // ignore it
         }
         // close the socket or the embedded server
         try {

@@ -40,8 +40,8 @@ public class MapiConnection extends MonetConnection {
     private ByteOrder serverEndianness;
 
     public MapiConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
-                          boolean isDebugging, String hostname, int port) throws IOException {
-        super(props, database, hash, MapiLanguage.GetLanguageFromString(language), blobIsBinary, isDebugging);
+                          String hostname, int port) throws IOException {
+        super(props, database, hash, MapiLanguage.GetLanguageFromString(language), blobIsBinary);
         this.hostname = hostname;
         this.port = port;
     }
@@ -331,15 +331,6 @@ public class MapiConnection extends MonetConnection {
 
                 switch (u.getScheme()) {
                     case "monetdb":
-                        // this is a redirect to another (monetdb) server, which means a full reconnect avoid the debug
-                        // log being closed
-                        if (this.isDebugging) {
-                            this.isDebugging = false;
-                            this.close();
-                            this.isDebugging = true;
-                        } else {
-                            this.close();
-                        }
                         tmp = u.getPath();
                         if (tmp != null && tmp.length() != 0) {
                             tmp = tmp.substring(1).trim();

@@ -8,7 +8,23 @@
 
 package nl.cwi.monetdb.merovingian;
 
+import nl.cwi.monetdb.mcl.connection.MCLException;
+import nl.cwi.monetdb.mcl.connection.mapi.MapiConnection;
+import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
+import nl.cwi.monetdb.mcl.protocol.ServerResponses;
+
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.PrintStream;
+import java.net.Socket;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * A Control class to perform operations on a remote merovingian
@@ -28,7 +44,7 @@ import java.io.IOException;
  * @author Fabian Groffen
  * @version 1.0
  */
-public class Control { //TODO make me working again
+public class Control {
 	/** The host to connect to */
 	private final String host;
 	/** The port to connect to */
@@ -36,7 +52,6 @@ public class Control { //TODO make me working again
 	/** The passphrase to use when connecting */
 	private final String passphrase;
 	/** The file we should write MapiSocket debuglog to */
-	private String debug;
 
 	/**
 	 * Constructs a new Control object.
@@ -48,18 +63,6 @@ public class Control { //TODO make me working again
 		this.host = host;
 		this.port = port;
 		this.passphrase = passphrase;
-	}
-
-	/**
-	 * Instructs to write a MCL protocol debug log to the given file.
-	 * This affects any newly performed command, and can be changed
-	 * inbetween commands.  Passing null to this method disables the
-	 * debug log.
-	 *
-	 * @param filename the filename to write debug information to, or null
-	 */
-	public void setDebug(String filename) {
-		this.debug = filename;
 	}
 
 	private String controlHash(String pass, String salt) {
@@ -92,35 +95,28 @@ public class Control { //TODO make me working again
 	
 	final static private String RESPONSE_OK = "OK";
 
-	/*private List<String> sendCommand(String database, String command, boolean hasOutput)
+	private List<String> sendCommand(String database, String command, boolean hasOutput)
 			throws MerovingianException, IOException {
-		AbstractMCLReader min;
-		AbstractMCLWriter mout;
-		DeleteMe ms = new DeleteMe(host, port, "monetdb", "monetdb", false, "sql", "SHA256");
-		ms.setDatabase("merovingian");
-		ms.setLanguage("control");
-		if (debug != null)
-			ms.debug(debug);
+
+		MapiConnection server = new MapiConnection(null, "merovingian",null, "control", true, host, port );
+		AbstractProtocol protocol = server.getProtocol();
 		try {
-			ms.connect("monetdb", passphrase);
-			min = ms.getReader();
-			mout = ms.getWriter();
-		} catch (MCLParseException | MCLException e) {
+			server.connect("monetdb", passphrase);
+		} catch (ProtocolException | MCLException e) {
 			throw new MerovingianException(e.getMessage());
 		} catch (AssertionError e) { // mcl panics
-			ms.close();
+			server.close();
 			
-			// Try resultset protocol instead
+			// Try old protocol instead
 			Socket s;
 			PrintStream out;
 			BufferedReader in;
 			s = new Socket(host, port);
 			out = new PrintStream(s.getOutputStream());
-			in = new BufferedReader(
-					new InputStreamReader(s.getInputStream()));
+			in = new BufferedReader(new InputStreamReader(s.getInputStream()));
 			try {
 				/* login ritual, step 1: get challenge from server */
-				/*String response = in.readLine();
+				String response = in.readLine();
 				if (response == null)
 					throw new MerovingianException("server closed the connection");
 
@@ -152,12 +148,12 @@ public class Control { //TODO make me working again
 				}
 
 				/* send command, form is simple: "<db> <cmd>\n" */
-				//out.print(database + " " + command + "\n");
+				out.print(database + " " + command + "\n");
 
 				/* Response has the first line either "OK\n" or an error
 				 * message.  In case of a command with output, the data will
 				 * follow the first line */
-				/*response = in.readLine();
+				response = in.readLine();
 				if (response == null) {
 					throw new MerovingianException("server closed the connection");
 				}
@@ -180,34 +176,36 @@ public class Control { //TODO make me working again
 			}
 		}
 
-		mout.writeLine(database + " " + command + "\n");
+		protocol.writeNextQuery(null,database + " " + command, "\n");
 		ArrayList<String> l = new ArrayList<>();
-		String tmpLine = min.readLine();
-		int linetype = min.getLineType();
-		if (linetype == AbstractMCLReader.ERROR)
-			throw new MerovingianException(tmpLine.substring(6));
-		if (linetype != AbstractMCLReader.RESULT)
-			throw new MerovingianException("unexpected line: " + tmpLine);
-		if (!tmpLine.substring(1).equals(RESPONSE_OK))
-			throw new MerovingianException(tmpLine.substring(1));
-		tmpLine = min.readLine();
-		linetype = min.getLineType();
-		while (linetype != AbstractMCLReader.PROMPT) {
-			if (linetype != AbstractMCLReader.RESULT)
-				throw new MerovingianException("unexpected line: " +
-						tmpLine);
+		protocol.waitUntilPrompt();
+		ServerResponses next = protocol.getCurrentServerResponseHeader();
+		String line = protocol.getRemainingStringLine(0);
 
-			l.add(tmpLine.substring(1));
+		if (next == ServerResponses.ERROR)
+			throw new MerovingianException(line.substring(6));
+		if (next != ServerResponses.RESULT)
+			throw new MerovingianException("unexpected line: " + line);
+		if (!line.substring(1).equals(RESPONSE_OK))
+			throw new MerovingianException(line.substring(1));
 
-			tmpLine = min.readLine();
-			linetype = min.getLineType();
+		next = protocol.getCurrentServerResponseHeader();
+		line = protocol.getRemainingStringLine(0);
+		while (next != ServerResponses.PROMPT) {
+			if (next != ServerResponses.RESULT)
+				throw new MerovingianException("unexpected line: " + line);
+
+			l.add(line.substring(1));
+
+			next = protocol.getCurrentServerResponseHeader();
+			line = protocol.getRemainingStringLine(0);
 		}
 
-		ms.close();
+		server.close();
 		return l;
-	}*/
+	}
 
-	/*public void start(String database) throws MerovingianException, IOException {
+	public void start(String database) throws MerovingianException, IOException {
 		sendCommand(database, "start", false);
 	}
 
@@ -239,8 +237,8 @@ public class Control { //TODO make me working again
 		if (newname == null)
 			newname = ""; /* force error from merovingian */
 
-		/*sendCommand(database, "name=" + newname, false);
-	}*/
+		sendCommand(database, "name=" + newname, false);
+	}
 
 	/**
 	 * Sets property for database to value.  If value is null, the
@@ -259,16 +257,16 @@ public class Control { //TODO make me working again
 		if (value == null)
 			value = "";
 
-		//sendCommand(database, property + "=" + value, false);
+		sendCommand(database, property + "=" + value, false);
 	}
 
 	public void inheritProperty(String database, String property) throws MerovingianException, IOException {
 		setProperty(database, property, null);
 	}
 
-	/*public Properties getProperties(String database) throws MerovingianException, IOException {
+	public Properties getProperties(String database) throws MerovingianException, IOException {
 		Properties ret = new Properties();
-		//List<String> response = sendCommand(database, "get", true);
+		List<String> response = sendCommand(database, "get", true);
 		for (String responseLine : response) {
 			if (responseLine.startsWith("#"))
 				continue;
@@ -296,12 +294,12 @@ public class Control { //TODO make me working again
 	/**
 	 * Test whether a specific database exists. 
 	 * 
-	 * @param database The database name
+	 * @param database
 	 * @return true, iff database already exists.
 	 * @throws MerovingianException
 	 * @throws IOException
 	 */
-	/*public boolean exists(String database) throws MerovingianException, IOException {
+	public boolean exists(String database) throws MerovingianException, IOException {
 		List<SabaothDB> all = getAllStatuses();
 		for (SabaothDB db : all) {
 			if (db.getName().equals(database)) {
@@ -325,7 +323,7 @@ public class Control { //TODO make me working again
 	}
 
 	public List<URI> getAllNeighbours() throws MerovingianException, IOException {
-		List<URI> l = new ArrayList<URI>();
+		List<URI> l = new ArrayList<>();
 		List<String> response = sendCommand("anelosimus", "eximius", true);
 		try {
 			for (String responseLine : response) {
@@ -344,5 +342,5 @@ public class Control { //TODO make me working again
 			throw new MerovingianException(e.getMessage());
 		}
 		return Collections.unmodifiableList(l);
-	}*/
+	}
 }

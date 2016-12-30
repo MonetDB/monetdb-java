@@ -136,7 +136,11 @@ public class OldMapiProtocol extends AbstractProtocol {
 
     @Override
     public String getRemainingStringLine(int startIndex) {
-        return new String(this.lineBuffer.array(), startIndex, this.lineBuffer.limit() - startIndex);
+        if(this.lineBuffer.limit() > startIndex) {
+            return new String(this.lineBuffer.array(), startIndex, this.lineBuffer.limit() - startIndex);
+        } else {
+            return null;
+        }
     }
 
     @Override

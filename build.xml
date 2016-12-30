@@ -31,7 +31,6 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
   <property name="util-package"         value="nl/cwi/monetdb/util" />
   <property name="mero-control-package" value="nl/cwi/monetdb/merovingian" />
 
-  <property file="build.local.properties" />
   <property file="build.properties" />
 
   <property name="jdbc-jar"
@@ -258,7 +257,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
   </target>
 
   <!--
-  This generates MonetDriver.java from its ".java.in" equivalents.  It's
+  This generates MonetDriver.java.in from its ".java.in" equivalents.  It's
   required for importing the driver version properties.
   -->
   <target name="driver" depends="prepare" unless="uptodate.drivers">
@@ -282,7 +281,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
     <!-- now copy and filter the file -->
   	<copy file="${srcdir}/${jdbc-package}/MonetDriver.java.in"
   	  overwrite="true"
-  	  tofile="${srcdir}/${jdbc-package}/MonetDriver.java"
+  	  tofile="src/main/java/nl/cwi/monetdb/jdbc/MonetDriver.java.in"
   	  filtering="yes" />
 
     <echo message="Configured build for the ${JDBC_MAJOR}.${JDBC_MINOR} (${JDBC_VER_SUFFIX}) edition driver" />

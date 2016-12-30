@@ -27,7 +27,7 @@ public class SQLExporter extends Exporter {
 	private Stack<String> lastSchema;
 
 	public final static int TYPE_OUTPUT	= 1;
-	public final static int VALUE_INSERT = 0;
+	public final static int VALUE_INSERT	= 0;
 	public final static int VALUE_COPY	= 1;
 	public final static int VALUE_TABLE	= 2;
 
@@ -48,7 +48,7 @@ public class SQLExporter extends Exporter {
 	 * @throws SQLException if a database related error occurs
 	 */
 	public void dumpSchema(DatabaseMetaData dbmd, String type, String catalog, String schema, String name)
-			throws SQLException {
+		throws SQLException {
 		assert dbmd != null;
 		assert type != null;
 		assert schema != null;
@@ -175,13 +175,13 @@ public class SQLExporter extends Exporter {
 			// print column type, optional length and scale, optional Not NULL, optional default value
 			out.print(sb.toString());
 
-			sb.delete(0, sb.length());	// clear the stringbuffer for next columns
+			sb.delete(0, sb.length());	// clear the stringbuffer for next column
 		}
 		cols.close();
 
 		// add the primary key constraint definition
 		// unfortunately some idiot defined that getPrimaryKeys()
-		// returns the primary key column sorted by column name, not
+		// returns the primary key columns sorted by column name, not
 		// key sequence order.  So we have to sort ourself :(
 		cols = dbmd.getPrimaryKeys(catalog, schema, name);
 		// first make an 'index' of the KEY_SEQ column
@@ -466,7 +466,10 @@ public class SQLExporter extends Exporter {
 		strbuf.append('|');
 		for (int j = 1; j < width.length; j++) {
 			String colLabel = md.getColumnLabel(j);
-			strbuf.append(' ').append(colLabel).append(repeat(' ', width[j] - colLabel.length())).append(" |");
+			strbuf.append(' ');
+			strbuf.append(colLabel);
+			strbuf.append(repeat(' ', width[j] - colLabel.length()));
+			strbuf.append(" |");
 		}
 		// print the header text
 		out.println(outsideLine);

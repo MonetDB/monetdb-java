@@ -8,12 +8,37 @@
 
 package nl.cwi.monetdb.client;
 
-import nl.cwi.monetdb.util.*;
-import java.sql.*;
-import java.io.*;
-import java.util.*;
-import java.util.zip.*;
-import java.net.*;
+import nl.cwi.monetdb.util.CmdLineOpts;
+import nl.cwi.monetdb.util.Exporter;
+import nl.cwi.monetdb.util.OptionsException;
+import nl.cwi.monetdb.util.SQLExporter;
+import nl.cwi.monetdb.util.XMLExporter;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.sql.Connection;
+import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+import java.util.zip.GZIPInputStream;
 
 /**
  * This program acts like an extended client program for MonetDB. Its
@@ -35,7 +60,7 @@ public final class JdbcClient {
 	private static Exporter exporter;
 	private static DatabaseMetaData dbmd;
 
-	public final static void main(String[] args) throws Exception {
+	public static void main(String[] args) throws Exception {
 		CmdLineOpts copts = new CmdLineOpts();
 
 		// arguments which take exactly one argument
@@ -133,7 +158,7 @@ public final class JdbcClient {
 			System.exit(1);
 		}
 		// we can actually compare pointers (objects) here
-		if (user != null && !user.equals(copts.getOption("user").getArgument())) pass = null;
+		if (!Objects.equals(user, copts.getOption("user").getArgument())) pass = null;
 
 		if (copts.getOption("help").isPresent()) {
 			System.out.print(
@@ -194,8 +219,7 @@ public final class JdbcClient {
 			host = host + ":" + copts.getOption("port").getArgument();
 		}
 
-		// make sure the driver is loaded
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		//Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
 
 		// build the extra arguments of the JDBC connect string
 		String attr = "?";
@@ -250,7 +274,7 @@ public final class JdbcClient {
 			dbmd = null;
 		}
 		stmt = con.createStatement();
-		
+
 		// see if we will have to perform a database dump (only in SQL mode)
 		if ("sql".equals(lang) && copts.getOption("dump").isPresent()) {
 			ResultSet tbl;
@@ -508,14 +532,8 @@ public final class JdbcClient {
 	 * @throws IOException if an IO exception occurs
 	 * @throws SQLException if a database related error occurs
 	 */
-	public static void processInteractive(
-		boolean hasFile,
-		boolean doEcho,
-		boolean scolonterm,
-		String user
-	)
-		throws IOException, SQLException
-	{
+	public static void processInteractive(boolean hasFile, boolean doEcho, boolean scolonterm, String user)
+		throws IOException, SQLException {
 		// an SQL stack keeps track of ( " and '
 		SQLStack stack = new SQLStack();
 		// a query part is a line of an SQL query
@@ -738,12 +756,8 @@ public final class JdbcClient {
 	 * @param showTiming flag to specify if timing information nees to be printed
 	 * @throws SQLException if a database related error occurs
 	 */
-	private static void executeQuery(String query,
-			Statement stmt,
-			PrintWriter out,
-			boolean showTiming)
-		throws SQLException
-	{
+	private static void executeQuery(String query, Statement stmt, PrintWriter out, boolean showTiming)
+		throws SQLException {
 		// warnings generated during querying
 		SQLWarning warn;
 		long startTime = (showTiming ? System.currentTimeMillis() : 0), finishTime;
@@ -916,11 +930,7 @@ public final class JdbcClient {
 	 * @param scolonterm whether a ';' makes this query part complete
 	 * @return a QueryPart object containing the results of this parse
 	 */
-	private static QueryPart scanQuery(
-			String query,
-			SQLStack stack,
-			boolean scolonterm)
-	{
+	private static QueryPart scanQuery(String query, SQLStack stack, boolean scolonterm) {
 		// examine string, char for char
 		boolean wasInString = (stack.peek() == '\'');
 		boolean wasInIdentifier = (stack.peek() == '"');
@@ -1101,7 +1111,7 @@ class Table {
 	final String name;
 	final String type;
 	final String fqname;
-	List<Table> needs = new ArrayList<>();
+	List<Table> needs = new ArrayList<Table>();
 
 	Table(String schem, String name, String type) {
 		this.schem = schem;
@@ -1123,9 +1133,9 @@ class Table {
 
 	List<Table> requires(List<Table> existingTables) {
 		if (existingTables == null || existingTables.isEmpty())
-			return new ArrayList<>(needs);
+			return new ArrayList<Table>(needs);
 
-		List<Table> req = new ArrayList<>();
+		List<Table> req = new ArrayList<Table>();
 		for (Table n : needs) {
 			if (!existingTables.contains(n))
 				req.add(n);
@@ -1165,7 +1175,6 @@ class Table {
 	public String toString() {
 		return fqname;
 	}
-
 
 	static Table findTable(String fqname, List<Table> list) {
 		for (Table l : list) {
