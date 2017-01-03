@@ -1694,12 +1694,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public ResultSet getProcedures(
-		String catalog,
-		String schemaPattern,
-		String procedureNamePattern
-	) throws SQLException
-	{
+	public ResultSet getProcedures(String catalog, String schemaPattern, String procedureNamePattern)
+			throws SQLException {
 		StringBuilder query = new StringBuilder(980);
 		query.append("SELECT cast(null as varchar(1)) AS \"PROCEDURE_CAT\", " +
 			"\"schemas\".\"name\" AS \"PROCEDURE_SCHEM\", " +
@@ -1800,12 +1796,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @see #getSearchStringEscape
 	 */
 	@Override
-	public ResultSet getProcedureColumns(
-		String catalog,
-		String schemaPattern,
-		String procedureNamePattern,
-		String columnNamePattern
-	) throws SQLException {
+	public ResultSet getProcedureColumns(String catalog, String schemaPattern, String procedureNamePattern,
+                                         String columnNamePattern) throws SQLException {
 		StringBuilder query = new StringBuilder(2900);
 		query.append("SELECT cast(null as varchar(1)) AS \"PROCEDURE_CAT\", " +
 			"\"schemas\".\"name\" AS \"PROCEDURE_SCHEM\", " +
@@ -1932,13 +1924,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database-access error occurs.
 	 */
 	@Override
-	public ResultSet getTables(
-		String catalog,
-		String schemaPattern,
-		String tableNamePattern,
-		String types[]
-	) throws SQLException
-	{
+	public ResultSet getTables(String catalog, String schemaPattern, String tableNamePattern, String types[])
+            throws SQLException {
 		// as of Jul2015 release the sys.tables.type values (0 through 6) is extended with new values 10, 11, 20, and 30 (for system and temp tables/views).
 		// as of Jul2015 release we also have a new table: sys.table_types with names for the new table types
 		// for correct behavior we need to know if the server is using the old (pre Jul2015) or new sys.tables.type values
@@ -2035,9 +2022,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
-	public ResultSet getSchemas(String catalog, String schemaPattern)
-		throws SQLException
-	{
+	public ResultSet getSchemas(String catalog, String schemaPattern) throws SQLException {
 		StringBuilder query = new StringBuilder(170);
 		query.append("SELECT \"name\" AS \"TABLE_SCHEM\", " +
 				"cast(null as char(1)) AS \"TABLE_CATALOG\" " +
@@ -2183,13 +2168,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @see #getSearchStringEscape
 	 */
 	@Override
-	public ResultSet getColumns(
-		String catalog,
-		String schemaPattern,
-		String tableNamePattern,
-		String columnNamePattern
-	) throws SQLException
-	{
+	public ResultSet getColumns(String catalog, String schemaPattern, String tableNamePattern, String columnNamePattern)
+            throws SQLException {
 		StringBuilder query = new StringBuilder(2450);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
@@ -2274,13 +2254,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
-	public ResultSet getColumnPrivileges(
-		String catalog,
-		String schemaPattern,
-		String tableNamePattern,
-		String columnNamePattern
-	) throws SQLException
-	{
+	public ResultSet getColumnPrivileges(String catalog, String schemaPattern, String tableNamePattern,
+                                         String columnNamePattern) throws SQLException {
 		StringBuilder query = new StringBuilder(1100);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
@@ -2363,12 +2338,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
-	public ResultSet getTablePrivileges(
-		String catalog,
-		String schemaPattern,
-		String tableNamePattern
-	) throws SQLException
-	{
+	public ResultSet getTablePrivileges(String catalog, String schemaPattern, String tableNamePattern)
+            throws SQLException {
 		StringBuilder query = new StringBuilder(1000);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
@@ -2452,14 +2423,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
-	public ResultSet getBestRowIdentifier(
-		String catalog,
-		String schema,
-		String table,
-		int scope,
-		boolean nullable
-	) throws SQLException
-	{
+	public ResultSet getBestRowIdentifier(String catalog, String schema, String table, int scope, boolean nullable)
+            throws SQLException {
 		StringBuilder query = new StringBuilder(1500);
 		query.append("SELECT CAST(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
 			"\"columns\".\"name\" AS \"COLUMN_NAME\", " +
@@ -2532,12 +2497,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
-	public ResultSet getVersionColumns(
-		String catalog,
-		String schema,
-		String table
-	) throws SQLException
-	{
+	public ResultSet getVersionColumns(String catalog, String schema, String table) throws SQLException {
 		// MonetDB currently does not have columns which update themselves, so return an empty ResultSet
 		String query =
 		"SELECT CAST(0 as smallint) AS \"SCOPE\", " +
@@ -2575,12 +2535,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
-	public ResultSet getPrimaryKeys(
-		String catalog,
-		String schema,
-		String table
-	) throws SQLException
-	{
+	public ResultSet getPrimaryKeys(String catalog, String schema, String table) throws SQLException {
 		StringBuilder query = new StringBuilder(600);
 		query.append("SELECT cast(null AS varchar(1)) AS \"TABLE_CAT\", " +
 			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
@@ -2613,7 +2568,6 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 		return executeMetaDataQuery(query.toString());
 	}
-
 
 	private final static String keyQuery =
 	"SELECT cast(null AS varchar(1)) AS \"PKTABLE_CAT\", " +
@@ -2709,9 +2663,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
-	public ResultSet getImportedKeys(String catalog, String schema, String table)
-		throws SQLException
-	{
+	public ResultSet getImportedKeys(String catalog, String schema, String table) throws SQLException {
 		StringBuilder query = new StringBuilder(keyQuery.length() + 250);
 		query.append(keyQuery);
 
@@ -2792,9 +2744,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
-	public ResultSet getExportedKeys(String catalog, String schema, String table)
-		throws SQLException
-	{
+	public ResultSet getExportedKeys(String catalog, String schema, String table) throws SQLException {
 		StringBuilder query = new StringBuilder(keyQuery.length() + 250);
 		query.append(keyQuery);
 
@@ -2881,15 +2831,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @see #getImportedKeys
 	 */
 	@Override
-	public ResultSet getCrossReference(
-		String pcatalog,
-		String pschema,
-		String ptable,
-		String fcatalog,
-		String fschema,
-		String ftable
-	) throws SQLException
-	{
+	public ResultSet getCrossReference(String pcatalog, String pschema, String ptable, String fcatalog, String fschema,
+                                       String ftable) throws SQLException {
 		StringBuilder query = new StringBuilder(keyQuery.length() + 350);
 		query.append(keyQuery);
 
@@ -3062,14 +3005,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database occurs
 	 */
 	@Override
-	public ResultSet getIndexInfo(
-		String catalog,
-		String schema,
-		String table,
-		boolean unique,
-		boolean approximate
-	) throws SQLException
-	{
+	public ResultSet getIndexInfo(String catalog, String schema, String table, boolean unique, boolean approximate)
+            throws SQLException {
 		String table_row_count = "0";
 
 		if (!approximate && schema != null && table != null && schema.length() > 0 && table.length() > 0) {
@@ -3156,8 +3093,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 
 	/**
-	 * Does the database support the concurrency type in combination
-	 * with the given result set type?
+	 * Does the database support the concurrency type in combination with the given result set type?
 	 *
 	 * @param type - defined in java.sql.ResultSet
 	 * @param concurrency - type defined in java.sql.ResultSet
@@ -3165,9 +3101,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException - if a database access error occurs
 	*/
 	@Override
-	public boolean supportsResultSetConcurrency(int type, int concurrency)
-		throws SQLException
-	{
+	public boolean supportsResultSetConcurrency(int type, int concurrency) throws SQLException {
 		// These combinations are not supported!
 		if (type == ResultSet.TYPE_SCROLL_SENSITIVE)
 			return false;
@@ -3256,13 +3190,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *
 	 */
 	@Override
-	public ResultSet getUDTs(
-		String catalog,
-		String schemaPattern,
-		String typeNamePattern,
-		int[] types
-	) throws SQLException
-	{
+	public ResultSet getUDTs(String catalog, String schemaPattern, String typeNamePattern, int[] types)
+            throws SQLException {
 		StringBuilder query = new StringBuilder(990);
 		if (types != null && types.length > 0) {
 			query.append("SELECT * FROM (");
@@ -3336,8 +3265,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	/**
 	 * Retrieves whether this database supports savepoints.
 	 *
-	 * @return <code>true</code> if savepoints are supported;
-	 *		   <code>false</code> otherwise
+	 * @return <code>true</code> if savepoints are supported; <code>false</code> otherwise
 	 */
 	@Override
 	public boolean supportsSavepoints() {
@@ -3345,11 +3273,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Retrieves whether this database supports named parameters to callable
-	 * statements.
+	 * Retrieves whether this database supports named parameters to callable statements.
 	 *
-	 * @return <code>true</code> if named parameters are supported;
-	 *		   <code>false</code> otherwise
+	 * @return <code>true</code> if named parameters are supported; <code>false</code> otherwise
 	 */
 	@Override
 	public boolean supportsNamedParameters() {
@@ -3358,12 +3284,10 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Retrieves whether it is possible to have multiple <code>ResultSet</code> objects
-	 * returned from a <code>CallableStatement</code> object
-	 * simultaneously.
+	 * returned from a <code>CallableStatement</code> object simultaneously.
 	 *
 	 * @return <code>true</code> if a <code>CallableStatement</code> object
-	 *		   can return multiple <code>ResultSet</code> objects
-	 *		   simultaneously; <code>false</code> otherwise
+	 *		   can return multiple <code>ResultSet</code> objects simultaneously; <code>false</code> otherwise
 	 */
 	@Override
 	public boolean supportsMultipleOpenResults() {
@@ -3371,11 +3295,10 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Retrieves whether auto-generated keys can be retrieved after
-	 * a statement has been executed.
+	 * Retrieves whether auto-generated keys can be retrieved after a statement has been executed.
 	 *
-	 * @return <code>true</code> if auto-generated keys can be retrieved
-	 *		   after a statement has executed; <code>false</code> otherwise
+	 * @return <code>true</code> if auto-generated keys can be retrieved after a statement has executed;
+     * <code>false</code> otherwise
 	 */
 	@Override
 	public boolean supportsGetGeneratedKeys() {
@@ -3422,17 +3345,10 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public ResultSet getSuperTypes(
-		String catalog,
-		String schemaPattern,
-		String typeNamePattern
-	) throws SQLException
-	{
-		String query =
-		"SELECT cast(null as char(1)) AS \"TYPE_CAT\", '' AS \"TYPE_SCHEM\", '' AS \"TYPE_NAME\", " +
+	public ResultSet getSuperTypes(String catalog, String schemaPattern, String typeNamePattern) throws SQLException {
+		String query = "SELECT cast(null as char(1)) AS \"TYPE_CAT\", '' AS \"TYPE_SCHEM\", '' AS \"TYPE_NAME\", " +
 			"cast(null as char(1)) AS \"SUPERTYPE_CAT\", '' AS \"SUPERTYPE_SCHEM\", '' AS \"SUPERTYPE_NAME\" " +
 		"WHERE 1 = 0";
-
 		return executeMetaDataQuery(query);
 	}
 
@@ -3469,17 +3385,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public ResultSet getSuperTables(
-		String catalog,
-		String schemaPattern,
-		String tableNamePattern
-	) throws SQLException
-	{
-		String query =
-		"SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
-			"'' AS \"TABLE_SCHEM\", '' AS \"TABLE_NAME\", '' AS \"SUPERTABLE_NAME\" " +
-		"WHERE 1 = 0";
-
+	public ResultSet getSuperTables(String catalog, String schemaPattern, String tableNamePattern) throws SQLException {
+		String query = "SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
+			"'' AS \"TABLE_SCHEM\", '' AS \"TABLE_NAME\", '' AS \"SUPERTABLE_NAME\" WHERE 1 = 0";
 		return executeMetaDataQuery(query);
 	}
 
@@ -3553,15 +3461,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public ResultSet getAttributes(
-		String catalog,
-		String schemaPattern,
-		String typeNamePattern,
-		String attributeNamePattern
-	) throws SQLException
-	{
-		String query =
-		"SELECT cast(null as char(1)) AS \"TYPE_CAT\", '' AS \"TYPE_SCHEM\", '' AS \"TYPE_NAME\", " +
+	public ResultSet getAttributes(String catalog, String schemaPattern, String typeNamePattern,
+                                   String attributeNamePattern) throws SQLException {
+		String query = "SELECT cast(null as char(1)) AS \"TYPE_CAT\", '' AS \"TYPE_SCHEM\", '' AS \"TYPE_NAME\", " +
 			"'' AS \"ATTR_NAME\", CAST(0 as int) AS \"DATA_TYPE\", '' AS \"ATTR_TYPE_NAME\", CAST(0 as int) AS \"ATTR_SIZE\", " +
 			"CAST(0 as int) AS \"DECIMAL_DIGITS\", CAST(0 as int) AS \"NUM_PREC_RADIX\", CAST(0 as int) AS \"NULLABLE\", " +
 			"'' AS \"REMARKS\", '' AS \"ATTR_DEF\", CAST(0 as int) AS \"SQL_DATA_TYPE\", " +
@@ -3570,15 +3472,13 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"'' AS \"SCOPE_CATALOG\", '' AS \"SCOPE_SCHEMA\", '' AS \"SCOPE_TABLE\", " +
 			"CAST(0 as smallint) AS \"SOURCE_DATA_TYPE\" " +
 		"WHERE 1 = 0";
-
 		return executeMetaDataQuery(query);
 	}
 
 	/**
 	 * Retrieves whether this database supports the given result set holdability.
 	 *
-	 * @param holdability one of the following constants:
-	 *			<code>ResultSet.HOLD_CURSORS_OVER_COMMIT</code> or
+	 * @param holdability one of the following constants: <code>ResultSet.HOLD_CURSORS_OVER_COMMIT</code> or
 	 *			<code>ResultSet.CLOSE_CURSORS_AT_COMMIT</code>
 	 * @return <code>true</code> if so; <code>false</code> otherwise
 	 * @see Connection
@@ -3591,12 +3491,10 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Retrieves the default holdability of this <code>ResultSet</code>
-	 * object.
+	 * Retrieves the default holdability of this <code>ResultSet</code> object.
 	 *
-	 * @return the default holdability; either
-	 *		   <code>ResultSet.HOLD_CURSORS_OVER_COMMIT</code> or
-	 *		   <code>ResultSet.CLOSE_CURSORS_AT_COMMIT</code>
+	 * @return the default holdability; either <code>ResultSet.HOLD_CURSORS_OVER_COMMIT</code> or
+     * <code>ResultSet.CLOSE_CURSORS_AT_COMMIT</code>
 	 */
 	@Override
 	public int getResultSetHoldability() {
@@ -3674,9 +3572,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	/**
 	 * Indicates whether the SQLSTATEs returned by <code>SQLException.getSQLState</code>
 	 * is X/Open (now known as Open Group) SQL CLI or SQL:2003.
-	 * @return the type of SQLSTATEs, one of:
-	 *		  sqlStateXOpen or
-	 *		  sqlStateSQL
+	 * @return the type of SQLSTATEs, one of: sqlStateXOpen or sqlStateSQL
 	 */
 	@Override
 	public int getSQLStateType() {
@@ -3685,8 +3581,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Indicates whether updates made to a LOB are made on a copy or directly
-	 * to the LOB.
+	 * Indicates whether updates made to a LOB are made on a copy or directly to the LOB.
 	 * @return <code>true</code> if updates are made to a copy of the LOB;
 	 *		   <code>false</code> if updates are made directly to the LOB
 	 */
@@ -3711,9 +3606,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	//== 1.6 methods (JDBC 4)
 
 	/**
-	 * Indicates whether or not this data source supports the SQL ROWID
-	 * type, and if so the lifetime for which a RowId object remains
-	 * valid.
+	 * Indicates whether or not this data source supports the SQL ROWID type, and if so the lifetime for which a RowId
+     * object remains valid.
 	 *
 	 * @return ROWID_UNSUPPORTED for now
 	 */
@@ -3724,8 +3618,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Get the schema names available in this database.  The results
-	 * are ordered by schema name.
+	 * Get the schema names available in this database. The results are ordered by schema name.
 	 *
 	 * <P>The schema column is:
 	 *	<OL>
@@ -3733,8 +3626,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	<LI><B>TABLE_CATALOG</B> String => catalog name (may be null)
 	 *	</OL>
 	 *
-	 * @return ResultSet each row has a single String column that is a
-	 *         schema name
+	 * @return ResultSet each row has a single String column that is a schema name
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
@@ -3743,8 +3635,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Retrieves whether this database supports invoking user-defined or
-	 * vendor functions using the stored procedure escape syntax.
+	 * Retrieves whether this database supports invoking user-defined or vendor functions using the stored procedure
+     * escape syntax.
 	 *
 	 * @return true if so; false otherwise
 	 */
@@ -3787,8 +3679,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *
 	 * The ResultSet is sorted by the NAME column
 	 *
-	 * @return A ResultSet object; each row is a supported client info
-	 *         property, none in case of MonetDB's current JDBC driver
+	 * @return A ResultSet object; each row is a supported client info property, none in case of MonetDB's current JDBC
+     * driver
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -3852,12 +3744,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public ResultSet getFunctions(
-			String catalog,
-			String schemaPattern,
-			String functionNamePattern)
-		throws SQLException
-	{
+	public ResultSet getFunctions(String catalog, String schemaPattern, String functionNamePattern)
+            throws SQLException {
 		StringBuilder query = new StringBuilder(800);
 		query.append("SELECT cast(null as varchar(1)) AS \"FUNCTION_CAT\", " +
 			"\"schemas\".\"name\" AS \"FUNCTION_SCHEM\", " +
@@ -3952,13 +3840,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException - if a database access error occurs
 	 */
 	@Override
-	public ResultSet getFunctionColumns(
-			String catalog,
-			String schemaPattern,
-			String functionNamePattern,
-			String columnNamePattern)
-		throws SQLException
-	{
+	public ResultSet getFunctionColumns(String catalog, String schemaPattern, String functionNamePattern,
+                                        String columnNamePattern) throws SQLException {
 		StringBuilder query = new StringBuilder(2600);
 		query.append("SELECT DISTINCT CAST(null as char(1)) AS \"FUNCTION_CAT\", " +
 			"\"schemas\".\"name\" AS \"FUNCTION_SCHEM\", " +
@@ -4051,13 +3934,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public ResultSet getPseudoColumns(
-			String catalog,
-			String schemaPattern,
-			String tableNamePattern,
-			String columnNamePattern)
-		throws SQLException
-	{
+	public ResultSet getPseudoColumns(String catalog, String schemaPattern, String tableNamePattern,
+                                      String columnNamePattern) throws SQLException {
 		// MonetDB currently does not support pseudo or hidden columns, so return an empty ResultSet
 		String query =
 		"SELECT CAST(null as char(1)) AS \"TABLE_CAT\", " +

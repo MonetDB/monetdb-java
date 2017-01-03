@@ -234,7 +234,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		}
 	}
 
-	private boolean internalBatch(String batch, int[] counts, int offset, int max, BatchUpdateException e) throws BatchUpdateException {
+	private boolean internalBatch(String batch, int[] counts, int offset, int max, BatchUpdateException e)
+			throws BatchUpdateException {
 		try {
 			boolean type = internalExecute(batch);
 			int count = -1;
@@ -950,8 +951,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	@Override
 	public void setEscapeProcessing(boolean enable) throws SQLException {
 		if (enable) {
-			addWarning("setEscapeProcessing: JDBC escape syntax is not supported by this driver",
-					"01M22");
+			addWarning("setEscapeProcessing: JDBC escape syntax is not supported by this driver", "01M22");
 		}
 	}
 

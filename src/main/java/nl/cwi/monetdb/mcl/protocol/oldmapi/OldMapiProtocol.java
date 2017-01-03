@@ -1,3 +1,11 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
@@ -16,9 +24,6 @@ import java.io.IOException;
 import java.nio.CharBuffer;
 import java.util.Map;
 
-/**
- * Created by ferreira on 11/30/16.
- */
 public class OldMapiProtocol extends AbstractProtocol {
 
     private ServerResponses currentServerResponseHeader = ServerResponses.UNKNOWN;

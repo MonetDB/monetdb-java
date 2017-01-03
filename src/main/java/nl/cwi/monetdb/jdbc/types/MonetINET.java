@@ -25,7 +25,8 @@ import java.net.*;
  * This is probably meaningful only and only if the netmask is 32.  The
  * getNetmaskBits() method can be used to retrieve the subnet bits.
  */
-public class INET implements SQLData {
+public class MonetINET implements SQLData {
+
 	private String inet;
 
 	@Override

@@ -51,12 +51,12 @@ public class Test_Rsqldata {
 						System.out.println("" + i + ".\t<null>");
 					} else {
 						System.out.println("" + i + ".\t" + x.toString());
-						if (x instanceof INET) {
-							INET inet = (INET)x;
+						if (x instanceof MonetINET) {
+							MonetINET inet = (MonetINET)x;
 							System.out.println("\t" + inet.getAddress() + "/" + inet.getNetmaskBits());
 							System.out.println("\t" + inet.getInetAddress().toString());
-						} else if (x instanceof URL) {
-							URL url = (URL)x;
+						} else if (x instanceof MonetURL) {
+							MonetURL url = (MonetURL)x;
 							System.out.println("\t" + url.getURL().toString());
 						}
 					}

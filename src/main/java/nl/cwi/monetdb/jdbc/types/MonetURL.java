@@ -16,7 +16,8 @@ import java.net.*;
  * represents an URL, that is, a well-formed string conforming to
  * RFC2396.
  */
-public class URL implements SQLData {
+public class MonetURL implements SQLData {
+
 	private String url;
 
 	@Override

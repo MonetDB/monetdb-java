@@ -1,3 +1,11 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.mcl.responses;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
@@ -126,7 +134,10 @@ public class ResultSetResponse implements IIncompleteResponse {
         for (int i = 0; i < this.type.length; i++) {
             int javaSQLtype = MonetDriver.getJavaType(this.type[i]);
             if (javaSQLtype == Types.BLOB && con.getBlobAsBinary()) {
-                javaSQLtype = Types.BINARY;
+                javaSQLtype = Types.LONGVARBINARY;
+            }
+            if (javaSQLtype == Types.CLOB && con.getClobAsLongChar()) {
+                javaSQLtype = Types.LONGVARCHAR;
             }
             this.JdbcSQLTypes[i] = javaSQLtype;
         }

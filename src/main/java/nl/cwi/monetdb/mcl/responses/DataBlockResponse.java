@@ -1,10 +1,24 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.mcl.responses;
 
+import nl.cwi.monetdb.jdbc.MonetBlob;
+import nl.cwi.monetdb.jdbc.MonetClob;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.Types;
+import java.util.Arrays;
+import java.util.Calendar;
 
 /**
  * The DataBlockResponse is tabular data belonging to a
@@ -91,8 +105,30 @@ public class DataBlockResponse implements IIncompleteResponse {
                     case Types.DOUBLE:
                         this.data[i] = new double[numberOfRows];
                         break;
-                    default:
-                        this.data[i] = new Object[numberOfRows];
+                    case Types.DECIMAL:
+                        this.data[i] = new BigDecimal[numberOfRows];
+                        break;
+                    case Types.NUMERIC:
+                        this.data[i] = new BigInteger[numberOfRows];
+                        break;
+                    case Types.BLOB:
+                        this.data[i] = new MonetBlob[numberOfRows];
+                        break;
+                    case Types.CLOB:
+                        this.data[i] = new MonetClob[numberOfRows];
+                        break;
+                    case Types.TIME:
+                    case Types.TIME_WITH_TIMEZONE:
+                    case Types.DATE:
+                    case Types.TIMESTAMP:
+                    case Types.TIMESTAMP_WITH_TIMEZONE:
+                        this.data[i] = new Calendar[numberOfRows];
+                        break;
+                    case Types.LONGVARBINARY:
+                        this.data[i] = new byte[numberOfRows][];
+                        break;
+                    default: //CHAR, VARCHAR, OTHER
+                        this.data[i] = new String[numberOfRows];
                 }
             }
         }
@@ -194,12 +230,9 @@ public class DataBlockResponse implements IIncompleteResponse {
                 return Float.toString(((float[]) this.data[column])[this.blockLine]);
             case Types.DOUBLE:
                 return Double.toString(((double[]) this.data[column])[this.blockLine]);
-            case Types.CHAR:
-            case Types.VARCHAR:
-            case Types.CLOB:
-            case Types.OTHER:
-                return (String) ((Object[]) this.data[column])[this.blockLine];
-            default:
+            case Types.LONGVARBINARY:
+                return Arrays.toString(((byte[][]) this.data[column])[this.blockLine]);
+            default: //CHAR, VARCHAR, LONGVARCHAR, OTHER, BLOB, CLOB and others
                 return ((Object[]) this.data[column])[this.blockLine].toString();
         }
     }
@@ -209,17 +242,17 @@ public class DataBlockResponse implements IIncompleteResponse {
             case Types.BOOLEAN:
                 return ((boolean[]) this.data[column])[this.blockLine];
             case Types.TINYINT:
-                return (((byte[]) this.data[column])[this.blockLine]);
+                return ((byte[]) this.data[column])[this.blockLine];
             case Types.SMALLINT:
-                return (((short[]) this.data[column])[this.blockLine]);
+                return ((short[]) this.data[column])[this.blockLine];
             case Types.INTEGER:
-                return (((int[]) this.data[column])[this.blockLine]);
+                return ((int[]) this.data[column])[this.blockLine];
             case Types.BIGINT:
-                return (((long[]) this.data[column])[this.blockLine]);
+                return ((long[]) this.data[column])[this.blockLine];
             case Types.REAL:
-                return (((float[]) this.data[column])[this.blockLine]);
+                return ((float[]) this.data[column])[this.blockLine];
             case Types.DOUBLE:
-                return (((double[]) this.data[column])[this.blockLine]);
+                return ((double[]) this.data[column])[this.blockLine];
             default:
                 return ((Object[]) this.data[column])[this.blockLine];
         }

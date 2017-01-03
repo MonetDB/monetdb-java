@@ -29,12 +29,14 @@ import java.util.logging.Logger;
  * @version 0.1
  */
 public class MonetDataSource extends MonetWrapper implements DataSource {
-	private String description;
-	private int loginTimeout = 0;
+
 	private String user;
-	// insecure, but how to do it better?
-	private String password;
-	private String url;
+	private String password; // insecure, but how to do it better?
+    private String description = "MonetDB database";
+	private String url = "jdbc:monetdb://localhost/";
+    private int loginTimeout;
+    private String embeddedDirectory;
+    private final MonetDriver driver = new MonetDriver();
 
 	// the following properties are also standard:
 	// private String dataSourceName;
@@ -42,17 +44,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	// private String serverName;
 	// private String role;
 
-	private final MonetDriver driver;
-
-	/**
-	 * Constructor of a MonetDataSource which uses default settings for a connection.  You probably want to change this
-	 * setting using the method setURL.
-	 */
-	public MonetDataSource() {
-		description = "MonetDB database";
-		url = "jdbc:monetdb://localhost/";
-		driver = new MonetDriver();
-	}
+    public MonetDataSource() {}
 
 	/**
 	 * Attempts to establish a connection with the data source that this DataSource object represents.
@@ -75,12 +67,16 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 */
 	@Override
 	public Connection getConnection(String username, String password) throws SQLException {
-		if (loginTimeout > 0) {
-			/// could enable Socket.setSoTimeout(int timeout) here...
-		}
 		Properties props = new Properties();
 		props.put("user", username);
 		props.put("password", password);
+        if (loginTimeout > 0) {
+            props.put("so_timeout", Integer.toString(loginTimeout));
+        }
+		if(embeddedDirectory != null) {
+            props.put("embedded", "true");
+            props.put("directory", embeddedDirectory);
+        }
 		return driver.connect(url, props);
 	}
 
@@ -186,7 +182,25 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 		this.description = description;
 	}
 
-	/**
+    /**
+     * Gets the embedded connection directory. If null, then a MAPI connection will be created instead.
+     *
+     * @return The embedded connection directory String. If null, then a MAPI connection will be created instead.
+     */
+    public String getEmbeddedDirectory() {
+        return embeddedDirectory;
+    }
+
+    /**
+     * Sets the embedded connection directory, thus making the connection embedded.
+     *
+     * @param embeddedDirectory The embedded connection directory to set
+     */
+    public void setEmbeddedDirectory(String embeddedDirectory) {
+        this.embeddedDirectory = embeddedDirectory;
+    }
+
+    /**
 	 * Return the parent Logger of all the Loggers used by this data
 	 * source.  This should be the Logger farthest from the root Logger
 	 * that is still an ancestor of all of the Loggers used by this data

@@ -1,19 +1,24 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
 import nl.cwi.monetdb.jdbc.MonetBlob;
 import nl.cwi.monetdb.jdbc.MonetClob;
+import nl.cwi.monetdb.mcl.connection.helpers.GregorianCalendarParser;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.sql.Types;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-
-/**
- * Created by ferreira on 12/6/16.
- */
+import java.text.ParsePosition;
+import java.util.Calendar;
 final class OldMapiTupleLineParser {
 
     private static final char[] NULL_STRING = "NULL".toCharArray();
@@ -167,12 +172,6 @@ final class OldMapiTupleLineParser {
         return column;
     }
 
-    private static final SimpleDateFormat DateParser = new SimpleDateFormat("yyyy-MM-dd");
-
-    private static final SimpleDateFormat TimeParser = new SimpleDateFormat("HH:mm:ss");
-
-    private static final SimpleDateFormat TimestampParser = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-
     private static byte[] BinaryBlobConverter(String toParse) {
         int len = toParse.length() / 2;
         byte[] res = new byte[len];
@@ -181,6 +180,8 @@ final class OldMapiTupleLineParser {
         }
         return res;
     }
+
+    private static final ParsePosition Ppos = new ParsePosition(0);
 
     private static void OldMapiStringToJavaObjectConverter(String toParse, int lineNumber, Object columnArray,
                                                            int jDBCMapping) throws ProtocolException {
@@ -207,45 +208,40 @@ final class OldMapiTupleLineParser {
                 ((double[]) columnArray)[lineNumber] = Double.parseDouble(toParse);
                 break;
             case Types.DECIMAL:
-                ((Object[]) columnArray)[lineNumber] = new BigDecimal(toParse);
+                ((BigDecimal[]) columnArray)[lineNumber] = new BigDecimal(toParse);
                 break;
             case Types.NUMERIC:
-                ((Object[]) columnArray)[lineNumber] = new BigInteger(toParse);
+                ((BigInteger[]) columnArray)[lineNumber] = new BigInteger(toParse);
                 break;
             case Types.CHAR:
             case Types.VARCHAR:
+            case Types.LONGVARCHAR:
             case Types.OTHER:
-                ((Object[]) columnArray)[lineNumber] = toParse;
+                ((String[]) columnArray)[lineNumber] = toParse;
                 break;
             case Types.DATE:
-                try {
-                    ((Object[]) columnArray)[lineNumber] = DateParser.parse(toParse);
-                } catch (ParseException e) {
-                    throw new ProtocolException(e.getMessage());
-                }
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseDate(toParse, Ppos);
                 break;
             case Types.TIME:
-                try {
-                    ((Object[]) columnArray)[lineNumber] = TimeParser.parse(toParse);
-                } catch (ParseException e) {
-                    throw new ProtocolException(e.getMessage());
-                }
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTime(toParse, Ppos, false);
+                break;
+            case Types.TIME_WITH_TIMEZONE:
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTime(toParse, Ppos, true);
                 break;
             case Types.TIMESTAMP:
-                try {
-                    ((Object[]) columnArray)[lineNumber] = TimestampParser.parse(toParse);
-                } catch (ParseException e) {
-                    throw new ProtocolException(e.getMessage());
-                }
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTimestamp(toParse, Ppos, false);
+                break;
+            case Types.TIMESTAMP_WITH_TIMEZONE:
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTimestamp(toParse, Ppos, true);
                 break;
             case Types.CLOB:
-                ((Object[]) columnArray)[lineNumber] = new MonetClob(toParse);
+                ((MonetClob[]) columnArray)[lineNumber] = new MonetClob(toParse);
                 break;
             case Types.BLOB:
-                ((Object[]) columnArray)[lineNumber] = new MonetBlob(BinaryBlobConverter(toParse));
+                ((MonetBlob[]) columnArray)[lineNumber] = new MonetBlob(BinaryBlobConverter(toParse));
                 break;
-            case Types.BINARY:
-                ((Object[]) columnArray)[lineNumber] = BinaryBlobConverter(toParse);
+            case Types.LONGVARBINARY:
+                ((byte[][]) columnArray)[lineNumber] = BinaryBlobConverter(toParse);
                 break;
             default:
                 throw new ProtocolException("Unknown type!");

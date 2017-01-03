@@ -98,7 +98,7 @@ public class Control {
 	private List<String> sendCommand(String database, String command, boolean hasOutput)
 			throws MerovingianException, IOException {
 
-		MapiConnection server = new MapiConnection(null, "merovingian",null, "control", true, host, port );
+		MapiConnection server = new MapiConnection(null, "merovingian",null, "control", false, true, host, port );
 		AbstractProtocol protocol = server.getProtocol();
 		try {
 			server.connect("monetdb", passphrase);

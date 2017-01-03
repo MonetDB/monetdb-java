@@ -42,9 +42,6 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 *
 	 * After free has been called, any attempt to invoke a method other than free will result in a SQLException being
 	 * thrown. If free is called multiple times, the subsequent calls to free are treated as a no-op.
-	 *
-	 * @throws SQLException if an error occurs releasing the Blob's resources
-	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
 	@Override
 	public void free() throws SQLException {
@@ -56,7 +53,6 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 *
 	 * @return a stream containing the BLOB data
 	 * @throws SQLException if there is an error accessing the BLOB value
-	 * @throws SQLFeatureNotSupportedException if the JDBC driver does not support this method
 	 */
 	@Override
 	public InputStream getBinaryStream() throws SQLException {
@@ -75,7 +71,6 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 * @return InputStream through which the partial Blob value can be read.
 	 * @throws SQLException if pos is less than 1 or if pos is greater than the number of bytes in the Blob or if pos +
 	 * length is greater than the number of bytes in the Blob
-	 * @throws SQLFeatureNotSupportedException if the JDBC driver does not support this method
 	 */
 	@Override
 	public InputStream getBinaryStream(long pos, long length) throws SQLException {

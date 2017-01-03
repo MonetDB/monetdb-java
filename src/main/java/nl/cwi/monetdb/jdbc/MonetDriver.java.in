@@ -135,7 +135,7 @@ final public class MonetDriver implements Driver {
 
 		DriverPropertyInfo prop = new DriverPropertyInfo("user", info.getProperty("user"));
 		prop.required = true;
-		prop.description = "The user loginname to use when authenticating on the database server";
+		prop.description = "The user name to use when authenticating on the database server";
 		props.add(prop);
 
 		prop = new DriverPropertyInfo("password", info.getProperty("password"));
@@ -143,34 +143,44 @@ final public class MonetDriver implements Driver {
 		prop.description = "The password to use when authenticating on the database server";
 		props.add(prop);
 
-		prop = new DriverPropertyInfo("language", "sql");
-		prop.required = false;
-		prop.description = "What language to use for MonetDB conversations (experts only)";
-		props.add(prop);
-
 		prop = new DriverPropertyInfo("hash", "");
 		prop.required = false;
 		prop.description = "Force the use of the given hash algorithm during challenge response (one of SHA1, MD5, plain)";
 		props.add(prop);
 
+		prop = new DriverPropertyInfo("language", "sql");
+		prop.required = false;
+		prop.description = "What language to use for MonetDB conversations (experts only)";
+		props.add(prop);
+
 		prop = new DriverPropertyInfo("follow_redirects", "true");
 		prop.required = false;
-		prop.description = "Whether redirects issued by the server should be followed";
+		prop.description = "Whether redirects issued by the server should be followed (MAPI connection only)";
 		props.add(prop);
 
 		prop = new DriverPropertyInfo("treat_blob_as_binary", "false");
 		prop.required = false;
-		prop.description = "Whether BLOBs on the server should be treated as BINARY types, thus mapped to byte[]";
+		prop.description = "Whether BLOBs on the server should be treated as BINARY types, thus mapped to byte[] (MAPI connection only)";
+		props.add(prop);
+
+		prop = new DriverPropertyInfo("treat_clob_as_longvarchar", "false");
+		prop.required = false;
+		prop.description = "Whether CLOBs on the server should be treated as LONGVARCHAR types, thus mapped to String (MAPI connection only)";
 		props.add(prop);
 
 		prop = new DriverPropertyInfo("so_timeout", "0");
 		prop.required = false;
-		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
+		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call (MAPI connection only)"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
 		props.add(prop);
 
 		prop = new DriverPropertyInfo("embedded", "false");
 		prop.required = false;
 		prop.description = "Whether or not to use an embedded MonetDB connection";
+		props.add(prop);
+
+		prop = new DriverPropertyInfo("directory", "");
+		prop.required = false;
+		prop.description = "The directory of the database farm (Embedded connection only)";
 		props.add(prop);
 
 		DriverPropertyInfo[] dpi = new DriverPropertyInfo[props.size()];
@@ -232,11 +242,9 @@ final public class MonetDriver implements Driver {
 		// typeMap.put("table", Types.???);
 		typeMap.put("time", Types.TIME);
 		typeMap.put("timestamp", Types.TIMESTAMP);
-		typeMap.put("timestamptz", Types.TIMESTAMP);
-        // new in Java 8: Types.TIMESTAMP_WITH_TIMEZONE (value 2014). Can't use it yet as we compile for java 7
-		typeMap.put("timetz", Types.TIME);
-        // new in Java 8: Types.TIME_WITH_TIMEZONE (value 2013). Can't use it yet as we compile for java 7
-		typeMap.put("tinyint", Types.TINYINT);
+		typeMap.put("timestamptz", Types.TIMESTAMP_WITH_TIMEZONE);
+		typeMap.put("timetz", Types.TIME_WITH_TIMEZONE);
+		typeMap.put("tinyint", Types.TINYINT); //but we will convert to java.lang.Byte
 		typeMap.put("url", Types.OTHER);
 		typeMap.put("uuid", Types.OTHER);
 		typeMap.put("varchar", Types.VARCHAR);
@@ -395,7 +403,6 @@ final public class MonetDriver implements Driver {
 		MonetConnection res;
 
 		boolean isEmbedded = Boolean.parseBoolean(props.getProperty("embedded", "false"));
-		boolean blobIsBinary = Boolean.valueOf(props.getProperty("treat_blob_as_binary", "false"));
 		String language = props.getProperty("language", "sql");
 		String username = props.getProperty("user", null);
 		String password = props.getProperty("password", null);
@@ -418,9 +425,8 @@ final public class MonetDriver implements Driver {
 					throw new SQLException("EmbeddedConnection Class not found!");
 				}
                 res = (MonetConnection) EmbeddedConnectionClass
-                    .getDeclaredConstructor(Properties.class, String.class, String.class, String.class,
-                                            Boolean.TYPE, String.class)
-                    .newInstance(props, database, hash, language, blobIsBinary, directory);
+                    .getDeclaredConstructor(Properties.class, String.class, String.class, String.class, String.class)
+                    .newInstance(props, database, hash, language, directory);
 			} catch (InvocationTargetException | InstantiationException | IllegalAccessException |
 			         NoSuchMethodException | ClassNotFoundException e) {
 				throw new SQLException(e);
@@ -433,6 +439,9 @@ final public class MonetDriver implements Driver {
 				throw new IllegalArgumentException("user should not be null or empty");
 			if (password == null || password.trim().isEmpty())
 				throw new IllegalArgumentException("password should not be null or empty");
+
+            boolean blobIsBinary = Boolean.valueOf(props.getProperty("treat_blob_as_binary", "false"));
+            boolean clobIsLongChar = Boolean.valueOf(props.getProperty("treat_clob_as_longvarchar", "false"));
 
 			boolean negative1 = false, failedparse1 = false;
 			int port = 0;
@@ -463,7 +472,7 @@ final public class MonetDriver implements Driver {
 				props.setProperty("so_timeout", "0");
 			}
 			try {
-				res = new MapiConnection(props, database, hash, language, blobIsBinary, hostname, port);
+				res = new MapiConnection(props, database, hash, language, blobIsBinary, clobIsLongChar, hostname, port);
 			} catch (IOException e) {
 				throw new SQLException(e);
 			}

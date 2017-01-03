@@ -1,7 +1,7 @@
 package nl.cwi.monetdb.jdbc;
 
-import nl.cwi.monetdb.jdbc.types.INET;
-import nl.cwi.monetdb.jdbc.types.URL;
+import nl.cwi.monetdb.jdbc.types.MonetINET;
+import nl.cwi.monetdb.jdbc.types.MonetURL;
 import nl.cwi.monetdb.mcl.connection.*;
 import nl.cwi.monetdb.mcl.connection.SenderThread;
 import nl.cwi.monetdb.mcl.connection.mapi.MapiLanguage;
@@ -71,8 +71,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     /** The Connection specific mapping of user defined types to Java types */
     private Map<String,Class<?>> typeMap = new HashMap<String,Class<?>>() {
         private static final long serialVersionUID = 1L; {
-            put("inet", INET.class);
-            put("url",  URL.class);
+            put("inet", MonetINET.class);
+            put("url",  MonetURL.class);
         }
     };
 
@@ -80,13 +80,13 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     // (only when you deal with it of course)
     /** A Map containing all (active) Statements created from this Connection */
     private Map<Statement,?> statements = new WeakHashMap<Statement, Object>();
-
     /** The number of results we receive from the server at once */
     private int curReplySize = -1; // the server by default uses -1 (all)
-
     /** Whether or not BLOB is mapped to BINARY within the driver */
     private final boolean blobIsBinary;
-
+    /** Whether or not CLOB is mapped to LONGVARCHAR within the driver */
+    private final boolean clobIsLongChar;
+    /** The underlying proticol provided by the connection (MAPI or embedded) */
     protected AbstractProtocol protocol;
 
     /**
@@ -97,20 +97,17 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * @throws IOException if an error occurs
      */
     public MonetConnection(Properties props, String database, String hash, IMonetDBLanguage language,
-                           boolean blobIsBinary) throws IOException {
+                           boolean blobIsBinary, boolean clobIsLongChar) throws IOException {
         this.conn_props = props;
         this.database = database;
         this.hash = hash;
         this.language = language;
         this.blobIsBinary = blobIsBinary;
+        this.clobIsLongChar = clobIsLongChar;
     }
 
     public IMonetDBLanguage getLanguage() {
         return language;
-    }
-
-    public void setClosed(boolean closed) {
-        this.closed = closed;
     }
 
     public AbstractProtocol getProtocol() {
@@ -350,11 +347,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Retrieves this Connection object's current transaction isolation
-     * level.
+     * Retrieves this Connection object's current transaction isolation level.
      *
-     * @return the current transaction isolation level, which will be
-     *         Connection.TRANSACTION_SERIALIZABLE
+     * @return the current transaction isolation level, which will be Connection.TRANSACTION_SERIALIZABLE
      */
     @Override
     public int getTransactionIsolation() {
@@ -366,8 +361,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * Unless the application has added an entry, the type map returned
      * will be empty.
      *
-     * @return the java.util.Map object associated with this Connection
-     *         object
+     * @return the java.util.Map object associated with this Connection object
      */
     @Override
     public Map<String,Class<?>> getTypeMap() {
@@ -381,22 +375,19 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * the method SQLWarning.getNextWarning on the warning that was
      * retrieved previously.
      *
-     * This method may not be called on a closed connection; doing so
-     * will cause an SQLException to be thrown.
+     * This method may not be called on a closed connection; doing so will cause an SQLException to be thrown.
      *
      * Note: Subsequent warnings will be chained to this SQLWarning.
      *
      * @return the first SQLWarning object or null if there are none
-     * @throws SQLException if a database access error occurs or this method is
-     *         called on a closed connection
+     * @throws SQLException if a database access error occurs or this method is called on a closed connection
      */
     @Override
     public SQLWarning getWarnings() throws SQLException {
         if (closed) {
             throw new SQLException("Cannot call on closed Connection", "M1M20");
         }
-        // if there are no warnings, this will be null, which fits with the
-        // specification.
+        // if there are no warnings, this will be null, which fits with the specification.
         return warnings;
     }
 
@@ -412,8 +403,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * can determine that a connection is invalid by catching any
      * exceptions that might be thrown when an operation is attempted.
      *
-     * @return true if this Connection object is closed; false if it is
-     *         still open
+     * @return true if this Connection object is closed; false if it is still open
      */
     @Override
     public boolean isClosed() {
@@ -443,7 +433,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) {return null;}
 
     @Override
-    public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) {return null;}
+    public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency,
+                                         int resultSetHoldability) {return null;}
 
     /**
      * Creates a PreparedStatement object for sending parameterized SQL
@@ -474,7 +465,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     @Override
     public PreparedStatement prepareStatement(String sql) throws SQLException {
-        return prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
+        return prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY,
+                ResultSet.HOLD_CURSORS_OVER_COMMIT);
     }
 
     /**
@@ -498,7 +490,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      *                      type and concurrency
      */
     @Override
-    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency)
+            throws SQLException {
         return prepareStatement(sql, resultSetType, resultSetConcurrency, ResultSet.HOLD_CURSORS_OVER_COMMIT);
     }
 
@@ -529,9 +522,11 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * concurrency, and holdability
      */
     @Override
-    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency,
+                                              int resultSetHoldability) throws SQLException {
         try {
-            PreparedStatement ret = new MonetPreparedStatement(this, resultSetType, resultSetConcurrency, resultSetHoldability, sql);
+            PreparedStatement ret = new MonetPreparedStatement(this, resultSetType, resultSetConcurrency,
+                    resultSetHoldability, sql);
             // store it in the map for when we close...
             statements.put(ret, null);
             return ret;
@@ -1035,7 +1030,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         return new Properties(conn_props);
     }
 
-
     /**
      * Sets the value of the client info property specified by name to the value specified by value.
      * Applications may use the DatabaseMetaData.getClientInfoProperties method to determine
@@ -1085,16 +1079,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
             return;
         }
         // only set value for supported property names
-        if (name.equals("host") ||
-                name.equals("port") ||
-                name.equals("user") ||
-                name.equals("password") ||
-                name.equals("database") ||
-                name.equals("language") ||
-                name.equals("so_timeout") ||
-                name.equals("debug") ||
-                name.equals("hash") ||
-                name.equals("treat_blob_as_binary")) {
+        if (name.equals("host") || name.equals("port") || name.equals("user") || name.equals("password") ||
+                name.equals("database") || name.equals("language") || name.equals("so_timeout") ||
+                name.equals("debug") || name.equals("hash") || name.equals("treat_blob_as_binary") ||
+                name.equals("treat_clob_as_longvarchar") || name.equals("embedded") || name.equals("directory")) {
             conn_props.setProperty(name, value);
         } else {
             addWarning("setClientInfo: " + name + "is not a recognised property", "01M07");
@@ -1260,6 +1248,13 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     public boolean getBlobAsBinary() {
         return blobIsBinary;
+    }
+
+    /**
+     * Returns whether the CLOB type should be mapped to LONGVARCHAR type.
+     */
+    public boolean getClobAsLongChar() {
+        return clobIsLongChar;
     }
 
     /**

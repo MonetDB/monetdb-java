@@ -1,3 +1,11 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.mcl.connection.mapi;
 
 import java.io.IOException;
@@ -5,9 +13,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
-/**
- * Created by ferreira on 12/9/16.
- */
 public class OldMapiSocket extends AbstractSocket {
 
     /** The blocksize (hardcoded in compliance with stream.mx) */

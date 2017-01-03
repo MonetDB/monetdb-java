@@ -1,12 +1,17 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.mcl.connection.helpers;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-/**
- * Created by ferreira on 12/1/16.
- */
-public class ChannelSecurity {
+public final class ChannelSecurity {
 
     private static char HexChar(int n) { return (n > 9) ? (char) ('a' + (n - 10)) : (char) ('0' + n); }
 

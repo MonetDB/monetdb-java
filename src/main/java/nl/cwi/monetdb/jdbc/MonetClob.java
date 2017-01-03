@@ -48,11 +48,13 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 * Retrieves the CLOB value designated by this Clob object as an ascii stream.
 	 *
 	 * @return a java.io.InputStream object containing the CLOB data
-	 * @throws SQLFeatureNotSupportedException this JDBC driver does not support this method
+     * @throws SQLException if there is an error accessing the CLOB value
 	 */
 	@Override
 	public InputStream getAsciiStream() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Operation getAsciiStream() currently not supported", "0A000");
+		if (buffer.length() == 0)
+			throw new SQLException("This Clob has been freed", "M1M20");
+		return new ByteArrayInputStream(buffer.toString().getBytes());
 	}
 
 	/**
@@ -60,11 +62,13 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 * (or as a stream of characters).
 	 *
 	 * @return a java.io.Reader object containing the CLOB data
-	 * @throws SQLFeatureNotSupportedException this JDBC driver does not support this method
+     * @throws SQLException if there is an error accessing the CLOB value
 	 */
 	@Override
 	public Reader getCharacterStream() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Operation getCharacterStream() currently not supported", "0A000");
+        if (buffer.length() == 0)
+            throw new SQLException("This Clob has been freed", "M1M20");
+        return new StringReader(buffer.toString());
 	}
 
 	/**
@@ -75,12 +79,13 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 * Clob is at position 1.
 	 * @param length the length in characters of the partial value to be retrieved.
 	 * @return Reader through which the partial Clob value can be read.
-	 * @throws SQLFeatureNotSupportedException this JDBC driver does not support this method
+     * @throws SQLException if there is an error accessing the CLOB value
 	 */
 	@Override
 	public Reader getCharacterStream(long pos, long length) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Operation getCharacterStream(long, long) currently not supported",
-				"0A000");
+        if (buffer.length() == 0)
+            throw new SQLException("This Clob has been freed", "M1M20");
+        return new StringReader(buffer.substring((int)(pos - 1), (int)(pos - 1 + length)));
 	}
 
 	/**
@@ -209,7 +214,7 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	public void truncate(long len) throws SQLException {
 		if (buffer.length() == 0)
 			throw new SQLException("This Clob has been freed", "M1M20");
-		// this command is a no-op
+		buffer.setLength((int) len);
 	}
 
 	/**

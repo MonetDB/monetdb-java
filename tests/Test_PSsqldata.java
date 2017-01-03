@@ -37,8 +37,8 @@ public class Test_PSsqldata {
 				System.out.println("\tclassname     " + pmd.getParameterClassName(col));
 			}
 
-			INET tinet = new INET();
-			URL turl = new URL();
+			MonetINET tinet = new MonetINET();
+			MonetURL turl = new MonetURL();
 
 			tinet.fromString("172.5.5.5/24");
 			turl.fromString("http://www.monetdb.org/");
@@ -59,12 +59,12 @@ public class Test_PSsqldata {
 						System.out.println("" + i + ".\t<null>");
 					} else {
 						System.out.println("" + i + ".\t" + x.toString());
-						if (x instanceof INET) {
-							INET inet = (INET)x;
+						if (x instanceof MonetINET) {
+							MonetINET inet = (MonetINET)x;
 							System.out.println("\t" + inet.getAddress() + "/" + inet.getNetmaskBits());
 							System.out.println("\t" + inet.getInetAddress().toString());
-						} else if (x instanceof URL) {
-							URL url = (URL)x;
+						} else if (x instanceof MonetURL) {
+							MonetURL url = (MonetURL)x;
 							System.out.println("\t" + url.getURL().toString());
 						}
 					}

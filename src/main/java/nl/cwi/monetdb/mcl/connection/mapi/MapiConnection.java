@@ -1,3 +1,11 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ */
+
 package nl.cwi.monetdb.mcl.connection.mapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
@@ -40,8 +48,8 @@ public class MapiConnection extends MonetConnection {
     private ByteOrder serverEndianness;
 
     public MapiConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
-                          String hostname, int port) throws IOException {
-        super(props, database, hash, MapiLanguage.GetLanguageFromString(language), blobIsBinary);
+                          boolean clobIsLongChar, String hostname, int port) throws IOException {
+        super(props, database, hash, MapiLanguage.GetLanguageFromString(language), blobIsBinary, clobIsLongChar);
         this.hostname = hostname;
         this.port = port;
     }

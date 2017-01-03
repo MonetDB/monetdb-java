@@ -41,8 +41,8 @@ public class MonetSavepoint implements Savepoint {
 	private final int id;
 
 	public MonetSavepoint(String name) throws IllegalArgumentException {
-		if (name == null) throw new IllegalArgumentException("null not allowed");
-
+		if (name == null)
+		    throw new IllegalArgumentException("Null name not allowed");
 		this.id = getNextId();
 		this.name = name;
 	}
@@ -60,9 +60,8 @@ public class MonetSavepoint implements Savepoint {
 	 */
 	@Override
 	public int getSavepointId() throws SQLException {
-		if (name != null) throw
-			new SQLException("Cannot getID for named savepoint", "3B000");
-
+		if (name != null)
+			throw new SQLException("Cannot getID for named savepoint", "3B000");
 		return getId();
 	}
 
@@ -74,9 +73,8 @@ public class MonetSavepoint implements Savepoint {
 	 */
 	@Override
 	public String getSavepointName() throws SQLException {
-		if (name == null) throw
-			new SQLException("Unable to retrieve name of unnamed savepoint", "3B000");
-
+		if (name == null)
+			throw new SQLException("Unable to retrieve name of unnamed savepoint", "3B000");
 		return name;
 	}
 
