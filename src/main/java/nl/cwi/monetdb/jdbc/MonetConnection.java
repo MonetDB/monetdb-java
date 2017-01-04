@@ -149,7 +149,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * Calling the method close on a Connection object that is already closed is a no-op.
      */
     @Override
-    public synchronized void close() {
+    public void close() {
         for (Statement st : statements.keySet()) {
             try {
                 st.close();
@@ -274,7 +274,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * concurrency, and holdability
      */
     @Override
-    public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+    public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+            throws SQLException {
         try {
             Statement ret = new MonetStatement(this, resultSetType, resultSetConcurrency, resultSetHoldability);
             // store it in the map for when we close...
@@ -288,11 +289,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Retrieves the current auto-commit mode for this Connection
-     * object.
+     * Retrieves the current auto-commit mode for this Connection object.
      *
-     * @return the current state of this Connection object's auto-commit
-     *         mode
+     * @return the current state of this Connection object's auto-commit mode
      * @see #setAutoCommit(boolean)
      */
     @Override
@@ -304,8 +303,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * Retrieves this Connection object's current catalog name.
      *
      * @return the current catalog name or null if there is none
-     * @throws SQLException if a database access error occurs or the
-     *         current language is not SQL
+     * @throws SQLException if a database access error occurs or the current language is not SQL
      */
     @Override
     public String getCatalog() throws SQLException {
@@ -314,12 +312,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Retrieves the current holdability of ResultSet objects created
-     * using this Connection object.
+     * Retrieves the current holdability of ResultSet objects created using this Connection object.
      *
-     * @return the holdability, one of
-     *         ResultSet.HOLD_CURSORS_OVER_COMMIT or
-     *         ResultSet.CLOSE_CURSORS_AT_COMMIT
+     * @return the holdability, one of ResultSet.HOLD_CURSORS_OVER_COMMIT or ResultSet.CLOSE_CURSORS_AT_COMMIT
      */
     @Override
     public int getHoldability() {
@@ -357,9 +352,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Retrieves the Map object associated with this Connection object.
-     * Unless the application has added an entry, the type map returned
-     * will be empty.
+     * Retrieves the Map object associated with this Connection object. Unless the application has added an entry,
+     * the type map returned will be empty.
      *
      * @return the java.util.Map object associated with this Connection object
      */
@@ -689,7 +683,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     @Override
     public void setCatalog(String catalog) throws SQLException {
-        // silently ignore this request as MonetDB does not support catalogs
+        throw new SQLFeatureNotSupportedException("setCatalog(String catalog) not supported", "0A000");
     }
 
     /**
@@ -777,18 +771,15 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * interface Connection are the possible transaction isolation
      * levels.
      *
-     * @param level one of the following Connection constants:
-     *        Connection.TRANSACTION_READ_UNCOMMITTED,
-     *        Connection.TRANSACTION_READ_COMMITTED,
-     *        Connection.TRANSACTION_REPEATABLE_READ, or
+     * @param level one of the following Connection constants: Connection.TRANSACTION_READ_UNCOMMITTED,
+     *        Connection.TRANSACTION_READ_COMMITTED, Connection.TRANSACTION_REPEATABLE_READ, or
      *        Connection.TRANSACTION_SERIALIZABLE.
      */
     @Override
     public void setTransactionIsolation(int level) {
         if (level != TRANSACTION_SERIALIZABLE) {
             addWarning("MonetDB only supports fully serializable " +
-                    "transactions, continuing with transaction level " +
-                    "raised to TRANSACTION_SERIALIZABLE", "01M09");
+                    "transactions, continuing with transaction level raised to TRANSACTION_SERIALIZABLE", "01M09");
         }
     }
 
@@ -881,8 +872,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     @Override
     public java.sql.Blob createBlob() throws SQLException {
-        byte[] buf = new byte[1];
-        return new MonetBlob(buf);
+        return new MonetBlob(new byte[1]);
     }
 
     /**
@@ -1116,8 +1106,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     public void setClientInfo(Properties props) throws java.sql.SQLClientInfoException {
         if (props != null) {
             for (Map.Entry<Object, Object> entry : props.entrySet()) {
-                setClientInfo(entry.getKey().toString(),
-                        entry.getValue().toString());
+                setClientInfo(entry.getKey().toString(), entry.getValue().toString());
             }
         }
     }

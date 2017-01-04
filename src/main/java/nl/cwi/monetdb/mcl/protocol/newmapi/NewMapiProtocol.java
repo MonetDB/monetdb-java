@@ -76,7 +76,7 @@ public class NewMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public void writeNextQuery(String prefix, String query, String suffix) throws IOException {
+    public synchronized void writeNextQuery(String prefix, String query, String suffix) throws IOException {
 
     }
 }

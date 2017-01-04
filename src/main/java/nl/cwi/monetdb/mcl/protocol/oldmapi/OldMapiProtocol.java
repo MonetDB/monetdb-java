@@ -149,7 +149,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public void writeNextQuery(String prefix, String query, String suffix) throws IOException {
+    public synchronized void writeNextQuery(String prefix, String query, String suffix) throws IOException {
         this.socket.writeNextLine(prefix, query, suffix);
         this.currentServerResponseHeader = ServerResponses.UNKNOWN; //reset reader state
     }

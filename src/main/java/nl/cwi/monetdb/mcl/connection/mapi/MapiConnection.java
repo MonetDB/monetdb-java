@@ -149,7 +149,7 @@ public class MapiConnection extends MonetConnection {
      * setting can be useful to break out of this indefinite wait. This option must be enabled prior to entering the
      * blocking operation to have effect.
      *
-     * @param s The specified timeout, in milliseconds.  A timeout of zero is interpreted as an infinite timeout.
+     * @param s The specified timeout, in milliseconds. A timeout of zero is interpreted as an infinite timeout.
      */
     @Override
     public void setSoTimeout(int s)  {
@@ -167,7 +167,7 @@ public class MapiConnection extends MonetConnection {
     }
 
     @Override
-    public void closeUnderlyingConnection() throws IOException {
+    public synchronized void closeUnderlyingConnection() throws IOException {
         ((OldMapiProtocol)protocol).getSocket().close();
     }
 

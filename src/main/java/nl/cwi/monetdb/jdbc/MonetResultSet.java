@@ -2573,11 +2573,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 					return new URL(currentBlock.getValueAsString(columnIndex - 1));
-			}
-			if(JdbcSQLTypes[columnIndex - 1] == Types.OTHER && "url".equals(types[columnIndex - 1])) {
-				return new URL(currentBlock.getValueAsString(columnIndex - 1));
-			} else {
-				throw new SQLException("Cannot convert " + types[columnIndex - 1] + " to an url", "M1M05");
+				case Types.OTHER:
+					if("url".equals(types[columnIndex - 1])) {
+						return new URL(currentBlock.getValueAsString(columnIndex - 1));
+					}
+				default:
+					throw new SQLException("Cannot convert " + types[columnIndex - 1] + " to an url", "M1M05");
 			}
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
@@ -2587,9 +2588,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row
-	 * of this ResultSet object as a java.net.URL object in the Java
-	 * programming language.
+	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.net.URL object
+	 * in the Java programming language.
 	 *
 	 * @param columnName the SQL name of the column
 	 * @return the column value as a java.net.URL object; if the value is SQL NULL, the value returned is null in the

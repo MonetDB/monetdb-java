@@ -19,6 +19,7 @@ import java.nio.CharBuffer;
 import java.sql.Types;
 import java.text.ParsePosition;
 import java.util.Calendar;
+
 final class OldMapiTupleLineParser {
 
     private static final char[] NULL_STRING = "NULL".toCharArray();

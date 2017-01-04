@@ -508,7 +508,15 @@ final public class MonetDriver implements Driver {
 				throw new SQLException("Unable to connect (" + con.getHostname() + ":"
 						+ con.getPort() + "): " + e.getMessage(), "08006");
 			} else {
-				throw new SQLException("Unable to connect the provided directory : " + e.getMessage(), "08006");
+                try {
+                    java.lang.reflect.Method method = EmbeddedConnectionClass.getMethod("getDirectory");
+                    String directory = (String) method.invoke(EmbeddedConnectionClass.cast(res));
+                    throw new SQLException("Unable to start the farm on the directory: " + directory +
+                                           " Details:" + e.getMessage(), "08006");
+                } catch (NoSuchMethodException | SecurityException | IllegalArgumentException |
+                         IllegalAccessException | InvocationTargetException ex) {
+                    throw new SQLException(e.getMessage());
+                }
 			}
 		} catch (ProtocolException e) {
 			throw new SQLException(e.getMessage(), "08001");
