@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
  */
 
 package nl.cwi.monetdb.mcl.responses;
@@ -48,9 +48,11 @@ public class DataBlockResponse implements IIncompleteResponse {
     /** The JdbcSQLTypes mapping */
     private final int[] jdbcSQLTypes;
     /** A mapping of null values of the current Row */
-    private boolean[][] nullMappings;
+    private boolean[][] nullMappings;//
     /** A 'pointer' to the current line */
     private int blockLine;
+    /** The number of rows in the block */
+    private final int rowcount;
 
     /**
      * Constructs a DataBlockResponse object.
@@ -60,8 +62,9 @@ public class DataBlockResponse implements IIncompleteResponse {
      */
     DataBlockResponse(int rowcount, int columncount, AbstractProtocol protocol, int[] JdbcSQLTypes) {
         this.pos = -1;
+        this.rowcount = rowcount;
         this.data = new Object[columncount];
-        this.nullMappings = new boolean[rowcount][columncount];
+        this.nullMappings = new boolean[columncount][rowcount];
         this.protocol = protocol;
         this.jdbcSQLTypes = JdbcSQLTypes;
     }
@@ -81,54 +84,54 @@ public class DataBlockResponse implements IIncompleteResponse {
         }
 
         if(this.pos == -1) { //if it's the first line, initialize the matrix
-            int numberOfColumns = this.data.length, numberOfRows = this.nullMappings.length;
+            int numberOfColumns = this.data.length;
             for (int i = 0 ; i < numberOfColumns ; i++) {
                 switch (this.jdbcSQLTypes[i]) {
                     case Types.BOOLEAN:
-                        this.data[i] = new boolean[numberOfRows];
+                        this.data[i] = new boolean[this.rowcount];
                         break;
                     case Types.TINYINT:
-                        this.data[i] = new byte[numberOfRows];
+                        this.data[i] = new byte[this.rowcount];
                         break;
                     case Types.SMALLINT:
-                        this.data[i] = new short[numberOfRows];
+                        this.data[i] = new short[this.rowcount];
                         break;
                     case Types.INTEGER:
-                        this.data[i] = new int[numberOfRows];
+                        this.data[i] = new int[this.rowcount];
                         break;
                     case Types.BIGINT:
-                        this.data[i] = new long[numberOfRows];
+                        this.data[i] = new long[this.rowcount];
                         break;
                     case Types.REAL:
-                        this.data[i] = new float[numberOfRows];
+                        this.data[i] = new float[this.rowcount];
                         break;
                     case Types.DOUBLE:
-                        this.data[i] = new double[numberOfRows];
+                        this.data[i] = new double[this.rowcount];
                         break;
                     case Types.DECIMAL:
-                        this.data[i] = new BigDecimal[numberOfRows];
+                        this.data[i] = new BigDecimal[this.rowcount];
                         break;
                     case Types.NUMERIC:
-                        this.data[i] = new BigInteger[numberOfRows];
+                        this.data[i] = new BigInteger[this.rowcount];
                         break;
                     case Types.BLOB:
-                        this.data[i] = new MonetBlob[numberOfRows];
+                        this.data[i] = new MonetBlob[this.rowcount];
                         break;
                     case Types.CLOB:
-                        this.data[i] = new MonetClob[numberOfRows];
+                        this.data[i] = new MonetClob[this.rowcount];
                         break;
                     case Types.TIME:
                     case Types.TIME_WITH_TIMEZONE:
                     case Types.DATE:
                     case Types.TIMESTAMP:
                     case Types.TIMESTAMP_WITH_TIMEZONE:
-                        this.data[i] = new Calendar[numberOfRows];
+                        this.data[i] = new Calendar[this.rowcount];
                         break;
                     case Types.LONGVARBINARY:
-                        this.data[i] = new byte[numberOfRows][];
+                        this.data[i] = new byte[this.rowcount][];
                         break;
                     default: //CHAR, VARCHAR, OTHER
-                        this.data[i] = new String[numberOfRows];
+                        this.data[i] = new String[this.rowcount];
                 }
             }
         }
@@ -146,7 +149,7 @@ public class DataBlockResponse implements IIncompleteResponse {
     @Override
     public boolean wantsMore() {
         // remember: pos is the value already stored
-        return (this.pos + 1) < this.nullMappings.length;
+        return (this.pos + 1) < this.rowcount;
     }
 
     /**
@@ -179,7 +182,7 @@ public class DataBlockResponse implements IIncompleteResponse {
     }
 
     public boolean checkValueIsNull(int column) {
-        return this.nullMappings[this.blockLine][column];
+        return this.nullMappings[column][this.blockLine];
     }
 
     public boolean getBooleanValue(int column) {

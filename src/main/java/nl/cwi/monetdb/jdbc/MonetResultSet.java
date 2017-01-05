@@ -3,13 +3,11 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
  */
 
 package nl.cwi.monetdb.jdbc;
 
-import nl.cwi.monetdb.jdbc.types.MonetINET;
-import nl.cwi.monetdb.jdbc.types.MonetURL;
 import nl.cwi.monetdb.mcl.connection.helpers.GregorianCalendarParser;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
@@ -1640,9 +1638,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 						case 3:
 							if ("url".equals(MonetDBType)) {
 								try {
-									MonetURL url_obj = new MonetURL();
-									url_obj.fromString(val);
-									return url_obj;
+									return new URL(val);
 								} catch (Exception exc) {
 									// ignore exception and just return the val String object
 									return val;
@@ -1652,9 +1648,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 						case 4:
 							if ("inet".equals(MonetDBType)) {
 								try {
-									MonetINET inet_obj = new MonetINET();
-									inet_obj.fromString(val);
-									return inet_obj;
+									return new MonetINET(val);
 								} catch (Exception exc) {
 									// ignore exception and just return the val String object
 									return val;

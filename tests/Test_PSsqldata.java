@@ -3,11 +3,13 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
  */
 
+import java.net.URL;
 import java.sql.*;
-import nl.cwi.monetdb.jdbc.types.*;
+
+import nl.cwi.monetdb.jdbc.MonetINET;
 
 public class Test_PSsqldata {
 	public static void main(String[] args) throws Exception {
@@ -37,11 +39,8 @@ public class Test_PSsqldata {
 				System.out.println("\tclassname     " + pmd.getParameterClassName(col));
 			}
 
-			MonetINET tinet = new MonetINET();
-			MonetURL turl = new MonetURL();
-
-			tinet.fromString("172.5.5.5/24");
-			turl.fromString("http://www.monetdb.org/");
+			MonetINET tinet = new MonetINET("172.5.5.5/24");
+			URL turl = new URL("http://www.monetdb.org/");
 			pstmt.setObject(1, tinet);
 			pstmt.setObject(2, turl);
 			pstmt.execute();
@@ -63,9 +62,9 @@ public class Test_PSsqldata {
 							MonetINET inet = (MonetINET)x;
 							System.out.println("\t" + inet.getAddress() + "/" + inet.getNetmaskBits());
 							System.out.println("\t" + inet.getInetAddress().toString());
-						} else if (x instanceof MonetURL) {
-							MonetURL url = (MonetURL)x;
-							System.out.println("\t" + url.getURL().toString());
+						} else if (x instanceof URL) {
+							URL url = (URL)x;
+							System.out.println("\t" + url.toString());
 						}
 					}
 				}

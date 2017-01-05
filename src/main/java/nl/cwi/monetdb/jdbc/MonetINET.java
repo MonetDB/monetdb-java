@@ -3,13 +3,18 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2016 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
  */
 
-package nl.cwi.monetdb.jdbc.types;
+package nl.cwi.monetdb.jdbc;
 
-import java.sql.*;
-import java.net.*;
+import java.net.Inet4Address;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.sql.SQLData;
+import java.sql.SQLException;
+import java.sql.SQLInput;
+import java.sql.SQLOutput;
 
 /**
  * The INET class represents the INET datatype in MonetDB.  It
@@ -27,34 +32,9 @@ import java.net.*;
  */
 public class MonetINET implements SQLData {
 
-	private String inet;
-
-	@Override
-	public String getSQLTypeName() {
-		return "inet";
-	}
-
-	@Override
-	public void readSQL(SQLInput stream, String typeName) throws SQLException {
-		if (typeName.compareTo("inet") != 0)
-			throw new SQLException("can only use this class with 'inet' type", "M1M05");
-		inet = stream.readString();
-	}
-
-	@Override
-	public void writeSQL(SQLOutput stream) throws SQLException {
-		stream.writeString(inet);
-	}
-
-	@Override
-	public String toString() {
-		return inet;
-	}
-
-	public void fromString(String newinet) throws Exception {
+	private static String FromString(String newinet) throws Exception {
 		if (newinet == null) {
-			inet = null;
-			return;
+			return null;
 		}
 		int slash = newinet.indexOf('/');
 		String tinet = newinet;
@@ -85,7 +65,39 @@ public class MonetINET implements SQLData {
 				throw new Exception("value must be between 0 and 255: " + quads[i]);
 		}
 		// everything is fine
-		inet = newinet;
+		return newinet;
+	}
+
+	private String inet;
+
+	public MonetINET(String inet) throws Exception {
+		this.inet = FromString(inet);
+	}
+
+	@Override
+	public String getSQLTypeName() {
+		return "inet";
+	}
+
+	@Override
+	public void readSQL(SQLInput stream, String typeName) throws SQLException {
+		if (typeName.compareTo("inet") != 0)
+			throw new SQLException("can only use this class with 'inet' type", "M1M05");
+		inet = stream.readString();
+	}
+
+	@Override
+	public void writeSQL(SQLOutput stream) throws SQLException {
+		stream.writeString(inet);
+	}
+
+	@Override
+	public String toString() {
+		return inet;
+	}
+
+	public void fromString(String newinet) throws Exception {
+		inet = FromString(newinet);
 	}
 
 	public String getAddress() {
@@ -105,7 +117,7 @@ public class MonetINET implements SQLData {
 			return;
 		}
 		if (newinet.indexOf('/') != -1)
-			throw new Exception("IPv4 address cannot contain '/' (use fromString() instead)");
+			throw new Exception("IPv4 address cannot contain '/' " + "(use fromString() instead)");
 		fromString(newinet);
 	}
 
@@ -142,7 +154,6 @@ public class MonetINET implements SQLData {
 	public InetAddress getInetAddress() throws SQLException {
 		if (inet == null)
 			return null;
-
 		try {
 			return InetAddress.getByName(getAddress());
 		} catch (UnknownHostException uhe) {

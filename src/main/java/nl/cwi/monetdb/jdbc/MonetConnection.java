@@ -1,7 +1,5 @@
 package nl.cwi.monetdb.jdbc;
 
-import nl.cwi.monetdb.jdbc.types.MonetINET;
-import nl.cwi.monetdb.jdbc.types.MonetURL;
 import nl.cwi.monetdb.mcl.connection.*;
 import nl.cwi.monetdb.mcl.connection.SenderThread;
 import nl.cwi.monetdb.mcl.connection.mapi.MapiLanguage;
@@ -72,7 +70,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     private Map<String,Class<?>> typeMap = new HashMap<String,Class<?>>() {
         private static final long serialVersionUID = 1L; {
             put("inet", MonetINET.class);
-            put("url",  MonetURL.class);
         }
     };
 
