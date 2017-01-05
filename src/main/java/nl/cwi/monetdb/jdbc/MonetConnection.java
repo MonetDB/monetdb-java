@@ -1102,12 +1102,9 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 *        type or a standard SQL type supported by this database.
 	 *        This is the value returned by Array.getBaseTypeName
 	 * @return an Array object whose elements map to the specified SQL type
-	 * @throws SQLException if a database error occurs, the JDBC type
-	 *         is not appropriate for the typeName and the conversion is
-	 *         not supported, the typeName is null or this method is
-	 *         called on a closed connection
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this data type
+	 * @throws SQLException - if a database error occurs, the JDBC type is not appropriate for the typeName and
+	 *         the conversion is not supported, the typeName is null or this method is called on a closed connection
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this data type
 	 * @since 1.6
 	 */
 	@Override
@@ -1123,8 +1120,8 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * may be used to add data to the Clob.
 	 *
 	 * @return a MonetClob instance
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support MonetClob objects that can be filled in
+	 * @throws SQLException - if an object that implements the Clob interface can not be constructed,
+	 *         this method is called on a closed connection or a database access error occurs.
 	 * @since 1.6
 	 */
 	@Override
@@ -1139,8 +1136,8 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * data to the Blob.
 	 *
 	 * @return a MonetBlob instance
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support MonetBlob objects that can be filled in
+	 * @throws SQLException - if an object that implements the Blob interface can not be constructed,
+	 *         this method is called on a closed connection or a database access error occurs.
 	 * @since 1.6
 	 */
 	@Override
@@ -1156,8 +1153,9 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * may be used to add data to the NClob.
 	 *
 	 * @return an NClob instance
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support MonetNClob objects that can be filled in
+	 * @throws SQLException - if an object that implements the NClob interface can not be constructed,
+	 *         this method is called on a closed connection or a database access error occurs.
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this data type
 	 * @since 1.6
 	 */
 	@Override
@@ -1175,10 +1173,9 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * @param attributes the attributes that populate the returned object
 	 * @return a Struct object that maps to the given SQL type and is
 	 *         populated with the given attributes
-	 * @throws SQLException if a database error occurs, the typeName
-	 *         is null or this method is called on a closed connection
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this data type
+	 * @throws SQLException - if an object that implements the Struct interface can not be constructed,
+	 *         this method is called on a closed connection or a database access error occurs.
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this data type
 	 * @since 1.6
 	 */
 	@Override
@@ -1193,8 +1190,9 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * interface may be used to add data to the SQLXML object.
 	 *
 	 * @return An object that implements the SQLXML interface
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this data type
+	 * @throws SQLException - if an object that implements the SQLXML interface can not be constructed,
+	 *         this method is called on a closed connection or a database access error occurs.
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this data type
 	 * @since 1.6
 	 */
 	@Override
