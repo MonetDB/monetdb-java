@@ -22,7 +22,7 @@ public abstract class AbstractProtocol {
 
     public abstract void waitUntilPrompt() throws IOException;
 
-    public abstract void fetchNextResponseData() throws IOException; //UPDATE currentData!!!
+    public abstract void fetchNextResponseData() throws IOException;
 
     public abstract ServerResponses getCurrentServerResponseHeader();
 

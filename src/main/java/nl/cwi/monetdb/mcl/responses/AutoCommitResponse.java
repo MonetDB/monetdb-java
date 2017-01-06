@@ -9,12 +9,15 @@
 package nl.cwi.monetdb.mcl.responses;
 
 /**
- * The AutoCommitResponse represents a transaction message.  It
- * stores (a change in) the server side auto commit mode.<br />
+ * The AutoCommitResponse represents a transaction message. It stores (a change in) the server side auto commit mode.
+ * <br />
  * <tt>&amp;4 (t|f)</tt>
  */
 public class AutoCommitResponse extends SchemaResponse {
 
+    /**
+     * If the auto commit mode is set.
+     */
     private final boolean autocommit;
 
     public AutoCommitResponse(boolean ac) {
@@ -22,6 +25,11 @@ public class AutoCommitResponse extends SchemaResponse {
         this.autocommit = ac;
     }
 
+    /**
+     * The auto commit value
+     *
+     * @return The auto commit value
+     */
     public boolean isAutocommit() {
         return autocommit;
     }

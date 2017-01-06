@@ -21,9 +21,8 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 /**
- * The ResultSetResponse represents a tabular result sent by the
- * server.  This is typically an SQL table.  The MAPI headers of the
- * Response look like:
+ * The ResultSetResponse represents a tabular result sent by the server. This is typically an SQL table. The MAPI
+ * headers of the Response look like:
  * <pre>
  * &amp;1 1 28 2 10
  * # name,     value # name
@@ -31,13 +30,15 @@ import java.sql.Types;
  * </pre>
  * there the first line consists out of<br />
  * <tt>&amp;"qt" "id" "tc" "cc" "rc"</tt>.
+ * Meanwhile on an Embedded connection the data is fetched with no parsing.
  */
 public class ResultSetResponse implements IIncompleteResponse {
 
+    /**
+     * The expected final value after the table headers are set.
+     */
     private static final byte IS_SET_FINAL_VALUE = 15;
 
-    /** The number of columns in this result */
-    private final int columncount;
     /** The number of rows in the current block */
     private final int rowcount;
     /** The total number of rows this result set has */
@@ -78,12 +79,13 @@ public class ResultSetResponse implements IIncompleteResponse {
     /**
      * Sole constructor, which requires a MonetConnection parent to be given.
      *
+     * @param con The connection of this ResultSet
+     * @param parent the parent that created this Response and will supply new result blocks when necessary
      * @param id the ID of the result set
+     * @param seq the query sequence number
+     * @param rowcount the number of rows in the current block
      * @param tuplecount the total number of tuples in the result set
      * @param columncount the number of columns in the result set
-     * @param rowcount the number of rows in the current block
-     * @param parent the parent that created this Response and will supply new result blocks when necessary
-     * @param seq the query sequence number
      */
     public ResultSetResponse(MonetConnection con, MonetConnection.ResponseList parent, int id, int seq, int rowcount,
                              int tuplecount, int columncount) {
@@ -113,13 +115,12 @@ public class ResultSetResponse implements IIncompleteResponse {
 
         int maxrows = parent.getMaxrows();
         this.tuplecount = (maxrows != 0 && tuplecount > maxrows) ? maxrows : tuplecount;
-        this.columncount = columncount;
 
-        this.name = new String[this.columncount];
-        this.type = new String[this.columncount];
-        this.tableNames = new String[this.columncount];
-        this.columnLengths = new int[this.columncount];
-        this.JdbcSQLTypes = new int[this.columncount];
+        this.name = new String[columncount];
+        this.type = new String[columncount];
+        this.tableNames = new String[columncount];
+        this.columnLengths = new int[columncount];
+        this.JdbcSQLTypes = new int[columncount];
 
         this.resultBlocks = new DataBlockResponse[(tuplecount / cacheSize) + 1];
         this.resultBlocks[0] = new DataBlockResponse(rowcount, columncount, con.getProtocol(), this.JdbcSQLTypes);
@@ -156,26 +157,48 @@ public class ResultSetResponse implements IIncompleteResponse {
      * Adds the given DataBlockResponse to this ResultSetResponse at the given block position.
      *
      * @param offset the offset number of rows for this block
+     * @param rowcount the number of rows for this block
+     * @param proto The connection's protocol
      */
-    public DataBlockResponse addDataBlockResponse(int offset, int rowcount, int columncount, AbstractProtocol proto) {
+    public DataBlockResponse addDataBlockResponse(int offset, int rowcount, AbstractProtocol proto) {
         int block = (offset - blockOffset) / cacheSize;
-        DataBlockResponse res = new DataBlockResponse(rowcount, columncount, proto, JdbcSQLTypes);
+        DataBlockResponse res = new DataBlockResponse(rowcount, this.name.length, proto, JdbcSQLTypes);
         resultBlocks[block] = res;
         return res;
     }
 
+    /**
+     * Returns this ResultSet id
+     *
+     * @return The resultSet id
+     */
     public int getId() {
         return id;
     }
 
+    /**
+     * Returns the number of columns on this ResultSet
+     *
+     * @return The number of columns on this ResultSet
+     */
     public int getColumncount() {
-        return columncount;
+        return name.length;
     }
 
+    /**
+     * Returns the number of rows on this ResultSet
+     *
+     * @return The number of rows on this ResultSet
+     */
     public int getTuplecount() {
         return tuplecount;
     }
 
+    /**
+     * Returns the number of rows on the current block
+     *
+     * @return The number of rows on the current block
+     */
     public int getRowcount() {
         return rowcount;
     }
@@ -183,7 +206,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     /**
      * Returns the names of the columns
      *
-     * @return the names of the columns
+     * @return The names of the columns
      */
     public String[] getNames() {
         return name;
@@ -192,7 +215,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     /**
      * Returns the types of the columns
      *
-     * @return the types of the columns
+     * @return The types of the columns
      */
     public String[] getTypes() {
         return type;
@@ -201,7 +224,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     /**
      * Returns the JDBC types of the columns
      *
-     * @return the JDBC types of the columns
+     * @return The JDBC types of the columns
      */
     public int[] getJdbcSQLTypes() {
         return JdbcSQLTypes;
@@ -210,7 +233,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     /**
      * Returns the tables of the columns
      *
-     * @return the tables of the columns
+     * @return The tables of the columns
      */
     public String[] getTableNames() {
         return tableNames;
@@ -219,7 +242,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     /**
      * Returns the lengths of the columns
      *
-     * @return the lengths of the columns
+     * @return The lengths of the columns
      */
     public int[] getColumnLengths() {
         return columnLengths;
@@ -228,7 +251,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     /**
      * Returns the cache size used within this Response
      *
-     * @return the cache size
+     * @return The cache size
      */
     public int getCacheSize() {
         return cacheSize;
@@ -237,7 +260,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     /**
      * Returns the current block offset
      *
-     * @return the current block offset
+     * @return The current block offset
      */
     public int getBlockOffset() {
         return blockOffset;
@@ -246,7 +269,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     /**
      * Returns the ResultSet type, FORWARD_ONLY or not.
      *
-     * @return the ResultSet type
+     * @return The ResultSet type
      */
     public int getRSType() {
         return parent.getRstype();
@@ -255,15 +278,15 @@ public class ResultSetResponse implements IIncompleteResponse {
     /**
      * Returns the concurrency of the ResultSet.
      *
-     * @return the ResultSet concurrency
+     * @return The ResultSet concurrency
      */
     public int getRSConcur() {
         return parent.getRsconcur();
     }
 
     /**
-     * Parses the given string and changes the value of the matching header appropriately, or passes it on to the
-     * underlying DataResponse.
+     * Gets the next table headers from the underlying protocol, or gets the next rows on to the underlying
+     * DataResponse if the headers are already retrieved.
      *
      * @param protocol the connection's protocol
      * @throws ProtocolException if has a wrong header
@@ -275,10 +298,11 @@ public class ResultSetResponse implements IIncompleteResponse {
         } else if (protocol.getCurrentServerResponseHeader() != ServerResponses.HEADER) {
             throw new ProtocolException("header expected, got: " + protocol.getRemainingStringLine(0));
         } else {
-            TableResultHeaders next = con.getProtocol().getNextTableHeader(this.name, this.columnLengths, this.type, this.tableNames);
+            TableResultHeaders next = con.getProtocol().getNextTableHeader(this.name, this.columnLengths, this.type,
+                    this.tableNames);
             this.isSet |= next.getValueForBitMap();
             if(this.isSet >= IS_SET_FINAL_VALUE) {
-                this.populateJdbcSQLTypesArray(); //VERY IMPORTANT
+                this.populateJdbcSQLTypesArray(); //VERY IMPORTANT to populate the JDBC types array
             }
         }
     }

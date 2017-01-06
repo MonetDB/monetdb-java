@@ -8,6 +8,10 @@
 
 package nl.cwi.monetdb.mcl.protocol;
 
+/**
+ * This enum lists the possible responses of a query by the server. Notice that Q_PARSE is not used by neither a MAPI or
+ * embedded connection, so it's here for completeness.
+ */
 public enum StarterHeaders {
 
     /* Please don't change the order */

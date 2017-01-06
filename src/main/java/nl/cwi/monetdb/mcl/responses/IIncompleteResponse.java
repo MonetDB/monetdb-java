@@ -11,7 +11,12 @@ package nl.cwi.monetdb.mcl.responses;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 
+/**
+ * The ResultSetResponse and DatablockResponse Classes might require more than one Block response if the response is
+ * larger than the BlockSize.
+ */
 public interface IIncompleteResponse extends IResponse {
+
     /**
      * Returns whether this Response expects more lines to be added to it.
      *
@@ -19,5 +24,11 @@ public interface IIncompleteResponse extends IResponse {
      */
     boolean wantsMore();
 
+    /**
+     * Adds a batch of data to the Response instance.
+     *
+     * @param protocol The connection's protocol to fetch data from
+     * @throws ProtocolException If the result line is not expected
+     */
     void addLines(AbstractProtocol protocol) throws ProtocolException;
 }

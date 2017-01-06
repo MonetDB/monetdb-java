@@ -9,17 +9,22 @@
 package nl.cwi.monetdb.mcl.responses;
 
 /**
- * The UpdateResponse represents an update statement response.  It
- * is issued on an UPDATE, INSERT or DELETE SQL statement.  This
- * response keeps a count field that represents the affected rows
- * and a field that contains the last inserted auto-generated ID, or
- * -1 if not applicable.<br />
+ * The UpdateResponse represents an update statement response. It is issued on an UPDATE, INSERT or DELETE SQL
+ * statement. This response keeps a count field that represents the affected rows and a field that contains the last
+ * inserted auto-generated ID, or -1 if not applicable.
+ * <br />
  * <tt>&amp;2 0 -1</tt>
  */
 public class UpdateResponse implements IResponse {
 
+    /**
+     * The id of the response before this one.
+     */
     private final int lastid;
 
+    /**
+     * The number of rows affected by the update statement.
+     */
     private final int count;
 
     public UpdateResponse(int lastid, int count) {
@@ -28,10 +33,20 @@ public class UpdateResponse implements IResponse {
         this.count = count;
     }
 
+    /**
+     * The id of the response before this one.
+     *
+     * @return The id of the response before this one
+     */
     public int getLastid() {
         return lastid;
     }
 
+    /**
+     * The number of rows affected by the update statement.
+     *
+     * @return The number of rows affected by the update statement
+     */
     public int getCount() {
         return count;
     }

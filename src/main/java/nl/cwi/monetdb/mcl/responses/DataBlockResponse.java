@@ -21,21 +21,18 @@ import java.util.Arrays;
 import java.util.Calendar;
 
 /**
- * The DataBlockResponse is tabular data belonging to a
- * ResultSetResponse.  Tabular data from the server typically looks
- * like:
+ * The DataBlockResponse is tabular data belonging to a ResultSetResponse. On a MAPI connection, tabular data from the
+ * server typically looks like:
  * <pre>
  * [ "value",	56	]
  * </pre>
- * where each column is separated by ",\t" and each tuple surrounded
- * by brackets ("[" and "]").  A DataBlockResponse object holds the
- * raw data as read from the server, in a parsed manner, ready for
- * easy retrieval.
+ * where each column is separated by ",\t" and each tuple surrounded by brackets ("[" and "]"). A DataBlockResponse
+ * object holds the raw data as read from the server, in a parsed manner, ready for easy retrieval. Meanwhile on an
+ * Embedded connection, the data is automatically parsed.
  *
- * This object is not intended to be queried by multiple threads
- * synchronously. It is designed to work for one thread retrieving
- * rows from it.  When multiple threads will retrieve rows from this
- * object, it is possible for threads to get the same data.
+ * This object is not intended to be queried by multiple threads synchronously. It is designed to work for one thread
+ * retrieving rows from it. When multiple threads will retrieve rows from this object, it is possible for threads to
+ * get the same data.
  */
 public class DataBlockResponse implements IIncompleteResponse {
 
@@ -59,6 +56,8 @@ public class DataBlockResponse implements IIncompleteResponse {
      *
      * @param rowcount the number of rows
      * @param columncount the number of columns
+     * @param protocol the underlying protocol
+     * @param JdbcSQLTypes an array of the JDBC mappings of the columns
      */
     DataBlockResponse(int rowcount, int columncount, AbstractProtocol protocol, int[] JdbcSQLTypes) {
         this.pos = -1;
@@ -70,10 +69,9 @@ public class DataBlockResponse implements IIncompleteResponse {
     }
 
     /**
-     * addLine adds a String of data to this object's data array. Note that an IndexOutOfBoundsException can be thrown
-     * when an attempt is made to add more than the original construction size specified.
+     * addLines adds a batch of rows to the block. Before adding the first line, the column arrays are allocated.
      *
-     * @param protocol The connection's protocol
+     * @param protocol The connection's protocol to fetch data from
      * @throws ProtocolException If the result line is not expected
      */
     @Override
@@ -169,54 +167,131 @@ public class DataBlockResponse implements IIncompleteResponse {
 
     /* Methods to be called after the block construction has been completed */
 
+    /**
+     * Sets the current line number on the block.
+     *
+     * @param blockLine the block line number
+     */
     void setBlockLine(int blockLine) {
         this.blockLine = blockLine;
     }
 
+    /**
+     * Sets the data on the block.
+     * This method is called by the MonetVirtualResultSet class which should be eliminated on the future.
+     *
+     * @param data the data to set
+     */
     public void setData(Object[] data) { /* For VirtualResultSet :( */
         this.data = data;
     }
 
+    /**
+     * Gets the data on the block.
+     * This method is called by the MonetVirtualResultSet class which should be eliminated on the future.
+     *
+     * @return the result set data
+     */
     public Object[] getData() { /* For VirtualResultSet :( */
         return this.data;
     }
 
+    /**
+     * Checks if a value in the current row is null.
+     *
+     * @param column The column index starting from 0
+     * @return If the value is null or not.
+     */
     public boolean checkValueIsNull(int column) {
         return this.nullMappings[column][this.blockLine];
     }
 
+    /**
+     * Gets the current row value as a Java Boolean.
+     *
+     * @param column The column index starting from 0
+     * @return A Java Boolean if the column is a boolean, otherwise a ClassCastException is thrown
+     */
     public boolean getBooleanValue(int column) {
         return ((boolean[]) this.data[column])[this.blockLine];
     }
 
+    /**
+     * Gets the current row value as a Java Byte.
+     *
+     * @param column The column index starting from 0
+     * @return A Java Byte if the column is a tinyint, otherwise a ClassCastException is thrown
+     */
     public byte getByteValue(int column) {
         return ((byte[]) this.data[column])[this.blockLine];
     }
 
+    /**
+     * Gets the current row value as a Java Short.
+     *
+     * @param column The column index starting from 0
+     * @return A Java Short if the column is a smallint, otherwise a ClassCastException is thrown
+     */
     public short getShortValue(int column) {
         return ((short[]) this.data[column])[this.blockLine];
     }
 
+    /**
+     * Gets the current row value as a Java Integer.
+     *
+     * @param column The column index starting from 0
+     * @return A Java Integer if the column is an integer or month_interval, otherwise a ClassCastException is thrown
+     */
     public int getIntValue(int column) {
         return ((int[]) this.data[column])[this.blockLine];
     }
 
+    /**
+     * Gets the current row value as a Java Long.
+     *
+     * @param column The column index starting from 0
+     * @return A Java Long if the column is a bigint or second_interval, otherwise a ClassCastException is thrown
+     */
     public long getLongValue(int column) {
         return ((long[]) this.data[column])[this.blockLine];
     }
 
+    /**
+     * Gets the current row value as a Java Float.
+     *
+     * @param column The column index starting from 0
+     * @return A Java Float if the column is a real, otherwise a ClassCastException is thrown
+     */
     public float getFloatValue(int column) {
         return ((float[]) this.data[column])[this.blockLine];
     }
 
+    /**
+     * Gets the current row value as a Java Double.
+     *
+     * @param column The column index starting from 0
+     * @return A Java Double if the column is a double, otherwise a ClassCastException is thrown
+     */
     public double getDoubleValue(int column) {
         return ((double[]) this.data[column])[this.blockLine];
     }
 
+    /**
+     * Gets the current row value as a Java Object.
+     *
+     * @param column The column index starting from 0
+     * @return A Java Object if the column is not a primitive type, otherwise a ClassCastException is thrown
+     */
     public Object getObjectValue(int column) {
         return ((Object[]) this.data[column])[this.blockLine];
     }
 
+    /**
+     * Gets the current row value as a Java String.
+     *
+     * @param column The column index starting from 0
+     * @return The String representation of the data type
+     */
     public String getValueAsString(int column) {
         switch (this.jdbcSQLTypes[column]) {
             case Types.BOOLEAN:
@@ -235,11 +310,22 @@ public class DataBlockResponse implements IIncompleteResponse {
                 return Double.toString(((double[]) this.data[column])[this.blockLine]);
             case Types.LONGVARBINARY:
                 return Arrays.toString(((byte[][]) this.data[column])[this.blockLine]);
-            default: //CHAR, VARCHAR, LONGVARCHAR, OTHER, BLOB, CLOB and others
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.LONGVARCHAR:
+            case Types.OTHER:
+                return ((String[]) this.data[column])[this.blockLine];
+            default: //BLOB, CLOB, BigDecimal, BigInteger, Time, Timestamp and Date
                 return ((Object[]) this.data[column])[this.blockLine].toString();
         }
     }
 
+    /**
+     * Gets the current row value as a Java Object.
+     *
+     * @param column The column index starting from 0
+     * @return The Object representation of the data type
+     */
     public Object getValueAsObject(int column) {
         switch (this.jdbcSQLTypes[column]) {
             case Types.BOOLEAN:

@@ -8,6 +8,9 @@
 
 package nl.cwi.monetdb.mcl.protocol;
 
+/**
+ * This enum represents the possible stages of a query response by the server.
+ */
 public enum ServerResponses {
 
     /* Please don't change the order */

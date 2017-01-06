@@ -113,7 +113,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     public DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
             throws ProtocolException {
         int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
-        int columncount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //column count
         int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int offset = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
 
@@ -121,7 +121,7 @@ public class OldMapiProtocol extends AbstractProtocol {
         if (rs == null) {
             return null;
         }
-        return rs.addDataBlockResponse(offset, rowcount, columncount, this);
+        return rs.addDataBlockResponse(offset, rowcount, this);
     }
 
     @Override
