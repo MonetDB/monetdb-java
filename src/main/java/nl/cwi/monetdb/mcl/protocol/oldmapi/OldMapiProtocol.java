@@ -32,12 +32,12 @@ public class OldMapiProtocol extends AbstractProtocol {
 
     CharBuffer lineBuffer;
 
-    private final StringBuilder tupleLineBuilder;
+    CharBuffer tupleLineBuffer;
 
     public OldMapiProtocol(OldMapiSocket socket) {
         this.socket = socket;
         this.lineBuffer = CharBuffer.wrap(new char[OldMapiSocket.BLOCK]);
-        this.tupleLineBuilder = new StringBuilder(OldMapiSocket.BLOCK);
+        this.tupleLineBuffer = CharBuffer.wrap(new char[1024]);
     }
 
     public OldMapiSocket getSocket() {
@@ -132,8 +132,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     @Override
     public int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] data, boolean[][] nulls)
             throws ProtocolException {
-        OldMapiTupleLineParser.OldMapiParseTupleLine(firstLineNumber, this.lineBuffer,
-                this.tupleLineBuilder, typesMap, data, nulls);
+        OldMapiTupleLineParser.OldMapiParseTupleLine(this, firstLineNumber, typesMap, data, nulls);
         return firstLineNumber;
     }
 

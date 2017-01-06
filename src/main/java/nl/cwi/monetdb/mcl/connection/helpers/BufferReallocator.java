@@ -33,9 +33,16 @@ public final class BufferReallocator {
 
     public static CharBuffer ReallocateBuffer(CharBuffer oldBuffer) {
         int newCapacity = GetNewCapacity(oldBuffer);
-        CharBuffer newBuffer = CharBuffer.allocate(newCapacity);
+        CharBuffer newBuffer = CharBuffer.wrap(new char[newCapacity]);
         oldBuffer.flip();
         newBuffer.put(oldBuffer.array());
         return newBuffer;
+    }
+
+    public static CharBuffer EnsureCapacity(CharBuffer oldBuffer, int newCapacity) {
+        if(newCapacity > oldBuffer.capacity()) {
+            oldBuffer = CharBuffer.wrap(new char[newCapacity]);
+        }
+        return oldBuffer;
     }
 }

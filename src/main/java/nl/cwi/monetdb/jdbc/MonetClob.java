@@ -30,6 +30,10 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 		buffer = new StringBuilder(in);
 	}
 
+	public MonetClob(char[] toParse, int startPosition, int count) {
+		buffer = new StringBuilder(new String(toParse, startPosition, count));
+	}
+
 	//== begin interface Clob
 	
 	/**
