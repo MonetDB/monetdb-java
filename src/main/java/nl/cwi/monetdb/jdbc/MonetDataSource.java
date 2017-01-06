@@ -35,7 +35,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
     private String description = "MonetDB database";
 	private String url = "jdbc:monetdb://localhost/";
     private int loginTimeout;
-    private String embeddedDirectory;
+    private boolean isEmbedded;
     private final MonetDriver driver = new MonetDriver();
 
 	// the following properties are also standard:
@@ -73,9 +73,8 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
         if (loginTimeout > 0) {
             props.put("so_timeout", Integer.toString(loginTimeout));
         }
-		if(embeddedDirectory != null) {
+		if(isEmbedded) {
             props.put("embedded", "true");
-            props.put("directory", embeddedDirectory);
         }
 		return driver.connect(url, props);
 	}
@@ -160,7 +159,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 *
 	 * @param url the connection URL
 	 */
-	public void setDatabaseName(String url) {
+	public void setURL(String url) {
 		this.url = url;
 	}
 
@@ -183,21 +182,21 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	}
 
     /**
-     * Gets the embedded connection directory. If null, then a MAPI connection will be created instead.
+     * Gets the embedded connection directory. If not, then a MAPI connection will be created instead.
      *
-     * @return The embedded connection directory String. If null, then a MAPI connection will be created instead.
+     * @return If the connection will be embedded. If not, then a MAPI connection will be created instead.
      */
-    public String getEmbeddedDirectory() {
-        return embeddedDirectory;
+    public boolean isEmbedded() {
+        return isEmbedded;
     }
 
     /**
-     * Sets the embedded connection directory, thus making the connection embedded.
+     * Sets the connection to be embedded
      *
-     * @param embeddedDirectory The embedded connection directory to set
+     * @param isEmbedded A boolean to indicate if the connection will be embedded
      */
-    public void setEmbeddedDirectory(String embeddedDirectory) {
-        this.embeddedDirectory = embeddedDirectory;
+    public void setIsEmbedded(boolean isEmbedded) {
+        this.isEmbedded = isEmbedded;
     }
 
     /**

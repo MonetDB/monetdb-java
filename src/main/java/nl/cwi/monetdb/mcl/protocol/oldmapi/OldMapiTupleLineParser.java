@@ -54,7 +54,7 @@ final class OldMapiTupleLineParser {
     }
 
     static int OldMapiParseTupleLine(int lineNumber, CharBuffer lineBuffer, StringBuilder helper, int[] typesMap,
-                                     Object[] values, boolean[] nulls) throws ProtocolException {
+                                     Object[] values, boolean[][] nulls) throws ProtocolException {
         int len = lineBuffer.limit();
         char[] array = lineBuffer.array();
 
@@ -151,13 +151,13 @@ final class OldMapiTupleLineParser {
                             }
                             // put the unescaped string in the right place
                             OldMapiStringToJavaObjectConverter(helper.toString(), lineNumber, values[column], typesMap[column]);
-                            nulls[column] = false;
+                            nulls[column][lineNumber] = false;
                         } else if ((i - 1) - cursor == 4 && CharIndexOf(array, array.length, NULL_STRING, NULL_STRING.length) == cursor) {
                             SetNullValue(lineNumber, values[column], typesMap[column]);
-                            nulls[column] = true;
+                            nulls[column][lineNumber] = true;
                         } else {
                             OldMapiStringToJavaObjectConverter(new String(array, cursor, i - 1 - cursor), lineNumber, values[column], typesMap[column]);
-                            nulls[column] = false;
+                            nulls[column][lineNumber] = false;
                         }
                         column++;
                         cursor = i + 1;
@@ -197,10 +197,10 @@ final class OldMapiTupleLineParser {
                 ((short[]) columnArray)[lineNumber] = Short.parseShort(toParse);
                 break;
             case Types.INTEGER:
-                ((int[]) columnArray)[lineNumber] = Integer.parseInt(toParse);
+                ((int[]) columnArray)[lineNumber] = Integer.parseInt(toParse.replace(".", "")); //intervals :(
                 break;
             case Types.BIGINT:
-                ((long[]) columnArray)[lineNumber] = Long.parseLong(toParse);
+                ((long[]) columnArray)[lineNumber] = Long.parseLong(toParse.replace(".", "")); //intervals :(
                 break;
             case Types.REAL:
                 ((float[]) columnArray)[lineNumber] = Float.parseFloat(toParse);

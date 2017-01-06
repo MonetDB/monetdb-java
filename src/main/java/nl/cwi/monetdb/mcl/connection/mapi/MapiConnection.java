@@ -44,14 +44,17 @@ public class MapiConnection extends MonetConnection {
     private int ttl = 10;
     /** Protocol version of the connection */
     private int version;
+    /** The database to connect to */
+    private String database;
     /** Endianness of the server */
     private ByteOrder serverEndianness;
 
-    public MapiConnection(Properties props, String database, String hash, String language, boolean blobIsBinary,
-                          boolean clobIsLongChar, String hostname, int port) throws IOException {
-        super(props, database, hash, MapiLanguage.GetLanguageFromString(language), blobIsBinary, clobIsLongChar);
+    public MapiConnection(Properties props, String hash, String language, boolean blobIsBinary,
+                          boolean clobIsLongChar, String hostname, int port, String database) throws IOException {
+        super(props, hash, MapiLanguage.GetLanguageFromString(language), blobIsBinary, clobIsLongChar);
         this.hostname = hostname;
         this.port = port;
+        this.database = database;
     }
 
     public String getHostname() {
@@ -60,6 +63,10 @@ public class MapiConnection extends MonetConnection {
 
     public int getPort() {
         return port;
+    }
+
+    public String getDatabase() {
+        return database;
     }
 
     public boolean isFollowRedirects() {

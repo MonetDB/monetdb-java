@@ -43,7 +43,7 @@ public class SQLcopyinto {
 		// of course also be done simultaneously with the JDBC
 		// connection being kept connected
 
-		MapiConnection server = new MapiConnection(null, "database",null, "sql", true,"localhost", 50000 );
+		MapiConnection server = new MapiConnection(null, null, "sql", false, true,"localhost", 50000, "database");
 
 		try {
 			List warning = server.connect("monetdb", "monetdb");

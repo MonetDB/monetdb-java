@@ -102,7 +102,7 @@ public class SQLRestore {
 	 * @throws IOException
 	 */
 	public void restore(File source) throws IOException {
-		MapiConnection server = new MapiConnection(null, _dbName,null, "sql", false, true, _host, _port );
+		MapiConnection server = new MapiConnection(null,null, "sql", false, true, _host, _port, _dbName);
 		try {
 			server.connect(_user, _password);
 

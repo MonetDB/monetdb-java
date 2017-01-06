@@ -83,9 +83,7 @@ public class OldMapiProtocol extends AbstractProtocol {
 
     @Override
     public StarterHeaders getNextStarterHeader() {
-        StarterHeaders res = OldMapiStartOfHeaderParser.GetNextStartHeaderOnOldMapi(this);
-        this.lineBuffer.position(this.lineBuffer.position() + 1);
-        return res;
+        return OldMapiStartOfHeaderParser.GetNextStartHeaderOnOldMapi(this);
     }
 
     @Override
@@ -135,7 +133,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     public int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] data, boolean[][] nulls)
             throws ProtocolException {
         OldMapiTupleLineParser.OldMapiParseTupleLine(firstLineNumber, this.lineBuffer,
-                this.tupleLineBuilder, typesMap, data, nulls[firstLineNumber]);
+                this.tupleLineBuilder, typesMap, data, nulls);
         return firstLineNumber;
     }
 

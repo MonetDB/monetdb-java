@@ -3257,22 +3257,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	//== end methods of interface ResultSet
 
 	/**
-	 * Adds a warning to the pile of warnings this ResultSet object has. If
-	 * there were no warnings (or clearWarnings was called) this warning will
-	 * be the first, otherwise this warning will get appended to the current
-	 * warning.
-	 *
-	 * @param reason the warning message
-	 */
-	private void addWarning(String reason, String sqlstate) {
-		if (warnings == null) {
-			warnings = new SQLWarning(reason, sqlstate);
-		} else {
-			warnings.setNextWarning(new SQLWarning(reason, sqlstate));
-		}
-	}
-
-	/**
 	 * Small helper method that formats the "Invalid Column Index number ..." message
 	 * and creates a new SQLException object whose SQLState is set to "M1M05".
 	 *

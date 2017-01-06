@@ -21,9 +21,11 @@ final class OldMapiStartOfHeaderParser {
                 break;
             case '1':
                 res = StarterHeaders.Q_TABLE;
+                protocol.lineBuffer.get();
                 break;
             case '2':
                 res = StarterHeaders.Q_UPDATE;
+                protocol.lineBuffer.get();
                 break;
             case '3':
                 res = StarterHeaders.Q_SCHEMA;
@@ -33,9 +35,11 @@ final class OldMapiStartOfHeaderParser {
                 break;
             case '5':
                 res = StarterHeaders.Q_PREPARE;
+                protocol.lineBuffer.get();
                 break;
             case '6':
                 res = StarterHeaders.Q_BLOCK;
+                protocol.lineBuffer.get();
                 break;
             default:
                 res = StarterHeaders.Q_UNKNOWN;
@@ -51,11 +55,13 @@ final class OldMapiStartOfHeaderParser {
         if (currentPointer >= limit) {
             throw new ProtocolException("unexpected end of string", currentPointer - 1);
         }
-        int tmp;
+        int tmp = 0, negative = 1;;
         char chr = array[currentPointer++];
         // note: don't use Character.isDigit() here, because we only want ISO-LATIN-1 digits
         if (chr >= '0' && chr <= '9') {
             tmp = (int)chr - (int)'0';
+        } else if(chr == '-') {
+            negative = -1;
         } else {
             throw new ProtocolException("expected a digit", currentPointer - 1);
         }
@@ -72,6 +78,7 @@ final class OldMapiStartOfHeaderParser {
                 throw new ProtocolException("expected a digit", currentPointer - 1);
             }
         }
+        tmp *= negative;
         protocol.lineBuffer.position(currentPointer);
         return tmp;
     }

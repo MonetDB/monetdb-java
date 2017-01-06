@@ -17,8 +17,7 @@ import java.io.InputStreamReader;
 
 
 /**
- * This file contains a function to extract files from its including Jar
- * package.
+ * This file contains a function to extract files from its including Jar package.
  *
  * @author Ying Zhang <Y.Zhang@cwi.nl>
  * @version 0.1
@@ -28,15 +27,12 @@ public class Extract {
 	private static final int DEFAULT_BUFSIZE = 16386;
 
     /**
-     * Extracts a file from the Jar package which includes this class to
-     * the given destination
-     * @param fromFile The file to extract, including it absolute path
-     * inside its including Jar package.
+     * Extracts a file from the Jar package which includes this class to the given destination
+     * @param fromFile The file to extract, including it absolute path inside its including Jar package.
      * @param toFile Destination for the extracted file
      * @throws FileNotFoundException If the file to extract can not be
      * found in its including Jar package.
-     * @throws IOException If any error happens during
-     * creating/reading/writing files.
+     * @throws IOException If any error happens during creating/reading/writing files.
      */
 	public static void extractFile(String fromFile, String toFile) throws FileNotFoundException, IOException {
 		char[] cbuf = new char[DEFAULT_BUFSIZE];

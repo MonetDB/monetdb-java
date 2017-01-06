@@ -148,9 +148,24 @@ final public class MonetDriver implements Driver {
 		prop.description = "Force the use of the given hash algorithm during challenge response (one of SHA1, MD5, plain)";
 		props.add(prop);
 
-		prop = new DriverPropertyInfo("language", "sql");
+		prop = new DriverPropertyInfo("host", "localhost");
 		prop.required = false;
-		prop.description = "What language to use for MonetDB conversations (experts only)";
+		prop.description = "The MonetDB server hostname (MAPI connection only)";
+		props.add(prop);
+
+		prop = new DriverPropertyInfo("port", PORT);
+		prop.required = false;
+		prop.description = "The port to connect to the MonetDB server (MAPI connection only)";
+		props.add(prop);
+
+		prop = new DriverPropertyInfo("so_timeout", "0");
+		prop.required = false;
+		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call (MAPI connection only)"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
+		props.add(prop);
+
+		prop = new DriverPropertyInfo("database", "");
+		prop.required = false;
+		prop.description = "The database name to connect (MAPI connection only)";
 		props.add(prop);
 
 		prop = new DriverPropertyInfo("follow_redirects", "true");
@@ -160,7 +175,7 @@ final public class MonetDriver implements Driver {
 
 		prop = new DriverPropertyInfo("treat_blob_as_binary", "false");
 		prop.required = false;
-		prop.description = "Whether BLOBs on the server should be treated as BINARY types, thus mapped to byte[] (MAPI connection only)";
+		prop.description = "Whether BLOBs on the server should be treated as LONGVARBINARY types, thus mapped to byte[] (MAPI connection only)";
 		props.add(prop);
 
 		prop = new DriverPropertyInfo("treat_clob_as_longvarchar", "false");
@@ -168,19 +183,14 @@ final public class MonetDriver implements Driver {
 		prop.description = "Whether CLOBs on the server should be treated as LONGVARCHAR types, thus mapped to String (MAPI connection only)";
 		props.add(prop);
 
-		prop = new DriverPropertyInfo("so_timeout", "0");
+		prop = new DriverPropertyInfo("language", "sql");
 		prop.required = false;
-		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call (MAPI connection only)"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
+		prop.description = "What language to use for MonetDB conversations (experts only)";
 		props.add(prop);
 
 		prop = new DriverPropertyInfo("embedded", "false");
 		prop.required = false;
 		prop.description = "Whether or not to use an embedded MonetDB connection";
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("directory", "");
-		prop.required = false;
-		prop.description = "The directory of the database farm (Embedded connection only)";
 		props.add(prop);
 
 		DriverPropertyInfo[] dpi = new DriverPropertyInfo[props.size()];
@@ -404,19 +414,12 @@ final public class MonetDriver implements Driver {
 
 		boolean isEmbedded = Boolean.parseBoolean(props.getProperty("embedded", "false"));
 		String language = props.getProperty("language", "sql");
-		String username = props.getProperty("user", null);
-		String password = props.getProperty("password", null);
-		String database = props.getProperty("database");
-		if (database == null || database.trim().isEmpty())
-			throw new IllegalArgumentException("database should not be null or empty");
+		String username = props.getProperty("user");
+		String password = props.getProperty("password");
 		String hash = props.getProperty("hash");
 		int sockTimeout = 0;
 
-		//instantiate the connection
-		if(isEmbedded) {
-			String directory = props.getProperty("directory");
-			if (directory == null || directory.trim().isEmpty())
-				throw new IllegalArgumentException("directory should not be null or empty");
+		if(isEmbedded) { //instantiate the connection
 			try {
 			    if(EmbeddedConnectionClass == null) {
 			        EmbeddedConnectionClass = Class.forName("nl.cwi.monetdb.embedded.jdbc.EmbeddedConnection");
@@ -425,8 +428,8 @@ final public class MonetDriver implements Driver {
 					throw new SQLException("EmbeddedConnection Class not found!");
 				}
                 res = (MonetConnection) EmbeddedConnectionClass
-                    .getDeclaredConstructor(Properties.class, String.class, String.class, String.class, String.class)
-                    .newInstance(props, database, hash, language, directory);
+                    .getDeclaredConstructor(Properties.class, String.class, String.class)
+                    .newInstance(props, hash, language);
 			} catch (InvocationTargetException | InstantiationException | IllegalAccessException |
 			         NoSuchMethodException | ClassNotFoundException e) {
 				throw new SQLException(e);
@@ -439,6 +442,9 @@ final public class MonetDriver implements Driver {
 				throw new IllegalArgumentException("user should not be null or empty");
 			if (password == null || password.trim().isEmpty())
 				throw new IllegalArgumentException("password should not be null or empty");
+            String database = props.getProperty("database");
+            if (database == null || database.trim().isEmpty())
+                throw new IllegalArgumentException("database should not be null or empty");
 
             boolean blobIsBinary = Boolean.valueOf(props.getProperty("treat_blob_as_binary", "false"));
             boolean clobIsLongChar = Boolean.valueOf(props.getProperty("treat_clob_as_longvarchar", "false"));
@@ -472,7 +478,7 @@ final public class MonetDriver implements Driver {
 				props.setProperty("so_timeout", "0");
 			}
 			try {
-				res = new MapiConnection(props, database, hash, language, blobIsBinary, clobIsLongChar, hostname, port);
+				res = new MapiConnection(props, hash, language, blobIsBinary, clobIsLongChar, hostname, port, database);
 			} catch (IOException e) {
 				throw new SQLException(e);
 			}
@@ -491,7 +497,7 @@ final public class MonetDriver implements Driver {
 			res.setSoTimeout(sockTimeout);
 		}
 
-		try {
+		try { //atempt to connect and authenticate the user
 			List<String> warnings = res.connect(username, password);
 			if(warnings != null) {
 				for (String warning : warnings) {
@@ -508,15 +514,7 @@ final public class MonetDriver implements Driver {
 				throw new SQLException("Unable to connect (" + con.getHostname() + ":"
 						+ con.getPort() + "): " + e.getMessage(), "08006");
 			} else {
-                try {
-                    java.lang.reflect.Method method = EmbeddedConnectionClass.getMethod("getDirectory");
-                    String directory = (String) method.invoke(EmbeddedConnectionClass.cast(res));
-                    throw new SQLException("Unable to start the farm on the directory: " + directory +
-                                           " Details:" + e.getMessage(), "08006");
-                } catch (NoSuchMethodException | SecurityException | IllegalArgumentException |
-                         IllegalAccessException | InvocationTargetException ex) {
-                    throw new SQLException(e.getMessage());
-                }
+                throw new SQLException("Unable to connect: " + e.getMessage(), "08006");
 			}
 		} catch (ProtocolException e) {
 			throw new SQLException(e.getMessage(), "08001");
@@ -529,8 +527,7 @@ final public class MonetDriver implements Driver {
 			throw sqle;
 		}
 
-		//set the timezone
-		if (res.getLanguage() == MapiLanguage.LANG_SQL) {
+		if (!isEmbedded && res.getLanguage() == MapiLanguage.LANG_SQL) { //set the timezone only in the MAPI connection
 			// enable auto commit
 			res.setAutoCommit(true);
 			// set our time zone on the server

@@ -17,8 +17,7 @@ import java.sql.*;
  */
 public class MJDBCTest {
 	public static void main(String[] args) throws Exception {
-		// make sure the driver is loaded
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		//Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
 		// turn on debugging (disabled)
 		//nl.cwi.monetdb.jdbc.MonetConnection.setDebug(true);
 		Connection con = DriverManager.getConnection("jdbc:monetdb://localhost/notused", "monetdb", "monetdb");

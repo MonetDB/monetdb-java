@@ -54,8 +54,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     protected final Properties conn_props;
     /** The language to connect with */
     protected IMonetDBLanguage language;
-    /** The database to connect to */
-    protected String database;
     /** Authentication hash method */
     protected final String hash;
     /** An optional thread that is used for sending large queries */
@@ -79,7 +77,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     private Map<Statement,?> statements = new WeakHashMap<Statement, Object>();
     /** The number of results we receive from the server at once */
     private int curReplySize = -1; // the server by default uses -1 (all)
-    /** Whether or not BLOB is mapped to BINARY within the driver */
+    /** Whether or not BLOB is mapped to LONGVARBINARY within the driver */
     private final boolean blobIsBinary;
     /** Whether or not CLOB is mapped to LONGVARCHAR within the driver */
     private final boolean clobIsLongChar;
@@ -93,10 +91,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      *
      * @throws IOException if an error occurs
      */
-    public MonetConnection(Properties props, String database, String hash, IMonetDBLanguage language,
-                           boolean blobIsBinary, boolean clobIsLongChar) throws IOException {
+    public MonetConnection(Properties props, String hash, IMonetDBLanguage language, boolean blobIsBinary,
+                           boolean clobIsLongChar) throws IOException {
         this.conn_props = props;
-        this.database = database;
         this.hash = hash;
         this.language = language;
         this.blobIsBinary = blobIsBinary;
@@ -800,7 +797,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     @Override
     public String toString() {
-        return "MonetDB Connection (" + this.getJDBCURL() + ") " + (closed ? "connected" : "disconnected");
+        return "MonetDB Connection (" + this.getJDBCURL() + ") " + (closed ? "disconnected" : "connected");
     }
 
     //== Java 1.6 methods (JDBC 4.0)
@@ -1068,8 +1065,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         // only set value for supported property names
         if (name.equals("host") || name.equals("port") || name.equals("user") || name.equals("password") ||
                 name.equals("database") || name.equals("language") || name.equals("so_timeout") ||
-                name.equals("debug") || name.equals("hash") || name.equals("treat_blob_as_binary") ||
-                name.equals("treat_clob_as_longvarchar") || name.equals("embedded") || name.equals("directory")) {
+                name.equals("hash") || name.equals("treat_blob_as_binary") || name.equals("follow_redirects") ||
+                name.equals("treat_clob_as_longvarchar") || name.equals("embedded")) {
             conn_props.setProperty(name, value);
         } else {
             addWarning("setClientInfo: " + name + "is not a recognised property", "01M07");
