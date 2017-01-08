@@ -21,8 +21,8 @@ import java.util.Map;
 public class NewMapiProtocol extends AbstractProtocol {
 
     @Override
-    public ServerResponses getCurrentServerResponseHeader() {
-        return null;
+    public int getCurrentServerResponseHeader() {
+        return 0;
     }
 
     @Override
@@ -36,8 +36,8 @@ public class NewMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public StarterHeaders getNextStarterHeader() {
-        return null;
+    public int getNextStarterHeader() {
+        return 0;
     }
 
     @Override
@@ -61,8 +61,8 @@ public class NewMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public TableResultHeaders getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames) throws ProtocolException {
-        return null;
+    public int getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames) throws ProtocolException {
+        return 0;
     }
 
     @Override

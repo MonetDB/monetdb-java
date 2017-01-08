@@ -76,7 +76,8 @@ public class DataBlockResponse implements IIncompleteResponse {
      */
     @Override
     public void addLines(AbstractProtocol protocol) throws ProtocolException {
-        if (protocol.getCurrentServerResponseHeader() != ServerResponses.RESULT) {
+        int csrh = protocol.getCurrentServerResponseHeader();
+        if (csrh != ServerResponses.RESULT) {
             throw new ProtocolException("protocol violation: unexpected line in data block: " +
                     protocol.getRemainingStringLine(0));
         }

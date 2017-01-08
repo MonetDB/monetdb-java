@@ -295,14 +295,16 @@ public class ResultSetResponse implements IIncompleteResponse {
     public void addLines(AbstractProtocol protocol) throws ProtocolException {
         if (this.isSet >= IS_SET_FINAL_VALUE) {
             this.resultBlocks[0].addLines(protocol);
-        } else if (protocol.getCurrentServerResponseHeader() != ServerResponses.HEADER) {
-            throw new ProtocolException("header expected, got: " + protocol.getRemainingStringLine(0));
         } else {
-            TableResultHeaders next = con.getProtocol().getNextTableHeader(this.name, this.columnLengths, this.type,
-                    this.tableNames);
-            this.isSet |= next.getValueForBitMap();
-            if(this.isSet >= IS_SET_FINAL_VALUE) {
-                this.populateJdbcSQLTypesArray(); //VERY IMPORTANT to populate the JDBC types array
+            int csrh = protocol.getCurrentServerResponseHeader();
+            if (csrh != ServerResponses.HEADER) {
+                throw new ProtocolException("header expected, got: " + protocol.getRemainingStringLine(0));
+            } else {
+                int next = con.getProtocol().getNextTableHeader(this.name, this.columnLengths, this.type, this.tableNames);
+                this.isSet |= next;
+                if (this.isSet >= IS_SET_FINAL_VALUE) {
+                    this.populateJdbcSQLTypesArray(); //VERY IMPORTANT to populate the JDBC types array
+                }
             }
         }
     }

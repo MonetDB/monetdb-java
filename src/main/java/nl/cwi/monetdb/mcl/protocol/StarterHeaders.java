@@ -9,28 +9,28 @@
 package nl.cwi.monetdb.mcl.protocol;
 
 /**
- * This enum lists the possible responses of a query by the server. Notice that Q_PARSE is not used by neither a MAPI or
+ * This class lists the possible responses of a query by the server. Notice that Q_PARSE is not used by neither a MAPI or
  * embedded connection, so it's here for completeness.
  */
-public enum StarterHeaders {
+public final class StarterHeaders {
 
     /* Please don't change the order */
 
     /** A parse response (not handled) */
-    Q_PARSE,
+    public static final int Q_PARSE = 0;
     /** A tabular response (typical ResultSet) */
-    Q_TABLE,
+    public static final int Q_TABLE = 1;
     /** A response to an update statement, contains number of affected rows and generated key-id */
-    Q_UPDATE,
+    public static final int Q_UPDATE = 2;
     /** A response to a schema update */
-    Q_SCHEMA,
+    public static final int Q_SCHEMA = 3;
     /** A response to a transaction statement (start, rollback, abort, commit) */
-    Q_TRANS,
+    public static final int Q_TRANS = 4;
     /** A tabular response in response to a PREPARE statement containing information about the wildcard values that
      * need to be supplied */
-    Q_PREPARE,
+    public static final int Q_PREPARE = 5;
     /** A tabular continuation response (for a ResultSet) */
-    Q_BLOCK,
+    public static final int Q_BLOCK = 6;
     /** An unknown and unsupported response */
-    Q_UNKNOWN
+    public static final int Q_UNKNOWN = 7;
 }

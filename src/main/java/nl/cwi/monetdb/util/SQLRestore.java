@@ -52,7 +52,7 @@ public class SQLRestore {
 
 		public void run() {
 			AbstractProtocol protocol = _is.getProtocol();
-			ServerResponses next;
+			int next;
 			String line;
 			try {
 				while (true) {
@@ -62,7 +62,7 @@ public class SQLRestore {
 					if (line == null)
 						break;
 					switch (next) {
-						case ERROR:
+						case ServerResponses.ERROR:
 							_errorMessage = line;
 							_errorState.set(true);
 							return;

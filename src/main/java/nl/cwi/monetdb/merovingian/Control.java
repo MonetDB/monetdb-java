@@ -179,7 +179,7 @@ public class Control {
 		protocol.writeNextQuery(null,database + " " + command, "\n");
 		ArrayList<String> l = new ArrayList<>();
 		protocol.waitUntilPrompt();
-		ServerResponses next = protocol.getCurrentServerResponseHeader();
+		int next = protocol.getCurrentServerResponseHeader();
 		String line = protocol.getRemainingStringLine(0);
 
 		if (next == ServerResponses.ERROR)

@@ -9,28 +9,28 @@
 package nl.cwi.monetdb.mcl.protocol;
 
 /**
- * This enum represents the possible stages of a query response by the server.
+ * This class represents the possible stages of a query response by the server.
  */
-public enum ServerResponses {
+public final class ServerResponses {
 
     /* Please don't change the order */
 
     /** "there is currently no line", or the the type is unknown is represented by UNKNOWN */
-    UNKNOWN,
+    public static final int UNKNOWN = 0;
     /** a line starting with ! indicates ERROR */
-    ERROR,
+    public static final int ERROR = 1;
     /** a line starting with % indicates HEADER */
-    HEADER,
+    public static final int HEADER = 2;
     /** a line starting with [ indicates RESULT */
-    RESULT,
+    public static final int RESULT = 3;
     /** a line which matches the pattern of prompt1 is a PROMPT */
-    PROMPT,
+    public static final int PROMPT = 4;
     /** a line which matches the pattern of prompt2 is a MORE */
-    MORE,
+    public static final int MORE = 5;
     /** a line starting with &amp; indicates the start of a header block */
-    SOHEADER,
+    public static final int SOHEADER = 6;
     /** a line starting with ^ indicates REDIRECT */
-    REDIRECT,
+    public static final int REDIRECT = 7;
     /** a line starting with # indicates INFO */
-    INFO
+    public static final int INFO = 8;
 }

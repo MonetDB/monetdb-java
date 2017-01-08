@@ -13,8 +13,8 @@ import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 
 final class OldMapiStartOfHeaderParser {
 
-    static StarterHeaders GetNextStartHeaderOnOldMapi(OldMapiProtocol protocol) {
-        StarterHeaders res;
+    static int GetNextStartHeaderOnOldMapi(OldMapiProtocol protocol) {
+        int res;
         switch (protocol.lineBuffer.get()) {
             case '0':
                 res = StarterHeaders.Q_PARSE;

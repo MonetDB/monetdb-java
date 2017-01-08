@@ -15,9 +15,9 @@ import java.nio.CharBuffer;
 
 final class OldMapiTableHeaderParser {
 
-    static TableResultHeaders GetNextTableHeader(CharBuffer lineBuffer, String[] columnNames, int[] columnLengths,
+    static int GetNextTableHeader(CharBuffer lineBuffer, String[] columnNames, int[] columnLengths,
                                                  String[] types, String[] tableNames) throws ProtocolException {
-        TableResultHeaders res = TableResultHeaders.UNKNOWN;
+        int res = TableResultHeaders.UNKNOWN;
         int currentLength = lineBuffer.limit();
         char[] array = lineBuffer.array();
 

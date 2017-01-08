@@ -201,25 +201,26 @@ public class MapiConnection extends MonetConnection {
      * @throws SQLException if an IO exception or a database error occurs
      */
     @Override
-    public void sendControlCommand(ControlCommands con, int data) throws SQLException {
+    public void sendControlCommand(int con, int data) throws SQLException {
         String command = null;
         switch (con) {
-            case AUTO_COMMIT:
+            case ControlCommands.AUTO_COMMIT:
                 command = "auto_commit " + ((data == 1) ? "1" : "0");
                 break;
-            case REPLY_SIZE:
+            case ControlCommands.REPLY_SIZE:
                 command = "reply_size " + data;
                 break;
-            case RELEASE:
+            case ControlCommands.RELEASE:
                 command = "release " + data;
                 break;
-            case CLOSE:
+            case ControlCommands.CLOSE:
                 command = "close " + data;
         }
         try {
             protocol.writeNextQuery(language.getCommandTemplateIndex(0), command, language.getCommandTemplateIndex(1));
             protocol.waitUntilPrompt();
-            if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
+            int csrh = protocol.getCurrentServerResponseHeader();
+            if (csrh == ServerResponses.ERROR) {
                 String error = protocol.getRemainingStringLine(0);
                 throw new SQLException(error.substring(6), error.substring(0, 5));
             }
@@ -267,19 +268,19 @@ public class MapiConnection extends MonetConnection {
         List<String> redirects = new ArrayList<>();
         List<String> warns = new ArrayList<>();
         String err = "";
-        ServerResponses next;
+        int next;
 
         do {
             this.protocol.fetchNextResponseData();
             next = this.protocol.getCurrentServerResponseHeader();
             switch (next) {
-                case ERROR:
+                case ServerResponses.ERROR:
                     err += "\n" + this.protocol.getRemainingStringLine(7);
                     break;
-                case INFO:
+                case ServerResponses.INFO:
                     warns.add(this.protocol.getRemainingStringLine(1));
                     break;
-                case REDIRECT:
+                case ServerResponses.REDIRECT:
                     redirects.add(this.protocol.getRemainingStringLine(1));
             }
         } while (next != ServerResponses.PROMPT);

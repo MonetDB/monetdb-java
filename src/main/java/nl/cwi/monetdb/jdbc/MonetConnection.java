@@ -6,6 +6,7 @@ import nl.cwi.monetdb.mcl.connection.mapi.MapiLanguage;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
+import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 import nl.cwi.monetdb.mcl.responses.*;
 import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
@@ -131,7 +132,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
     public abstract String getJDBCURL();
 
-    public abstract void sendControlCommand(ControlCommands con, int data) throws SQLException;
+    public abstract void sendControlCommand(int con, int data) throws SQLException;
 
     public abstract ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType,
                                                     int resultSetConcurrency) throws SQLException;
@@ -1251,7 +1252,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         try {
             protocol.writeNextQuery(language.getQueryTemplateIndex(0), command, language.getQueryTemplateIndex(1));
             protocol.waitUntilPrompt();
-            if (protocol.getCurrentServerResponseHeader() == ServerResponses.ERROR) {
+            int csrh = protocol.getCurrentServerResponseHeader();
+            if (csrh == ServerResponses.ERROR) {
                 String error = protocol.getRemainingStringLine(0);
                 throw new SQLException(error.substring(6), error.substring(0, 5));
             }
@@ -1471,19 +1473,20 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
                 // go for new results
                 protocol.fetchNextResponseData();
-                ServerResponses nextResponse = protocol.getCurrentServerResponseHeader();
+                int nextResponse = protocol.getCurrentServerResponseHeader();
                 IResponse res = null;
                 while (nextResponse != ServerResponses.PROMPT) {
                     // each response should start with a start of header (or error)
                     switch (nextResponse) {
-                        case SOHEADER:
+                        case ServerResponses.SOHEADER:
                             // make the response object, and fill it
+                            int nextStartHeader = protocol.getNextStarterHeader();
                             try {
-                                switch (protocol.getNextStarterHeader()) {
-                                    case Q_PARSE:
-                                        throw new ProtocolException("Q_PARSE header not allowed here", 1);
-                                    case Q_TABLE:
-                                    case Q_PREPARE: {
+                                switch (nextStartHeader) {
+                                    case StarterHeaders.Q_PARSE:
+                                        throw new ProtocolException("Q_PARSE header not allowed here");
+                                    case StarterHeaders.Q_TABLE:
+                                    case StarterHeaders.Q_PREPARE: {
                                         res = protocol.getNextResultSetResponse(MonetConnection.this,
                                                 ResponseList.this, this.seqnr);
                                         ResultSetResponse rsreponse = (ResultSetResponse) res;
@@ -1497,13 +1500,13 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         }
                                     }
                                     break;
-                                    case Q_UPDATE:
+                                    case StarterHeaders.Q_UPDATE:
                                         res = protocol.getNextUpdateResponse();
                                         break;
-                                    case Q_SCHEMA:
+                                    case StarterHeaders.Q_SCHEMA:
                                         res = protocol.getNextSchemaResponse();
                                         break;
-                                    case Q_TRANS:
+                                    case StarterHeaders.Q_TRANS:
                                         res = protocol.getNextAutoCommitResponse();
                                         boolean isAutoCommit = ((AutoCommitResponse) res).isAutocommit();
 
@@ -1513,7 +1516,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         }
                                         MonetConnection.this.autoCommit = isAutoCommit;
                                         break;
-                                    case Q_BLOCK: {
+                                    case StarterHeaders.Q_BLOCK: {
                                         DataBlockResponse next = protocol.getNextDatablockResponse(rsresponses);
                                         if (next == null) {
                                             error = "M0M12!No ResultSetResponse for a DataBlock found";
@@ -1571,13 +1574,13 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                             protocol.fetchNextResponseData();
                             nextResponse = protocol.getCurrentServerResponseHeader();
                             break;
-                        case INFO:
+                        case ServerResponses.INFO:
                             addWarning(protocol.getRemainingStringLine(0), "01000");
                             // read the next line (can be prompt, new result, error, etc.) before we start the loop over
                             protocol.fetchNextResponseData();
                             nextResponse = protocol.getCurrentServerResponseHeader();
                             break;
-                        case ERROR:
+                        case ServerResponses.ERROR:
                             // read everything till the prompt (should be error) we don't know if we ignore some
                             // garbage here... but the log should reveal that
                             error = protocol.getRemainingStringLine(0);

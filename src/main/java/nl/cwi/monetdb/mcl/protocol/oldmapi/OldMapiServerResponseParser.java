@@ -12,8 +12,8 @@ import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
 final class OldMapiServerResponseParser {
 
-    static ServerResponses ParseOldMapiServerResponse(OldMapiProtocol protocol) {
-        ServerResponses res;
+    static int ParseOldMapiServerResponse(OldMapiProtocol protocol) {
+        int res;
         switch (protocol.lineBuffer.get()) {
             case '!':
                 res = ServerResponses.ERROR;

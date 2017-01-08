@@ -8,14 +8,14 @@
 
 package nl.cwi.monetdb.mcl.connection;
 
-public enum ControlCommands {
+public final class ControlCommands {
 
     /** Send autocommit statement */
-    AUTO_COMMIT,
+    public static final int AUTO_COMMIT = 1;
     /** Set reply size for the server */
-    REPLY_SIZE,
+    public static final int REPLY_SIZE = 2;
     /** Release a prepared statement data */
-    RELEASE,
+    public static final int RELEASE = 3;
     /** Close a query */
-    CLOSE
+    public static final int CLOSE = 4;
 }

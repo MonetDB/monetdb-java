@@ -13,8 +13,6 @@ import nl.cwi.monetdb.mcl.connection.mapi.OldMapiSocket;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
-import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
-import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
 import nl.cwi.monetdb.mcl.responses.AutoCommitResponse;
 import nl.cwi.monetdb.mcl.responses.UpdateResponse;
 import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
@@ -26,7 +24,7 @@ import java.util.Map;
 
 public class OldMapiProtocol extends AbstractProtocol {
 
-    private ServerResponses currentServerResponseHeader = ServerResponses.UNKNOWN;
+    private int currentServerResponseHeader = ServerResponses.UNKNOWN;
 
     private final OldMapiSocket socket;
 
@@ -45,7 +43,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public ServerResponses getCurrentServerResponseHeader() {
+    public int getCurrentServerResponseHeader() {
         return currentServerResponseHeader;
     }
 
@@ -82,7 +80,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public StarterHeaders getNextStarterHeader() {
+    public int getNextStarterHeader() {
         return OldMapiStartOfHeaderParser.GetNextStartHeaderOnOldMapi(this);
     }
 
@@ -125,7 +123,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public TableResultHeaders getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames) throws ProtocolException {
+    public int getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames) throws ProtocolException {
         return OldMapiTableHeaderParser.GetNextTableHeader(this.lineBuffer, columnNames, columnLengths, types, tableNames);
     }
 

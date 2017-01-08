@@ -24,9 +24,9 @@ public abstract class AbstractProtocol {
 
     public abstract void fetchNextResponseData() throws IOException;
 
-    public abstract ServerResponses getCurrentServerResponseHeader();
+    public abstract int getCurrentServerResponseHeader();
 
-    public abstract StarterHeaders getNextStarterHeader();
+    public abstract int getNextStarterHeader();
 
     public abstract ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list,
                                                                int seqnr) throws ProtocolException;
@@ -42,8 +42,8 @@ public abstract class AbstractProtocol {
     public abstract DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
             throws ProtocolException;
 
-    public abstract TableResultHeaders getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types,
-                                                          String[] tableNames) throws ProtocolException;
+    public abstract int getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types,
+                                           String[] tableNames) throws ProtocolException;
 
     public abstract int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] values,
                                         boolean[][] nulls) throws ProtocolException;
