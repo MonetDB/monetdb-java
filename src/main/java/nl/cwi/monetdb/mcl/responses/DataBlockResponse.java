@@ -44,8 +44,6 @@ public class DataBlockResponse implements IIncompleteResponse {
     private final AbstractProtocol protocol;
     /** The JdbcSQLTypes mapping */
     private final int[] jdbcSQLTypes;
-    /** A mapping of null values of the current Row */
-    private boolean[][] nullMappings;//
     /** A 'pointer' to the current line */
     private int blockLine;
     /** The number of rows in the block */
@@ -63,7 +61,6 @@ public class DataBlockResponse implements IIncompleteResponse {
         this.pos = -1;
         this.rowcount = rowcount;
         this.data = new Object[columncount];
-        this.nullMappings = new boolean[columncount][rowcount];
         this.protocol = protocol;
         this.jdbcSQLTypes = JdbcSQLTypes;
     }
@@ -87,8 +84,6 @@ public class DataBlockResponse implements IIncompleteResponse {
             for (int i = 0 ; i < numberOfColumns ; i++) {
                 switch (this.jdbcSQLTypes[i]) {
                     case Types.BOOLEAN:
-                        this.data[i] = new boolean[this.rowcount];
-                        break;
                     case Types.TINYINT:
                         this.data[i] = new byte[this.rowcount];
                         break;
@@ -137,7 +132,7 @@ public class DataBlockResponse implements IIncompleteResponse {
 
         // add to the backing array
         int nextPos = this.pos + 1;
-        this.pos = this.protocol.parseTupleLines(nextPos, this.jdbcSQLTypes, this.data, this.nullMappings);
+        this.pos = this.protocol.parseTupleLines(nextPos, this.jdbcSQLTypes, this.data);
     }
 
     /**
@@ -160,10 +155,8 @@ public class DataBlockResponse implements IIncompleteResponse {
         int numberOfColumns = this.data.length;
         for (int i = 0; i < numberOfColumns; i++) {
             data[i] = null;
-            nullMappings[i] = null;
         }
         data = null;
-        nullMappings = null;
     }
 
     /* Methods to be called after the block construction has been completed */
@@ -204,7 +197,23 @@ public class DataBlockResponse implements IIncompleteResponse {
      * @return If the value is null or not.
      */
     public boolean checkValueIsNull(int column) {
-        return this.nullMappings[column][this.blockLine];
+        switch (this.jdbcSQLTypes[column]) {
+            case Types.BOOLEAN:
+            case Types.TINYINT:
+                return ((byte[]) this.data[column])[this.blockLine] == Byte.MIN_VALUE;
+            case Types.SMALLINT:
+                return ((short[]) this.data[column])[this.blockLine] == Short.MIN_VALUE;
+            case Types.INTEGER:
+                return ((int[]) this.data[column])[this.blockLine] == Integer.MIN_VALUE;
+            case Types.BIGINT:
+                return ((long[]) this.data[column])[this.blockLine] == Long.MIN_VALUE;
+            case Types.REAL:
+                return ((float[]) this.data[column])[this.blockLine] == Float.MIN_VALUE;
+            case Types.DOUBLE:
+                return ((double[]) this.data[column])[this.blockLine] == Double.MIN_VALUE;
+            default:
+                return ((Object[]) this.data[column])[this.blockLine] == null;
+        }
     }
 
     /**
@@ -214,7 +223,7 @@ public class DataBlockResponse implements IIncompleteResponse {
      * @return A Java Boolean if the column is a boolean, otherwise a ClassCastException is thrown
      */
     public boolean getBooleanValue(int column) {
-        return ((boolean[]) this.data[column])[this.blockLine];
+        return ((byte[]) this.data[column])[this.blockLine] == 1;
     }
 
     /**
@@ -296,7 +305,7 @@ public class DataBlockResponse implements IIncompleteResponse {
     public String getValueAsString(int column) {
         switch (this.jdbcSQLTypes[column]) {
             case Types.BOOLEAN:
-                return Boolean.toString(((boolean[]) this.data[column])[this.blockLine]);
+                return ((byte[]) this.data[column])[this.blockLine] == 1 ? "true" : "false";
             case Types.TINYINT:
                 return Byte.toString(((byte[]) this.data[column])[this.blockLine]);
             case Types.SMALLINT:
@@ -330,7 +339,7 @@ public class DataBlockResponse implements IIncompleteResponse {
     public Object getValueAsObject(int column) {
         switch (this.jdbcSQLTypes[column]) {
             case Types.BOOLEAN:
-                return ((boolean[]) this.data[column])[this.blockLine];
+                return ((byte[]) this.data[column])[this.blockLine] == 1;
             case Types.TINYINT:
                 return ((byte[]) this.data[column])[this.blockLine];
             case Types.SMALLINT:

@@ -45,8 +45,7 @@ public abstract class AbstractProtocol {
     public abstract int getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types,
                                            String[] tableNames) throws ProtocolException;
 
-    public abstract int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] values,
-                                        boolean[][] nulls) throws ProtocolException;
+    public abstract int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] values) throws ProtocolException;
 
     public abstract String getRemainingStringLine(int startIndex);
 

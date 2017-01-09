@@ -123,14 +123,14 @@ public class OldMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public int getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames) throws ProtocolException {
+    public int getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames)
+            throws ProtocolException {
         return OldMapiTableHeaderParser.GetNextTableHeader(this.lineBuffer, columnNames, columnLengths, types, tableNames);
     }
 
     @Override
-    public int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] data, boolean[][] nulls)
-            throws ProtocolException {
-        OldMapiTupleLineParser.OldMapiParseTupleLine(this, firstLineNumber, typesMap, data, nulls);
+    public int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] data) throws ProtocolException {
+        OldMapiTupleLineParser.OldMapiParseTupleLine(this, firstLineNumber, typesMap, data);
         return firstLineNumber;
     }
 

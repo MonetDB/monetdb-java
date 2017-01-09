@@ -20,13 +20,14 @@ import java.nio.CharBuffer;
 import java.sql.Types;
 import java.text.ParsePosition;
 import java.util.Calendar;
+import java.util.Map;
 
 final class OldMapiTupleLineParser {
 
     private static final char[] NULL_STRING = new char[]{'N','U','L','L'};
 
-    static int OldMapiParseTupleLine(OldMapiProtocol protocol, int lineNumber, int[] typesMap, Object[] values,
-                                     boolean[][] nulls) throws ProtocolException {
+    static int OldMapiParseTupleLine(OldMapiProtocol protocol, int lineNumber, int[] typesMap, Object[] values)
+            throws ProtocolException {
         CharBuffer lineBuffer = protocol.lineBuffer;
         CharBuffer tupleLineBuffer = protocol.tupleLineBuffer;
 
@@ -127,13 +128,10 @@ final class OldMapiTupleLineParser {
                             // put the unescaped string in the right place
                             tupleLineBuffer.flip();
                             OldMapiStringToJavaDataConversion(tupleLineBuffer.array(), 0, tupleLineBuffer.limit(), lineNumber, values[column], typesMap[column]);
-                            nulls[column][lineNumber] = false;
                         } else if ((i - 1) - cursor == 4 && OldMapiTupleLineParserHelper.CharIndexOf(array, array.length, NULL_STRING, 4) == cursor) {
                             SetNullValue(lineNumber, values[column], typesMap[column]);
-                            nulls[column][lineNumber] = true;
                         } else {
                             OldMapiStringToJavaDataConversion(array, cursor, i - 1 - cursor, lineNumber, values[column], typesMap[column]);
-                            nulls[column][lineNumber] = false;
                         }
                         column++;
                         cursor = i + 1;
@@ -166,7 +164,7 @@ final class OldMapiTupleLineParser {
                                                           Object columnArray, int jDBCMapping) throws ProtocolException {
         switch (jDBCMapping) {
             case Types.BOOLEAN:
-                ((boolean[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToBoolean(toParse, startPosition, count);
+                ((byte[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToBoolean(toParse, startPosition, count);
                 break;
             case Types.TINYINT:
                 ((byte[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToByte(toParse, startPosition, count);
@@ -230,8 +228,6 @@ final class OldMapiTupleLineParser {
     private static void SetNullValue(int lineNumber, Object columnArray, int jDBCMapping) throws ProtocolException {
         switch (jDBCMapping) {
             case Types.BOOLEAN:
-                ((boolean[]) columnArray)[lineNumber] = false;
-                break;
             case Types.TINYINT:
                 ((byte[]) columnArray)[lineNumber] = Byte.MIN_VALUE;
                 break;

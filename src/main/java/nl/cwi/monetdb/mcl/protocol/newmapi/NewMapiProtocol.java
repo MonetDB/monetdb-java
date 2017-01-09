@@ -66,7 +66,7 @@ public class NewMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public int parseTupleLines(int lineNumber, int[] typesMap, Object[] values, boolean[][] nulls) throws ProtocolException {
+    public int parseTupleLines(int lineNumber, int[] typesMap, Object[] values) throws ProtocolException {
         return 0;
     }
 

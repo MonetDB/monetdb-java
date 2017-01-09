@@ -33,8 +33,8 @@ final class OldMapiTupleLineParserHelper {
 
     private static final char[] TrueConstant = new char[]{'t','r','u','e'};
 
-    static boolean CharArrayToBoolean(char[] data, int start, int count) {
-        return CharIndexOf(data, start + count, TrueConstant, 4) == start;
+    static byte CharArrayToBoolean(char[] data, int start, int count) {
+        return CharIndexOf(data, start + count, TrueConstant, 4) == start ? (byte)1 : (byte)0;
     }
 
     static byte CharArrayToByte(char[] data, int start, int count) {
