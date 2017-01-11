@@ -9,8 +9,8 @@
 package nl.cwi.monetdb.mcl.protocol;
 
 /**
- * This class lists the possible responses of a query by the server. Notice that Q_PARSE is not used by neither a MAPI or
- * embedded connection, so it's here for completeness.
+ * This class lists the possible responses of a query by the server. Notice that Q_PARSE is not used by neither a MAPI
+ * or an embedded connection, so it's here for completeness.
  */
 public final class StarterHeaders {
 

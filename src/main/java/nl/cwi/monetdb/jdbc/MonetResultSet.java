@@ -1653,8 +1653,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 									// ignore exception and just return the val String object
 									return val;
 								}
-							} else
-							if ("uuid".equals(MonetDBType)) {
+							} else if ("uuid".equals(MonetDBType)) {
 								try {
 									return UUID.fromString(val);
 								} catch (IllegalArgumentException exc) {
@@ -2615,8 +2614,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		if (header != null && header.isClosed())
 			throw new SQLException("Cannot call on closed ResultSet", "M1M20");
 
-		// if there are no warnings, this will be null, which fits with the
-		// specification.
+		// if there are no warnings, this will be null, which fits with the specification.
 		return warnings;
 	}
 

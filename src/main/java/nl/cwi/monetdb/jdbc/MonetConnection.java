@@ -1252,7 +1252,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         try {
             protocol.writeNextQuery(language.getQueryTemplateIndex(0), command, language.getQueryTemplateIndex(1));
             protocol.waitUntilPrompt();
-            int csrh = protocol.getCurrentServerResponseHeader();
+            int csrh = protocol.getCurrentServerResponse();
             if (csrh == ServerResponses.ERROR) {
                 String error = protocol.getRemainingStringLine(0);
                 throw new SQLException(error.substring(6), error.substring(0, 5));
@@ -1473,7 +1473,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
                 // go for new results
                 protocol.fetchNextResponseData();
-                int nextResponse = protocol.getCurrentServerResponseHeader();
+                int nextResponse = protocol.getCurrentServerResponse();
                 IResponse res = null;
                 while (nextResponse != ServerResponses.PROMPT) {
                     // each response should start with a start of header (or error)
@@ -1533,14 +1533,14 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         + e.getErrorOffset();
                                 // flush all the rest
                                 protocol.waitUntilPrompt();
-                                nextResponse = protocol.getCurrentServerResponseHeader();
+                                nextResponse = protocol.getCurrentServerResponse();
                                 break;
                             }
 
                             // immediately handle errors after parsing the header (res may be null)
                             if (error != null) {
                                 protocol.waitUntilPrompt();
-                                nextResponse = protocol.getCurrentServerResponseHeader();
+                                nextResponse = protocol.getCurrentServerResponse();
                                 break;
                             }
 
@@ -1555,7 +1555,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         // right, some protocol violation, skip the rest of the result
                                         error = "M0M10!" + ex.getMessage();
                                         protocol.waitUntilPrompt();
-                                        nextResponse = protocol.getCurrentServerResponseHeader();
+                                        nextResponse = protocol.getCurrentServerResponse();
                                         break;
                                     }
                                 }
@@ -1572,20 +1572,20 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                             }
                             // read the next line (can be prompt, new result, error, etc.) before we start the loop over
                             protocol.fetchNextResponseData();
-                            nextResponse = protocol.getCurrentServerResponseHeader();
+                            nextResponse = protocol.getCurrentServerResponse();
                             break;
                         case ServerResponses.INFO:
                             addWarning(protocol.getRemainingStringLine(0), "01000");
                             // read the next line (can be prompt, new result, error, etc.) before we start the loop over
                             protocol.fetchNextResponseData();
-                            nextResponse = protocol.getCurrentServerResponseHeader();
+                            nextResponse = protocol.getCurrentServerResponse();
                             break;
                         case ServerResponses.ERROR:
                             // read everything till the prompt (should be error) we don't know if we ignore some
                             // garbage here... but the log should reveal that
                             error = protocol.getRemainingStringLine(0);
                             protocol.waitUntilPrompt();
-                            nextResponse = protocol.getCurrentServerResponseHeader();
+                            nextResponse = protocol.getCurrentServerResponse();
                             break;
                         default:
                             throw new SQLException("Protocol violation, unexpected line!", "M0M10");

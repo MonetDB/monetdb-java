@@ -78,10 +78,8 @@ public class MapiConnection extends MonetConnection {
     }
 
     /**
-     * Sets whether MCL redirections should be followed or not.  If set
-     * to false, an MCLException will be thrown when a redirect is
-     * encountered during connect.  The default behaviour is to
-     * automatically follow redirects.
+     * Sets whether MCL redirections should be followed or not. If set to false, an MCLException will be thrown when a
+     * redirect is encountered during connect. The default behaviour is to automatically follow redirects.
      *
      * @param r whether to follow redirects (true) or not (false)
      */
@@ -90,12 +88,9 @@ public class MapiConnection extends MonetConnection {
     }
 
     /**
-     * Sets the number of redirects that are followed when
-     * followRedirects is true.  In order to avoid going into an endless
-     * loop due to some evil server, or another error, a maximum number
-     * of redirects that may be followed can be set here.  Note that to
-     * disable the following of redirects you should use
-     * setFollowRedirects.
+     * Sets the number of redirects that are followed when followRedirects is true. In order to avoid going into an
+     * endless loop due to some evil server, or another error, a maximum number of redirects that may be followed can be
+     * set here. Note that to disable the following of redirects you should use setFollowRedirects.
      *
      * @see #setFollowRedirects(boolean r)
      * @param t the number of redirects before an exception is thrown
@@ -105,9 +100,8 @@ public class MapiConnection extends MonetConnection {
     }
 
     /**
-     * Returns the mapi protocol version used by this socket.  The
-     * protocol version depends on the server being used.  Users of the
-     * MapiSocket should check this version to act appropriately.
+     * Returns the mapi protocol version used by this socket. The protocol version depends on the server being used.
+     * Users of the MapiSocket should check this version to act appropriately.
      *
      * @return the mapi protocol version
      */
@@ -219,7 +213,7 @@ public class MapiConnection extends MonetConnection {
         try {
             protocol.writeNextQuery(language.getCommandTemplateIndex(0), command, language.getCommandTemplateIndex(1));
             protocol.waitUntilPrompt();
-            int csrh = protocol.getCurrentServerResponseHeader();
+            int csrh = protocol.getCurrentServerResponse();
             if (csrh == ServerResponses.ERROR) {
                 String error = protocol.getRemainingStringLine(0);
                 throw new SQLException(error.substring(6), error.substring(0, 5));
@@ -272,7 +266,7 @@ public class MapiConnection extends MonetConnection {
 
         do {
             this.protocol.fetchNextResponseData();
-            next = this.protocol.getCurrentServerResponseHeader();
+            next = this.protocol.getCurrentServerResponse();
             switch (next) {
                 case ServerResponses.ERROR:
                     err += "\n" + this.protocol.getRemainingStringLine(7);

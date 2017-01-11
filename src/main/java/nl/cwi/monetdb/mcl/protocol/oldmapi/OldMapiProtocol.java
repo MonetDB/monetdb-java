@@ -43,7 +43,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     }
 
     @Override
-    public int getCurrentServerResponseHeader() {
+    public int getCurrentServerResponse() {
         return currentServerResponseHeader;
     }
 

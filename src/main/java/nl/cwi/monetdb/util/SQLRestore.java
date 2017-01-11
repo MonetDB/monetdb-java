@@ -57,7 +57,7 @@ public class SQLRestore {
 			try {
 				while (true) {
 					protocol.waitUntilPrompt();
-					next = protocol.getCurrentServerResponseHeader();
+					next = protocol.getCurrentServerResponse();
 					line = protocol.getRemainingStringLine(0);
 					if (line == null)
 						break;

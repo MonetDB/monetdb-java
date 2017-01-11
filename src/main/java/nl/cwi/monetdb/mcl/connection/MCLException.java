@@ -9,8 +9,8 @@
 package nl.cwi.monetdb.mcl.connection;
 
 /**
- * A general purpose Exception class for MCL related problems.  This
- * class should be used if no more precise Exception class exists.
+ * A general purpose Exception class for MCL related problems. This class should be used if no more precise Exception
+ * class exists.
  */
 public class MCLException extends Exception {
 

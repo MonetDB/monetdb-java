@@ -14,7 +14,6 @@ import nl.cwi.monetdb.mcl.connection.ControlCommands;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
-import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -296,7 +295,7 @@ public class ResultSetResponse implements IIncompleteResponse {
         if (this.isSet >= IS_SET_FINAL_VALUE) {
             this.resultBlocks[0].addLines(protocol);
         } else {
-            int csrh = protocol.getCurrentServerResponseHeader();
+            int csrh = protocol.getCurrentServerResponse();
             if (csrh != ServerResponses.HEADER) {
                 throw new ProtocolException("header expected, got: " + protocol.getRemainingStringLine(0));
             } else {

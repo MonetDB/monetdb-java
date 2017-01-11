@@ -21,7 +21,7 @@ import java.util.Map;
 public class NewMapiProtocol extends AbstractProtocol {
 
     @Override
-    public int getCurrentServerResponseHeader() {
+    public int getCurrentServerResponse() {
         return 0;
     }
 

@@ -8,11 +8,14 @@
 
 package nl.cwi.monetdb.mcl.connection;
 
+/**
+ * The listening of the MonetDB's control commands sent by the client during a JDBC connection.
+ */
 public final class ControlCommands {
 
     /** Send autocommit statement */
     public static final int AUTO_COMMIT = 1;
-    /** Set reply size for the server */
+    /** Set reply size for the server (for the maxrows specification) */
     public static final int REPLY_SIZE = 2;
     /** Release a prepared statement data */
     public static final int RELEASE = 3;

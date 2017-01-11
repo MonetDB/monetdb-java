@@ -17,15 +17,11 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * A thread to send a query to the server.  When sending large
- * amounts of data to a server, the output buffer of the underlying
- * communication socket may overflow.  In such case the sending
- * process blocks.  In order to prevent deadlock, it might be
- * desirable that the driver as a whole does not block.  This thread
- * facilitates the prevention of such 'full block', because this
- * separate thread only will block.<br />
- * This thread is designed for reuse, as thread creation costs are
- * high.
+ * A thread to send a query to the server.  When sending large amounts of data to a server, the output buffer of the
+ * underlying communication socket may overflow.  In such case the sending process blocks. In order to prevent deadlock,
+ * it might be desirable that the driver as a whole does not block. This thread facilitates the prevention of such
+ * 'full block', because this separate thread only will block.<br /> This thread is designed for reuse, as thread
+ * creation costs are high.
  */
 public class SenderThread extends Thread {
 

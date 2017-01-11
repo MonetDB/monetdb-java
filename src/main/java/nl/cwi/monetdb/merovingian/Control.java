@@ -179,7 +179,7 @@ public class Control {
 		protocol.writeNextQuery(null,database + " " + command, "\n");
 		ArrayList<String> l = new ArrayList<>();
 		protocol.waitUntilPrompt();
-		int next = protocol.getCurrentServerResponseHeader();
+		int next = protocol.getCurrentServerResponse();
 		String line = protocol.getRemainingStringLine(0);
 
 		if (next == ServerResponses.ERROR)
@@ -189,7 +189,7 @@ public class Control {
 		if (!line.substring(1).equals(RESPONSE_OK))
 			throw new MerovingianException(line.substring(1));
 
-		next = protocol.getCurrentServerResponseHeader();
+		next = protocol.getCurrentServerResponse();
 		line = protocol.getRemainingStringLine(0);
 		while (next != ServerResponses.PROMPT) {
 			if (next != ServerResponses.RESULT)
@@ -197,7 +197,7 @@ public class Control {
 
 			l.add(line.substring(1));
 
-			next = protocol.getCurrentServerResponseHeader();
+			next = protocol.getCurrentServerResponse();
 			line = protocol.getRemainingStringLine(0);
 		}
 
