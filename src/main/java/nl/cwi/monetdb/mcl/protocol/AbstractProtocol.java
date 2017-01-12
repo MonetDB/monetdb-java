@@ -108,7 +108,7 @@ public abstract class AbstractProtocol {
      * @param columnNames The column names array
      * @param columnLengths The column lengths array
      * @param types The columns SQL names array
-     * @param tableNames The columns schemas and names in format schema.name
+     * @param tableNames The columns schemas and names in format schema.table
      * @return A TableResultHeaders integer representation, representing which of the fields was filled
      * @throws ProtocolException If an error in the underlying connection happened.
      */

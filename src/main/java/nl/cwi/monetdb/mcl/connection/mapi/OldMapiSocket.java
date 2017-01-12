@@ -13,18 +13,45 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 
+/**
+ * A Socket for communicating with the MonetDB database in MAPI block mode. The OldMapiSocket implements the protocol
+ * specifics of the MAPI block mode protocol,
+ *
+ * For each line read, it is determined what type of line it is according to the MonetDB MAPI protocol version 9. This
+ * results in a line to be PROMPT, HEADER, RESULT, ERROR or UNKNOWN.
+ *
+ * The general use of this Socket must be seen only in the full context of a MAPI connection to a server. It has the
+ * same ingredients as a normal Socket, allowing for seamless plugging.
+ * <pre>
+ *    Socket   \     /  InputStream  ----&gt;
+ *              &gt; o &lt;
+ *  MapiSocket /     \ OutputStream  ----&gt;
+ * </pre>
+ * The OldMapiSocket allows to retrieve Streams for communicating.  They are interfaced, so they can be chained in any
+ * way.  While the Socket transparently deals with how data is sent over the wire, the actual data read needs to be
+ * interpreted, for which a Reader/Writer interface is most sufficient.
+ *
+ * @author Fabian Groffen
+ * @version 4.1
+ */
 public class OldMapiSocket extends AbstractSocket {
 
     /** The blocksize (hardcoded in compliance with stream.mx) */
     public final static int BLOCK = 8 * 1024 - 2;
 
     /**
-     * A short in two bytes for holding the block size in bytes
+     * A short in two bytes for holding the block size in bytes.
      */
     private final byte[] blklen = new byte[2];
 
+    /**
+     * The socket input stream read by blocks.
+     */
     private final OldMapiBlockInputStream inStream;
 
+    /**
+     * The socket output stream written by blocks.
+     */
     private final OldMapiBlockOutputStream outStream;
 
     OldMapiSocket(String hostname, int port, MapiConnection connection) throws IOException {
@@ -33,6 +60,9 @@ public class OldMapiSocket extends AbstractSocket {
         this.outStream = new OldMapiBlockOutputStream(socket.getOutputStream());
     }
 
+    /**
+     * The block size will be the one hardcoded on the connection.
+     */
     @Override
     public int getBlockSize() {
         return BLOCK;
@@ -58,6 +88,9 @@ public class OldMapiSocket extends AbstractSocket {
         this.socket.close();
     }
 
+    /**
+     * Inner class that is used to make the data on the blocked stream available as a normal stream.
+     */
     private class OldMapiBlockInputStream {
 
         private final InputStream inStream;
@@ -80,14 +113,11 @@ public class OldMapiSocket extends AbstractSocket {
         }
 
         /**
-         * Small wrapper to get a blocking variant of the read() method
-         * on the BufferedInputStream.  We want to benefit from the
-         * Buffered pre-fetching, but not dealing with half blocks.
-         * Changing this class to be able to use the partially received
-         * data will greatly complicate matters, while a performance
-         * improvement is debatable given the relatively small size of
-         * our blocks.  Maybe it does speed up on slower links, then
-         * consider this method a quick bug fix/workaround.
+         * Small wrapper to get a blocking variant of the read() method on the BufferedInputStream. We want to benefit
+         * from the Buffered pre-fetching, but not dealing with half blocks. Changing this class to be able to use the
+         * partially received data will greatly complicate matters, while a performance improvement is debatable given
+         * the relatively small size of our blocks. Maybe it does speed up on slower links, then consider this method a
+         * quick bug fix/workaround.
          *
          * @return false if reading the block failed due to EOF
          */
@@ -112,27 +142,19 @@ public class OldMapiSocket extends AbstractSocket {
         }
 
         /**
-         * Reads the next block on the stream into the internal buffer,
-         * or writes the prompt in the buffer.
+         * Reads the next block on the stream into the internal buffer, or writes the prompt in the buffer.
          * <p>
-         * The blocked stream protocol consists of first a two byte
-         * integer indicating the length of the block, then the
-         * block, followed by another length + block.  The end of
-         * such sequence is put in the last bit of the length, and
-         * hence this length should be shifted to the right to
-         * obtain the real length value first.  We simply fetch
-         * blocks here as soon as they are needed for the stream's
-         * read methods.
+         * The blocked stream protocol consists of first a two byte integer indicating the length of the block, then the
+         * block, followed by another length + block. The end of such sequence is put in the last bit of the length, and
+         * hence this length should be shifted to the right to obtain the real length value first. We simply fetch
+         * blocks here as soon as they are needed for the stream's read methods.
          * <p>
-         * The user-flush, which is an implicit effect of the end of
-         * a block sequence, is communicated beyond the stream by
-         * inserting a prompt sequence on the stream after the last
-         * block.  This method makes sure that a final block ends with a
-         * newline, if it doesn't already, in order to facilitate a
-         * Reader that is possibly chained to this InputStream.
+         * The user-flush, which is an implicit effect of the end of a block sequence, is communicated beyond the stream
+         * by inserting a prompt sequence on the stream after the last block. This method makes sure that a final block
+         * ends with a newline, if it doesn't already, in order to facilitate a Reader that is possibly chained to this
+         * InputStream.
          * <p>
-         * If the stream is not positioned correctly, hell will break
-         * loose.
+         * If the stream is not positioned correctly, hell will break loose.
          */
         private int readBlock() throws IOException {
             // read next two bytes (short)
@@ -227,6 +249,12 @@ public class OldMapiSocket extends AbstractSocket {
         }
     }
 
+    /**
+     * Inner class that is used to write data on a normal stream as a blocked stream. A call to the flush() method will
+     * write a "final" block to the underlying stream. Non-final blocks are written as soon as one or more bytes would
+     * not fit in the current block any more. This allows to write to a block to it's full size, and then flush it
+     * explicitly to have a final block being written to the stream.
+     */
     class OldMapiBlockOutputStream {
 
         private final OutputStream outStream;

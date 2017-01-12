@@ -11,6 +11,8 @@ package nl.cwi.monetdb.mcl.responses;
 /**
  * A Response is a message sent by the server to indicate some action has taken place, and possible results of that
  * action.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
  */
 public interface IResponse {
 

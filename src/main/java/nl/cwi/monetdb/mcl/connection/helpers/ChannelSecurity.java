@@ -11,15 +11,20 @@ package nl.cwi.monetdb.mcl.connection.helpers;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+/**
+ * A helper class to process Hash digests during the authentication process.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
+ */
 public final class ChannelSecurity {
 
     private static char HexChar(int n) { return (n > 9) ? (char) ('a' + (n - 10)) : (char) ('0' + n); }
 
     /**
-     * Small helper method to convert a byte string to a hexadecimalstring representation.
+     * Helper method to convert a byte string to a hexadecimal String representation.
      *
-     * @param digest the byte array to convert
-     * @return the byte array as hexadecimal string
+     * @param digest The byte array to convert
+     * @return The byte array as a hexadecimal string
      */
     private static String ToHex(byte[] digest) {
         char[] result = new char[digest.length * 2];
@@ -31,6 +36,13 @@ public final class ChannelSecurity {
         return new String(result);
     }
 
+    /**
+     * Digests several byte[] into a String digest, using a specified hash algorithm.
+     *
+     * @param algorithm The hash algorithm to use
+     * @param toDigests The Strings to digest
+     * @return The Strings digest as a hexadecimal string
+     */
     public static String DigestStrings(String algorithm, byte[]... toDigests) {
         try {
             MessageDigest md = MessageDigest.getInstance(algorithm);

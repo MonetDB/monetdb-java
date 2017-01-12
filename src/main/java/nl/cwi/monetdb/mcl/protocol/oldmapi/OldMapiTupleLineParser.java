@@ -20,12 +20,38 @@ import java.nio.CharBuffer;
 import java.sql.Types;
 import java.text.ParsePosition;
 import java.util.Calendar;
-import java.util.Map;
 
+/**
+ * The OldMapiTupleLineParser extracts the values from a given tuple. The number of values that are expected are known
+ * upfront to speed up allocation and validation. For null values we will map into Java minimum values for primitives
+ * and null pointers for objects.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
+ */
 final class OldMapiTupleLineParser {
 
+    /**
+     * The character array representation of a NULL value found in a tuple.
+     */
     private static final char[] NULL_STRING = new char[]{'N','U','L','L'};
 
+    /**
+     * A Java parser to parse Date, Time and Timestamp data, to be reused during the connection to save memory
+     * allocation.
+     */
+    private static final ParsePosition Ppos = new ParsePosition(0);
+
+    /**
+     * Parses the given OldMapiProtocol's lineBuffer source as tuple line for a DataBlock. If source cannot be parsed, a
+     * ProtocolException is thrown. The OldMapiProtocol's tupleLineBuffer is used to help parsing a column value.
+     *
+     * @param protocol The OldMapiProtocol instance to parse its lineBuffer
+     * @param lineNumber The row line number on the DataBlock to insert the tuple
+     * @param typesMap The JDBC types mapping array
+     * @param values An array of columns to fill the parsed values
+     * @return The number of columns parsed
+     * @throws ProtocolException If an error occurs during parsing
+     */
     static int OldMapiParseTupleLine(OldMapiProtocol protocol, int lineNumber, int[] typesMap, Object[] values)
             throws ProtocolException {
         CharBuffer lineBuffer = protocol.lineBuffer;
@@ -70,7 +96,6 @@ final class OldMapiTupleLineParser {
                     } else if (!escaped) {
                         inString = false;
                     }
-
                     // reset escaped flag
                     escaped = false;
                     break;
@@ -78,7 +103,7 @@ final class OldMapiTupleLineParser {
                     if (!inString && (i > 0 && array[i - 1] == ',') || (i + 1 == len - 1 && array[++i] == ']')) { // dirty
                         // split!
                         if (array[cursor] == '"' && array[i - 2] == '"') {
-                            // reuse the CharBuffer by cleaning it and ensure the capacity
+                            // reuse the tupleLineBuffer by cleaning it and ensure the capacity
                             tupleLineBuffer.clear();
                             tupleLineBuffer = BufferReallocator.EnsureCapacity(tupleLineBuffer, (i - 2) - (cursor + 1));
 
@@ -149,6 +174,14 @@ final class OldMapiTupleLineParser {
         return column;
     }
 
+    /**
+     * Parses a BLOB String from a tuple column, converting it into a Java byte[] representation.
+     *
+     * @param toParse The CharBuffer's backing array
+     * @param startPosition The first position in the array to parse
+     * @param count The number of characters to read from the starter position
+     * @return A Java byte[] instance with the parsed BLOB
+     */
     private static byte[] BinaryBlobConverter(char[] toParse, int startPosition, int count) {
         int len = (startPosition + count) / 2;
         byte[] res = new byte[len];
@@ -158,8 +191,17 @@ final class OldMapiTupleLineParser {
         return res;
     }
 
-    private static final ParsePosition Ppos = new ParsePosition(0);
-
+    /**
+     * Converts a segment of a CharBuffer's backing array into a Java primitive or object depending on the JDBC Mapping.
+     *
+     * @param toParse The CharBuffer's backing array
+     * @param startPosition The first position in the array to parse
+     * @param count The number of characters to read from the starter position
+     * @param lineNumber The row line number on the DataBlock to insert the tuple
+     * @param columnArray The column array where the value will be appended
+     * @param jDBCMapping The JDBC mapping of the value
+     * @throws ProtocolException If the JDBC Mapping is unknown
+     */
     private static void OldMapiStringToJavaDataConversion(char[] toParse, int startPosition, int count, int lineNumber,
                                                           Object columnArray, int jDBCMapping) throws ProtocolException {
         switch (jDBCMapping) {
@@ -221,11 +263,19 @@ final class OldMapiTupleLineParser {
                 ((byte[][]) columnArray)[lineNumber] = BinaryBlobConverter(toParse, startPosition, count);
                 break;
             default:
-                throw new ProtocolException("Unknown type!");
+                throw new ProtocolException("Unknown JDBC mapping!");
         }
     }
 
-    private static void SetNullValue(int lineNumber, Object columnArray, int jDBCMapping) throws ProtocolException {
+    /**
+     * Maps MonetDB's null values with their respective Java representation. For the primitive types, we will map them
+     * to their minimum values, while for objects we just map into null pointers.
+     *
+     * @param lineNumber The row line number on the DataBlock to insert the tuple
+     * @param columnArray The column array where the value will be appended
+     * @param jDBCMapping The JDBC mapping of the value
+     */
+    private static void SetNullValue(int lineNumber, Object columnArray, int jDBCMapping) {
         switch (jDBCMapping) {
             case Types.BOOLEAN:
             case Types.TINYINT:

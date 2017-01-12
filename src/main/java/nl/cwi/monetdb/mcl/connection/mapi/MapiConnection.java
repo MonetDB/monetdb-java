@@ -13,7 +13,6 @@ import nl.cwi.monetdb.mcl.connection.helpers.ChannelSecurity;
 import nl.cwi.monetdb.mcl.connection.ControlCommands;
 import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
-import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.oldmapi.OldMapiProtocol;
 
@@ -23,9 +22,15 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteOrder;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.*;
 
+/**
+ * A {@link Connection} suitable for the MonetDB database on a MAPI connection.
+ *
+ * @author Fabian Groffen, Martin van Dinther, Pedro Ferreira
+ */
 public class MapiConnection extends MonetConnection {
     /** the PROMPT ASCII char sent by the server */
     static final char PROMPT_CHAR = '.';
@@ -36,6 +41,8 @@ public class MapiConnection extends MonetConnection {
     private final String hostname;
     /** The port to connect on the host to */
     private final int port;
+    /** The database to connect to */
+    private String database;
     /** The TCP Socket timeout in milliseconds. Default is 0 meaning the timeout is disabled (i.e., timeout of infinity) */
     private int soTimeout = 0;
     /** Whether we should follow redirects */
@@ -44,93 +51,49 @@ public class MapiConnection extends MonetConnection {
     private int ttl = 10;
     /** Protocol version of the connection */
     private int version;
-    /** The database to connect to */
-    private String database;
     /** Endianness of the server */
     private ByteOrder serverEndianness;
 
-    public MapiConnection(Properties props, String hash, String language, boolean blobIsBinary,
-                          boolean clobIsLongChar, String hostname, int port, String database) throws IOException {
+    public MapiConnection(Properties props, String hash, String language, boolean blobIsBinary, boolean clobIsLongChar,
+                          String hostname, int port, String database) throws IOException {
         super(props, hash, MapiLanguage.GetLanguageFromString(language), blobIsBinary, clobIsLongChar);
         this.hostname = hostname;
         this.port = port;
         this.database = database;
     }
 
+    /**
+     * Gets the hostname of the server used on this connection.
+     *
+     * @return The hostname of the server used on this connection
+     */
     public String getHostname() {
         return hostname;
     }
 
+    /**
+     * Gets the port of the server used on this connection.
+     *
+     * @return The port of the server used on this connection
+     */
     public int getPort() {
         return port;
     }
 
+    /**
+     * Gets the database to connect to. If database is null, a connection is made to the default database of the server.
+     * This is also the default.
+     *
+     * @return The database name
+     */
     public String getDatabase() {
         return database;
-    }
-
-    public boolean isFollowRedirects() {
-        return followRedirects;
-    }
-
-    public int getTtl() {
-        return ttl;
-    }
-
-    /**
-     * Sets whether MCL redirections should be followed or not. If set to false, an MCLException will be thrown when a
-     * redirect is encountered during connect. The default behaviour is to automatically follow redirects.
-     *
-     * @param r whether to follow redirects (true) or not (false)
-     */
-    public void setFollowRedirects(boolean r) {
-        this.followRedirects = r;
-    }
-
-    /**
-     * Sets the number of redirects that are followed when followRedirects is true. In order to avoid going into an
-     * endless loop due to some evil server, or another error, a maximum number of redirects that may be followed can be
-     * set here. Note that to disable the following of redirects you should use setFollowRedirects.
-     *
-     * @see #setFollowRedirects(boolean r)
-     * @param t the number of redirects before an exception is thrown
-     */
-    public void setTTL(int t) {
-        this.ttl = t;
-    }
-
-    /**
-     * Returns the mapi protocol version used by this socket. The protocol version depends on the server being used.
-     * Users of the MapiSocket should check this version to act appropriately.
-     *
-     * @return the mapi protocol version
-     */
-    public int getProtocolVersion() {
-        return this.version;
-    }
-
-    public int getVersion() {
-        return version;
-    }
-
-    public ByteOrder getServerEndianness() {
-        return serverEndianness;
-    }
-
-    @Override
-    public int getBlockSize() {
-        return ((OldMapiProtocol)protocol).getSocket().getBlockSize();
-    }
-
-    @Override
-    public int getDefFetchsize() {
-        return DEF_FETCHSIZE;
     }
 
     /**
      * Gets the SO_TIMEOUT from the underlying Socket.
      *
-     * @return the currently in use timeout in milliseconds
+     * @return The currently in use timeout in milliseconds
      */
     @Override
     public int getSoTimeout()  {
@@ -150,21 +113,81 @@ public class MapiConnection extends MonetConnection {
      * setting can be useful to break out of this indefinite wait. This option must be enabled prior to entering the
      * blocking operation to have effect.
      *
-     * @param s The specified timeout, in milliseconds. A timeout of zero is interpreted as an infinite timeout.
+     * @param timeout The specified timeout, in milliseconds. A timeout of zero is interpreted as an infinite timeout
      */
     @Override
-    public void setSoTimeout(int s)  {
-        if (s < 0) {
+    public void setSoTimeout(int timeout)  {
+        if (timeout < 0) {
             throw new IllegalArgumentException("Timeout can't be negative");
         }
         try {
             if(protocol != null) {
-                ((OldMapiProtocol)protocol).getSocket().setSoTimeout(s);
+                ((OldMapiProtocol)protocol).getSocket().setSoTimeout(timeout);
             }
-            this.soTimeout = s;
+            this.soTimeout = timeout;
         } catch (SocketException e) {
             this.addWarning("The socket timeout could not be set", "M1M05");
         }
+    }
+
+    /**
+     * Gets whether MCL redirections should be followed or not. If set to false, an MCLException will be thrown when a
+     * redirect is encountered during connect. The default behaviour is to automatically follow redirects.
+     *
+     * @return Whether to follow redirects (true) or not (false)
+     */
+    public boolean isFollowRedirects() {
+        return followRedirects;
+    }
+
+    /**
+     * Gets the number of redirects that are followed when followRedirects is true. In order to avoid going into an
+     * endless loop due to some evil server, or another error, a maximum number of redirects that may be followed can be
+     * set here. Note that to disable the following of redirects you should use setFollowRedirects.
+     *
+     * @see #isFollowRedirects()
+     * @return The number of redirects before an exception is thrown
+     */
+    public int getTtl() {
+        return ttl;
+    }
+
+    /**
+     * Gets the mapi protocol version used by this socket. The protocol version depends on the server being used.
+     *
+     * @return The mapi protocol version used by this socket
+     */
+    public int getVersion() {
+        return version;
+    }
+
+    /**
+     * Gets the connection server endianness.
+     *
+     * @return The connection server endianness
+     */
+    public ByteOrder getServerEndianness() {
+        return serverEndianness;
+    }
+
+    /**
+     * On a MAPI connection, the block size will be the block size of the connection.
+     *
+     * @return The block size length
+     */
+    @Override
+    public int getBlockSize() {
+        return ((OldMapiProtocol)protocol).getSocket().getBlockSize();
+    }
+
+    /**
+     * On a MAPI connection the default fetch size per DataBlock is 250 rows.
+     *
+     * @return The default fetch size
+     */
+    @Override
+    public int getDefFetchsize() {
+        return DEF_FETCHSIZE;
     }
 
     @Override
@@ -177,27 +200,13 @@ public class MapiConnection extends MonetConnection {
         String res = "jdbc:monetdb://" + this.hostname + ":" + this.port + "/" + this.database;
         if (this.getLanguage() == MapiLanguage.LANG_MAL)
             res += "?language=mal";
-        return  res;
+        return res;
     }
 
     @Override
-    public AbstractProtocol getProtocol() {
-        return this.protocol;
-    }
-
-    /**
-     * Sends the given string to MonetDB as control statement, making
-     * sure there is a prompt after the command is sent.  All possible
-     * returned information is discarded.  Encountered errors are
-     * reported.
-     *
-     * @param con the command to send
-     * @throws SQLException if an IO exception or a database error occurs
-     */
-    @Override
-    public void sendControlCommand(int con, int data) throws SQLException {
+    public void sendControlCommand(int commandID, int data) throws SQLException {
         String command = null;
-        switch (con) {
+        switch (commandID) {
             case ControlCommands.AUTO_COMMIT:
                 command = "auto_commit " + ((data == 1) ? "1" : "0");
                 break;
@@ -211,7 +220,8 @@ public class MapiConnection extends MonetConnection {
                 command = "close " + data;
         }
         try {
-            protocol.writeNextQuery(language.getCommandTemplateIndex(0), command, language.getCommandTemplateIndex(1));
+            protocol.writeNextQuery(language.getCommandTemplateIndex(0), command,
+                    language.getCommandTemplateIndex(1));
             protocol.waitUntilPrompt();
             int csrh = protocol.getCurrentServerResponse();
             if (csrh == ServerResponses.ERROR) {
@@ -227,10 +237,20 @@ public class MapiConnection extends MonetConnection {
     }
 
     @Override
-    public ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType, int resultSetConcurrency) throws SQLException {
+    public ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType, int resultSetConcurrency)
+            throws SQLException {
         return new MonetConnection.ResponseList(fetchSize, maxRows, resultSetType, resultSetConcurrency);
     }
 
+    /**
+     * Connects to the given host and port, logging in as the given user. If followRedirect is false, a
+     * RedirectionException is thrown when a redirect is encountered.
+     *
+     * @return A List with informational (warning) messages. If this list is empty; then there are no warnings.
+     * @throws IOException if an I/O error occurs when creating the socket
+     * @throws ProtocolException if bogus data is received
+     * @throws MCLException if an MCL related error occurs
+     */
     @Override
     public List<String> connect(String user, String pass) throws IOException, ProtocolException, MCLException {
         // Wrap around the internal connect that needs to know if it should really make a TCP connection or not.
@@ -383,8 +403,8 @@ public class MapiConnection extends MonetConnection {
      * @param hash the hash method(s) to use, or NULL for all supported hashes
      */
     private String getChallengeResponse(String chalstr, String username, String password, String language,
-                                        String database, String hash)
-            throws ProtocolException, MCLException, IOException {
+                                        String database, String hash) throws ProtocolException, MCLException,
+            IOException {
         String response;
         String algo;
 

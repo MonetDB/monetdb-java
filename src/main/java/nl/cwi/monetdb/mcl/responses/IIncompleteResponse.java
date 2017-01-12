@@ -14,6 +14,8 @@ import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 /**
  * The ResultSetResponse and DatablockResponse Classes might require more than one Block response if the response is
  * larger than the BlockSize.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
  */
 public interface IIncompleteResponse extends IResponse {
 

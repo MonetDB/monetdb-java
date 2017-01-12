@@ -17,12 +17,26 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.TimeZone;
 
+/**
+ * A helper class to process MAPI dates, times and timestamps Strings into their Java representation.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
+ */
 public final class GregorianCalendarParser {
 
+    /**
+     * The date parser, with intention for re-usage to save memory allocations.
+     */
     private static final SimpleDateFormat DateParser = new SimpleDateFormat("yyyy-MM-dd");
 
+    /**
+     * The time parser, with intention for re-usage to save memory allocations.
+     */
     private static final SimpleDateFormat TimeParser = new SimpleDateFormat("HH:mm:ss");
 
+    /**
+     * The timestamp parser, with intention for re-usage to save memory allocations.
+     */
     private static final SimpleDateFormat TimestampParser = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
     /**
@@ -43,6 +57,14 @@ public final class GregorianCalendarParser {
         }
     }
 
+    /**
+     * Parses a date MAPI String into a Java {@link Calendar} instance.
+     *
+     * @param toParse The date String to parse
+     * @param pos The position of the String to start the parsing
+     * @return A {@link Calendar} instance of the parsed date
+     * @throws ProtocolException If the String could not be parsed
+     */
     public static Calendar ParseDate(String toParse, ParsePosition pos) throws ProtocolException {
         pos.setIndex(0);
         Calendar res = new GregorianCalendar();
@@ -55,8 +77,18 @@ public final class GregorianCalendarParser {
         return res;
     }
 
-    private static Calendar ParseTimeIn(String toParse, ParsePosition pos, boolean hasTimeZone,
-                                        SimpleDateFormat parser) throws ProtocolException {
+    /**
+     * Parses a time or a timestamp MAPI String into a Java {@link Calendar} instance.
+     *
+     * @param toParse The time/timestamp String to parse
+     * @param pos The position of the String to start the parsing
+     * @param hasTimeZone If the time/timestamp String has timezone information
+     * @param parser The parser to use (time or timestamp)
+     * @return A {@link Calendar} instance of the parsed time/timestamp
+     * @throws ProtocolException If the String could not be parsed
+     */
+    private static Calendar ParseTimeIn(String toParse, ParsePosition pos, boolean hasTimeZone, SimpleDateFormat parser)
+            throws ProtocolException {
         pos.setIndex(0);
         Calendar res = new GregorianCalendar();
         Date util = parser.parse(toParse, pos);
@@ -95,10 +127,28 @@ public final class GregorianCalendarParser {
         return res;
     }
 
+    /**
+     * Parses a time MAPI String into a Java {@link Calendar} instance.
+     *
+     * @param toParse The time String to parse
+     * @param pos The position of the String to start the parsing
+     * @param hasTimeZone If the time String has timezone information
+     * @return A {@link Calendar} instance of the parsed time
+     * @throws ProtocolException If the String could not be parsed
+     */
     public static Calendar ParseTime(String toParse, ParsePosition pos, boolean hasTimeZone) throws ProtocolException {
         return ParseTimeIn(toParse, pos, hasTimeZone, TimeParser);
     }
 
+    /**
+     * Parses a timestamp MAPI String into a Java {@link Calendar} instance.
+     *
+     * @param toParse The timestamp String to parse
+     * @param pos The position of the String to start the parsing
+     * @param hasTimeZone If the timestamp String has timezone information
+     * @return A {@link Calendar} instance of the parsed timestamp
+     * @throws ProtocolException If the String could not be parsed
+     */
     public static Calendar ParseTimestamp(String toParse, ParsePosition pos, boolean hasTimeZone)
             throws ProtocolException {
         return ParseTimeIn(toParse, pos, hasTimeZone, TimestampParser);

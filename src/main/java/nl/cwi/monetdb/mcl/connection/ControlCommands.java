@@ -10,6 +10,8 @@ package nl.cwi.monetdb.mcl.connection;
 
 /**
  * The listening of the MonetDB's control commands sent by the client during a JDBC connection.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
  */
 public final class ControlCommands {
 

@@ -33,6 +33,8 @@ import java.util.Calendar;
  * This object is not intended to be queried by multiple threads synchronously. It is designed to work for one thread
  * retrieving rows from it. When multiple threads will retrieve rows from this object, it is possible for threads to
  * get the same data.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
  */
 public class DataBlockResponse implements IIncompleteResponse {
 

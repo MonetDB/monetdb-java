@@ -30,6 +30,8 @@ import java.sql.Types;
  * there the first line consists out of<br />
  * <tt>&amp;"qt" "id" "tc" "cc" "rc"</tt>.
  * Meanwhile on an Embedded connection the data is fetched with no parsing.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
  */
 public class ResultSetResponse implements IIncompleteResponse {
 

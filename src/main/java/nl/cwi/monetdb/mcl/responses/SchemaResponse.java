@@ -16,6 +16,8 @@ import java.sql.Statement;
  * MonetDB's case always SUCCESS_NO_INFO. Note that this state is not sent by the server.
  * <br />
  * <tt>&amp;3</tt>
+ *
+ * @author Fabian Groffen
  */
 public class SchemaResponse implements IResponse {
 

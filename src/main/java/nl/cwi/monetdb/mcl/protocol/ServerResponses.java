@@ -10,6 +10,8 @@ package nl.cwi.monetdb.mcl.protocol;
 
 /**
  * This class represents the possible stages of a query response by the server.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
  */
 public final class ServerResponses {
 

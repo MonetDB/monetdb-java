@@ -22,14 +22,33 @@ import java.io.IOException;
 import java.nio.CharBuffer;
 import java.util.Map;
 
+/**
+ * The JDBC abstract protocol implementation on a MAPI connection using the protocol version 9. The connection holds a
+ * lineBuffer which will be reused during the whole connection for memory saving purposes. An additional tupleLineBuffer
+ * is used to help parsing tuple lines from a BLOCK response.
+ *
+ * @author Pedro Ferreira
+ */
 public class OldMapiProtocol extends AbstractProtocol {
 
+    /**
+     * The current server response.
+     */
     private int currentServerResponseHeader = ServerResponses.UNKNOWN;
 
+    /**
+     * The underlying MAPI socket connection.
+     */
     private final OldMapiSocket socket;
 
+    /**
+     * The buffer used to parse server's responses.
+     */
     CharBuffer lineBuffer;
 
+    /**
+     * A helper buffer used to parse tuple line responses.
+     */
     CharBuffer tupleLineBuffer;
 
     public OldMapiProtocol(OldMapiSocket socket) {
@@ -38,6 +57,11 @@ public class OldMapiProtocol extends AbstractProtocol {
         this.tupleLineBuffer = CharBuffer.wrap(new char[1024]);
     }
 
+    /**
+     * Retrieve the underlying socket data.
+     *
+     * @return The underlying socket data
+     */
     public OldMapiSocket getSocket() {
         return socket;
     }
@@ -47,6 +71,14 @@ public class OldMapiProtocol extends AbstractProtocol {
         return currentServerResponseHeader;
     }
 
+    /**
+     * Reads up till the MonetDB prompt, indicating the server is ready for a new command.
+     *
+     * If there are errors present in the lines that are read, then they are put in one string and returned <b>after</b>
+     * the prompt has been found.
+     *
+     * @throws IOException if an IO exception occurs while talking to the server
+     */
     @Override
     public void waitUntilPrompt() throws IOException {
         while(this.currentServerResponseHeader != ServerResponses.PROMPT) {
@@ -62,14 +94,23 @@ public class OldMapiProtocol extends AbstractProtocol {
         }
     }
 
+    /**
+     * Read a line of text from the socket. A line is considered to be terminated by any one of a line feed ('\n').
+     *
+     * Warning: until the server properly prefixes all of its error messages with SQLSTATE codes, this method prefixes
+     * all errors it sees without sqlstate with the generic data exception code (22000).
+     *
+     * @throws IOException If an I/O error occurs
+     */
     @Override
-    public void fetchNextResponseData() throws IOException { //readLine equivalent
+    public void fetchNextResponseData() throws IOException {
         this.lineBuffer = this.socket.readLine(this.lineBuffer);
         if(this.lineBuffer.limit() == 0) {
             throw new IOException("Connection to server lost!");
         }
         this.currentServerResponseHeader = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
-        if (this.currentServerResponseHeader == ServerResponses.ERROR && !this.lineBuffer.toString().matches("^[0-9A-Z]{5}!.+")) {
+        if (this.currentServerResponseHeader == ServerResponses.ERROR && !this.lineBuffer.toString()
+                .matches("^[0-9A-Z]{5}!.+")) {
             CharBuffer newbuffer = CharBuffer.wrap(new char[this.lineBuffer.capacity() + 7]);
             newbuffer.put("!22000!");
             newbuffer.put(this.lineBuffer.array());
@@ -97,7 +138,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     @Override
     public UpdateResponse getNextUpdateResponse() throws ProtocolException {
         int count = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
-        int lastId = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //TODO test this!!
+        int lastId = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         return new UpdateResponse(lastId, count);
     }
 
@@ -125,7 +166,8 @@ public class OldMapiProtocol extends AbstractProtocol {
     @Override
     public int getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames)
             throws ProtocolException {
-        return OldMapiTableHeaderParser.GetNextTableHeader(this.lineBuffer, columnNames, columnLengths, types, tableNames);
+        return OldMapiTableHeaderParser.GetNextTableHeader(this.lineBuffer, columnNames, columnLengths, types,
+                tableNames);
     }
 
     @Override
@@ -146,6 +188,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     @Override
     public synchronized void writeNextQuery(String prefix, String query, String suffix) throws IOException {
         this.socket.writeNextLine(prefix, query, suffix);
-        this.currentServerResponseHeader = ServerResponses.UNKNOWN; //reset reader state
+        // reset reader state, last line isn't valid any more now
+        this.currentServerResponseHeader = ServerResponses.UNKNOWN;
     }
 }

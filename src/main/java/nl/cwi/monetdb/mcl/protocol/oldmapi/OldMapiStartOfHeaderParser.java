@@ -11,6 +11,12 @@ package nl.cwi.monetdb.mcl.protocol.oldmapi;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 
+/**
+ * The OldMapiStartOfHeaderParser is responsible to retrieve the server's headers on a SOHEADER response. Depending on
+ * the type of the header, the next tokens should be retrieved as integers or Strings.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
+ */
 final class OldMapiStartOfHeaderParser {
 
     static int GetNextStartHeaderOnOldMapi(OldMapiProtocol protocol) {
@@ -47,6 +53,14 @@ final class OldMapiStartOfHeaderParser {
         return res;
     }
 
+    /**
+     * Returns the next token in the Protocol's lineBuffer as an integer. The value is considered to end at the end of
+     * the lineBuffer or at a space. If a non-numeric character is encountered a ProtocolException is thrown.
+     *
+     * @param protocol An Old Mapi Protocol instance where the next token will be retrieved
+     * @return The next token in the Protocol as an integer
+     * @throws ProtocolException if no numeric value could be read
+     */
     static int GetNextResponseDataAsInt(OldMapiProtocol protocol) throws ProtocolException {
         int currentPointer = protocol.lineBuffer.position();
         int limit = protocol.lineBuffer.limit();
@@ -83,6 +97,14 @@ final class OldMapiStartOfHeaderParser {
         return positive ? tmp : -tmp;
     }
 
+    /**
+     * Returns the next token in the Protocol's lineBuffer as a String. The value is considered to end at the end of the
+     * lineBuffer or at a space. If no character is found, a ProtocolException is thrown.
+     *
+     * @param protocol An Old Mapi Protocol instance where the next token will be retrieved
+     * @return The next token in the Protocol as a String
+     * @throws ProtocolException if no character could be read
+     */
     static String GetNextResponseDataAsString(OldMapiProtocol protocol) throws ProtocolException {
         int currentPointer = protocol.lineBuffer.position();
         int limit = protocol.lineBuffer.limit();

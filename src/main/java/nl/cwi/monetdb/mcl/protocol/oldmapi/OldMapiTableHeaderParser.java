@@ -13,10 +13,27 @@ import nl.cwi.monetdb.mcl.protocol.TableResultHeaders;
 
 import java.nio.CharBuffer;
 
+/**
+ * The OldMapiTableHeaderParser is a generic parser that retrieves Q_TABLE, Q_PREPARE and Q_BLOCK responses data as
+ * integers and Strings to fill the Tables' metadata.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
+ */
 final class OldMapiTableHeaderParser {
 
+    /**
+     * Retrieves the next table result set header and fills the respective array of values.
+     *
+     * @param lineBuffer An Old Mapi Protocol's lineBuffer to retrieve data
+     * @param columnNames The result set column names
+     * @param columnLengths The result set column lengths
+     * @param types The result set column SQL types
+     * @param tableNames The result set columns schema and table names in format schema.table
+     * @return The integer representation of the Table Result Header retrieved
+     * @throws ProtocolException If an error while parsing occurred
+     */
     static int GetNextTableHeader(CharBuffer lineBuffer, String[] columnNames, int[] columnLengths,
-                                                 String[] types, String[] tableNames) throws ProtocolException {
+                                  String[] types, String[] tableNames) throws ProtocolException {
         int res = TableResultHeaders.UNKNOWN;
         int currentLength = lineBuffer.limit();
         char[] array = lineBuffer.array();
@@ -50,7 +67,7 @@ final class OldMapiTableHeaderParser {
             }
         }
         if (!nameFound)
-            throw new ProtocolException("invalid header, no header name found", pos);
+            throw new ProtocolException("Invalid header, no header name found", pos);
 
         // depending on the name of the header, we continue
         switch (array[pos]) {
@@ -76,11 +93,18 @@ final class OldMapiTableHeaderParser {
                 }
                 break;
             default:
-                throw new ProtocolException("unknown header: " + new String(array, pos, currentLength - pos));
+                throw new ProtocolException("Unknown header: " + new String(array, pos, currentLength - pos));
         }
         return res;
     }
 
+    /**
+     * Fills a String array header with values.
+     *
+     * @param array The lineBuffer's backing array
+     * @param stop The position to stop parsing
+     * @param stringValues The String array to fill
+     */
     private static void GetStringValues(char[] array, int stop, String[] stringValues) {
         int elem = 0, start = 2;
 
@@ -94,6 +118,14 @@ final class OldMapiTableHeaderParser {
         stringValues[elem] = new String(array, start, stop - start);
     }
 
+    /**
+     * Fills an integer array header with values.
+     *
+     * @param array The lineBuffer's backing array
+     * @param stop The position to stop parsing
+     * @param intValues The integer array to fill
+     * @throws ProtocolException If an error while parsing occurred
+     */
     private static void GetIntValues(char[] array, int stop, int[] intValues) throws ProtocolException {
         int elem = 0, tmp = 0, start = 2;
 
@@ -108,7 +140,7 @@ final class OldMapiTableHeaderParser {
                 if (array[i] >= '0' && array[i] <= '9') {
                     tmp += (int) array[i] - (int)'0';
                 } else {
-                    throw new ProtocolException("expected a digit in " + new String(array) + " at " + i);
+                    throw new ProtocolException("Expected a digit in " + new String(array) + " at " + i);
                 }
             }
         }

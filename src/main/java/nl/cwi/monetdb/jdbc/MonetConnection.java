@@ -51,7 +51,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         return SeqCounter;
     }
 
-    /** the successful processed input properties */
+    /** The successful processed input properties */
     protected final Properties conn_props;
     /** The language to connect with */
     protected IMonetDBLanguage language;
@@ -110,8 +110,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     }
 
     /**
-     * Connects to the given host and port, logging in as the given user. If followRedirect is false, a
-     * RedirectionException is thrown when a redirect is encountered.
+     * Connects to the server, authenticating the user.
      *
      * @return A List with informational (warning) messages. If this list is empty; then there are no warnings.
      * @throws IOException if an I/O error occurs when creating the socket
@@ -120,20 +119,67 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     public abstract List<String> connect(String user, String pass) throws IOException, ProtocolException, MCLException;
 
+    /**
+     * Gets the underlying connection block size length.
+     *
+     * @return The block size length
+     */
     public abstract int getBlockSize();
 
+    /**
+     * Gets the underlying connection default fetch size for DataBlock responses.
+     *
+     * @return The default fetch size
+     */
     public abstract int getDefFetchsize();
 
+    /**
+     * Gets the underlying connection socket timeout.
+     *
+     * @return The underlying connection socket timeout
+     */
     public abstract int getSoTimeout();
 
-    public abstract void setSoTimeout(int s);
+    /**
+     * Sets the underlying connection socket timeout.
+     *
+     * @param timeout The specified timeout, in milliseconds. A timeout of zero is interpreted as an infinite timeout
+     */
+    public abstract void setSoTimeout(int timeout);
 
+    /**
+     * Closes the underlying connection implementation.
+     *
+     * @throws IOException if an I/O error occurs while closing the connection
+     */
     public abstract void closeUnderlyingConnection() throws IOException;
 
+    /**
+     * Gets the underlying connection JDBC String URL.
+     *
+     * @return The underlying connection JDBC String URL
+     */
     public abstract String getJDBCURL();
 
-    public abstract void sendControlCommand(int con, int data) throws SQLException;
+    /**
+     * Sends a control command to the server.
+     *
+     * @param commandID the command identifier according to {@link ControlCommands} listing
+     * @param data The integer to send according to the control command
+     * @throws SQLException if an IO exception or a database error occurs
+     */
+    public abstract void sendControlCommand(int commandID, int data) throws SQLException;
 
+    /**
+     * Creates a ResponseList.
+     *
+     * @param fetchSize the nubmer of rows per block in the response list
+     * @param maxRows maximum number of rows to allow in the set
+     * @param resultSetType the type of result sets to produce
+     * @param resultSetConcurrency the concurrency of result sets to produce
+     * @return A ResponseList instance
+     * @throws SQLException if an IO exception or a database error occurs
+     */
     public abstract ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType,
                                                     int resultSetConcurrency) throws SQLException;
 

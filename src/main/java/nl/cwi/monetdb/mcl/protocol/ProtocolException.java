@@ -15,6 +15,8 @@ import java.text.ParseException;
  * throws an ProtocolException as soon as something that is read cannot be understood or does not conform to the
  * specifications (e.g. a missing field). The instance that throws the exception will try to give an error offset
  * whenever possible. Alternatively it makes sure that the error message includes the offending data read.
+ *
+ * @author Fabian Groffen
  */
 public class ProtocolException extends ParseException {
 

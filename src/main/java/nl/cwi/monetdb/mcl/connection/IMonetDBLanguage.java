@@ -11,6 +11,8 @@ package nl.cwi.monetdb.mcl.connection;
 /**
  * An interface which represents the delimiters for user queries depending on the language (SQL and MAL) and connection
  * (Socket and Embedded).
+ *
+ * @author Pedro Ferreira
  */
 public interface IMonetDBLanguage {
 

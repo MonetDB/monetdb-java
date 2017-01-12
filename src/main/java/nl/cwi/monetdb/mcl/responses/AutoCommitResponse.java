@@ -12,6 +12,8 @@ package nl.cwi.monetdb.mcl.responses;
  * The AutoCommitResponse represents a transaction message. It stores (a change in) the server side auto commit mode.
  * <br />
  * <tt>&amp;4 (t|f)</tt>
+ *
+ * @author Fabian Groffen
  */
 public class AutoCommitResponse extends SchemaResponse {
 

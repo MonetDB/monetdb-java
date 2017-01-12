@@ -10,13 +10,29 @@ package nl.cwi.monetdb.mcl.connection.helpers;
 
 import java.nio.CharBuffer;
 
+/**
+ * An helper class to reallocate CharBuffer instance in way that won't overflow their capacity. (Adapted from the
+ * {@link StringBuilder} reallocation implementation).
+ *
+ * @author Pedro Ferreira
+ */
 public final class BufferReallocator {
 
+    /**
+     * The possible MAX_ARRAY_SIZE, according to {@link AbstractStringBuilder}.
+     */
     private static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
 
-    private static int GetNewCapacity(CharBuffer oldBuffer) {
-        int minCapacity = oldBuffer.capacity() << 1;
-        int newCapacity = (oldBuffer.capacity() << 1) + 2;
+    /**
+     * Calculates the CharBuffer's new capacity, throwing a {@link OutOfMemoryError}, if the capacity causes overflow.
+     * The capacity will always try to duplicate.
+     *
+     * @param buffer The buffer whose capacity will be expanded
+     * @return The buffer's new capacity
+     */
+    private static int GetNewCapacity(CharBuffer buffer) {
+        int minCapacity = buffer.capacity() << 1;
+        int newCapacity = (buffer.capacity() << 1) + 2;
         if (newCapacity - minCapacity < 0) {
             newCapacity = minCapacity;
         }
@@ -31,18 +47,32 @@ public final class BufferReallocator {
         }
     }
 
-    public static CharBuffer ReallocateBuffer(CharBuffer oldBuffer) {
-        int newCapacity = GetNewCapacity(oldBuffer);
+    /**
+     * Reallocates the buffer by creating a new one with the new capacity and the contents of the previous one.
+     *
+     * @param buffer The buffer whose capacity will be expanded
+     * @return The new buffer allocated
+     */
+    public static CharBuffer ReallocateBuffer(CharBuffer buffer) {
+        int newCapacity = GetNewCapacity(buffer);
         CharBuffer newBuffer = CharBuffer.wrap(new char[newCapacity]);
-        oldBuffer.flip();
-        newBuffer.put(oldBuffer.array());
+        buffer.flip();
+        newBuffer.put(buffer.array());
         return newBuffer;
     }
 
-    public static CharBuffer EnsureCapacity(CharBuffer oldBuffer, int newCapacity) {
-        if(newCapacity > oldBuffer.capacity()) {
-            oldBuffer = CharBuffer.wrap(new char[newCapacity]);
+    /**
+     * Ensures that a buffer has a certain amount of capacity, creating a new one if the new capacity is larger than the
+     * current one in the buffer
+     *
+     * @param buffer The buffer whose capacity will be checked
+     * @param capacityThreshold The capacity threshold to test
+     * @return The original buffer or the new one allocated
+     */
+    public static CharBuffer EnsureCapacity(CharBuffer buffer, int capacityThreshold) {
+        if(capacityThreshold > buffer.capacity()) {
+            buffer = CharBuffer.wrap(new char[capacityThreshold]);
         }
-        return oldBuffer;
+        return buffer;
     }
 }

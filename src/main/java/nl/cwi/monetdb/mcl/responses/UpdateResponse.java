@@ -14,6 +14,8 @@ package nl.cwi.monetdb.mcl.responses;
  * inserted auto-generated ID, or -1 if not applicable.
  * <br />
  * <tt>&amp;2 0 -1</tt>
+ *
+ * @author Fabian Groffen, Pedro Ferreira
  */
 public class UpdateResponse implements IResponse {
 

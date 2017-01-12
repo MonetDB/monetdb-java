@@ -10,8 +10,19 @@ package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
+/**
+ * This class parses the next server response on a MAPI connection using the next ASCII character on the stream.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
+ */
 final class OldMapiServerResponseParser {
 
+    /**
+     * Retrieves the next server response from an old MAPI protocol instance.
+     *
+     * @param protocol An Old MAPI protocol instance from which the next server response will be retrieved
+     * @return The integer representation of the next server response
+     */
     static int ParseOldMapiServerResponse(OldMapiProtocol protocol) {
         int res;
         switch (protocol.lineBuffer.get()) {

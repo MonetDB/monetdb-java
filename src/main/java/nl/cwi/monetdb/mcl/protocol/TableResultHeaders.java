@@ -10,7 +10,9 @@ package nl.cwi.monetdb.mcl.protocol;
 
 /**
  * This class lists the result table headers returned by the server. The integer values are used for the bitmap on the
- * ResultSetResponse Class
+ * ResultSetResponse Class.
+ *
+ * @author Fabian Groffen, Pedro Ferreira
  */
 public final class TableResultHeaders {
 
