@@ -1113,7 +1113,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         if (name.equals("host") || name.equals("port") || name.equals("user") || name.equals("password") ||
                 name.equals("database") || name.equals("language") || name.equals("so_timeout") ||
                 name.equals("hash") || name.equals("treat_blob_as_binary") || name.equals("follow_redirects") ||
-                name.equals("treat_clob_as_longvarchar") || name.equals("embedded")) {
+                name.equals("treat_clob_as_longvarchar") || name.equals("embedded") || name.equals("directory")) {
             conn_props.setProperty(name, value);
         } else {
             addWarning("setClientInfo: " + name + "is not a recognised property", "01M07");

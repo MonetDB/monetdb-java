@@ -193,6 +193,11 @@ final public class MonetDriver implements Driver {
 		prop.description = "Whether or not to use an embedded MonetDB connection";
 		props.add(prop);
 
+		prop = new DriverPropertyInfo("directory", "");
+		prop.required = false;
+		prop.description = "Sets the directory to set the database in a embedded connection (Embedded connection only)";
+		props.add(prop);
+
 		DriverPropertyInfo[] dpi = new DriverPropertyInfo[props.size()];
 		return props.toArray(dpi);
 	}
@@ -421,15 +426,19 @@ final public class MonetDriver implements Driver {
 
 		if(isEmbedded) { //instantiate the connection
 			try {
+                String directory = props.getProperty("directory");
+                if (directory == null || directory.trim().isEmpty())
+                    throw new IllegalArgumentException("directory should not be null or empty");
+
 			    if(EmbeddedConnectionClass == null) {
 			        EmbeddedConnectionClass = Class.forName("nl.cwi.monetdb.embedded.jdbc.EmbeddedConnection");
+                    if(EmbeddedConnectionClass == null) { //if it's still null then there is a problem
+                        throw new SQLException("EmbeddedConnection Class not found! Please load the MonetDBJavaEmbedded JAR!");
+                    }
 			    }
-				if(EmbeddedConnectionClass == null) { //if it's still null then there is a problem
-					throw new SQLException("EmbeddedConnection Class not found!");
-				}
                 res = (MonetConnection) EmbeddedConnectionClass
-                    .getDeclaredConstructor(Properties.class, String.class, String.class)
-                    .newInstance(props, hash, language);
+                    .getDeclaredConstructor(Properties.class, String.class, String.class, String.class)
+                    .newInstance(props, hash, language, directory);
 			} catch (InvocationTargetException | InstantiationException | IllegalAccessException |
 			         NoSuchMethodException | ClassNotFoundException e) {
 				throw new SQLException(e);
