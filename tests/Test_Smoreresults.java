@@ -21,22 +21,22 @@ public class Test_Smoreresults {
 
 		try {
 			System.out.print("1. more results?...");
-			if (stmt.getMoreResults() != false || stmt.getUpdateCount() != -1)
+			if (stmt.getMoreResults() || stmt.getUpdateCount() != -1)
 				throw new SQLException("more results on an unitialised Statement, how can that be?");
 			System.out.println(" nope :)");
 
 			System.out.print("2. SELECT 1...");
-			if (stmt.execute("SELECT 1;") == false)
+			if (!stmt.execute("SELECT 1;"))
 				throw new SQLException("SELECT 1 returns update or no results");
 			System.out.println(" ResultSet :)");
 
 			System.out.print("3. more results?...");
-			if (stmt.getMoreResults() != false || stmt.getUpdateCount() != -1)
+			if (stmt.getMoreResults() || stmt.getUpdateCount() != -1)
 				throw new SQLException("more results after SELECT 1 query, how can that be?");
 			System.out.println(" nope :)");
 
 			System.out.print("4. even more results?...");
-			if (stmt.getMoreResults() != false || stmt.getUpdateCount() != -1)
+			if (stmt.getMoreResults() || stmt.getUpdateCount() != -1)
 				throw new SQLException("more results after SELECT 1 query, how can that be?");
 			System.out.println(" nope :)");
 

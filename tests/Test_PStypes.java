@@ -23,22 +23,21 @@ public class Test_PStypes {
 
 		try {
 			stmt.executeUpdate(
-"CREATE TABLE htmtest (" +
-"       htmid    bigint       NOT NULL," +
-"       ra       double ," +
-"       decl     double ," +
-"       dra      double ," +
-"       ddecl    double ," +
-"       flux     double ," +
-"       dflux    double ," +
-"       freq     double ," +
-"       bw       double ," +
-"       type     decimal(1,0)," +
-"       imageurl varchar(100)," +
-"       comment  varchar(100)," +
-"       CONSTRAINT htmtest_htmid_pkey PRIMARY KEY (htmid)" +
-")"
-);
+			"CREATE TABLE htmtest (" +
+			"       htmid    bigint       NOT NULL," +
+			"       ra       double ," +
+			"       decl     double ," +
+			"       dra      double ," +
+			"       ddecl    double ," +
+			"       flux     double ," +
+			"       dflux    double ," +
+			"       freq     double ," +
+			"       bw       double ," +
+			"       type     decimal(1,0)," +
+			"       imageurl varchar(100)," +
+			"       comment  varchar(100)," +
+			"       CONSTRAINT htmtest_htmid_pkey PRIMARY KEY (htmid)" +
+			")");
 			// index is not used, but the original bug had it too
 			stmt.executeUpdate("CREATE INDEX htmid ON htmtest (htmid)");
 		} catch (SQLException e) {
@@ -49,9 +48,7 @@ public class Test_PStypes {
 		}
 
 		try {
-			pstmt = con.prepareStatement(
-"INSERT INTO HTMTEST (HTMID,RA,DECL,FLUX,COMMENT) VALUES (?,?,?,?,?)"
-);
+			pstmt = con.prepareStatement("INSERT INTO HTMTEST (HTMID,RA,DECL,FLUX,COMMENT) VALUES (?,?,?,?,?)");
 			System.out.print("1. inserting a record...");
 
 			pstmt.setLong(1, 1L);
@@ -64,9 +61,7 @@ public class Test_PStypes {
 			System.out.println("success :)");
 
 			// try an update like bug #1757923
-			pstmt = con.prepareStatement(
-"UPDATE HTMTEST set COMMENT=?, TYPE=? WHERE HTMID=?"
-);
+			pstmt = con.prepareStatement("UPDATE HTMTEST set COMMENT=?, TYPE=? WHERE HTMID=?");
 			System.out.print("2. updating record...");
 
 			pstmt.setString(1, "some update");

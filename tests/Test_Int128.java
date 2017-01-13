@@ -20,10 +20,8 @@ public class Test_Int128 {
 	public static void main(String[] args) throws Exception {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
-		BigInteger bi = new BigInteger(
-				"123456789012345678909876543210987654321");
-		BigDecimal bd = new BigDecimal(
-				"1234567890123456789.9876543210987654321");
+		BigInteger bi = new BigInteger("123456789012345678909876543210987654321");
+		BigDecimal bd = new BigDecimal("1234567890123456789.9876543210987654321");
 		try {
 			con.setAutoCommit(false);
 			Statement s = con.createStatement();

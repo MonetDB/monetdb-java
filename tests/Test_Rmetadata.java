@@ -13,8 +13,8 @@ public class Test_Rmetadata {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
-		ResultSet rs = null;
-		ResultSetMetaData rsmd = null;
+		ResultSet rs;
+		ResultSetMetaData rsmd;
 		//DatabaseMetaData dbmd = con.getMetaData();
 
 		con.setAutoCommit(false);
@@ -23,7 +23,6 @@ public class Test_Rmetadata {
 
 		try {
 			stmt.executeUpdate("CREATE TABLE table_Test_Rmetadata ( myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob )");
-
 			// all NULLs
 			stmt.executeUpdate("INSERT INTO table_Test_Rmetadata VALUES (NULL, NULL,            NULL,           NULL,                  NULL)");
 			// all filled in

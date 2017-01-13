@@ -13,7 +13,7 @@ public class Test_Rbooleans {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
-		ResultSet rs = null;
+		ResultSet rs;
 		//DatabaseMetaData dbmd = con.getMetaData();
 
 		con.setAutoCommit(false);

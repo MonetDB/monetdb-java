@@ -14,9 +14,8 @@ public class Test_PSmetadata {
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		PreparedStatement pstmt;
-		ResultSet rs = null;
-		ResultSetMetaData rsmd = null;
-		ParameterMetaData pmd = null;
+		ResultSetMetaData rsmd;
+		ParameterMetaData pmd;
 
 		con.setAutoCommit(false);
 		// >> false: auto commit should be off now
@@ -24,7 +23,6 @@ public class Test_PSmetadata {
 
 		try {
 			stmt.executeUpdate("CREATE TABLE table_Test_PSmetadata ( myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob )");
-
 			// all NULLs
 			stmt.executeUpdate("INSERT INTO table_Test_PSmetadata VALUES (NULL, NULL,            NULL,           NULL,                  NULL)");
 			// all filled in

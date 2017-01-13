@@ -13,6 +13,7 @@ import nl.cwi.monetdb.mcl.connection.mapi.OldMapiSocket;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
+import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 import nl.cwi.monetdb.mcl.responses.AutoCommitResponse;
 import nl.cwi.monetdb.mcl.responses.UpdateResponse;
 import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
@@ -30,6 +31,11 @@ import java.util.Map;
  * @author Pedro Ferreira
  */
 public class OldMapiProtocol extends AbstractProtocol {
+
+    /**
+     * The default size for the tuple lines' CharBuffer (it should be less than the OldMapiSocket BLOCK size).
+     */
+    private static final int TUPLE_LINE_BUFFER_DEFAULT_SIZE = 1024;
 
     /**
      * The current server response.
@@ -54,18 +60,23 @@ public class OldMapiProtocol extends AbstractProtocol {
     public OldMapiProtocol(OldMapiSocket socket) {
         this.socket = socket;
         this.lineBuffer = CharBuffer.wrap(new char[OldMapiSocket.BLOCK]);
-        this.tupleLineBuffer = CharBuffer.wrap(new char[1024]);
+        this.tupleLineBuffer = CharBuffer.wrap(new char[TUPLE_LINE_BUFFER_DEFAULT_SIZE]);
     }
 
     /**
-     * Retrieve the underlying socket data.
+     * Gets the underlying socket.
      *
-     * @return The underlying socket data
+     * @return The underlying socket
      */
     public OldMapiSocket getSocket() {
         return socket;
     }
 
+    /**
+     * Gets the current server response, obtained through the fetchNextResponseData method.
+     *
+     * @return The integer representation of {@link ServerResponses}
+     */
     @Override
     public int getCurrentServerResponse() {
         return currentServerResponseHeader;
@@ -95,7 +106,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     }
 
     /**
-     * Read a line of text from the socket. A line is considered to be terminated by any one of a line feed ('\n').
+     * Reads a line of text from the socket. A line is considered to be terminated by any one of a line feed ('\n').
      *
      * Warning: until the server properly prefixes all of its error messages with SQLSTATE codes, this method prefixes
      * all errors it sees without sqlstate with the generic data exception code (22000).
@@ -120,11 +131,25 @@ public class OldMapiProtocol extends AbstractProtocol {
         this.lineBuffer.position(1);
     }
 
+    /**
+     * Gets the next starter header of a server response.
+     *
+     * @return The integer representation of {@link StarterHeaders}
+     */
     @Override
     public int getNextStarterHeader() {
         return OldMapiStartOfHeaderParser.GetNextStartHeaderOnOldMapi(this);
     }
 
+    /**
+     * Gets the next ResultSet response from the server, belonging to a ResponseList.
+     *
+     * @param con The current MonetDB's JDBC connection
+     * @param list The Response List this result set will belong to
+     * @param seqnr The sequence number of this result set on the Response List
+     * @return The ResultSet instance
+     * @throws ProtocolException If an error in the underlying connection happened.
+     */
     @Override
     public ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr)
             throws ProtocolException {
@@ -135,6 +160,12 @@ public class OldMapiProtocol extends AbstractProtocol {
         return new ResultSetResponse(con, list, seqnr, id, rowcount, tuplecount, columncount);
     }
 
+    /**
+     * Gets the next UpdateResponse response from the server.
+     *
+     * @return The UpdateResponse instance
+     * @throws ProtocolException If an error in the underlying connection happened.
+     */
     @Override
     public UpdateResponse getNextUpdateResponse() throws ProtocolException {
         int count = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
@@ -142,12 +173,26 @@ public class OldMapiProtocol extends AbstractProtocol {
         return new UpdateResponse(lastId, count);
     }
 
+    /**
+     * Gets the next AutoCommitResponse response from the server.
+     *
+     * @return The AutoCommitResponse instance
+     * @throws ProtocolException If an error in the underlying connection happened.
+     */
     @Override
     public AutoCommitResponse getNextAutoCommitResponse() throws ProtocolException {
         boolean ac = OldMapiStartOfHeaderParser.GetNextResponseDataAsString(this).equals("t");
         return new AutoCommitResponse(ac);
     }
 
+    /**
+     * Gets the next DataBlockResponse response from the server, belonging to a ResultSetResponse
+     *
+     * @param rsresponses A map of ResultSetResponse, in which this Block will belong to one of them, by checking its id
+     *                    against the keys of the Map.
+     * @return The DataBlockResponse instance
+     * @throws ProtocolException If an error in the underlying connection happened.
+     */
     @Override
     public DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
             throws ProtocolException {
@@ -163,6 +208,16 @@ public class OldMapiProtocol extends AbstractProtocol {
         return rs.addDataBlockResponse(offset, rowcount, this);
     }
 
+    /**
+     * Gets the next Table Header for a ResultSetResponse. More than one of the parameter arrays can be filled at once.
+     *
+     * @param columnNames The column names array
+     * @param columnLengths The column lengths array
+     * @param types The columns SQL names array
+     * @param tableNames The columns schemas and names in format schema.table
+     * @return A TableResultHeaders integer representation, representing which of the fields was filled
+     * @throws ProtocolException If an error in the underlying connection happened.
+     */
     @Override
     public int getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames)
             throws ProtocolException {
@@ -170,12 +225,29 @@ public class OldMapiProtocol extends AbstractProtocol {
                 tableNames);
     }
 
+    /**
+     * Retrieves the next values in a DataBlockResponse from the underlying connection, starting at a specific line
+     * number.
+     *
+     * @param firstLineNumber The first line number in the response to retrieve
+     * @param typesMap The JDBC types mapping array for every column in the ResultSetResponse of the DataBlock
+     * @param values An array of columns to fill the values
+     * @return The number of lines parsed from the underlying connection
+     * @throws ProtocolException If an error in the underlying connection happened.
+     */
     @Override
-    public int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] data) throws ProtocolException {
-        OldMapiTupleLineParser.OldMapiParseTupleLine(this, firstLineNumber, typesMap, data);
+    public int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] values) throws ProtocolException {
+        OldMapiTupleLineParser.OldMapiParseTupleLine(this, firstLineNumber, typesMap, values);
         return firstLineNumber;
     }
 
+    /**
+     * Gets the remaining response line from the underlying connection as a Java String. This method is mostly used to
+     * retrieve error Strings, when they are detected while parsing a response line.
+     *
+     * @param startIndex The first index in the response line to retrieve the String
+     * @return The String representation of the line starting at the provided index
+     */
     @Override
     public String getRemainingStringLine(int startIndex) {
         if(this.lineBuffer.limit() > startIndex) {
@@ -185,6 +257,15 @@ public class OldMapiProtocol extends AbstractProtocol {
         }
     }
 
+    /**
+     * Writes a user query to the server, while providing the respective prefixes and suffixes depending on the current
+     * language and connection used.
+     *
+     * @param prefix The prefix to append at the beginning of the query string
+     * @param query The user query to submit to the server
+     * @param suffix The suffix to append at the end of the query string
+     * @throws IOException If an error in the underlying connection happened.
+     */
     @Override
     public synchronized void writeNextQuery(String prefix, String query, String suffix) throws IOException {
         this.socket.writeNextLine(prefix, query, suffix);

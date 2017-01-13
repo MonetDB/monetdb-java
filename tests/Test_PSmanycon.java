@@ -12,7 +12,7 @@ import java.util.*;
 public class Test_PSmanycon {
 	public static void main(String[] args) throws Exception {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
-		List pss = new ArrayList(100);	// Connections go in here
+		List<PreparedStatement> pss = new ArrayList<>(100);	// Connections go in here
 
 		try {
 			// spawn a lot of Connections, just for fun...
@@ -51,7 +51,7 @@ public class Test_PSmanycon {
 					Connection con = DriverManager.getConnection(args[0]);
 					Statement stmt = con.createStatement();
 					try {
-						int affrows = stmt.executeUpdate("update foo where bar is wrong");
+						stmt.executeUpdate("update foo where bar is wrong");
 						System.out.println("oops, faulty statement just got through :(");
 					} catch (SQLException e) {
 						System.out.println("Forced transaction failure");

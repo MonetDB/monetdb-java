@@ -15,7 +15,7 @@ package nl.cwi.monetdb.mcl.protocol;
  */
 public final class ServerResponses {
 
-    /* Please don't change the order */
+    /* Please don't change the order or the values */
 
     /** "there is currently no line", or the the type is unknown is represented by UNKNOWN */
     public static final int UNKNOWN = 0;

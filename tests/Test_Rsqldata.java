@@ -16,8 +16,8 @@ public class Test_Rsqldata {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
-		ResultSet rs = null;
-		ResultSetMetaData rsmd = null;
+		ResultSet rs;
+		ResultSetMetaData rsmd;
 
 		con.setAutoCommit(false);
 		// >> false: auto commit should be off now

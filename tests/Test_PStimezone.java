@@ -22,7 +22,7 @@ public class Test_PStimezone {
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		PreparedStatement pstmt;
-		ResultSet rs = null;
+		ResultSet rs;
 		//DatabaseMetaData dbmd = con.getMetaData();
 
 		con.setAutoCommit(false);

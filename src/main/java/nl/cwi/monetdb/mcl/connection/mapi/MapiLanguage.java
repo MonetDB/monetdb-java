@@ -13,7 +13,7 @@ import nl.cwi.monetdb.mcl.connection.IMonetDBLanguage;
 /**
  * The MAPI implementation of the available languages on a JDBC connection: SQL and MAL.
  *
- * @author Pedro Ferreira
+ * @author Fabian Groffen, Pedro Ferreira
  */
 public enum MapiLanguage implements IMonetDBLanguage {
 

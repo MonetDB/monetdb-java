@@ -17,9 +17,9 @@ public class Test_PSsqldata {
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		PreparedStatement pstmt;
-		ResultSet rs = null;
-		ResultSetMetaData rsmd = null;
-		ParameterMetaData pmd = null;
+		ResultSet rs;
+		ResultSetMetaData rsmd ;
+		ParameterMetaData pmd;
 
 		con.setAutoCommit(false);
 		// >> false: auto commit should be off now

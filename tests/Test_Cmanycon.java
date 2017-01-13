@@ -12,7 +12,7 @@ import java.util.*;
 public class Test_Cmanycon {
 	public static void main(String[] args) throws Exception {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
-		List cons = new ArrayList(100);	// Connections go in here
+		List<Connection> cons = new ArrayList<>(100);	// Connections go in here
 
 		try {
 			// spawn a lot of Connections, just for fun...

@@ -27,11 +27,12 @@ import java.sql.SQLException;
 import java.util.*;
 
 /**
- * A {@link Connection} suitable for the MonetDB database on a MAPI connection.
+ * A {@link Connection} suitable for the MonetDB database using a MAPI connection.
  *
  * @author Fabian Groffen, Martin van Dinther, Pedro Ferreira
  */
 public class MapiConnection extends MonetConnection {
+
     /** the PROMPT ASCII char sent by the server */
     static final char PROMPT_CHAR = '.';
     /** the default number of rows that are (attempted to) read at once */
@@ -190,11 +191,21 @@ public class MapiConnection extends MonetConnection {
         return DEF_FETCHSIZE;
     }
 
+    /**
+     * Closes the underlying connection implementation. On a MAPI connection, the underlying socket is closed.
+     *
+     * @throws IOException if an I/O error occurs while closing the connection
+     */
     @Override
     public synchronized void closeUnderlyingConnection() throws IOException {
         ((OldMapiProtocol)protocol).getSocket().close();
     }
 
+    /**
+     * Gets the underlying connection JDBC String URL.
+     *
+     * @return The underlying connection JDBC String URL
+     */
     @Override
     public String getJDBCURL() {
         String res = "jdbc:monetdb://" + this.hostname + ":" + this.port + "/" + this.database;
@@ -203,6 +214,13 @@ public class MapiConnection extends MonetConnection {
         return res;
     }
 
+    /**
+     * Sends a control command to the server. On a MAPI connection, regular MonetDB commands are sent to the server.
+     *
+     * @param commandID the command identifier according to {@link ControlCommands} listing
+     * @param data The integer to send according to the control command
+     * @throws SQLException if an IO exception or a database error occurs
+     */
     @Override
     public void sendControlCommand(int commandID, int data) throws SQLException {
         String command = null;
@@ -236,6 +254,16 @@ public class MapiConnection extends MonetConnection {
         }
     }
 
+    /**
+     * Creates a ResponseList. In a Mapi connection, there are no restrictions while creating the response list.
+     *
+     * @param fetchSize the nubmer of rows per block in the response list
+     * @param maxRows maximum number of rows to allow in the set
+     * @param resultSetType the type of result sets to produce
+     * @param resultSetConcurrency the concurrency of result sets to produce
+     * @return A ResponseList instance
+     * @throws SQLException if an IO exception or a database error occurs
+     */
     @Override
     public ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType, int resultSetConcurrency)
             throws SQLException {
@@ -246,6 +274,8 @@ public class MapiConnection extends MonetConnection {
      * Connects to the given host and port, logging in as the given user. If followRedirect is false, a
      * RedirectionException is thrown when a redirect is encountered.
      *
+     * @param user The user name to authenticate
+     * @param pass The user's password
      * @return A List with informational (warning) messages. If this list is empty; then there are no warnings.
      * @throws IOException if an I/O error occurs when creating the socket
      * @throws ProtocolException if bogus data is received

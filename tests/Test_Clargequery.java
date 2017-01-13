@@ -44,7 +44,7 @@ public class Test_Clargequery {
 			System.out.print("1. sending");
 			stmt1.execute(bigq.toString());
 			int i = 1;	// we skip the first "getResultSet()"
-			while (stmt1.getMoreResults() != false) {
+			while (stmt1.getMoreResults()) {
 				i++;
 			}
 			if (stmt1.getUpdateCount() != -1) {

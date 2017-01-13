@@ -39,7 +39,7 @@ import java.util.concurrent.Executor;
  * The current state of this connection is that it nearly implements the
  * whole Connection interface.
  *
- * @author Martin van Dinther
+ * @author Fabian Groffen, Martin van Dinther, Pedro Ferreira
  * @version 1.3
  */
 public abstract class MonetConnection extends MonetWrapper implements Connection {
@@ -101,10 +101,20 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         this.clobIsLongChar = clobIsLongChar;
     }
 
+    /**
+     * Gets the connection's language data.
+     *
+     * @return The connection's language data
+     */
     public IMonetDBLanguage getLanguage() {
         return language;
     }
 
+    /**
+     * Gets the connection's protocol.
+     *
+     * @return The connection's protocol
+     */
     public AbstractProtocol getProtocol() {
         return this.protocol;
     }
@@ -112,6 +122,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     /**
      * Connects to the server, authenticating the user.
      *
+     * @param user The user name to authenticate
+     * @param pass The user's password
      * @return A List with informational (warning) messages. If this list is empty; then there are no warnings.
      * @throws IOException if an I/O error occurs when creating the socket
      * @throws ProtocolException if bogus data is received

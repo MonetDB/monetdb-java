@@ -34,28 +34,28 @@ public abstract class AbstractProtocol {
     public abstract void waitUntilPrompt() throws IOException;
 
     /**
-     * Fetch the server's next response data.
+     * Fetches the server's next response data.
      *
      * @throws IOException If an error in the underlying connection happened.
      */
     public abstract void fetchNextResponseData() throws IOException;
 
     /**
-     * Get the current server response, obtained through the fetchNextResponseData method.
+     * Gets the current server response.
      *
      * @return The integer representation of the server response
      */
     public abstract int getCurrentServerResponse();
 
     /**
-     * Get the next starter header of a server response.
+     * Gets the next starter header of a server response.
      *
-     * @return The integer representation of the starter header
+     * @return The integer representation of {@link StarterHeaders}
      */
     public abstract int getNextStarterHeader();
 
     /**
-     * Get the next ResultSet response from the server, belonging to a ResponseList.
+     * Gets the next ResultSet response from the server, belonging to a ResponseList.
      *
      * @param con The current MonetDB's JDBC connection
      * @param list The Response List this result set will belong to
@@ -67,7 +67,7 @@ public abstract class AbstractProtocol {
                                                                int seqnr) throws ProtocolException;
 
     /**
-     * Get the next UpdateResponse response from the server.
+     * Gets the next UpdateResponse response from the server.
      *
      * @return The UpdateResponse instance
      * @throws ProtocolException If an error in the underlying connection happened.
@@ -75,7 +75,7 @@ public abstract class AbstractProtocol {
     public abstract UpdateResponse getNextUpdateResponse() throws ProtocolException;
 
     /**
-     * Get the next SchemaResponse response from the server.
+     * Gets the next SchemaResponse response from the server.
      *
      * @return The SchemaResponse instance
      */
@@ -84,7 +84,7 @@ public abstract class AbstractProtocol {
     }
 
     /**
-     * Get the next AutoCommitResponse response from the server.
+     * Gets the next AutoCommitResponse response from the server.
      *
      * @return The AutoCommitResponse instance
      * @throws ProtocolException If an error in the underlying connection happened.
@@ -92,7 +92,7 @@ public abstract class AbstractProtocol {
     public abstract AutoCommitResponse getNextAutoCommitResponse() throws ProtocolException;
 
     /**
-     * Get the next DataBlockResponse response from the server, belonging to a ResultSetResponse
+     * Gets the next DataBlockResponse response from the server, belonging to a ResultSetResponse
      *
      * @param rsresponses A map of ResultSetResponse, in which this Block will belong to one of them, by checking its id
      *                    against the keys of the Map.
@@ -103,7 +103,7 @@ public abstract class AbstractProtocol {
             throws ProtocolException;
 
     /**
-     * Get the next Table Header for a ResultSetResponse. More than one of the parameter arrays can be filled at once.
+     * Gets the next Table Header for a ResultSetResponse. More than one of the parameter arrays can be filled at once.
      *
      * @param columnNames The column names array
      * @param columnLengths The column lengths array
@@ -141,7 +141,7 @@ public abstract class AbstractProtocol {
      * language and connection used.
      *
      * @param prefix The prefix to append at the beginning of the query string
-     * @param query The user query to submit at the server
+     * @param query The user query to submit to the server
      * @param suffix The suffix to append at the end of the query string
      * @throws IOException If an error in the underlying connection happened.
      */

@@ -433,7 +433,7 @@ final public class MonetDriver implements Driver {
 			    if(EmbeddedConnectionClass == null) {
 			        EmbeddedConnectionClass = Class.forName("nl.cwi.monetdb.embedded.jdbc.EmbeddedConnection");
                     if(EmbeddedConnectionClass == null) { //if it's still null then there is a problem
-                        throw new SQLException("EmbeddedConnection Class not found! Please load the MonetDBJavaEmbedded JAR!");
+                        throw new SQLException("EmbeddedConnection Class not found! Please add the MonetDBJavaEmbedded JAR to the Classpath!");
                     }
 			    }
                 res = (MonetConnection) EmbeddedConnectionClass

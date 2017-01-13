@@ -15,6 +15,8 @@ package nl.cwi.monetdb.mcl.connection;
  */
 public final class ControlCommands {
 
+    /* Please don't change the order or the values */
+
     /** Send autocommit statement */
     public static final int AUTO_COMMIT = 1;
     /** Set reply size for the server (for the maxrows specification) */
