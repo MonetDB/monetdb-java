@@ -97,22 +97,6 @@ sed \
 	-e "s|Release date: 20[0-9][0-9]-[01][0-9]-[0-3][0-9]|Release date: `date +%F`|" \
 	${file} | ${diff} ${file} - | ${patch}
 
-for file in \
-	Makefile.ag \
-	; do
-	if [[ -f ${file} ]] ; then
-		for f in $FILES ; do
-			fr=${f//XXX/${NEW_MAJOR}.${NEW_MINOR}}
-			fo=${f//XXX/${ESC_MAJOR}.${ESC_MINOR}}
-			fo=${fo//./\\.}
-			sed -e "s|${fo}|${fr}|g" \
-				${file} | ${diff} ${file} - | ${patch}
-		done
-	else
-		echo "Please do not forget to patch file '${file##*../}', too."
-	fi
-done
-
 file="build.properties"
 sed \
 	-e "s|${TYPE}_MAJOR=${ESC_MAJOR}|${TYPE}_MAJOR=${NEW_MAJOR}|g" \

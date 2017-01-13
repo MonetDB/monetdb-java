@@ -8,8 +8,9 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import java.sql.*;
 import java.io.*;
+import java.sql.Clob;
+import java.sql.SQLException;
 
 /**
  * The MonetClob class implements the {@link java.sql.Clob} interface.  Because

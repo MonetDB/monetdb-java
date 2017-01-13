@@ -1,6 +1,6 @@
 RELEASE NOTES
-MonetDB JDBC driver version 2.23 (Liberica/MCL-1.13)
-Release date: 2016-07-13
+MonetDB JDBC driver version 2.24 (Liberica/MCL-1.14)
+Release date: 2016-12-15
 
 This JDBC driver is designed for use with MonetDB, a main-memory
 database.  For more information see https://www.monetdb.org/.
@@ -29,13 +29,10 @@ Currently implemented JDBC 4.1 interfaces include:
 
   * java.sql.Connection
     The next features/methods are NOT implemented:
-    - createArrayOf
-    - createBlob, createClob, createNClob
-    - createStruct
-    - createSQLXML
+    - createArrayOf, createNClob, createStruct, createSQLXML
     - createStatement with result set holdability
     - prepareCall (CallableStatement is not supported)
-    - prepareStatement with column indices or names
+    - prepareStatement with array of column indices or column names
     - setHoldability (close/hold cursors over commit is not
       configurable)
   NOTE: be sure to check for warnings after setting concurrencies or
