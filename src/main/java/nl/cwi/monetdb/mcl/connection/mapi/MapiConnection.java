@@ -262,11 +262,9 @@ public class MapiConnection extends MonetConnection {
      * @param resultSetType the type of result sets to produce
      * @param resultSetConcurrency the concurrency of result sets to produce
      * @return A ResponseList instance
-     * @throws SQLException if an IO exception or a database error occurs
      */
     @Override
-    public ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType, int resultSetConcurrency)
-            throws SQLException {
+    public ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType, int resultSetConcurrency) {
         return new MonetConnection.ResponseList(fetchSize, maxRows, resultSetType, resultSetConcurrency);
     }
 

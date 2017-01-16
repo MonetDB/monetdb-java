@@ -306,6 +306,13 @@ public class DataBlockResponse implements IIncompleteResponse {
      */
     public String getValueAsString(int column) {
         switch (this.jdbcSQLTypes[column]) {
+            case Types.CHAR:
+            case Types.VARCHAR:
+            case Types.LONGVARCHAR:
+            case Types.OTHER:
+                return ((String[]) this.data[column])[this.blockLine];
+            case Types.LONGVARBINARY:
+                return Arrays.toString(((byte[][]) this.data[column])[this.blockLine]);
             case Types.BOOLEAN:
                 return ((byte[]) this.data[column])[this.blockLine] == 1 ? "true" : "false";
             case Types.TINYINT:
@@ -320,13 +327,6 @@ public class DataBlockResponse implements IIncompleteResponse {
                 return Float.toString(((float[]) this.data[column])[this.blockLine]);
             case Types.DOUBLE:
                 return Double.toString(((double[]) this.data[column])[this.blockLine]);
-            case Types.LONGVARBINARY:
-                return Arrays.toString(((byte[][]) this.data[column])[this.blockLine]);
-            case Types.CHAR:
-            case Types.VARCHAR:
-            case Types.LONGVARCHAR:
-            case Types.OTHER:
-                return ((String[]) this.data[column])[this.blockLine];
             default: //BLOB, CLOB, BigDecimal, BigInteger, Time, Timestamp and Date
                 return ((Object[]) this.data[column])[this.blockLine].toString();
         }

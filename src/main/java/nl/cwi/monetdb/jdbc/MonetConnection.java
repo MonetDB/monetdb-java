@@ -190,10 +190,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * @param resultSetType the type of result sets to produce
      * @param resultSetConcurrency the concurrency of result sets to produce
      * @return A ResponseList instance
-     * @throws SQLException if an IO exception or a database error occurs
      */
     public abstract ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType,
-                                                    int resultSetConcurrency) throws SQLException;
+                                                    int resultSetConcurrency);
 
     /**
      * Releases this Connection object's database and JDBC resources immediately instead of waiting for them to be
@@ -1369,7 +1368,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
          * @param rstype the type of result sets to produce
          * @param rsconcur the concurrency of result sets to produce
          */
-        public ResponseList(int cachesize, int maxrows, int rstype, int rsconcur) throws SQLException {
+        public ResponseList(int cachesize, int maxrows, int rstype, int rsconcur) {
             this.cachesize = cachesize;
             this.maxrows = maxrows;
             this.rstype = rstype;
