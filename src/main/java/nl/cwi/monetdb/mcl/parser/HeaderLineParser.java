@@ -125,8 +125,12 @@ public class HeaderLineParser extends MCLParser {
 
 	/**
 	 * Returns an array of Strings containing the values between
-	 * ',\t' separators.  Note that no quoting/dequoting is done in this
-	 * method.
+	 * ',\t' separators.
+	 * As of Oct2014-SP1 release MAPI adds double quotes around names when
+	 * the name contains a comma or a tab or a space or a # or " character.
+	 * See issue: https://www.monetdb.org/bugzilla/show_bug.cgi?id=3616
+	 * If the parsed name string part has a " as first and last character,
+	 * we remove those added double quotes here.
 	 *
 	 * @param chrLine a character array holding the input data
 	 * @param start where the relevant data starts
@@ -137,13 +141,16 @@ public class HeaderLineParser extends MCLParser {
 
 		for (int i = start + 1; i < stop; i++) {
 			if (chrLine[i] == '\t' && chrLine[i - 1] == ',') {
-				values[elem++] =
-					new String(chrLine, start, i - 1 - start);
+				if (chrLine[start] == '"')
+					start++;  // skip leading double quote
+				values[elem++] = new String(chrLine, start, i - (chrLine[i - 2] == '"' ? 2 : 1) - start);
 				start = i + 1;
 			}
 		}
-		// add the left over part
-		values[elem++] = new String(chrLine, start, stop - start);
+		// add the left over part (last column)
+		if (chrLine[start] == '"')
+			start++;  // skip leading double quote
+		values[elem++] = new String(chrLine, start, stop - (chrLine[stop - 1] == '"' ? 1 : 0) - start);
 	}
 
 	/**
