@@ -59,7 +59,7 @@ public class OldMapiProtocol extends AbstractProtocol {
 
     public OldMapiProtocol(OldMapiSocket socket) {
         this.socket = socket;
-        this.lineBuffer = CharBuffer.wrap(new char[OldMapiSocket.BLOCK]);
+        this.lineBuffer = CharBuffer.wrap(new char[OldMapiSocket.FULL_BLOCK]);
         this.tupleLineBuffer = CharBuffer.wrap(new char[TUPLE_LINE_BUFFER_DEFAULT_SIZE]);
     }
 
@@ -267,7 +267,7 @@ public class OldMapiProtocol extends AbstractProtocol {
      * @throws IOException If an error in the underlying connection happened.
      */
     @Override
-    public synchronized void writeNextQuery(String prefix, String query, String suffix) throws IOException {
+    public void writeNextQuery(String prefix, String query, String suffix) throws IOException {
         this.socket.writeNextLine(prefix, query, suffix);
         // reset reader state, last line isn't valid any more now
         this.currentServerResponseHeader = ServerResponses.UNKNOWN;

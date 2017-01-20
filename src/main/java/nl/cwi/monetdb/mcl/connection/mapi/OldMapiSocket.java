@@ -36,8 +36,11 @@ import java.nio.ByteBuffer;
  */
 public class OldMapiSocket extends AbstractSocket {
 
+    /** The full blocksize to use in the upper layer buffers */
+    public final static int FULL_BLOCK = 8 * 1024;
+
     /** The blocksize (hardcoded in compliance with stream.mx) */
-    public final static int BLOCK = 8 * 1024 - 2;
+    private static final int BLOCK = FULL_BLOCK - 2;
 
     /**
      * A short in two bytes for holding the block size in bytes.
@@ -58,6 +61,14 @@ public class OldMapiSocket extends AbstractSocket {
         super(hostname, port, connection);
         this.inStream = new OldMapiBlockInputStream(socket.getInputStream());
         this.outStream = new OldMapiBlockOutputStream(socket.getOutputStream());
+    }
+
+    /**
+     * The block size to be used in the upper layer buffers
+     */
+    @Override
+    public int getFullBlockSize() {
+        return FULL_BLOCK;
     }
 
     /**
@@ -99,7 +110,7 @@ public class OldMapiSocket extends AbstractSocket {
 
         private int blockLen = 0;
 
-        private final byte[] block = new byte[BLOCK];
+        private final byte[] block = new byte[BLOCK + 3]; //\n.\n
 
         /**
          * Constructs this BlockInputStream, backed by the given InputStream. A BufferedInputStream is internally used.
@@ -182,7 +193,6 @@ public class OldMapiSocket extends AbstractSocket {
                 block[blockLen++] = MapiConnection.PROMPT_CHAR;
                 block[blockLen++] = '\n';
             }
-
             return blockLen;
         }
 
@@ -319,7 +329,6 @@ public class OldMapiSocket extends AbstractSocket {
 
         int write(ByteBuffer b, int off, int len) throws IOException {
             int t, written = 0;
-            b.flip();
             while (len > 0) {
                 t = BLOCK - writePos;
                 if (len > t) {

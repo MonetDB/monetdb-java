@@ -52,11 +52,11 @@ public abstract class AbstractSocket implements Closeable {
     AbstractSocket(String hostname, int port, MapiConnection connection) throws IOException {
         this.socket = new Socket(hostname, port);
         this.connection = connection;
-        this.bufferIn = ByteBuffer.wrap(new byte[getBlockSize()]);
-        this.bufferOut = ByteBuffer.wrap(new byte[getBlockSize()]);
-        this.stringsDecoded = CharBuffer.allocate(getBlockSize());
+        this.bufferIn = ByteBuffer.wrap(new byte[getFullBlockSize()]);
+        this.bufferOut = ByteBuffer.wrap(new byte[getFullBlockSize()]);
+        this.stringsDecoded = CharBuffer.allocate(getFullBlockSize());
         this.stringsDecoded.flip();
-        this.stringsEncoded = CharBuffer.allocate(getBlockSize());
+        this.stringsEncoded = CharBuffer.allocate(getFullBlockSize());
     }
 
     /**
@@ -100,6 +100,13 @@ public abstract class AbstractSocket implements Closeable {
     }
 
     /**
+     * Gets the underlying socket full block size.
+     *
+     * @return The underlying socket full block size
+     */
+    public abstract int getFullBlockSize();
+
+    /**
      * Gets the underlying socket block size.
      *
      * @return The underlying socket block size
@@ -134,7 +141,7 @@ public abstract class AbstractSocket implements Closeable {
      *
      * @throws IOException If an error in the underlying connection happened
      */
-    private void readToBuffer() throws IOException {
+    private void readToInputBuffer() throws IOException {
         int read = this.readToBufferIn(this.bufferIn);
         if(read == 0) {
             throw new IOException("The server has reached EOF!");
@@ -158,15 +165,18 @@ public abstract class AbstractSocket implements Closeable {
         boolean found = false;
         char[] sourceArray = this.stringsDecoded.array();
         int sourcePosition = this.stringsDecoded.position();
+        int sourceLimit = this.stringsDecoded.limit();
         char[] destinationArray = lineBuffer.array();
         int destinationPosition = 0;
         int destinationLimit = lineBuffer.limit();
 
         while(!found) {
-            if(!this.stringsDecoded.hasRemaining()) {
-                this.readToBuffer();
+            if(sourcePosition >= sourceLimit) {
+                this.stringsDecoded.position(sourcePosition);
+                this.readToInputBuffer();
                 sourceArray = this.stringsDecoded.array();
                 sourcePosition = 0;
+                sourceLimit = this.stringsDecoded.limit();
             }
             char c = sourceArray[sourcePosition++];
             if(c == '\n') {
@@ -189,9 +199,10 @@ public abstract class AbstractSocket implements Closeable {
     /**
      * Helper method to write, encode into UTF-8 and flush.
      *
+     * @param toFlush A boolean indicating to flush the underlying stream or not
      * @throws IOException If an error in the underlying connection happened
      */
-    private void flushOutputCharBuffer() throws IOException {
+    private void writeToOutputBuffer(boolean toFlush) throws IOException {
         this.stringsEncoded.flip();
         this.utf8Encoder.reset();
         this.utf8Encoder.encode(this.stringsEncoded, this.bufferOut, true);
@@ -201,23 +212,28 @@ public abstract class AbstractSocket implements Closeable {
         if(written == 0) {
             throw new IOException("The query could not be sent to the server!");
         } else {
-            this.flush();
+            if(toFlush) {
+                this.flush();
+            }
         }
     }
 
     /**
      * Writes a String line into the underlying socket.
      *
+     * @param line The line to write in the socket
      * @throws IOException If an error in the underlying connection happened
      */
     private void writeNextBlock(String line) throws IOException {
         int limit = line.length();
         int destinationPosition = this.stringsEncoded.position();
+        int destinationCapacity = this.stringsEncoded.capacity();
         char[] destinationArray = this.stringsEncoded.array();
 
         for (int i = 0; i < limit; i++) {
-            if (!this.stringsEncoded.hasRemaining()) {
-                this.flushOutputCharBuffer();
+            if (destinationPosition >= destinationCapacity) {
+                this.stringsEncoded.position(destinationPosition);
+                this.writeToOutputBuffer(false);
                 destinationArray = this.stringsEncoded.array();
                 destinationPosition = 0;
             }
@@ -242,9 +258,6 @@ public abstract class AbstractSocket implements Closeable {
         if(suffix != null) {
             this.writeNextBlock(suffix);
         }
-        this.writeNextBlock("\n");
-        if (this.stringsEncoded.hasRemaining()) {
-            this.flushOutputCharBuffer();
-        }
+        this.writeToOutputBuffer(true);
     }
 }
