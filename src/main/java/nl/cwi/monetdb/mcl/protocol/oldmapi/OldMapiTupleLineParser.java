@@ -146,6 +146,8 @@ final class OldMapiTupleLineParser {
                                             tupleLineBuffer.put(array[pos]);
                                             break;
                                     }
+                                } else if(array[pos] == '\\') {
+
                                 } else {
                                     tupleLineBuffer.put(array[pos]);
                                 }
@@ -153,7 +155,7 @@ final class OldMapiTupleLineParser {
                             // put the unescaped string in the right place
                             tupleLineBuffer.flip();
                             OldMapiStringToJavaDataConversion(tupleLineBuffer.array(), 0, tupleLineBuffer.limit(), lineNumber, values[column], typesMap[column]);
-                        } else if ((i - 1) - cursor == 4 && OldMapiTupleLineParserHelper.CharIndexOf(array, array.length, NULL_STRING, 4) == cursor) {
+                        } else if ((i - 1) - cursor == 4 && OldMapiTupleLineParserHelper.CharIndexOf(array, 0, array.length, NULL_STRING, 0,4, cursor) == cursor) {
                             SetNullValue(lineNumber, values[column], typesMap[column]);
                         } else {
                             OldMapiStringToJavaDataConversion(array, cursor, i - 1 - cursor, lineNumber, values[column], typesMap[column]);
@@ -206,7 +208,7 @@ final class OldMapiTupleLineParser {
                                                           Object columnArray, int jDBCMapping) throws ProtocolException {
         switch (jDBCMapping) {
             case Types.BOOLEAN:
-                ((byte[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToBoolean(toParse, startPosition, count);
+                ((byte[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToBoolean(toParse, startPosition);
                 break;
             case Types.TINYINT:
                 ((byte[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToByte(toParse, startPosition, count);
@@ -226,11 +228,9 @@ final class OldMapiTupleLineParser {
             case Types.DOUBLE:
                 ((double[]) columnArray)[lineNumber] = Double.parseDouble(new String(toParse, startPosition, count));
                 break;
+            case Types.NUMERIC:
             case Types.DECIMAL:
                 ((BigDecimal[]) columnArray)[lineNumber] = new BigDecimal(toParse, startPosition, count);
-                break;
-            case Types.NUMERIC:
-                ((BigInteger[]) columnArray)[lineNumber] = new BigInteger(new String(toParse, startPosition, count));
                 break;
             case Types.CHAR:
             case Types.VARCHAR:

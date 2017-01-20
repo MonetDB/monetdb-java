@@ -15,7 +15,6 @@ import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.sql.Types;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -104,11 +103,9 @@ public class DataBlockResponse implements IIncompleteResponse {
                     case Types.DOUBLE:
                         this.data[i] = new double[this.rowcount];
                         break;
+                    case Types.NUMERIC:
                     case Types.DECIMAL:
                         this.data[i] = new BigDecimal[this.rowcount];
-                        break;
-                    case Types.NUMERIC:
-                        this.data[i] = new BigInteger[this.rowcount];
                         break;
                     case Types.BLOB:
                         this.data[i] = new MonetBlob[this.rowcount];
@@ -170,26 +167,6 @@ public class DataBlockResponse implements IIncompleteResponse {
      */
     void setBlockLine(int blockLine) {
         this.blockLine = blockLine;
-    }
-
-    /**
-     * Sets the data on the block.
-     * This method is called by the MonetVirtualResultSet class which should be eliminated on the future.
-     *
-     * @param data the data to set
-     */
-    public void setData(Object[] data) { /* For VirtualResultSet :( */
-        this.data = data;
-    }
-
-    /**
-     * Gets the data on the block.
-     * This method is called by the MonetVirtualResultSet class which should be eliminated on the future.
-     *
-     * @return the result set data
-     */
-    public Object[] getData() { /* For VirtualResultSet :( */
-        return this.data;
     }
 
     /**
@@ -327,7 +304,7 @@ public class DataBlockResponse implements IIncompleteResponse {
                 return Float.toString(((float[]) this.data[column])[this.blockLine]);
             case Types.DOUBLE:
                 return Double.toString(((double[]) this.data[column])[this.blockLine]);
-            default: //BLOB, CLOB, BigDecimal, BigInteger, Time, Timestamp and Date
+            default: //BLOB, CLOB, BigDecimal, Time, Timestamp and Date
                 return ((Object[]) this.data[column])[this.blockLine].toString();
         }
     }

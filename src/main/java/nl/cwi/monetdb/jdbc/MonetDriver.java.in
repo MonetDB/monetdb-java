@@ -243,7 +243,7 @@ final public class MonetDriver implements Driver {
 		typeMap.put("double", Types.DOUBLE);
 		typeMap.put("geometry", Types.OTHER);
 		typeMap.put("geometrya", Types.OTHER);
-		typeMap.put("hugeint", Types.NUMERIC); //but we will convert to java.math.BigInteger
+		typeMap.put("hugeint", Types.NUMERIC);
 		typeMap.put("inet", Types.OTHER);
 		typeMap.put("int", Types.INTEGER);
 		typeMap.put("json", Types.OTHER);

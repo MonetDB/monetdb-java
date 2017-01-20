@@ -19,6 +19,7 @@ import java.nio.ByteOrder;
 import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CharsetEncoder;
+import java.nio.charset.CoderResult;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -27,7 +28,7 @@ import java.nio.charset.StandardCharsets;
  * fetched will be different hence this class should be sub-classed according to the protocol itself.
  * <br/>
  * Meanwhile the implementation of this class uses Java ByteBuffers which allows memory re-usage for more performance.
- * Also MonetDB uses UTF-8 as its character encoding, hence its required to convert into UTF-16 (JVM encoding).
+ * Also MonetDB uses UTF-8 as its character encoding, hence it is required to convert into UTF-16 (JVM encoding).
  *
  * @author Pedro Ferreira
  */
@@ -205,10 +206,19 @@ public abstract class AbstractSocket implements Closeable {
     private void writeToOutputBuffer(boolean toFlush) throws IOException {
         this.stringsEncoded.flip();
         this.utf8Encoder.reset();
+        CoderResult res;
+        int written = 0;
+        do {
+            res = this.utf8Encoder.encode(this.stringsEncoded, this.bufferOut, false);
+            written += this.writeFromBufferOut(this.bufferOut);
+        } while (res == CoderResult.OVERFLOW);
+
         this.utf8Encoder.encode(this.stringsEncoded, this.bufferOut, true);
         this.utf8Encoder.flush(this.bufferOut);
+        written += this.writeFromBufferOut(this.bufferOut);
+
         this.stringsEncoded.clear();
-        int written = this.writeFromBufferOut(this.bufferOut);
+        this.bufferOut.clear();
         if(written == 0) {
             throw new IOException("The query could not be sent to the server!");
         } else {

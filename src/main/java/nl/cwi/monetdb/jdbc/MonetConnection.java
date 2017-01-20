@@ -84,6 +84,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     private final boolean clobIsLongChar;
     /** The underlying proticol provided by the connection (MAPI or embedded) */
     protected AbstractProtocol protocol;
+    /** Tells if the connection is embedded or not */
+    private final boolean isEmbedded;
 
     /**
      * Constructor of a Connection for MonetDB. At this moment the current implementation limits itself to storing the
@@ -99,6 +101,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         this.language = language;
         this.blobIsBinary = blobIsBinary;
         this.clobIsLongChar = clobIsLongChar;
+        String embedded = props.getProperty("embedded");
+        this.isEmbedded = embedded != null && embedded.equals("true");
     }
 
     /**
@@ -181,18 +185,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * @throws SQLException if an IO exception or a database error occurs
      */
     public abstract void sendControlCommand(int commandID, int data) throws SQLException;
-
-    /**
-     * Creates a ResponseList.
-     *
-     * @param fetchSize the nubmer of rows per block in the response list
-     * @param maxRows maximum number of rows to allow in the set
-     * @param resultSetType the type of result sets to produce
-     * @param resultSetConcurrency the concurrency of result sets to produce
-     * @return A ResponseList instance
-     */
-    public abstract ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType,
-                                                    int resultSetConcurrency);
 
     /**
      * Releases this Connection object's database and JDBC resources immediately instead of waiting for them to be
@@ -1498,8 +1490,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                  * Change the reply size of the server.  If the given value is the same as the current value known
                  * to use, then ignore this call.  If it is set to 0 we get a prompt after the server sent it's
                  * header.
+                 *
+                 * 2017: For now, in the embedded connection, the value set cachesize will be always the default one.
                  */
-                int size = cachesize == 0 ? MonetConnection.this.getDefFetchsize() : cachesize;
+                int size = (cachesize != 0 && !isEmbedded) ? cachesize : MonetConnection.this.getDefFetchsize();
                 size = maxrows != 0 ? Math.min(maxrows, size) : size;
                 // don't do work if it's not needed
                 if (language == MapiLanguage.LANG_SQL && size != curReplySize &&

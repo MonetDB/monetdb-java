@@ -38,6 +38,7 @@ final class OldMapiStartOfHeaderParser {
                 break;
             case '4':
                 res = StarterHeaders.Q_TRANS;
+                protocol.lineBuffer.get();
                 break;
             case '5':
                 res = StarterHeaders.Q_PREPARE;

@@ -16,7 +16,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.IOException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.net.URL;
 import java.nio.CharBuffer;
@@ -1659,18 +1658,6 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					setDouble(parameterIndex, val6);
 					break;
 				case Types.NUMERIC:
-					BigInteger val7;
-					try {
-						val7 = new BigInteger((String)x);
-					} catch (NumberFormatException e) {
-						try {
-							val7 = BigInteger.ZERO;
-						} catch (NumberFormatException ex) {
-							throw new SQLException("Internal error: unable to create template BigInteger: " + ex.getMessage(), "M0M03");
-						}
-					}
-					setObject(parameterIndex, val7);
-					break;
 				case Types.DECIMAL:
 					BigDecimal val8;
 					try {
@@ -1736,7 +1723,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 				default:
 					throw new SQLException("Conversion not allowed", "M1M05");
 			}
-		} else if (x instanceof BigDecimal || x instanceof BigInteger || x instanceof Byte || x instanceof Short || x instanceof Integer || x instanceof Long || x instanceof Float || x instanceof Double) {
+		} else if (x instanceof BigDecimal || x instanceof Byte || x instanceof Short || x instanceof Integer || x instanceof Long || x instanceof Float || x instanceof Double) {
 			Number num = (Number)x;
 			switch (targetSqlType) {
 				case Types.TINYINT:
@@ -1758,12 +1745,6 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					setDouble(parameterIndex, num.doubleValue());
 					break;
 				case Types.NUMERIC:
-					if (x instanceof BigInteger) {
-						setObject(parameterIndex, x);
-					} else {
-						setObject(parameterIndex, new BigInteger(Integer.toString(num.intValue())));
-					}
-					break;
 				case Types.DECIMAL:
 					if (x instanceof BigDecimal) {
 						setBigDecimal(parameterIndex, (BigDecimal)x);
@@ -1808,8 +1789,6 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					setDouble(parameterIndex, (val ? 1.0 : 0.0));  // do no cast to (double) as it generates a compiler warning
 					break;
 				case Types.NUMERIC:
-					setObject(parameterIndex, val ? BigInteger.ONE : BigInteger.ZERO);
-					break;
 				case Types.DECIMAL:
 					setBigDecimal(parameterIndex, val ? BigDecimal.ONE : BigDecimal.ZERO);
 				 	break;

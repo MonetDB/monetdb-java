@@ -255,20 +255,6 @@ public class MapiConnection extends MonetConnection {
     }
 
     /**
-     * Creates a ResponseList. In a Mapi connection, there are no restrictions while creating the response list.
-     *
-     * @param fetchSize the nubmer of rows per block in the response list
-     * @param maxRows maximum number of rows to allow in the set
-     * @param resultSetType the type of result sets to produce
-     * @param resultSetConcurrency the concurrency of result sets to produce
-     * @return A ResponseList instance
-     */
-    @Override
-    public ResponseList createResponseList(int fetchSize, int maxRows, int resultSetType, int resultSetConcurrency) {
-        return new MonetConnection.ResponseList(fetchSize, maxRows, resultSetType, resultSetConcurrency);
-    }
-
-    /**
      * Connects to the given host and port, logging in as the given user. If followRedirect is false, a
      * RedirectionException is thrown when a redirect is encountered.
      *

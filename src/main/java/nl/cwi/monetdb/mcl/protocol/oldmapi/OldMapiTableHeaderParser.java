@@ -101,6 +101,11 @@ final class OldMapiTableHeaderParser {
     /**
      * Fills a String array header with values.
      *
+     * As of Oct2014-SP1 release MAPI adds double quotes around names when the name contains a comma or a tab or a space
+     * or a # or " character.
+     * See issue: https://www.monetdb.org/bugzilla/show_bug.cgi?id=3616 If the parsed name string part has a " as first
+     * and last character, we remove those added double quotes here.
+     *
      * @param array The lineBuffer's backing array
      * @param stop The position to stop parsing
      * @param stringValues The String array to fill
@@ -110,12 +115,18 @@ final class OldMapiTableHeaderParser {
 
         for (int i = start + 1; i < stop; i++) {
             if (array[i] == '\t' && array[i - 1] == ',') {
-                stringValues[elem++] = new String(array, start, i - 1 - start);
+                if (array[start] == '"') {
+                    start++;  // skip leading double quote
+                }
+                stringValues[elem++] = new String(array, start, i - (array[i - 2] == '"' ? 2 : 1) - start);
                 start = i + 1;
             }
         }
-        // add the left over part
-        stringValues[elem] = new String(array, start, stop - start);
+        // add the left over part (last column)
+        if (array[start] == '"') {
+            start++;  // skip leading double quote
+        }
+        stringValues[elem] = new String(array, start, stop - (array[stop - 1] == '"' ? 1 : 0) - start);
     }
 
     /**

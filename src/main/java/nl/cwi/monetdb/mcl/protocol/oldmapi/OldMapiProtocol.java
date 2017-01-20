@@ -157,7 +157,7 @@ public class OldMapiProtocol extends AbstractProtocol {
         int tuplecount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int columncount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
-        return new ResultSetResponse(con, list, seqnr, id, rowcount, tuplecount, columncount);
+        return new ResultSetResponse(con, list, id, seqnr, rowcount, tuplecount, columncount);
     }
 
     /**
@@ -181,7 +181,7 @@ public class OldMapiProtocol extends AbstractProtocol {
      */
     @Override
     public AutoCommitResponse getNextAutoCommitResponse() throws ProtocolException {
-        boolean ac = OldMapiStartOfHeaderParser.GetNextResponseDataAsString(this).equals("t");
+        boolean ac = this.lineBuffer.get() == 't';
         return new AutoCommitResponse(ac);
     }
 

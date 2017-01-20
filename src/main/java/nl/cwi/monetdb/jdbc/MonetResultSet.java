@@ -17,7 +17,6 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Array;
@@ -93,7 +92,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	/** Just a dummy variable to keep store the fetchsize set. */
 	private int fetchSize;
 	/** The current row's values */
-	DataBlockResponse currentBlock;
+	private DataBlockResponse currentBlock;
 
 	/**
 	 * Main constructor backed by the given Header.
@@ -589,16 +588,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 			BigDecimal val;
 			switch (JdbcSQLTypes[columnIndex - 1]) {
+				case Types.NUMERIC:
 				case Types.DECIMAL:
 					val = (BigDecimal) currentBlock.getObjectValue(columnIndex - 1);
 					break;
-				case Types.NUMERIC:
-					BigInteger huge = (BigInteger) currentBlock.getValueAsObject(columnIndex - 1);
-					val = BigDecimal.valueOf(huge.longValue());
-					break;
 				case Types.BOOLEAN:
-					byte bval = currentBlock.getBooleanValue(columnIndex - 1) ? (byte) 1 : (byte) 0;
-					val = new BigDecimal(bval);
+					val = new BigDecimal(currentBlock.getBooleanValue(columnIndex - 1) ? (byte) 1 : (byte) 0);
 					break;
 				case Types.TINYINT:
 					val = new BigDecimal(currentBlock.getByteValue(columnIndex - 1));
@@ -739,8 +734,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 						return true;
 					throw newSQLInvalidColumnIndexException(columnIndex);
 				case Types.NUMERIC:
-				    BigInteger huge = (BigInteger) currentBlock.getValueAsObject(columnIndex - 1);
-                    return huge.compareTo(BigInteger.ZERO) != 0;
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
 					return bigdec.compareTo(BigDecimal.ZERO) != 0;
@@ -805,8 +798,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.LONGVARBINARY:
 					return Byte.parseByte(currentBlock.getValueAsString(columnIndex - 1));
 				case Types.NUMERIC:
-					BigInteger huge = (BigInteger) currentBlock.getValueAsObject(columnIndex - 1);
-					return huge.byteValue();
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
 					return bigdec.byteValue();
@@ -961,8 +952,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.LONGVARBINARY:
 					return Double.parseDouble(currentBlock.getValueAsString(columnIndex - 1));
 				case Types.NUMERIC:
-					BigInteger huge = (BigInteger) currentBlock.getValueAsObject(columnIndex - 1);
-					return huge.doubleValue();
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
 					return bigdec.doubleValue();
@@ -1106,8 +1095,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.LONGVARBINARY:
 					return Float.parseFloat(currentBlock.getValueAsString(columnIndex - 1));
 				case Types.NUMERIC:
-					BigInteger huge = (BigInteger) currentBlock.getValueAsObject(columnIndex - 1);
-					return huge.floatValue();
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
 					return bigdec.floatValue();
@@ -1173,8 +1160,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.LONGVARBINARY:
 					return Integer.parseInt(currentBlock.getValueAsString(columnIndex - 1));
 				case Types.NUMERIC:
-					BigInteger huge = (BigInteger) currentBlock.getValueAsObject(columnIndex - 1);
-					return huge.intValue();
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
 					return bigdec.intValue();
@@ -1239,8 +1224,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.LONGVARBINARY:
 					return Long.parseLong(currentBlock.getValueAsString(columnIndex - 1));
 				case Types.NUMERIC:
-					BigInteger huge = (BigInteger) currentBlock.getValueAsObject(columnIndex - 1);
-					return huge.longValue();
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
 					return bigdec.longValue();
@@ -1909,8 +1892,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		}
 		if (type == null || type == String.class) {
 			return currentBlock.getValueAsString(columnIndex - 1);
-		} else if (type == BigInteger.class) {
-			return getObject(columnIndex);
 		} else if (type == BigDecimal.class) {
 			return getBigDecimal(columnIndex);
 		} else if (type == Boolean.class) {
@@ -2198,7 +2179,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			case Types.LONGVARCHAR:
 				return String.class;
 			case Types.NUMERIC:
-				return BigInteger.class;
 			case Types.DECIMAL:
 				return BigDecimal.class;
 			case Types.BOOLEAN:
@@ -2356,8 +2336,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.LONGVARBINARY:
 					return Short.parseShort(currentBlock.getValueAsString(columnIndex - 1));
 				case Types.NUMERIC:
-					BigInteger huge = (BigInteger) currentBlock.getValueAsObject(columnIndex - 1);
-					return huge.shortValue();
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
 					return bigdec.shortValue();

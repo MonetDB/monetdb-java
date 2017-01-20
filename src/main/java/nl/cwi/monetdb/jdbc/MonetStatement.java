@@ -196,9 +196,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 			for (int i = 0; i < batch.size(); i++) {
 				String tmp = batch.get(i);
 				if (sep.length() + tmp.length() > connection.getBlockSize()) {
-					// The thing is too big.  Way too big.  Since it won't
-					// be optimal anyway, just add it to whatever we have
-					// and continue.
+					// The thing is too big. Way too big. Since it won't be optimal anyway, just add it to whatever we
+					// have and continue.
 					if (!first) {
 						tmpBatch.append(sep);
 					}
@@ -475,7 +474,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		}
 
 		// create a container for the result
-		lastResponseList = connection.createResponseList(fetchSize, maxRows, resultSetType, resultSetConcurrency);
+		lastResponseList = connection.new ResponseList(fetchSize, maxRows, resultSetType, resultSetConcurrency);
 		// fill the header list by processing the query
 		lastResponseList.processQuery(sql);
 
@@ -660,7 +659,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	public ResultSet getGeneratedKeys() throws SQLException {
 		String[] columns = new String[1], types = new String[1];
 		int[] jdbcTypes = new int[1];
-		String[][] results;
+		Object[] results;
 
 		columns[0] = "GENERATED_KEY";
 		/* the generated key should be an integer, because (wait for it) other 
@@ -668,16 +667,13 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		types[0] = "BIGINT";
 		jdbcTypes[0] = MonetDriver.getJavaType(types[0]);
 
+		results = new Object[1];
+		results[0] = new long[1];
+
 		if (header instanceof UpdateResponse) {
-			int lastid = ((UpdateResponse)header).getLastid();
-			if (lastid ==-1) {
-				results = new String[1][1];
-			} else {
-				results = new String[1][1];
-				results[0][0] = Integer.toString(lastid);
-			}
+			((long[]) results[0])[0] = ((UpdateResponse)header).getLastid();
 		} else {
-			results = new String[1][1];
+			((long[]) results[0])[0] = -1;
 		}
 
 		try {
@@ -1187,15 +1183,14 @@ public class MonetStatement extends MonetWrapper implements Statement {
  * TODO: try to eliminate the need for this class completely.
  */
 final class MonetVirtualResultSet extends MonetResultSet {
-	private String results[][];
+	private Object[] results;
 	private boolean closed;
 
-	MonetVirtualResultSet(Statement statement, String[] columns, String[] types, int[] jdbcTypes, String[][] results)
+	MonetVirtualResultSet(Statement statement, String[] columns, String[] types, int[] jdbcTypes, Object[] results)
 			throws IllegalArgumentException {
 		super(statement, columns, types, jdbcTypes, results.length);
 		this.results = results;
 		this.closed = false;
-        this.currentBlock.setData(results);
 	}
 
 	/**
@@ -1226,13 +1221,17 @@ final class MonetVirtualResultSet extends MonetResultSet {
 		this.curRow = row;
 
 		// see if we have the row
-		if (row < 1 || row > tupleCount) return false;
+		return !(row < 1 || row > tupleCount);
+	}
 
-		String[] values = (String[]) this.currentBlock.getData()[0];
+	@Override
+	public int getInt(int column) throws SQLException {
+		return (int) ((long[]) results[0])[0];
+	}
 
-		System.arraycopy(this.results[row - 1], 0, values, 0, this.results[row - 1].length);
-
-		return true;
+	@Override
+	public long getLong(int column) throws SQLException {
+		return ((long[]) results[0])[0];
 	}
 
 	/**
