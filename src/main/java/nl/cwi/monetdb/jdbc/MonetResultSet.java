@@ -8,8 +8,6 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import nl.cwi.monetdb.mcl.connection.helpers.GregorianCalendarParser;
-import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
@@ -40,7 +38,6 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.text.ParsePosition;
 import java.util.*;
 
 /**
@@ -61,7 +58,7 @@ import java.util.*;
  * for FORWARD_ONLY result sets the memory usage will be likely lower for large
  * result sets.
  *
- * @author Fabian Groffen, Martin van Dinther
+ * @author Fabian Groffen, Martin van Dinther, Pedro Ferreira
  * @version 0.8
  */
 public class MonetResultSet extends MonetWrapper implements ResultSet {
@@ -707,40 +704,36 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 			// match type specific values
 			switch (JdbcSQLTypes[columnIndex - 1]) {
-				case Types.BOOLEAN:
-					return currentBlock.getBooleanValue(columnIndex - 1);
-				case Types.TINYINT:
-					return currentBlock.getByteValue(columnIndex - 1) != 0;
-				case Types.SMALLINT:
-					return currentBlock.getShortValue(columnIndex - 1) != 0;
-				case Types.INTEGER:
-					return currentBlock.getIntValue(columnIndex - 1) != 0;
-				case Types.BIGINT:
-					return currentBlock.getLongValue(columnIndex - 1) != 0L;
-				case Types.REAL:
-					return currentBlock.getFloatValue(columnIndex - 1) != 0.0f;
-				case Types.DOUBLE:
-					return currentBlock.getDoubleValue(columnIndex - 1) != 0.0d;
-				case Types.CHAR:
-				case Types.VARCHAR:
-				case Types.LONGVARCHAR:
-				case Types.CLOB:
-				case Types.BLOB:
-				case Types.LONGVARBINARY:
-					String val = currentBlock.getValueAsString(columnIndex - 1);
-					if ("false".equalsIgnoreCase(val) || "0".equals(val))
-						return false;
-					if ("true".equalsIgnoreCase(val) || "1".equals(val))
-						return true;
-					throw newSQLInvalidColumnIndexException(columnIndex);
-				case Types.NUMERIC:
-				case Types.DECIMAL:
-					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
-					return bigdec.compareTo(BigDecimal.ZERO) != 0;
-				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
-					throw new SQLException("Conversion from " + types[columnIndex - 1] +
-							" to boolean type not supported", "M1M05");
-			}
+                case Types.BOOLEAN:
+                    return currentBlock.getBooleanValue(columnIndex - 1);
+                case Types.TINYINT:
+                    return currentBlock.getByteValue(columnIndex - 1) != 0;
+                case Types.SMALLINT:
+                    return currentBlock.getShortValue(columnIndex - 1) != 0;
+                case Types.INTEGER:
+                    return currentBlock.getIntValue(columnIndex - 1) != 0;
+                case Types.BIGINT:
+                    return currentBlock.getLongValue(columnIndex - 1) != 0L;
+                case Types.REAL:
+                    return currentBlock.getFloatValue(columnIndex - 1) != 0.0f;
+                case Types.DOUBLE:
+                    return currentBlock.getDoubleValue(columnIndex - 1) != 0.0d;
+                case Types.CHAR:
+                case Types.VARCHAR:
+                case Types.LONGVARCHAR:
+                case Types.CLOB:
+                case Types.BLOB:
+                case Types.LONGVARBINARY:
+                    String val = currentBlock.getValueAsString(columnIndex - 1);
+                    return !"0".equals(val) && ("1".equals(val) || Boolean.parseBoolean(val));
+                case Types.NUMERIC:
+                case Types.DECIMAL:
+                    BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
+                    return bigdec.compareTo(BigDecimal.ZERO) != 0;
+                default: //OTHERS, BLOB, LONGVARBINARY, TIME...
+                    throw new SQLException("Conversion from " + types[columnIndex - 1] +
+                            " to boolean type not supported", "M1M05");
+            }
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
@@ -1828,7 +1821,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 						case 3:
 							if ("url".equals(MonetDBType)) {
 								try {
-									return new URL(val);
+									return new MonetURL(val);
 								} catch (Exception exc) {
 									// ignore exception and just return the val String object
 									return val;
@@ -2504,33 +2497,40 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			if(setLastNullValue(columnIndex - 1)) {
 				return null;
 			}
-            Calendar res;
+			Calendar res;
+            long millis;
             switch (JdbcSQLTypes[columnIndex - 1]) {
-				case Types.DATE:
+                case Types.DATE:
+                case Types.TIME:
+                case Types.TIMESTAMP:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+                    millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
+                case Types.TIME_WITH_TIMEZONE:
+                case Types.TIMESTAMP_WITH_TIMEZONE:
+                    res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+                    millis = res.getTimeInMillis();
+                    break;
                 case Types.CHAR:
                 case Types.VARCHAR:
                 case Types.LONGVARCHAR:
                 case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-                    String value = currentBlock.getValueAsString(columnIndex - 1);
-                    res = GregorianCalendarParser.ParseDate(value, new ParsePosition(0));
+                    res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.DATE);
+                    millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
                     break;
                 default:
-                    throw new SQLException("Conversion from " + types[columnIndex - 1] +
-                            " to Date not supported", "M1M05");
+                    this.addWarning("unsupported data type", "01M03");
+                    cal.clear();
+                    millis = 0;
             }
-            res.setTimeZone(cal.getTimeZone());
-            return new Date(res.getTimeInMillis());
+            return new Date(millis);
         } catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
-		} catch (ProtocolException ep) {
-            throw new SQLException(ep.getMessage(), "M1M05");
-        }
+		}
 	}
 
 	/**
@@ -2597,13 +2597,18 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
                 return null;
             }
             Calendar res;
+            long millis;
             switch (JdbcSQLTypes[columnIndex - 1]) {
-				case Types.TIME:
+                case Types.DATE:
+                case Types.TIME:
+                case Types.TIMESTAMP:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
-					res.setTimeZone(cal.getTimeZone());
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
-				case Types.TIME_WITH_TIMEZONE:
+                case Types.TIME_WITH_TIMEZONE:
+                case Types.TIMESTAMP_WITH_TIMEZONE:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+					millis = res.getTimeInMillis();
 					break;
                 case Types.CHAR:
                 case Types.VARCHAR:
@@ -2611,21 +2616,19 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
                 case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-                    String value = currentBlock.getValueAsString(columnIndex - 1);
-                    res = GregorianCalendarParser.ParseTime(value, new ParsePosition(0), false);
-                    res.setTimeZone(cal.getTimeZone());
+                    res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.TIME);
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
                     break;
                 default:
-                    throw new SQLException("Conversion from " + types[columnIndex - 1] +
-                            " to Time not supported", "M1M05");
+                    this.addWarning("unsupported data type", "01M03");
+                    cal.clear();
+                    millis = 0;
             }
-            return new Time(res.getTimeInMillis());
+            return new Time(millis);
         } catch (ClassCastException ex) {
             throw new SQLException(ex.getMessage());
         } catch (IndexOutOfBoundsException e) {
             throw newSQLInvalidColumnIndexException(columnIndex);
-        } catch (ProtocolException ep) {
-            throw new SQLException(ep.getMessage(), "M1M05");
         }
 	}
 
@@ -2693,13 +2696,27 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
                 return null;
             }
             Calendar res;
+			long millis;
+			int nanos = 0;
             switch (JdbcSQLTypes[columnIndex - 1]) {
+                case Types.DATE:
+                case Types.TIME:
+                    res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+                    millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+                    break;
+                case Types.TIME_WITH_TIMEZONE:
+                    res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+                    millis = res.getTimeInMillis();
+                    break;
 				case Types.TIMESTAMP:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
-					res.setTimeZone(cal.getTimeZone());
+                    nanos = currentBlock.getNanos(columnIndex - 1);
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
 				case Types.TIMESTAMP_WITH_TIMEZONE:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+                    nanos = currentBlock.getNanos(columnIndex - 1);
+					millis = res.getTimeInMillis();
 					break;
                 case Types.CHAR:
                 case Types.VARCHAR:
@@ -2707,21 +2724,21 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
                 case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-                    String value = currentBlock.getValueAsString(columnIndex - 1);
-                    res = GregorianCalendarParser.ParseTimestamp(value, new ParsePosition(0), false);
-                    res.setTimeZone(cal.getTimeZone());
+                    res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.TIMESTAMP);
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
                     break;
                 default:
-                    throw new SQLException("Conversion from " + types[columnIndex - 1] +
-                            " to Timestamp not supported", "M1M05");
+                    this.addWarning("unsupported data type", "01M03");
+                    cal.clear();
+                    millis = 0;
             }
-            return new Timestamp(res.getTimeInMillis());
+            Timestamp result = new Timestamp(millis);
+            result.setNanos(nanos);
+            return result;
         } catch (ClassCastException ex) {
             throw new SQLException(ex.getMessage());
         } catch (IndexOutOfBoundsException e) {
             throw newSQLInvalidColumnIndexException(columnIndex);
-        } catch (ProtocolException ep) {
-            throw new SQLException(ep.getMessage(), "M1M05");
         }
 	}
 
@@ -2787,6 +2804,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					if("url".equals(types[columnIndex - 1])) {
 						return new URL(currentBlock.getValueAsString(columnIndex - 1));
 					}
+					break;
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
@@ -2794,9 +2812,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
 					return new URL(currentBlock.getValueAsString(columnIndex - 1));
-				default:
-					throw new SQLException("Cannot convert " + types[columnIndex - 1] + " to an url", "M1M05");
 			}
+			throw new SQLException("Cannot convert " + types[columnIndex - 1] + " to an url", "M1M05");
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		} catch (MalformedURLException e) {
@@ -3015,6 +3032,22 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public boolean rowUpdated() throws SQLException {
 		return false;
 	}
+
+    /**
+     * Adds a warning to the pile of warnings this ResultSet object has. If
+     * there were no warnings (or clearWarnings was called) this warning will
+     * be the first, otherwise this warning will get appended to the current
+     * warning.
+     *
+     * @param reason the warning message
+     */
+    public void addWarning(String reason, String sqlstate) {
+        if (warnings == null) {
+            warnings = new SQLWarning(reason, sqlstate);
+        } else {
+            warnings.setNextWarning(new SQLWarning(reason, sqlstate));
+        }
+    }
 
 	/* the next methods are all related to updateable result sets, which we currently do not support */
 	@Override

@@ -208,7 +208,7 @@ public abstract class AbstractSocket implements Closeable {
         this.utf8Encoder.reset();
         CoderResult res;
         int written = 0;
-        do {
+        do { //to avoid overflow in the UTF-16 to UTF-8 conversion, has to do this cycle
             res = this.utf8Encoder.encode(this.stringsEncoded, this.bufferOut, false);
             written += this.writeFromBufferOut(this.bufferOut);
         } while (res == CoderResult.OVERFLOW);

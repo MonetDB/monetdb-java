@@ -21,6 +21,7 @@ import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
+import java.text.SimpleDateFormat;
 import java.util.Map;
 
 /**
@@ -37,24 +38,22 @@ public class OldMapiProtocol extends AbstractProtocol {
      */
     private static final int TUPLE_LINE_BUFFER_DEFAULT_SIZE = 1024;
 
-    /**
-     * The current server response.
-     */
+    /** Format of a time string from the old MAPI connection */
+    final SimpleDateFormat timeParser = new SimpleDateFormat("HH:mm:ss");
+
+    /** Format of a timestamp string from the old MAPI connection */
+    final SimpleDateFormat timestampParser = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+    /**The current server response */
     private int currentServerResponseHeader = ServerResponses.UNKNOWN;
 
-    /**
-     * The underlying MAPI socket connection.
-     */
+    /** The underlying MAPI socket connection */
     private final OldMapiSocket socket;
 
-    /**
-     * The buffer used to parse server's responses.
-     */
+    /** The buffer used to parse server's responses */
     CharBuffer lineBuffer;
 
-    /**
-     * A helper buffer used to parse tuple line responses.
-     */
+    /** A helper buffer used to parse tuple line responses */
     CharBuffer tupleLineBuffer;
 
     public OldMapiProtocol(OldMapiSocket socket) {
@@ -205,7 +204,7 @@ public class OldMapiProtocol extends AbstractProtocol {
         if (rs == null) {
             return null;
         }
-        return rs.addDataBlockResponse(offset, rowcount, this);
+        return rs.addDataBlockResponse(offset, rowcount);
     }
 
     /**
@@ -251,6 +250,9 @@ public class OldMapiProtocol extends AbstractProtocol {
     @Override
     public String getRemainingStringLine(int startIndex) {
         if(this.lineBuffer.limit() > startIndex) {
+            if(this.lineBuffer.array()[startIndex] == '!') {
+                startIndex++;
+            }
             return new String(this.lineBuffer.array(), startIndex, this.lineBuffer.limit() - startIndex);
         } else {
             return null;

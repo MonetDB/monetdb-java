@@ -10,12 +10,17 @@ package nl.cwi.monetdb.mcl.responses;
 
 import nl.cwi.monetdb.jdbc.MonetBlob;
 import nl.cwi.monetdb.jdbc.MonetClob;
+import nl.cwi.monetdb.jdbc.MonetConnection;
+import nl.cwi.monetdb.jdbc.MonetResultSet;
+import nl.cwi.monetdb.mcl.connection.helpers.GregorianCalendarParser;
+import nl.cwi.monetdb.mcl.connection.helpers.TimestampHelper;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 
 import java.math.BigDecimal;
-import java.sql.Types;
+import java.sql.*;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Calendar;
 
@@ -41,6 +46,8 @@ public class DataBlockResponse implements IIncompleteResponse {
     private Object[] data;
     /** The counter which keeps the current position in the data array */
     private int pos;
+    /** If the underlying connection is embedded or not */
+    private final boolean isEmbedded;
     /** The connection protocol to parse the tuple lines */
     private final AbstractProtocol protocol;
     /** The JdbcSQLTypes mapping */
@@ -58,10 +65,12 @@ public class DataBlockResponse implements IIncompleteResponse {
      * @param protocol the underlying protocol
      * @param JdbcSQLTypes an array of the JDBC mappings of the columns
      */
-    DataBlockResponse(int rowcount, int columncount, AbstractProtocol protocol, int[] JdbcSQLTypes) {
+    DataBlockResponse(int rowcount, int columncount, MonetConnection connection, AbstractProtocol protocol,
+                      int[] JdbcSQLTypes) {
         this.pos = -1;
         this.rowcount = rowcount;
         this.data = new Object[columncount];
+        this.isEmbedded = connection.isEmbedded();
         this.protocol = protocol;
         this.jdbcSQLTypes = JdbcSQLTypes;
     }
@@ -84,6 +93,9 @@ public class DataBlockResponse implements IIncompleteResponse {
             int numberOfColumns = this.data.length;
             for (int i = 0 ; i < numberOfColumns ; i++) {
                 switch (this.jdbcSQLTypes[i]) {
+                    case Types.INTEGER:
+                        this.data[i] = new int[this.rowcount];
+                        break;
                     case Types.BOOLEAN:
                     case Types.TINYINT:
                         this.data[i] = new byte[this.rowcount];
@@ -91,17 +103,27 @@ public class DataBlockResponse implements IIncompleteResponse {
                     case Types.SMALLINT:
                         this.data[i] = new short[this.rowcount];
                         break;
-                    case Types.INTEGER:
-                        this.data[i] = new int[this.rowcount];
-                        break;
-                    case Types.BIGINT:
-                        this.data[i] = new long[this.rowcount];
-                        break;
                     case Types.REAL:
                         this.data[i] = new float[this.rowcount];
                         break;
                     case Types.DOUBLE:
                         this.data[i] = new double[this.rowcount];
+                        break;
+                    case Types.BIGINT:
+                        this.data[i] = new long[this.rowcount];
+                        break;
+                    case Types.DATE:
+                    case Types.TIME:
+                    case Types.TIME_WITH_TIMEZONE:
+                        this.data[i] = new Calendar[this.rowcount];
+                        break;
+                    case Types.TIMESTAMP:
+                    case Types.TIMESTAMP_WITH_TIMEZONE:
+                        if(this.isEmbedded) {
+                            this.data[i] = new Calendar[this.rowcount];
+                        } else {
+                            this.data[i] = new TimestampHelper[this.rowcount];
+                        }
                         break;
                     case Types.NUMERIC:
                     case Types.DECIMAL:
@@ -112,13 +134,6 @@ public class DataBlockResponse implements IIncompleteResponse {
                         break;
                     case Types.CLOB:
                         this.data[i] = new MonetClob[this.rowcount];
-                        break;
-                    case Types.TIME:
-                    case Types.TIME_WITH_TIMEZONE:
-                    case Types.DATE:
-                    case Types.TIMESTAMP:
-                    case Types.TIMESTAMP_WITH_TIMEZONE:
-                        this.data[i] = new Calendar[this.rowcount];
                         break;
                     case Types.LONGVARBINARY:
                         this.data[i] = new byte[this.rowcount][];
@@ -276,6 +291,44 @@ public class DataBlockResponse implements IIncompleteResponse {
     }
 
     /**
+     * To parse a String column in a date, time or timestamp instance, this method is used.
+
+     * @param mrs A MonetResultSet instance where warning can be added     *
+     * @param column The column index starting from 0
+     * @param jdbcType The JDBC type of the column desired to convert
+     * @return A {@link Calendar} instance of the parsed date
+     * @throws SQLException If the conversation cannot be performed
+     */
+    public Calendar getDateValueFromString(MonetResultSet mrs, int column, int jdbcType) throws SQLException {
+        String value = ((Object[]) this.data[column])[this.blockLine].toString();
+        SimpleDateFormat aux;
+        switch (jdbcType) {
+            case Types.DATE:
+                aux = protocol.getMonetDate();
+                break;
+            case Types.TIME:
+            case Types.TIME_WITH_TIMEZONE:
+                aux = protocol.getMonetTimePrinter();
+                break;
+            case Types.TIMESTAMP:
+            case Types.TIMESTAMP_WITH_TIMEZONE:
+                aux = protocol.getMonetTimestampPrinter();
+                break;
+            default:
+                throw new SQLException("Internal error!", "M1M05");
+        }
+        return GregorianCalendarParser.ParseDateString(mrs, value, protocol.getMonetParserPosition(), aux, jdbcType);
+    }
+
+    public int getNanos(int column) {
+        if(isEmbedded) {
+            return 0;
+        } else {
+            return ((TimestampHelper[]) this.data[column])[this.blockLine].getTimestamp().getNanos();
+        }
+    }
+
+    /**
      * Gets the current row value as a Java String.
      *
      * @param column The column index starting from 0
@@ -304,7 +357,32 @@ public class DataBlockResponse implements IIncompleteResponse {
                 return Float.toString(((float[]) this.data[column])[this.blockLine]);
             case Types.DOUBLE:
                 return Double.toString(((double[]) this.data[column])[this.blockLine]);
-            default: //BLOB, CLOB, BigDecimal, Time, Timestamp and Date
+            case Types.DATE:
+                Date aux1 = new Date(((Calendar[]) this.data[column])[this.blockLine].getTimeInMillis());
+                return protocol.getMonetDate().format(aux1);
+            case Types.TIME:
+                Time aux2 = new Time(((Calendar[]) this.data[column])[this.blockLine].getTimeInMillis());
+                return protocol.getMonetTimePrinter().format(aux2);
+            case Types.TIME_WITH_TIMEZONE:
+                Time aux3 = new Time(((Calendar[]) this.data[column])[this.blockLine].getTimeInMillis());
+                return protocol.getMonetTimeTzPrinter().format(aux3);
+            case Types.TIMESTAMP:
+                Timestamp aux4;
+                if(this.isEmbedded) {
+                    aux4 = new Timestamp(((Calendar[]) this.data[column])[this.blockLine].getTimeInMillis());
+                } else {
+                    aux4 = ((TimestampHelper[]) this.data[column])[this.blockLine].getTimestamp();
+                }
+                return protocol.getMonetTimestampPrinter().format(aux4);
+            case Types.TIMESTAMP_WITH_TIMEZONE:
+                Timestamp aux5;
+                if(this.isEmbedded) {
+                    aux5 = new Timestamp(((Calendar[]) this.data[column])[this.blockLine].getTimeInMillis());
+                } else {
+                    aux5 = ((TimestampHelper[]) this.data[column])[this.blockLine].getTimestamp();
+                }
+                return protocol.getMonetTimestampTzPrinter().format(aux5);
+            default: //BLOB, CLOB, BigDecimal
                 return ((Object[]) this.data[column])[this.blockLine].toString();
         }
     }
@@ -331,6 +409,13 @@ public class DataBlockResponse implements IIncompleteResponse {
                 return ((float[]) this.data[column])[this.blockLine];
             case Types.DOUBLE:
                 return ((double[]) this.data[column])[this.blockLine];
+            case Types.TIMESTAMP:
+            case Types.TIMESTAMP_WITH_TIMEZONE:
+                if(isEmbedded) {
+                    return ((Calendar[]) this.data[column])[this.blockLine];
+                } else {
+                    return ((TimestampHelper[]) this.data[column])[this.blockLine].getCalendar();
+                }
             default:
                 return ((Object[]) this.data[column])[this.blockLine];
         }

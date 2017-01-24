@@ -29,6 +29,8 @@ import java.sql.SQLOutput;
  * This class allows to retrieve the value of this INET as InetAddress.
  * This is probably meaningful only and only if the netmask is 32.  The
  * getNetmaskBits() method can be used to retrieve the subnet bits.
+ *
+ * @author Fabian Groffen
  */
 public class MonetINET implements SQLData {
 

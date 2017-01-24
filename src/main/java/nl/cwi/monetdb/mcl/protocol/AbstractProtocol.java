@@ -16,6 +16,8 @@ import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
 import java.io.IOException;
+import java.text.ParsePosition;
+import java.text.SimpleDateFormat;
 import java.util.Map;
 
 /**
@@ -25,6 +27,121 @@ import java.util.Map;
  * @author Pedro Ferreira
  */
 public abstract class AbstractProtocol {
+
+    /* only parse the date patterns once, use multiple times */
+    /** Format of a date used by mserver */
+    private final SimpleDateFormat monetDate = new SimpleDateFormat("yyyy-MM-dd");
+
+    /** Format of a time */
+    private final SimpleDateFormat monetTime = new SimpleDateFormat("HH:mm:ss.SSS");
+    /** Format of a time with RFC822 time zone */
+    private final SimpleDateFormat monetTimeTz = new SimpleDateFormat("HH:mm:ss.SSSZ");
+    /** Format to print a Time String */
+    private final SimpleDateFormat monetTimePrinter = new SimpleDateFormat("HH:mm:ss");
+    /** Format to print a TimeTz String */
+    private final SimpleDateFormat monetTimeTzPrinter = new SimpleDateFormat("HH:mm:ssXXX");
+
+    /** Format of a timestamp */
+    private final SimpleDateFormat monetTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+    /** Format of a timestamp with RFC822 time zone */
+    private final SimpleDateFormat monetTimestampTz = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+    /** Format to print a TimeStamp String */
+    private final SimpleDateFormat monetTimestampPrinter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSS");
+    /** Format to print a TimeStampTz String */
+    private final SimpleDateFormat monetTimestampTzPrinter = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSSSSXXX");
+
+    /** A helper to parse Dates, Times and Timestamps, to be reused during the connection to save memory allocations. */
+    private final ParsePosition monetParserPosition = new ParsePosition(0);
+
+    /**
+     * Gets the MonetDB Date formatter.
+     *
+     * @return The MonetDB Date formatter
+     */
+    public SimpleDateFormat getMonetDate() {
+        return monetDate;
+    }
+
+    /**
+     * Gets the MonetDB Time formatter.
+     *
+     * @return The MonetDB Time formatter
+     */
+    public SimpleDateFormat getMonetTime() {
+        return monetTime;
+    }
+
+    /**
+     * Gets the MonetDB Time with RFC822 time zone formatter.
+     *
+     * @return The MonetDB Time with RFC822 time zone formatter
+     */
+    public SimpleDateFormat getMonetTimeTz() {
+        return monetTimeTz;
+    }
+
+    /**
+     * Gets the MonetDB Time printer.
+     *
+     * @return The MonetDB Time printer
+     */
+    public SimpleDateFormat getMonetTimePrinter() {
+        return monetTimePrinter;
+    }
+
+    /**
+     * Gets the MonetDB Time with timezone printer.
+     *
+     * @return The MonetDB Time with timezone printer.
+     */
+    public SimpleDateFormat getMonetTimeTzPrinter() {
+        return monetTimeTzPrinter;
+    }
+
+    /**
+     * Gets the MonetDB Timestamp formatter.
+     *
+     * @return The MonetDB Timestamp formatter
+     */
+    public SimpleDateFormat getMonetTimestamp() {
+        return monetTimestamp;
+    }
+
+    /**
+     * Gets the MonetDB Timestamp with RFC822 time zone formatter.
+     *
+     * @return The MonetDB Timestamp with RFC822 time zone formatter
+     */
+    public SimpleDateFormat getMonetTimestampTz() {
+        return monetTimestampTz;
+    }
+
+    /**
+     * Gets the MonetDB Timestamp printer.
+     *
+     * @return The MonetDB Timestamp printer
+     */
+    public SimpleDateFormat getMonetTimestampPrinter() {
+        return monetTimestampPrinter;
+    }
+
+    /**
+     * Gets the MonetDB Timestamp with timezone printer.
+     *
+     * @return The MonetDB Timestamp with timezone printer.
+     */
+    public SimpleDateFormat getMonetTimestampTzPrinter() {
+        return monetTimestampTzPrinter;
+    }
+
+    /**
+     * Gets the Protocol parser position.
+     *
+     * @return The Protocol parser position
+     */
+    public ParsePosition getMonetParserPosition() {
+        return monetParserPosition;
+    }
 
     /**
      * Waits until the server sends the PROMPT message, meaning that the next response is ready for retrieval.

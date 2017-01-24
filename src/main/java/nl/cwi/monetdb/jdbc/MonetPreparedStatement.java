@@ -44,22 +44,10 @@ import java.util.Map;
  * [ "int",        9,      0       ]
  * </pre>
  *
- * @author Fabian Groffen, Martin van Dinther
+ * @author Fabian Groffen, Martin van Dinther, Pedro Ferreira
  * @version 0.4
  */
 public class MonetPreparedStatement extends MonetStatement implements PreparedStatement {
-
-	/* only parse the date patterns once, use multiple times */
-	/** Format of a timestamp with RFC822 time zone */
-	private static final SimpleDateFormat MTimestampZ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
-	/** Format of a timestamp */
-	private static final SimpleDateFormat MTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
-	/** Format of a time with RFC822 time zone */
-	private static final SimpleDateFormat MTimeZ = new SimpleDateFormat("HH:mm:ss.SSSZ");
-	/** Format of a time */
-	private static final SimpleDateFormat MTime = new SimpleDateFormat("HH:mm:ss.SSS");
-	/** Format of a date used by mserver */
-	private static final SimpleDateFormat MDate = new SimpleDateFormat("yyyy-MM-dd");
 
 	private final MonetConnection connection;
 	private final String[] monetdbType;
@@ -73,6 +61,12 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	private final int size;
 	private final int rscolcnt;
 	private final String[] values;
+
+	private final SimpleDateFormat mTimestampZ;
+	private final SimpleDateFormat mTimestamp;
+	private final SimpleDateFormat mTimeZ;
+	private final SimpleDateFormat mTime;
+	private final SimpleDateFormat mDate;
 
 	/**
 	 * MonetPreparedStatement constructor which checks the arguments for validity. A MonetPreparedStatement is backed
@@ -126,6 +120,12 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 
 		// PreparedStatements are by default poolable
 		poolable = true;
+
+		mTimestampZ = connection.getProtocol().getMonetTimestampTz();
+		mTimestamp = connection.getProtocol().getMonetTimestamp();
+		mTimeZ = connection.getProtocol().getMonetTimeTz();
+		mTime = connection.getProtocol().getMonetTime();
+		mDate = connection.getProtocol().getMonetDate();
 	}
 
 	//== methods interface PreparedStatement
@@ -335,7 +335,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					case Types.LONGVARCHAR:
 						return true;
 					default:
-						return true;
+						return false;
 				}
 			}
 
@@ -1307,8 +1307,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		if (cal == null) {
 			setValue(parameterIndex, "date '" + x.toString() + "'");
 		} else {
-			MDate.setTimeZone(cal.getTimeZone());
-			setValue(parameterIndex, "date '" + MDate.format(x) + "'");
+			mDate.setTimeZone(cal.getTimeZone());
+			setValue(parameterIndex, "date '" + mDate.format(x) + "'");
 		}
 	}
 
@@ -2152,7 +2152,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
-			String RFC822 = MTimeZ.format(x);
+			String RFC822 = mTimeZ.format(x);
 			setValue(index, "timetz '" + RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
@@ -2162,8 +2162,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			if (cal == null) {
 				setValue(index, "time '" + x.toString() + "'");
 			} else {
-				MTime.setTimeZone(cal.getTimeZone());
-				setValue(index, "time '" + MTime.format(x) + "'");
+				mTime.setTimeZone(cal.getTimeZone());
+				setValue(index, "time '" + mTime.format(x) + "'");
 			}
 		}
 	}
@@ -2209,7 +2209,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
-			String RFC822 = MTimestampZ.format(x);
+			String RFC822 = mTimestampZ.format(x);
 			setValue(index, "timestamptz '" + RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
@@ -2219,8 +2219,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			if (cal == null) {
 				setValue(index, "timestamp '" + x.toString() + "'");
 			} else {
-				MTimestamp.setTimeZone(cal.getTimeZone());
-				setValue(index, "timestamp '" + MTimestamp.format(x) + "'");
+				mTimestamp.setTimeZone(cal.getTimeZone());
+				setValue(index, "timestamp '" + mTimestamp.format(x) + "'");
 			}
 		}
 	}
@@ -2263,6 +2263,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	@Override
 	public void setURL(int parameterIndex, URL x) throws SQLException {
 		setString(parameterIndex, x.toString());
+		values[getParamIdx(parameterIndex)] = "url " + values[getParamIdx(parameterIndex)];
 	}
 
 	/**

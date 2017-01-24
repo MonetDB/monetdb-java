@@ -12,13 +12,12 @@ import nl.cwi.monetdb.jdbc.MonetBlob;
 import nl.cwi.monetdb.jdbc.MonetClob;
 import nl.cwi.monetdb.mcl.connection.helpers.BufferReallocator;
 import nl.cwi.monetdb.mcl.connection.helpers.GregorianCalendarParser;
+import nl.cwi.monetdb.mcl.connection.helpers.TimestampHelper;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
 import java.nio.CharBuffer;
 import java.sql.Types;
-import java.text.ParsePosition;
 import java.util.Calendar;
 
 /**
@@ -34,12 +33,6 @@ final class OldMapiTupleLineParser {
      * The character array representation of a NULL value found in a tuple.
      */
     private static final char[] NULL_STRING = new char[]{'N','U','L','L'};
-
-    /**
-     * A Java parser to parse Date, Time and Timestamp data, to be reused during the connection to save memory
-     * allocation.
-     */
-    private static final ParsePosition Ppos = new ParsePosition(0);
 
     /**
      * Parses the given OldMapiProtocol's lineBuffer source as tuple line for a DataBlock. If source cannot be parsed, a
@@ -66,7 +59,7 @@ final class OldMapiTupleLineParser {
                 throw new ProtocolException(typesMap.length + " columns expected, but only single value found");
             }
             // return the whole string but the leading =
-            OldMapiStringToJavaDataConversion(array, 1, len - 1, lineNumber, values[0], typesMap[0]);
+            OldMapiStringToJavaDataConversion(protocol, array, 1, len - 1, lineNumber, values[0], typesMap[0]);
             return 1;
         }
 
@@ -147,18 +140,32 @@ final class OldMapiTupleLineParser {
                                             break;
                                     }
                                 } else if(array[pos] == '\\') {
-
+                                    pos++;
+                                    switch (array[pos]) {
+                                        case '\\':
+                                            tupleLineBuffer.put('\\');
+                                            break;
+                                        case 'n':
+                                            tupleLineBuffer.put('\n');
+                                            break;
+                                        case 't':
+                                            tupleLineBuffer.put('\t');
+                                            break;
+                                        case '"':
+                                            tupleLineBuffer.put('"');
+                                            break;
+                                    }
                                 } else {
                                     tupleLineBuffer.put(array[pos]);
                                 }
                             }
                             // put the unescaped string in the right place
                             tupleLineBuffer.flip();
-                            OldMapiStringToJavaDataConversion(tupleLineBuffer.array(), 0, tupleLineBuffer.limit(), lineNumber, values[column], typesMap[column]);
+                            OldMapiStringToJavaDataConversion(protocol, tupleLineBuffer.array(), 0, tupleLineBuffer.limit(), lineNumber, values[column], typesMap[column]);
                         } else if ((i - 1) - cursor == 4 && OldMapiTupleLineParserHelper.CharIndexOf(array, 0, array.length, NULL_STRING, 0,4, cursor) == cursor) {
                             SetNullValue(lineNumber, values[column], typesMap[column]);
                         } else {
-                            OldMapiStringToJavaDataConversion(array, cursor, i - 1 - cursor, lineNumber, values[column], typesMap[column]);
+                            OldMapiStringToJavaDataConversion(protocol, array, cursor, i - 1 - cursor, lineNumber, values[column], typesMap[column]);
                         }
                         column++;
                         cursor = i + 1;
@@ -204,8 +211,9 @@ final class OldMapiTupleLineParser {
      * @param jDBCMapping The JDBC mapping of the value
      * @throws ProtocolException If the JDBC Mapping is unknown
      */
-    private static void OldMapiStringToJavaDataConversion(char[] toParse, int startPosition, int count, int lineNumber,
-                                                          Object columnArray, int jDBCMapping) throws ProtocolException {
+    private static void OldMapiStringToJavaDataConversion(OldMapiProtocol protocol, char[] toParse, int startPosition,
+                                                          int count, int lineNumber, Object columnArray,
+                                                          int jDBCMapping) throws ProtocolException {
         switch (jDBCMapping) {
             case Types.BOOLEAN:
                 ((byte[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToBoolean(toParse, startPosition);
@@ -239,19 +247,19 @@ final class OldMapiTupleLineParser {
                 ((String[]) columnArray)[lineNumber] = new String(toParse, startPosition, count);
                 break;
             case Types.DATE:
-                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseDate(new String(toParse, startPosition, count), Ppos);
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseDate(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.getMonetDate());
                 break;
             case Types.TIME:
-                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTime(new String(toParse, startPosition, count), Ppos, false);
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTime(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timeParser, false);
                 break;
             case Types.TIME_WITH_TIMEZONE:
-                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTime(new String(toParse, startPosition, count), Ppos, true);
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTime(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timeParser, true);
                 break;
             case Types.TIMESTAMP:
-                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTimestamp(new String(toParse, startPosition, count), Ppos, false);
+                ((TimestampHelper[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTimestamp(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timestampParser, false);
                 break;
             case Types.TIMESTAMP_WITH_TIMEZONE:
-                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTimestamp(new String(toParse, startPosition, count), Ppos, true);
+                ((TimestampHelper[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTimestamp(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timestampParser, true);
                 break;
             case Types.CLOB:
                 ((MonetClob[]) columnArray)[lineNumber] = new MonetClob(toParse, startPosition, count);

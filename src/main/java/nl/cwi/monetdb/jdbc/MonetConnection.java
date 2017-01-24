@@ -47,6 +47,11 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     /** The sequence counter */
     private static int SeqCounter = 0;
 
+    /**
+     * Gets the current sequence counter.
+     *
+     * @return The current sequence counter
+     */
     public static int GetSeqCounter() {
         return SeqCounter;
     }
@@ -69,6 +74,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     private Map<String,Class<?>> typeMap = new HashMap<String,Class<?>>() {
         private static final long serialVersionUID = 1L; {
             put("inet", MonetINET.class);
+            put("url", MonetURL.class);
         }
     };
 
@@ -103,6 +109,15 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         this.clobIsLongChar = clobIsLongChar;
         String embedded = props.getProperty("embedded");
         this.isEmbedded = embedded != null && embedded.equals("true");
+    }
+
+    /**
+     * Checks if the conection is embedded or not
+     *
+     * @return If the connection is embedded
+     */
+    public boolean isEmbedded() {
+        return isEmbedded;
     }
 
     /**

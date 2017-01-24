@@ -35,9 +35,7 @@ import java.sql.Types;
  */
 public class ResultSetResponse implements IIncompleteResponse {
 
-    /**
-     * The expected final value after the table headers are set.
-     */
+    /** The expected final value after the table headers are set. */
     private static final byte IS_SET_FINAL_VALUE = 15;
 
     /** The number of rows in the current block */
@@ -124,7 +122,7 @@ public class ResultSetResponse implements IIncompleteResponse {
         this.JdbcSQLTypes = new int[columncount];
 
         this.resultBlocks = new DataBlockResponse[(tuplecount / cacheSize) + 1];
-        this.resultBlocks[0] = new DataBlockResponse(rowcount, columncount, con.getProtocol(), this.JdbcSQLTypes);
+        this.resultBlocks[0] = new DataBlockResponse(rowcount, columncount, con, con.getProtocol(), this.JdbcSQLTypes);
     }
 
     /**
@@ -159,11 +157,10 @@ public class ResultSetResponse implements IIncompleteResponse {
      *
      * @param offset the offset number of rows for this block
      * @param rowcount the number of rows for this block
-     * @param proto The connection's protocol
      */
-    public DataBlockResponse addDataBlockResponse(int offset, int rowcount, AbstractProtocol proto) {
+    public DataBlockResponse addDataBlockResponse(int offset, int rowcount) {
         int block = (offset - blockOffset) / cacheSize;
-        DataBlockResponse res = new DataBlockResponse(rowcount, this.name.length, proto, JdbcSQLTypes);
+        DataBlockResponse res = new DataBlockResponse(rowcount, this.name.length, this.con, this.con.getProtocol(), JdbcSQLTypes);
         resultBlocks[block] = res;
         return res;
     }
