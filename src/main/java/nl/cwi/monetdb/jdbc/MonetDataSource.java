@@ -27,7 +27,7 @@ import java.util.logging.Logger;
  *
  * Additionally, pooled connections can be used when using a DataSource.
  *
- * @author Fabian Groffen
+ * @author Fabian Groffen, Pedro Ferreira
  * @version 0.1
  */
 public class MonetDataSource extends MonetWrapper implements DataSource {
@@ -37,7 +37,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
     private String description = "MonetDB database";
 	private String url = "jdbc:monetdb://localhost/";
     private int loginTimeout;
-    private boolean isEmbedded;
+    private String directory;
     private final MonetDriver driver = new MonetDriver();
 
 	// the following properties are also standard:
@@ -75,8 +75,9 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
         if (loginTimeout > 0) {
             props.put("so_timeout", Integer.toString(loginTimeout));
         }
-		if(isEmbedded) {
+		if(directory != null) {
             props.put("embedded", "true");
+			props.put("directory", directory);
         }
 		return driver.connect(url, props);
 	}
@@ -184,21 +185,30 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	}
 
     /**
+     * Gets the directory value
+     *
+     * @return the directory value
+     */
+    public String getDirectory() {
+        return directory;
+    }
+
+    /**
+     * Sets the directory value, meaning it wil start an embedded connection
+     *
+     * @param directory The directory location
+     */
+    public void setDirectory(String directory) {
+        this.directory = directory;
+    }
+
+    /**
      * Gets the embedded connection directory. If not, then a MAPI connection will be created instead.
      *
      * @return If the connection will be embedded. If not, then a MAPI connection will be created instead.
      */
     public boolean isEmbedded() {
-        return isEmbedded;
-    }
-
-    /**
-     * Sets the connection to be embedded
-     *
-     * @param isEmbedded A boolean to indicate if the connection will be embedded
-     */
-    public void setIsEmbedded(boolean isEmbedded) {
-        this.isEmbedded = isEmbedded;
+        return directory != null;
     }
 
     /**

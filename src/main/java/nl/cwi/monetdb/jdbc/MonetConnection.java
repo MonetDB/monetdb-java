@@ -2,7 +2,6 @@ package nl.cwi.monetdb.jdbc;
 
 import nl.cwi.monetdb.mcl.connection.*;
 import nl.cwi.monetdb.mcl.connection.SenderThread;
-import nl.cwi.monetdb.mcl.connection.mapi.MapiLanguage;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
@@ -394,7 +393,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      */
     @Override
     public DatabaseMetaData getMetaData() throws SQLException {
-        if (this.language != MapiLanguage.LANG_SQL) {
+        if (!this.language.getRepresentation().equals("sql")) {
             throw new SQLException("This method is only supported in SQL mode", "M0M04");
         }
         return new MonetDatabaseMetaData(this);
@@ -1511,7 +1510,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                 int size = (cachesize != 0 && !isEmbedded) ? cachesize : MonetConnection.this.getDefFetchsize();
                 size = maxrows != 0 ? Math.min(maxrows, size) : size;
                 // don't do work if it's not needed
-                if (language == MapiLanguage.LANG_SQL && size != curReplySize &&
+                if (!language.getRepresentation().equals("sql") && size != curReplySize &&
                         !Arrays.deepEquals(templ, language.getCommandTemplates())) {
                     sendControlCommand(ControlCommands.REPLY_SIZE, size);
                     // store the reply size after a successful change
