@@ -1672,10 +1672,12 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                     SQLException ret = null;
                     String[] errors = error.split("\n");
                     for (String error1 : errors) {
+                        String error2 = isEmbedded() ? error1 : error1.substring(0, 5);
+                        String error3 = isEmbedded() ? "M0M10" : error1.substring(6);
                         if (ret == null) {
-                            ret = new SQLException(error1.substring(6), error1.substring(0, 5));
+                            ret = new SQLException(error2, error3);
                         } else {
-                            ret.setNextException(new SQLException(error1.substring(6), error1.substring(0, 5)));
+                            ret.setNextException(new SQLException(error2, error3));
                         }
                     }
                     throw ret;

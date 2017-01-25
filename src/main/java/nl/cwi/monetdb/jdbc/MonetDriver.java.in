@@ -364,7 +364,6 @@ final public class MonetDriver implements Driver {
 	public Connection connect(String url, Properties info) throws SQLException {
 		int tmp;
 		Properties props = new Properties();
-		props.put("port", PORT);
 		props.putAll(info);
 		info = props;
 
@@ -461,7 +460,7 @@ final public class MonetDriver implements Driver {
 			boolean negative1 = false, failedparse1 = false;
 			int port = 0;
 			try {
-				port = Integer.parseInt(props.getProperty("port"));
+				port = Integer.parseInt(props.getProperty("port", PORT));
 			} catch (NumberFormatException e) {
 				failedparse1 = true;
 				props.setProperty("port", PORT);
