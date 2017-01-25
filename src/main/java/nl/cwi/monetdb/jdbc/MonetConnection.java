@@ -164,6 +164,13 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     public abstract int getDefFetchsize();
 
     /**
+     * Gets the initial value for the StringBuilder size.
+     *
+     * @return The initial value for the StringBuilder size
+     */
+    public abstract int initialStringBuilderSize();
+
+    /**
      * Gets the underlying connection socket timeout.
      *
      * @return The underlying connection socket timeout

@@ -191,11 +191,12 @@ public class MonetStatement extends MonetWrapper implements Statement {
 			boolean error = false;
 
 			BatchUpdateException e = new BatchUpdateException("Error(s) occurred while executing the batch, see next SQLExceptions for details", "22000", counts);
-			StringBuilder tmpBatch = new StringBuilder(connection.getBlockSize());
+			int builderSize = connection.initialStringBuilderSize();
+			StringBuilder tmpBatch = new StringBuilder(builderSize);
 			String sep = connection.getLanguage().getQueryTemplateIndex(2);
 			for (int i = 0; i < batch.size(); i++) {
 				String tmp = batch.get(i);
-				if (sep.length() + tmp.length() > connection.getBlockSize()) {
+				if (sep.length() + tmp.length() > builderSize) {
 					// The thing is too big. Way too big. Since it won't be optimal anyway, just add it to whatever we
 					// have and continue.
 					if (!first) {
@@ -209,7 +210,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 					first = true;
 					continue;
 				}
-				if (tmpBatch.length() + sep.length() + tmp.length() >= connection.getBlockSize()) {
+				if (tmpBatch.length() + sep.length() + tmp.length() >= builderSize) {
 					// send and receive
 					error |= internalBatch(tmpBatch.toString(), counts, offset, i + 1, e);
 					offset = i;

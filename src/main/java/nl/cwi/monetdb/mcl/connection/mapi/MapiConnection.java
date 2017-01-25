@@ -191,6 +191,11 @@ public class MapiConnection extends MonetConnection {
         return DEF_FETCHSIZE;
     }
 
+    @Override
+    public int initialStringBuilderSize() {
+        return this.getBlockSize();
+    }
+
     /**
      * Closes the underlying connection implementation. On a MAPI connection, the underlying socket is closed.
      *
