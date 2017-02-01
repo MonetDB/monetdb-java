@@ -9,11 +9,7 @@
 package nl.cwi.monetdb.mcl.protocol;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.responses.AutoCommitResponse;
-import nl.cwi.monetdb.mcl.responses.SchemaResponse;
-import nl.cwi.monetdb.mcl.responses.UpdateResponse;
-import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
-import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
+import nl.cwi.monetdb.mcl.responses.*;
 
 import java.io.IOException;
 import java.text.ParsePosition;
@@ -177,11 +173,12 @@ public abstract class AbstractProtocol {
      * @param con The current MonetDB's JDBC connection
      * @param list The Response List this result set will belong to
      * @param seqnr The sequence number of this result set on the Response List
+     * @param maxrows A maxrows to set if so
      * @return The ResultSet instance
      * @throws ProtocolException If an error in the underlying connection happened.
      */
     public abstract ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list,
-                                                               int seqnr) throws ProtocolException;
+                                                               int seqnr, int maxrows) throws ProtocolException;
 
     /**
      * Gets the next UpdateResponse response from the server.

@@ -10,14 +10,14 @@ package nl.cwi.monetdb.mcl.protocol.oldmapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
 import nl.cwi.monetdb.mcl.connection.mapi.OldMapiSocket;
-import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 import nl.cwi.monetdb.mcl.responses.AutoCommitResponse;
-import nl.cwi.monetdb.mcl.responses.UpdateResponse;
 import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
+import nl.cwi.monetdb.mcl.responses.UpdateResponse;
 
 import java.io.IOException;
 import java.nio.CharBuffer;
@@ -121,9 +121,11 @@ public class OldMapiProtocol extends AbstractProtocol {
         this.currentServerResponseHeader = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
         if (this.currentServerResponseHeader == ServerResponses.ERROR && !this.lineBuffer.toString()
                 .matches("^[0-9A-Z]{5}!.+")) {
+            int limit = this.lineBuffer.limit();
             CharBuffer newbuffer = CharBuffer.wrap(new char[this.lineBuffer.capacity() + 7]);
-            newbuffer.put("!22000!");
-            newbuffer.put(this.lineBuffer.array());
+            newbuffer.put("!22000");
+            newbuffer.put(this.lineBuffer.array(), 0, limit);
+            newbuffer.limit(limit + 6);
             newbuffer.flip();
             this.lineBuffer = newbuffer;
         }
@@ -146,16 +148,20 @@ public class OldMapiProtocol extends AbstractProtocol {
      * @param con The current MonetDB's JDBC connection
      * @param list The Response List this result set will belong to
      * @param seqnr The sequence number of this result set on the Response List
+     * @param maxrows A maxrows to set if so
      * @return The ResultSet instance
      * @throws ProtocolException If an error in the underlying connection happened.
      */
     @Override
-    public ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr)
-            throws ProtocolException {
+    public ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr,
+                                                      int maxrows) throws ProtocolException {
         int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
         int tuplecount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int columncount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
         int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        if (maxrows != 0 && tuplecount > maxrows) {
+            tuplecount = maxrows;
+        }
         return new ResultSetResponse(con, list, id, seqnr, rowcount, tuplecount, columncount);
     }
 

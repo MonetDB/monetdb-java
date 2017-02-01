@@ -1514,7 +1514,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                 int size = (cachesize != 0 && !isEmbedded) ? cachesize : MonetConnection.this.getDefFetchsize();
                 size = maxrows != 0 ? Math.min(maxrows, size) : size;
                 // don't do work if it's not needed
-                if (!language.getRepresentation().equals("sql") && size != curReplySize &&
+                if (!isEmbedded && language.getRepresentation().equals("sql") && size != curReplySize &&
                         !Arrays.deepEquals(templ, language.getCommandTemplates())) {
                     sendControlCommand(ControlCommands.REPLY_SIZE, size);
                     // store the reply size after a successful change
@@ -1557,7 +1557,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                     case StarterHeaders.Q_TABLE:
                                     case StarterHeaders.Q_PREPARE: {
                                         res = protocol.getNextResultSetResponse(MonetConnection.this,
-                                                ResponseList.this, this.seqnr);
+                                                ResponseList.this, this.seqnr, this.maxrows);
                                         ResultSetResponse rsreponse = (ResultSetResponse) res;
                                         // only add this resultset to the hashmap if it can possibly
                                         // have an additional datablock
