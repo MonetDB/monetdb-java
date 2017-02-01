@@ -1,16 +1,16 @@
 package nl.cwi.monetdb.jdbc;
 
-import nl.cwi.monetdb.mcl.connection.*;
+import nl.cwi.monetdb.mcl.connection.ControlCommands;
+import nl.cwi.monetdb.mcl.connection.IMonetDBLanguage;
+import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.connection.SenderThread;
-import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 import nl.cwi.monetdb.mcl.responses.*;
-import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
-import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.SocketTimeoutException;
 import java.sql.*;
 import java.util.*;
@@ -80,7 +80,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
     // See javadoc for documentation about WeakHashMap if you don't know what it does !!!NOW!!!
     // (only when you deal with it of course)
     /** A Map containing all (active) Statements created from this Connection */
-    private Map<Statement,?> statements = new WeakHashMap<Statement, Object>();
+    private Map<Statement,?> statements = new WeakHashMap<>();
     /** The number of results we receive from the server at once */
     private int curReplySize = -1; // the server by default uses -1 (all)
     /** Whether or not BLOB is mapped to LONGVARBINARY within the driver */
@@ -1033,12 +1033,12 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
             if (rs != null) {
                 try {
                     rs.close();
-                } catch (Exception e2) {}
+                } catch (Exception ignored) {}
             }
             if (stmt != null) {
                 try {
                     stmt.close();
-                } catch (Exception e2) {}
+                } catch (Exception ignored) {}
             }
         }
         return false;
@@ -1192,11 +1192,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         if (schema == null)
             throw new SQLException("Missing schema name", "M1M05");
 
-        Statement st = createStatement();
-        try {
+        try (Statement st = createStatement()) {
             st.execute("SET SCHEMA \"" + schema + "\"");
-        } finally {
-            st.close();
         }
     }
 
@@ -1318,7 +1315,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      * @param command the exact string to send to MonetDB
      * @throws SQLException if an IO exception or a database error occurs
      */
-    public void sendIndependentCommand(String command) throws SQLException {
+    void sendIndependentCommand(String command) throws SQLException {
         try {
             protocol.writeNextQuery(language.getQueryTemplateIndex(0), command, language.getQueryTemplateIndex(1));
             protocol.waitUntilPrompt();
@@ -1341,7 +1338,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      *
      * @param reason the warning message
      */
-    public void addWarning(String reason, String sqlstate) {
+    protected void addWarning(String reason, String sqlstate) {
         if (warnings == null) {
             warnings = new SQLWarning(reason, sqlstate);
         } else {
@@ -1381,7 +1378,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
          * @param rstype the type of result sets to produce
          * @param rsconcur the concurrency of result sets to produce
          */
-        public ResponseList(int cachesize, int maxrows, int rstype, int rsconcur) {
+        ResponseList(int cachesize, int maxrows, int rstype, int rsconcur) {
             this.cachesize = cachesize;
             this.maxrows = maxrows;
             this.rstype = rstype;
@@ -1507,7 +1504,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                 protocol.waitUntilPrompt();
 
                 // {{{ set reply size
-                /**
+                /*
                  * Change the reply size of the server.  If the given value is the same as the current value known
                  * to use, then ignore this call.  If it is set to 0 we get a prompt after the server sent it's
                  * header.
@@ -1677,14 +1674,14 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                 }
                 if (error != null) {
                     SQLException ret = null;
-                    String[] errors = error.split("\n");
-                    for (String error1 : errors) {
-                        String error2 = isEmbedded() ? error1 : error1.substring(0, 5);
-                        String error3 = isEmbedded() ? "M0M10" : error1.substring(6);
+                    String[] errorsList = error.split("\n");
+                    for (String singleError : errorsList) {
+                        String reason = isEmbedded() ? singleError : singleError.substring(6);
+                        String sqlState = isEmbedded() ? "M0M10" : singleError.substring(0, 5);
                         if (ret == null) {
-                            ret = new SQLException(error2, error3);
+                            ret = new SQLException(reason, sqlState);
                         } else {
-                            ret.setNextException(new SQLException(error2, error3));
+                            ret.setNextException(new SQLException(reason, sqlState));
                         }
                     }
                     throw ret;
