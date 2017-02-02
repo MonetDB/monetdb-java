@@ -32,7 +32,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
 
   <property file="build.properties" />
 
-  <property name="jdbc-jar" value="${jardir}/monetdb-jdbc-${JDBC_MAJOR}.${JDBC_MINOR}.jar" />
+  <property name="jdbc-jar" value="${jardir}/monetdb-jdbc-new-${JDBC_MAJOR}.${JDBC_MINOR}.jar" />
   <property name="jdbcclient-jar" value="${jardir}/jdbcclient.jar" />
   <property name="jmonetdb-jar" value="${jardir}/jmonetdb.jar" />
   <property name="mcl-jar" value="${jardir}/monetdb-mcl-${MCL_MAJOR}.${MCL_MINOR}.jar" />
