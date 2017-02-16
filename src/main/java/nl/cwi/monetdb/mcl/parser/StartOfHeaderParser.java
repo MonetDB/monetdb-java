@@ -96,15 +96,18 @@ public class StartOfHeaderParser {
 	 * @throws MCLParseException if no numeric value could be read
 	 */
 	public final int getNextAsInt() throws MCLParseException {
+		boolean positive = true;
 		pos++;
 		if (!soh.hasRemaining()) throw
 			new MCLParseException("unexpected end of string", soh.position() - 1);
-		int tmp;
+		int tmp = 0;
 		char chr = soh.get();
 		// note: don't use Character.isDigit() here, because
 		// we only want ISO-LATIN-1 digits
 		if (chr >= '0' && chr <= '9') {
 			tmp = (int)chr - (int)'0';
+		} else if(chr == '-') {
+			positive = false;
 		} else {
 			throw new MCLParseException("expected a digit", soh.position() - 1);
 		}
@@ -118,7 +121,7 @@ public class StartOfHeaderParser {
 			}
 		}
 
-		return tmp;
+		return positive ? tmp : -tmp;
 	}
 
 	public final String getNextAsString() throws MCLParseException {

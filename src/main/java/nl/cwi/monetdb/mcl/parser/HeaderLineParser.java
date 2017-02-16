@@ -157,6 +157,10 @@ public class HeaderLineParser extends MCLParser {
 	 * Returns an array of ints containing the values between
 	 * ',\t' separators.
 	 *
+	 * Feb2017 note - This integer parser doesn't have to parse negative
+	 * numbers, because it is only used to parse column lengths
+	 * which is always greater than 0.
+	 *
 	 * @param chrLine a character array holding the input data
 	 * @param start where the relevant data starts
 	 * @param stop where the relevant data stops
@@ -171,7 +175,6 @@ public class HeaderLineParser extends MCLParser {
 			if (chrLine[i] == ',' && chrLine[i + 1] == '\t') {
 				intValues[elem++] = tmp;
 				tmp = 0;
-				start = i++;
 			} else {
 				tmp *= 10;
 				// note: don't use Character.isDigit() here, because
