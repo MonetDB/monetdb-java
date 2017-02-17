@@ -175,6 +175,7 @@ public class HeaderLineParser extends MCLParser {
 			if (chrLine[i] == ',' && chrLine[i + 1] == '\t') {
 				intValues[elem++] = tmp;
 				tmp = 0;
+				start = i++;
 			} else {
 				tmp *= 10;
 				// note: don't use Character.isDigit() here, because

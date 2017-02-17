@@ -104,10 +104,14 @@ public class StartOfHeaderParser {
 		char chr = soh.get();
 		// note: don't use Character.isDigit() here, because
 		// we only want ISO-LATIN-1 digits
+		if(chr == '-') {
+			positive = false;
+			if (!soh.hasRemaining())
+				throw new MCLParseException("unexpected end of string", soh.position() - 1);
+			chr = soh.get();
+		}
 		if (chr >= '0' && chr <= '9') {
 			tmp = (int)chr - (int)'0';
-		} else if(chr == '-') {
-			positive = false;
 		} else {
 			throw new MCLParseException("expected a digit", soh.position() - 1);
 		}
