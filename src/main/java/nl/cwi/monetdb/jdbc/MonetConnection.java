@@ -106,8 +106,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
         this.language = language;
         this.blobIsBinary = blobIsBinary;
         this.clobIsLongChar = clobIsLongChar;
-        String embedded = props.getProperty("embedded");
-        this.isEmbedded = embedded != null && embedded.equals("true");
+        //"instance of" should be cleanner, but this is faster.
+        this.isEmbedded = props.getProperty("embedded", "false").equals("true");
     }
 
     /**

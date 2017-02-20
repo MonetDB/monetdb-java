@@ -45,14 +45,15 @@ import java.util.logging.Logger;
  * where [:&lt;port&gt;] denotes that a port is optional. If not
  * given the default (@JDBC_DEF_PORT@) will be used.
  *
- * @author Fabian Groffen
+ * @author Fabian Groffen, Pedro Ferreira
  * @version @JDBC_MAJOR@.@JDBC_MINOR@ (@JDBC_VER_SUFFIX@)
  */
 final public class MonetDriver implements Driver {
-	// the url kind will be jdbc:monetdb://<host>[:<port>]/<database>
+	// the url kind will be jdbc:monetdb://<host>[:<port>]/<database> (in a MAPI connection)
+	// the url kind will be jdbc:monetdb:embedded:<directory> (in an Embedded connection)
 	// Chapter 9.2.1 from Sun JDBC 3.0 specification
 	/** The prefix of a MonetDB url */
-	private static final String MONETURL = "jdbc:monetdb://";
+	private static final String MONETURL = "jdbc:monetdb:";
 	/** Major version of this driver */
 	private static final int DRIVERMAJOR = @JDBC_MAJOR@;
 	/** Minor version of this driver */
@@ -145,27 +146,12 @@ final public class MonetDriver implements Driver {
 
 		prop = new DriverPropertyInfo("hash", "");
 		prop.required = false;
-		prop.description = "Force the use of the given hash algorithm during challenge response (one of SHA1, MD5, plain)";
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("host", "localhost");
-		prop.required = false;
-		prop.description = "The MonetDB server hostname (MAPI connection only)";
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("port", PORT);
-		prop.required = false;
-		prop.description = "The port to connect to the MonetDB server (MAPI connection only)";
+		prop.description = "Force the use of the given hash algorithm during challenge response (one of SHA1, MD5, plain) (MAPI connection only)";
 		props.add(prop);
 
 		prop = new DriverPropertyInfo("so_timeout", "0");
 		prop.required = false;
 		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call (MAPI connection only)"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("database", "");
-		prop.required = false;
-		prop.description = "The database name to connect (MAPI connection only)";
 		props.add(prop);
 
 		prop = new DriverPropertyInfo("follow_redirects", "true");
@@ -186,16 +172,6 @@ final public class MonetDriver implements Driver {
 		prop = new DriverPropertyInfo("language", "sql");
 		prop.required = false;
 		prop.description = "What language to use for MonetDB conversations (experts only)";
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("embedded", "false");
-		prop.required = false;
-		prop.description = "Whether or not to use an embedded MonetDB connection";
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("directory", "");
-		prop.required = false;
-		prop.description = "Sets the directory to set the database in a embedded connection (Embedded connection only)";
 		props.add(prop);
 
 		DriverPropertyInfo[] dpi = new DriverPropertyInfo[props.size()];
@@ -363,51 +339,59 @@ final public class MonetDriver implements Driver {
 	 */
 	public Connection connect(String url, Properties info) throws SQLException {
 		int tmp;
+		boolean isEmbedded;
 		Properties props = new Properties();
 		props.putAll(info);
 		info = props;
 
-		// url should be of style jdbc:monetdb://<host>/<database>
 		if (!acceptsURL(url))
 			throw new SQLException("Invalid URL: it does not start with: " + MONETURL, "08M26");
 
-		// remove leading "jdbc:" so the rest is a valid hierarchical URI
-		URI uri;
-		try {
-			uri = new URI(url.substring(5));
-		} catch (URISyntaxException e) {
-			throw new SQLException(e.toString(), "08M26");
+		if(!url.startsWith("jdbc:monetdb:embedded:")) {
+		    // url should be of style jdbc:monetdb://<host>/<database>
+            isEmbedded = false;
+            URI uri;
+            try {
+                uri = new URI(url.substring(5));
+            } catch (URISyntaxException e) {
+                throw new SQLException(e.toString(), "08M26");
+            }
+
+            String uri_host = uri.getHost();
+            if (uri_host == null)
+                throw new SQLException("Invalid URL: no hostname given or unparsable in '" + url + "'", "08M26");
+            info.put("host", uri_host);
+
+            int uri_port = uri.getPort();
+            if (uri_port > 0)
+                info.put("port", "" + uri_port);
+
+            // check the database
+            String uri_path = uri.getPath();
+            if (uri_path != null && uri_path.length() != 0) {
+                uri_path = uri_path.substring(1);
+                if (!uri_path.trim().isEmpty())
+                    info.put("database", uri_path);
+            }
+
+            String uri_query = uri.getQuery();
+            if (uri_query != null) {
+                // handle additional arguments
+                String args[] = uri_query.split("&");
+                for (String arg : args) {
+                    tmp = arg.indexOf('=');
+                    if (tmp > 0)
+                        info.put(arg.substring(0, tmp), arg.substring(tmp + 1));
+                }
+            }
+		} else {
+	    	// url should be of style jdbc:monetdb:embedded:<directory>
+       		isEmbedded = true;
+    		info.put("directory", url.substring(22));
 		}
 
-		String uri_host = uri.getHost();
-		if (uri_host == null)
-			throw new SQLException("Invalid URL: no hostname given or unparsable in '" + url + "'", "08M26");
-		info.put("host", uri_host);
-
-		int uri_port = uri.getPort();
-		if (uri_port > 0)
-			info.put("port", "" + uri_port);
-
-		// check the database
-		String uri_path = uri.getPath();
-		if (uri_path != null && uri_path.length() != 0) {
-			uri_path = uri_path.substring(1);
-			if (!uri_path.trim().isEmpty())
-				info.put("database", uri_path);
-		}
-
-		String uri_query = uri.getQuery();
-		if (uri_query != null) {
-			// handle additional arguments
-			String args[] = uri_query.split("&");
-			for (String arg : args) {
-				tmp = arg.indexOf('=');
-				if (tmp > 0)
-					info.put(arg.substring(0, tmp), arg.substring(tmp + 1));
-			}
-		}
-
-		// finally return the Connection as requested
+		info.put("embedded", Boolean.toString(isEmbedded));
+        // finally return the Connection as requested
 		return CreateMonetDBJDBCConnection(info);
 	}
 
@@ -416,7 +400,7 @@ final public class MonetDriver implements Driver {
 			IllegalArgumentException {
 		MonetConnection res;
 
-		boolean isEmbedded = Boolean.parseBoolean(props.getProperty("embedded", "false"));
+        boolean isEmbedded = Boolean.parseBoolean(props.getProperty("embedded", "false"));
 		String language = props.getProperty("language", "sql");
 		String username = props.getProperty("user");
 		String password = props.getProperty("password");
@@ -505,7 +489,7 @@ final public class MonetDriver implements Driver {
 			res.setSoTimeout(sockTimeout);
 		}
 
-		try { //atempt to connect and authenticate the user
+		try { //attempt to connect and authenticate the user
 			List<String> warnings = res.connect(username, password);
 			if(warnings != null) {
 				for (String warning : warnings) {
