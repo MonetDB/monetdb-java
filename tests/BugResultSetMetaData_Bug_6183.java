@@ -9,64 +9,76 @@
 import java.sql.*;
 
 public class BugResultSetMetaData_Bug_6183 {
+	static final String dqTblName = "\"my dq_table\"";
+	static final String[] dqColNames = {"\"my space\"", "\"my, comma_space\"", "\"my$dollar\"", "\"my#hash\"", "\"my	tab\"", "\"my	,tab_comma\"", "\"my,	comma_tab\"", "\"my\\\"backslash_doublequote\""};
+
 	public static void main(String[] args) throws Exception {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		ResultSet rs = null;
 		try {
-			System.out.println("1. create table \"my dq_table\"");
-			int ret = stmt.executeUpdate("CREATE TABLE \"my dq_table\" (\"my column\" varchar(30), col2 int, \"my, column\" int, \"my$column\" int, \"my#column\" int, \"my	tcolumn\" int, \"my	,tc column\" int, \"my\\\"column\" int)");
-			System.out.println(" returned: " + ret);
+			System.out.println("1. create table " + dqTblName);
+			StringBuilder sb = new StringBuilder(30 + (dqColNames.length * (30 + 15)));
+			sb.append("CREATE TABLE ").append(dqTblName).append(" (");
+			for (int n = 0; n < dqColNames.length; n++) {
+				sb.append(dqColNames[n]);
+				sb.append(" varchar(").append(31 + n).append(')');
+				if (n < (dqColNames.length -1))
+					sb.append(", ");
+			}
+			sb.append(')');
+			int ret = stmt.executeUpdate(sb.toString());
+			System.out.println(" returned: " + ret + " (expected -2)");
+			System.out.println();
 
-			System.out.println("2. show column names of this new table via sys.columns query");
-			rs = stmt.executeQuery("SELECT name, type, number from sys.columns where table_id in (select id from sys._tables where name = 'my dq_table') order by number");
+			String tblName = dqTblName.substring(1, dqTblName.length() -1);	// trim the leading and trailing double quote characters
+			System.out.println("2. show column names of this new table (" + tblName + ") via sys.columns query");
+			rs = stmt.executeQuery("SELECT number, name, type from sys.columns where table_id in (select id from sys._tables where name = '" + tblName + "') order by number");
 			showResultAndClose(rs);
 
-			System.out.println("3. insert 1 row of data");
-			ret = stmt.executeUpdate("INSERT INTO \"my dq_table\" VALUES ('row1', 1,2,3,4,5,6,7)");
-			System.out.println(" returned: " + ret);
+			System.out.println("3. insert 1 row of data with values same as column names");
+			sb.setLength(0);
+			sb.append("INSERT INTO ").append(dqTblName).append(" VALUES (");
+			for (int n = 0; n < dqColNames.length; n++) {
+				sb.append('\'');
+				sb.append(dqColNames[n]);
+				sb.append('\'');
+				if (n < (dqColNames.length -1))
+					sb.append(", ");
+			}
+			sb.append(')');
+			ret = stmt.executeUpdate(sb.toString());
+			System.out.println(" returned: " + ret + " (expected 1)");
+			System.out.println();
 
-			System.out.println("4. show full content of table \"my dq_table\"");
-			rs = stmt.executeQuery("SELECT * from \"my dq_table\"");
-			showResultAndClose(rs);
+			System.out.println("4. insert 1 row of data with values same as column names but without enclosing double quotes");
+			sb.setLength(0);
+			sb.append("INSERT INTO ").append(dqTblName).append(" VALUES (");
+			for (int n = 0; n < dqColNames.length; n++) {
+				sb.append('\'');
+				// remove enclosing double quotes
+				sb.append(dqColNames[n].substring(1, dqColNames[n].length() -1));
+				sb.append('\'');
+				if (n < (dqColNames.length -1))
+					sb.append(", ");
+			}
+			sb.append(')');
+			ret = stmt.executeUpdate(sb.toString());
+			System.out.println(" returned: " + ret + " (expected 1)");
+			System.out.println();
 
-			System.out.println("5. show content of column \"my column\"");
-			rs = stmt.executeQuery("SELECT \"my column\" from \"my dq_table\"");
-			showResultAndClose(rs);
+			// query each column separately
+			for (int n = 0; n < dqColNames.length; n++) {
+				executeQueryAndShowResult(stmt, dqColNames[n], 5 + n);
+			}
+			// query all columns
+			executeQueryAndShowResult(stmt, "*", 5 + dqColNames.length);
 
-			System.out.println("6. show content of column \"my, column\"");
-			rs = stmt.executeQuery("SELECT \"my, column\" from \"my dq_table\"");
-			showResultAndClose(rs);
-
-			System.out.println("7. show content of column \"my$column\"");
-			rs = stmt.executeQuery("SELECT \"my$column\" from \"my dq_table\"");
-			showResultAndClose(rs);
-
-			System.out.println("8. show content of column \"my#column\"");
-			rs = stmt.executeQuery("SELECT \"my#column\" from \"my dq_table\"");
-			showResultAndClose(rs);
-
-			System.out.println("9. show content of column \"my	tcolumn\"");
-			rs = stmt.executeQuery("SELECT \"my	tcolumn\" from \"my dq_table\"");
-			showResultAndClose(rs);
-
-			System.out.println("10. show content of column \"my	,tc column\"");
-			rs = stmt.executeQuery("SELECT \"my	,tc column\" from \"my dq_table\"");
-			showResultAndClose(rs);
-
-			System.out.println("11. show content of column \"my\\\"column\"");
-			rs = stmt.executeQuery("SELECT \"my\\\"column\" from \"my dq_table\"");
-			showResultAndClose(rs);
-
-			System.out.println("12. show content of all columns");
-			rs = stmt.executeQuery("select col2, \"my column\", \"my, column\", \"my$column\", \"my#column\", \"my	tcolumn\", \"my	,tc column\", \"my\\\"column\" from \"my dq_table\"");
-			showResultAndClose(rs);
-
-			System.out.println("Finally drop table \"my dq_table\"");
-			ret = stmt.executeUpdate("DROP TABLE \"my dq_table\" ");
-			System.out.println(" returned: " + ret);
-
+			System.out.println("Finally drop table " + dqTblName);
+			ret = stmt.executeUpdate("DROP TABLE " + dqTblName);
+			System.out.println(" returned: " + ret + " (expected -2)");
+			System.out.println();
 		} catch (SQLException se) {
 			System.out.println("Failure occurred: " + se);
 		} finally {
@@ -77,29 +89,26 @@ public class BugResultSetMetaData_Bug_6183 {
 		con.close();
 	}
 
+	private static void executeQueryAndShowResult(Statement st, String col_list, int query_count) throws SQLException {
+		System.out.print(query_count);
+		System.out.println(". show content of column(s): " + col_list);
+		ResultSet rs = st.executeQuery("SELECT " + col_list + " from " + dqTblName);
+		showResultAndClose(rs);
+	}
+
 	private static void showResultAndClose(ResultSet rs) throws SQLException {
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int rs_col_count = rsmd.getColumnCount();
 		System.out.println("Resultset with " + rs_col_count + " columns");
-
-		System.out.println("print column names");
+		System.out.println("\tColumn Name, Column Label:");
 		for (int col = 1; col <= rs_col_count; col++) {
-			if (col > 1)
-				System.out.print("\t");
-			System.out.print(rsmd.getColumnName(col));
+			System.out.println(col + "\t" + rsmd.getColumnName(col) + "\t" +rsmd.getColumnLabel(col));
 		}
-		System.out.println();
 
-		System.out.println("print column labels");
-		for (int col = 1; col <= rs_col_count; col++) {
-			if (col > 1)
-				System.out.print("\t");
-			System.out.print(rsmd.getColumnLabel(col));
-		}
-		System.out.println();
-
-		System.out.println("print data rows");
+		System.out.println("Data rows:");
+		long row_count = 0;
 		while (rs.next()) {
+			row_count++;
 			for (int col = 1; col <= rs_col_count; col++) {
 				if (col > 1)
 					System.out.print("\t");
@@ -108,9 +117,7 @@ public class BugResultSetMetaData_Bug_6183 {
 			System.out.println();
 		}
 		rs.close();
-		System.out.println("Completed");
+		System.out.println("Listed " + row_count + " rows");
 		System.out.println();
 	}
-
-
 }

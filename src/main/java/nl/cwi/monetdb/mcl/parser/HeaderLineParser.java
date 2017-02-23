@@ -69,7 +69,8 @@ public class HeaderLineParser extends MCLParser {
 				case '#':
 					// found!
 					nameFound = true;
-					if (pos == 0) pos = i + 1;
+					if (pos == 0)
+						pos = i + 1;
 					i = 0;	// force the loop to terminate
 					break;
 				default:
@@ -84,30 +85,23 @@ public class HeaderLineParser extends MCLParser {
 		// depending on the name of the header, we continue
 		switch (chrLine[pos]) {
 			case 'n':
-				if (len - pos == 4 &&
-						source.regionMatches(pos + 1, "name", 1, 3))
-				{
+				if (len - pos == 4 && source.regionMatches(pos + 1, "name", 1, 3)) {
 					getValues(chrLine, 2, pos - 3);
 					type = NAME;
 				}
 				break;
 			case 'l':
-				if (len - pos == 6 &&
-						source.regionMatches(pos + 1, "length", 1, 5))
-				{
+				if (len - pos == 6 && source.regionMatches(pos + 1, "length", 1, 5)) {
 					getIntValues(chrLine, 2, pos - 3);
 					type = LENGTH;
 				}
 				break;
 			case 't':
-				if (len - pos == 4 &&
-						source.regionMatches(pos + 1, "type", 1, 3))
-				{
+				if (len - pos == 4 && source.regionMatches(pos + 1, "type", 1, 3)) {
 					getValues(chrLine, 2, pos - 3);
 					type = TYPE;
-				} else if (len - pos == 10 &&
-						source.regionMatches(pos + 1, "table_name", 1, 9))
-				{
+				} else
+				if (len - pos == 10 && source.regionMatches(pos + 1, "table_name", 1, 9)) {
 					getValues(chrLine, 2, pos - 3);
 					type = TABLE;
 				}
@@ -126,8 +120,9 @@ public class HeaderLineParser extends MCLParser {
 	/**
 	 * Returns an array of Strings containing the values between
 	 * ',\t' separators.
+	 *
 	 * As of Oct2014-SP1 release MAPI adds double quotes around names when
-	 * the name contains a comma or a tab or a space or a # or " character.
+	 * the name contains a comma or a tab or a space or a # or " or \ escape character.
 	 * See issue: https://www.monetdb.org/bugzilla/show_bug.cgi?id=3616
 	 * If the parsed name string part has a " as first and last character,
 	 * we remove those added double quotes here.
@@ -138,19 +133,59 @@ public class HeaderLineParser extends MCLParser {
 	 */
 	final private void getValues(char[] chrLine, int start, int stop) {
 		int elem = 0;
+		boolean inString = false, escaped = false;
 
-		for (int i = start + 1; i < stop; i++) {
-			if (chrLine[i] == '\t' && chrLine[i - 1] == ',') {
-				if (chrLine[start] == '"')
-					start++;  // skip leading double quote
-				values[elem++] = new String(chrLine, start, i - (chrLine[i - 2] == '"' ? 2 : 1) - start);
-				start = i + 1;
+		for (int i = start; i < stop; i++) {
+			switch(chrLine[i]) {
+				case '\\':
+					escaped = !escaped;
+					break;
+				case '"':
+					/**
+					 * If all strings are wrapped between two quotes, a \" can
+					 * never exist outside a string. Thus if we believe that we
+					 * are not within a string, we can safely assume we're about
+					 * to enter a string if we find a quote.
+					 * If we are in a string we should stop being in a string if
+					 * we find a quote which is not prefixed by a \, for that
+					 * would be an escaped quote. However, a nasty situation can
+					 * occur where the string is like "test \\" as obvious, a
+					 * test for a \ in front of a " doesn't hold here for all
+					 * cases. Because "test \\\"" can exist as well, we need to
+					 * know if a quote is prefixed by an escaping slash or not.
+					 */
+					if (!inString) {
+						inString = true;
+					} else if (!escaped) {
+						inString = false;
+					}
+					// reset escaped flag
+					escaped = false;
+					break;
+				case ',':
+					if (!inString && chrLine[i + 1] == '\t') {
+						// we found the field separator
+						if (chrLine[start] == '"')
+							start++;  // skip leading double quote
+						if (elem < values.length) {
+							values[elem++] = new String(chrLine, start, i - (chrLine[i - 1] == '"' ? 1 : 0) - start);
+						}
+						i++;
+						start = i + 1;	// reset start for the next name, skipping the field separator (a comma and tab)
+					}
+					// reset escaped flag
+					escaped = false;
+					break;
+				default:
+					escaped = false;
+					break;
 			}
 		}
 		// add the left over part (last column)
 		if (chrLine[start] == '"')
 			start++;  // skip leading double quote
-		values[elem++] = new String(chrLine, start, stop - (chrLine[stop - 1] == '"' ? 1 : 0) - start);
+		if (elem < values.length)
+			values[elem] = new String(chrLine, start, stop - (chrLine[stop - 1] == '"' ? 1 : 0) - start);
 	}
 
 	/**
@@ -159,15 +194,13 @@ public class HeaderLineParser extends MCLParser {
 	 *
 	 * Feb2017 note - This integer parser doesn't have to parse negative
 	 * numbers, because it is only used to parse column lengths
-	 * which is always greater than 0.
+	 * which are always greater than 0.
 	 *
 	 * @param chrLine a character array holding the input data
 	 * @param start where the relevant data starts
 	 * @param stop where the relevant data stops
 	 */
-	final private void getIntValues(char[] chrLine, int start, int stop)
-		throws MCLParseException
-	{
+	final private void getIntValues(char[] chrLine, int start, int stop) throws MCLParseException {
 		int elem = 0;
 		int tmp = 0;
 
@@ -177,17 +210,17 @@ public class HeaderLineParser extends MCLParser {
 				tmp = 0;
 				start = i++;
 			} else {
-				tmp *= 10;
 				// note: don't use Character.isDigit() here, because
 				// we only want ISO-LATIN-1 digits
 				if (chrLine[i] >= '0' && chrLine[i] <= '9') {
+					tmp *= 10;
 					tmp += (int)chrLine[i] - (int)'0';
 				} else {
 					throw new MCLParseException("expected a digit in " + new String(chrLine) + " at " + i);
 				}
 			}
 		}
-		// add the left over part
-		intValues[elem++] = tmp;
+		// add the left over part (last column)
+		intValues[elem] = tmp;
 	}
 }
