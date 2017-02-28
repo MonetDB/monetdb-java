@@ -73,7 +73,7 @@ public class ResultSetResponse implements IIncompleteResponse {
     /** the offset to be used on Xexport queries */
     private int blockOffset = 0;
     /** A List of result blocks (chunks of size fetchSize/cacheSize) */
-    private final DataBlockResponse[] resultBlocks;
+    private final AbstractDataBlockResponse[] resultBlocks;
 
     /**
      * Sole constructor, which requires a MonetConnection parent to be given.
@@ -121,8 +121,9 @@ public class ResultSetResponse implements IIncompleteResponse {
         this.columnLengths = new int[columncount];
         this.JdbcSQLTypes = new int[columncount];
 
-        this.resultBlocks = new DataBlockResponse[(tuplecount / cacheSize) + 1];
-        this.resultBlocks[0] = new DataBlockResponse(rowcount, columncount, con, con.getProtocol(), this.JdbcSQLTypes);
+        this.resultBlocks = new AbstractDataBlockResponse[(tuplecount / cacheSize) + 1];
+        this.resultBlocks[0] = con.getProtocol().getAnEmptyDataBlockResponse(rowcount, columncount,
+                con.getProtocol(), this.JdbcSQLTypes);
     }
 
     /**
@@ -158,9 +159,10 @@ public class ResultSetResponse implements IIncompleteResponse {
      * @param offset the offset number of rows for this block
      * @param rowcount the number of rows for this block
      */
-    public DataBlockResponse addDataBlockResponse(int offset, int rowcount) {
+    public AbstractDataBlockResponse addDataBlockResponse(int offset, int rowcount) {
         int block = (offset - blockOffset) / cacheSize;
-        DataBlockResponse res = new DataBlockResponse(rowcount, this.name.length, this.con, this.con.getProtocol(), JdbcSQLTypes);
+        AbstractDataBlockResponse res = con.getProtocol().getAnEmptyDataBlockResponse(rowcount,
+                this.getColumncount(), this.con.getProtocol(), JdbcSQLTypes);
         resultBlocks[block] = res;
         return res;
     }
@@ -316,7 +318,7 @@ public class ResultSetResponse implements IIncompleteResponse {
      * @return the exact row read as requested or null if the requested row is out of the scope of the result set
      * @throws SQLException if an database error occurs
      */
-    public DataBlockResponse getDataBlockCorrespondingToLine(int row) throws SQLException {
+    public AbstractDataBlockResponse getDataBlockCorrespondingToLine(int row) throws SQLException {
         if (row >= tuplecount || row < 0)
             return null;
 
@@ -324,7 +326,7 @@ public class ResultSetResponse implements IIncompleteResponse {
         int blockLine = (row - blockOffset) % cacheSize;
 
         // do we have the right block loaded? (optimistic try)
-        DataBlockResponse rawr;
+        AbstractDataBlockResponse rawr;
         // load block if appropriate
         if ((rawr = resultBlocks[block]) == null) {
             // TODO: ponder about a maximum number of blocks to keep in memory when dealing with random access to
@@ -387,7 +389,7 @@ public class ResultSetResponse implements IIncompleteResponse {
 
         // close the data block associated with us
         for (int i = 1; i < resultBlocks.length; i++) {
-            DataBlockResponse r = resultBlocks[i];
+            AbstractDataBlockResponse r = resultBlocks[i];
             if (r != null) r.close();
         }
 

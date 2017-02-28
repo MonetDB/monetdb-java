@@ -183,7 +183,7 @@ public abstract class AbstractProtocol {
     /**
      * Gets the next UpdateResponse response from the server.
      *
-     * @return The UpdateResponse instance
+     * @return An UpdateResponse instance
      * @throws ProtocolException If an error in the underlying connection happened.
      */
     public abstract UpdateResponse getNextUpdateResponse() throws ProtocolException;
@@ -191,7 +191,7 @@ public abstract class AbstractProtocol {
     /**
      * Gets the next SchemaResponse response from the server.
      *
-     * @return The SchemaResponse instance
+     * @return A SchemaResponse instance
      */
     public SchemaResponse getNextSchemaResponse() {
         return new SchemaResponse();
@@ -200,10 +200,23 @@ public abstract class AbstractProtocol {
     /**
      * Gets the next AutoCommitResponse response from the server.
      *
-     * @return The AutoCommitResponse instance
+     * @return An AutoCommitResponse instance
      * @throws ProtocolException If an error in the underlying connection happened.
      */
     public abstract AutoCommitResponse getNextAutoCommitResponse() throws ProtocolException;
+
+    /**
+     * Get an empty DataBlockResponse from the server.
+     *
+     * @param rowcount - Number of tuples
+     * @param columncount - Number of tuples
+     * @param protocol - This protocol
+     * @param JdbcSQLTypes - the types array
+     * @return An AbstractDataBlockResponse instance
+     */
+    public abstract AbstractDataBlockResponse getAnEmptyDataBlockResponse(int rowcount, int columncount,
+                                                                          AbstractProtocol protocol,
+                                                                          int[] JdbcSQLTypes);
 
     /**
      * Gets the next DataBlockResponse response from the server, belonging to a ResultSetResponse
@@ -213,7 +226,7 @@ public abstract class AbstractProtocol {
      * @return The DataBlockResponse instance
      * @throws ProtocolException If an error in the underlying connection happened.
      */
-    public abstract DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
+    public abstract AbstractDataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
             throws ProtocolException;
 
     /**
@@ -228,18 +241,6 @@ public abstract class AbstractProtocol {
      */
     public abstract int getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types,
                                            String[] tableNames) throws ProtocolException;
-
-    /**
-     * Retrieves the next values in a DataBlockResponse from the underlying connection, starting at a specific line
-     * number.
-     *
-     * @param firstLineNumber The first line number in the response to retrieve
-     * @param typesMap The JDBC types mapping array for every column in the ResultSetResponse of the DataBlock
-     * @param values An array of columns to fill the values
-     * @return The number of lines parsed from the underlying connection
-     * @throws ProtocolException If an error in the underlying connection happened.
-     */
-    public abstract int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] values) throws ProtocolException;
 
     /**
      * Gets the remaining response line from the underlying connection as a Java String. This method is mostly used to

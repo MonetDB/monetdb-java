@@ -14,8 +14,8 @@ import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
+import nl.cwi.monetdb.mcl.responses.AbstractDataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.AutoCommitResponse;
-import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 import nl.cwi.monetdb.mcl.responses.UpdateResponse;
 
@@ -168,7 +168,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     /**
      * Gets the next UpdateResponse response from the server.
      *
-     * @return The UpdateResponse instance
+     * @return An UpdateResponse instance
      * @throws ProtocolException If an error in the underlying connection happened.
      */
     @Override
@@ -181,13 +181,19 @@ public class OldMapiProtocol extends AbstractProtocol {
     /**
      * Gets the next AutoCommitResponse response from the server.
      *
-     * @return The AutoCommitResponse instance
+     * @return An AutoCommitResponse instance
      * @throws ProtocolException If an error in the underlying connection happened.
      */
     @Override
     public AutoCommitResponse getNextAutoCommitResponse() throws ProtocolException {
         boolean ac = this.lineBuffer.get() == 't';
         return new AutoCommitResponse(ac);
+    }
+
+    @Override
+    public AbstractDataBlockResponse getAnEmptyDataBlockResponse(int rowcount, int columncount,
+                                                                 AbstractProtocol protocol, int[] JdbcSQLTypes) {
+        return new OldMapiDataBlockResponse(rowcount, columncount, protocol, JdbcSQLTypes);
     }
 
     /**
@@ -199,7 +205,7 @@ public class OldMapiProtocol extends AbstractProtocol {
      * @throws ProtocolException If an error in the underlying connection happened.
      */
     @Override
-    public DataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
+    public AbstractDataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
             throws ProtocolException {
         int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
         OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //column count
@@ -240,8 +246,7 @@ public class OldMapiProtocol extends AbstractProtocol {
      * @return The number of lines parsed from the underlying connection
      * @throws ProtocolException If an error in the underlying connection happened.
      */
-    @Override
-    public int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] values) throws ProtocolException {
+    int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] values) throws ProtocolException {
         OldMapiTupleLineParser.OldMapiParseTupleLine(this, firstLineNumber, typesMap, values);
         return firstLineNumber;
     }

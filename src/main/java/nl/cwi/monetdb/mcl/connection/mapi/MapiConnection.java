@@ -9,9 +9,9 @@
 package nl.cwi.monetdb.mcl.connection.mapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
-import nl.cwi.monetdb.mcl.connection.helpers.ChannelSecurity;
 import nl.cwi.monetdb.mcl.connection.ControlCommands;
 import nl.cwi.monetdb.mcl.connection.MCLException;
+import nl.cwi.monetdb.mcl.connection.helpers.ChannelSecurity;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.oldmapi.OldMapiProtocol;
@@ -110,7 +110,7 @@ public class MapiConnection extends MonetConnection {
     }
 
     /**
-     * Set the SO_TIMEOUT on the underlying Socket.  When for some reason the connection to the database hangs, this
+     * Set the SO_TIMEOUT on the underlying Socket. When for some reason the connection to the database hangs, this
      * setting can be useful to break out of this indefinite wait. This option must be enabled prior to entering the
      * blocking operation to have effect.
      *

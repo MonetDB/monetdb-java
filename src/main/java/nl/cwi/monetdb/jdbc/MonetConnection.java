@@ -1559,14 +1559,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         res = protocol.getNextResultSetResponse(MonetConnection.this,
                                                 ResponseList.this, this.seqnr, this.maxrows);
                                         ResultSetResponse rsreponse = (ResultSetResponse) res;
-                                        // only add this resultset to the hashmap if it can possibly
-                                        // have an additional datablock
-                                        if (rsreponse.getRowcount() < rsreponse.getTuplecount()) {
-                                            if (rsresponses == null) {
-                                                rsresponses = new HashMap<>();
-                                            }
-                                            rsresponses.put(rsreponse.getId(), rsreponse);
+                                        if (rsresponses == null) {
+                                            rsresponses = new HashMap<>();
                                         }
+                                        rsresponses.put(rsreponse.getId(), rsreponse);
                                     }
                                     break;
                                     case StarterHeaders.Q_UPDATE:
@@ -1586,7 +1582,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
                                         MonetConnection.this.autoCommit = isAutoCommit;
                                         break;
                                     case StarterHeaders.Q_BLOCK: {
-                                        DataBlockResponse next = protocol.getNextDatablockResponse(rsresponses);
+                                        AbstractDataBlockResponse next = protocol.getNextDatablockResponse(rsresponses);
                                         if (next == null) {
                                             error = "M0M12!No ResultSetResponse for a DataBlock found";
                                             break;
@@ -1636,7 +1632,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
                             // it is of no use to store DataBlockResponses, you never want to retrieve them directly
                             // anyway
-                            if (!(res instanceof DataBlockResponse)) {
+                            if (!(res instanceof AbstractDataBlockResponse)) {
                                 responses.add(res);
                             }
                             // read the next line (can be prompt, new result, error, etc.) before we start the loop over

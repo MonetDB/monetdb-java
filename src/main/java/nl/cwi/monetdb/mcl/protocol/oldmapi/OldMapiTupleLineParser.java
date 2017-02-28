@@ -29,6 +29,8 @@ import java.util.Calendar;
  */
 final class OldMapiTupleLineParser {
 
+    private OldMapiTupleLineParser() {}
+
     /**
      * The character array representation of a NULL value found in a tuple.
      */
@@ -175,7 +177,6 @@ final class OldMapiTupleLineParser {
                     break;
             }
         }
-
         protocol.tupleLineBuffer = tupleLineBuffer;
         // check if this result is of the size we expected it to be
         if (column != typesMap.length)

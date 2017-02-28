@@ -16,6 +16,8 @@ package nl.cwi.monetdb.mcl.protocol;
  */
 public final class StarterHeaders {
 
+    private StarterHeaders() {}
+
     /* Please don't change the order or the values */
 
     /** A parse response (not handled) */

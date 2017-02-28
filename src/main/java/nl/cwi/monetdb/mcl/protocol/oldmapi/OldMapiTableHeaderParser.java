@@ -21,6 +21,8 @@ import java.nio.CharBuffer;
  */
 final class OldMapiTableHeaderParser {
 
+    private OldMapiTableHeaderParser() {}
+
     /**
      * Retrieves the next table result set header and fills the respective array of values.
      *

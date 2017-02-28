@@ -8,37 +8,23 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import nl.cwi.monetdb.mcl.responses.DataBlockResponse;
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
+import nl.cwi.monetdb.mcl.responses.AbstractDataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.Reader;
+import java.io.StringReader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.sql.Array;
-import java.sql.Blob;
-import java.sql.Clob;
-import java.sql.Connection;
-import java.sql.DatabaseMetaData;
-import java.sql.Date;
-import java.sql.NClob;
-import java.sql.Ref;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.RowId;
-import java.sql.SQLData;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLInput;
-import java.sql.SQLWarning;
-import java.sql.SQLXML;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Timestamp;
-import java.sql.Types;
-import java.util.*;
+import java.sql.*;
+import java.util.Calendar;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * A ResultSet suitable for the MonetDB database.
@@ -84,12 +70,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	private int concurrency = CONCUR_READ_ONLY;
 	/** The warnings for this ResultSet object */
 	private SQLWarning warnings;
-	/** whether the last read field (via some getXyz() method) was NULL */
-	private boolean lastReadWasNull = true;
 	/** Just a dummy variable to keep store the fetchsize set. */
 	private int fetchSize;
 	/** The current row's values */
-	private DataBlockResponse currentBlock;
+	private AbstractDataBlockResponse currentBlock;
 
 	/**
 	 * Main constructor backed by the given Header.
@@ -150,11 +134,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		this.columns = columns;
 		this.types = types;
 		this.JdbcSQLTypes = JdbcSQLTypes;
-	}
-
-	private boolean setLastNullValue(int columnIndex) {
-		this.lastReadWasNull = currentBlock.checkValueIsNull(columnIndex);
-		return this.lastReadWasNull;
 	}
 
 	//== methods of interface ResultSet
@@ -303,23 +282,29 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public InputStream getAsciiStream(int columnIndex) throws SQLException {
         try {
-            if(setLastNullValue(columnIndex - 1)) {
-                return null;
-            }
+			InputStream res = null;
             switch (JdbcSQLTypes[columnIndex - 1]) {
-                case Types.BLOB:
-                    return getClob(columnIndex).getAsciiStream();
                 case Types.CLOB:
-                    return getClob(columnIndex).getAsciiStream();
+					Clob cl = getClob(columnIndex);
+                    if(cl != null) {
+                        res = cl.getAsciiStream();
+                    }
+					break;
+                case Types.BLOB:
                 case Types.LONGVARBINARY:
                 case Types.CHAR:
                 case Types.VARCHAR:
                 case Types.LONGVARCHAR:
-                    return new ByteArrayInputStream(getBytes(columnIndex));
+                    byte[] bytes = getBytes(columnIndex);
+                    if(bytes != null) {
+                        res = new ByteArrayInputStream(getBytes(columnIndex));
+                    }
+					break;
                 default:
                     throw new SQLException("Conversion from " + types[columnIndex - 1] +
                             " to ascii stream not supported", "M1M05");
             }
+            return res;
         } catch (ClassCastException ex) {
             throw new SQLException(ex.getMessage());
         } catch (IndexOutOfBoundsException e) {
@@ -362,18 +347,25 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public InputStream getBinaryStream(int columnIndex) throws SQLException {
         try {
-            if(setLastNullValue(columnIndex - 1)) {
-                return null;
-            }
+			InputStream res = null;
             switch (JdbcSQLTypes[columnIndex - 1]) {
                 case Types.BLOB:
-                    return getBlob(columnIndex).getBinaryStream();
+                    Blob cl = getBlob(columnIndex);
+                    if(cl != null) {
+                        res = cl.getBinaryStream();
+                    }
+                    break;
                 case Types.LONGVARBINARY:
-                    return new ByteArrayInputStream(getBytes(columnIndex));
+                    byte[] bytes = getBytes(columnIndex);
+                    if(bytes != null) {
+                        res = new ByteArrayInputStream(getBytes(columnIndex));
+                    }
+                    break;
                 default:
                     throw new SQLException("Conversion from " + types[columnIndex - 1] +
                             " to binary stream not supported", "M1M05");
             }
+			return res;
         } catch (ClassCastException ex) {
             throw new SQLException(ex.getMessage());
         } catch (IndexOutOfBoundsException e) {
@@ -414,13 +406,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public Reader getCharacterStream(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return null;
-			}
-			return new StringReader(currentBlock.getValueAsString(columnIndex - 1));
+			String ss = currentBlock.getValueAsString(columnIndex - 1);
+            return (ss == null) ? null : new StringReader(ss);
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -481,13 +473,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public Blob getBlob(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return null;
-			}
 			return (MonetBlob) currentBlock.getObjectValue(columnIndex - 1);
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -516,13 +507,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public Clob getClob(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return null;
-			}
 			return (MonetClob) currentBlock.getObjectValue(columnIndex - 1);
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -580,52 +570,48 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return null;
-			}
-			BigDecimal val;
 			switch (JdbcSQLTypes[columnIndex - 1]) {
 				case Types.NUMERIC:
 				case Types.DECIMAL:
-					val = (BigDecimal) currentBlock.getObjectValue(columnIndex - 1);
-					break;
+					return (BigDecimal) currentBlock.getObjectValue(columnIndex - 1);
 				case Types.BOOLEAN:
-					val = new BigDecimal(currentBlock.getBooleanValue(columnIndex - 1) ? (byte) 1 : (byte) 0);
-					break;
+					boolean bol = currentBlock.getBooleanValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? null : new BigDecimal(bol ? 1 : 0);
 				case Types.TINYINT:
-					val = new BigDecimal(currentBlock.getByteValue(columnIndex - 1));
-					break;
+					byte bb = currentBlock.getByteValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? null : new BigDecimal(bb);
 				case Types.SMALLINT:
-					val = new BigDecimal(currentBlock.getShortValue(columnIndex - 1));
-					break;
+					short sh = currentBlock.getShortValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? null : new BigDecimal(sh);
 				case Types.INTEGER:
-					val = new BigDecimal(currentBlock.getIntValue(columnIndex - 1));
-					break;
+					int in = currentBlock.getIntValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? null : new BigDecimal(in);
 				case Types.BIGINT:
-					val = new BigDecimal(currentBlock.getLongValue(columnIndex - 1));
-					break;
+					long lon = currentBlock.getLongValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? null : new BigDecimal(lon);
 				case Types.REAL:
-					val = new BigDecimal(currentBlock.getFloatValue(columnIndex - 1));
-					break;
+					float floa = currentBlock.getFloatValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? null : new BigDecimal(floa);
 				case Types.DOUBLE:
-					val = new BigDecimal(currentBlock.getDoubleValue(columnIndex - 1));
-					break;
+					double dou = currentBlock.getDoubleValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? null : new BigDecimal(dou);
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-					val = new BigDecimal(currentBlock.getValueAsString(columnIndex - 1));
-					break;
+				    String ss = currentBlock.getValueAsString(columnIndex - 1);
+					return (ss == null) ? null : new BigDecimal(ss);
 				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
 					throw new SQLException("Conversion from " + types[columnIndex - 1] +
 							" to boolean type not supported", "M1M05");
 			}
-			return val;
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -644,11 +630,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Deprecated
 	public BigDecimal getBigDecimal(int columnIndex, int scale) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return null;
-			}
 			BigDecimal val = getBigDecimal(columnIndex);
-			val.setScale(scale);
+			if(val != null) {
+				val.setScale(scale);
+			}
 			return val;
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
@@ -699,25 +684,29 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public boolean getBoolean(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return false; // if the value is SQL NULL, the value returned is false
-			}
 			// match type specific values
 			switch (JdbcSQLTypes[columnIndex - 1]) {
-                case Types.BOOLEAN:
-                    return currentBlock.getBooleanValue(columnIndex - 1);
-                case Types.TINYINT:
-                    return currentBlock.getByteValue(columnIndex - 1) != 0;
-                case Types.SMALLINT:
-                    return currentBlock.getShortValue(columnIndex - 1) != 0;
-                case Types.INTEGER:
-                    return currentBlock.getIntValue(columnIndex - 1) != 0;
-                case Types.BIGINT:
-                    return currentBlock.getLongValue(columnIndex - 1) != 0L;
-                case Types.REAL:
-                    return currentBlock.getFloatValue(columnIndex - 1) != 0.0f;
-                case Types.DOUBLE:
-                    return currentBlock.getDoubleValue(columnIndex - 1) != 0.0d;
+				case Types.BOOLEAN:
+					boolean bol = currentBlock.getBooleanValue(columnIndex - 1);
+					return !currentBlock.isLastReadWasNull() && bol;
+				case Types.TINYINT:
+					byte bb = currentBlock.getByteValue(columnIndex - 1);
+					return !currentBlock.isLastReadWasNull() && bb != 0;
+				case Types.SMALLINT:
+					short sh = currentBlock.getShortValue(columnIndex - 1);
+					return !currentBlock.isLastReadWasNull() && sh != 0;
+				case Types.INTEGER:
+					int in = currentBlock.getIntValue(columnIndex - 1);
+					return !currentBlock.isLastReadWasNull() && in != 0;
+				case Types.BIGINT:
+					long lon = currentBlock.getLongValue(columnIndex - 1);
+					return !currentBlock.isLastReadWasNull() && lon != 0;
+				case Types.REAL:
+					float floa = currentBlock.getFloatValue(columnIndex - 1);
+					return !currentBlock.isLastReadWasNull() && floa != 0.0f;
+				case Types.DOUBLE:
+					double dou = currentBlock.getDoubleValue(columnIndex - 1);
+					return !currentBlock.isLastReadWasNull() && dou != 0.0d;
                 case Types.CHAR:
                 case Types.VARCHAR:
                 case Types.LONGVARCHAR:
@@ -725,18 +714,20 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
                 case Types.BLOB:
                 case Types.LONGVARBINARY:
                     String val = currentBlock.getValueAsString(columnIndex - 1);
-                    return !"0".equals(val) && ("1".equals(val) || Boolean.parseBoolean(val));
+                    return val != null && !"0".equals(val) && ("1".equals(val) || Boolean.parseBoolean(val));
                 case Types.NUMERIC:
                 case Types.DECIMAL:
                     BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
-                    return bigdec.compareTo(BigDecimal.ZERO) != 0;
+                    return bigdec != null && bigdec.compareTo(BigDecimal.ZERO) != 0;
                 default: //OTHERS, BLOB, LONGVARBINARY, TIME...
                     throw new SQLException("Conversion from " + types[columnIndex - 1] +
                             " to boolean type not supported", "M1M05");
             }
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -765,42 +756,49 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return 0;
-			}
 			switch (JdbcSQLTypes[columnIndex - 1]) {
 				case Types.TINYINT:
-					return currentBlock.getByteValue(columnIndex - 1);
+					byte bb = currentBlock.getByteValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : bb;
 				case Types.BOOLEAN:
-					return currentBlock.getBooleanValue(columnIndex - 1) ? (byte) 1 : (byte) 0;
+					boolean bol = currentBlock.getBooleanValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (bol ? (byte) 1 : (byte) 0);
 				case Types.SMALLINT:
-					return (byte) currentBlock.getShortValue(columnIndex - 1);
+					short sh = currentBlock.getShortValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (byte) sh;
 				case Types.INTEGER:
-					return (byte) currentBlock.getIntValue(columnIndex - 1);
+					int in = currentBlock.getIntValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (byte) in;
 				case Types.BIGINT:
-					return (byte) currentBlock.getLongValue(columnIndex - 1);
+					long lon = currentBlock.getLongValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (byte) lon;
 				case Types.REAL:
-					return (byte) Math.round(currentBlock.getFloatValue(columnIndex - 1));
+					float floa = currentBlock.getFloatValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (byte) Math.round(floa);
 				case Types.DOUBLE:
-					return (byte) Math.round(currentBlock.getDoubleValue(columnIndex - 1));
+					double dou = currentBlock.getDoubleValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (byte) Math.round(dou);
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-					return Byte.parseByte(currentBlock.getValueAsString(columnIndex - 1));
+					String ss = currentBlock.getValueAsString(columnIndex - 1);
+					return ss == null ? 0 : Byte.parseByte(ss);
 				case Types.NUMERIC:
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
-					return bigdec.byteValue();
+					return bigdec == null ? 0 : bigdec.byteValue();
 				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
 					throw new SQLException("Conversion from " + types[columnIndex - 1] +
-							" to boolean type not supported", "M1M05");
+							" to byte type not supported", "M1M05");
 			}
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -831,13 +829,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public byte[] getBytes(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return null;
-			}
 			// According to Table B-6, getBytes() only operates on BINARY types
 			switch (JdbcSQLTypes[columnIndex - 1]) {
 				case Types.BLOB:
-					return ((MonetBlob) currentBlock.getObjectValue(columnIndex - 1)).getBuffer();
+					MonetBlob mb = (MonetBlob) currentBlock.getObjectValue(columnIndex - 1);
+					return mb == null ? null : mb.getBuffer();
 				case Types.LONGVARBINARY:
 					// unpack the HEX (BLOB) notation to real bytes
 					return (byte[]) currentBlock.getObjectValue(columnIndex - 1);
@@ -845,13 +841,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
-					return currentBlock.getValueAsString(columnIndex - 1).getBytes();
+					String ss = currentBlock.getValueAsString(columnIndex - 1);
+					return ss == null ? null : ss.getBytes();
 				default:
 					throw new SQLException("Cannot operate on " + types[columnIndex - 1] + " type", "M1M05");
 			}
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -919,42 +918,49 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public double getDouble(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return 0.0d;
-			}
 			switch (JdbcSQLTypes[columnIndex - 1]) {
 				case Types.DOUBLE:
-					return currentBlock.getDoubleValue(columnIndex - 1);
+					double res = currentBlock.getDoubleValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0d : res;
 				case Types.BOOLEAN:
-					return currentBlock.getBooleanValue(columnIndex - 1) ? 1.0d : 0.0d;
+					boolean bol = currentBlock.getBooleanValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0d : (bol ? 1.0d : 0.0d);
 				case Types.TINYINT:
-					return currentBlock.getByteValue(columnIndex - 1);
+					byte bb = currentBlock.getByteValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0d : (double) bb;
 				case Types.SMALLINT:
-					return currentBlock.getShortValue(columnIndex - 1);
+					short sh = currentBlock.getShortValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0d : (double) sh;
 				case Types.INTEGER:
-					return currentBlock.getIntValue(columnIndex - 1);
+					int in = currentBlock.getIntValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0d : (double) in;
 				case Types.BIGINT:
-					return currentBlock.getLongValue(columnIndex - 1);
+					long lon = currentBlock.getLongValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0d : (double) lon;
 				case Types.REAL:
-					return currentBlock.getFloatValue(columnIndex - 1);
+					float floa = currentBlock.getFloatValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0d : floa;
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-					return Double.parseDouble(currentBlock.getValueAsString(columnIndex - 1));
+					String ss = currentBlock.getValueAsString(columnIndex - 1);
+					return ss == null ? 0.0d : Double.parseDouble(ss);
 				case Types.NUMERIC:
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
-					return bigdec.doubleValue();
+					return bigdec == null ? 0.0d : bigdec.doubleValue();
 				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
 					throw new SQLException("Conversion from " + types[columnIndex - 1] +
-							" to boolean type not supported", "M1M05");
+							" to double type not supported", "M1M05");
 			}
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -1062,42 +1068,49 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public float getFloat(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return 0.0f;
-			}
 			switch (JdbcSQLTypes[columnIndex - 1]) {
 				case Types.REAL:
-					return currentBlock.getFloatValue(columnIndex - 1);
+					float res = currentBlock.getFloatValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0f : res;
 				case Types.BOOLEAN:
-					return currentBlock.getBooleanValue(columnIndex - 1) ? 1.0f : 0.0f;
+					boolean bol = currentBlock.getBooleanValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0f : (bol ? 1.0f : 0.0f);
 				case Types.TINYINT:
-					return currentBlock.getByteValue(columnIndex - 1);
+					byte bb = currentBlock.getByteValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0f : (float) bb;
 				case Types.SMALLINT:
-					return currentBlock.getShortValue(columnIndex - 1);
+					short sh = currentBlock.getShortValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0f : (float) sh;
 				case Types.INTEGER:
-					return currentBlock.getIntValue(columnIndex - 1);
+					int in = currentBlock.getIntValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0f : (float) in;
 				case Types.BIGINT:
-					return currentBlock.getLongValue(columnIndex - 1);
+					long lon = currentBlock.getLongValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0f : (float) lon;
 				case Types.DOUBLE:
-					return (float) currentBlock.getDoubleValue(columnIndex - 1);
+					double dou = currentBlock.getDoubleValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0.0f : (float) dou;
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-					return Float.parseFloat(currentBlock.getValueAsString(columnIndex - 1));
+					String ss = currentBlock.getValueAsString(columnIndex - 1);
+					return ss == null ? 0.0f : Float.parseFloat(ss);
 				case Types.NUMERIC:
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
-					return bigdec.floatValue();
+					return bigdec == null ? 0.0f : bigdec.floatValue();
 				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
 					throw new SQLException("Conversion from " + types[columnIndex - 1] +
-							" to boolean type not supported", "M1M05");
+							" to float type not supported", "M1M05");
 			}
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -1126,43 +1139,49 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return 0;
-			}
-			// match type specific values
 			switch (JdbcSQLTypes[columnIndex - 1]) {
 				case Types.INTEGER:
-					return currentBlock.getIntValue(columnIndex - 1);
+					int res = currentBlock.getIntValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : res;
 				case Types.BOOLEAN:
-					return currentBlock.getBooleanValue(columnIndex - 1) ? 1 : 0;
+					boolean bol = currentBlock.getBooleanValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (bol ? 1 : 0);
 				case Types.TINYINT:
-					return currentBlock.getByteValue(columnIndex - 1);
+					byte bb = currentBlock.getByteValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : bb;
 				case Types.SMALLINT:
-					return currentBlock.getShortValue(columnIndex - 1);
+					short sh = currentBlock.getShortValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : sh;
 				case Types.BIGINT:
-					return (int) currentBlock.getLongValue(columnIndex - 1);
+					long lon = currentBlock.getLongValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (int) lon;
 				case Types.REAL:
-					return Math.round(currentBlock.getFloatValue(columnIndex - 1));
+					float floa = currentBlock.getFloatValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : Math.round(floa);
 				case Types.DOUBLE:
-					return (int) Math.round(currentBlock.getDoubleValue(columnIndex - 1));
+					double dou = currentBlock.getDoubleValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (int) Math.round(dou);
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-					return Integer.parseInt(currentBlock.getValueAsString(columnIndex - 1));
+					String ss = currentBlock.getValueAsString(columnIndex - 1);
+					return ss == null ? 0 : Integer.parseInt(ss);
 				case Types.NUMERIC:
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
-					return bigdec.intValue();
+					return bigdec == null ? 0 : bigdec.intValue();
 				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
 					throw new SQLException("Conversion from " + types[columnIndex - 1] +
-							" to boolean type not supported", "M1M05");
+							" to integer type not supported", "M1M05");
 			}
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -1191,42 +1210,49 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public long getLong(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return 0L;
-			}
 			switch (JdbcSQLTypes[columnIndex - 1]) {
 				case Types.BIGINT:
-					return currentBlock.getLongValue(columnIndex - 1);
+					long res = currentBlock.getLongValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : res;
 				case Types.BOOLEAN:
-					return currentBlock.getBooleanValue(columnIndex - 1) ? 1 : 0;
+					boolean bol = currentBlock.getBooleanValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (bol ? 1 : 0);
 				case Types.TINYINT:
-					return currentBlock.getByteValue(columnIndex - 1);
+					byte bb = currentBlock.getByteValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : bb;
 				case Types.SMALLINT:
-					return currentBlock.getShortValue(columnIndex - 1);
+					short sh = currentBlock.getShortValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : sh;
 				case Types.INTEGER:
-					return currentBlock.getIntValue(columnIndex - 1);
+					int in = currentBlock.getIntValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : in;
 				case Types.REAL:
-					return Math.round(currentBlock.getFloatValue(columnIndex - 1));
+					float floa = currentBlock.getFloatValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : Math.round(floa);
 				case Types.DOUBLE:
-					return Math.round(currentBlock.getDoubleValue(columnIndex - 1));
+					double dou = currentBlock.getDoubleValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : Math.round(dou);
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-					return Long.parseLong(currentBlock.getValueAsString(columnIndex - 1));
+					String ss = currentBlock.getValueAsString(columnIndex - 1);
+					return ss == null ? 0 : Long.parseLong(ss);
 				case Types.NUMERIC:
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
-					return bigdec.longValue();
+					return bigdec == null ? 0 : bigdec.longValue();
 				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
 					throw new SQLException("Conversion from " + types[columnIndex - 1] +
-							" to boolean type not supported", "M1M05");
+							" to long type not supported", "M1M05");
 			}
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
-		} catch (IndexOutOfBoundsException e) {
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        } catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -1785,9 +1811,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		// implementation should be as fast as possible, so avoid method calls (by inlining code) where possible
 		final int JdbcType;
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return null;
-			}
 			JdbcType = JdbcSQLTypes[columnIndex - 1];
 			switch(JdbcType) {
 				case Types.BOOLEAN:
@@ -1817,6 +1840,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					// For these MonetDB types (except json, see comments below) we try to create objects of the corresponding class.
 					String MonetDBType = types[columnIndex - 1];
 					String val = currentBlock.getValueAsString(columnIndex - 1);
+					if (val == null) {
+						return null;
+					}
 					switch (MonetDBType.length()) {
 						case 3:
 							if ("url".equals(MonetDBType)) {
@@ -1862,7 +1888,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
-		}
+		} catch (ProtocolException e) {
+            throw new SQLException(e);
+        }
 	}
 
 	private boolean classImplementsSQLData(Class<?> cl) {
@@ -1876,194 +1904,196 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 	@SuppressWarnings("unchecked")
 	private Object getObjectFromClass(int columnIndex, Class<?> type) throws SQLException {
-		if(setLastNullValue(columnIndex - 1)) {
-			return null;
-		}
-		if (type == null) {
-			// fallback to the standard Class mappings
-			type = getClassForType(JdbcSQLTypes[columnIndex - 1]);
-		}
-		if (type == null || type == String.class) {
-			return currentBlock.getValueAsString(columnIndex - 1);
-		} else if (type == BigDecimal.class) {
-			return getBigDecimal(columnIndex);
-		} else if (type == Boolean.class) {
-			return getBoolean(columnIndex);
-		} else if (type == Byte.class) {
-			return getByte(columnIndex);
-		} else if (type == Short.class) {
-			return getShort(columnIndex);
-		} else if (type == Integer.class) {
-			return getInt(columnIndex);
-		} else if (type == Long.class) {
-			return getLong(columnIndex);
-		} else if (type == Float.class) {
-			return getFloat(columnIndex);
-		} else if (type == Double.class) {
-			return getDouble(columnIndex);
-		} else if (type == byte[].class) {
-			return getBytes(columnIndex);
-		} else if (type == Date.class) {
-			return getDate(columnIndex);
-		} else if (type == Time.class) {
-			return getTime(columnIndex);
-		} else if (type == Timestamp.class) {
-			return getTimestamp(columnIndex);
-		} else if (type == Clob.class) {
-			return getClob(columnIndex);
-		} else if (type == Blob.class) {
-			return getBlob(columnIndex);
-		} else if (classImplementsSQLData(type)) {
-			SQLData x;
-			try {
-				Constructor<? extends SQLData> ctor = ((Class)type).getConstructor();
-				x = ctor.newInstance();
-			} catch (NoSuchMethodException | InstantiationException | InvocationTargetException
-					| SecurityException | IllegalAccessException nsme) {
-				throw new SQLException(nsme.getMessage(), "M0M27");
+		try {
+
+			if (type == null) {
+				// fallback to the standard Class mappings
+				type = getClassForType(JdbcSQLTypes[columnIndex - 1]);
 			}
-			final int colnum = columnIndex;
-			final boolean valwasnull = wasNull();
-			SQLInput input = new SQLInput() {
-				@Override
-				public String readString() throws SQLException {
-					return getString(colnum);
+			if (type == null || type == String.class) {
+				return currentBlock.getValueAsString(columnIndex - 1);
+			} else if (type == BigDecimal.class) {
+				return getBigDecimal(columnIndex);
+			} else if (type == Boolean.class) {
+				return getBoolean(columnIndex);
+			} else if (type == Byte.class) {
+				return getByte(columnIndex);
+			} else if (type == Short.class) {
+				return getShort(columnIndex);
+			} else if (type == Integer.class) {
+				return getInt(columnIndex);
+			} else if (type == Long.class) {
+				return getLong(columnIndex);
+			} else if (type == Float.class) {
+				return getFloat(columnIndex);
+			} else if (type == Double.class) {
+				return getDouble(columnIndex);
+			} else if (type == byte[].class) {
+				return getBytes(columnIndex);
+			} else if (type == Date.class) {
+				return getDate(columnIndex);
+			} else if (type == Time.class) {
+				return getTime(columnIndex);
+			} else if (type == Timestamp.class) {
+				return getTimestamp(columnIndex);
+			} else if (type == Clob.class) {
+				return getClob(columnIndex);
+			} else if (type == Blob.class) {
+				return getBlob(columnIndex);
+			} else if (classImplementsSQLData(type)) {
+				SQLData x;
+				try {
+					Constructor<? extends SQLData> ctor = ((Class) type).getConstructor();
+					x = ctor.newInstance();
+				} catch (NoSuchMethodException | InstantiationException | InvocationTargetException
+						| SecurityException | IllegalAccessException nsme) {
+					throw new SQLException(nsme.getMessage(), "M0M27");
 				}
+				final int colnum = columnIndex;
+				final boolean valwasnull = wasNull();
+				SQLInput input = new SQLInput() {
+					@Override
+					public String readString() throws SQLException {
+						return getString(colnum);
+					}
 
-				@Override
-				public boolean readBoolean() throws SQLException {
-					return getBoolean(colnum);
-				}
+					@Override
+					public boolean readBoolean() throws SQLException {
+						return getBoolean(colnum);
+					}
 
-				@Override
-				public byte readByte() throws SQLException {
-					return getByte(colnum);
-				}
+					@Override
+					public byte readByte() throws SQLException {
+						return getByte(colnum);
+					}
 
-				@Override
-				public short readShort() throws SQLException {
-					return getShort(colnum);
-				}
+					@Override
+					public short readShort() throws SQLException {
+						return getShort(colnum);
+					}
 
-				@Override
-				public int readInt() throws SQLException {
-					return getInt(colnum);
-				}
+					@Override
+					public int readInt() throws SQLException {
+						return getInt(colnum);
+					}
 
-				@Override
-				public long readLong() throws SQLException {
-					return getLong(colnum);
-				}
+					@Override
+					public long readLong() throws SQLException {
+						return getLong(colnum);
+					}
 
-				@Override
-				public float readFloat() throws SQLException {
-					return getFloat(colnum);
-				}
+					@Override
+					public float readFloat() throws SQLException {
+						return getFloat(colnum);
+					}
 
-				@Override
-				public double readDouble() throws SQLException {
-					return getDouble(colnum);
-				}
+					@Override
+					public double readDouble() throws SQLException {
+						return getDouble(colnum);
+					}
 
-				@Override
-				public BigDecimal readBigDecimal() throws SQLException {
-					return getBigDecimal(colnum);
-				}
+					@Override
+					public BigDecimal readBigDecimal() throws SQLException {
+						return getBigDecimal(colnum);
+					}
 
-				@Override
-				public byte[] readBytes() throws SQLException {
-					return getBytes(colnum);
-				}
+					@Override
+					public byte[] readBytes() throws SQLException {
+						return getBytes(colnum);
+					}
 
-				@Override
-				public Date readDate() throws SQLException {
-					return getDate(colnum);
-				}
+					@Override
+					public Date readDate() throws SQLException {
+						return getDate(colnum);
+					}
 
-				@Override
-				public Time readTime() throws SQLException {
-					return getTime(colnum);
-				}
+					@Override
+					public Time readTime() throws SQLException {
+						return getTime(colnum);
+					}
 
-				@Override
-				public Timestamp readTimestamp() throws SQLException {
-					return getTimestamp(colnum);
-				}
+					@Override
+					public Timestamp readTimestamp() throws SQLException {
+						return getTimestamp(colnum);
+					}
 
-				@Override
-				public Reader readCharacterStream() throws SQLException {
-					return getCharacterStream(colnum);
-				}
+					@Override
+					public Reader readCharacterStream() throws SQLException {
+						return getCharacterStream(colnum);
+					}
 
-				@Override
-				public InputStream readAsciiStream() throws SQLException {
-					return getAsciiStream(colnum);
-				}
+					@Override
+					public InputStream readAsciiStream() throws SQLException {
+						return getAsciiStream(colnum);
+					}
 
-				@Override
-				public InputStream readBinaryStream() throws SQLException {
-					return getBinaryStream(colnum);
-				}
+					@Override
+					public InputStream readBinaryStream() throws SQLException {
+						return getBinaryStream(colnum);
+					}
 
-				@Override
-				public Object readObject() throws SQLException {
-					return getObject(colnum);
-				}
+					@Override
+					public Object readObject() throws SQLException {
+						return getObject(colnum);
+					}
 
-				@Override
-				public Ref readRef() throws SQLException {
-					return getRef(colnum);
-				}
+					@Override
+					public Ref readRef() throws SQLException {
+						return getRef(colnum);
+					}
 
-				@Override
-				public Blob readBlob() throws SQLException {
-					return getBlob(colnum);
-				}
+					@Override
+					public Blob readBlob() throws SQLException {
+						return getBlob(colnum);
+					}
 
-				@Override
-				public Clob readClob() throws SQLException {
-					return getClob(colnum);
-				}
+					@Override
+					public Clob readClob() throws SQLException {
+						return getClob(colnum);
+					}
 
-				@Override
-				public Array readArray() throws SQLException {
-					return getArray(colnum);
-				}
+					@Override
+					public Array readArray() throws SQLException {
+						return getArray(colnum);
+					}
 
-				@Override
-				public boolean wasNull() throws SQLException {
-					return valwasnull;
-				}
+					@Override
+					public boolean wasNull() throws SQLException {
+						return valwasnull;
+					}
 
-				@Override
-				public URL readURL() throws SQLException {
-					return getURL(colnum);
-				}
+					@Override
+					public URL readURL() throws SQLException {
+						return getURL(colnum);
+					}
 
-				@Override
-				public NClob readNClob() throws SQLException {
-					return getNClob(colnum);
-				}
+					@Override
+					public NClob readNClob() throws SQLException {
+						return getNClob(colnum);
+					}
 
-				@Override
-				public String readNString() throws SQLException {
-					return getNString(colnum);
-				}
+					@Override
+					public String readNString() throws SQLException {
+						return getNString(colnum);
+					}
 
-				@Override
-				public SQLXML readSQLXML() throws SQLException {
-					return getSQLXML(colnum);
-				}
+					@Override
+					public SQLXML readSQLXML() throws SQLException {
+						return getSQLXML(colnum);
+					}
 
-				@Override
-				public RowId readRowId() throws SQLException {
-					return getRowId(colnum);
-				}
-			};
-			x.readSQL(input, types[columnIndex - 1]);
-			return x;
-		} else {
-			return currentBlock.getObjectValue(columnIndex - 1);
+					@Override
+					public RowId readRowId() throws SQLException {
+						return getRowId(colnum);
+					}
+				};
+				x.readSQL(input, types[columnIndex - 1]);
+				return x;
+			} else {
+				return currentBlock.getObjectValue(columnIndex - 1);
+			}
+		} catch (ProtocolException e) {
+			throw new SQLException(e);
 		}
 	}
 
@@ -2303,41 +2333,48 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public short getShort(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return 0;
-			}
 			switch (JdbcSQLTypes[columnIndex - 1]) {
 				case Types.SMALLINT:
-					return currentBlock.getShortValue(columnIndex - 1);
+					short res = currentBlock.getShortValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : res;
 				case Types.BOOLEAN:
-					return currentBlock.getBooleanValue(columnIndex - 1) ? (short) 1 : (short) 0;
+					boolean bol = currentBlock.getBooleanValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? (short) 0 : (bol ? (short) 1 : (short) 0);
 				case Types.TINYINT:
-					return currentBlock.getByteValue(columnIndex - 1);
+					byte bb = currentBlock.getByteValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : bb;
 				case Types.INTEGER:
-					return (short) currentBlock.getIntValue(columnIndex - 1);
+					int in = currentBlock.getIntValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (short) in;
 				case Types.BIGINT:
-					return (short) currentBlock.getLongValue(columnIndex - 1);
+					long lon = currentBlock.getLongValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (short) lon;
 				case Types.REAL:
-					return (short) Math.round(currentBlock.getFloatValue(columnIndex - 1));
+					float floa = currentBlock.getFloatValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (short) Math.round(floa);
 				case Types.DOUBLE:
-					return (short) Math.round(currentBlock.getDoubleValue(columnIndex - 1));
+					double dou = currentBlock.getDoubleValue(columnIndex - 1);
+					return currentBlock.isLastReadWasNull() ? 0 : (short) Math.round(dou);
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-					return Short.parseShort(currentBlock.getValueAsString(columnIndex - 1));
+					String ss = currentBlock.getValueAsString(columnIndex - 1);
+					return ss == null ? 0 : Short.parseShort(ss);
 				case Types.NUMERIC:
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
-					return bigdec.shortValue();
+					return bigdec == null ? 0 : bigdec.shortValue();
 				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
 					throw new SQLException("Conversion from " + types[columnIndex - 1] +
-							" to boolean type not supported", "M1M05");
+							" to short type not supported", "M1M05");
 			}
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
+		} catch (ProtocolException e) {
+			throw new SQLException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -2379,12 +2416,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public String getString(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return null;
-			}
 			return currentBlock.getValueAsString(columnIndex - 1);
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
+		} catch (ProtocolException e) {
+			throw new SQLException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -2494,9 +2530,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public Date getDate(int columnIndex, Calendar cal) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return null;
-			}
 			Calendar res;
             long millis;
             switch (JdbcSQLTypes[columnIndex - 1]) {
@@ -2504,11 +2537,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
                 case Types.TIME:
                 case Types.TIMESTAMP:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+					if(res == null) {
+						return null;
+					}
                     millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
                 case Types.TIME_WITH_TIMEZONE:
                 case Types.TIMESTAMP_WITH_TIMEZONE:
                     res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+					if(res == null) {
+						return null;
+					}
                     millis = res.getTimeInMillis();
                     break;
                 case Types.CHAR:
@@ -2518,6 +2557,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
                     res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.DATE);
+					if(res == null) {
+						return null;
+					}
                     millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
                     break;
                 default:
@@ -2528,6 +2570,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
             return new Date(millis);
         } catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
+		} catch (ProtocolException e) {
+			throw new SQLException(e);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -2593,9 +2637,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public Time getTime(int columnIndex, Calendar cal) throws SQLException {
         try {
-            if(setLastNullValue(columnIndex - 1)) {
-                return null;
-            }
             Calendar res;
             long millis;
             switch (JdbcSQLTypes[columnIndex - 1]) {
@@ -2603,11 +2644,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
                 case Types.TIME:
                 case Types.TIMESTAMP:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+					if(res == null) {
+						return null;
+					}
 					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
                 case Types.TIME_WITH_TIMEZONE:
                 case Types.TIMESTAMP_WITH_TIMEZONE:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+					if(res == null) {
+						return null;
+					}
 					millis = res.getTimeInMillis();
 					break;
                 case Types.CHAR:
@@ -2617,7 +2664,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
                     res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.TIME);
-					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					if(res == null) {
+						return null;
+					}
+                    millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
                     break;
                 default:
                     this.addWarning("unsupported data type", "01M03");
@@ -2627,7 +2677,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
             return new Time(millis);
         } catch (ClassCastException ex) {
             throw new SQLException(ex.getMessage());
-        } catch (IndexOutOfBoundsException e) {
+        } catch (ProtocolException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
             throw newSQLInvalidColumnIndexException(columnIndex);
         }
 	}
@@ -2692,9 +2744,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar cal) throws SQLException {
         try {
-            if(setLastNullValue(columnIndex - 1)) {
-                return null;
-            }
             Calendar res;
 			long millis;
 			int nanos = 0;
@@ -2702,20 +2751,32 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
                 case Types.DATE:
                 case Types.TIME:
                     res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+					if(res == null) {
+						return null;
+					}
                     millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
                     break;
                 case Types.TIME_WITH_TIMEZONE:
                     res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+					if(res == null) {
+						return null;
+					}
                     millis = res.getTimeInMillis();
                     break;
 				case Types.TIMESTAMP:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
-                    nanos = currentBlock.getNanos(columnIndex - 1);
+					if(res == null) {
+						return null;
+					}
+					nanos = currentBlock.getLastNanos();
 					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
 				case Types.TIMESTAMP_WITH_TIMEZONE:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
-                    nanos = currentBlock.getNanos(columnIndex - 1);
+					if(res == null) {
+						return null;
+					}
+					nanos = currentBlock.getLastNanos();
 					millis = res.getTimeInMillis();
 					break;
                 case Types.CHAR:
@@ -2725,7 +2786,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
                     res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.TIMESTAMP);
-					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					if(res == null) {
+						return null;
+					}
+                    millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
                     break;
                 default:
                     this.addWarning("unsupported data type", "01M03");
@@ -2737,7 +2801,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
             return result;
         } catch (ClassCastException ex) {
             throw new SQLException(ex.getMessage());
-        } catch (IndexOutOfBoundsException e) {
+        } catch (ProtocolException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
             throw newSQLInvalidColumnIndexException(columnIndex);
         }
 	}
@@ -2796,13 +2862,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	public URL getURL(int columnIndex) throws SQLException {
 		try {
-			if(setLastNullValue(columnIndex - 1)) {
-				return null;
-			}
 			switch(JdbcSQLTypes[columnIndex - 1]) { //if it's a string type, will attempt the conversion
 				case Types.OTHER:
 					if("url".equals(types[columnIndex - 1])) {
-						return new URL(currentBlock.getValueAsString(columnIndex - 1));
+						String ss = currentBlock.getValueAsString(columnIndex - 1);
+						return ss == null ? null : new URL(ss);
 					}
 					break;
 				case Types.CHAR:
@@ -2811,11 +2875,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-					return new URL(currentBlock.getValueAsString(columnIndex - 1));
+					String sss = currentBlock.getValueAsString(columnIndex - 1);
+					return sss == null ? null : new URL(sss);
 			}
 			throw new SQLException("Cannot convert " + types[columnIndex - 1] + " to an url", "M1M05");
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
+		} catch (ProtocolException e) {
+			throw new SQLException(e);
 		} catch (MalformedURLException e) {
 			throw new SQLException(e.getMessage(), "M1M05");
 		}
@@ -3506,7 +3573,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public boolean wasNull() {
-		return lastReadWasNull;
+		return currentBlock.isLastReadWasNull();
 	}
 
 	//== end methods of interface ResultSet

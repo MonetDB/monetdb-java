@@ -236,6 +236,10 @@ public class OldMapiSocket extends AbstractSocket {
                     break;
                 }
             }
+            if(size == -1) { //When nothing could be read, throw the exception
+                throw new IOException("Read from " + connection.getHostname() + ":" +
+                        connection.getPort() + ": Incomplete block read from stream");
+            }
             b.position(size);
             b.flip();
             return size;

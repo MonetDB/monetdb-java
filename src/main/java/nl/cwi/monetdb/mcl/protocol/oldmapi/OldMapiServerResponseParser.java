@@ -17,6 +17,8 @@ import nl.cwi.monetdb.mcl.protocol.ServerResponses;
  */
 final class OldMapiServerResponseParser {
 
+    private OldMapiServerResponseParser() {}
+
     /**
      * Retrieves the next server response from an old MAPI protocol instance.
      *

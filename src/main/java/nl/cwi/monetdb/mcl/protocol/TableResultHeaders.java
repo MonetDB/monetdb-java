@@ -16,6 +16,8 @@ package nl.cwi.monetdb.mcl.protocol;
  */
 public final class TableResultHeaders {
 
+    private TableResultHeaders() {}
+
     /* Please don't change the order or the values */
 
     /** When an unknown table header is returned on a MAPI connection */

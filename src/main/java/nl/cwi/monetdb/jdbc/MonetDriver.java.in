@@ -48,7 +48,7 @@ import java.util.logging.Logger;
  * @author Fabian Groffen, Pedro Ferreira
  * @version @JDBC_MAJOR@.@JDBC_MINOR@ (@JDBC_VER_SUFFIX@)
  */
-final public class MonetDriver implements Driver {
+public final class MonetDriver implements Driver {
 	// the url kind will be jdbc:monetdb://<host>[:<port>]/<database> (in a MAPI connection)
 	// the url kind will be jdbc:monetdb:embedded:<directory> (in an Embedded connection)
 	// Chapter 9.2.1 from Sun JDBC 3.0 specification
