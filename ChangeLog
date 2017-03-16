@@ -1,3 +1,13 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Mar 30 2017 Sjoerd Mullender <sjoerd@acm.org>
+- Compiled and released new jars: monetdb-jdbc-2.25.jar, monetdb-mcl-1.15.jar
+  and updated jdbcclient.jar
+
+* Thu Mar  9 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected ResultSetMetaData methods getColumnLabel(int), getColomnName(int),
+  getTableName(int) and getSchemaName(int) for names which contain special
+  characters such as a space, a tab, a comma, a double quote, etc.
+  See also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6183
+
