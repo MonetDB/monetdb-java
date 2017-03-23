@@ -388,8 +388,7 @@ public class ResultSetResponse implements IIncompleteResponse {
         }
 
         // close the data block associated with us
-        for (int i = 1; i < resultBlocks.length; i++) {
-            AbstractDataBlockResponse r = resultBlocks[i];
+        for (AbstractDataBlockResponse r : resultBlocks) {
             if (r != null) r.close();
         }
 
