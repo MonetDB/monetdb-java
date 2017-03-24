@@ -68,11 +68,11 @@ public class OldMapiDataBlockResponse extends AbstractDataBlockResponse {
                         break;
                     case Types.DATE:
                     case Types.TIME:
-                    case Types.TIME_WITH_TIMEZONE:
+                    case 2013: //Types.TIME_WITH_TIMEZONE:
                         this.data[i] = new Calendar[this.rowcount];
                         break;
                     case Types.TIMESTAMP:
-                    case Types.TIMESTAMP_WITH_TIMEZONE:
+                    case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
                         this.data[i] = new TimestampHelper[this.rowcount];
                         break;
                     case Types.NUMERIC:
@@ -246,7 +246,7 @@ public class OldMapiDataBlockResponse extends AbstractDataBlockResponse {
             case Types.TIME:
                 Time aux2 = new Time(((Calendar[]) this.data[column])[this.blockLine].getTimeInMillis());
                 return protocol.getMonetTimePrinter().format(aux2);
-            case Types.TIME_WITH_TIMEZONE:
+            case 2013: //Types.TIME_WITH_TIMEZONE:
                 Time aux3 = new Time(((Calendar[]) this.data[column])[this.blockLine].getTimeInMillis());
                 return protocol.getMonetTimeTzPrinter().format(aux3);
             case Types.TIMESTAMP:
@@ -254,7 +254,7 @@ public class OldMapiDataBlockResponse extends AbstractDataBlockResponse {
                 Timestamp aux4 = thel.getTimestamp();
                 this.lastNanos = thel.getNanoseconds();
                 return protocol.getMonetTimestampPrinter().format(aux4);
-            case Types.TIMESTAMP_WITH_TIMEZONE:
+            case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
                 TimestampHelper thelper = ((TimestampHelper[]) this.data[column])[this.blockLine];
                 Timestamp aux5 = thelper.getTimestamp();
                 this.lastNanos = thelper.getNanoseconds();
@@ -282,7 +282,7 @@ public class OldMapiDataBlockResponse extends AbstractDataBlockResponse {
             case Types.DOUBLE:
                 return ((double[]) this.data[column])[this.blockLine];
             case Types.TIMESTAMP:
-            case Types.TIMESTAMP_WITH_TIMEZONE:
+            case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
                 TimestampHelper thelper = ((TimestampHelper[]) this.data[column])[this.blockLine];
                 this.lastNanos = thelper.getNanoseconds();
                 return thelper.getCalendar();

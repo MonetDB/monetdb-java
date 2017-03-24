@@ -253,13 +253,13 @@ final class OldMapiTupleLineParser {
             case Types.TIME:
                 ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTime(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timeParser, false);
                 break;
-            case Types.TIME_WITH_TIMEZONE:
+            case 2013: //Types.TIME_WITH_TIMEZONE:
                 ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTime(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timeParser, true);
                 break;
             case Types.TIMESTAMP:
                 ((TimestampHelper[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTimestamp(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timestampParser, false);
                 break;
-            case Types.TIMESTAMP_WITH_TIMEZONE:
+            case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
                 ((TimestampHelper[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTimestamp(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timestampParser, true);
                 break;
             case Types.CLOB:

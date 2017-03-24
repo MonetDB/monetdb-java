@@ -2542,8 +2542,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					}
                     millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
-                case Types.TIME_WITH_TIMEZONE:
-                case Types.TIMESTAMP_WITH_TIMEZONE:
+                case 2013: //Types.TIME_WITH_TIMEZONE:
+                case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
                     res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;
@@ -2649,8 +2649,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					}
 					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
-                case Types.TIME_WITH_TIMEZONE:
-                case Types.TIMESTAMP_WITH_TIMEZONE:
+                case 2013: //Types.TIME_WITH_TIMEZONE:
+                case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;
@@ -2756,7 +2756,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					}
                     millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
                     break;
-                case Types.TIME_WITH_TIMEZONE:
+                case 2013: //Types.TIME_WITH_TIMEZONE:
                     res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;
@@ -2771,7 +2771,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					nanos = currentBlock.getLastNanos();
 					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
-				case Types.TIMESTAMP_WITH_TIMEZONE:
+				case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;

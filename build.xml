@@ -50,11 +50,8 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
   since EOL.
   2015-07-16, sjoerd@acm.org
 
-  Update Compile it to Java 8 for the simplicity of the implementation of the driver
-  2017-01-03, ferreira@cwi.nl
-
   -->
-  <property name="jvm.version"               value="1.8" />
+  <property name="jvm.version"               value="1.7" />
   <property name="javac.flags"               value="-Xlint:-options" />
 
   <!-- full target -->

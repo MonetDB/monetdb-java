@@ -187,11 +187,11 @@ public abstract class AbstractDataBlockResponse implements IIncompleteResponse {
                     aux = protocol.getMonetDate();
                     break;
                 case Types.TIME:
-                case Types.TIME_WITH_TIMEZONE:
+                case 2013: //Types.TIME_WITH_TIMEZONE:
                     aux = protocol.getMonetTimePrinter();
                     break;
                 case Types.TIMESTAMP:
-                case Types.TIMESTAMP_WITH_TIMEZONE:
+                case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
                     aux = protocol.getMonetTimestampPrinter();
                     break;
                 default:

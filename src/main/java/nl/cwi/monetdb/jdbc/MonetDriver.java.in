@@ -233,8 +233,8 @@ public final class MonetDriver implements Driver {
 		// typeMap.put("table", Types.???);
 		typeMap.put("time", Types.TIME);
 		typeMap.put("timestamp", Types.TIMESTAMP);
-		typeMap.put("timestamptz", Types.TIMESTAMP_WITH_TIMEZONE);
-		typeMap.put("timetz", Types.TIME_WITH_TIMEZONE);
+		typeMap.put("timestamptz", 2014); //Types.TIMESTAMP_WITH_TIMEZONE make it compile on Java 7
+		typeMap.put("timetz", 2013); //Types.TIME_WITH_TIMEZONE make it compile on Java 7
 		typeMap.put("tinyint", Types.TINYINT); //but we will convert to java.lang.Byte
 		typeMap.put("url", Types.OTHER);
 		typeMap.put("uuid", Types.OTHER);
