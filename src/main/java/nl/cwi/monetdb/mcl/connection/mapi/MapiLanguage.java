@@ -61,7 +61,7 @@ public enum MapiLanguage implements IMonetDBLanguage {
         return representation;
     }
 
-    public static MapiLanguage GetLanguageFromString(String language) {
+    public static MapiLanguage getLanguageFromString(String language) {
         switch (language) {
             case "sql":
                 return LANG_SQL;

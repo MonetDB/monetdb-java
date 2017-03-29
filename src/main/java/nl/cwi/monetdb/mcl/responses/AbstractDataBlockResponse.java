@@ -197,7 +197,7 @@ public abstract class AbstractDataBlockResponse implements IIncompleteResponse {
                 default:
                     throw new SQLException("Internal error!", "M1M05");
             }
-            return GregorianCalendarParser.ParseDateString(mrs, value, protocol.getMonetParserPosition(), aux, jdbcType);
+            return GregorianCalendarParser.parseDateString(mrs, value, protocol.getMonetParserPosition(), aux, jdbcType);
         } catch (ProtocolException e) {
             throw new SQLException(e);
         }

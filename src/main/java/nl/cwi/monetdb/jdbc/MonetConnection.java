@@ -51,7 +51,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
      *
      * @return The current sequence counter
      */
-    public static int GetSeqCounter() {
+    public static int getSeqCounter() {
         return SeqCounter;
     }
 

@@ -184,7 +184,7 @@ public abstract class AbstractSocket implements Closeable {
                 found = true;
             } else {
                 if(destinationPosition + 1 >= destinationLimit) {
-                    lineBuffer = BufferReallocator.ReallocateBuffer(lineBuffer);
+                    lineBuffer = BufferReallocator.reallocateBuffer(lineBuffer);
                     destinationArray = lineBuffer.array();
                     destinationLimit = lineBuffer.limit();
                 }

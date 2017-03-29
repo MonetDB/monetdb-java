@@ -47,7 +47,7 @@ final class OldMapiTupleLineParser {
      * @return The number of columns parsed
      * @throws ProtocolException If an error occurs during parsing
      */
-    static int OldMapiParseTupleLine(OldMapiProtocol protocol, int lineNumber, int[] typesMap, Object[] values)
+    static int oldMapiParseTupleLine(OldMapiProtocol protocol, int lineNumber, int[] typesMap, Object[] values)
             throws ProtocolException {
         CharBuffer lineBuffer = protocol.lineBuffer;
         CharBuffer tupleLineBuffer = protocol.tupleLineBuffer;
@@ -61,7 +61,8 @@ final class OldMapiTupleLineParser {
                 throw new ProtocolException(typesMap.length + " columns expected, but only single value found");
             }
             // return the whole string but the leading =
-            OldMapiStringToJavaDataConversion(protocol, array, 1, len - 1, lineNumber, values[0], typesMap[0]);
+            oldMapiStringToJavaDataConversion(protocol, array, 1, len - 1, lineNumber, values[0],
+                    typesMap[0]);
             return 1;
         }
 
@@ -100,7 +101,7 @@ final class OldMapiTupleLineParser {
                         if (array[cursor] == '"' && array[i - 2] == '"') {
                             // reuse the tupleLineBuffer by cleaning it and ensure the capacity
                             tupleLineBuffer.clear();
-                            tupleLineBuffer = BufferReallocator.EnsureCapacity(tupleLineBuffer, (i - 2) - (cursor + 1));
+                            tupleLineBuffer = BufferReallocator.ensureCapacity(tupleLineBuffer, (i - 2) - (cursor + 1));
 
                             for (int pos = cursor + 1; pos < i - 2; pos++) {
                                 if (array[cursor] == '\\' && pos + 1 < i - 2) {
@@ -163,11 +164,14 @@ final class OldMapiTupleLineParser {
                             }
                             // put the unescaped string in the right place
                             tupleLineBuffer.flip();
-                            OldMapiStringToJavaDataConversion(protocol, tupleLineBuffer.array(), 0, tupleLineBuffer.limit(), lineNumber, values[column], typesMap[column]);
-                        } else if ((i - 1) - cursor == 4 && OldMapiTupleLineParserHelper.CharIndexOf(array, 0, array.length, NULL_STRING, 0,4, cursor) == cursor) {
-                            SetNullValue(lineNumber, values[column], typesMap[column]);
+                            oldMapiStringToJavaDataConversion(protocol, tupleLineBuffer.array(), 0,
+                                    tupleLineBuffer.limit(), lineNumber, values[column], typesMap[column]);
+                        } else if ((i - 1) - cursor == 4 && OldMapiTupleLineParserHelper.charIndexOf(array,
+                                0,array.length, NULL_STRING, 0,4, cursor) == cursor) {
+                            setNullValue(lineNumber, values[column], typesMap[column]);
                         } else {
-                            OldMapiStringToJavaDataConversion(protocol, array, cursor, i - 1 - cursor, lineNumber, values[column], typesMap[column]);
+                            oldMapiStringToJavaDataConversion(protocol, array, cursor, i - 1 - cursor, lineNumber,
+                                    values[column], typesMap[column]);
                         }
                         column++;
                         cursor = i + 1;
@@ -180,7 +184,8 @@ final class OldMapiTupleLineParser {
         protocol.tupleLineBuffer = tupleLineBuffer;
         // check if this result is of the size we expected it to be
         if (column != typesMap.length)
-            throw new ProtocolException("illegal result length: " + column + "\nlast read: " + (column > 0 ? values[column - 1] : "<none>"));
+            throw new ProtocolException("illegal result length: " + column + "\nlast read: "
+                    + (column > 0 ? values[column - 1] : "<none>"));
         return column;
     }
 
@@ -192,7 +197,7 @@ final class OldMapiTupleLineParser {
      * @param count The number of characters to read from the starter position
      * @return A Java byte[] instance with the parsed BLOB
      */
-    private static byte[] BinaryBlobConverter(char[] toParse, int startPosition, int count) {
+    private static byte[] binaryBlobConverter(char[] toParse, int startPosition, int count) {
         int len = (startPosition + count) / 2;
         byte[] res = new byte[len];
         for (int i = 0; i < len; i++) {
@@ -212,24 +217,24 @@ final class OldMapiTupleLineParser {
      * @param jDBCMapping The JDBC mapping of the value
      * @throws ProtocolException If the JDBC Mapping is unknown
      */
-    private static void OldMapiStringToJavaDataConversion(OldMapiProtocol protocol, char[] toParse, int startPosition,
+    private static void oldMapiStringToJavaDataConversion(OldMapiProtocol protocol, char[] toParse, int startPosition,
                                                           int count, int lineNumber, Object columnArray,
                                                           int jDBCMapping) throws ProtocolException {
         switch (jDBCMapping) {
             case Types.BOOLEAN:
-                ((byte[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToBoolean(toParse, startPosition);
+                ((byte[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.charArrayToBoolean(toParse, startPosition);
                 break;
             case Types.TINYINT:
-                ((byte[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToByte(toParse, startPosition, count);
+                ((byte[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.charArrayToByte(toParse, startPosition, count);
                 break;
             case Types.SMALLINT:
-                ((short[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToShort(toParse, startPosition, count);
+                ((short[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.charArrayToShort(toParse, startPosition, count);
                 break;
             case Types.INTEGER:
-                ((int[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToInt(toParse, startPosition, count);
+                ((int[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.charArrayToInt(toParse, startPosition, count);
                 break;
             case Types.BIGINT:
-                ((long[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.CharArrayToLong(toParse, startPosition, count);
+                ((long[]) columnArray)[lineNumber] = OldMapiTupleLineParserHelper.charArrayToLong(toParse, startPosition, count);
                 break;
             case Types.REAL:
                 ((float[]) columnArray)[lineNumber] = Float.parseFloat(new String(toParse, startPosition, count));
@@ -248,28 +253,33 @@ final class OldMapiTupleLineParser {
                 ((String[]) columnArray)[lineNumber] = new String(toParse, startPosition, count);
                 break;
             case Types.DATE:
-                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseDate(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.getMonetDate());
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.parseDate(new String(toParse, startPosition, count),
+                        protocol.getMonetParserPosition(), protocol.getMonetDate());
                 break;
             case Types.TIME:
-                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTime(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timeParser, false);
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.parseTime(new String(toParse, startPosition, count),
+                        protocol.getMonetParserPosition(), protocol.timeParser, false);
                 break;
             case 2013: //Types.TIME_WITH_TIMEZONE:
-                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTime(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timeParser, true);
+                ((Calendar[]) columnArray)[lineNumber] = GregorianCalendarParser.parseTime(new String(toParse, startPosition, count),
+                        protocol.getMonetParserPosition(), protocol.timeParser, true);
                 break;
             case Types.TIMESTAMP:
-                ((TimestampHelper[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTimestamp(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timestampParser, false);
+                ((TimestampHelper[]) columnArray)[lineNumber] = GregorianCalendarParser.parseTimestamp(new String(toParse, startPosition, count),
+                        protocol.getMonetParserPosition(), protocol.timestampParser, false);
                 break;
             case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
-                ((TimestampHelper[]) columnArray)[lineNumber] = GregorianCalendarParser.ParseTimestamp(new String(toParse, startPosition, count), protocol.getMonetParserPosition(), protocol.timestampParser, true);
+                ((TimestampHelper[]) columnArray)[lineNumber] = GregorianCalendarParser.parseTimestamp(new String(toParse, startPosition, count),
+                        protocol.getMonetParserPosition(), protocol.timestampParser, true);
                 break;
             case Types.CLOB:
                 ((MonetClob[]) columnArray)[lineNumber] = new MonetClob(toParse, startPosition, count);
                 break;
             case Types.BLOB:
-                ((MonetBlob[]) columnArray)[lineNumber] = new MonetBlob(BinaryBlobConverter(toParse, startPosition, count));
+                ((MonetBlob[]) columnArray)[lineNumber] = new MonetBlob(binaryBlobConverter(toParse, startPosition, count));
                 break;
             case Types.LONGVARBINARY:
-                ((byte[][]) columnArray)[lineNumber] = BinaryBlobConverter(toParse, startPosition, count);
+                ((byte[][]) columnArray)[lineNumber] = binaryBlobConverter(toParse, startPosition, count);
                 break;
             default:
                 throw new ProtocolException("Unknown JDBC mapping!");
@@ -284,7 +294,7 @@ final class OldMapiTupleLineParser {
      * @param columnArray The column array where the value will be appended
      * @param jDBCMapping The JDBC mapping of the value
      */
-    private static void SetNullValue(int lineNumber, Object columnArray, int jDBCMapping) {
+    private static void setNullValue(int lineNumber, Object columnArray, int jDBCMapping) {
         switch (jDBCMapping) {
             case Types.BOOLEAN:
             case Types.TINYINT:

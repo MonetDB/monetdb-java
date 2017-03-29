@@ -25,7 +25,7 @@ final class OldMapiServerResponseParser {
      * @param protocol An Old MAPI protocol instance from which the next server response will be retrieved
      * @return The integer representation of the next server response
      */
-    static int ParseOldMapiServerResponse(OldMapiProtocol protocol) {
+    static int parseOldMapiServerResponse(OldMapiProtocol protocol) {
         int res;
         switch (protocol.lineBuffer.get()) {
             case '!':

@@ -34,8 +34,8 @@ final class OldMapiTableHeaderParser {
      * @return The integer representation of the Table Result Header retrieved
      * @throws ProtocolException If an error while parsing occurred
      */
-    static int GetNextTableHeader(CharBuffer lineBuffer, String[] columnNames, int[] columnLengths,
-                                  String[] types, String[] tableNames) throws ProtocolException {
+    static int getNextTableHeader(CharBuffer lineBuffer, String[] columnNames, int[] columnLengths, String[] types,
+                                  String[] tableNames) throws ProtocolException {
         int res = TableResultHeaders.UNKNOWN;
         int currentLength = lineBuffer.limit();
         char[] array = lineBuffer.array();
@@ -75,22 +75,22 @@ final class OldMapiTableHeaderParser {
         switch (array[pos]) {
             case 'n': //name
                 if (currentLength - pos == 4) {
-                    GetStringValues(array, pos - 3, columnNames);
+                    getStringValues(array, pos - 3, columnNames);
                     res = TableResultHeaders.NAME;
                 }
                 break;
             case 'l': //length
                 if (currentLength - pos == 6) {
-                    GetIntValues(array, pos - 3, columnLengths);
+                    getIntValues(array, pos - 3, columnLengths);
                     res = TableResultHeaders.LENGTH;
                 }
                 break;
             case 't':
                 if (currentLength - pos == 4) { //type
-                    GetStringValues(array, pos - 3, types);
+                    getStringValues(array, pos - 3, types);
                     res = TableResultHeaders.TYPE;
                 } else if (currentLength - pos == 10) { //table_name
-                    GetStringValues(array, pos - 3, tableNames);
+                    getStringValues(array, pos - 3, tableNames);
                     res = TableResultHeaders.TABLE;
                 }
                 break;
@@ -112,7 +112,7 @@ final class OldMapiTableHeaderParser {
      * @param stop The position to stop parsing
      * @param stringValues The String array to fill
      */
-    private static void GetStringValues(char[] array, int stop, String[] stringValues) {
+    private static void getStringValues(char[] array, int stop, String[] stringValues) {
         int elem = 0, start = 2;
 
         for (int i = start + 1; i < stop; i++) {
@@ -139,7 +139,7 @@ final class OldMapiTableHeaderParser {
      * @param intValues The integer array to fill
      * @throws ProtocolException If an error while parsing occurred
      */
-    private static void GetIntValues(char[] array, int stop, int[] intValues) throws ProtocolException {
+    private static void getIntValues(char[] array, int stop, int[] intValues) throws ProtocolException {
         int elem = 0, tmp = 0, start = 2;
 
         for (int i = start; i < stop; i++) {

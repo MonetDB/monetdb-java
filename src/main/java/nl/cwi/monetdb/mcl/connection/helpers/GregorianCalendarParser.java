@@ -44,8 +44,8 @@ public final class GregorianCalendarParser {
         }
     }
 
-    /** The time zone information, to be resused to avoid memory allocations */
-    private static final TimeZone DefaultTimeZone = TimeZone.getDefault();
+    /** The time zone information, to be re-used to avoid memory allocations */
+    private static final TimeZone defaultTimeZone = TimeZone.getDefault();
 
     /**
      * Parses a date or time or timestamp MAPI String into a Java {@link Calendar} instance.
@@ -57,14 +57,14 @@ public final class GregorianCalendarParser {
      * @param jdbcType The JDBC type of the column
      * @return A {@link Calendar} instance of the parsed date
      */
-    public static Calendar ParseDateString(MonetResultSet mrs, String toParse, ParsePosition pos,
+    public static Calendar parseDateString(MonetResultSet mrs, String toParse, ParsePosition pos,
                                            SimpleDateFormat parser, int jdbcType) {
         pos.setIndex(0);
         Calendar res = new GregorianCalendar();
         if(jdbcType == Types.TIME || jdbcType == Types.TIMESTAMP || jdbcType == Types.DATE) {
             parser.setTimeZone(TimeZone.getTimeZone("GMT" + toParse.substring(toParse.length() - 6)));
         } else {
-            parser.setTimeZone(DefaultTimeZone);
+            parser.setTimeZone(defaultTimeZone);
         }
 
         Date aux = parser.parse(toParse, pos);
@@ -123,7 +123,7 @@ public final class GregorianCalendarParser {
      * @return A {@link Calendar} instance of the parsed date
      * @throws ProtocolException If the String could not be parsed
      */
-    public static Calendar ParseDate(String toParse, ParsePosition pos, SimpleDateFormat parser)
+    public static Calendar parseDate(String toParse, ParsePosition pos, SimpleDateFormat parser)
             throws ProtocolException {
         pos.setIndex(0);
         Calendar res = new GregorianCalendar();
@@ -146,13 +146,13 @@ public final class GregorianCalendarParser {
      * @return A {@link Calendar} instance of the parsed time
      * @throws ProtocolException If the String could not be parsed
      */
-    public static Calendar ParseTime(String toParse, ParsePosition pos, SimpleDateFormat parser, boolean hasTimeZone)
+    public static Calendar parseTime(String toParse, ParsePosition pos, SimpleDateFormat parser, boolean hasTimeZone)
             throws ProtocolException {
         pos.setIndex(0);
         if(hasTimeZone) { // MonetDB/SQL99:  Sign TwoDigitHours : Minutes
             parser.setTimeZone(TimeZone.getTimeZone("GMT" + toParse.substring(toParse.length() - 6)));
         } else {
-            parser.setTimeZone(DefaultTimeZone);
+            parser.setTimeZone(defaultTimeZone);
         }
 
         Calendar res = new GregorianCalendar();
@@ -175,13 +175,13 @@ public final class GregorianCalendarParser {
      * @return A {@link TimestampHelper} instance of the parsed timestamp with nanos information
      * @throws ProtocolException If the String could not be parsed
      */
-    public static TimestampHelper ParseTimestamp(String toParse, ParsePosition pos, SimpleDateFormat parser,
+    public static TimestampHelper parseTimestamp(String toParse, ParsePosition pos, SimpleDateFormat parser,
                                                  boolean hasTimeZone) throws ProtocolException {
         pos.setIndex(0);
         if(hasTimeZone) { // MonetDB/SQL99:  Sign TwoDigitHours : Minutes
             parser.setTimeZone(TimeZone.getTimeZone("GMT" + toParse.substring(toParse.length() - 6)));
         } else {
-            parser.setTimeZone(DefaultTimeZone);
+            parser.setTimeZone(defaultTimeZone);
         }
 
         GregorianCalendar res = new GregorianCalendar();

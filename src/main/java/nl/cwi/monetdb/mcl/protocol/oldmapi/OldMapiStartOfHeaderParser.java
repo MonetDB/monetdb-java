@@ -21,7 +21,7 @@ final class OldMapiStartOfHeaderParser {
 
     private OldMapiStartOfHeaderParser() {}
 
-    static int GetNextStartHeaderOnOldMapi(OldMapiProtocol protocol) {
+    static int getNextStartHeaderOnOldMapi(OldMapiProtocol protocol) {
         int res;
         switch (protocol.lineBuffer.get()) {
             case '0':
@@ -64,7 +64,7 @@ final class OldMapiStartOfHeaderParser {
      * @return The next token in the Protocol as an integer
      * @throws ProtocolException if no numeric value could be read
      */
-    static int GetNextResponseDataAsInt(OldMapiProtocol protocol) throws ProtocolException {
+    static int getNextResponseDataAsInt(OldMapiProtocol protocol) throws ProtocolException {
         int currentPointer = protocol.lineBuffer.position();
         int limit = protocol.lineBuffer.limit();
         char[] array = protocol.lineBuffer.array();
@@ -108,7 +108,7 @@ final class OldMapiStartOfHeaderParser {
      * @return The next token in the Protocol as a String
      * @throws ProtocolException if no character could be read
      */
-    static String GetNextResponseDataAsString(OldMapiProtocol protocol) throws ProtocolException {
+    static String getNextResponseDataAsString(OldMapiProtocol protocol) throws ProtocolException {
         int currentPointer = protocol.lineBuffer.position();
         int limit = protocol.lineBuffer.limit();
         char[] array = protocol.lineBuffer.array();

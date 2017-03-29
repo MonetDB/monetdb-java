@@ -18,7 +18,7 @@ import java.security.NoSuchAlgorithmException;
  */
 public final class ChannelSecurity {
 
-    private static char HexChar(int n) { return (n > 9) ? (char) ('a' + (n - 10)) : (char) ('0' + n); }
+    private static char hexChar(int n) { return (n > 9) ? (char) ('a' + (n - 10)) : (char) ('0' + n); }
 
     /**
      * Helper method to convert a byte string to a hexadecimal String representation.
@@ -26,12 +26,12 @@ public final class ChannelSecurity {
      * @param digest The byte array to convert
      * @return The byte array as a hexadecimal string
      */
-    private static String ToHex(byte[] digest) {
+    private static String toHex(byte[] digest) {
         char[] result = new char[digest.length * 2];
         int pos = 0;
         for (byte aDigest : digest) {
-            result[pos++] = HexChar((aDigest & 0xf0) >> 4);
-            result[pos++] = HexChar(aDigest & 0x0f);
+            result[pos++] = hexChar((aDigest & 0xf0) >> 4);
+            result[pos++] = hexChar(aDigest & 0x0f);
         }
         return new String(result);
     }
@@ -43,13 +43,13 @@ public final class ChannelSecurity {
      * @param toDigests The Strings to digest
      * @return The Strings digest as a hexadecimal string
      */
-    public static String DigestStrings(String algorithm, byte[]... toDigests) {
+    public static String digestStrings(String algorithm, byte[]... toDigests) {
         try {
             MessageDigest md = MessageDigest.getInstance(algorithm);
             for (byte[] str : toDigests) {
                 md.update(str);
             }
-            return ToHex(md.digest());
+            return toHex(md.digest());
         } catch (NoSuchAlgorithmException e) {
             throw new AssertionError("internal error: " + e.toString());
         }

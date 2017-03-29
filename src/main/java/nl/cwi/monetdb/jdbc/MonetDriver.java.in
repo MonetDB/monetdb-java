@@ -69,7 +69,7 @@ public final class MonetDriver implements Driver {
 	/** MonetDB default port to connect to */
 	private static final String PORT = "@JDBC_DEF_PORT@";
 
-    private static Class EmbeddedConnectionClass = null;
+    private static Class embeddedConnectionClass = null;
 
 	// initialize this class: register it at the DriverManager
 	// Chapter 9.2 from Sun JDBC 3.0 specification
@@ -413,13 +413,13 @@ public final class MonetDriver implements Driver {
                 if (directory == null || directory.trim().isEmpty())
                     throw new IllegalArgumentException("directory should not be null or empty");
 
-			    if(EmbeddedConnectionClass == null) {
-			        EmbeddedConnectionClass = Class.forName("nl.cwi.monetdb.embedded.jdbc.EmbeddedConnection");
-                    if(EmbeddedConnectionClass == null) { //if it's still null then there is a problem
+			    if(embeddedConnectionClass == null) {
+			        embeddedConnectionClass = Class.forName("nl.cwi.monetdb.embedded.jdbc.EmbeddedConnection");
+                    if(embeddedConnectionClass == null) { //if it is still null then there is a problem!
                         throw new SQLException("EmbeddedConnection Class not found! Please add the MonetDBJavaEmbedded JAR to the Classpath!");
                     }
 			    }
-                res = (MonetConnection) EmbeddedConnectionClass
+                res = (MonetConnection) embeddedConnectionClass
                     .getDeclaredConstructor(Properties.class, String.class, String.class, String.class)
                     .newInstance(props, hash, language, directory);
 			} catch (InvocationTargetException | InstantiationException | IllegalAccessException |

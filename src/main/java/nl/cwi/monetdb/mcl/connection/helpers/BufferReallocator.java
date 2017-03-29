@@ -30,7 +30,7 @@ public final class BufferReallocator {
      * @param buffer The buffer whose capacity will be expanded
      * @return The buffer's new capacity
      */
-    private static int GetNewCapacity(CharBuffer buffer) {
+    private static int getNewCapacity(CharBuffer buffer) {
         int minCapacity = buffer.capacity() << 1;
         int newCapacity = (buffer.capacity() << 1) + 2;
         if (newCapacity - minCapacity < 0) {
@@ -53,8 +53,8 @@ public final class BufferReallocator {
      * @param buffer The buffer whose capacity will be expanded
      * @return The new buffer allocated
      */
-    public static CharBuffer ReallocateBuffer(CharBuffer buffer) {
-        int newCapacity = GetNewCapacity(buffer);
+    public static CharBuffer reallocateBuffer(CharBuffer buffer) {
+        int newCapacity = getNewCapacity(buffer);
         CharBuffer newBuffer = CharBuffer.wrap(new char[newCapacity]);
         buffer.flip();
         newBuffer.put(buffer.array());
@@ -69,7 +69,7 @@ public final class BufferReallocator {
      * @param capacityThreshold The capacity threshold to test
      * @return The original buffer or the new one allocated
      */
-    public static CharBuffer EnsureCapacity(CharBuffer buffer, int capacityThreshold) {
+    public static CharBuffer ensureCapacity(CharBuffer buffer, int capacityThreshold) {
         if(capacityThreshold > buffer.capacity()) {
             buffer = CharBuffer.wrap(new char[capacityThreshold]);
         }

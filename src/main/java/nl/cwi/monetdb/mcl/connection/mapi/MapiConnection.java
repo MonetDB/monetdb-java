@@ -57,7 +57,7 @@ public class MapiConnection extends MonetConnection {
 
     public MapiConnection(Properties props, String hash, String language, boolean blobIsBinary, boolean clobIsLongChar,
                           String hostname, int port, String database) throws IOException {
-        super(props, hash, MapiLanguage.GetLanguageFromString(language), blobIsBinary, clobIsLongChar);
+        super(props, hash, MapiLanguage.getLanguageFromString(language), blobIsBinary, clobIsLongChar);
         this.hostname = hostname;
         this.port = port;
         this.database = database;
@@ -356,7 +356,7 @@ public class MapiConnection extends MonetConnection {
                                 case "language":
                                     tmp = arg.substring(pos + 1);
                                     warns.add("redirect specifies use of different language: " + tmp);
-                                     this.language = MapiLanguage.GetLanguageFromString(tmp);
+                                     this.language = MapiLanguage.getLanguageFromString(tmp);
                                     break;
                                 case "user":
                                     tmp = arg.substring(pos + 1);
@@ -481,7 +481,7 @@ public class MapiConnection extends MonetConnection {
                         throw new MCLException("Unsupported password hash: " + chaltok[5]);
                 }
 
-                password = ChannelSecurity.DigestStrings(algo, password.getBytes("UTF-8"));
+                password = ChannelSecurity.digestStrings(algo, password.getBytes("UTF-8"));
 
                 // proto 7 (finally) used the challenge and works with a password hash. The supported implementations
                 // come from the server challenge. We chose the best hash we can find, in the order SHA1, MD5, plain.
@@ -517,7 +517,7 @@ public class MapiConnection extends MonetConnection {
                     throw new MCLException("No supported password hashes in " + hashes);
                 }
 
-                pwhash += ChannelSecurity.DigestStrings(algo, password.getBytes("UTF-8"),
+                pwhash += ChannelSecurity.digestStrings(algo, password.getBytes("UTF-8"),
                         challenge.getBytes("UTF-8"));
 
                 // generate response

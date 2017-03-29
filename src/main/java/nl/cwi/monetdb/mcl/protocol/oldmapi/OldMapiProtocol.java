@@ -96,7 +96,7 @@ public class OldMapiProtocol extends AbstractProtocol {
             if(this.lineBuffer.limit() == 0) {
                 throw new IOException("Connection to server lost!");
             }
-            this.currentServerResponseHeader = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
+            this.currentServerResponseHeader = OldMapiServerResponseParser.parseOldMapiServerResponse(this);
             this.lineBuffer.position(0);
             if (this.currentServerResponseHeader == ServerResponses.ERROR) {
                 this.lineBuffer.position(1);
@@ -118,7 +118,7 @@ public class OldMapiProtocol extends AbstractProtocol {
         if(this.lineBuffer.limit() == 0) {
             throw new IOException("Connection to server lost!");
         }
-        this.currentServerResponseHeader = OldMapiServerResponseParser.ParseOldMapiServerResponse(this);
+        this.currentServerResponseHeader = OldMapiServerResponseParser.parseOldMapiServerResponse(this);
         if (this.currentServerResponseHeader == ServerResponses.ERROR && !this.lineBuffer.toString()
                 .matches("^[0-9A-Z]{5}!.+")) {
             int limit = this.lineBuffer.limit();
@@ -139,7 +139,7 @@ public class OldMapiProtocol extends AbstractProtocol {
      */
     @Override
     public int getNextStarterHeader() {
-        return OldMapiStartOfHeaderParser.GetNextStartHeaderOnOldMapi(this);
+        return OldMapiStartOfHeaderParser.getNextStartHeaderOnOldMapi(this);
     }
 
     /**
@@ -155,10 +155,10 @@ public class OldMapiProtocol extends AbstractProtocol {
     @Override
     public ResultSetResponse getNextResultSetResponse(MonetConnection con, MonetConnection.ResponseList list, int seqnr,
                                                       int maxrows) throws ProtocolException {
-        int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
-        int tuplecount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
-        int columncount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
-        int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        int id = OldMapiStartOfHeaderParser.getNextResponseDataAsInt(this); //The order cannot be switched!!
+        int tuplecount = OldMapiStartOfHeaderParser.getNextResponseDataAsInt(this);
+        int columncount = OldMapiStartOfHeaderParser.getNextResponseDataAsInt(this);
+        int rowcount = OldMapiStartOfHeaderParser.getNextResponseDataAsInt(this);
         if (maxrows != 0 && tuplecount > maxrows) {
             tuplecount = maxrows;
         }
@@ -173,8 +173,8 @@ public class OldMapiProtocol extends AbstractProtocol {
      */
     @Override
     public UpdateResponse getNextUpdateResponse() throws ProtocolException {
-        int count = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
-        int lastId = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        int count = OldMapiStartOfHeaderParser.getNextResponseDataAsInt(this); //The order cannot be switched!!
+        int lastId = OldMapiStartOfHeaderParser.getNextResponseDataAsInt(this);
         return new UpdateResponse(lastId, count);
     }
 
@@ -207,10 +207,10 @@ public class OldMapiProtocol extends AbstractProtocol {
     @Override
     public AbstractDataBlockResponse getNextDatablockResponse(Map<Integer, ResultSetResponse> rsresponses)
             throws ProtocolException {
-        int id = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //The order cannot be switched!!
-        OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this); //column count
-        int rowcount = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
-        int offset = OldMapiStartOfHeaderParser.GetNextResponseDataAsInt(this);
+        int id = OldMapiStartOfHeaderParser.getNextResponseDataAsInt(this); //The order cannot be switched!!
+        OldMapiStartOfHeaderParser.getNextResponseDataAsInt(this); //column count
+        int rowcount = OldMapiStartOfHeaderParser.getNextResponseDataAsInt(this);
+        int offset = OldMapiStartOfHeaderParser.getNextResponseDataAsInt(this);
 
         ResultSetResponse rs = rsresponses.get(id);
         if (rs == null) {
@@ -232,7 +232,7 @@ public class OldMapiProtocol extends AbstractProtocol {
     @Override
     public int getNextTableHeader(String[] columnNames, int[] columnLengths, String[] types, String[] tableNames)
             throws ProtocolException {
-        return OldMapiTableHeaderParser.GetNextTableHeader(this.lineBuffer, columnNames, columnLengths, types,
+        return OldMapiTableHeaderParser.getNextTableHeader(this.lineBuffer, columnNames, columnLengths, types,
                 tableNames);
     }
 
@@ -247,7 +247,7 @@ public class OldMapiProtocol extends AbstractProtocol {
      * @throws ProtocolException If an error in the underlying connection happened.
      */
     int parseTupleLines(int firstLineNumber, int[] typesMap, Object[] values) throws ProtocolException {
-        OldMapiTupleLineParser.OldMapiParseTupleLine(this, firstLineNumber, typesMap, values);
+        OldMapiTupleLineParser.oldMapiParseTupleLine(this, firstLineNumber, typesMap, values);
         return firstLineNumber;
     }
 

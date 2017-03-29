@@ -337,7 +337,7 @@ public class ResultSetResponse implements IIncompleteResponse {
                 for (int i = 0; i < block; i++)
                     resultBlocks[i] = null;
 
-                if (MonetConnection.GetSeqCounter() - 1 == seqnr && !cacheSizeSetExplicitly &&
+                if (MonetConnection.getSeqCounter() - 1 == seqnr && !cacheSizeSetExplicitly &&
                         tuplecount - row > cacheSize && cacheSize < con.getDefFetchsize() * 10) {
                     // there has no query been issued after this one, so we can consider this an uninterrupted
                     // continuation request.  Let's once increase the cacheSize as it was not explicitly set,
