@@ -79,19 +79,4 @@ public class Test_PSmetadata {
 		con.rollback();
 		con.close();
 	}
-
-	private static String isInstance(Object obj, String type) {
-		if (obj == null)
-			return("(null)");
-		try {
-			Class c = Class.forName(type);
-			if (c.isInstance(obj)) {
-				return(obj.getClass().getName() + " is an instance of " + type);
-			} else {
-				return(obj.getClass().getName() + " is NOT an instance of " + type);
-			}
-		} catch (ClassNotFoundException e) {
-			return("No such class: " + type);
-		}
-	}
 }
