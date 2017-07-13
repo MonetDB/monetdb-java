@@ -1934,11 +1934,12 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		@Override
 		public void complete() throws SQLException {
 			String error = "";
-			if (!isSet[NAMES])  error += "name header missing\n";
+			if (!isSet[NAMES])  error = "name header missing\n";
 			if (!isSet[TYPES])  error += "type header missing\n";
 			if (!isSet[TABLES]) error += "table name header missing\n";
 			if (!isSet[LENS])   error += "column width header missing\n";
-			if (error != "") throw new SQLException(error, "M0M10");
+			if (!error.isEmpty())
+				throw new SQLException(error, "M0M10");
 		}
 
 		/**
@@ -2015,7 +2016,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 		/**
 		 * Returns a line from the cache. If the line is already present in the
-		 * cache, it is returned, if not apropriate actions are taken to make
+		 * cache, it is returned, if not appropriate actions are taken to make
 		 * sure the right block is being fetched and as soon as the requested
 		 * line is fetched it is returned.
 		 *
@@ -2079,13 +2080,11 @@ public class MonetConnection extends MonetWrapper implements Connection {
 				}
 
 				// ok, need to fetch cache block first
-				parent.executeQuery(
-						commandTempl,
-						"export " + id + " " + ((block * cacheSize) + blockOffset) + " " + cacheSize
-				);
+				parent.executeQuery(commandTempl,
+						"export " + id + " " + ((block * cacheSize) + blockOffset) + " " + cacheSize);
 				rawr = resultBlocks[block];
 				if (rawr == null)
-					throw new AssertionError("block " + block + " should have been fetched by now :(");
+					throw new SQLException("resultBlocks[" + block + "] should have been fetched by now", "M0M10");
 			}
 
 			return rawr.getRow(blockLine);
