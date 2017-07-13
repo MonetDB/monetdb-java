@@ -36,6 +36,11 @@ public class Bug_PrepStmtSetObject_CLOB_6349 {
 			rsmd = rs.getMetaData();
 			System.out.println("Query ResultSet has " + rsmd.getColumnCount() + " columns. Type of first is: " + rsmd.getColumnTypeName(1));
 
+			boolean has_row = rs.next();
+			boolean has_rows = rs.next();
+			if (has_row == false || has_rows == true)
+				System.out.println("Fetching Query ResultSet failed");
+
 			stmt.executeUpdate("DROP TABLE PrepStmtSetObject_CLOB");
 
 		} catch (SQLException e) {
