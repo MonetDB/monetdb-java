@@ -2782,6 +2782,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public java.sql.Date getDate(int columnIndex, Calendar cal)
 		throws SQLException
 	{
+		// to avoid unnecessary work, check for NULL value and invalid columnIndex first
+		try {
+			if (tlp.values[columnIndex - 1] == null) {
+				lastReadWasNull = true;
+				return null;
+			}
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		}
+
 		if (cal == null) {
 			cal = Calendar.getInstance();
 		}
@@ -2860,6 +2870,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public Time getTime(int columnIndex, Calendar cal)
 		throws SQLException
 	{
+		// to avoid unnecessary work, check for NULL value and invalid columnIndex first
+		try {
+			if (tlp.values[columnIndex - 1] == null) {
+				lastReadWasNull = true;
+				return null;
+			}
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		}
+
 		if (cal == null) {
 			cal = Calendar.getInstance();
 		}
@@ -2938,6 +2958,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public Timestamp getTimestamp(int columnIndex, Calendar cal)
 		throws SQLException
 	{
+		// to avoid unnecessary work, check for NULL value and invalid columnIndex first
+		try {
+			if (tlp.values[columnIndex - 1] == null) {
+				lastReadWasNull = true;
+				return null;
+			}
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		}
+
 		if (cal == null) {
 			cal = Calendar.getInstance();
 		}
