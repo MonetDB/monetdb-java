@@ -39,7 +39,6 @@ import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
-import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Map;
@@ -234,8 +233,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public boolean absolute(int row) throws SQLException {
-		if (row != curRow + 1 && type == TYPE_FORWARD_ONLY) throw
-			new SQLException("(Absolute) positioning not allowed on forward " +
+		if (row != curRow + 1 && type == TYPE_FORWARD_ONLY)
+			throw new SQLException("(Absolute) positioning not allowed on forward " +
 				" only result sets!", "M1M05");
 
 		if (header.isClosed())
@@ -247,15 +246,18 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			row = tupleCount + row + 1;
 		}
 		// now place the row not farther than just before or after the result
-		if (row < 0) row = 0;	// before first
-		else if (row > tupleCount + 1) row = tupleCount + 1;	// after last
+		if (row < 0)
+			row = 0;	// before first
+		else if (row > tupleCount + 1)
+			row = tupleCount + 1;	// after last
 
 		String tmpLine = header.getLine(row - 1);
 
 		// store it
 		curRow = row;
 
-		if (tmpLine == null) return false;
+		if (tmpLine == null)
+			return false;
 		try {
 			tlp.parse(tmpLine);
 		} catch (MCLParseException e) {
@@ -2569,12 +2571,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	// This behaviour is according table B-6 of Sun JDBC Specification 3.0
-	private SimpleDateFormat ts =
-		new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-	private SimpleDateFormat t =
-		new SimpleDateFormat("HH:mm:ss");
-	private SimpleDateFormat d =
-		new SimpleDateFormat("yyyy-MM-dd");
+	private SimpleDateFormat dateFormat;
+	private SimpleDateFormat timeFormat;
+	private SimpleDateFormat timestampFormat;
 	/**
 	 * Helper method which parses the date/time value for columns of type
 	 * TIME, DATE and TIMESTAMP.  For the types CHAR, VARCHAR and
@@ -2595,8 +2594,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	private int getJavaDate(Calendar cal, int columnIndex, int type)
 		throws SQLException
 	{
-		if (cal == null) throw
-			new IllegalArgumentException("No Calendar object given!");
+		if (cal == null)
+			throw new IllegalArgumentException("No Calendar object given!");
 
 		final String monetDate;
 		final String MonetDBType;
@@ -2637,19 +2636,31 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		}
 
 		java.util.Date pdate = null;
-		ParsePosition ppos = new ParsePosition(0);
+		final java.text.ParsePosition ppos = new java.text.ParsePosition(0);
 		switch(JdbcType) {
 			case Types.DATE:
-				d.setTimeZone(ptz);
-				pdate = d.parse(monetDate, ppos);
+				if (dateFormat == null) {
+					// first time usage, create and keep the dateFormat object for next usage
+					dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+				}
+				dateFormat.setTimeZone(ptz);
+				pdate = dateFormat.parse(monetDate, ppos);
 				break;
 			case Types.TIME:
-				t.setTimeZone(ptz);
-				pdate = t.parse(monetDate, ppos);
+				if (timeFormat == null) {
+					// first time usage, create and keep the timeFormat object for next usage
+					timeFormat = new SimpleDateFormat("HH:mm:ss");
+				}
+				timeFormat.setTimeZone(ptz);
+				pdate = timeFormat.parse(monetDate, ppos);
 				break;
 			case Types.TIMESTAMP:
-				ts.setTimeZone(ptz);
-				pdate = ts.parse(monetDate, ppos);
+				if (timestampFormat == null) {
+					// first time usage, create and keep the timestampFormat object for next usage
+					timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+				}
+				timestampFormat.setTimeZone(ptz);
+				pdate = timestampFormat.parse(monetDate, ppos);
 				break;
 			default:
 				addWarning("unsupported data type", "01M03");
@@ -2665,7 +2676,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				addWarning("parsing failed," +
 						 " found: '" + monetDate.charAt(epos) + "'" +
 						 " in: \"" + monetDate + "\"" +
-						 " at pos: " + ppos.getErrorIndex(), "01M10");
+						 " at pos: " + epos, "01M10");
 			} else {
 				addWarning("parsing failed, expected more data after '" +
 						monetDate + "'", "01M10");
@@ -2751,7 +2762,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public java.sql.Date getDate(int columnIndex) throws SQLException {
-		return getDate(columnIndex, Calendar.getInstance());
+		return getDate(columnIndex, null);
 	}
 
 	/**
@@ -2771,6 +2782,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public java.sql.Date getDate(int columnIndex, Calendar cal)
 		throws SQLException
 	{
+		if (cal == null) {
+			cal = Calendar.getInstance();
+		}
 		int ret = getJavaDate(cal, columnIndex, Types.DATE);
 		return ret == -1 ? null : new java.sql.Date(cal.getTimeInMillis());
 	}
@@ -2788,7 +2802,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public java.sql.Date getDate(String columnName) throws SQLException {
-		return getDate(findColumn(columnName), Calendar.getInstance());
+		return getDate(findColumn(columnName), null);
 	}
 
 	/**
@@ -2824,7 +2838,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public Time getTime(int columnIndex) throws SQLException {
-		return getTime(columnIndex, Calendar.getInstance());
+		return getTime(columnIndex, null);
 	}
 
 	/**
@@ -2846,6 +2860,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public Time getTime(int columnIndex, Calendar cal)
 		throws SQLException
 	{
+		if (cal == null) {
+			cal = Calendar.getInstance();
+		}
 		int ret = getJavaDate(cal, columnIndex, Types.TIME);
 		return ret == -1 ? null : new Time(cal.getTimeInMillis());
 	}
@@ -2862,7 +2879,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public Time getTime(String columnName) throws SQLException {
-		return getTime(findColumn(columnName), Calendar.getInstance());
+		return getTime(findColumn(columnName), null);
 	}
 
 	/**
@@ -2899,7 +2916,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public Timestamp getTimestamp(int columnIndex) throws SQLException {
-		return getTimestamp(columnIndex, Calendar.getInstance());
+		return getTimestamp(columnIndex, null);
 	}
 
 	/**
@@ -2921,6 +2938,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public Timestamp getTimestamp(int columnIndex, Calendar cal)
 		throws SQLException
 	{
+		if (cal == null) {
+			cal = Calendar.getInstance();
+		}
 		int nanos = getJavaDate(cal, columnIndex, Types.TIMESTAMP);
 		if (nanos == -1)
 			return null;
@@ -2942,7 +2962,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public Timestamp getTimestamp(String columnName) throws SQLException {
-		return getTimestamp(findColumn(columnName), Calendar.getInstance());
+		return getTimestamp(findColumn(columnName), null);
 	}
 
 	/**
