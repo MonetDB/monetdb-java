@@ -30,6 +30,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.RowId;
 import java.sql.SQLData;
+import java.sql.SQLDataException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLInput;
@@ -2799,7 +2800,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return ret == -1 ? null : new java.sql.Date(cal.getTimeInMillis());
 			}
 		} catch (IllegalArgumentException iae) {
-			throw new SQLException("Could not convert value to a Date. Expected JDBC date escape format yyyy-[m]m-[d]d. "
+			throw new SQLDataException("Could not convert value to a Date. Expected JDBC date escape format yyyy-[m]m-[d]d. "
 				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
@@ -2892,7 +2893,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return ret == -1 ? null : new Time(cal.getTimeInMillis());
 			}
 		} catch (IllegalArgumentException iae) {
-			throw new SQLException("Could not convert value to a Time. Expected JDBC time escape format hh:mm:ss. "
+			throw new SQLDataException("Could not convert value to a Time. Expected JDBC time escape format hh:mm:ss. "
 				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
@@ -2990,7 +2991,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				return ts;
 			}
 		} catch (IllegalArgumentException iae) {
-			throw new SQLException("Could not convert value to a Timestamp. Expected JDBC time escape format yyyy-[m]m-[d]d hh:mm:ss[.f...]. "
+			throw new SQLDataException("Could not convert value to a Timestamp. Expected JDBC time escape format yyyy-[m]m-[d]d hh:mm:ss[.f...]. "
 				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
@@ -3795,30 +3796,32 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 	/**
 	 * Small helper method that formats the "Invalid Column Index number ..." message
-	 * and creates a new SQLException object whose SQLState is set to "M1M05".
+	 * and creates a new SQLDataException object whose SQLState is set
+	 * to "22010": invalid indicator parameter value.
 	 *
 	 * @param colIdx the column index number
-	 * @return a new created SQLException object with SQLState M1M05
+	 * @return a new created SQLDataException object with SQLState 22010
 	 */
-	public final static SQLException newSQLInvalidColumnIndexException(int colIdx) {
-		return new SQLException("Invalid Column Index number: " + colIdx, "M1M05");
+	public final static SQLDataException newSQLInvalidColumnIndexException(int colIdx) {
+		return new SQLDataException("Invalid Column Index number: " + colIdx, "22010");
 	}
 
 	/**
 	 * Small helper method that formats the "Could not convert value to a number" message
-	 * and creates a new SQLException object whose SQLState is set to "22003": Numeric value out of range.
+	 * and creates a new SQLDataException object whose SQLState is set
+	 * to "22003": Numeric value out of range.
 	 *
 	 * @param error the NumberFormatException
-	 * @return a new created SQLException object with SQLState 22003
+	 * @return a new created SQLDataException object with SQLState 22003
 	 */
-	private final static SQLException newSQLNumberFormatException(NumberFormatException error) {
-		return new SQLException("Could not convert value to a number. " + error.getMessage(), "22003");
+	private final static SQLDataException newSQLNumberFormatException(NumberFormatException error) {
+		return new SQLDataException("Could not convert value to a number. " + error.getMessage(), "22003");
 	}
 
 	/**
 	 * Small helper method that formats the "Method ... not implemented" message
 	 * and creates a new SQLFeatureNotSupportedException object
-	 * whose SQLState is set to "0A000".
+	 * whose SQLState is set to "0A000": feature not supported.
 	 *
 	 * @param name the method name
 	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000

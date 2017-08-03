@@ -19,6 +19,7 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLNonTransientConnectionException;
 import java.sql.SQLWarning;
 import java.sql.Savepoint;
 import java.sql.Statement;
@@ -260,7 +261,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 				server.debug(f.getAbsolutePath());
 			} catch (IOException ex) {
-				throw new SQLException("Opening logfile failed: " + ex.getMessage(), "08M01");
+				throw new SQLNonTransientConnectionException("Opening logfile failed: " + ex.getMessage(), "08M01");
 			}
 		}
 
@@ -279,16 +280,16 @@ public class MonetConnection extends MonetWrapper implements Connection {
 
 			String error = in.waitForPrompt();
 			if (error != null)
-				throw new SQLException((error.length() > 6) ? error.substring(6) : error, "08001");
+				throw new SQLNonTransientConnectionException((error.length() > 6) ? error.substring(6) : error, "08001");
 		} catch (IOException e) {
-			throw new SQLException("Unable to connect (" + hostname + ":" + port + "): " + e.getMessage(), "08006");
+			throw new SQLNonTransientConnectionException("Unable to connect (" + hostname + ":" + port + "): " + e.getMessage(), "08006");
 		} catch (MCLParseException e) {
-			throw new SQLException(e.getMessage(), "08001");
+			throw new SQLNonTransientConnectionException(e.getMessage(), "08001");
 		} catch (MCLException e) {
 			String[] connex = e.getMessage().split("\n");
-			SQLException sqle = new SQLException(connex[0], "08001", e);
+			SQLException sqle = new SQLNonTransientConnectionException(connex[0], "08001", e);
 			for (int i = 1; i < connex.length; i++) {
-				sqle.setNextException(new SQLException(connex[1], "08001"));
+				sqle.setNextException(new SQLNonTransientConnectionException(connex[1], "08001"));
 			}
 			throw sqle;
 		}
@@ -681,7 +682,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 * default result set type and concurrency to be overridden.
 	 *
 	 * @param sql a String object that is the SQL statement to be sent to the
-	 *            database; may contain one or more ? IN parameters
+	 *        database; may contain one or more ? IN parameters
 	 * @param resultSetType a result set type; one of
 	 *        ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE,
 	 *        or ResultSet.TYPE_SCROLL_SENSITIVE
@@ -691,8 +692,8 @@ public class MonetConnection extends MonetWrapper implements Connection {
 	 *         statement that will produce ResultSet objects with the given
 	 *         type and concurrency
 	 * @throws SQLException if a database access error occurs or the given
-	 *                      parameters are not ResultSet constants indicating
-	 *                      type and concurrency
+	 *         parameters are not ResultSet constants indicating
+	 *         type and concurrency
 	 */
 	@Override
 	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
@@ -1507,7 +1508,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		try {
 			server.setSoTimeout(millis);
 		} catch (SocketException e) {
-			throw new SQLException(e.getMessage(), "08000");
+			throw new SQLNonTransientConnectionException(e.getMessage(), "08000");
 		}
 	}
 
@@ -1530,7 +1531,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		try {
 			return server.getSoTimeout();
 		} catch (SocketException e) {
-			throw new SQLException(e.getMessage(), "08000");
+			throw new SQLNonTransientConnectionException(e.getMessage(), "08000");
 		}
 	}
 
@@ -1546,8 +1547,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		String language = "";
 		if (lang == LANG_MAL)
 			language = "?language=mal";
-		return "jdbc:monetdb://" + hostname + ":" + port + "/" +
-			database + language;
+		return "jdbc:monetdb://" + hostname + ":" + port + "/" + database + language;
 	}
 
 	/**
@@ -1595,13 +1595,12 @@ public class MonetConnection extends MonetWrapper implements Connection {
 						(queryTempl[1] == null ? "" : queryTempl[1]));
 				String error = in.waitForPrompt();
 				if (error != null)
-					throw new SQLException(error.substring(6),
-							error.substring(0, 5));
+					throw new SQLException(error.substring(6), error.substring(0, 5));
 			} catch (SocketTimeoutException e) {
 				close(); // JDBC 4.1 semantics: abort()
-				throw new SQLException("connection timed out", "08M33");
+				throw new SQLNonTransientConnectionException("connection timed out", "08M33");
 			} catch (IOException e) {
-				throw new SQLException(e.getMessage(), "08000");
+				throw new SQLNonTransientConnectionException(e.getMessage(), "08000");
 			}
 		}
 	}
@@ -1625,13 +1624,12 @@ public class MonetConnection extends MonetWrapper implements Connection {
 						(commandTempl[1] == null ? "" : commandTempl[1]));
 				String error = in.waitForPrompt();
 				if (error != null)
-					throw new SQLException(error.substring(6),
-							error.substring(0, 5));
+					throw new SQLException(error.substring(6), error.substring(0, 5));
 			} catch (SocketTimeoutException e) {
 				close(); // JDBC 4.1 semantics, abort()
-				throw new SQLException("connection timed out", "08M33");
+				throw new SQLNonTransientConnectionException("connection timed out", "08M33");
 			} catch (IOException e) {
-				throw new SQLException(e.getMessage(), "08000");
+				throw new SQLNonTransientConnectionException(e.getMessage(), "08000");
 			}
 		}
 	}
@@ -1771,7 +1769,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 * @param columncount the number of columns in the result set
 		 * @param rowcount the number of rows in the current block
 		 * @param parent the parent that created this Response and will
-		 *               supply new result blocks when necessary
+		 *        supply new result blocks when necessary
 		 * @param seq the query sequence number
 		 */
 		ResultSetResponse(
@@ -1929,7 +1927,7 @@ public class MonetConnection extends MonetWrapper implements Connection {
 		 * needs to be consistent with regard to its internal data.
 		 *
 		 * @throws SQLException if the data currently in this Response is not
-		 *                      sufficient to be consistant
+		 *         sufficient to be consistant
 		 */
 		@Override
 		public void complete() throws SQLException {
@@ -2727,23 +2725,26 @@ public class MonetConnection extends MonetWrapper implements Connection {
 					SQLException ret = null;
 					String[] errors = error.split("\n");
 					for (int i = 0; i < errors.length; i++) {
-						if (ret == null) {
-							ret = new SQLException(errors[i].substring(6),
-									errors[i].substring(0, 5));
+						SQLException newErr;
+						if (errors[i].length() >= 6) {
+							newErr = new SQLException(errors[i].substring(6), errors[i].substring(0, 5));
 						} else {
-							ret.setNextException(new SQLException(
-										errors[i].substring(6),
-										errors[i].substring(0, 5)));
+							newErr = new SQLNonTransientConnectionException(errors[i], "08000");
+						}
+						if (ret == null) {
+							ret = newErr;
+						} else {
+							ret.setNextException(newErr);
 						}
 					}
 					throw ret;
 				}
 			} catch (SocketTimeoutException e) {
 				close(); // JDBC 4.1 semantics, abort()
-				throw new SQLException("connection timed out", "08M33");
+				throw new SQLNonTransientConnectionException("connection timed out", "08M33");
 			} catch (IOException e) {
 				closed = true;
-				throw new SQLException(e.getMessage() + " (mserver still alive?)", "08000");
+				throw new SQLNonTransientConnectionException(e.getMessage() + " (mserver5 still alive?)", "08006");
 			}
 		}
 	}

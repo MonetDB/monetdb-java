@@ -2585,19 +2585,20 @@ public class MonetPreparedStatement
 
 	/**
 	 * Small helper method that formats the "Invalid Parameter Index number ..." message
-	 * and creates a new SQLException object whose SQLState is set to "M1M05".
+	 * and creates a new SQLDataException object whose SQLState is set
+	 * to "22010": invalid indicator parameter value.
 	 *
 	 * @param paramIdx the parameter index number
-	 * @return a new created SQLException object with SQLState M1M05
+	 * @return a new created SQLDataException object with SQLState 22010
 	 */
-	private final static SQLException newSQLInvalidParameterIndexException(int paramIdx) {
-		return new SQLException("Invalid Parameter Index number: " + paramIdx, "M1M05");
+	private final static SQLDataException newSQLInvalidParameterIndexException(int paramIdx) {
+		return new SQLDataException("Invalid Parameter Index number: " + paramIdx, "22010");
 	}
 
 	/**
 	 * Small helper method that formats the "Method ... not implemented" message
 	 * and creates a new SQLFeatureNotSupportedException object
-	 * whose SQLState is set to "0A000".
+	 * whose SQLState is set to "0A000": feature not supported.
 	 *
 	 * @param name the method name
 	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000

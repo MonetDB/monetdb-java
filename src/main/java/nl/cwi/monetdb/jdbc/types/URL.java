@@ -10,14 +10,14 @@ package nl.cwi.monetdb.jdbc.types;
 
 import java.net.MalformedURLException;
 import java.sql.SQLData;
+import java.sql.SQLDataException;
 import java.sql.SQLException;
 import java.sql.SQLInput;
 import java.sql.SQLOutput;
 
 /**
- * The URL class represents the URL datatype in MonetDB.  It
- * represents an URL, that is, a well-formed string conforming to
- * RFC2396.
+ * The URL class represents the URL datatype in MonetDB.
+ * It represents an URL, that is, a well-formed string conforming to RFC2396.
  */
 public class URL implements SQLData {
 	private String url;
@@ -29,7 +29,7 @@ public class URL implements SQLData {
 
 	@Override
 	public void readSQL(SQLInput stream, String typeName) throws SQLException {
-		if (typeName.compareTo("url") != 0)
+		if (!"url".equals(typeName))
 			throw new SQLException("can only use this class with 'url' type", "M1M05");
 		url = stream.readString();
 	}
@@ -61,7 +61,7 @@ public class URL implements SQLData {
 		try {
 			return new java.net.URL(url);
 		} catch (MalformedURLException mue) {
-			throw new SQLException("data is not a valid URL", "M0M27");
+			throw new SQLDataException("data is not a valid URL: " + mue.getMessage(), "22M30");
 		}
 	}
 
