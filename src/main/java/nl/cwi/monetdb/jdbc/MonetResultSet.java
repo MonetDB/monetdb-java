@@ -2793,12 +2793,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 			lastReadWasNull = false;
 			if (cal == null) {
-				// convert string in JDBC date escape format yyyy-[m]m-[d]d directly to a Date object
-				return java.sql.Date.valueOf(val);
-			} else {
-				int ret = getJavaDate(cal, columnIndex, Types.DATE);
-				return ret == -1 ? null : new java.sql.Date(cal.getTimeInMillis());
+				if (val.contains("-") && !val.contains(":") && !val.contains("+")) {
+					// try to convert string in JDBC date escape format yyyy-[m]m-[d]d directly to a Date object
+					return java.sql.Date.valueOf(val);
+				}
+				cal = Calendar.getInstance();
 			}
+			int ret = getJavaDate(cal, columnIndex, Types.DATE);
+			return ret == -1 ? null : new java.sql.Date(cal.getTimeInMillis());
 		} catch (IllegalArgumentException iae) {
 			throw new SQLDataException("Could not convert value to a Date. Expected JDBC date escape format yyyy-[m]m-[d]d. "
 				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
@@ -2869,7 +2871,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param cal the java.util.Calendar object to use in constructing the
 	 *        timestamp
-	 * @return the column value as a java.sql.Timestamp object; if the value is
+	 * @return the column value as a java.sql.Time object; if the value is
 	 *         SQL NULL, the value returned is null in the Java programming
 	 *         language
 	 * @throws SQLException if a database access error occurs
@@ -2886,12 +2888,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 			lastReadWasNull = false;
 			if (cal == null) {
-				// convert string in JDBC time escape format hh:mm:ss directly to a Time object
-				return Time.valueOf(val);
-			} else {
-				int ret = getJavaDate(cal, columnIndex, Types.TIME);
-				return ret == -1 ? null : new Time(cal.getTimeInMillis());
+				if (!val.contains("-") && val.contains(":") && !val.contains("+")) {
+					// try to convert string in JDBC time escape format hh:mm:ss directly to a Time object
+					return Time.valueOf(val);
+				}
+				cal = Calendar.getInstance();
 			}
+			int ret = getJavaDate(cal, columnIndex, Types.TIME);
+			return ret == -1 ? null : new Time(cal.getTimeInMillis());
 		} catch (IllegalArgumentException iae) {
 			throw new SQLDataException("Could not convert value to a Time. Expected JDBC time escape format hh:mm:ss. "
 				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
@@ -2925,7 +2929,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @param columnName the SQL name of the column
 	 * @param cal the java.util.Calendar object to use in constructing the
 	 *        timestamp
-	 * @return the column value as a java.sql.Timestamp object; if the value is
+	 * @return the column value as a java.sql.Time object; if the value is
 	 *         SQL NULL, the value returned is null in the Java programming
 	 *         language
 	 * @throws SQLException if a database access error occurs
@@ -2979,17 +2983,19 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			}
 			lastReadWasNull = false;
 			if (cal == null) {
-				// convert string in JDBC timestamp escape format yyyy-[m]m-[d]d hh:mm:ss[.f...] directly to a Timestamp object
-				return Timestamp.valueOf(val);
-			} else {
-				int nanos = getJavaDate(cal, columnIndex, Types.TIMESTAMP);
-				if (nanos == -1)
-					return null;
-
-				Timestamp ts = new Timestamp(cal.getTimeInMillis());
-				ts.setNanos(nanos);
-				return ts;
+				if (val.contains("-") && val.contains(":") && !val.contains("+")) {
+					// try to convert string in JDBC timestamp escape format yyyy-[m]m-[d]d hh:mm:ss[.f...] directly to a Timestamp object
+					return Timestamp.valueOf(val);
+				}
+				cal = Calendar.getInstance();
 			}
+			int nanos = getJavaDate(cal, columnIndex, Types.TIMESTAMP);
+			if (nanos == -1)
+				return null;
+
+			Timestamp ts = new Timestamp(cal.getTimeInMillis());
+			ts.setNanos(nanos);
+			return ts;
 		} catch (IllegalArgumentException iae) {
 			throw new SQLDataException("Could not convert value to a Timestamp. Expected JDBC time escape format yyyy-[m]m-[d]d hh:mm:ss[.f...]. "
 				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
