@@ -103,6 +103,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 *
 	 * @param statement the statement which created this ResultSet
 	 * @param header a header containing the query, resultset type, etc.
+	 * @throws IllegalArgumentException if called with null or invalid value for one of the arguments
 	 * @throws SQLException is a protocol error occurs
 	 */
 	MonetResultSet(
@@ -147,6 +148,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @param columns the column names
 	 * @param types the column types
 	 * @param results the number of rows in the ResultSet
+	 * @throws IllegalArgumentException if called with null or invalid value for one of the arguments
 	 * @throws IOException if communicating with monet failed
 	 * @throws SQLException is a protocol error occurs
 	 */
@@ -155,7 +157,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		String[] columns,
 		String[] types,
 		int results
-	) throws IllegalArgumentException
+		) throws IllegalArgumentException
 	{
 		if (statement == null) {
 			throw new IllegalArgumentException("Statement may not be null!");
@@ -2782,21 +2784,26 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public java.sql.Date getDate(int columnIndex, Calendar cal)
 		throws SQLException
 	{
-		// to avoid unnecessary work, check for NULL value and invalid columnIndex first
 		try {
-			if (tlp.values[columnIndex - 1] == null) {
+			String val = tlp.values[columnIndex - 1];
+			if (val == null) {
 				lastReadWasNull = true;
 				return null;
 			}
+			lastReadWasNull = false;
+			if (cal == null) {
+				// convert string in JDBC date escape format yyyy-[m]m-[d]d directly to a Date object
+				return java.sql.Date.valueOf(val);
+			} else {
+				int ret = getJavaDate(cal, columnIndex, Types.DATE);
+				return ret == -1 ? null : new java.sql.Date(cal.getTimeInMillis());
+			}
+		} catch (IllegalArgumentException iae) {
+			throw new SQLException("Could not convert value to a Date. Expected JDBC date escape format yyyy-[m]m-[d]d. "
+				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
-
-		if (cal == null) {
-			cal = Calendar.getInstance();
-		}
-		int ret = getJavaDate(cal, columnIndex, Types.DATE);
-		return ret == -1 ? null : new java.sql.Date(cal.getTimeInMillis());
 	}
 
 	/**
@@ -2870,21 +2877,26 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public Time getTime(int columnIndex, Calendar cal)
 		throws SQLException
 	{
-		// to avoid unnecessary work, check for NULL value and invalid columnIndex first
 		try {
-			if (tlp.values[columnIndex - 1] == null) {
+			String val = tlp.values[columnIndex - 1];
+			if (val == null) {
 				lastReadWasNull = true;
 				return null;
 			}
+			lastReadWasNull = false;
+			if (cal == null) {
+				// convert string in JDBC time escape format hh:mm:ss directly to a Time object
+				return Time.valueOf(val);
+			} else {
+				int ret = getJavaDate(cal, columnIndex, Types.TIME);
+				return ret == -1 ? null : new Time(cal.getTimeInMillis());
+			}
+		} catch (IllegalArgumentException iae) {
+			throw new SQLException("Could not convert value to a Time. Expected JDBC time escape format hh:mm:ss. "
+				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
-
-		if (cal == null) {
-			cal = Calendar.getInstance();
-		}
-		int ret = getJavaDate(cal, columnIndex, Types.TIME);
-		return ret == -1 ? null : new Time(cal.getTimeInMillis());
 	}
 
 	/**
@@ -2958,26 +2970,31 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public Timestamp getTimestamp(int columnIndex, Calendar cal)
 		throws SQLException
 	{
-		// to avoid unnecessary work, check for NULL value and invalid columnIndex first
 		try {
-			if (tlp.values[columnIndex - 1] == null) {
+			String val = tlp.values[columnIndex - 1];
+			if (val == null) {
 				lastReadWasNull = true;
 				return null;
 			}
+			lastReadWasNull = false;
+			if (cal == null) {
+				// convert string in JDBC timestamp escape format yyyy-[m]m-[d]d hh:mm:ss[.f...] directly to a Timestamp object
+				return Timestamp.valueOf(val);
+			} else {
+				int nanos = getJavaDate(cal, columnIndex, Types.TIMESTAMP);
+				if (nanos == -1)
+					return null;
+
+				Timestamp ts = new Timestamp(cal.getTimeInMillis());
+				ts.setNanos(nanos);
+				return ts;
+			}
+		} catch (IllegalArgumentException iae) {
+			throw new SQLException("Could not convert value to a Timestamp. Expected JDBC time escape format yyyy-[m]m-[d]d hh:mm:ss[.f...]. "
+				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
-
-		if (cal == null) {
-			cal = Calendar.getInstance();
-		}
-		int nanos = getJavaDate(cal, columnIndex, Types.TIMESTAMP);
-		if (nanos == -1)
-			return null;
-
-		Timestamp ts = new Timestamp(cal.getTimeInMillis());
-		ts.setNanos(nanos);
-		return ts;
 	}
 
 	/**
