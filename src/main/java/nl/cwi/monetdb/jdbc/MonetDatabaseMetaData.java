@@ -48,7 +48,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		try {
 			st = con.createStatement();
 			rs = st.executeQuery(
-				"SELECT \"name\", \"value\" FROM \"sys\".\"environment\"" +
+				"SELECT \"name\", \"value\" FROM \"sys\".\"env\"()" +
 				" WHERE \"name\" IN ('monet_version', 'max_clients')" +
 				" UNION SELECT 'current_user' as \"name\", current_user as \"value\"");
 			if (rs != null) {
