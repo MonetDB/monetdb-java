@@ -27,6 +27,7 @@ public class Bug_Connect_as_voc_getMetaData_Failure_Bug_6388 {
 			System.out.println("3. ALTER USER voc");
 			stmt1.executeUpdate("ALTER USER \"voc\" SET SCHEMA \"voc\"");
 			System.out.println("creation succeeded :)");
+			System.out.println();
 
 			login_as_voc_and_get_MetaData(args[0].replace("=monetdb", "=voc"));
 
@@ -69,27 +70,30 @@ public class Bug_Connect_as_voc_getMetaData_Failure_Bug_6388 {
 			System.out.println("MaxConnections = " + dbmd.getMaxConnections());
 
 			System.out.println("4.4. getDatabaseProductVersion()");
-			System.out.println("DatabaseProductVersion = " + dbmd.getDatabaseProductVersion());
+			String dbmsVersion = dbmd.getDatabaseProductVersion();	// should be 11.27.1 or higher
+			boolean postJul2017 = ("11.27.1".compareTo(dbmsVersion) <= 0);
+			System.out.println("DatabaseProductVersion = " + (postJul2017 ? "11.27.+" : dbmsVersion));
 
 			System.out.println("4.5. getDatabaseMajorVersion()");
-			System.out.println("DatabaseMajorVersion = " + dbmd.getDatabaseMajorVersion());
+			System.out.println("DatabaseMajorVersion = " + dbmd.getDatabaseMajorVersion());	// should be 11
 
 			System.out.println("4.6. getDatabaseMinorVersion()");
-			System.out.println("DatabaseMinorVersion = " + dbmd.getDatabaseMinorVersion());
+			int dbmsMinorVersion = dbmd.getDatabaseMinorVersion();	// should be 27 or higher
+			System.out.println("DatabaseMinorVersion = " + (dbmsMinorVersion >= 27 ? "27+" : dbmsMinorVersion));
 
 			System.out.println("4.7. getTables(null, 'tmp', null, null)");
-			ResultSet rs2 = dbmd.getTables(null, "tmp", null, null);
-			if (rs2 != null) {
+			ResultSet rs1 = dbmd.getTables(null, "tmp", null, null);
+			if (rs1 != null) {
 				System.out.println("List Tables in schema tmp:");
-				while (rs2.next()) {
-					System.out.println(rs2.getString(3));
+				while (rs1.next()) {
+					System.out.println(rs1.getString(3));
 				}
-				rs2.close();
+				rs1.close();
 			}
 			System.out.println("completed listing Tables in schema tmp");
 
 			System.out.println("4.8. getTableTypes()");
-			ResultSet rs1 = dbmd.getTableTypes();
+			rs1 = dbmd.getTableTypes();
 			if (rs1 != null) {
 				System.out.println("List TableTypes:");
 				while (rs1.next()) {
