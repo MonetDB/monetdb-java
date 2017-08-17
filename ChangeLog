@@ -2,6 +2,7 @@
 # This file is updated with Maddlog
 
 * Thu Aug 17 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented ResultSet method getNCharacterStream()
 - In class MonetClob implemented methods getCharacterStream()
   and getCharacterStream(long pos, long length).  Method
   getCharacterStream() is called by DBeaver to fetch the Clob value.

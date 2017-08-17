@@ -515,7 +515,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public Reader getNCharacterStream(int columnIndex) throws SQLException {
-		throw newSQLFeatureNotSupportedException("getNCharacterStream");
+		return getCharacterStream(columnIndex);
 	}
 
 	/**
@@ -534,7 +534,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public Reader getNCharacterStream(String columnLabel) throws SQLException {
-		throw newSQLFeatureNotSupportedException("getNCharacterStream");
+		return getCharacterStream(findColumn(columnLabel));
 	}
 
 	/**
@@ -2534,7 +2534,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public String getNString(String columnLabel) throws SQLException {
-		return getNString(findColumn(columnLabel));
+		return getString(findColumn(columnLabel));
 	}
 
 	/**

@@ -64,9 +64,9 @@ Currently implemented JDBC 4.1 interfaces include:
     The next features/methods are NOT implemented:
     - getArray
     - getAsciiStream, getUnicodeStream
-    - getNCharacterStream, getNClob, getNString
+    - getNClob
     - getRef, getRowId, getSQLXML
-    - all methods related to updateable result sets
+    - All methods related to updateable result sets
 
   * java.sql.ResultSetMetaData
 
