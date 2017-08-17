@@ -1,6 +1,15 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Aug 17 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- In class MonetClob implemented methods getCharacterStream()
+  and getCharacterStream(long pos, long length).  Method
+  getCharacterStream() is called by DBeaver to fetch the Clob value.
+  It used to throw a SQLFeatureNotSupportedException with message:
+  "Method getCharacterStream() currently not supported" This caused
+  DBeaver to log the exception and show NULL as the value on screen,
+  which is incorrect.  This has been fixed.
+
 * Fri Jul 28 2017 Sjoerd Mullender <sjoerd@acm.org>
 - Compiled and released new jars: monetdb-jdbc-2.26.jar and updated jdbcclient.jar
 

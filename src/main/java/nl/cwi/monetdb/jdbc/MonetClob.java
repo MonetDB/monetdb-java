@@ -11,6 +11,7 @@ package nl.cwi.monetdb.jdbc;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
+import java.io.StringReader;
 import java.io.Writer;
 import java.sql.Clob;
 import java.sql.SQLException;
@@ -38,7 +39,7 @@ public class MonetClob implements Clob {
 	/* internal utility method */
 	private void checkBufIsNotNull() throws SQLException {
 		if (buf == null)
-			throw new SQLException("This Clob has been freed", "M1M20");
+			throw new SQLException("This MonetClob has been freed", "M1M20");
 	}
 
 	//== begin interface Clob
@@ -68,7 +69,7 @@ public class MonetClob implements Clob {
 	 */
 	@Override
 	public InputStream getAsciiStream() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Method getAsciiStream() currently not supported", "0A000");
+		throw new SQLFeatureNotSupportedException("Method getAsciiStream() not supported", "0A000");
 	}
 
 	/**
@@ -81,7 +82,8 @@ public class MonetClob implements Clob {
 	 */
 	@Override
 	public Reader getCharacterStream() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Method getCharacterStream() currently not supported", "0A000");
+		checkBufIsNotNull();
+		return new StringReader(buf.toString());
 	}
 
 	/**
@@ -100,7 +102,8 @@ public class MonetClob implements Clob {
 	 */
 	@Override
 	public Reader getCharacterStream(long pos, long length) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Method getCharacterStream(long, long) currently not supported", "0A000");
+		checkBufIsNotNull();
+		return new StringReader(getSubString(pos, (int)length));
 	}
 
 	/**
@@ -179,12 +182,12 @@ public class MonetClob implements Clob {
 
 	@Override
 	public OutputStream setAsciiStream(long pos) throws SQLException {
-		throw new SQLException("Method setAsciiStream(long pos) currently not supported", "0A000");
+		throw new SQLFeatureNotSupportedException("Method setAsciiStream(long pos) not supported", "0A000");
 	}
 
 	@Override
 	public Writer setCharacterStream(long pos) throws SQLException {
-		throw new SQLException("Method setCharacterStream(long pos) currently not supported", "0A000");
+		throw new SQLFeatureNotSupportedException("Method setCharacterStream(long pos) not supported", "0A000");
 	}
 
 	/**
