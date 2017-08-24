@@ -2,7 +2,8 @@
 # This file is updated with Maddlog
 
 * Thu Aug 24 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Implemented PreparedStatement method setNString().
+- Implemented PreparedStatement method setURL(int, URL).
+- Implemented PreparedStatement method setNString(int, String).
 - The MonetDB JDBC driver code and jdbcclient program are now compiled
   without debug info and with optimise flag enabled.  The new jar files are
   now smaller in size.

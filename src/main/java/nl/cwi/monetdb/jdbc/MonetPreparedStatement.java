@@ -2499,7 +2499,15 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void setURL(int parameterIndex, URL x) throws SQLException {
-		throw newSQLFeatureNotSupportedException("setURL");
+		if (x == null) {
+			setNull(parameterIndex, -1);
+			return;
+		}
+
+		String val = x.toString();
+		setValue(parameterIndex,
+			"url '" + val.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'"
+		);
 	}
 
 	/**

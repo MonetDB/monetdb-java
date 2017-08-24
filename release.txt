@@ -56,7 +56,7 @@ Currently implemented JDBC 4.1 interfaces include:
     - setAsciiStream, setBinaryStream, setUnicodeStream
     - setBlob
     - setNCharacterStream, setNClob
-    - setRef, setRowId, setSQLXML, setURL
+    - setRef, setRowId, setSQLXML
 
   * java.sql.ParameterMetaData
 
