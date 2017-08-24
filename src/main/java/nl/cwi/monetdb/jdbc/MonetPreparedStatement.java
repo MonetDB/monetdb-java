@@ -1704,7 +1704,7 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void setObject(int parameterIndex, Object x) throws SQLException {
-		setObject(parameterIndex, x, javaType[getParamIdx(parameterIndex)]);
+		setObject(parameterIndex, x, javaType[getParamIdx(parameterIndex)], 0);
 	}
 
 	/**
@@ -1766,6 +1766,11 @@ public class MonetPreparedStatement
 		int scale)
 		throws SQLException
 	{
+		if (x == null) {
+			setNull(parameterIndex, -1);
+			return;
+		}
+
 		// this is according to table B-5
 		if (x instanceof String) {
 			switch (targetSqlType) {
@@ -2099,9 +2104,9 @@ public class MonetPreparedStatement
 		} else if (x instanceof RowId) {
 			setRowId(parameterIndex, (RowId)x);
 		} else if (x instanceof NClob) {
-			throw newSQLFeatureNotSupportedException("setObject() with object of type NClob");
+			setNClob(parameterIndex, (NClob)x);
 		} else if (x instanceof SQLXML) {
-			throw newSQLFeatureNotSupportedException("setObject() with object of type SQLXML");
+			setSQLXML(parameterIndex, (SQLXML)x);
 		} else if (x instanceof SQLData) { // not in JDBC4.1???
 			SQLData sx = (SQLData)x;
 			final int paramnr = parameterIndex;
@@ -2556,7 +2561,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if the given index is out of bounds
 	 */
 	void setValue(int parameterIndex, String val) throws SQLException {
-		values[getParamIdx(parameterIndex)] = val;
+		values[getParamIdx(parameterIndex)] = (val == null ? "NULL" : val);
 	}
 
 	/**
