@@ -1625,7 +1625,7 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void setNString(int parameterIndex, String value) throws SQLException {
-		throw newSQLFeatureNotSupportedException("setNString");
+		setString(parameterIndex, value);
 	}
 
 	/**

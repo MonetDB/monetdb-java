@@ -2,12 +2,13 @@
 # This file is updated with Maddlog
 
 * Thu Aug 24 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented PreparedStatement method setNString().
 - The MonetDB JDBC driver code and jdbcclient program are now compiled
   without debug info and with optimise flag enabled.  The new jar files are
   now smaller in size.
 
 * Thu Aug 17 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Implemented ResultSet method getNCharacterStream()
+- Implemented ResultSet method getNCharacterStream().
 - In class MonetClob implemented methods getCharacterStream()
   and getCharacterStream(long pos, long length).  Method
   getCharacterStream() is called by DBeaver to fetch the Clob value.
