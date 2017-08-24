@@ -945,12 +945,12 @@ public class MonetPreparedStatement
 	 * driver converts this to an SQL ARRAY value when it sends it to
 	 * the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x an Array object that maps an SQL ARRAY value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setArray(int i, Array x) throws SQLException {
+	public void setArray(int parameterIndex, Array x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setArray");
 	}
 
@@ -1032,14 +1032,14 @@ public class MonetPreparedStatement
 	 * The driver converts this to an SQL NUMERIC value when it sends it to the
 	 * database.
 	 *
-	 * @param idx the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setBigDecimal(int idx, BigDecimal x) throws SQLException {
+	public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
 		// get array position
-		int i = getParamIdx(idx);
+		int i = getParamIdx(parameterIndex);
 
 		// round to the scale of the DB:
 		x = x.setScale(scale[i], RoundingMode.HALF_UP);
@@ -1059,7 +1059,7 @@ public class MonetPreparedStatement
 			xStr = xStr.substring(0, Math.min(xStr.length(), dot + 1 + scale[i]));
 		while (xStr.startsWith("0") && xStr.length() > 1)
 			xStr = xStr.substring(1);
-		setValue(idx, xStr);
+		setValue(parameterIndex, xStr);
 	}
 
 	/**
@@ -1137,14 +1137,14 @@ public class MonetPreparedStatement
 	 * Sets the designated parameter to the given Blob object. The driver
 	 * converts this to an SQL BLOB value when it sends it to the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x a Blob object that maps an SQL BLOB value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setBlob(int i, InputStream x) throws SQLException {
+	public void setBlob(int parameterIndex, InputStream x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setBlob");
 	}
 
@@ -1152,14 +1152,14 @@ public class MonetPreparedStatement
 	 * Sets the designated parameter to the given Blob object. The driver
 	 * converts this to an SQL BLOB value when it sends it to the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x a Blob object that maps an SQL BLOB value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setBlob(int i, Blob x) throws SQLException {
+	public void setBlob(int parameterIndex, Blob x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setBlob");
 	}
 
@@ -1174,7 +1174,7 @@ public class MonetPreparedStatement
 	 * may have to do extra work to determine whether the parameter data
 	 * should be sent to the server as a LONGVARBINARY or a BLOB.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param is an object that contains the data to set the parameter
 	 *           value to
 	 * @param length the number of bytes in the parameter data
@@ -1183,7 +1183,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setBlob(int i, InputStream is, long length) throws SQLException {
+	public void setBlob(int parameterIndex, InputStream is, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setBlob");
 	}
 
@@ -1334,28 +1334,28 @@ public class MonetPreparedStatement
 	 * Sets the designated parameter to the given Clob object. The driver
 	 * converts this to an SQL CLOB value when it sends it to the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x a Clob object that maps an SQL CLOB value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setClob(int i, Clob x) throws SQLException {
+	public void setClob(int parameterIndex, Clob x) throws SQLException {
 		if (x == null) {
-			setNull(i, -1);
+			setNull(parameterIndex, -1);
 			return;
 		}
 
 		// simply serialise the CLOB into a variable for now... far from
 		// efficient, but might work for a few cases...
 		// be on your marks: we have to cast the length down!
-		setString(i, x.getSubString(1L, (int)(x.length())));
+		setString(parameterIndex, x.getSubString(1L, (int)(x.length())));
 	}
 
 	/**
 	 * Sets the designated parameter to the given Clob object. The driver
 	 * converts this to an SQL CLOB value when it sends it to the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param reader an object that contains the data to set the parameter
 	 *          value to
 	 * @throws SQLException if a database access error occurs
@@ -1363,9 +1363,9 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setClob(int i, Reader reader) throws SQLException {
+	public void setClob(int parameterIndex, Reader reader) throws SQLException {
 		if (reader == null) {
-			setNull(i, -1);
+			setNull(parameterIndex, -1);
 			return;
 		}
 		// Some buffer. Size of 8192 is default for BufferedReader, so...
@@ -1376,7 +1376,7 @@ public class MonetPreparedStatement
 			while ((numChars = reader.read(arr, 0, arr.length)) > 0) {
 				buf.append(arr, 0, numChars);
 			}
-			setString(i, buf.toString());
+			setString(parameterIndex, buf.toString());
 		} catch (IOException e) {
 			throw new SQLException(e);
 		}
@@ -1393,16 +1393,16 @@ public class MonetPreparedStatement
 	 * extra work to determine whether the parameter data should be sent
 	 * to the server as a LONGVARCHAR or a CLOB.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param reader An object that contains the data to set the
 	 *        parameter value to.
 	 * @param length the number of characters in the parameter data.
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setClob(int i, Reader reader, long length) throws SQLException {
+	public void setClob(int parameterIndex, Reader reader, long length) throws SQLException {
 		if (reader == null || length < 0) {
-			setNull(i, -1);
+			setNull(parameterIndex, -1);
 			return;
 		}
 		// simply serialise the CLOB into a variable for now... far from
@@ -1416,7 +1416,7 @@ public class MonetPreparedStatement
 		}
 		// We have to rewind the buffer, because otherwise toString() returns "".
 		buf.rewind();
-		setString(i, buf.toString());
+		setString(parameterIndex, buf.toString());
 	}
 
 	/**
@@ -1524,14 +1524,14 @@ public class MonetPreparedStatement
 	 * necessary conversion from Java character format to the national
 	 * character set in the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setNCharacterStream(int i, Reader value) throws SQLException {
+	public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNCharacterStream");
 	}
 
@@ -1541,7 +1541,7 @@ public class MonetPreparedStatement
 	 * necessary conversion from Java character format to the national
 	 * character set in the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @param length the number of characters in the parameter data.
 	 * @throws SQLException if a database access error occurs
@@ -1549,7 +1549,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setNCharacterStream(int i, Reader value, long length)
+	public void setNCharacterStream(int parameterIndex, Reader value, long length)
 		throws SQLException
 	{
 		throw newSQLFeatureNotSupportedException("setNCharacterStream");
@@ -1560,14 +1560,14 @@ public class MonetPreparedStatement
 	 * driver converts this to a SQL NCLOB value when it sends it to the
 	 * database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setNClob(int i, Reader value) throws SQLException {
+	public void setNClob(int parameterIndex, Reader value) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNClob");
 	}
 
@@ -1576,14 +1576,14 @@ public class MonetPreparedStatement
 	 * driver converts this to a SQL NCLOB value when it sends it to the
 	 * database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setNClob(int i, NClob value) throws SQLException {
+	public void setNClob(int parameterIndex, NClob value) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNClob");
 	}
 
@@ -1598,7 +1598,7 @@ public class MonetPreparedStatement
 	 * extra work to determine whether the parameter data should be sent
 	 * to the server as a LONGNVARCHAR or a NCLOB.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param r An object that contains the data to set the parameter
 	 *          value to
 	 * @param length the number of characters in the parameter data
@@ -1607,7 +1607,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setNClob(int i, Reader r, long length) throws SQLException {
+	public void setNClob(int parameterIndex, Reader r, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNClob");
 	}
 
@@ -1617,14 +1617,14 @@ public class MonetPreparedStatement
 	 * value (depending on the argument's size relative to the driver's
 	 * limits on NVARCHAR values) when it sends it to the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setNString(int i, String value) throws SQLException {
+	public void setNString(int parameterIndex, String value) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNString");
 	}
 
@@ -1660,7 +1660,7 @@ public class MonetPreparedStatement
 	 * parameter of any JDBC type. If the parameter does not have a
 	 * user-defined or REF type, the given typeName is ignored.
 	 *
-	 * @param paramIndex the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param sqlType a value from java.sql.Types
 	 * @param typeName the fully-qualified name of an SQL user-defined type;
 	 *                 ignored if the parameter is not a user-defined type or
@@ -1668,11 +1668,11 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setNull(int paramIndex, int sqlType, String typeName)
+	public void setNull(int parameterIndex, int sqlType, String typeName)
 		throws SQLException
 	{
 		// MonetDB/SQL's NULL needs no type
-		setNull(paramIndex, sqlType);
+		setNull(parameterIndex, sqlType);
 	}
 
 	/**
@@ -1697,14 +1697,14 @@ public class MonetPreparedStatement
 	 * example, if the object is of a class implementing more than one
 	 * of the interfaces named above.
 	 *
-	 * @param index the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the object containing the input parameter value
 	 * @throws SQLException if a database access error occurs or the type of
 	 *                      the given object is ambiguous
 	 */
 	@Override
-	public void setObject(int index, Object x) throws SQLException {
-		setObject(index, x, javaType[getParamIdx(index)]);
+	public void setObject(int parameterIndex, Object x) throws SQLException {
+		setObject(parameterIndex, x, javaType[getParamIdx(parameterIndex)]);
 	}
 
 	/**
@@ -2260,14 +2260,14 @@ public class MonetPreparedStatement
 	 * The driver converts this to an SQL REF value when it sends it to the
 	 * database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x an SQL REF value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setRef(int i, Ref x) throws SQLException {
+	public void setRef(int parameterIndex, Ref x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setRef");
 	}
 
@@ -2276,14 +2276,14 @@ public class MonetPreparedStatement
 	 * The driver converts this to a SQL ROWID value when it sends it to
 	 * the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setRowId(int i, RowId x) throws SQLException {
+	public void setRowId(int parameterIndex, RowId x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setRowId");
 	}
 
@@ -2344,13 +2344,13 @@ public class MonetPreparedStatement
 	 * The driver converts this to an SQL TIME value when it sends it to
 	 * the database.
 	 *
-	 * @param index the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTime(int index, Time x) throws SQLException {
-		setTime(index, x, null);
+	public void setTime(int parameterIndex, Time x) throws SQLException {
+		setTime(parameterIndex, x, null);
 	}
 
 	/**
@@ -2363,26 +2363,26 @@ public class MonetPreparedStatement
 	 * timezone, which is that of the virtual machine running the
 	 * application.
 	 *
-	 * @param index the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @param cal the Calendar object the driver will use to construct the time
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTime(int index, Time x, Calendar cal)
+	public void setTime(int parameterIndex, Time x, Calendar cal)
 		throws SQLException
 	{
 		if (x == null) {
-			setNull(index, -1);
+			setNull(parameterIndex, -1);
 			return;
 		}
 
-		boolean hasTimeZone = monetdbType[getParamIdx(index)].endsWith("tz");
+		boolean hasTimeZone = monetdbType[getParamIdx(parameterIndex)].endsWith("tz");
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
 			String RFC822 = mTimeZ.format(x);
-			setValue(index, "timetz '" +
+			setValue(parameterIndex, "timetz '" +
 					RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
@@ -2390,10 +2390,10 @@ public class MonetPreparedStatement
 			// connection creation, we can just write a plain timestamp
 			// here
 			if (cal == null) {
-				setValue(index, "time '" + x.toString() + "'");
+				setValue(parameterIndex, "time '" + x.toString() + "'");
 			} else {
 				mTime.setTimeZone(cal.getTimeZone());
-				setValue(index, "time '" + mTime.format(x) + "'");
+				setValue(parameterIndex, "time '" + mTime.format(x) + "'");
 			}
 		}
 	}
@@ -2403,15 +2403,15 @@ public class MonetPreparedStatement
 	 * value.  The driver converts this to an SQL TIMESTAMP value when
 	 * it sends it to the database.
 	 *
-	 * @param index the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTimestamp(int index, Timestamp x)
+	public void setTimestamp(int parameterIndex, Timestamp x)
 		throws SQLException
 	{
-		setTimestamp(index, x, null);
+		setTimestamp(parameterIndex, x, null);
 	}
 
 	/**
@@ -2424,27 +2424,27 @@ public class MonetPreparedStatement
 	 * default timezone, which is that of the virtual machine running
 	 * the application.
 	 *
-	 * @param index the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @param cal the Calendar object the driver will use to construct the
 	 *            timestamp
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTimestamp(int index, Timestamp x, Calendar cal)
+	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal)
 		throws SQLException
 	{
 		if (x == null) {
-			setNull(index, -1);
+			setNull(parameterIndex, -1);
 			return;
 		}
 
-		boolean hasTimeZone = monetdbType[getParamIdx(index)].endsWith("tz");
+		boolean hasTimeZone = monetdbType[getParamIdx(parameterIndex)].endsWith("tz");
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
 			String RFC822 = mTimestampZ.format(x);
-			setValue(index, "timestamptz '" +
+			setValue(parameterIndex, "timestamptz '" +
 					RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
@@ -2452,10 +2452,10 @@ public class MonetPreparedStatement
 			// connection creation, we can just write a plain timestamp
 			// here
 			if (cal == null) {
-				setValue(index, "timestamp '" + x.toString() + "'");
+				setValue(parameterIndex, "timestamp '" + x.toString() + "'");
 			} else {
 				mTimestamp.setTimeZone(cal.getTimeZone());
-				setValue(index, "timestamp '" + mTimestamp.format(x) + "'");
+				setValue(parameterIndex, "timestamp '" + mTimestamp.format(x) + "'");
 			}
 		}
 	}
@@ -2543,12 +2543,12 @@ public class MonetPreparedStatement
 	 * out of bounds, and SQLException is thrown.  The given value should
 	 * never be null.
 	 *
-	 * @param index the parameter index
+	 * @param parameterIndex the parameter index
 	 * @param val the exact String representation to set
 	 * @throws SQLException if the given index is out of bounds
 	 */
-	void setValue(int index, String val) throws SQLException {
-		values[getParamIdx(index)] = val;
+	void setValue(int parameterIndex, String val) throws SQLException {
+		values[getParamIdx(parameterIndex)] = val;
 	}
 
 	/**
