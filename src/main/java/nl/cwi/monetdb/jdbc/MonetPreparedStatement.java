@@ -62,7 +62,7 @@ import java.util.Map;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 0.4
+ * @version 0.5
  */
 public class MonetPreparedStatement
 	extends MonetStatement
@@ -1773,118 +1773,7 @@ public class MonetPreparedStatement
 
 		// this is according to table B-5
 		if (x instanceof String) {
-			switch (targetSqlType) {
-				case Types.CHAR:
-				case Types.VARCHAR:
-				case Types.LONGVARCHAR:
-				case Types.CLOB:
-					setString(parameterIndex, (String)x);
-				break;
-				case Types.TINYINT:
-				case Types.SMALLINT:
-				case Types.INTEGER:
-				{
-					int val;
-					try {
-						val = Integer.parseInt((String)x);
-					} catch (NumberFormatException e) {
-						val = 0;
-					}
-					setInt(parameterIndex, val);
-				} break;
-				case Types.BIGINT:
-				{
-					long val;
-					try {
-						val = Long.parseLong((String)x);
-					} catch (NumberFormatException e) {
-						val = 0;
-					}
-					setLong(parameterIndex, val);
-				} break;
-				case Types.REAL:
-				{
-					float val;
-					try {
-						val = Float.parseFloat((String)x);
-					} catch (NumberFormatException e) {
-						val = 0;
-					}
-					setFloat(parameterIndex, val);
-				} break;
-				case Types.FLOAT:
-				case Types.DOUBLE:
-				{
-					double val;
-					try {
-						val = Double.parseDouble((String)x);
-					} catch (NumberFormatException e) {
-						val = 0;
-					}
-					setDouble(parameterIndex, val);
-				} break;
-				case Types.DECIMAL:
-				case Types.NUMERIC:
-				{
-					BigDecimal val;
-					try {
-						val = new BigDecimal((String)x);
-					} catch (NumberFormatException e) {
-						try {
-							val = new BigDecimal(0.0);
-						} catch (NumberFormatException ex) {
-							throw new SQLException("Internal error: unable to create template BigDecimal: " + ex.getMessage(), "M0M03");
-						}
-					}
-					val = val.setScale(scale, BigDecimal.ROUND_HALF_UP);
-					setBigDecimal(parameterIndex, val);
-				} break;
-				case Types.BIT:
-				case Types.BOOLEAN:
-					setBoolean(parameterIndex, (Boolean.valueOf((String)x)).booleanValue());
-				break;
-				case Types.BINARY:
-				case Types.VARBINARY:
-				case Types.LONGVARBINARY:
-					setBytes(parameterIndex, ((String)x).getBytes());
-				break;
-				case Types.DATE:
-				{
-					java.sql.Date val;
-					try {
-						val = java.sql.Date.valueOf((String)x);
-					} catch (IllegalArgumentException e) {
-						val = new java.sql.Date(0L);
-					}
-					setDate(parameterIndex, val);
-				} break;
-				case Types.TIME:
-				{
-					Time val;
-					try {
-						val = Time.valueOf((String)x);
-					} catch (IllegalArgumentException e) {
-						val = new Time(0L);
-					}
-					setTime(parameterIndex, val);
-				} break;
-				case Types.TIMESTAMP:
-				{
-					Timestamp val;
-					try {
-						val = Timestamp.valueOf((String)x);
-					} catch (IllegalArgumentException e) {
-						val = new Timestamp(0L);
-					}
-					setTimestamp(parameterIndex, val);
-				} break;
-				case Types.NCHAR:
-				case Types.NVARCHAR:
-				case Types.LONGNVARCHAR:
-					throw newSQLFeatureNotSupportedException("setObject() with targetType N[VAR]CHAR");
-				default:
-					throw new SQLException("Conversion not allowed", "M1M05");
-			}
+			setString(parameterIndex, (String)x);
 		} else if (x instanceof BigDecimal ||
 				x instanceof Byte ||
 				x instanceof Short ||
@@ -2090,9 +1979,9 @@ public class MonetPreparedStatement
 			}
 		} else if (x instanceof Array) {
 			setArray(parameterIndex, (Array)x);
-		} else if (x instanceof Blob) {
+		} else if (x instanceof Blob || x instanceof MonetBlob) {
 			setBlob(parameterIndex, (Blob)x);
-		} else if (x instanceof Clob) {
+		} else if (x instanceof Clob || x instanceof MonetClob) {
 			setClob(parameterIndex, (Clob)x);
 		} else if (x instanceof Struct) {
 			// I have no idea how to do this...
@@ -2101,6 +1990,8 @@ public class MonetPreparedStatement
 			setRef(parameterIndex, (Ref)x);
 		} else if (x instanceof java.net.URL) {
 			setURL(parameterIndex, (java.net.URL)x);
+		} else if (x instanceof java.util.UUID) {
+			setString(parameterIndex, x.toString());
 		} else if (x instanceof RowId) {
 			setRowId(parameterIndex, (RowId)x);
 		} else if (x instanceof NClob) {
@@ -2256,7 +2147,7 @@ public class MonetPreparedStatement
 			};
 			sx.writeSQL(out);
 		} else {	// java Class
-			throw newSQLFeatureNotSupportedException("setObject() with object of type Class");
+			throw newSQLFeatureNotSupportedException("setObject() with object of type Class " + x.getClass().getName());
 		}
 	}
 
@@ -2322,10 +2213,164 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		setValue(
-			parameterIndex,
-			"'" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'"
-		);
+		int paramIdx = getParamIdx(parameterIndex);	// this will throw a SQLException if parameter can not be found
+
+		/* depending on the parameter data type (as expected by MonetDB) we
+		   may need to add the data type as cast prefix to the parameter value */
+		int paramJdbcType = javaType[paramIdx];
+		String paramMonetdbType = monetdbType[paramIdx];
+
+		switch (paramJdbcType) {
+			case Types.CHAR:
+			case Types.VARCHAR:
+			case Types.LONGVARCHAR:
+			case Types.CLOB:
+			case Types.NCHAR:
+			case Types.NVARCHAR:
+			case Types.LONGNVARCHAR:
+			{
+				String castprefix = "";
+				switch (paramMonetdbType) {
+					// some MonetDB specific data types require a cast prefix
+					case "inet":
+						try {
+							// check if x represents a valid inet string to prevent
+							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+							nl.cwi.monetdb.jdbc.types.INET inet_obj = new nl.cwi.monetdb.jdbc.types.INET();
+							inet_obj.fromString(x);
+						} catch (SQLException se) {
+							throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + se, "M1M05");
+						}
+						castprefix = "inet ";
+						break;
+					case "json":
+						// There is no support for JSON in standard java class libraries.
+						// Possibly we could use org.json.simple.JSONObject or other/faster libs
+						// javax.json.Json is not released yet (see https://json-processing-spec.java.net/)
+						// see also https://github.com/fabienrenaud/java-json-benchmark
+						// Note that it would make our JDBC driver dependent of an external jar
+						// and we don't want that.
+
+						// do simplistic check if x represents a valid json string to prevent
+						// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+						if (x.isEmpty() ||
+							(x.startsWith("{") && !x.endsWith("}")) ||
+							(x.startsWith("[") && !x.endsWith("]"))
+							// TODO check completely if x represents a valid json string
+						   )
+							throw new SQLException("Invalid json string. It does not start with { or [ and end with } or ]", "M1M05");
+
+						// TODO check completely if x represents a valid json string
+
+						castprefix = "json ";
+						break;
+					case "url":
+						try {
+							// also check if x represents a valid url string to prevent
+							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+							java.net.URL url_obj = new java.net.URL(x);
+						} catch (java.net.MalformedURLException mue) {
+							throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + mue, "M1M05");
+						}
+						castprefix = "url ";
+						break;
+					case "uuid":
+						try {
+							// also check if x represents a valid uuid string to prevent
+							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+							java.util.UUID uuid_obj = java.util.UUID.fromString(x);
+						} catch (IllegalArgumentException iae) {
+							throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + iae, "M1M05");
+						}
+						castprefix = "uuid ";
+						break;
+				}
+				/* in specific cases prefix the string with: inet or json or url or uuid */
+				setValue(parameterIndex,
+					castprefix + "'" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
+				break;
+			}
+			case Types.TINYINT:
+			case Types.SMALLINT:
+			case Types.INTEGER:
+			case Types.BIGINT:
+			case Types.REAL:
+			case Types.FLOAT:
+			case Types.DOUBLE:
+			case Types.DECIMAL:
+			case Types.NUMERIC:
+				try {
+					// check (by calling parse) if the string represents a valid number to prevent
+					// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+					if (paramJdbcType == Types.INTEGER || paramJdbcType == Types.SMALLINT || paramJdbcType == Types.TINYINT) {
+						int number = Integer.parseInt(x);
+					} else
+					if (paramJdbcType == Types.BIGINT) {
+						long number = Long.parseLong(x);
+					} else
+					if (paramJdbcType == Types.REAL || paramJdbcType == Types.DOUBLE || paramJdbcType == Types.FLOAT) {
+						double number = Double.parseDouble(x);
+					} else
+					if (paramJdbcType == Types.DECIMAL || paramJdbcType == Types.NUMERIC) {
+						BigDecimal number = new BigDecimal(x);
+					}
+				} catch (NumberFormatException nfe) {
+					throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + nfe, "M1M05");
+				}
+				setValue(parameterIndex, x);
+				break;
+			case Types.BIT:
+			case Types.BOOLEAN:
+				if  (x.equalsIgnoreCase("false") || x.equalsIgnoreCase("true") || x.equals("0") || x.equals("1")) {
+					setValue(parameterIndex, x);
+				} else {
+					throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed", "M1M05");
+				}
+				break;
+			case Types.DATE:
+			case Types.TIME:
+			case Types.TIMESTAMP:
+				try {
+					// check if the string represents a valid calendar date or time or timestamp to prevent
+					// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+					if (paramJdbcType == Types.DATE) {
+						java.sql.Date datum = java.sql.Date.valueOf(x);
+					} else
+					if (paramJdbcType == Types.TIME) {
+						Time tijdstip = Time.valueOf(x);
+					} else
+					if (paramJdbcType == Types.TIMESTAMP) {
+						Timestamp tijdstip = Timestamp.valueOf(x);
+					}
+				} catch (IllegalArgumentException iae) {
+					throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + iae, "M1M05");
+				}
+				/* prefix the string with: date or time or timetz or timestamp or timestamptz */
+				setValue(parameterIndex, paramMonetdbType + " '" + x + "'");
+				break;
+			case Types.BINARY:
+			case Types.VARBINARY:
+			case Types.LONGVARBINARY:
+			case Types.BLOB:
+				// check if the string x contains pairs of hex chars to prevent
+				// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+				int xlen = x.length();
+				for (int i = 0; i < xlen; i++) {
+					char c = x.charAt(i);
+					if (c < '0' || c > '9') {
+						if (c < 'A' || c > 'F') {
+							if (c < 'a' || c > 'f') {
+								throw new SQLException("Invalid string for parameter data type " + paramMonetdbType + ". The string may contain only hex chars", "M1M05");
+							}
+						}
+					}
+				}
+				/* prefix the string with: blob */
+				setValue(parameterIndex, "blob '" + x + "'");
+				break;
+			default:
+				throw new SQLException("Conversion of string to parameter data type " + paramMonetdbType + " is not (yet) supported", "M1M05");
+		}
 	}
 
 	/**

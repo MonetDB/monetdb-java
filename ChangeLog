@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Aug 31 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected PreparedStatement methods setString(int, String)
+  and setObject(int, Object, ...) in case the target parameter
+  data type was json or inet or url or uuid.  See also
+  https://www.monetdb.org/bugzilla/show_bug.cgi?id=6382
+
 * Thu Aug 24 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Implemented PreparedStatement method setURL(int, URL).
 - Implemented PreparedStatement method setNString(int, String).
