@@ -86,6 +86,10 @@ Currently implemented JDBC 4.1 interfaces include:
     - setAsciiStream
     - setCharacterStream
 
+  * java.sql.SQLData
+    implemented by class: nl.cwi.monetdb.jdbc.types.INET
+            and by class: nl.cwi.monetdb.jdbc.types.URL
+
   * javax.sql.DataSource (not tested)
 
 
@@ -95,7 +99,6 @@ The next java.sql.* interfaces are NOT implemented:
   * java.sql.NClob
   * java.sql.Ref
   * java.sql.Rowid
-  * java.sql.SQLData
   * java.sql.SQLInput
   * java.sql.SQLOutput
   * java.sql.SQLXML
