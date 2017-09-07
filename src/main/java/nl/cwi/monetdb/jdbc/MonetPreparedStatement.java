@@ -2434,7 +2434,8 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		boolean hasTimeZone = monetdbType[getParamIdx(parameterIndex)].endsWith("tz");
+		String MonetDBType = monetdbType[getParamIdx(parameterIndex)];
+		boolean hasTimeZone = ("timetz".equals(MonetDBType) || "timestamptz".equals(MonetDBType));
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
@@ -2504,7 +2505,8 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		boolean hasTimeZone = monetdbType[getParamIdx(parameterIndex)].endsWith("tz");
+		String MonetDBType = monetdbType[getParamIdx(parameterIndex)];
+		boolean hasTimeZone = ("timestamptz".equals(MonetDBType) || "timetz".equals(MonetDBType));
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
