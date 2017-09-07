@@ -2252,7 +2252,7 @@ public class MonetPreparedStatement
 							nl.cwi.monetdb.jdbc.types.INET inet_obj = new nl.cwi.monetdb.jdbc.types.INET();
 							inet_obj.fromString(x);
 						} catch (SQLException se) {
-							throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + se, "M1M05");
+							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + se.getMessage(), "22M29");
 						}
 						castprefix = "inet ";
 						break;
@@ -2271,7 +2271,7 @@ public class MonetPreparedStatement
 							(x.startsWith("[") && !x.endsWith("]"))
 							// TODO check completely if x represents a valid json string
 						   )
-							throw new SQLException("Invalid json string. It does not start with { or [ and end with } or ]", "M1M05");
+							throw new SQLDataException("Invalid json string. It does not start with { or [ and end with } or ]", "22M32");
 
 						// TODO check completely if x represents a valid json string
 
@@ -2283,7 +2283,7 @@ public class MonetPreparedStatement
 							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
 							java.net.URL url_obj = new java.net.URL(x);
 						} catch (java.net.MalformedURLException mue) {
-							throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + mue, "M1M05");
+							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + mue.getMessage(), "22M30");
 						}
 						castprefix = "url ";
 						break;
@@ -2293,7 +2293,7 @@ public class MonetPreparedStatement
 							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
 							java.util.UUID uuid_obj = java.util.UUID.fromString(x);
 						} catch (IllegalArgumentException iae) {
-							throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + iae, "M1M05");
+							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + iae.getMessage(), "22M31");
 						}
 						castprefix = "uuid ";
 						break;
@@ -2328,7 +2328,7 @@ public class MonetPreparedStatement
 						BigDecimal number = new BigDecimal(x);
 					}
 				} catch (NumberFormatException nfe) {
-					throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + nfe, "M1M05");
+					throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + nfe.getMessage(), "22003");
 				}
 				setValue(parameterIndex, x);
 				break;
@@ -2337,7 +2337,7 @@ public class MonetPreparedStatement
 				if  (x.equalsIgnoreCase("false") || x.equalsIgnoreCase("true") || x.equals("0") || x.equals("1")) {
 					setValue(parameterIndex, x);
 				} else {
-					throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed", "M1M05");
+					throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed", "22000");
 				}
 				break;
 			case Types.DATE:
@@ -2356,7 +2356,7 @@ public class MonetPreparedStatement
 						Timestamp tijdstip = Timestamp.valueOf(x);
 					}
 				} catch (IllegalArgumentException iae) {
-					throw new SQLException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + iae, "M1M05");
+					throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + iae.getMessage(), "22007");
 				}
 				/* prefix the string with: date or time or timetz or timestamp or timestamptz */
 				setValue(parameterIndex, paramMonetdbType + " '" + x + "'");
@@ -2373,7 +2373,7 @@ public class MonetPreparedStatement
 					if (c < '0' || c > '9') {
 						if (c < 'A' || c > 'F') {
 							if (c < 'a' || c > 'f') {
-								throw new SQLException("Invalid string for parameter data type " + paramMonetdbType + ". The string may contain only hex chars", "M1M05");
+								throw new SQLDataException("Invalid string for parameter data type " + paramMonetdbType + ". The string may contain only hex chars", "22M28");
 							}
 						}
 					}
