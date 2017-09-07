@@ -150,18 +150,26 @@ public class MonetPreparedStatement
 
 		// fill the arrays
 		ResultSet rs = super.getResultSet();
-		for (int i = 0; rs.next(); i++) {
-			monetdbType[i] = rs.getString("type");
-			javaType[i] = MonetDriver.getJavaType(monetdbType[i]);
-			digits[i] = rs.getInt("digits");
-			scale[i] = rs.getInt("scale");
-			if (rscolcnt == 3)
-				continue;
-			schema[i] = rs.getString("schema");
-			table[i] = rs.getString("table");
-			column[i] = rs.getString("column");
+		if (rs != null) {
+			int type_colnr = rs.findColumn("type");
+			int digits_colnr = rs.findColumn("digits");
+			int scale_colnr = rs.findColumn("scale");
+			int schema_colnr = rs.findColumn("schema");
+			int table_colnr = rs.findColumn("table");
+			int column_colnr = rs.findColumn("column");
+			for (int i = 0; rs.next(); i++) {
+				monetdbType[i] = rs.getString(type_colnr);
+				javaType[i] = MonetDriver.getJavaType(monetdbType[i]);
+				digits[i] = rs.getInt(digits_colnr);
+				scale[i] = rs.getInt(scale_colnr);
+				if (rscolcnt == 3)
+					continue;
+				schema[i] = rs.getString(schema_colnr);
+				table[i] = rs.getString(table_colnr);
+				column[i] = rs.getString(column_colnr);
+			}
+			rs.close();
 		}
-		rs.close();
 
 		// PreparedStatements are by default poolable
 		poolable = true;
