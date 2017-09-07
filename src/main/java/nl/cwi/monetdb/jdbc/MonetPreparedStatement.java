@@ -146,6 +146,7 @@ public class MonetPreparedStatement
 		// fill the arrays
 		ResultSet rs = super.getResultSet();
 		if (rs != null) {
+			// System.out.println("After super.getResultSet();");
 			int type_colnr = rs.findColumn("type");
 			int digits_colnr = rs.findColumn("digits");
 			int scale_colnr = rs.findColumn("scale");
@@ -162,6 +163,9 @@ public class MonetPreparedStatement
 				schema[i] = rs.getString(schema_colnr);
 				table[i] = rs.getString(table_colnr);
 				column[i] = rs.getString(column_colnr);
+				/* when column[i] != null it is a result column of the prepared query, see getColumnIdx(int),
+				   when column[i] == null it is a parameter for the prepared statement, see getParamIdx(int). */
+				// System.out.println("column " + i + " has value: " + column[i]);
 			}
 			rs.close();
 		}
@@ -328,6 +332,7 @@ public class MonetPreparedStatement
 	private int getColumnIdx(int colnr) throws SQLException {
 		int curcol = 0;
 		for (int i = 0; i < size; i++) {
+			/* when column[i] == null it is a parameter, when column[i] != null it is a result column of the prepared query */
 			if (column[i] == null)
 				continue;
 			curcol++;
@@ -343,6 +348,7 @@ public class MonetPreparedStatement
 	private int getParamIdx(int paramnr) throws SQLException {
 		int curparam = 0;
 		for (int i = 0; i < size; i++) {
+			/* when column[i] == null it is a parameter, when column[i] != null it is a result column of the prepared query */
 			if (column[i] != null)
 				continue;
 			curparam++;
