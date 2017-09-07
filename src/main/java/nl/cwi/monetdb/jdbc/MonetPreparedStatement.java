@@ -83,22 +83,17 @@ public class MonetPreparedStatement
 
 	private final MonetConnection connection;
 
-	/* only parse the date patterns once, use multiple times */
+	/* placeholders for date/time pattern formats created once (only when needed), used multiple times */
 	/** Format of a timestamp with RFC822 time zone */
-	final SimpleDateFormat mTimestampZ =
-		new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+	private SimpleDateFormat mTimestampZ;
 	/** Format of a timestamp */
-	final SimpleDateFormat mTimestamp =
-		new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+	private SimpleDateFormat mTimestamp;
 	/** Format of a time with RFC822 time zone */
-	final SimpleDateFormat mTimeZ =
-		new SimpleDateFormat("HH:mm:ss.SSSZ");
+	private SimpleDateFormat mTimeZ;
 	/** Format of a time */
-	final SimpleDateFormat mTime =
-		new SimpleDateFormat("HH:mm:ss.SSS");
+	private SimpleDateFormat mTime;
 	/** Format of a date used by mserver */
-	final SimpleDateFormat mDate =
-		new SimpleDateFormat("yyyy-MM-dd");
+	private SimpleDateFormat mDate;
 
 	/**
 	 * MonetPreparedStatement constructor which checks the arguments for
@@ -1469,6 +1464,10 @@ public class MonetPreparedStatement
 		if (cal == null) {
 			setValue(parameterIndex, "date '" + x.toString() + "'");
 		} else {
+			if (mDate == null) {
+				// first time usage, create and keep the mDate object for next usage
+				mDate = new SimpleDateFormat("yyyy-MM-dd");
+			}
 			mDate.setTimeZone(cal.getTimeZone());
 			setValue(parameterIndex, "date '" + mDate.format(x) + "'");
 		}
@@ -2439,6 +2438,10 @@ public class MonetPreparedStatement
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
+			if (mTimeZ == null) {
+				// first time usage, create and keep the mTimeZ object for next usage
+				mTimeZ = new SimpleDateFormat("HH:mm:ss.SSSZ");
+			}
 			String RFC822 = mTimeZ.format(x);
 			setValue(parameterIndex, "timetz '" +
 					RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
@@ -2450,6 +2453,10 @@ public class MonetPreparedStatement
 			if (cal == null) {
 				setValue(parameterIndex, "time '" + x.toString() + "'");
 			} else {
+				if (mTime == null) {
+					// first time usage, create and keep the mTime object for next usage
+					mTime = new SimpleDateFormat("HH:mm:ss.SSS");
+				}
 				mTime.setTimeZone(cal.getTimeZone());
 				setValue(parameterIndex, "time '" + mTime.format(x) + "'");
 			}
@@ -2501,17 +2508,24 @@ public class MonetPreparedStatement
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
+			if (mTimestampZ == null) {
+				// first time usage, create and keep the mTimestampZ object for next usage
+				mTimestampZ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+			}
 			String RFC822 = mTimestampZ.format(x);
 			setValue(parameterIndex, "timestamptz '" +
 					RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
 			// calendar given, since we told the server our timezone at
-			// connection creation, we can just write a plain timestamp
-			// here
+			// connection creation, we can just write a plain timestamp here
 			if (cal == null) {
 				setValue(parameterIndex, "timestamp '" + x.toString() + "'");
 			} else {
+				if (mTimestamp == null) {
+					// first time usage, create and keep the mTimestamp object for next usage
+					mTimestamp = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
+				}
 				mTimestamp.setTimeZone(cal.getTimeZone());
 				setValue(parameterIndex, "timestamp '" + mTimestamp.format(x) + "'");
 			}
@@ -2613,7 +2627,7 @@ public class MonetPreparedStatement
 	 * @param val the exact String representation to set
 	 * @throws SQLException if the given index is out of bounds
 	 */
-	void setValue(int parameterIndex, String val) throws SQLException {
+	private void setValue(int parameterIndex, String val) throws SQLException {
 		values[getParamIdx(parameterIndex)] = (val == null ? "NULL" : val);
 	}
 
@@ -2628,9 +2642,7 @@ public class MonetPreparedStatement
 	 */
 	private String transform() throws SQLException {
 		StringBuilder buf = new StringBuilder(8 + 12 * size);
-		buf.append("exec ");
-		buf.append(id);
-		buf.append('(');
+		buf.append("exec ").append(id).append('(');
 		// check if all columns are set and do a replace
 		int col = 0;
 		for (int i = 0; i < size; i++) {
@@ -2639,8 +2651,8 @@ public class MonetPreparedStatement
 			col++;
 			if (col > 1)
 				buf.append(',');
-			if (values[i] == null) throw
-				new SQLException("Cannot execute, parameter " + col + " is missing.", "M1M05");
+			if (values[i] == null)
+				throw new SQLException("Cannot execute, parameter " + col + " is missing.", "M1M05");
 
 			buf.append(values[i]);
 		}
