@@ -66,7 +66,7 @@ import java.util.Map;
  */
 public class MonetPreparedStatement
 	extends MonetStatement
-	implements PreparedStatement
+	implements PreparedStatement, AutoCloseable
 {
 	private final String[] monetdbType;
 	private final int[] javaType;

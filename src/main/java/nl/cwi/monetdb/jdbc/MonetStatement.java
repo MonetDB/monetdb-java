@@ -44,7 +44,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Martin van Dinther
  * @version 0.7
  */
-public class MonetStatement extends MonetWrapper implements Statement {
+public class MonetStatement
+	extends MonetWrapper
+	implements Statement, AutoCloseable
+{
 	/** the default value of maxRows, 0 indicates unlimited */
 	static final int DEF_MAXROWS = 0;
 
@@ -96,8 +99,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 		int resultSetHoldability)
 		throws SQLException, IllegalArgumentException
 	{
-		if (connection == null) throw
-			new IllegalArgumentException("No Connection given!");
+		if (connection == null)
+			throw new IllegalArgumentException("No Connection given!");
 
 		this.connection = connection;
 		this.resultSetType = resultSetType;
@@ -260,8 +263,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 			int count = -1;
 			if (!type) count = getUpdateCount();
 			do {
-				if (offset >= max) throw
-					new SQLException("Overflow: don't use multi statements when batching (" + max + ")", "M1M16");
+				if (offset >= max)
+					throw new SQLException("Overflow: don't use multi statements when batching (" + max + ")", "M1M16");
 				if (type) {
 					e.setNextException(
 						new SQLException("Batch query produced a ResultSet! " +

@@ -72,7 +72,10 @@ import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
  * @author Martin van Dinther
  * @version 1.3
  */
-public class MonetConnection extends MonetWrapper implements Connection {
+public class MonetConnection
+	extends MonetWrapper
+	implements Connection, AutoCloseable
+{
 	/** the successful processed input properties */
 	private final Properties conn_props = new Properties();
 

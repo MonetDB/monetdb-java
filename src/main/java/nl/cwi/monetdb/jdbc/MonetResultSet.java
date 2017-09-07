@@ -66,7 +66,10 @@ import java.util.TimeZone;
  * @author Fabian Groffen, Martin van Dinther
  * @version 0.8
  */
-public class MonetResultSet extends MonetWrapper implements ResultSet {
+public class MonetResultSet
+	extends MonetWrapper
+	implements ResultSet, AutoCloseable
+{
 	// the following have default access modifier for the MonetVirtualResultSet subclass
 	/** The current line of the buffer split in columns */
 	final TupleLineParser tlp;
