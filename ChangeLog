@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Sep  7 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented PreparedStatement methods setNCharacterStream(int, Reader)
+  and setNCharacterStream(int, Reader, long).
+
 * Thu Aug 31 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected PreparedStatement methods setString(int, String)
   and setObject(int, Object, ...) in case the target parameter

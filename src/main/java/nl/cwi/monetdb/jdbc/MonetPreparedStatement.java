@@ -1539,7 +1539,7 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
-		throw newSQLFeatureNotSupportedException("setNCharacterStream");
+		setCharacterStream(parameterIndex, value, 0);
 	}
 
 	/**
@@ -1559,7 +1559,7 @@ public class MonetPreparedStatement
 	public void setNCharacterStream(int parameterIndex, Reader value, long length)
 		throws SQLException
 	{
-		throw newSQLFeatureNotSupportedException("setNCharacterStream");
+		setCharacterStream(parameterIndex, value, length);
 	}
 
 	/**
@@ -2084,7 +2084,7 @@ public class MonetPreparedStatement
 
 				@Override
 				public void writeCharacterStream(Reader x) throws SQLException {
-					setCharacterStream(paramnr, x);
+					setCharacterStream(paramnr, x, 0);
 				}
 
 				@Override
