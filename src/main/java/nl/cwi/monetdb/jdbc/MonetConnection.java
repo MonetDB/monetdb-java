@@ -1232,27 +1232,44 @@ public class MonetConnection
 		// ping db using query: select 1;
 		Statement stmt = null;
 		ResultSet rs = null;
+		boolean isValid = false;
 		try {
 			stmt = createStatement();
-			stmt.setQueryTimeout(timeout);
-			rs = stmt.executeQuery("SELECT 1");
-			rs.close();
-			rs = null;
-			stmt.close();
-			return true;
-		} catch (Exception e) {
+			if (stmt != null) {
+				int original_timeout = stmt.getQueryTimeout();
+				if (timeout > 0 && original_timeout != timeout) {
+					// we need to change the requested timeout for this test query
+					stmt.setQueryTimeout(timeout);
+				}
+				rs = stmt.executeQuery("SELECT 1");
+				if (rs != null && rs.next()) {
+					isValid = true;
+				}
+				if (timeout > 0 && original_timeout != timeout) {
+					// restore the original server timeout value
+					stmt.setQueryTimeout(original_timeout);
+				}
+			}
+		} catch (SQLException se) {
+			String msg = se.getMessage();
+			// System.out.println("Con.isValid(): " + msg);
+			if (msg != null && msg.equals("Current transaction is aborted (please ROLLBACK)")) {
+				isValid = true;
+			}
+			/* ignore stmt errors/exceptions, we are only testing if the connection is still alive and usable */
+		} finally {
 			if (rs != null) {
 				try {
 					rs.close();
-				} catch (Exception e2) {}
+				} catch (Exception e2) { /* ignore error */ }
 			}
 			if (stmt != null) {
 				try {
 					stmt.close();
-				} catch (Exception e2) {}
+				} catch (Exception e2) { /* ignore error */ }
 			}
 		}
-		return false;
+		return isValid;
 	}
 
 	/**
