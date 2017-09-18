@@ -17,47 +17,47 @@ import nl.cwi.monetdb.mcl.protocol.ServerResponses;
  */
 final class OldMapiServerResponseParser {
 
-    private OldMapiServerResponseParser() {}
+	private OldMapiServerResponseParser() {}
 
-    /**
-     * Retrieves the next server response from an old MAPI protocol instance.
-     *
-     * @param protocol An Old MAPI protocol instance from which the next server response will be retrieved
-     * @return The integer representation of the next server response
-     */
-    static int parseOldMapiServerResponse(OldMapiProtocol protocol) {
-        int res;
-        switch (protocol.lineBuffer.get()) {
-            case '!':
-                res = ServerResponses.ERROR;
-                break;
-            case '&':
-                res = ServerResponses.SOHEADER;
-                break;
-            case '%':
-                res = ServerResponses.HEADER;
-                break;
-            case '[':
-                res = ServerResponses.RESULT;
-                break;
-            case '=':
-                res = ServerResponses.RESULT;
-                break;
-            case '^':
-                res = ServerResponses.REDIRECT;
-                break;
-            case '#':
-                res = ServerResponses.INFO;
-                break;
-            case '.':
-                res = ServerResponses.PROMPT;
-                break;
-            case ',':
-                res = ServerResponses.MORE;
-                break;
-            default:
-                res = ServerResponses.UNKNOWN;
-        }
-        return res;
-    }
+	/**
+	 * Retrieves the next server response from an old MAPI protocol instance.
+	 *
+	 * @param protocol An Old MAPI protocol instance from which the next server response will be retrieved
+	 * @return The integer representation of the next server response
+	 */
+	static int parseOldMapiServerResponse(OldMapiProtocol protocol) {
+		int res;
+		switch (protocol.lineBuffer.get()) {
+			case '!':
+				res = ServerResponses.ERROR;
+				break;
+			case '&':
+				res = ServerResponses.SOHEADER;
+				break;
+			case '%':
+				res = ServerResponses.HEADER;
+				break;
+			case '[':
+				res = ServerResponses.RESULT;
+				break;
+			case '=':
+				res = ServerResponses.RESULT;
+				break;
+			case '^':
+				res = ServerResponses.REDIRECT;
+				break;
+			case '#':
+				res = ServerResponses.INFO;
+				break;
+			case '.':
+				res = ServerResponses.PROMPT;
+				break;
+			case ',':
+				res = ServerResponses.MORE;
+				break;
+			default:
+				res = ServerResponses.UNKNOWN;
+		}
+		return res;
+	}
 }

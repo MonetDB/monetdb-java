@@ -19,18 +19,18 @@ import nl.cwi.monetdb.mcl.protocol.ProtocolException;
  */
 public interface IIncompleteResponse extends IResponse {
 
-    /**
-     * Returns whether this Response expects more lines to be added to it.
-     *
-     * @return true if a next line should be added, false otherwise
-     */
-    boolean wantsMore();
+	/**
+	 * Returns whether this Response expects more lines to be added to it.
+	 *
+	 * @return true if a next line should be added, false otherwise
+	 */
+	boolean wantsMore();
 
-    /**
-     * Adds a batch of data to the Response instance.
-     *
-     * @param protocol The connection's protocol to fetch data from
-     * @throws ProtocolException If the result line is not expected
-     */
-    void addLines(AbstractProtocol protocol) throws ProtocolException;
+	/**
+	 * Adds a batch of data to the Response instance.
+	 *
+	 * @param protocol The connection's protocol to fetch data from
+	 * @throws ProtocolException If the result line is not expected
+	 */
+	void addLines(AbstractProtocol protocol) throws ProtocolException;
 }

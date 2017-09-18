@@ -15,26 +15,26 @@ package nl.cwi.monetdb.mcl.protocol;
  */
 public final class ServerResponses {
 
-    private ServerResponses() {}
+	private ServerResponses() {}
 
-    /* Please don't change the order or the values */
+	/* Please don't change the order or the values */
 
-    /** "there is currently no line", or the the type is unknown is represented by UNKNOWN */
-    public static final int UNKNOWN = 0;
-    /** a line starting with ! indicates ERROR */
-    public static final int ERROR = 1;
-    /** a line starting with % indicates HEADER */
-    public static final int HEADER = 2;
-    /** a line starting with [ indicates RESULT */
-    public static final int RESULT = 3;
-    /** a line which matches the pattern of prompt1 is a PROMPT */
-    public static final int PROMPT = 4;
-    /** a line which matches the pattern of prompt2 is a MORE */
-    public static final int MORE = 5;
-    /** a line starting with &amp; indicates the start of a header block */
-    public static final int SOHEADER = 6;
-    /** a line starting with ^ indicates REDIRECT */
-    public static final int REDIRECT = 7;
-    /** a line starting with # indicates INFO */
-    public static final int INFO = 8;
+	/** "there is currently no line", or the the type is unknown is represented by UNKNOWN */
+	public static final int UNKNOWN = 0;
+	/** a line starting with ! indicates ERROR */
+	public static final int ERROR = 1;
+	/** a line starting with % indicates HEADER */
+	public static final int HEADER = 2;
+	/** a line starting with [ indicates RESULT */
+	public static final int RESULT = 3;
+	/** a line which matches the pattern of prompt1 is a PROMPT */
+	public static final int PROMPT = 4;
+	/** a line which matches the pattern of prompt2 is a MORE */
+	public static final int MORE = 5;
+	/** a line starting with &amp; indicates the start of a header block */
+	public static final int SOHEADER = 6;
+	/** a line starting with ^ indicates REDIRECT */
+	public static final int REDIRECT = 7;
+	/** a line starting with # indicates INFO */
+	public static final int INFO = 8;
 }

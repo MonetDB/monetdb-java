@@ -15,14 +15,14 @@ package nl.cwi.monetdb.mcl.connection;
  */
 public final class ControlCommands {
 
-    /* Please don't change the order or the values */
+	/* Please don't change the order or the values */
 
-    /** Send autocommit statement */
-    public static final int AUTO_COMMIT = 1;
-    /** Set reply size for the server (for the maxrows specification) */
-    public static final int REPLY_SIZE = 2;
-    /** Release a prepared statement data */
-    public static final int RELEASE = 3;
-    /** Close a query */
-    public static final int CLOSE = 4;
+	/** Send autocommit statement */
+	public static final int AUTO_COMMIT = 1;
+	/** Set reply size for the server (for the maxrows specification) */
+	public static final int REPLY_SIZE = 2;
+	/** Release a prepared statement data */
+	public static final int RELEASE = 3;
+	/** Close a query */
+	public static final int CLOSE = 4;
 }

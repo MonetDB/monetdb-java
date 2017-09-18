@@ -16,20 +16,20 @@ package nl.cwi.monetdb.mcl.protocol;
  */
 public final class TableResultHeaders {
 
-    private TableResultHeaders() {}
+	private TableResultHeaders() {}
 
-    /* Please don't change the order or the values */
+	/* Please don't change the order or the values */
 
-    /** When an unknown table header is returned on a MAPI connection */
-    public static final int UNKNOWN = 0;
-    /** The column names */
-    public static final int NAME = 1;
-    /** The column lengths */
-    public static final int LENGTH = 2;
-    /** The column table and schemas names in format of schema.table */
-    public static final int TABLE = 4;
-    /** The SQL name of the MonetDB data type of the column */
-    public static final int TYPE = 8;
-    /** This header is returned by the JDBC embedded telling that it fetches all the previous headers at once */
-    public static final int ALL = 15;
+	/** When an unknown table header is returned on a MAPI connection */
+	public static final int UNKNOWN = 0;
+	/** The column names */
+	public static final int NAME = 1;
+	/** The column lengths */
+	public static final int LENGTH = 2;
+	/** The column table and schemas names in format of schema.table */
+	public static final int TABLE = 4;
+	/** The SQL name of the MonetDB data type of the column */
+	public static final int TYPE = 8;
+	/** This header is returned by the JDBC embedded telling that it fetches all the previous headers at once */
+	public static final int ALL = 15;
 }

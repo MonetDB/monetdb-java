@@ -21,12 +21,12 @@ import java.sql.Statement;
  */
 public class SchemaResponse implements IResponse {
 
-    public int getState() {
-        return Statement.SUCCESS_NO_INFO;
-    }
+	public int getState() {
+		return Statement.SUCCESS_NO_INFO;
+	}
 
-    @Override
-    public void close() {
-        // nothing to do here...
-    }
+	@Override
+	public void close() {
+		// nothing to do here...
+	}
 }

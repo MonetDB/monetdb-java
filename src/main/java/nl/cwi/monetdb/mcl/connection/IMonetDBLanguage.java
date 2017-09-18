@@ -16,40 +16,40 @@ package nl.cwi.monetdb.mcl.connection;
  */
 public interface IMonetDBLanguage {
 
-    /**
-     * Gets the String representation of a query delimiter represented through the index parameter.
-     *
-     * @param index The delimiter index starting from 0
-     * @return The String representation of the delimiter
-     */
-    String getQueryTemplateIndex(int index);
+	/**
+	 * Gets the String representation of a query delimiter represented through the index parameter.
+	 *
+	 * @param index The delimiter index starting from 0
+	 * @return The String representation of the delimiter
+	 */
+	String getQueryTemplateIndex(int index);
 
-    /**
-     * Gets the String representation of a command delimiter represented through the index parameter.
-     *
-     * @param index The delimiter index starting from 0
-     * @return The String representation of the delimiter
-     */
-    String getCommandTemplateIndex(int index);
+	/**
+	 * Gets the String representation of a command delimiter represented through the index parameter.
+	 *
+	 * @param index The delimiter index starting from 0
+	 * @return The String representation of the delimiter
+	 */
+	String getCommandTemplateIndex(int index);
 
-    /**
-     * Gets all query delimiters.
-     *
-     * @return All query delimiters
-     */
-    String[] getQueryTemplates();
+	/**
+	 * Gets all query delimiters.
+	 *
+	 * @return All query delimiters
+	 */
+	String[] getQueryTemplates();
 
-    /**
-     * Gets all command delimiters.
-     *
-     * @return All command delimiters
-     */
-    String[] getCommandTemplates();
+	/**
+	 * Gets all command delimiters.
+	 *
+	 * @return All command delimiters
+	 */
+	String[] getCommandTemplates();
 
-    /**
-     * Gets the String representation of the language currently used.
-     *
-     * @return The String representation of the language currently used.
-     */
-    String getRepresentation();
+	/**
+	 * Gets the String representation of the language currently used.
+	 *
+	 * @return The String representation of the language currently used.
+	 */
+	String getRepresentation();
 }

@@ -16,25 +16,25 @@ package nl.cwi.monetdb.mcl.protocol;
  */
 public final class StarterHeaders {
 
-    private StarterHeaders() {}
+	private StarterHeaders() {}
 
-    /* Please don't change the order or the values */
+	/* Please don't change the order or the values */
 
-    /** A parse response (not handled) */
-    public static final int Q_PARSE = 0;
-    /** A tabular response (typical ResultSet) */
-    public static final int Q_TABLE = 1;
-    /** A response to an update statement, contains number of affected rows and generated key-id */
-    public static final int Q_UPDATE = 2;
-    /** A response to a schema update */
-    public static final int Q_SCHEMA = 3;
-    /** A response to a transaction statement (start, rollback, abort, commit) */
-    public static final int Q_TRANS = 4;
-    /** A tabular response in response to a PREPARE statement containing information about the wildcard values that
-     * need to be supplied */
-    public static final int Q_PREPARE = 5;
-    /** A tabular continuation response (for a ResultSet) */
-    public static final int Q_BLOCK = 6;
-    /** An unknown and unsupported response */
-    public static final int Q_UNKNOWN = 7;
+	/** A parse response (not handled) */
+	public static final int Q_PARSE = 0;
+	/** A tabular response (typical ResultSet) */
+	public static final int Q_TABLE = 1;
+	/** A response to an update statement, contains number of affected rows and generated key-id */
+	public static final int Q_UPDATE = 2;
+	/** A response to a schema update */
+	public static final int Q_SCHEMA = 3;
+	/** A response to a transaction statement (start, rollback, abort, commit) */
+	public static final int Q_TRANS = 4;
+	/** A tabular response in response to a PREPARE statement containing information about the wildcard values that
+	 * need to be supplied */
+	public static final int Q_PREPARE = 5;
+	/** A tabular continuation response (for a ResultSet) */
+	public static final int Q_BLOCK = 6;
+	/** An unknown and unsupported response */
+	public static final int Q_UNKNOWN = 7;
 }

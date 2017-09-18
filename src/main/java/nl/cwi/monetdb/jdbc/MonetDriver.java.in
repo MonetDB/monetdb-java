@@ -69,7 +69,7 @@ public final class MonetDriver implements Driver {
 	/** MonetDB default port to connect to */
 	private static final String PORT = "@JDBC_DEF_PORT@";
 
-    private static Class embeddedConnectionClass = null;
+	private static Class embeddedConnectionClass = null;
 
 	// initialize this class: register it at the DriverManager
 	// Chapter 9.2 from Sun JDBC 3.0 specification
@@ -348,59 +348,59 @@ public final class MonetDriver implements Driver {
 			throw new SQLException("Invalid URL: it does not start with: " + MONETURL, "08M26");
 
 		if(!url.startsWith("jdbc:monetdb:embedded:")) {
-		    // url should be of style jdbc:monetdb://<host>/<database>
-            isEmbedded = false;
-            URI uri;
-            try {
-                uri = new URI(url.substring(5));
-            } catch (URISyntaxException e) {
-                throw new SQLException(e.toString(), "08M26");
-            }
+			// url should be of style jdbc:monetdb://<host>/<database>
+			isEmbedded = false;
+			URI uri;
+			try {
+				uri = new URI(url.substring(5));
+			} catch (URISyntaxException e) {
+				throw new SQLException(e.toString(), "08M26");
+			}
 
-            String uri_host = uri.getHost();
-            if (uri_host == null)
-                throw new SQLException("Invalid URL: no hostname given or unparsable in '" + url + "'", "08M26");
-            info.put("host", uri_host);
+			String uri_host = uri.getHost();
+			if (uri_host == null)
+				throw new SQLException("Invalid URL: no hostname given or unparsable in '" + url + "'", "08M26");
+			info.put("host", uri_host);
 
-            int uri_port = uri.getPort();
-            if (uri_port > 0)
-                info.put("port", "" + uri_port);
+			int uri_port = uri.getPort();
+			if (uri_port > 0)
+				info.put("port", "" + uri_port);
 
-            // check the database
-            String uri_path = uri.getPath();
-            if (uri_path != null && uri_path.length() != 0) {
-                uri_path = uri_path.substring(1);
-                if (!uri_path.trim().isEmpty())
-                    info.put("database", uri_path);
-            }
+			// check the database
+			String uri_path = uri.getPath();
+			if (uri_path != null && uri_path.length() != 0) {
+				uri_path = uri_path.substring(1);
+				if (!uri_path.trim().isEmpty())
+					info.put("database", uri_path);
+			}
 
-            String uri_query = uri.getQuery();
-            if (uri_query != null) {
-                // handle additional arguments
-                String args[] = uri_query.split("&");
-                for (String arg : args) {
-                    tmp = arg.indexOf('=');
-                    if (tmp > 0)
-                        info.put(arg.substring(0, tmp), arg.substring(tmp + 1));
-                }
-            }
+			String uri_query = uri.getQuery();
+			if (uri_query != null) {
+				// handle additional arguments
+				String args[] = uri_query.split("&");
+				for (String arg : args) {
+					tmp = arg.indexOf('=');
+					if (tmp > 0)
+						info.put(arg.substring(0, tmp), arg.substring(tmp + 1));
+				}
+			}
 		} else {
-	    	// url should be of style jdbc:monetdb:embedded:<directory>
-       		isEmbedded = true;
-    		info.put("directory", url.substring(22));
+			// url should be of style jdbc:monetdb:embedded:<directory>
+			isEmbedded = true;
+			info.put("directory", url.substring(22));
 		}
 
 		info.put("embedded", Boolean.toString(isEmbedded));
-        // finally return the Connection as requested
+		// finally return the Connection as requested
 		return CreateMonetDBJDBCConnection(info);
 	}
 
-    @SuppressWarnings("unchecked")
+	@SuppressWarnings("unchecked")
 	private static MonetConnection CreateMonetDBJDBCConnection(Properties props) throws SQLException,
 			IllegalArgumentException {
 		MonetConnection res;
 
-        boolean isEmbedded = Boolean.parseBoolean(props.getProperty("embedded", "false"));
+		boolean isEmbedded = Boolean.parseBoolean(props.getProperty("embedded", "false"));
 		String language = props.getProperty("language", "sql");
 		String username = props.getProperty("user");
 		String password = props.getProperty("password");
@@ -409,21 +409,20 @@ public final class MonetDriver implements Driver {
 
 		if(isEmbedded) { //instantiate the connection
 			try {
-                String directory = props.getProperty("directory");
-                if (directory == null || directory.trim().isEmpty())
-                    throw new IllegalArgumentException("directory should not be null or empty");
-
-			    if(embeddedConnectionClass == null) {
-			        embeddedConnectionClass = Class.forName("nl.cwi.monetdb.embedded.jdbc.EmbeddedConnection");
-                    if(embeddedConnectionClass == null) { //if it is still null then there is a problem!
-                        throw new SQLException("EmbeddedConnection Class not found! Please add the MonetDBJavaEmbedded JAR to the Classpath!");
-                    }
-			    }
-                res = (MonetConnection) embeddedConnectionClass
-                    .getDeclaredConstructor(Properties.class, String.class, String.class, String.class)
-                    .newInstance(props, hash, language, directory);
+				String directory = props.getProperty("directory");
+				if (directory != null && (directory.trim().isEmpty() || directory.equals(":memory:")))
+					directory = null;
+				if(embeddedConnectionClass == null) {
+					embeddedConnectionClass = Class.forName("nl.cwi.monetdb.embedded.jdbc.EmbeddedConnection");
+					if(embeddedConnectionClass == null) { //if it is still null then there is a problem!
+						throw new SQLException("EmbeddedConnection Class not found! Please add monetdb-java-lite jar to the CLASSPATH");
+					}
+				}
+				res = (MonetConnection) embeddedConnectionClass
+					.getDeclaredConstructor(Properties.class, String.class, String.class, String.class)
+					.newInstance(props, hash, language, directory);
 			} catch (InvocationTargetException | InstantiationException | IllegalAccessException |
-			         NoSuchMethodException | ClassNotFoundException e) {
+					 NoSuchMethodException | ClassNotFoundException e) {
 				throw new SQLException(e);
 			}
 		} else {
@@ -434,12 +433,12 @@ public final class MonetDriver implements Driver {
 				throw new IllegalArgumentException("user should not be null or empty");
 			if (password == null || password.trim().isEmpty())
 				throw new IllegalArgumentException("password should not be null or empty");
-            String database = props.getProperty("database");
-            if (database == null || database.trim().isEmpty())
-                throw new IllegalArgumentException("database should not be null or empty");
+			String database = props.getProperty("database");
+			if (database == null || database.trim().isEmpty())
+				throw new IllegalArgumentException("database should not be null or empty");
 
-            boolean blobIsBinary = Boolean.valueOf(props.getProperty("treat_blob_as_binary", "false"));
-            boolean clobIsLongChar = Boolean.valueOf(props.getProperty("treat_clob_as_longvarchar", "false"));
+			boolean blobIsBinary = Boolean.valueOf(props.getProperty("treat_blob_as_binary", "false"));
+			boolean clobIsLongChar = Boolean.valueOf(props.getProperty("treat_clob_as_longvarchar", "false"));
 
 			boolean negative1 = false, failedparse1 = false;
 			int port = 0;
@@ -506,7 +505,7 @@ public final class MonetDriver implements Driver {
 				throw new SQLException("Unable to connect (" + con.getHostname() + ":"
 						+ con.getPort() + "): " + e.getMessage(), "08006");
 			} else {
-                throw new SQLException("Unable to connect: " + e.getMessage(), "08006");
+				throw new SQLException("Unable to connect: " + e.getMessage(), "08006");
 			}
 		} catch (ProtocolException e) {
 			throw new SQLException(e.getMessage(), "08001");

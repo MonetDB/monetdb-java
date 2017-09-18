@@ -19,42 +19,42 @@ package nl.cwi.monetdb.mcl.responses;
  */
 public class UpdateResponse implements IResponse {
 
-    /**
-     * The id of the response before this one.
-     */
-    private final int lastid;
+	/**
+	 * The id of the response before this one.
+	 */
+	private final int lastid;
 
-    /**
-     * The number of rows affected by the update statement.
-     */
-    private final int count;
+	/**
+	 * The number of rows affected by the update statement.
+	 */
+	private final int count;
 
-    public UpdateResponse(int lastid, int count) {
-        // fill the blank finals
-        this.lastid = lastid;
-        this.count = count;
-    }
+	public UpdateResponse(int lastid, int count) {
+		// fill the blank finals
+		this.lastid = lastid;
+		this.count = count;
+	}
 
-    /**
-     * The id of the response before this one.
-     *
-     * @return The id of the response before this one
-     */
-    public int getLastid() {
-        return lastid;
-    }
+	/**
+	 * The id of the response before this one.
+	 *
+	 * @return The id of the response before this one
+	 */
+	public int getLastid() {
+		return lastid;
+	}
 
-    /**
-     * The number of rows affected by the update statement.
-     *
-     * @return The number of rows affected by the update statement
-     */
-    public int getCount() {
-        return count;
-    }
+	/**
+	 * The number of rows affected by the update statement.
+	 *
+	 * @return The number of rows affected by the update statement
+	 */
+	public int getCount() {
+		return count;
+	}
 
-    @Override
-    public void close() {
-        // nothing to do here...
-    }
+	@Override
+	public void close() {
+		// nothing to do here...
+	}
 }

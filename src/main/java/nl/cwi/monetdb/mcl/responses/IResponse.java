@@ -16,8 +16,8 @@ package nl.cwi.monetdb.mcl.responses;
  */
 public interface IResponse {
 
-    /**
-     * Instructs the Response implementation to close and do the necessary clean up procedures.
-     */
-    void close();
+	/**
+	 * Instructs the Response implementation to close and do the necessary clean up procedures.
+	 */
+	void close();
 }

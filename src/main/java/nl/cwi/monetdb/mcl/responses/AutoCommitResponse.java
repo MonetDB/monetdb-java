@@ -17,22 +17,22 @@ package nl.cwi.monetdb.mcl.responses;
  */
 public class AutoCommitResponse extends SchemaResponse {
 
-    /**
-     * If the auto commit mode is set.
-     */
-    private final boolean autocommit;
+	/**
+	 * If the auto commit mode is set.
+	 */
+	private final boolean autocommit;
 
-    public AutoCommitResponse(boolean ac) {
-        // fill the blank final
-        this.autocommit = ac;
-    }
+	public AutoCommitResponse(boolean ac) {
+		// fill the blank final
+		this.autocommit = ac;
+	}
 
-    /**
-     * The auto commit value
-     *
-     * @return The auto commit value
-     */
-    public boolean isAutocommit() {
-        return autocommit;
-    }
+	/**
+	 * The auto commit value
+	 *
+	 * @return The auto commit value
+	 */
+	public boolean isAutocommit() {
+		return autocommit;
+	}
 }
