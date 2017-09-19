@@ -12,10 +12,7 @@ import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.responses.AbstractDataBlockResponse;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
-import java.io.Reader;
-import java.io.StringReader;
+import java.io.*;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.math.BigDecimal;
@@ -47,7 +44,7 @@ import java.util.UUID;
  * @author Fabian Groffen, Martin van Dinther, Pedro Ferreira
  * @version 0.8
  */
-public class MonetResultSet extends MonetWrapper implements ResultSet {
+public class MonetResultSet extends MonetWrapper implements ResultSet, AutoCloseable {
 
 	/** The current position of the cursor for this ResultSet object */
 	int curRow = 0;
@@ -80,9 +77,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 *
 	 * @param statement the statement which created this ResultSet
 	 * @param header a header containing the query, resultset type, etc.
-	 * @throws SQLException is a protocol error occurs
+	 * @throws IllegalArgumentException if called with null or invalid value for one of the arguments
 	 */
-	MonetResultSet(Statement statement, ResultSetResponse header) throws SQLException {
+	MonetResultSet(Statement statement, ResultSetResponse header) throws IllegalArgumentException {
 		if (statement == null) {
 			throw new IllegalArgumentException("Statement may not be null!");
 		}
@@ -111,7 +108,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * @param columns the column names
 	 * @param types the column types
 	 * @param results the number of rows in the ResultSet
-	 * @throws IllegalArgumentException if communicating with monet failed
+	 * @throws IllegalArgumentException if called with null or invalid value for one of the arguments
 	 */
 	MonetResultSet(Statement statement, String[] columns, String[] types, int[] JdbcSQLTypes, int results)
 			throws IllegalArgumentException {
@@ -144,14 +141,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Moves the cursor to the given row number in this ResultSet object.
 	 *
 	 * If the row number is positive, the cursor moves to the given row number with respect to the beginning of the
-     * result set. The first row is row 1, the second is row 2, and so on.
+	 * result set. The first row is row 1, the second is row 2, and so on.
 	 *
 	 * If the given row number is negative, the cursor moves to an absolute row position with respect to the end of the
-     * result set. For example, calling the method absolute(-1) positions the cursor on the last row; calling the
+	 * result set. For example, calling the method absolute(-1) positions the cursor on the last row; calling the
 	 * method absolute(-2) moves the cursor to the next-to-last row, and so on.
 	 *
 	 * An attempt to position the cursor beyond the first/last row in the result set leaves the cursor before the first
-     * row or after the last row.
+	 * row or after the last row.
 	 * Note: calling absolute(1) is the same as calling first(). Calling absolute(-1) is the same as calling last().
 	 *
 	 * @param row the number of the row to which the cursor should move. A positive number indicates the row number
@@ -174,12 +171,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			row = tupleCount + row + 1;
 		}
 		// now place the row not farther than just before or after the result
-		if (row < 0) {
-			row = 0; // before first
-		} else if (row > tupleCount + 1) {
-			row = tupleCount + 1; // after last
-		}
-		// store it
+		if (row < 0)
+			row = 0;	// before first
+		else if (row > tupleCount + 1)
+			row = tupleCount + 1;	// after last
+
 		this.curRow = row;
 		this.currentBlock = header.getDataBlockCorrespondingToLine(row - 1);
 		return this.curRow <= this.tupleCount;
@@ -237,25 +233,25 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * case insensitive. If a select list contains the same column more than once, the first instance of the
 	 * column will be returned.
 	 *
-	 * @param columnName the name of the column
+	 * @param columnLabel the name of the column
 	 * @return the column index of the given column name
-	 * @throws SQLException if the ResultSet object does not contain columnName
+	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
-	public int findColumn(String columnName) throws SQLException {
-		if (columnName != null) {
+	public int findColumn(String columnLabel) throws SQLException {
+		if (columnLabel != null) {
 			final int array_size = columns.length;
 			for (int i = 0; i < array_size; i++) {
-				if (columnName.equals(columns[i]))
+				if (columnLabel.equals(columns[i]))
 					return i + 1;
 			}
 			/* if an exact match did not succeed try a case insensitive match */
 			for (int i = 0; i < array_size; i++) {
-				if (columnName.equalsIgnoreCase(columns[i]))
+				if (columnLabel.equalsIgnoreCase(columns[i]))
 					return i + 1;
 			}
 		}
-		throw new SQLException("No such column name: " + columnName, "M1M05");
+		throw new SQLException("No such column name: " + columnLabel, "M1M05");
 	}
 
 	/**
@@ -275,46 +271,46 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public Array getArray(String colName) throws SQLException {
+	public Array getArray(String columnLabel) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getArray");
 	}
 
 	@Override
 	public InputStream getAsciiStream(int columnIndex) throws SQLException {
-        try {
+		try {
 			InputStream res = null;
-            switch (JdbcSQLTypes[columnIndex - 1]) {
-                case Types.CLOB:
+			switch (JdbcSQLTypes[columnIndex - 1]) {
+				case Types.CLOB:
 					Clob cl = getClob(columnIndex);
-                    if(cl != null) {
-                        res = cl.getAsciiStream();
-                    }
+					if(cl != null) {
+						res = cl.getAsciiStream();
+					}
 					break;
-                case Types.BLOB:
-                case Types.LONGVARBINARY:
-                case Types.CHAR:
-                case Types.VARCHAR:
-                case Types.LONGVARCHAR:
-                    byte[] bytes = getBytes(columnIndex);
-                    if(bytes != null) {
-                        res = new ByteArrayInputStream(getBytes(columnIndex));
-                    }
+				case Types.BLOB:
+				case Types.LONGVARBINARY:
+				case Types.CHAR:
+				case Types.VARCHAR:
+				case Types.LONGVARCHAR:
+					byte[] bytes = getBytes(columnIndex);
+					if(bytes != null) {
+						res = new ByteArrayInputStream(getBytes(columnIndex));
+					}
 					break;
-                default:
-                    throw new SQLException("Conversion from " + types[columnIndex - 1] +
-                            " to ascii stream not supported", "M1M05");
-            }
-            return res;
-        } catch (ClassCastException ex) {
-            throw new SQLException(ex.getMessage());
-        } catch (IndexOutOfBoundsException e) {
-            throw newSQLInvalidColumnIndexException(columnIndex);
-        }
+				default:
+					throw new SQLException("Conversion from " + types[columnIndex - 1] +
+							" to ascii stream not supported", "M1M05");
+			}
+			return res;
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		}
 	}
 
 	@Override
-	public InputStream getAsciiStream(String columnName) throws SQLException {
-        return getAsciiStream(findColumn(columnName));
+	public InputStream getAsciiStream(String columnLabel) throws SQLException {
+		throw newSQLFeatureNotSupportedException("getAsciiStream");
 	}
 
 	@Override
@@ -325,73 +321,73 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 	@Override
 	@Deprecated
-	public InputStream getUnicodeStream(String columnName) throws SQLException {
+	public InputStream getUnicodeStream(String columnLabel) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getUnicodeStream");
 	}
 
 	/**
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a stream of
-     * uninterpreted bytes. The value can then be read in chunks from the stream. This method is particularly suitable
-     * for retrieving large LONGVARBINARY values.
+	 * uninterpreted bytes. The value can then be read in chunks from the stream. This method is particularly suitable
+	 * for retrieving large LONGVARBINARY values.
 	 * <br/><br/>
 	 * Note: All the data in the returned stream must be read prior to getting the value of any other column. The next
-     * call to a getter method implicitly closes the stream. Also, a stream may return 0 when the method
-     * InputStream.available  is called whether there is data available or not.
+	 * call to a getter method implicitly closes the stream. Also, a stream may return 0 when the method
+	 * InputStream.available  is called whether there is data available or not.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a Java input stream that delivers the database column value as a stream of uninterpreted bytes; if the
-     * value is SQL NULL, the value returned is null
+	 * value is SQL NULL, the value returned is null
 	 * @throws SQLException if the columnIndex is not valid; if a database access error occurs or this method is called
-     * on a closed result set
+	 * on a closed result set
 	 */
 	@Override
 	public InputStream getBinaryStream(int columnIndex) throws SQLException {
-        try {
+		try {
 			InputStream res = null;
-            switch (JdbcSQLTypes[columnIndex - 1]) {
-                case Types.BLOB:
-                    Blob cl = getBlob(columnIndex);
-                    if(cl != null) {
-                        res = cl.getBinaryStream();
-                    }
-                    break;
-                case Types.LONGVARBINARY:
-                    byte[] bytes = getBytes(columnIndex);
-                    if(bytes != null) {
-                        res = new ByteArrayInputStream(getBytes(columnIndex));
-                    }
-                    break;
-                default:
-                    throw new SQLException("Conversion from " + types[columnIndex - 1] +
-                            " to binary stream not supported", "M1M05");
-            }
+			switch (JdbcSQLTypes[columnIndex - 1]) {
+				case Types.BLOB:
+					Blob cl = getBlob(columnIndex);
+					if(cl != null) {
+						res = cl.getBinaryStream();
+					}
+					break;
+				case Types.LONGVARBINARY:
+					byte[] bytes = getBytes(columnIndex);
+					if(bytes != null) {
+						res = new ByteArrayInputStream(getBytes(columnIndex));
+					}
+					break;
+				default:
+					throw new SQLException("Conversion from " + types[columnIndex - 1] +
+							" to binary stream not supported", "M1M05");
+			}
 			return res;
-        } catch (ClassCastException ex) {
-            throw new SQLException(ex.getMessage());
-        } catch (IndexOutOfBoundsException e) {
-            throw newSQLInvalidColumnIndexException(columnIndex);
-        }
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		}
 	}
-	
+
 	/**
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a stream of
-     * uninterpreted bytes. The value can then be read in chunks from the stream. This method is particularly suitable
-     * for retrieving large LONGVARBINARY  values.
-     * <br/><br/>
+	 * uninterpreted bytes. The value can then be read in chunks from the stream. This method is particularly suitable
+	 * for retrieving large LONGVARBINARY  values.
+	 * <br/><br/>
 	 * Note: All the data in the returned stream must be read prior to getting the value of any other column. The next
-     * call to a getter method implicitly closes the stream. Also, a stream may return 0 when the method available is
-     * called whether there is data available or not.
+	 * call to a getter method implicitly closes the stream. Also, a stream may return 0 when the method available is
+	 * called whether there is data available or not.
 	 *
-	 * @param columnName the label for the column specified with the SQL AS clause. If the SQL AS clause was not
-     * specified, then the label is the name of the column
+	 * @param columnLabel the label for the column specified with he SQL AS clause. If the SQL AS clause was not
+	 * specified, then the label is the name of the column
 	 * @return a Java input stream that delivers the database column value as a stream of uninterpreted bytes; if the
-     * value is SQL NULL, the result is null
+	 * value is SQL NULL, the result is null
 	 * @throws SQLException if the columnLabel is not valid; if a database access error occurs or this method is called
-     * on a closed result set
+	 * on a closed result set
 	 */
 	@Override
-	public InputStream getBinaryStream(String columnName) throws SQLException {
-		return getBinaryStream(findColumn(columnName));
+	public InputStream getBinaryStream(String columnLabel) throws SQLException {
+		return getBinaryStream(findColumn(columnLabel));
 	}
 
 	/**
@@ -407,12 +403,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public Reader getCharacterStream(int columnIndex) throws SQLException {
 		try {
 			String ss = currentBlock.getValueAsString(columnIndex - 1);
-            return (ss == null) ? null : new StringReader(ss);
+			return (ss == null) ? null : new StringReader(ss);
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -421,45 +417,45 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.io.Reader
 	 * object.
 	 *
-	 * @param columnName the name of the column
+	 * @param columnLabel the name of the column
 	 * @return a java.io.Reader object that contains the column value; if the value is SQL NULL, the value returned is
-     * null in the Java programming language.
+	 * null in the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Reader getCharacterStream(String columnName) throws SQLException {
-		return getCharacterStream(findColumn(columnName));
+	public Reader getCharacterStream(String columnLabel) throws SQLException {
+		return getCharacterStream(findColumn(columnLabel));
 	}
 
 	/**
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.io.Reader
-     * object. It is intended for use when accessing NCHAR, NVARCHAR and LONGNVARCHAR columns.
+	 * object. It is intended for use when accessing NCHAR, NVARCHAR and LONGNVARCHAR columns.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a java.io.Reader object that contains the column value; if the value is SQL NULL, the value returned is
-     * null in the Java programming language.
+	 * null in the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
 	 */
 	@Override
 	public Reader getNCharacterStream(int columnIndex) throws SQLException {
-		throw newSQLFeatureNotSupportedException("getNCharacterStream");
+		return getCharacterStream(columnIndex);
 	}
 
 	/**
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.io.Reader
-     * object. It is intended for use when accessing NCHAR, NVARCHAR and LONGNVARCHAR columns.
+	 * object. It is intended for use when accessing NCHAR, NVARCHAR and LONGNVARCHAR columns.
 	 *
-	 * @param columnName the name of the column
+	 * @param columnLabel the name of the column
 	 * @return a java.io.Reader object that contains the column value; if the value is SQL NULL, the value returned is
-     * null in the Java programming language.
+	 * null in the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public Reader getNCharacterStream(String columnName) throws SQLException {
-		throw newSQLFeatureNotSupportedException("getNCharacterStream");
+	public Reader getNCharacterStream(String columnLabel) throws SQLException {
+		return getCharacterStream(findColumn(columnLabel));
 	}
 
 	/**
@@ -477,23 +473,23 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
 
 	/**
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a Blob object in the
-     * Java programming language.
+	 * Java programming language.
 	 *
-	 * @param colName the name of the column from which to retrieve the value
+	 * @param columnLabel the name of the column from which to retrieve the value
 	 * @return a Blob object representing the SQL BLOB value in the specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Blob getBlob(String colName) throws SQLException {
-		return getBlob(findColumn(colName));
+	public Blob getBlob(String columnLabel) throws SQLException {
+		return getBlob(findColumn(columnLabel));
 	}
 
 	/**
@@ -511,8 +507,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -521,26 +517,26 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a Clob object in the
 	 * Java programming language.
 	 *
-	 * @param colName the name of the column from which to retrieve the value
+	 * @param columnLabel the name of the column from which to retrieve the value
 	 * @return a Clob object representing the SQL CLOB value in the specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Clob getClob(String colName) throws SQLException {
-		return getClob(findColumn(colName));
+	public Clob getClob(String columnLabel) throws SQLException {
+		return getClob(findColumn(columnLabel));
 	}
 
 	/**
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a NClob object in the
 	 * Java programming language.
 	 *
-	 * @param i the first column is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a NClob object representing the SQL NCLOB value in the specified column
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
 	 */
 	@Override
-	public NClob getNClob(int i) throws SQLException {
+	public NClob getNClob(int columnIndex) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getNClob");
 	}
 
@@ -548,13 +544,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a NClob object in the
 	 * Java programming language.
 	 *
-	 * @param colName the name of the column from which to retrieve the value
+	 * @param columnLabel the name of the column from which to retrieve the value
 	 * @return a NClob object representing the SQL NCLOB value in the specified column
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
 	 */
 	@Override
-	public NClob getNClob(String colName) throws SQLException {
+	public NClob getNClob(String columnLabel) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getNClob");
 	}
 
@@ -601,7 +597,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-				    String ss = currentBlock.getValueAsString(columnIndex - 1);
+					String ss = currentBlock.getValueAsString(columnIndex - 1);
 					return (ss == null) ? null : new BigDecimal(ss);
 				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
 					throw new SQLException("Conversion from " + types[columnIndex - 1] +
@@ -610,8 +606,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -646,21 +642,21 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.math.BigDecimal with full precision.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value (full precision); if the value is SQL NULL,
 	 *         the value returned is null in the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public BigDecimal getBigDecimal(String columnName) throws SQLException {
-		return getBigDecimal(findColumn(columnName));
+	public BigDecimal getBigDecimal(String columnLabel) throws SQLException {
+		return getBigDecimal(findColumn(columnLabel));
 	}
 
 	/**
 	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a java.math.BigDecimal with full precision.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @param scale the number of digits to the right of the decimal point
 	 * @return the column value (full precision); if the value is SQL NULL,
 	 *         the value returned is null in the Java programming language.
@@ -668,14 +664,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	@Deprecated
-	public BigDecimal getBigDecimal(String columnName, int scale) throws SQLException {
-		return getBigDecimal(findColumn(columnName), scale);
+	public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
+		return getBigDecimal(findColumn(columnLabel), scale);
 	}
 
 	// See Sun JDBC Specification 3.0 Table B-6
 	/**
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a boolean in the Java
-     * programming language.
+	 * programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned is false
@@ -707,27 +703,27 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.DOUBLE:
 					double dou = currentBlock.getDoubleValue(columnIndex - 1);
 					return !currentBlock.isLastReadWasNull() && dou != 0.0d;
-                case Types.CHAR:
-                case Types.VARCHAR:
-                case Types.LONGVARCHAR:
-                case Types.CLOB:
-                case Types.BLOB:
-                case Types.LONGVARBINARY:
-                    String val = currentBlock.getValueAsString(columnIndex - 1);
-                    return val != null && !"0".equals(val) && ("1".equals(val) || Boolean.parseBoolean(val));
-                case Types.NUMERIC:
-                case Types.DECIMAL:
-                    BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
-                    return bigdec != null && bigdec.compareTo(BigDecimal.ZERO) != 0;
-                default: //OTHERS, BLOB, LONGVARBINARY, TIME...
-                    throw new SQLException("Conversion from " + types[columnIndex - 1] +
-                            " to boolean type not supported", "M1M05");
-            }
+				case Types.CHAR:
+				case Types.VARCHAR:
+				case Types.LONGVARCHAR:
+				case Types.CLOB:
+				case Types.BLOB:
+				case Types.LONGVARBINARY:
+					String val = currentBlock.getValueAsString(columnIndex - 1);
+					return val != null && !"0".equals(val) && ("1".equals(val) || Boolean.parseBoolean(val));
+				case Types.NUMERIC:
+				case Types.DECIMAL:
+					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
+					return bigdec != null && bigdec.compareTo(BigDecimal.ZERO) != 0;
+				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
+					throw new SQLException("Conversion from " + types[columnIndex - 1] +
+							" to boolean type not supported", "M1M05");
+			}
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -736,13 +732,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a boolean in the Java
 	 * programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is false
-	 * @throws SQLException if the ResultSet object does not contain columnName
+	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
-	public boolean getBoolean(String columnName) throws SQLException {
-		return getBoolean(findColumn(columnName));
+	public boolean getBoolean(String columnLabel) throws SQLException {
+		return getBoolean(findColumn(columnLabel));
 	}
 
 	/**
@@ -797,8 +793,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -807,14 +803,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a byte in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is 0
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public byte getByte(String columnName) throws SQLException {
-		return getByte(findColumn(columnName));
+	public byte getByte(String columnLabel) throws SQLException {
+		return getByte(findColumn(columnLabel));
 	}
 
 	/**
@@ -849,8 +845,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -859,13 +855,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a byte array in the
 	 * Java programming language. The bytes represent the raw values returned by the driver.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public byte[] getBytes(String columnName) throws SQLException {
-		return getBytes(findColumn(columnName));
+	public byte[] getBytes(String columnLabel) throws SQLException {
+		return getBytes(findColumn(columnLabel));
 	}
 
 	/**
@@ -959,8 +955,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -969,13 +965,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a double in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
-	 * @throws SQLException if the ResultSet object does not contain columnName
+	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
-	public double getDouble(String columnName) throws SQLException {
-		return getDouble(findColumn(columnName));
+	public double getDouble(String columnLabel) throws SQLException {
+		return getDouble(findColumn(columnLabel));
 	}
 
 	/**
@@ -1109,8 +1105,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -1119,13 +1115,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a float in the Java
 	 * programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
-	 * @throws SQLException if the ResultSet object does not contain columnName
+	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
-	public float getFloat(String columnName) throws SQLException {
-		return getFloat(findColumn(columnName));
+	public float getFloat(String columnLabel) throws SQLException {
+		return getFloat(findColumn(columnLabel));
 	}
 
 	/**
@@ -1180,8 +1176,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -1190,13 +1186,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as an int in the
 	 * Java programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
-	 * @throws SQLException if the ResultSet object does not contain columnName
+	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
-	public int getInt(String columnName) throws SQLException {
-		return getInt(findColumn(columnName));
+	public int getInt(String columnLabel) throws SQLException {
+		return getInt(findColumn(columnLabel));
 	}
 
 	/**
@@ -1251,8 +1247,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        } catch (IndexOutOfBoundsException e) {
+			throw new SQLException(e);
+		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
@@ -1261,13 +1257,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a long in the Java
 	 * programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
-	 * @throws SQLException if the ResultSet object does not contain columnName
+	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
-	public long getLong(String columnName) throws SQLException {
-		return getLong(findColumn(columnName));
+	public long getLong(String columnLabel) throws SQLException {
+		return getLong(findColumn(columnLabel));
 	}
 
 	/* helper for the anonymous class inside getMetaData */
@@ -1569,9 +1565,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 								_precision[column] = 10;
 								break;
 							case Types.TIME:
+							case 2013: //Types.TIME_WITH_TIMEZONE:
 								_precision[column] = 8;
 								break;
 							case Types.TIMESTAMP:
+							case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
 								_precision[column] = 19;
 								break;
 							default:
@@ -1832,8 +1830,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 				case Types.DATE:
 					return getDate(columnIndex);
 				case Types.TIME:
+				case 2013: //Types.TIME_WITH_TIMEZONE:
 					return getTime(columnIndex);
 				case Types.TIMESTAMP:
+				case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
 					return getTimestamp(columnIndex);
 				case Types.OTHER: {
 					// The MonetDB types: inet, json, url and uuid are all mapped to Types.OTHER in MonetDriver.typeMap
@@ -1889,8 +1889,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		} catch (ProtocolException e) {
-            throw new SQLException(e);
-        }
+			throw new SQLException(e);
+		}
 	}
 
 	private boolean classImplementsSQLData(Class<?> cl) {
@@ -2160,6 +2160,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	@Override
 	@SuppressWarnings("unchecked")
 	public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
+		if (type == null)
+			throw new SQLException("type is null", "M1M05");
 		try {
 			return (T) getObjectFromClass(columnIndex, type);
 		} catch (IndexOutOfBoundsException e) {
@@ -2223,8 +2225,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 			case Types.DATE:
 				return Date.class;
 			case Types.TIME:
+			case 2013: //Types.TIME_WITH_TIMEZONE:
 				return Time.class;
 			case Types.TIMESTAMP:
+			case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
 				return Timestamp.class;
 			case Types.CLOB:
 				return Clob.class;
@@ -2247,13 +2251,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 *
 	 * This method may also be used to read database-specific abstract data types.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return a java.lang.Object holding the column value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Object getObject(String columnName) throws SQLException {
-		return getObject(findColumn(columnName));
+	public Object getObject(String columnLabel) throws SQLException {
+		return getObject(findColumn(columnLabel));
 	}
 
 	/**
@@ -2262,24 +2266,24 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * value is an SQL NULL, the driver returns a Java null. This method uses
 	 * the specified Map object for custom mapping if appropriate.
 	 *
-	 * @param colName the name of the column from which to retrieve the value
+	 * @param columnLabel the name of the column from which to retrieve the value
 	 * @param map a java.util.Map object that contains the mapping from SQL
 	 *        type names to classes in the Java programming language
 	 * @return an Object representing the SQL value in the specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Object getObject(String colName, Map<String,Class<?>> map) throws SQLException {
-		return getObject(findColumn(colName), map);
+	public Object getObject(String columnLabel, Map<String,Class<?>> map) throws SQLException {
+		return getObject(findColumn(columnLabel), map);
 	}
 
 	@Override
-	public Ref getRef(int i) throws SQLException {
+	public Ref getRef(int columnIndex) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getRef");
 	}
 
 	@Override
-	public Ref getRef(String colName) throws SQLException {
+	public Ref getRef(String columnLabel) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getRef");
 	}
 
@@ -2312,13 +2316,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.sql.RowId
 	 * object in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is null
-	 * @throws SQLException if the ResultSet object does not contain columnName
+	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
 	 */
 	@Override
-	public RowId getRowId(String columnName) throws SQLException {
+	public RowId getRowId(String columnLabel) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getRowId");
 	}
 
@@ -2384,13 +2388,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a short in the Java
 	 * programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
-	 * @throws SQLException if the ResultSet object does not contain columnName
+	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
-	public short getShort(String columnName) throws SQLException {
-		return getShort(findColumn(columnName));
+	public short getShort(String columnLabel) throws SQLException {
+		return getShort(findColumn(columnLabel));
 	}
 
 	/**
@@ -2430,13 +2434,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this
 	 * ResultSet object as a String in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is null
-	 * @throws SQLException if the ResultSet object does not contain columnName
+	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
-	public String getString(String columnName) throws SQLException {
-		return getString(findColumn(columnName));
+	public String getString(String columnLabel) throws SQLException {
+		return getString(findColumn(columnLabel));
 	}
 
 	/**
@@ -2461,27 +2465,27 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * language. It is intended for use when accessing NCHAR,NVARCHAR
 	 * and LONGNVARCHAR columns.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is null
-	 * @throws SQLException if the ResultSet object does not contain columnName
+	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
 	 */
 	@Override
-	public String getNString(String columnName) throws SQLException {
-		return getNString(findColumn(columnName));
+	public String getNString(String columnLabel) throws SQLException {
+		return getString(findColumn(columnLabel));
 	}
 
 	/**
 	 * Retrieves the value of the designated column in the current row of this ResultSet as a java.sql.SQLXML object
 	 * in the Java programming language.
 	 *
-	 * @param i the first column is 1, the second is 2, ...
+	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a SQLXML object that maps an SQL XML value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
 	 */
 	@Override
-	public SQLXML getSQLXML(int i) throws SQLException {
+	public SQLXML getSQLXML(int columnIndex) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getSQLXML");
 	}
 
@@ -2489,14 +2493,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet as a java.sql.SQLXML object
 	 * in the Java programming language.
 	 *
-	 * @param colName the label for the column specified with the SQL AS clause. If the SQL AS clause was not specified,
-	 * then the label is the name of the column
+	 * @param columnLabel the label for the column specified with the SQL AS clause. If the SQL AS clause was not
+	 * specified, then the label is the name of the column
 	 * @return a SQLXML object that maps an SQL XML value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
 	 */
 	@Override
-	public SQLXML getSQLXML(String colName) throws SQLException {
+	public SQLXML getSQLXML(String columnLabel) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getSQLXML");
 	}
 
@@ -2531,44 +2535,44 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	public Date getDate(int columnIndex, Calendar cal) throws SQLException {
 		try {
 			Calendar res;
-            long millis;
-            switch (JdbcSQLTypes[columnIndex - 1]) {
-                case Types.DATE:
-                case Types.TIME:
-                case Types.TIMESTAMP:
+			long millis;
+			switch (JdbcSQLTypes[columnIndex - 1]) {
+				case Types.DATE:
+				case Types.TIME:
+				case Types.TIMESTAMP:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;
 					}
-                    millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
-                case 2013: //Types.TIME_WITH_TIMEZONE:
-                case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
-                    res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+				case 2013: //Types.TIME_WITH_TIMEZONE:
+				case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
+					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;
 					}
-                    millis = res.getTimeInMillis();
-                    break;
-                case Types.CHAR:
-                case Types.VARCHAR:
-                case Types.LONGVARCHAR:
-                case Types.CLOB:
+					millis = res.getTimeInMillis();
+					break;
+				case Types.CHAR:
+				case Types.VARCHAR:
+				case Types.LONGVARCHAR:
+				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-                    res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.DATE);
+					res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.DATE);
 					if(res == null) {
 						return null;
 					}
-                    millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
-                    break;
-                default:
-                    this.addWarning("unsupported data type", "01M03");
-                    cal.clear();
-                    millis = 0;
-            }
-            return new Date(millis);
-        } catch (ClassCastException ex) {
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					break;
+				default:
+					this.addWarning("unsupported data type", "01M03");
+					cal.clear();
+					millis = 0;
+			}
+			return new Date(millis);
+		} catch (ClassCastException ex) {
 			throw new SQLException(ex.getMessage());
 		} catch (ProtocolException e) {
 			throw new SQLException(e);
@@ -2582,13 +2586,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * ResultSet object as a java.sql.Date object in the Java programming
 	 * language.
 	 *
-	 * @param columnName the SQL name of the column from which to retrieve the value
+	 * @param columnLabel the SQL name of the column from which to retrieve the value
 	 * @return the column value; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Date getDate(String columnName) throws SQLException {
-		return getDate(findColumn(columnName), Calendar.getInstance());
+	public Date getDate(String columnLabel) throws SQLException {
+		return getDate(findColumn(columnLabel), Calendar.getInstance());
 	}
 
 	/**
@@ -2598,14 +2602,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * millisecond value for the date if the underlying database does not store
 	 * timezone information.
 	 *
-	 * @param columnName the SQL name of the column from which to retrieve the value
+	 * @param columnLabel the SQL name of the column from which to retrieve the value
 	 * @param cal the java.util.Calendar object to use in constructing the date
 	 * @return the column value; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Date getDate(String columnName, Calendar cal) throws SQLException {
-		return getDate(findColumn(columnName), cal);
+	public Date getDate(String columnLabel, Calendar cal) throws SQLException {
+		return getDate(findColumn(columnLabel), cal);
 	}
 
 	/**
@@ -2618,7 +2622,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public Time getTime(int columnIndex) throws SQLException {
-		return getTime(columnIndex, Calendar.getInstance());
+		return getTime(columnIndex, null);
 	}
 
 	/**
@@ -2630,71 +2634,71 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param cal the java.util.Calendar object to use in constructing the timestamp
-	 * @return the column value as a java.sql.Timestamp object; if the value is SQL NULL, the value returned is null in
-	 * the Java programming language
+	 * @return the column value as a java.sql.Time object; if the value is SQL NULL, the value returned is null in the
+	 * Java programming language
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public Time getTime(int columnIndex, Calendar cal) throws SQLException {
-        try {
-            Calendar res;
-            long millis;
-            switch (JdbcSQLTypes[columnIndex - 1]) {
-                case Types.DATE:
-                case Types.TIME:
-                case Types.TIMESTAMP:
+		try {
+			Calendar res;
+			long millis;
+			switch (JdbcSQLTypes[columnIndex - 1]) {
+				case Types.DATE:
+				case Types.TIME:
+				case Types.TIMESTAMP:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;
 					}
 					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
-                case 2013: //Types.TIME_WITH_TIMEZONE:
-                case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
+				case 2013: //Types.TIME_WITH_TIMEZONE:
+				case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;
 					}
 					millis = res.getTimeInMillis();
 					break;
-                case Types.CHAR:
-                case Types.VARCHAR:
-                case Types.LONGVARCHAR:
-                case Types.CLOB:
+				case Types.CHAR:
+				case Types.VARCHAR:
+				case Types.LONGVARCHAR:
+				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-                    res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.TIME);
+					res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.TIME);
 					if(res == null) {
 						return null;
 					}
-                    millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
-                    break;
-                default:
-                    this.addWarning("unsupported data type", "01M03");
-                    cal.clear();
-                    millis = 0;
-            }
-            return new Time(millis);
-        } catch (ClassCastException ex) {
-            throw new SQLException(ex.getMessage());
-        } catch (ProtocolException e) {
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					break;
+				default:
+					this.addWarning("unsupported data type", "01M03");
+					cal.clear();
+					millis = 0;
+			}
+			return new Time(millis);
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
+		} catch (ProtocolException e) {
 			throw new SQLException(e);
 		} catch (IndexOutOfBoundsException e) {
-            throw newSQLInvalidColumnIndexException(columnIndex);
-        }
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		}
 	}
 
 	/**
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.sql.Time
 	 * object in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Time getTime(String columnName) throws SQLException {
-		return getTime(findColumn(columnName), Calendar.getInstance());
+	public Time getTime(String columnLabel) throws SQLException {
+		return getTime(findColumn(columnLabel), null);
 	}
 
 	/**
@@ -2704,15 +2708,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * millisecond value for the time if the underlying database does not store
 	 * timezone information.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @param cal the java.util.Calendar object to use in constructing the timestamp
-	 * @return the column value as a java.sql.Timestamp object; if the value is SQL NULL, the value returned is null
-	 * in the Java programming language
+	 * @return the column value as a java.sql.Time object; if the value is SQL NULL, the value returned is null in the
+	 * Java programming language
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Time getTime(String columnName, Calendar cal) throws SQLException {
-		return getTime(findColumn(columnName), cal);
+	public Time getTime(String columnLabel, Calendar cal) throws SQLException {
+		return getTime(findColumn(columnLabel), cal);
 	}
 
 	/**
@@ -2725,7 +2729,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public Timestamp getTimestamp(int columnIndex) throws SQLException {
-		return getTimestamp(columnIndex, Calendar.getInstance());
+		return getTimestamp(columnIndex, null);
 	}
 
 	/**
@@ -2743,26 +2747,26 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 */
 	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar cal) throws SQLException {
-        try {
-            Calendar res;
+		try {
+			Calendar res;
 			long millis;
 			int nanos = 0;
-            switch (JdbcSQLTypes[columnIndex - 1]) {
-                case Types.DATE:
-                case Types.TIME:
-                    res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+			switch (JdbcSQLTypes[columnIndex - 1]) {
+				case Types.DATE:
+				case Types.TIME:
+					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;
 					}
-                    millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
-                    break;
-                case 2013: //Types.TIME_WITH_TIMEZONE:
-                    res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					break;
+				case 2013: //Types.TIME_WITH_TIMEZONE:
+					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;
 					}
-                    millis = res.getTimeInMillis();
-                    break;
+					millis = res.getTimeInMillis();
+					break;
 				case Types.TIMESTAMP:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
@@ -2779,46 +2783,46 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 					nanos = currentBlock.getLastNanos();
 					millis = res.getTimeInMillis();
 					break;
-                case Types.CHAR:
-                case Types.VARCHAR:
-                case Types.LONGVARCHAR:
-                case Types.CLOB:
+				case Types.CHAR:
+				case Types.VARCHAR:
+				case Types.LONGVARCHAR:
+				case Types.CLOB:
 				case Types.BLOB:
 				case Types.LONGVARBINARY:
-                    res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.TIMESTAMP);
+					res = currentBlock.getDateValueFromString(this, columnIndex - 1, Types.TIMESTAMP);
 					if(res == null) {
 						return null;
 					}
-                    millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
-                    break;
-                default:
-                    this.addWarning("unsupported data type", "01M03");
-                    cal.clear();
-                    millis = 0;
-            }
-            Timestamp result = new Timestamp(millis);
-            result.setNanos(nanos);
-            return result;
-        } catch (ClassCastException ex) {
-            throw new SQLException(ex.getMessage());
-        } catch (ProtocolException e) {
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					break;
+				default:
+					this.addWarning("unsupported data type", "01M03");
+					cal.clear();
+					millis = 0;
+			}
+			Timestamp result = new Timestamp(millis);
+			result.setNanos(nanos);
+			return result;
+		} catch (ClassCastException ex) {
+			throw new SQLException(ex.getMessage());
+		} catch (ProtocolException e) {
 			throw new SQLException(e);
 		} catch (IndexOutOfBoundsException e) {
-            throw newSQLInvalidColumnIndexException(columnIndex);
-        }
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		}
 	}
 
 	/**
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.sql.Timestamp
 	 * object in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Timestamp getTimestamp(String columnName) throws SQLException {
-		return getTimestamp(findColumn(columnName), Calendar.getInstance());
+	public Timestamp getTimestamp(String columnLabel) throws SQLException {
+		return getTimestamp(findColumn(columnLabel), null);
 	}
 
 	/**
@@ -2828,15 +2832,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * millisecond value for the timestamp if the underlying database does not
 	 * store timezone information.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @param cal the java.util.Calendar object to use in constructing the timestamp
 	 * @return the column value as a java.sql.Timestamp object; if the value is
 	 *         SQL NULL, the value returned is null in the Java programming language
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Timestamp getTimestamp(String columnName, Calendar cal) throws SQLException {
-		return getTimestamp(findColumn(columnName), cal);
+	public Timestamp getTimestamp(String columnLabel, Calendar cal) throws SQLException {
+		return getTimestamp(findColumn(columnLabel), cal);
 	}
 
 	/**
@@ -2892,14 +2896,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.net.URL object
 	 * in the Java programming language.
 	 *
-	 * @param columnName the SQL name of the column
+	 * @param columnLabel the SQL name of the column
 	 * @return the column value as a java.net.URL object; if the value is SQL NULL, the value returned is null in the
 	 * Java programming language
 	 * @throws SQLException if a database access error occurs, or if a URL is malformed
 	 */
 	@Override
-	public URL getURL(String columnName) throws SQLException {
-		return getURL(findColumn(columnName));
+	public URL getURL(String columnLabel) throws SQLException {
+		return getURL(findColumn(columnLabel));
 	}
 
 	/**
@@ -3087,7 +3091,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	 *
 	 * Note: Support for the rowUpdated method is optional with a result set concurrency of CONCUR_READ_ONLY
 	 *
-	 * Returns: true if the current row is detected to have been visibly updated by the owner or another; false otherwise
+	 * Returns: true if the current row is detected to have been visibly updated by the owner or another;false otherwise
 	 *
 	 * Throws:
 	 *     SQLException - if a database access error occurs or this method is called on a closed result set
@@ -3100,21 +3104,21 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 		return false;
 	}
 
-    /**
-     * Adds a warning to the pile of warnings this ResultSet object has. If
-     * there were no warnings (or clearWarnings was called) this warning will
-     * be the first, otherwise this warning will get appended to the current
-     * warning.
-     *
-     * @param reason the warning message
-     */
-    public void addWarning(String reason, String sqlstate) {
-        if (warnings == null) {
-            warnings = new SQLWarning(reason, sqlstate);
-        } else {
-            warnings.setNextWarning(new SQLWarning(reason, sqlstate));
-        }
-    }
+	/**
+	 * Adds a warning to the pile of warnings this ResultSet object has. If
+	 * there were no warnings (or clearWarnings was called) this warning will
+	 * be the first, otherwise this warning will get appended to the current
+	 * warning.
+	 *
+	 * @param reason the warning message
+	 */
+	public void addWarning(String reason, String sqlstate) {
+		if (warnings == null) {
+			warnings = new SQLWarning(reason, sqlstate);
+		} else {
+			warnings.setNextWarning(new SQLWarning(reason, sqlstate));
+		}
+	}
 
 	/* the next methods are all related to updateable result sets, which we currently do not support */
 	@Override
@@ -3153,7 +3157,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateArray(String columnName, Array x) throws SQLException {
+	public void updateArray(String columnLabel, Array x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateArray");
 	}
 
@@ -3173,17 +3177,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateAsciiStream(String columnName, InputStream x) throws SQLException {
+	public void updateAsciiStream(String columnLabel, InputStream x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateAsciiStream");
 	}
 
 	@Override
-	public void updateAsciiStream(String columnName, InputStream x, int length) throws SQLException {
+	public void updateAsciiStream(String columnLabel, InputStream x, int length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateAsciiStream");
 	}
 
 	@Override
-	public void updateAsciiStream(String columnName, InputStream x, long length) throws SQLException {
+	public void updateAsciiStream(String columnLabel, InputStream x, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateAsciiStream");
 	}
 
@@ -3193,7 +3197,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateBigDecimal(String columnName, BigDecimal x) throws SQLException {
+	public void updateBigDecimal(String columnLabel, BigDecimal x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateBigDecimal");
 	}
 
@@ -3213,17 +3217,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateBinaryStream(String columnName, InputStream x) throws SQLException {
+	public void updateBinaryStream(String columnLabel, InputStream x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateBinaryStream");
 	}
 
 	@Override
-	public void updateBinaryStream(String columnName, InputStream x, int length) throws SQLException {
+	public void updateBinaryStream(String columnLabel, InputStream x, int length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateBinaryStream");
 	}
 
 	@Override
-	public void updateBinaryStream(String columnName, InputStream x, long length) throws SQLException {
+	public void updateBinaryStream(String columnLabel, InputStream x, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateBinaryStream");
 	}
 
@@ -3243,17 +3247,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateBlob(String columnName, Blob x) throws SQLException {
+	public void updateBlob(String columnLabel, Blob x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateBlob");
 	}
 
 	@Override
-	public void updateBlob(String columnName, InputStream s) throws SQLException {
+	public void updateBlob(String columnLabel, InputStream s) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateBlob");
 	}
 
 	@Override
-	public void updateBlob(String columnName, InputStream s, long length) throws SQLException {
+	public void updateBlob(String columnLabel, InputStream s, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateBlob");
 	}
 
@@ -3263,7 +3267,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateBoolean(String columnName, boolean x) throws SQLException {
+	public void updateBoolean(String columnLabel, boolean x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateBoolean");
 	}
 
@@ -3273,7 +3277,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateByte(String columnName, byte x) throws SQLException {
+	public void updateByte(String columnLabel, byte x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateByte");
 	}
 
@@ -3283,7 +3287,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateBytes(String columnName, byte[] x) throws SQLException {
+	public void updateBytes(String columnLabel, byte[] x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateBytes");
 	}
 
@@ -3303,17 +3307,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateCharacterStream(String columnName, Reader reader) throws SQLException {
+	public void updateCharacterStream(String columnLabel, Reader reader) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateCharacterStream");
 	}
 
 	@Override
-	public void updateCharacterStream(String columnName, Reader reader, int length) throws SQLException {
+	public void updateCharacterStream(String columnLabel, Reader reader, int length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateCharacterStream");
 	}
 
 	@Override
-	public void updateCharacterStream(String columnName, Reader reader, long length) throws SQLException {
+	public void updateCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateCharacterStream");
 	}
 
@@ -3328,12 +3332,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateNCharacterStream(String columnName, Reader reader) throws SQLException {
+	public void updateNCharacterStream(String columnLabel, Reader reader) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateNCharacterStream");
 	}
 
 	@Override
-	public void updateNCharacterStream(String columnName, Reader reader, long length) throws SQLException {
+	public void updateNCharacterStream(String columnLabel, Reader reader, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateNCharacterStream");
 	}
 
@@ -3353,17 +3357,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateClob(String columnName, Clob x) throws SQLException {
+	public void updateClob(String columnLabel, Clob x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateClob");
 	}
 
 	@Override
-	public void updateClob(String columnName, Reader r) throws SQLException {
+	public void updateClob(String columnLabel, Reader r) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateClob");
 	}
 
 	@Override
-	public void updateClob(String columnName, Reader r, long length) throws SQLException {
+	public void updateClob(String columnLabel, Reader r, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateClob");
 	}
 
@@ -3383,17 +3387,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateNClob(String columnName, NClob x) throws SQLException {
+	public void updateNClob(String columnLabel, NClob x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateNClob");
 	}
 
 	@Override
-	public void updateNClob(String columnName, Reader r) throws SQLException {
+	public void updateNClob(String columnLabel, Reader r) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateNClob");
 	}
 
 	@Override
-	public void updateNClob(String columnName, Reader r, long length) throws SQLException {
+	public void updateNClob(String columnLabel, Reader r, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateNClob");
 	}
 
@@ -3403,7 +3407,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateDate(String columnName, java.sql.Date x) throws SQLException {
+	public void updateDate(String columnLabel, java.sql.Date x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateDate");
 	}
 
@@ -3413,7 +3417,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateDouble(String columnName, double x) throws SQLException {
+	public void updateDouble(String columnLabel, double x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateDouble");
 	}
 
@@ -3423,7 +3427,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateFloat(String columnName, float x) throws SQLException {
+	public void updateFloat(String columnLabel, float x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateFloat");
 	}
 
@@ -3433,7 +3437,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateInt(String columnName, int x) throws SQLException {
+	public void updateInt(String columnLabel, int x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateInt");
 	}
 
@@ -3443,7 +3447,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateLong(String columnName, long x) throws SQLException {
+	public void updateLong(String columnLabel, long x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateLong");
 	}
 
@@ -3453,7 +3457,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateNull(String columnName) throws SQLException {
+	public void updateNull(String columnLabel) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateNull");
 	}
 
@@ -3468,12 +3472,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateObject(String columnName, Object x) throws SQLException {
+	public void updateObject(String columnLabel, Object x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateObject");
 	}
 
 	@Override
-	public void updateObject(String columnName, Object x, int scale) throws SQLException {
+	public void updateObject(String columnLabel, Object x, int scale) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateObject");
 	}
 
@@ -3483,7 +3487,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateRef(String columnName, Ref x) throws SQLException {
+	public void updateRef(String columnLabel, Ref x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateRef");
 	}
 
@@ -3508,7 +3512,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateShort(String columnName, short x) throws SQLException {
+	public void updateShort(String columnLabel, short x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateShort");
 	}
 
@@ -3518,7 +3522,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateString(String columnName, String x) throws SQLException {
+	public void updateString(String columnLabel, String x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateString");
 	}
 
@@ -3528,12 +3532,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateNString(String columnName, String x) throws SQLException {
+	public void updateNString(String columnLabel, String x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateNString");
 	}
 
 	@Override
-	public void updateSQLXML(String columnName, SQLXML x) throws SQLException {
+	public void updateSQLXML(String columnLabel, SQLXML x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateSQLXML");
 	}
 
@@ -3548,7 +3552,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateTime(String columnName, Time x) throws SQLException {
+	public void updateTime(String columnLabel, Time x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateTime");
 	}
 
@@ -3558,7 +3562,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 	}
 
 	@Override
-	public void updateTimestamp(String columnName, Timestamp x) throws SQLException {
+	public void updateTimestamp(String columnLabel, Timestamp x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateTimestamp");
 	}
 
@@ -3580,19 +3584,18 @@ public class MonetResultSet extends MonetWrapper implements ResultSet {
 
 	/**
 	 * Small helper method that formats the "Invalid Column Index number ..." message
-	 * and creates a new SQLException object whose SQLState is set to "M1M05".
+	 * and creates a new SQLDataException object whose SQLState is set to "22010": invalid indicator parameter value.
 	 *
 	 * @param colIdx the column index number
-	 * @return a new created SQLException object with SQLState M1M05
+	 * @return a new created SQLDataException object with SQLState 22010
 	 */
-	static SQLException newSQLInvalidColumnIndexException(int colIdx) {
-		return new SQLException("Invalid Column Index number: " + colIdx, "M1M05");
+	static SQLDataException newSQLInvalidColumnIndexException(int colIdx) {
+		return new SQLDataException("Invalid Column Index number: " + colIdx, "22010");
 	}
 
 	/**
 	 * Small helper method that formats the "Method ... not implemented" message
-	 * and creates a new SQLFeatureNotSupportedException object
-	 * whose SQLState is set to "0A000".
+	 * and creates a new SQLFeatureNotSupportedException object whose SQLState is set to "0A000": feature not supported.
 	 *
 	 * @param name the method name
 	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000

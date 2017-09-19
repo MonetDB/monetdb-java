@@ -54,11 +54,11 @@ import java.util.zip.GZIPInputStream;
 public final class JdbcClient {
 
 	private static Connection con;
+	private static DatabaseMetaData dbmd;
 	private static Statement stmt;
 	private static BufferedReader in;
 	private static PrintWriter out;
 	private static Exporter exporter;
-	private static DatabaseMetaData dbmd;
 
 	public static void main(String[] args) throws Exception {
 		CmdLineOpts copts = new CmdLineOpts();
@@ -158,20 +158,21 @@ public final class JdbcClient {
 			System.exit(1);
 		}
 		// we can actually compare pointers (objects) here
-		if (!Objects.equals(user, copts.getOption("user").getArgument())) pass = null;
+		if (user != copts.getOption("user").getArgument())
+			pass = null;
 
 		if (copts.getOption("help").isPresent()) {
 			System.out.print(
 				"Usage java -jar jdbcclient.jar\n" +
-				"                  [-h host[:port]] [-p port] [-f file] [-u user]\n" +
-				"                  [-l language] [-d database] [-e] [-D [table]]\n" +
-				"                  [-X<opt>]\n" +
+				"\t\t[-h host[:port]] [-p port] [-f file] [-u user]\n" +
+				"\t\t[-l language] [-d database] [-e] [-D [table]]\n" +
+				"\t\t[-X<opt>]\n" +
 				"or using long option equivalents --host --port --file --user --language\n" +
 				"--dump --echo --database.\n" +
 				"Arguments may be written directly after the option like -p50000.\n" +
 				"\n" +
-				"If no host and port are given, localhost and 50000 are assumed.  An .monetdb\n" +
-				"file may exist in the user's home directory.  This file can contain\n" +
+				"If no host and port are given, localhost and 50000 are assumed.\n" +
+				"An .monetdb file may exist in the user's home directory.  This file can contain\n" +
 				"preferences to use each time JdbcClient is started.  Options given on the\n" +
 				"command line override the preferences file.  The .monetdb file syntax is\n" +
 				"<option>=<value> where option is one of the options host, port, file, mode\n" +
@@ -219,7 +220,8 @@ public final class JdbcClient {
 			host = host + ":" + copts.getOption("port").getArgument();
 		}
 
-		//Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
+		// make sure the driver is loaded
+		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 
 		// build the extra arguments of the JDBC connect string
 		String attr = "?";
@@ -227,12 +229,15 @@ public final class JdbcClient {
 		String lang = oc.getArgument();
 		if (oc.isPresent())
 			attr += "language=" + lang + "&";
+
+/* Xquery is no longer functional or supported
 		// set some behaviour based on the language XQuery
 		if (lang.equals("xquery")) {
 			scolonterm = false;	// no ; to end a statement
 			if (!copts.getOption("Xoutput").isPresent())
 				xmlMode = true; // the user will like xml results, most probably
 		}
+*/
 		oc = copts.getOption("Xdebug");
 		if (oc.isPresent()) {
 			attr += "debug=true&";
@@ -273,6 +278,7 @@ public final class JdbcClient {
 			// SQL language
 			dbmd = null;
 		}
+
 		stmt = con.createStatement();
 
 		// see if we will have to perform a database dump (only in SQL mode)
@@ -295,9 +301,9 @@ public final class JdbcClient {
 			List<Table> tables = new LinkedList<>();
 			while (tbl.next()) {
 				tables.add(new Table(
-					tbl.getString("TABLE_SCHEM"),
-					tbl.getString("TABLE_NAME"),
-					tbl.getString("TABLE_TYPE")));
+					tbl.getString(2),	// 2 = "TABLE_SCHEM"
+					tbl.getString(3),	// 3 = "TABLE_NAME"
+					tbl.getString(4)));	// 4 = "TABLE_TYPE"
 			}
 			tbl.close();
 
@@ -329,23 +335,21 @@ public final class JdbcClient {
 					}
 				}
 			} else {
-				/* this returns everything, so including SYSTEM TABLE
-				 * constraints */
+				/* this returns everything, so including SYSTEM TABLE constraints */
 				tbl = dbmd.getImportedKeys(null, null, null);
 				while (tbl.next()) {
-					// find FK table object
-					Table fk = Table.findTable(tbl.getString("FKTABLE_SCHEM") + "." + tbl.getString("FKTABLE_NAME"), tables);
+					// find FK table object  6 = "FKTABLE_SCHEM", 7 = "FKTABLE_NAME"
+					Table fk = Table.findTable(tbl.getString(6) + "." + tbl.getString(7), tables);
 
-					// find PK table object
-					Table pk = Table.findTable(tbl.getString("PKTABLE_SCHEM") + "." + tbl.getString("PKTABLE_NAME"), tables);
+					// find PK table object  2 = "PKTABLE_SCHEM", 3 = "PKTABLE_NAME"
+					Table pk = Table.findTable(tbl.getString(2) + "." + tbl.getString(3), tables);
 
-					// this happens when a system table has referential
-					// constraints
+					// this happens when a system table has referential constraints
 					if (fk == null || pk == null)
 						continue;
 
-					// add PK table dependancy to FK table
-					fk.addDependancy(pk);
+					// add PK table dependency to FK table
+					fk.addDependency(pk);
 				}
 				tbl.close();
 
@@ -473,8 +477,7 @@ public final class JdbcClient {
 	 *
 	 * @param uri URL or filename as String
 	 * @return a BufferedReader for the uri
-	 * @throws Exception if uri cannot be identified as a valid URL or
-	 *         file
+	 * @throws Exception if uri cannot be identified as a valid URL or file
 	 */
 	static BufferedReader getReader(String uri) throws Exception {
 		BufferedReader ret = null;
@@ -611,40 +614,54 @@ public final class JdbcClient {
 						out.println("\\q      quits this program");
 						out.println("\\h      this help screen");
 						if (dbmd != null)
-							out.println("\\d      list available tables and views");
+							out.println("\\d      list available tables and views in current schema");
 						out.println("\\d<obj> describes the given table or view");
 						out.println("\\l<uri> executes the contents of the given file or URL");
 						out.println("\\i<uri> batch executes the inserts from the given file or URL");
 					} else if (dbmd != null && command.startsWith("\\d")) {
+						ResultSet tbl = null;
 						try {
-							String object = command.substring(2).trim().toLowerCase();
+							String object = command.substring(2).trim();
 							if (scolonterm && object.endsWith(";"))
 								object = object.substring(0, object.length() - 1);
-							if (!object.isEmpty()) {
+							if (object.isEmpty()) {
+								// list available tables and views in current schema
+								String current_schema = con.getSchema();
+								tbl = dbmd.getTables(null, current_schema, null, null);
+
+								// give us a list of all non-system tables and views (including temp ones)
+								while (tbl.next()) {
+									String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
+									if (tableType != null && !tableType.startsWith("SYSTEM "))
+										out.println(tableType + "\t" +
+											tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
+											tbl.getString(3));	// 3 = "TABLE_NAME"
+								}
+								tbl.close();
+								tbl = null;
+							} else {
+								// describes the given table or view
 								String schema;
+								String obj_nm = object;
+								boolean found = false;
 								int dot = object.indexOf(".");
-								if (dot != -1) {
-									// use provided schema
+								if (dot > 0) {
+									// use specified schema
 									schema = object.substring(0, dot);
-									object = object.substring(dot + 1);
+									obj_nm = object.substring(dot + 1);
 								} else {
 									// use current schema
 									schema = con.getSchema();
 								}
-								ResultSet tbl = dbmd.getTables(null, schema, null, null);
-
-								// we have an object, see if we can find it
-								boolean found = false;
-								while (tbl.next()) {
-									String tableName = tbl.getString("TABLE_NAME");
-									String schemaName = tbl.getString("TABLE_SCHEM");
-									if ((dot == -1 && tableName.equalsIgnoreCase(object)) ||
-										(schemaName + "." + tableName).equalsIgnoreCase(object))
-									{
+								tbl = dbmd.getTables(null, schema, obj_nm, null);
+								while (tbl.next() && !found) {
+									String tableName = tbl.getString(3);	// 3 = "TABLE_NAME"
+									String schemaName = tbl.getString(2);	// 2 = "TABLE_SCHEM"
+									if (obj_nm.equals(tableName) && schema.equals(schemaName)) {
 										// we found it, describe it
 										exporter.dumpSchema(dbmd,
-												tbl.getString("TABLE_TYPE"),
-												tbl.getString("TABLE_CAT"),
+												tbl.getString(4),	// 4 = "TABLE_TYPE"
+												tbl.getString(1),	// 1 = "TABLE_CAT"
 												schemaName,
 												tableName);
 
@@ -653,22 +670,10 @@ public final class JdbcClient {
 									}
 								}
 								tbl.close();
+								tbl = null;
 
 								if (!found)
 									System.err.println("Unknown table or view: " + object);
-							} else {
-								String current_schema = con.getSchema();
-								ResultSet tbl = dbmd.getTables(null, current_schema, null, null);
-
-								// give us a list of all non-system tables and views (including temp ones)
-								while (tbl.next()) {
-									String tableType = tbl.getString("TABLE_TYPE");
-									if (tableType != null && !tableType.startsWith("SYSTEM "))
-										out.println(tableType + "\t" +
-											tbl.getString("TABLE_SCHEM") + "." +
-											tbl.getString("TABLE_NAME"));
-								}
-								tbl.close();
 							}
 						} catch (SQLException e) {
 							out.flush();
@@ -676,6 +681,9 @@ public final class JdbcClient {
 								System.err.println("Error [" + e.getSQLState() + "]: " + e.getMessage());
 								// print all error messages in the chain (if any)
 							} while ((e = e.getNextException()) != null);
+						} finally {
+							if (tbl != null)
+								tbl.close();
 						}
 					} else if (command.startsWith("\\l") || command.startsWith("\\i")) {
 						String object = command.substring(2).trim();
@@ -845,7 +853,7 @@ public final class JdbcClient {
 	 * is sent to the server as-is.
 	 *
 	 * @param batchSize the number of items to store in the batch before
-	 *                  sending them to the database for execution.
+	 *		sending them to the database for execution.
 	 * @throws IOException if an IO exception occurs.
 	 */
 	public static void processBatch(int batchSize) throws IOException {
@@ -1120,12 +1128,12 @@ class Table {
 		this.fqname = schem + "." + name;
 	}
 
-	void addDependancy(Table dependsOn) throws Exception {
+	void addDependency(Table dependsOn) throws Exception {
 		if (this.fqname.equals(dependsOn.fqname))
-			throw new Exception("Cyclic dependancy graphs are not supported (foreign key relation references self)");
+			throw new Exception("Cyclic dependency graphs are not supported (foreign key relation references self)");
 
 		if (dependsOn.needs.contains(this))
-			throw new Exception("Cyclic dependancy graphs are not supported (foreign key relation a->b and b->a)");
+			throw new Exception("Cyclic dependency graphs are not supported (foreign key relation a->b and b->a)");
 
 		if (!needs.contains(dependsOn))
 			needs.add(dependsOn);
@@ -1148,16 +1156,8 @@ class Table {
 		return schem;
 	}
 
-	String getSchemQ() {
-		return JdbcClient.dq(schem);
-	}
-
 	String getName() {
 		return name;
-	}
-
-	String getNameQ() {
-		return JdbcClient.dq(name);
 	}
 
 	String getType() {
@@ -1169,7 +1169,7 @@ class Table {
 	}
 
 	String getFqnameQ() {
-		return getSchemQ() + "." + getNameQ();
+		return JdbcClient.dq(schem) + "." + JdbcClient.dq(name);
 	}
 
 	public String toString() {
@@ -1190,7 +1190,7 @@ class Table {
 		for (int i = 0; i < table.needs.size(); i++) {
 			Table child = table.needs.get(i);
 			if (parents.contains(child))
-				throw new Exception("Cyclic dependancy graphs are not supported (cycle detected for " + child.fqname + ")");
+				throw new Exception("Cyclic dependency graphs are not supported (cycle detected for " + child.fqname + ")");
 			checkForLoop(child, parents);
 		}
 	}

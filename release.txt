@@ -1,6 +1,6 @@
 RELEASE NOTES
-MonetDB JDBC driver version 2.24 (Liberica/MCL-1.14)
-Release date: 2016-12-15
+MonetDB JDBC driver version 2.26 (Liberica/MCL-1.15)
+Release date: 2017-07-28
 
 This JDBC driver is designed for use with MonetDB, a main-memory
 database.  For more information see https://www.monetdb.org/.
@@ -55,8 +55,8 @@ Currently implemented JDBC 4.1 interfaces include:
     - setArray
     - setAsciiStream, setBinaryStream, setUnicodeStream
     - setBlob
-    - setNCharacterStream, setNClob, setNString
-    - setRef, setRowId, setSQLXML, setURL
+    - setNClob
+    - setRef, setRowId, setSQLXML
 
   * java.sql.ParameterMetaData
 
@@ -64,9 +64,9 @@ Currently implemented JDBC 4.1 interfaces include:
     The next features/methods are NOT implemented:
     - getArray
     - getAsciiStream, getUnicodeStream
-    - getNCharacterStream, getNClob, getNString
+    - getNClob
     - getRef, getRowId, getSQLXML
-    - all methods related to updateable result sets
+    - All methods related to updateable result sets
 
   * java.sql.ResultSetMetaData
 
@@ -83,9 +83,12 @@ Currently implemented JDBC 4.1 interfaces include:
     A simple implementation using a StringBuilder to store the whole CLOB
     The next features/methods are NOT implemented:
     - getAsciiStream
-    - getCharacterStream
     - setAsciiStream
     - setCharacterStream
+
+  * java.sql.SQLData
+    implemented by class: nl.cwi.monetdb.jdbc.types.INET
+            and by class: nl.cwi.monetdb.jdbc.types.URL
 
   * javax.sql.DataSource (not tested)
 
@@ -96,7 +99,6 @@ The next java.sql.* interfaces are NOT implemented:
   * java.sql.NClob
   * java.sql.Ref
   * java.sql.Rowid
-  * java.sql.SQLData
   * java.sql.SQLInput
   * java.sql.SQLOutput
   * java.sql.SQLXML

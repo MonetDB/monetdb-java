@@ -1,3 +1,39 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Sep  7 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented PreparedStatement methods setNCharacterStream(int, Reader)
+  and setNCharacterStream(int, Reader, long).
+
+* Thu Aug 31 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected PreparedStatement methods setString(int, String)
+  and setObject(int, Object, ...) in case the target parameter
+  data type was json or inet or url or uuid.  See also
+  https://www.monetdb.org/bugzilla/show_bug.cgi?id=6382
+
+* Thu Aug 24 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented PreparedStatement method setURL(int, URL).
+- Implemented PreparedStatement method setNString(int, String).
+- The MonetDB JDBC driver code and jdbcclient program are now compiled
+  without debug info and with optimise flag enabled.  The new jar files are
+  now smaller in size.
+
+* Thu Aug 17 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented ResultSet method getNCharacterStream().
+- In class MonetClob implemented methods getCharacterStream()
+  and getCharacterStream(long pos, long length).  Method
+  getCharacterStream() is called by DBeaver to fetch the Clob value.
+  It used to throw a SQLFeatureNotSupportedException with message:
+   "Method getCharacterStream() currently not supported". This caused
+  DBeaver to log the exception and show NULL as the value on screen,
+  which is incorrect.  This has been fixed.
+
+* Fri Jul 28 2017 Sjoerd Mullender <sjoerd@acm.org>
+- Compiled and released new jars: monetdb-jdbc-2.26.jar and updated jdbcclient.jar
+
+* Thu Jul 13 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected implementation of PreparedStatement method
+   setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength)
+  for the case the targetSqlType is Types.CLOB.
+  See also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6349
+

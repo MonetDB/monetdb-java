@@ -46,9 +46,9 @@ import java.util.Map;
  * </pre>
  *
  * @author Fabian Groffen, Martin van Dinther, Pedro Ferreira
- * @version 0.4
+ * @version 0.5v
  */
-public class MonetPreparedStatement extends MonetStatement implements PreparedStatement {
+public class MonetPreparedStatement extends MonetStatement implements PreparedStatement, AutoCloseable {
 
 	private final MonetConnection connection;
 	private final String[] monetdbType;
@@ -106,18 +106,30 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 
 		// fill the arrays
 		ResultSet rs = super.getResultSet();
-		for (int i = 0; rs.next(); i++) {
-			monetdbType[i] = rs.getString("type");
-			javaType[i] = MonetDriver.getJavaType(monetdbType[i]);
-			digits[i] = rs.getInt("digits");
-			scale[i] = rs.getInt("scale");
-			if (rscolcnt == 3)
-				continue;
-			schema[i] = rs.getString("schema");
-			table[i] = rs.getString("table");
-			column[i] = rs.getString("column");
+		if (rs != null) {
+			// System.out.println("After super.getResultSet();");
+			int type_colnr = rs.findColumn("type");
+			int digits_colnr = rs.findColumn("digits");
+			int scale_colnr = rs.findColumn("scale");
+			int schema_colnr = rs.findColumn("schema");
+			int table_colnr = rs.findColumn("table");
+			int column_colnr = rs.findColumn("column");
+			for (int i = 0; rs.next(); i++) {
+				monetdbType[i] = rs.getString(type_colnr);
+				javaType[i] = MonetDriver.getJavaType(monetdbType[i]);
+				digits[i] = rs.getInt(digits_colnr);
+				scale[i] = rs.getInt(scale_colnr);
+				if (rscolcnt == 3)
+					continue;
+				schema[i] = rs.getString(schema_colnr);
+				table[i] = rs.getString(table_colnr);
+				column[i] = rs.getString(column_colnr);
+				/* when column[i] != null it is a result column of the prepared query, see getColumnIdx(int),
+				   when column[i] == null it is a parameter for the prepared statement, see getParamIdx(int). */
+				// System.out.println("column " + i + " has value: " + column[i]);
+			}
+			rs.close();
 		}
-		rs.close();
 
 		// PreparedStatements are by default poolable
 		poolable = true;
@@ -238,6 +250,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	private int getColumnIdx(int colnr) throws SQLException {
 		int curcol = 0;
 		for (int i = 0; i < size; i++) {
+			/* when column[i] == null it is a parameter, when column[i] != null it is a result column of the prepared query */
 			if (column[i] == null)
 				continue;
 			curcol++;
@@ -254,6 +267,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	private int getParamIdx(int paramnr) throws SQLException {
 		int curparam = 0;
 		for (int i = 0; i < size; i++) {
+			/* when column[i] == null it is a parameter, when column[i] != null it is a result column of the prepared query */
 			if (column[i] != null)
 				continue;
 			curparam++;
@@ -800,13 +814,13 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * Sets the designated parameter to the given Array object.  The
 	 * driver converts this to an SQL ARRAY value when it sends it to
 	 * the database.
-     *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 *
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x an Array object that maps an SQL ARRAY value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setArray(int i, Array x) throws SQLException {
+	public void setArray(int parameterIndex, Array x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setArray");
 	}
 
@@ -882,14 +896,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * The driver converts this to an SQL NUMERIC value when it sends it to the
 	 * database.
 	 *
-	 * @param idx the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setBigDecimal(int idx, BigDecimal x) throws SQLException {
+	public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
 		// get array position
-		int i = getParamIdx(idx);
+		int i = getParamIdx(parameterIndex);
 
 		// round to the scale of the DB:
 		x = x.setScale(scale[i], RoundingMode.HALF_UP);
@@ -910,7 +924,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			xStr = xStr.substring(0, Math.min(xStr.length(), dot + 1 + scale[i]));
 		while (xStr.startsWith("0") && xStr.length() > 1)
 			xStr = xStr.substring(1);
-		setValue(idx, xStr);
+		setValue(parameterIndex, xStr);
 	}
 
 	/**
@@ -983,12 +997,12 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * converts this to an SQL BLOB value when it sends it to the database.
 	 *
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
-	 * @param stream an object that contains the data to set the parameter value to
+	 * @param x a Blob object that maps an SQL BLOB value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setBlob(int parameterIndex, InputStream stream) throws SQLException {
-		if (stream == null) {
+	public void setBlob(int parameterIndex, InputStream x) throws SQLException {
+		if (x == null) {
 			setNull(parameterIndex, -1);
 			return;
 		}
@@ -997,7 +1011,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		ByteArrayOutputStream buf = new ByteArrayOutputStream();
 		int numChars;
 		try {
-			while ((numChars = stream.read(arr, 0, arr.length)) > 0) {
+			while ((numChars = x.read(arr, 0, arr.length)) > 0) {
 				buf.write(arr, 0, numChars);
 			}
 			setBytes(parameterIndex, buf.toByteArray());
@@ -1035,13 +1049,13 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * should be sent to the server as a LONGVARBINARY or a BLOB.
 	 *
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
-	 * @param stream an object that contains the data to set the parameter value to
+	 * @param is an object that contains the data to set the parameter value to
 	 * @param length the number of bytes in the parameter data
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setBlob(int parameterIndex, InputStream stream, long length) throws SQLException {
-		if (stream == null) {
+	public void setBlob(int parameterIndex, InputStream is, long length) throws SQLException {
+		if (is == null) {
 			setNull(parameterIndex, -1);
 			return;
 		}
@@ -1049,7 +1063,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			byte[] arr = new byte[(int) length];
 			ByteArrayOutputStream buf = new ByteArrayOutputStream((int) length);
 
-			int numChars = stream.read(arr, 0, (int) length);
+			int numChars = is.read(arr, 0, (int) length);
 			buf.write(arr, 0, numChars);
 			setBytes(parameterIndex, buf.toByteArray());
 		} catch (IOException e) {
@@ -1187,36 +1201,36 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * Sets the designated parameter to the given Clob object. The driver
 	 * converts this to an SQL CLOB value when it sends it to the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x a Clob object that maps an SQL CLOB value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setClob(int i, Clob x) throws SQLException {
+	public void setClob(int parameterIndex, Clob x) throws SQLException {
 		if (x == null) {
-			setNull(i, -1);
+			setNull(parameterIndex, -1);
 			return;
 		}
 
 		// simply serialise the CLOB into a variable for now... far from
 		// efficient, but might work for a few cases...
 		// be on your marks: we have to cast the length down!
-		setString(i, x.getSubString(1L, (int)(x.length())));
+		setString(parameterIndex, x.getSubString(1L, (int)(x.length())));
 	}
 
 	/**
 	 * Sets the designated parameter to the given Clob object. The driver
 	 * converts this to an SQL CLOB value when it sends it to the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param reader an object that contains the data to set the parameter
 	 *          value to
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setClob(int i, Reader reader) throws SQLException {
+	public void setClob(int parameterIndex, Reader reader) throws SQLException {
 		if (reader == null) {
-			setNull(i, -1);
+			setNull(parameterIndex, -1);
 			return;
 		}
 		// Some buffer. Size of 8192 is default for BufferedReader, so...
@@ -1227,7 +1241,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			while ((numChars = reader.read(arr, 0, arr.length)) > 0) {
 				buf.append(arr, 0, numChars);
 			}
-			setString(i, buf.toString());
+			setString(parameterIndex, buf.toString());
 		} catch (IOException e) {
 			throw new SQLException(e);
 		}
@@ -1244,16 +1258,16 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * extra work to determine whether the parameter data should be sent
 	 * to the server as a LONGVARCHAR or a CLOB.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param reader An object that contains the data to set the
 	 *        parameter value to.
 	 * @param length the number of characters in the parameter data.
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setClob(int i, Reader reader, long length) throws SQLException {
+	public void setClob(int parameterIndex, Reader reader, long length) throws SQLException {
 		if (reader == null || length < 0) {
-			setNull(i, -1);
+			setNull(parameterIndex, -1);
 			return;
 		}
 		// simply serialise the CLOB into a variable for now... far from
@@ -1267,7 +1281,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		}
 		// We have to rewind the buffer, because otherwise toString() returns "".
 		buf.rewind();
-		setString(i, buf.toString());
+		setString(parameterIndex, buf.toString());
 	}
 
 	/**
@@ -1371,15 +1385,15 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * necessary conversion from Java character format to the national
 	 * character set in the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setNCharacterStream(int i, Reader value) throws SQLException {
-		throw newSQLFeatureNotSupportedException("setNCharacterStream");
+	public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
+		setCharacterStream(parameterIndex, value, 0);
 	}
 
 	/**
@@ -1388,7 +1402,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * necessary conversion from Java character format to the national
 	 * character set in the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @param length the number of characters in the parameter data.
 	 * @throws SQLException if a database access error occurs
@@ -1396,8 +1410,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *         not support this method
 	 */
 	@Override
-	public void setNCharacterStream(int i, Reader value, long length) throws SQLException {
-		throw newSQLFeatureNotSupportedException("setNCharacterStream");
+	public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {
+		setCharacterStream(parameterIndex, value, length);
 	}
 
 	/**
@@ -1405,14 +1419,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * driver converts this to a SQL NCLOB value when it sends it to the
 	 * database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setNClob(int i, Reader value) throws SQLException {
+	public void setNClob(int parameterIndex, Reader value) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNClob");
 	}
 
@@ -1421,14 +1435,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * driver converts this to a SQL NCLOB value when it sends it to the
 	 * database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setNClob(int i, NClob value) throws SQLException {
+	public void setNClob(int parameterIndex, NClob value) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNClob");
 	}
 
@@ -1443,7 +1457,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * extra work to determine whether the parameter data should be sent
 	 * to the server as a LONGNVARCHAR or a NCLOB.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param r An object that contains the data to set the parameter
 	 *          value to
 	 * @param length the number of characters in the parameter data
@@ -1452,7 +1466,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *         not support this method
 	 */
 	@Override
-	public void setNClob(int i, Reader r, long length) throws SQLException {
+	public void setNClob(int parameterIndex, Reader r, long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNClob");
 	}
 
@@ -1462,15 +1476,15 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * value (depending on the argument's size relative to the driver's
 	 * limits on NVARCHAR values) when it sends it to the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setNString(int i, String value) throws SQLException {
-		throw newSQLFeatureNotSupportedException("setNString");
+	public void setNString(int parameterIndex, String value) throws SQLException {
+		setString(parameterIndex, value);
 	}
 
 	/**
@@ -1505,7 +1519,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * parameter of any JDBC type. If the parameter does not have a
 	 * user-defined or REF type, the given typeName is ignored.
 	 *
-	 * @param paramIndex the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param sqlType a value from java.sql.Types
 	 * @param typeName the fully-qualified name of an SQL user-defined type;
 	 *                 ignored if the parameter is not a user-defined type or
@@ -1513,9 +1527,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setNull(int paramIndex, int sqlType, String typeName) throws SQLException {
+	public void setNull(int parameterIndex, int sqlType, String typeName) throws SQLException {
 		// MonetDB/SQL's NULL needs no type
-		setNull(paramIndex, sqlType);
+		setNull(parameterIndex, sqlType);
 	}
 
 	/**
@@ -1540,14 +1554,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * example, if the object is of a class implementing more than one
 	 * of the interfaces named above.
 	 *
-	 * @param index the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the object containing the input parameter value
 	 * @throws SQLException if a database access error occurs or the type of
 	 *                      the given object is ambiguous
 	 */
 	@Override
-	public void setObject(int index, Object x) throws SQLException {
-		setObject(index, x, javaType[getParamIdx(index)]);
+	public void setObject(int parameterIndex, Object x) throws SQLException {
+		setObject(parameterIndex, x, javaType[getParamIdx(parameterIndex)], 0);
 	}
 
 	/**
@@ -1600,127 +1614,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @see Types
 	 */
 	@Override
-	public void setObject(
-			int parameterIndex,
-			Object x,
-			int targetSqlType,
-			int scale)
-			throws SQLException
-	{
+	public void setObject(int parameterIndex, Object x, int targetSqlType, int scale) throws SQLException {
+		if (x == null) {
+			setNull(parameterIndex, -1);
+			return;
+		}
 		// this is according to table B-5
 		if (x instanceof String) {
-			switch (targetSqlType) {
-				case Types.CHAR:
-				case Types.VARCHAR:
-				case Types.LONGVARCHAR:
-				case Types.CLOB:
-					setString(parameterIndex, (String)x);
-					break;
-				case Types.TINYINT:
-				case Types.SMALLINT:
-				case Types.INTEGER:
-				{
-					int val;
-					try {
-						val = Integer.parseInt((String)x);
-					} catch (NumberFormatException e) {
-						val = 0;
-					}
-					setInt(parameterIndex, val);
-				} break;
-				case Types.BIGINT:
-				{
-					long val;
-					try {
-						val = Long.parseLong((String)x);
-					} catch (NumberFormatException e) {
-						val = 0;
-					}
-					setLong(parameterIndex, val);
-				} break;
-				case Types.REAL:
-				{
-					float val;
-					try {
-						val = Float.parseFloat((String)x);
-					} catch (NumberFormatException e) {
-						val = 0;
-					}
-					setFloat(parameterIndex, val);
-				} break;
-				case Types.FLOAT:
-				case Types.DOUBLE:
-				{
-					double val;
-					try {
-						val = Double.parseDouble((String)x);
-					} catch (NumberFormatException e) {
-						val = 0;
-					}
-					setDouble(parameterIndex, val);
-				} break;
-				case Types.DECIMAL:
-				case Types.NUMERIC:
-				{
-					BigDecimal val;
-					try {
-						val = new BigDecimal((String)x);
-					} catch (NumberFormatException e) {
-						try {
-							val = new BigDecimal(0.0);
-						} catch (NumberFormatException ex) {
-							throw new SQLException("Internal error: unable to create template BigDecimal: " + ex.getMessage(), "M0M03");
-						}
-					}
-					val = val.setScale(scale, BigDecimal.ROUND_HALF_UP);
-					setBigDecimal(parameterIndex, val);
-				} break;
-				case Types.BIT:
-				case Types.BOOLEAN:
-					setBoolean(parameterIndex, (Boolean.valueOf((String)x)).booleanValue());
-					break;
-				case Types.BINARY:
-				case Types.VARBINARY:
-				case Types.LONGVARBINARY:
-					setBytes(parameterIndex, ((String)x).getBytes());
-					break;
-				case Types.DATE:
-				{
-					java.sql.Date val;
-					try {
-						val = java.sql.Date.valueOf((String)x);
-					} catch (IllegalArgumentException e) {
-						val = new java.sql.Date(0L);
-					}
-					setDate(parameterIndex, val);
-				} break;
-				case Types.TIME:
-				{
-					Time val;
-					try {
-						val = Time.valueOf((String)x);
-					} catch (IllegalArgumentException e) {
-						val = new Time(0L);
-					}
-					setTime(parameterIndex, val);
-				} break;
-				case Types.TIMESTAMP:
-				{
-					Timestamp val;
-					try {
-						val = Timestamp.valueOf((String)x);
-					} catch (IllegalArgumentException e) {
-						val = new Timestamp(0L);
-					}
-					setTimestamp(parameterIndex, val);
-				} break;
-				case Types.NCHAR:
-				case Types.NVARCHAR:
-				case Types.LONGNVARCHAR:
-					throw newSQLFeatureNotSupportedException("setObject() with targetType N[VAR]CHAR");
-				default:
-					throw new SQLException("Conversion not allowed", "M1M05");
-			}
+			setString(parameterIndex, (String)x);
 		} else if (x instanceof BigDecimal ||
 				x instanceof Byte ||
 				x instanceof Short ||
@@ -1879,13 +1780,13 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 						setDate(parameterIndex, new java.sql.Date(
 								((java.util.Date)x).getTime()));
 					} else if (x instanceof Calendar) {
-						setDate(parameterIndex, new java.sql.Date(
-								((Calendar)x).getTimeInMillis()));
+						setDate(parameterIndex, new java.sql.Date(((Calendar)x).getTimeInMillis()));
 					} else {
 						throw new SQLException("Conversion not allowed", "M1M05");
 					}
 					break;
 				case Types.TIME:
+				case 2013: //Types.TIME_WITH_TIMEZONE:
 					if (x instanceof Time) {
 						setTime(parameterIndex, (Time)x);
 					} else if (x instanceof Timestamp) {
@@ -1894,13 +1795,13 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 						setTime(parameterIndex, new java.sql.Time(
 								((java.util.Date)x).getTime()));
 					} else if (x instanceof Calendar) {
-						setTime(parameterIndex, new java.sql.Time(
-								((Calendar)x).getTimeInMillis()));
+						setTime(parameterIndex, new java.sql.Time(((Calendar)x).getTimeInMillis()));
 					} else {
 						throw new SQLException("Conversion not allowed", "M1M05");
 					}
 					break;
 				case Types.TIMESTAMP:
+				case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
 					if (x instanceof Timestamp) {
 						setTimestamp(parameterIndex, (Timestamp)x);
 					} else if (x instanceof java.sql.Date) {
@@ -1909,8 +1810,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 						setTimestamp(parameterIndex, new java.sql.Timestamp(
 								((java.util.Date)x).getTime()));
 					} else if (x instanceof Calendar) {
-						setTimestamp(parameterIndex, new java.sql.Timestamp(
-								((Calendar)x).getTimeInMillis()));
+						setTimestamp(parameterIndex, new java.sql.Timestamp(((Calendar)x).getTimeInMillis()));
 					} else {
 						throw new SQLException("Conversion not allowed", "M1M05");
 					}
@@ -1926,9 +1826,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 		} else if (x instanceof Array) {
 			setArray(parameterIndex, (Array)x);
-		} else if (x instanceof Blob) {
+		} else if (x instanceof Blob || x instanceof MonetBlob) {
 			setBlob(parameterIndex, (Blob)x);
-		} else if (x instanceof Clob) {
+		} else if (x instanceof Clob || x instanceof MonetClob) {
 			setClob(parameterIndex, (Clob)x);
 		} else if (x instanceof Struct) {
 			// I have no idea how to do this...
@@ -1937,12 +1837,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			setRef(parameterIndex, (Ref)x);
 		} else if (x instanceof java.net.URL) {
 			setURL(parameterIndex, (java.net.URL)x);
+		} else if (x instanceof java.util.UUID) {
+			setString(parameterIndex, x.toString());
 		} else if (x instanceof RowId) {
 			setRowId(parameterIndex, (RowId)x);
 		} else if (x instanceof NClob) {
-			throw newSQLFeatureNotSupportedException("setObject() with object of type NClob");
+			setNClob(parameterIndex, (NClob)x);
 		} else if (x instanceof SQLXML) {
-			throw newSQLFeatureNotSupportedException("setObject() with object of type SQLXML");
+			setSQLXML(parameterIndex, (SQLXML)x);
 		} else if (x instanceof SQLData) { // not in JDBC4.1???
 			SQLData sx = (SQLData)x;
 			final int paramnr = parameterIndex;
@@ -2022,7 +1924,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 
 				@Override
 				public void writeCharacterStream(Reader x) throws SQLException {
-					setCharacterStream(paramnr, x);
+					setCharacterStream(paramnr, x, 0);
 				}
 
 				@Override
@@ -2092,7 +1994,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			};
 			sx.writeSQL(out);
 		} else {	// java Class
-			throw newSQLFeatureNotSupportedException("setObject() with object of type Class");
+			throw newSQLFeatureNotSupportedException("setObject() with object of type Class " + x.getClass().getName());
 		}
 	}
 
@@ -2101,14 +2003,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * The driver converts this to an SQL REF value when it sends it to the
 	 * database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x an SQL REF value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setRef(int i, Ref x) throws SQLException {
+	public void setRef(int parameterIndex, Ref x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setRef");
 	}
 
@@ -2117,14 +2019,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * The driver converts this to a SQL ROWID value when it sends it to
 	 * the database.
 	 *
-	 * @param i the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @throws SQLException if a database access error occurs
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public void setRowId(int i, RowId x) throws SQLException {
+	public void setRowId(int parameterIndex, RowId x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setRowId");
 	}
 
@@ -2157,7 +2059,164 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			setNull(parameterIndex, -1);
 			return;
 		}
-		setValue(parameterIndex, "'" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
+		int paramIdx = getParamIdx(parameterIndex);	// this will throw a SQLException if parameter can not be found
+
+		/* depending on the parameter data type (as expected by MonetDB) we
+		   may need to add the data type as cast prefix to the parameter value */
+		int paramJdbcType = javaType[paramIdx];
+		String paramMonetdbType = monetdbType[paramIdx];
+
+		switch (paramJdbcType) {
+			case Types.CHAR:
+			case Types.VARCHAR:
+			case Types.LONGVARCHAR:
+			case Types.CLOB:
+			case Types.NCHAR:
+			case Types.NVARCHAR:
+			case Types.LONGNVARCHAR:
+			{
+				String castprefix = "";
+				switch (paramMonetdbType) {
+					// some MonetDB specific data types require a cast prefix
+					case "inet":
+						try {
+							// check if x represents a valid inet string to prevent
+							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+							nl.cwi.monetdb.jdbc.MonetINET inet_obj = new nl.cwi.monetdb.jdbc.MonetINET(x);
+						} catch (Exception se) {
+							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + se.getMessage(), "22M29");
+						}
+						castprefix = "inet ";
+						break;
+					case "json":
+						// There is no support for JSON in standard java class libraries.
+						// Possibly we could use org.json.simple.JSONObject or other/faster libs
+						// javax.json.Json is not released yet (see https://json-processing-spec.java.net/)
+						// see also https://github.com/fabienrenaud/java-json-benchmark
+						// Note that it would make our JDBC driver dependent of an external jar
+						// and we don't want that.
+
+						// do simplistic check if x represents a valid json string to prevent
+						// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+						if (x.isEmpty() ||
+							(x.startsWith("{") && !x.endsWith("}")) ||
+							(x.startsWith("[") && !x.endsWith("]"))
+							// TODO check completely if x represents a valid json string
+						   )
+							throw new SQLDataException("Invalid json string. It does not start with { or [ and end with } or ]", "22M32");
+
+						// TODO check completely if x represents a valid json string
+
+						castprefix = "json ";
+						break;
+					case "url":
+						try {
+							// also check if x represents a valid url string to prevent
+							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+							java.net.URL url_obj = new java.net.URL(x);
+						} catch (java.net.MalformedURLException mue) {
+							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + mue.getMessage(), "22M30");
+						}
+						castprefix = "url ";
+						break;
+					case "uuid":
+						try {
+							// also check if x represents a valid uuid string to prevent
+							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+							java.util.UUID uuid_obj = java.util.UUID.fromString(x);
+						} catch (IllegalArgumentException iae) {
+							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + iae.getMessage(), "22M31");
+						}
+						castprefix = "uuid ";
+						break;
+				}
+				/* in specific cases prefix the string with: inet or json or url or uuid */
+				setValue(parameterIndex,
+					castprefix + "'" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
+				break;
+			}
+			case Types.TINYINT:
+			case Types.SMALLINT:
+			case Types.INTEGER:
+			case Types.BIGINT:
+			case Types.REAL:
+			case Types.FLOAT:
+			case Types.DOUBLE:
+			case Types.DECIMAL:
+			case Types.NUMERIC:
+				try {
+					// check (by calling parse) if the string represents a valid number to prevent
+					// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+					if (paramJdbcType == Types.TINYINT) {
+						int number = Byte.parseByte(x);
+					} else if (paramJdbcType == Types.SMALLINT ) {
+						int number = Short.parseShort(x);
+					} else if (paramJdbcType == Types.INTEGER) {
+						int number = Integer.parseInt(x);
+					} else if (paramJdbcType == Types.BIGINT) {
+						long number = Long.parseLong(x);
+					} else if (paramJdbcType == Types.REAL || paramJdbcType == Types.DOUBLE || paramJdbcType == Types.FLOAT) {
+						double number = Double.parseDouble(x);
+					} else {
+						BigDecimal number = new BigDecimal(x);
+					}
+				} catch (NumberFormatException nfe) {
+					throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + nfe.getMessage(), "22003");
+				}
+				setValue(parameterIndex, x);
+				break;
+			case Types.BIT:
+			case Types.BOOLEAN:
+				if  (x.equalsIgnoreCase("false") || x.equalsIgnoreCase("true") || x.equals("0") || x.equals("1")) {
+					setValue(parameterIndex, x);
+				} else {
+					throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed", "22000");
+				}
+				break;
+			case Types.DATE:
+			case Types.TIME:
+			case 2013: //Types.TIME_WITH_TIMEZONE:
+			case Types.TIMESTAMP:
+			case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
+				try {
+					// check if the string represents a valid calendar date or time or timestamp to prevent
+					// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+					if (paramJdbcType == Types.DATE) {
+						java.sql.Date datum = java.sql.Date.valueOf(x);
+					} else if (paramJdbcType == Types.TIME || paramJdbcType == 2013) {
+						Time tijdstip = Time.valueOf(x);
+					} else {
+						Timestamp tijdstip = Timestamp.valueOf(x);
+					}
+				} catch (IllegalArgumentException iae) {
+					throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + iae.getMessage(), "22007");
+				}
+				/* prefix the string with: date or time or timetz or timestamp or timestamptz */
+				setValue(parameterIndex, paramMonetdbType + " '" + x + "'");
+				break;
+			case Types.BINARY:
+			case Types.VARBINARY:
+			case Types.LONGVARBINARY:
+			case Types.BLOB:
+				// check if the string x contains pairs of hex chars to prevent
+				// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+				int xlen = x.length();
+				for (int i = 0; i < xlen; i++) {
+					char c = x.charAt(i);
+					if (c < '0' || c > '9') {
+						if (c < 'A' || c > 'F') {
+							if (c < 'a' || c > 'f') {
+								throw new SQLDataException("Invalid string for parameter data type " + paramMonetdbType + ". The string may contain only hex chars", "22M28");
+							}
+						}
+					}
+				}
+				/* prefix the string with: blob */
+				setValue(parameterIndex, "blob '" + x + "'");
+				break;
+			default:
+				throw new SQLException("Conversion of string to parameter data type " + paramMonetdbType + " is not (yet) supported", "M1M05");
+		}
 	}
 
 	/**
@@ -2181,13 +2240,13 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * The driver converts this to an SQL TIME value when it sends it to
 	 * the database.
 	 *
-	 * @param index the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTime(int index, Time x) throws SQLException {
-		setTime(index, x, null);
+	public void setTime(int parameterIndex, Time x) throws SQLException {
+		setTime(parameterIndex, x, null);
 	}
 
 	/**
@@ -2200,34 +2259,35 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * timezone, which is that of the virtual machine running the
 	 * application.
 	 *
-	 * @param index the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @param cal the Calendar object the driver will use to construct the time
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTime(int index, Time x, Calendar cal) throws SQLException {
+	public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException {
 		if (x == null) {
-			setNull(index, -1);
+			setNull(parameterIndex, -1);
 			return;
 		}
 
-		boolean hasTimeZone = monetdbType[getParamIdx(index)].endsWith("tz");
+		String MonetDBType = monetdbType[getParamIdx(parameterIndex)];
+		boolean hasTimeZone = ("timetz".equals(MonetDBType) || "timestamptz".equals(MonetDBType));
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
 			String RFC822 = mTimeZ.format(x);
-			setValue(index, "timetz '" + RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
+			setValue(parameterIndex, "timetz '" + RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
 			// calendar given, since we told the server our timezone at
 			// connection creation, we can just write a plain timestamp
 			// here
 			if (cal == null) {
-				setValue(index, "time '" + x.toString() + "'");
+				setValue(parameterIndex, "time '" + x.toString() + "'");
 			} else {
 				mTime.setTimeZone(cal.getTimeZone());
-				setValue(index, "time '" + mTime.format(x) + "'");
+				setValue(parameterIndex, "time '" + mTime.format(x) + "'");
 			}
 		}
 	}
@@ -2237,13 +2297,13 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * value.  The driver converts this to an SQL TIMESTAMP value when
 	 * it sends it to the database.
 	 *
-	 * @param index the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTimestamp(int index, Timestamp x) throws SQLException {
-		setTimestamp(index, x, null);
+	public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
+		setTimestamp(parameterIndex, x, null);
 	}
 
 	/**
@@ -2256,35 +2316,35 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * default timezone, which is that of the virtual machine running
 	 * the application.
 	 *
-	 * @param index the first parameter is 1, the second is 2, ...
+	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x the parameter value
 	 * @param cal the Calendar object the driver will use to construct the
 	 *            timestamp
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTimestamp(int index, Timestamp x, Calendar cal) throws SQLException {
+	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException {
 		if (x == null) {
-			setNull(index, -1);
+			setNull(parameterIndex, -1);
 			return;
 		}
 
-		boolean hasTimeZone = monetdbType[getParamIdx(index)].endsWith("tz");
+		String MonetDBType = monetdbType[getParamIdx(parameterIndex)];
+		boolean hasTimeZone = ("timestamptz".equals(MonetDBType) || "timetz".equals(MonetDBType));
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
 			String RFC822 = mTimestampZ.format(x);
-			setValue(index, "timestamptz '" + RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
+			setValue(parameterIndex, "timestamptz '" + RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
 			// calendar given, since we told the server our timezone at
-			// connection creation, we can just write a plain timestamp
-			// here
+			// connection creation, we can just write a plain timestamp here
 			if (cal == null) {
-				setValue(index, "timestamp '" + x.toString() + "'");
+				setValue(parameterIndex, "timestamp '" + x.toString() + "'");
 			} else {
 				mTimestamp.setTimeZone(cal.getTimeZone());
-				setValue(index, "timestamp '" + mTimestamp.format(x) + "'");
+				setValue(parameterIndex, "timestamp '" + mTimestamp.format(x) + "'");
 			}
 		}
 	}
@@ -2326,8 +2386,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 */
 	@Override
 	public void setURL(int parameterIndex, URL x) throws SQLException {
-		setString(parameterIndex, x.toString());
-		values[getParamIdx(parameterIndex)] = "url " + values[getParamIdx(parameterIndex)];
+		if (x == null) {
+			setNull(parameterIndex, -1);
+			return;
+		}
+
+		String val = x.toString();
+		setValue(parameterIndex, "url '" + val.replaceAll("\\\\", "\\\\\\\\")
+				.replaceAll("'", "\\\\'") + "'");
 	}
 
 	/**
@@ -2369,12 +2435,12 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * Sets the given index with the supplied value. If the given index is out of bounds, and SQLException is thrown.
 	 * The given value should never be null.
 	 *
-	 * @param index the parameter index
+	 * @param parameterIndex the parameter index
 	 * @param val the exact String representation to set
 	 * @throws SQLException if the given index is out of bounds
 	 */
-	private void setValue(int index, String val) throws SQLException {
-		values[getParamIdx(index)] = val;
+	private void setValue(int parameterIndex, String val) throws SQLException {
+		values[getParamIdx(parameterIndex)] = (val == null ? "NULL" : val);
 	}
 
 	/**
@@ -2388,9 +2454,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 */
 	private String transform() throws SQLException {
 		StringBuilder buf = new StringBuilder(8 + 12 * size);
-		buf.append("exec ");
-		buf.append(id);
-		buf.append('(');
+		buf.append("exec ").append(id).append('(');
 		// check if all columns are set and do a replace
 		int col = 0;
 		for (int i = 0; i < size; i++) {
@@ -2399,8 +2463,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			col++;
 			if (col > 1)
 				buf.append(',');
-			if (values[i] == null) throw
-				new SQLException("Cannot execute, parameter " + col + " is missing.", "M1M05");
+			if (values[i] == null)
+				throw new SQLException("Cannot execute, parameter " + col + " is missing.", "M1M05");
 
 			buf.append(values[i]);
 		}
@@ -2411,19 +2475,20 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 
 	/**
 	 * Small helper method that formats the "Invalid Parameter Index number ..." message
-	 * and creates a new SQLException object whose SQLState is set to "M1M05".
+	 * and creates a new SQLDataException object whose SQLState is set
+	 * to "22010": invalid indicator parameter value.
 	 *
 	 * @param paramIdx the parameter index number
-	 * @return a new created SQLException object with SQLState M1M05
+	 * @return a new created SQLDataException object with SQLState 22010
 	 */
-	private static SQLException newSQLInvalidParameterIndexException(int paramIdx) {
-		return new SQLException("Invalid Parameter Index number: " + paramIdx, "M1M05");
+	private static SQLDataException newSQLInvalidParameterIndexException(int paramIdx) {
+		return new SQLDataException("Invalid Parameter Index number: " + paramIdx, "22010");
 	}
 
 	/**
 	 * Small helper method that formats the "Method ... not implemented" message
 	 * and creates a new SQLFeatureNotSupportedException object
-	 * whose SQLState is set to "0A000".
+	 * whose SQLState is set to "0A000": feature not supported.
 	 *
 	 * @param name the method name
 	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000

@@ -11,6 +11,7 @@ package nl.cwi.monetdb.jdbc;
 import nl.cwi.monetdb.mcl.responses.*;
 import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 
+import java.io.IOException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.Statement;
@@ -45,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Martin van Dinther
  * @version 0.7
  */
-public class MonetStatement extends MonetWrapper implements Statement {
+public class MonetStatement extends MonetWrapper implements Statement, AutoCloseable {
 	/** The parental Connection object */
 	private MonetConnection connection;
 	/** The last ResponseList object this Statement produced */
@@ -81,11 +82,10 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	 * @param connection the connection that created this Statement
 	 * @param resultSetType type of ResultSet to produce
 	 * @param resultSetConcurrency concurrency of ResultSet to produce
-	 * @throws SQLException if an error occurs during login
 	 * @throws IllegalArgumentException is one of the arguments is null or empty
 	 */
 	MonetStatement(MonetConnection connection, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
-			throws SQLException, IllegalArgumentException {
+			throws IllegalArgumentException {
 		if (connection == null) throw
 			new IllegalArgumentException("No Connection given!");
 
@@ -241,8 +241,8 @@ public class MonetStatement extends MonetWrapper implements Statement {
 			int count = -1;
 			if (!type) count = getUpdateCount();
 			do {
-				if (offset >= max) throw
-					new SQLException("Overflow: don't use multi statements when batching (" + max + ")", "M1M16");
+				if (offset >= max)
+					throw new SQLException("Overflow: don't use multi statements when batching (" + max + ")", "M1M16");
 				if (type) {
 					e.setNextException(new SQLException("Batch query produced a ResultSet! " +
 							"Ignoring and setting update count to value " + EXECUTE_FAILED, "M1M17"));
@@ -330,7 +330,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 	public boolean execute(String sql) throws SQLException {
 		return internalExecute(sql);
 	}
-	
+
 	/**
 	 * Executes the given SQL statement, which may return multiple
 	 * results, and signals the driver that any auto-generated keys
@@ -679,7 +679,7 @@ public class MonetStatement extends MonetWrapper implements Statement {
 
 		try {
 			return new MonetVirtualResultSet(this, columns, types, jdbcTypes, results);
-		} catch (IllegalArgumentException e) {
+		} catch (IllegalArgumentException | IOException e) {
 			throw new SQLException("Internal driver error: " + e.getMessage(), "M0M03");
 		}
 	}
@@ -1188,7 +1188,7 @@ final class MonetVirtualResultSet extends MonetResultSet {
 	private boolean closed;
 
 	MonetVirtualResultSet(Statement statement, String[] columns, String[] types, int[] jdbcTypes, Object[] results)
-			throws IllegalArgumentException {
+			throws IllegalArgumentException, IOException, SQLException {
 		super(statement, columns, types, jdbcTypes, results.length);
 		this.results = results;
 		this.closed = false;

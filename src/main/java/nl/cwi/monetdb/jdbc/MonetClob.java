@@ -11,6 +11,7 @@ package nl.cwi.monetdb.jdbc;
 import java.io.*;
 import java.sql.Clob;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 
 /**
  * The MonetClob class implements the {@link java.sql.Clob} interface.  Because
@@ -24,19 +25,28 @@ import java.sql.SQLException;
  * @author Fabian Groffen
  */
 public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
-	
+
 	private final StringBuilder buffer;
 
 	public MonetClob(String in) {
-		buffer = new StringBuilder(in);
+		if(in != null)
+			buffer = new StringBuilder(in);
+		else
+			buffer = null;
 	}
 
 	public MonetClob(char[] toParse, int startPosition, int count) {
 		buffer = new StringBuilder(new String(toParse, startPosition, count));
 	}
 
+	/* internal utility method */
+	private void checkBufIsNotNull() throws SQLException {
+		if (buffer == null)
+			throw new SQLException("This MonetClob has been freed", "M1M20");
+	}
+
 	//== begin interface Clob
-	
+
 	/**
 	 * This method frees the Clob object and releases the resources the resources that it holds. The object is invalid
 	 * once the free method is called.
@@ -46,7 +56,8 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public void free() {
-		buffer.setLength(0);
+		if (buffer != null)
+			buffer.setLength(0);
 	}
 
 	/**
@@ -57,6 +68,7 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public InputStream getAsciiStream() throws SQLException {
+		checkBufIsNotNull();
 		if (buffer.length() == 0)
 			throw new SQLException("This Clob has been freed", "M1M20");
 		return new ByteArrayInputStream(buffer.toString().getBytes());
@@ -71,9 +83,8 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public Reader getCharacterStream() throws SQLException {
-        if (buffer.length() == 0)
-            throw new SQLException("This Clob has been freed", "M1M20");
-        return new StringReader(buffer.toString());
+		checkBufIsNotNull();
+		return new StringReader(buffer.toString());
 	}
 
 	/**
@@ -88,9 +99,8 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public Reader getCharacterStream(long pos, long length) throws SQLException {
-        if (buffer.length() == 0)
-            throw new SQLException("This Clob has been freed", "M1M20");
-        return new StringReader(buffer.substring((int)(pos - 1), (int)(pos - 1 + length)));
+		checkBufIsNotNull();
+		return new StringReader(getSubString(pos, (int)length));
 	}
 
 	/**
@@ -104,8 +114,7 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public String getSubString(long pos, int length) throws SQLException {
-		if (buffer.length() == 0)
-			throw new SQLException("This Clob has been freed", "M1M20");
+		checkBufIsNotNull();
 		try {
 			return buffer.substring((int)(pos - 1), (int)(pos - 1 + length));
 		} catch (IndexOutOfBoundsException e) {
@@ -121,9 +130,8 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public long length() throws SQLException {
-		if (buffer.length() == 0)
-			throw new SQLException("This Clob has been freed", "M1M20");
-		return (long) buffer.length();
+		checkBufIsNotNull();
+		return (long)buffer.length();
 	}
 
 	/**
@@ -137,6 +145,7 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public long position(Clob searchstr, long start) throws SQLException {
+		checkBufIsNotNull();
 		return position(searchstr.getSubString(1L, (int)(searchstr.length())), start);
 	}
 
@@ -151,23 +160,18 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public long position(String searchstr, long start) throws SQLException {
-		if (buffer.length() == 0)
-			throw new SQLException("This Clob has been freed", "M1M20");
+		checkBufIsNotNull();
 		return (long)(buffer.indexOf(searchstr, (int)(start - 1)));
 	}
 
 	@Override
 	public OutputStream setAsciiStream(long pos) throws SQLException {
-		if (buffer.length() == 0)
-			throw new SQLException("This Clob has been freed", "M1M20");
-		throw new SQLException("Operation setAsciiStream(long pos) currently not supported", "0A000");
+		throw new SQLFeatureNotSupportedException("Method setAsciiStream(long pos) not supported", "0A000");
 	}
 
 	@Override
 	public Writer setCharacterStream(long pos) throws SQLException {
-		if (buffer.length() == 0)
-			throw new SQLException("This Clob has been freed", "M1M20");
-		throw new SQLException("Operation setCharacterStream(long pos) currently not supported", "0A000");
+		throw new SQLFeatureNotSupportedException("Method setCharacterStream(long pos) not supported", "0A000");
 	}
 
 	/**
@@ -195,12 +199,9 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public int setString(long pos, String str, int offset, int len) throws SQLException {
-		if (buffer.length() == 0)
-			throw new SQLException("This Clob has been freed", "M1M20");
-
+		checkBufIsNotNull();
 		int buflen = buffer.length();
 		int retlen = Math.min(buflen, (int)(pos - 1 + len));
-		
 		if (retlen > 0) {
 			buffer.replace((int)(pos - 1), (int)(pos + retlen), str.substring(offset - 1, (offset + len)));
 			return retlen;
@@ -217,8 +218,7 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public void truncate(long len) throws SQLException {
-		if (buffer.length() == 0)
-			throw new SQLException("This Clob has been freed", "M1M20");
+		checkBufIsNotNull();
 		buffer.setLength((int) len);
 	}
 
@@ -230,8 +230,8 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 */
 	@Override
 	public String toString() {
-		if (buffer.length() == 0)
-			return "<a freed MonetClob instance>";
+		if (buffer == null || buffer.length() == 0)
+			return "null";
 		return buffer.toString();
 	}
 
@@ -247,7 +247,11 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 * Overriding the hashCode method for the byte array.
 	 */
 	@Override
-	public int hashCode() { return this.buffer.toString().hashCode(); }
+	public int hashCode() {
+		if (buffer == null || buffer.length() == 0)
+			return 0;
+		return this.buffer.toString().hashCode();
+	}
 
 	/**
 	 * Adding the compare to method.

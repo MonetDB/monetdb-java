@@ -39,6 +39,24 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 		return buffer;
 	}
 
+	static MonetBlob create(String in) {
+		// unpack the HEX (BLOB) notation to real bytes
+		int len = in.length() / 2;
+		byte[] buf = new byte[len];
+		int offset;
+		for (int i = 0; i < len; i++) {
+			offset = 2 * i;
+			buf[i] = (byte)Integer.parseInt(in.substring(offset, offset + 2), 16);
+		}
+		return new MonetBlob(buf);
+	}
+
+	/* internal utility method */
+	private void checkBufIsNotNull() throws SQLException {
+		if (buffer == null)
+			throw new SQLException("This MonetBlob has been freed", "M1M20");
+	}
+
 	//== begin interface Blob
 
 	/**
@@ -61,8 +79,7 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 */
 	@Override
 	public InputStream getBinaryStream() throws SQLException {
-		if (buffer == null)
-			throw new SQLException("This Blob object has been freed", "M1M20");
+		checkBufIsNotNull();
 		return new ByteArrayInputStream(buffer);
 	}
 
@@ -79,8 +96,7 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 */
 	@Override
 	public InputStream getBinaryStream(long pos, long length) throws SQLException {
-		if (buffer == null)
-			throw new SQLException("This Blob object has been freed", "M1M20");
+		checkBufIsNotNull();
 		if (pos < 1)
 			throw new SQLException("pos is less than 1", "M1M05");
 		if (pos - 1 > buffer.length)
@@ -103,10 +119,9 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 */
 	@Override
 	public byte[] getBytes(long pos, int length) throws SQLException {
-		if (buffer == null)
-			throw new SQLException("This Blob object has been freed", "M1M20");
+		checkBufIsNotNull();
 		try {
-			return Arrays.copyOfRange(buffer, (int) pos - 1, (int) pos - 1 + length);
+			return java.util.Arrays.copyOfRange(buffer, (int) pos - 1, (int) pos - 1 + length);
 		} catch (IndexOutOfBoundsException e) {
 			throw new SQLException(e.getMessage(), "M0M10");
 		}
@@ -120,9 +135,8 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 */
 	@Override
 	public long length() throws SQLException {
-		if (buffer == null)
-			throw new SQLException("This Blob object has been freed", "M1M20");
-		return (long) buffer.length;
+		checkBufIsNotNull();
+		return (long)buffer.length;
 	}
 
 	/**
@@ -150,8 +164,7 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 */
 	@Override
 	public long position(byte[] pattern, long start) throws SQLException {
-		if (buffer == null)
-			throw new SQLException("This Blob object has been freed", "M1M20");
+		checkBufIsNotNull();
 		try {
 			for (int i = (int)(start - 1); i < buffer.length - pattern.length; i++) {
 				int j;
@@ -184,12 +197,7 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 */
 	@Override
 	public OutputStream setBinaryStream(long pos) throws SQLException {
-		if (buffer == null)
-			throw new SQLException("This Blob object has been freed", "M1M20");
-		if (pos < 1)
-			throw new SQLException("pos is less than 1", "M1M05");
-		throw new SQLFeatureNotSupportedException("Operation setBinaryStream(long pos) currently not supported",
-				"0A000");
+		throw new SQLFeatureNotSupportedException("Method setBinaryStream(long pos) not supported", "0A000");
 	}
 
 	/**
@@ -222,8 +230,7 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 */
 	@Override
 	public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
-		if (buffer == null)
-			throw new SQLException("This Blob object has been freed", "M1M20");
+		checkBufIsNotNull();
 		try {
 			/* transactions? what are you talking about? */
 			System.arraycopy(bytes, offset - 1 + (int) pos, buffer, (int) pos, len - (int) pos);
@@ -241,8 +248,7 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 */
 	@Override
 	public void truncate(long len) throws SQLException {
-		if (buffer == null)
-			throw new SQLException("This Blob object has been freed", "M1M20");
+		checkBufIsNotNull();
 		if (buffer.length > len) {
 			byte[] newbuf = new byte[(int)len];
 			System.arraycopy(buffer, 0, newbuf, 0, (int) len);

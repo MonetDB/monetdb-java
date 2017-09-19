@@ -34,11 +34,11 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 
 	private String user;
 	private String password; // insecure, but how to do it better?
-    private String description = "MonetDB database";
+	private String description = "MonetDB database";
 	private String url = "jdbc:monetdb://localhost/";
-    private int loginTimeout;
-    private String directory;
-    private final MonetDriver driver = new MonetDriver();
+	private int loginTimeout;
+	private String directory;
+	private final MonetDriver driver = new MonetDriver();
 
 	// the following properties are also standard:
 	// private String dataSourceName;
@@ -46,7 +46,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	// private String serverName;
 	// private String role;
 
-    public MonetDataSource() {}
+	public MonetDataSource() {}
 
 	/**
 	 * Attempts to establish a connection with the data source that this DataSource object represents.
@@ -72,13 +72,13 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 		Properties props = new Properties();
 		props.put("user", username);
 		props.put("password", password);
-        if (loginTimeout > 0) {
-            props.put("so_timeout", Integer.toString(loginTimeout));
-        }
+		if (loginTimeout > 0) {
+			props.put("so_timeout", Integer.toString(loginTimeout));
+		}
 		if(directory != null) {
-            props.put("embedded", "true");
+			props.put("embedded", "true");
 			props.put("directory", directory);
-        }
+		}
 		return driver.connect(url, props);
 	}
 
@@ -184,34 +184,34 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 		this.description = description;
 	}
 
-    /**
-     * Gets the directory value
-     *
-     * @return the directory value
-     */
-    public String getDirectory() {
-        return directory;
-    }
+	/**
+	 * Gets the directory value
+	 *
+	 * @return the directory value
+	 */
+	public String getDirectory() {
+		return directory;
+	}
 
-    /**
-     * Sets the directory value, meaning it wil start an embedded connection
-     *
-     * @param directory The directory location
-     */
-    public void setDirectory(String directory) {
-        this.directory = directory;
-    }
+	/**
+	 * Sets the directory value, meaning it wil start an embedded connection
+	 *
+	 * @param directory The directory location
+	 */
+	public void setDirectory(String directory) {
+		this.directory = directory;
+	}
 
-    /**
-     * Gets the embedded connection directory. If not, then a MAPI connection will be created instead.
-     *
-     * @return If the connection will be embedded. If not, then a MAPI connection will be created instead.
-     */
-    public boolean isEmbedded() {
-        return directory != null;
-    }
+	/**
+	 * Gets the embedded connection directory. If not, then a MAPI connection will be created instead.
+	 *
+	 * @return If the connection will be embedded. If not, then a MAPI connection will be created instead.
+	 */
+	public boolean isEmbedded() {
+		return directory != null;
+	}
 
-    /**
+	/**
 	 * Return the parent Logger of all the Loggers used by this data
 	 * source.  This should be the Logger farthest from the root Logger
 	 * that is still an ancestor of all of the Loggers used by this data

@@ -16,15 +16,23 @@ public class BugExecuteUpdate_Bug_3350 {
 
 		final Statement stmt = con.createStatement();
 		try {
-			executeDML(stmt, "INSERT INTO sys.keywords VALUES ('Bug_3350')"); // should insert 1 row
-			executeDML(stmt, "INSERT INTO sys.keywords VALUES ('Bug_3350')"); // this will result in an SQLException due to PK uniqueness violation
+			stmt.execute("CREATE TABLE t3350 (keyword VARCHAR(30) PRIMARY KEY)");
+			con.commit();
+
+			executeDML(stmt, "INSERT INTO t3350 VALUES ('Bug_3350')"); // should insert 1 row
+			executeDML(stmt, "INSERT INTO t3350 VALUES ('Bug_3350')"); // this will result in an SQLException due to PK uniqueness violation
 			con.rollback();
 
-			executeDML(stmt, "INSERT INTO sys.keywords VALUES ('Bug_3350')"); // should insert 1 row
-			executeDML(stmt, "DELETE FROM sys.keywords WHERE \"keyword\" = 'Bug_3350'"); // should delete 1 row
-			executeDML(stmt, "DELETE FROM sys.keywords WHERE \"keyword\" = 'Bug_3350'"); // should delete 0 rows
+			executeDML(stmt, "INSERT INTO t3350 VALUES ('Bug_3350')"); // should insert 1 row
+			executeDML(stmt, "INSERT INTO t3350 VALUES ('1'), ('x'), ('3'), ('y')"); // should insert 4 rows
+			executeDML(stmt, "DELETE FROM t3350 WHERE \"keyword\" = 'Bug_3350'"); // should delete 1 row
+			executeDML(stmt, "DELETE FROM t3350 WHERE \"keyword\" = 'Bug_3350'"); // should delete 0 rows
+			executeDML(stmt, "UPDATE t3350 set \"keyword\" = keyword||'_ext'"); // should update 4 rows
+			executeDML(stmt, "DELETE FROM t3350"); // should delete 4 rows
+			con.commit();
 
-			con.rollback();
+			stmt.execute("DROP TABLE t3350");
+			con.commit();
 		} catch (SQLException se) {
 			System.out.println(se.getMessage());
 		} finally {

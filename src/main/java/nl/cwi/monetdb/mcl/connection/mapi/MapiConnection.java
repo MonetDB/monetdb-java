@@ -24,6 +24,7 @@ import java.net.URISyntaxException;
 import java.nio.ByteOrder;
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLNonTransientConnectionException;
 import java.util.*;
 
 /**
@@ -56,7 +57,7 @@ public class MapiConnection extends MonetConnection {
 	private ByteOrder serverEndianness;
 
 	public MapiConnection(Properties props, String hash, String language, boolean blobIsBinary, boolean clobIsLongChar,
-						  String hostname, int port, String database) throws IOException {
+						  String hostname, int port, String database) {
 		super(props, hash, MapiLanguage.getLanguageFromString(language), blobIsBinary, clobIsLongChar);
 		this.hostname = hostname;
 		this.port = port;
@@ -97,16 +98,11 @@ public class MapiConnection extends MonetConnection {
 	 * @return The currently in use timeout in milliseconds
 	 */
 	@Override
-	public int getSoTimeout()  {
-		try {
-			if(protocol != null) {
-				this.soTimeout = ((OldMapiProtocol)protocol).getSocket().getSoTimeout();
-			}
-			return this.soTimeout;
-		} catch (SocketException e) {
-			this.addWarning("The socket timeout could not be get", "M1M05");
+	public int getSoTimeout() throws SocketException {
+		if(protocol != null) {
+			this.soTimeout = ((OldMapiProtocol)protocol).getSocket().getSoTimeout();
 		}
-		return -1;
+		return this.soTimeout;
 	}
 
 	/**
@@ -117,18 +113,14 @@ public class MapiConnection extends MonetConnection {
 	 * @param timeout The specified timeout, in milliseconds. A timeout of zero is interpreted as an infinite timeout
 	 */
 	@Override
-	public void setSoTimeout(int timeout)  {
+	public void setSoTimeout(int timeout) throws SocketException {
 		if (timeout < 0) {
 			throw new IllegalArgumentException("Timeout can't be negative");
 		}
-		try {
-			if(protocol != null) {
-				((OldMapiProtocol)protocol).getSocket().setSoTimeout(timeout);
-			}
-			this.soTimeout = timeout;
-		} catch (SocketException e) {
-			this.addWarning("The socket timeout could not be set", "M1M05");
+		if(protocol != null) {
+			((OldMapiProtocol)protocol).getSocket().setSoTimeout(timeout);
 		}
+		this.soTimeout = timeout;
 	}
 
 	/**
@@ -253,9 +245,9 @@ public class MapiConnection extends MonetConnection {
 			}
 		} catch (SocketTimeoutException e) {
 			close(); // JDBC 4.1 semantics, abort()
-			throw new SQLException("connection timed out", "08M33");
+			throw new SQLNonTransientConnectionException("connection timed out", "08M33");
 		} catch (IOException e) {
-			throw new SQLException(e.getMessage(), "08000");
+			throw new SQLNonTransientConnectionException(e.getMessage(), "08000");
 		}
 	}
 
