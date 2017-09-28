@@ -49,7 +49,7 @@ public class TupleLineParser extends MCLParser {
 				throw new MCLParseException(values.length +
 						" columns expected, but only single value found");
 
-			// return the whole string but the leading =
+			// return the whole string but without the leading =
 			values[0] = source.substring(1);
 
 			// reset colnr
@@ -60,9 +60,9 @@ public class TupleLineParser extends MCLParser {
 
 		// extract separate fields by examining string, char for char
 		boolean inString = false, escaped = false;
-		int cursor = 2, column = 0, i = 2;
+		int cursor = 2, column = 0;
 		StringBuilder uesc = new StringBuilder();
-		for (; i < len; i++) {
+		for (int i = 2; i < len; i++) {
 			switch(chrLine[i]) {
 				default:
 					escaped = false;
@@ -109,14 +109,20 @@ public class TupleLineParser extends MCLParser {
 							for (int pos = cursor + 1; pos < i - 2; pos++) {
 								if (chrLine[pos] == '\\' && pos + 1 < i - 2) {
 									pos++;
-									// strToStr and strFromStr in gdk_atoms.mx only
-									// support \t \n \\ \" and \377
+									// escapedStr and GDKstrFromStr in gdk_atoms.c only
+									// support \\ \f \n \r \t \" and \377
 									switch (chrLine[pos]) {
 										case '\\':
 											uesc.append('\\');
 										break;
+										case 'f':
+											uesc.append('\f');
+										break;
 										case 'n':
 											uesc.append('\n');
+										break;
+										case 'r':
+											uesc.append('\r');
 										break;
 										case 't':
 											uesc.append('\t');
@@ -177,7 +183,7 @@ public class TupleLineParser extends MCLParser {
 
 		// reset colnr
 		reset();
-		
+
 		return 0;
 	}
 }
