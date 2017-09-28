@@ -253,6 +253,11 @@ final public class MonetDriver implements Driver {
 		prop.description = "Whether BLOBs on the server should be treated as BINARY types, thus mapped to byte[]";
 		props.add(prop);
 
+		prop = new DriverPropertyInfo("treat_clob_as_varchar", "false");
+		prop.required = false;
+		prop.description = "Whether CLOBs on the server should be treated and handled as VARCHAR types in the JDBC driver"; // recommend for increased performance due to less overhead
+		props.add(prop);
+
 		prop = new DriverPropertyInfo("so_timeout", "0");
 		prop.required = false;
 		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1

@@ -196,14 +196,21 @@ public class MonetResultSet
 	 * thereby improving getXyz() method performance.
 	 */
 	private void populateJdbcSQLtypesArray() {
+		MonetConnection connection = null;
+		try {
+			connection = (MonetConnection)statement.getConnection();
+		} catch (SQLException se) { /* ignore it */ }
+
 		for (int i = 0; i < types.length; i++) {
 			int javaSQLtype = MonetDriver.getJavaType(types[i]);
 			JdbcSQLTypes[i] = javaSQLtype;
+			if (javaSQLtype == Types.CLOB) {
+				if (connection != null && connection.mapClobAsVarChar())
+					JdbcSQLTypes[i] = Types.VARCHAR;
+			} else
 			if (javaSQLtype == Types.BLOB) {
-				try {
-					if (((MonetConnection)statement.getConnection()).getBlobAsBinary())
-						JdbcSQLTypes[i] = Types.BINARY;
-				} catch (SQLException se) { /* ignore it */ }
+				if (connection != null && connection.mapBlobAsVarBinary())
+					JdbcSQLTypes[i] = Types.VARBINARY;
 			}
 		}
 	}

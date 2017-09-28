@@ -141,8 +141,10 @@ public class MonetConnection
 	/** The language which is used */
 	final int lang;
 
-	/** Whether or not BLOB is mapped to BINARY within the driver */
-	private final boolean blobIsBinary;
+	/** Whether or not BLOB is mapped to Types.VARBINARY instead of Types.BLOB within this connection */
+	private boolean treatBlobAsVarBinary = false;
+	/** Whether or not CLOB is mapped to Types.VARCHAR instead of Types.CLOB within this connection */
+	private boolean treatClobAsVarChar = false;
 
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
@@ -201,12 +203,18 @@ public class MonetConnection
 		if (hash != null)
 			conn_props.setProperty("hash", hash);
 
-		String blobIsBinary_prop = props.getProperty("treat_blob_as_binary");
-		if (blobIsBinary_prop != null) {
-			blobIsBinary = Boolean.parseBoolean(blobIsBinary_prop);
-			conn_props.setProperty("treat_blob_as_binary", Boolean.toString(blobIsBinary));
-		} else {
-			blobIsBinary = false;
+		String treatBlobAsVarBinary_prop = props.getProperty("treat_blob_as_binary");
+		if (treatBlobAsVarBinary_prop != null) {
+			treatBlobAsVarBinary = Boolean.parseBoolean(treatBlobAsVarBinary_prop);
+			conn_props.setProperty("treat_blob_as_binary", Boolean.toString(treatBlobAsVarBinary));
+			typeMap.put("blob", Byte[].class);
+		}
+
+		String treatClobAsVarChar_prop = props.getProperty("treat_clob_as_varchar");
+		if (treatClobAsVarChar_prop != null) {
+			treatClobAsVarChar = Boolean.parseBoolean(treatClobAsVarChar_prop);
+			conn_props.setProperty("treat_clob_as_varchar", Boolean.toString(treatClobAsVarChar));
+			typeMap.put("clob", String.class);
 		}
 
 		int sockTimeout = 0;
@@ -1252,8 +1260,11 @@ public class MonetConnection
 			}
 		} catch (SQLException se) {
 			String msg = se.getMessage();
-			// System.out.println("Con.isValid(): " + msg);
-			if (msg != null && msg.equals("Current transaction is aborted (please ROLLBACK)")) {
+			// System.out.println(se.getSQLState() + " Con.isValid(): " + msg);
+			if (msg != null && msg.equalsIgnoreCase("Current transaction is aborted (please ROLLBACK)")) {
+				// Must use equalsIgnoreCase() here because up to Jul2017 release 'Current' was 'current' so with lowercase c.
+				// It changed to 'Current' after Jul2017 release. We need to support all server versions.
+				// SQLState = 25005
 				isValid = true;
 			}
 			/* ignore stmt errors/exceptions, we are only testing if the connection is still alive and usable */
@@ -1371,7 +1382,9 @@ public class MonetConnection
 		    name.equals("so_timeout") ||
 		    name.equals("debug") ||
 		    name.equals("hash") ||
-		    name.equals("treat_blob_as_binary")) {
+		    name.equals("treat_blob_as_binary") ||
+		    name.equals("treat_clob_as_varchar"))
+		{
 			conn_props.setProperty(name, value);
 		} else {
 			addWarning("setClientInfo: " + name + "is not a recognised property", "01M07");
@@ -1571,12 +1584,22 @@ public class MonetConnection
 	}
 
 	/**
-	 * Returns whether the BLOB type should be mapped to BINARY type.
+	 * Returns whether the JDBC BLOB type should be mapped to VARBINARY type.
+	 * This allows generic JDBC programs to fetch Blob data via getBytes()
+	 * instead of getBlob() and Blob.getBinaryStream() to reduce overhead.
 	 */
-	boolean getBlobAsBinary() {
-		return blobIsBinary;
+	boolean mapBlobAsVarBinary() {
+		return treatBlobAsVarBinary;
 	}
 
+	/**
+	 * Returns whether the JDBC CLOB type should be mapped to VARCHAR type.
+	 * This allows generic JDBC programs to fetch Clob data via getString()
+	 * instead of getClob() and Clob.getCharacterStream() to reduce overhead.
+	 */
+	boolean mapClobAsVarChar() {
+		return treatClobAsVarChar;
+	}
 
 	/**
 	 * Sends the given string to MonetDB as special transaction command.

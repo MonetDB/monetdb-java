@@ -156,6 +156,14 @@ public class MonetPreparedStatement
 			for (int i = 0; rs.next(); i++) {
 				monetdbType[i] = rs.getString(type_colnr);
 				javaType[i] = MonetDriver.getJavaType(monetdbType[i]);
+				if (javaType[i] == Types.CLOB) {
+					if (connection.mapClobAsVarChar())
+						javaType[i] = Types.VARCHAR;
+				} else
+				if (javaType[i] == Types.BLOB) {
+					if (connection.mapBlobAsVarBinary())
+						javaType[i] = Types.VARBINARY;
+				}
 				digits[i] = rs.getInt(digits_colnr);
 				scale[i] = rs.getInt(scale_colnr);
 				if (rscolcnt == 3)
