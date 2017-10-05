@@ -289,11 +289,10 @@ public class MonetStatement
 	}
 
 	/**
-	 * Cancels this Statement object if both the DBMS and driver support
-	 * aborting an SQL statement.  This method can be used by one thread to
-	 * cancel a statement that is being executed by another thread.
+	 * Cancels this Statement object if both the DBMS and driver support aborting an SQL statement.
+	 * This method can be used by one thread to cancel a statement that is being executed by another thread.
 	 *
-	 * @throws SQLException - if a database access error occurs or the cancel operation is not supported
+	 * @throws SQLException - if a database access error occurs or this method is called on a closed Statement
 	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
 	@Override
