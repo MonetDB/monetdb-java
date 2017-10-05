@@ -326,8 +326,10 @@ public class MonetStatement
 	@Override
 	public void close() {
 		// close previous ResultSet, if not closed already
-		if (lastResponseList != null)
+		if (lastResponseList != null) {
 			lastResponseList.close();
+			lastResponseList = null;
+		}
 		closed = true;
 	}
 
@@ -1207,10 +1209,11 @@ public class MonetStatement
 	 * @param reason the warning message
 	 */
 	private void addWarning(String reason, String sqlstate) {
+		SQLWarning warng = new SQLWarning(reason, sqlstate);
 		if (warnings == null) {
-			warnings = new SQLWarning(reason, sqlstate);
+			warnings = warng;
 		} else {
-			warnings.setNextWarning(new SQLWarning(reason, sqlstate));
+			warnings.setNextWarning(warng);
 		}
 	}
 
