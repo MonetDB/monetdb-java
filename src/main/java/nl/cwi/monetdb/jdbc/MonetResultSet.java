@@ -192,8 +192,8 @@ public class MonetResultSet
 
 	/**
 	 * Internal utility method to fill the JdbcSQLTypes array with derivable values.
-	 * By doing it once (in the constructor) we can avoid doing this in many getXyz() methods again and again
-	 * thereby improving getXyz() method performance.
+	 * By doing it once (in the constructor) we can avoid doing this in many getXyz()
+	 * methods again and again thereby improving getXyz() method performance.
 	 */
 	private void populateJdbcSQLtypesArray() {
 		MonetConnection connection = null;
@@ -203,15 +203,15 @@ public class MonetResultSet
 
 		for (int i = 0; i < types.length; i++) {
 			int javaSQLtype = MonetDriver.getJavaType(types[i]);
-			JdbcSQLTypes[i] = javaSQLtype;
 			if (javaSQLtype == Types.CLOB) {
 				if (connection != null && connection.mapClobAsVarChar())
-					JdbcSQLTypes[i] = Types.VARCHAR;
+					javaSQLtype = Types.VARCHAR;
 			} else
 			if (javaSQLtype == Types.BLOB) {
 				if (connection != null && connection.mapBlobAsVarBinary())
-					JdbcSQLTypes[i] = Types.VARBINARY;
+					javaSQLtype = Types.VARBINARY;
 			}
+			JdbcSQLTypes[i] = javaSQLtype;
 		}
 	}
 

@@ -54,29 +54,29 @@ public class StartOfHeaderParser {
 		soh.get();	// skip the &
 		int type = soh.get();
 		switch (type) {
-			default:
-				throw new MCLParseException("invalid or unknown header", 1);
 			case Q_PARSE:
 			case Q_SCHEMA:
 				len = 0;
-			break;
+				break;
 			case Q_TABLE:
 			case Q_PREPARE:
 				len = 4;
 				soh.get();
-			break;
+				break;
 			case Q_UPDATE:
 				len = 2;
 				soh.get();
-			break;
+				break;
 			case Q_TRANS:
 				len = 1;
 				soh.get();
-			break;
+				break;
 			case Q_BLOCK:
 				len = 3;
 				soh.get();
-			break;
+				break;
+			default:
+				throw new MCLParseException("invalid or unknown header", 1);
 		}
 		pos = 0;
 		return type;
@@ -98,8 +98,8 @@ public class StartOfHeaderParser {
 	public final int getNextAsInt() throws MCLParseException {
 		boolean positive = true;
 		pos++;
-		if (!soh.hasRemaining()) throw
-			new MCLParseException("unexpected end of string", soh.position() - 1);
+		if (!soh.hasRemaining())
+			throw new MCLParseException("unexpected end of string", soh.position() - 1);
 		int tmp = 0;
 		char chr = soh.get();
 		// note: don't use Character.isDigit() here, because
@@ -117,8 +117,8 @@ public class StartOfHeaderParser {
 		}
 
 		while (soh.hasRemaining() && (chr = soh.get()) != ' ') {
-			tmp *= 10;
 			if (chr >= '0' && chr <= '9') {
+				tmp *= 10;
 				tmp += (int)chr - (int)'0';
 			} else {
 				throw new MCLParseException("expected a digit", soh.position() - 1);
@@ -130,8 +130,8 @@ public class StartOfHeaderParser {
 
 	public final String getNextAsString() throws MCLParseException {
 		pos++;
-		if (!soh.hasRemaining()) throw
-			new MCLParseException("unexpected end of string", soh.position() - 1);
+		if (!soh.hasRemaining())
+			throw new MCLParseException("unexpected end of string", soh.position() - 1);
 		int cnt = 0;
 		soh.mark();
 		while (soh.hasRemaining() && soh.get() != ' ') {

@@ -66,10 +66,10 @@ public class TupleLineParser extends MCLParser {
 			switch(chrLine[i]) {
 				default:
 					escaped = false;
-				break;
+					break;
 				case '\\':
 					escaped = !escaped;
-				break;
+					break;
 				case '"':
 					/**
 					 * If all strings are wrapped between two quotes, a \" can
@@ -92,7 +92,7 @@ public class TupleLineParser extends MCLParser {
 
 					// reset escaped flag
 					escaped = false;
-				break;
+					break;
 				case '\t':
 					if (!inString &&
 						(i > 0 && chrLine[i - 1] == ',') ||
@@ -114,29 +114,29 @@ public class TupleLineParser extends MCLParser {
 									switch (chrLine[pos]) {
 										case '\\':
 											uesc.append('\\');
-										break;
+											break;
 										case 'f':
 											uesc.append('\f');
-										break;
+											break;
 										case 'n':
 											uesc.append('\n');
-										break;
+											break;
 										case 'r':
 											uesc.append('\r');
-										break;
+											break;
 										case 't':
 											uesc.append('\t');
-										break;
+											break;
 										case '"':
 											uesc.append('"');
-										break;
+											break;
 										case '0': case '1': case '2': case '3':
 											// this could be an octal number, let's check it out
 											if (pos + 2 < i - 2 &&
 												chrLine[pos + 1] >= '0' && chrLine[pos + 1] <= '7' &&
 												chrLine[pos + 2] >= '0' && chrLine[pos + 2] <= '7'
 											) {
-												// we got the number!
+												// we got an octal number
 												try {
 													uesc.append((char)(Integer.parseInt("" + chrLine[pos] + chrLine[pos + 1] + chrLine[pos + 2], 8)));
 													pos += 2;
@@ -148,11 +148,11 @@ public class TupleLineParser extends MCLParser {
 												// do default action if number seems not to be correct
 												uesc.append(chrLine[pos]);
 											}
-										break;
+											break;
 										default:
-											// this is wrong, just ignore the escape, and print the char
+											// this is wrong usage of escape, just ignore the \-escape and print the char
 											uesc.append(chrLine[pos]);
-										break;
+											break;
 									}
 								} else {
 									uesc.append(chrLine[pos]);
@@ -161,20 +161,17 @@ public class TupleLineParser extends MCLParser {
 
 							// put the unescaped string in the right place
 							values[column++] = uesc.toString();
-						} else if ((i - 1) - cursor == 4 &&
-								source.indexOf("NULL", cursor) == cursor)
-						{
+						} else if ((i - 1) - cursor == 4 && source.indexOf("NULL", cursor) == cursor) {
 							values[column++] = null;
 						} else {
-							values[column++] =
-								source.substring(cursor, i - 1);
+							values[column++] = source.substring(cursor, i - 1);
 						}
 						cursor = i + 1;
 					}
 
 					// reset escaped flag
 					escaped = false;
-				break;
+					break;
 			}
 		}
 		// check if this result is of the size we expected it to be

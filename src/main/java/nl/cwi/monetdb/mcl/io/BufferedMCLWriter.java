@@ -34,7 +34,7 @@ import java.io.Writer;
  *
  * @author Fabian Groffen <Fabian.Groffen>
  * @see nl.cwi.monetdb.mcl.net.MapiSocket
- * @see nl.cwi.monetdb.mcl.io.BufferedMCLWriter
+ * @see nl.cwi.monetdb.mcl.io.BufferedMCLReader
  */
 public class BufferedMCLWriter extends BufferedWriter {
 	private BufferedMCLReader reader;
@@ -63,17 +63,6 @@ public class BufferedMCLWriter extends BufferedWriter {
 	}
 
 	/**
-	 * Registers the given reader in this writer.  A registered reader
-	 * receives a linetype reset when a line is written from this
-	 * writer.
-	 *
-	 * @param r an BufferedMCLReader
-	 */
-	public void registerReader(BufferedMCLReader r) {
-		reader = r;
-	}
-
-	/**
 	 * Write a line separator.  The line separator string is in this
 	 * class always the single newline character '\n'.
 	 *
@@ -82,6 +71,18 @@ public class BufferedMCLWriter extends BufferedWriter {
 	@Override
 	public void newLine() throws IOException {
 		write('\n');
+	}
+
+
+	/**
+	 * Registers the given reader in this writer.  A registered reader
+	 * receives a linetype reset when a line is written from this
+	 * writer.
+	 *
+	 * @param r an BufferedMCLReader
+	 */
+	public void registerReader(BufferedMCLReader r) {
+		reader = r;
 	}
 
 	/**
@@ -96,6 +97,7 @@ public class BufferedMCLWriter extends BufferedWriter {
 		write(line);
 		flush();
 		// reset reader state, last line isn't valid any more now
-		if (reader != null) reader.setLineType(null);
+		if (reader != null)
+			reader.setLineType(null);
 	}
 }

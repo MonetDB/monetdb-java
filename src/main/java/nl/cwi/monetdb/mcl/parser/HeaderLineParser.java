@@ -19,10 +19,10 @@ package nl.cwi.monetdb.mcl.parser;
 public class HeaderLineParser extends MCLParser {
 	private int type;
 
-	public final static int NAME       = 1;
-	public final static int LENGTH     = 2;
-	public final static int TABLE      = 3;
-	public final static int TYPE       = 4;
+	public final static int NAME   = 1;
+	public final static int LENGTH = 2;
+	public final static int TABLE  = 3;
+	public final static int TYPE   = 4;
 
 	/**
 	 * Constructs a HeaderLineParser which expects columncount columns.
@@ -53,7 +53,7 @@ public class HeaderLineParser extends MCLParser {
 		int pos = 0;
 		boolean foundChar = false;
 		boolean nameFound = false;
-		// find header name
+		// find header name searching from the end of the line
 		for (int i = len - 1; i >= 0; i--) {
 			switch (chrLine[i]) {
 				case ' ':
@@ -107,8 +107,7 @@ public class HeaderLineParser extends MCLParser {
 				}
 				break;
 			default:
-				throw new MCLParseException("unknown header: " +
-						(new String(chrLine, pos, len - pos)));
+				throw new MCLParseException("unknown header: " + (new String(chrLine, pos, len - pos)));
 		}
 
 		// adjust colno

@@ -252,15 +252,16 @@ public final class MapiSocket {
 	 * @throws MCLException if an MCL related error occurs
 	 */
 	public List<String> connect(String host, int port, String user, String pass)
-		throws IOException, MCLParseException, MCLException {
+		throws IOException, MCLParseException, MCLException
+	{
 		// Wrap around the internal connect that needs to know if it
 		// should really make a TCP connection or not.
 		return connect(host, port, user, pass, true);
 	}
 
-	private List<String> connect(String host, int port, String user, String pass,
-			boolean makeConnection)
-		throws IOException, MCLParseException, MCLException {
+	private List<String> connect(String host, int port, String user, String pass, boolean makeConnection)
+		throws IOException, MCLParseException, MCLException
+	{
 		if (ttl-- <= 0)
 			throw new MCLException("Maximum number of redirects reached, aborting connection attempt. Sorry.");
 
@@ -385,7 +386,7 @@ public final class MapiSocket {
 						close();
 					}
 					tmp = u.getPath();
-					if (tmp != null && tmp.length() != 0) {
+					if (tmp != null && tmp.length() > 0) {
 						tmp = tmp.substring(1).trim();
 						if (!tmp.isEmpty() && !tmp.equals(database)) {
 							warns.add("redirect points to different " + "database: " + tmp);
@@ -438,8 +439,8 @@ public final class MapiSocket {
 
 		// parse the challenge string, split it on ':'
 		String[] chaltok = chalstr.split(":");
-		if (chaltok.length <= 4) throw
-			new MCLParseException("Server challenge string unusable!  Challenge contains too few tokens: " + chalstr);
+		if (chaltok.length <= 4)
+			throw new MCLParseException("Server challenge string unusable!  Challenge contains too few tokens: " + chalstr);
 
 		// challenge string to use as salt/key
 		String challenge = chaltok[0];
@@ -549,9 +550,9 @@ public final class MapiSocket {
 				}
 
 				// generate response
-				response = "BIG:";	// JVM byte-order is big-endian
-				response += username + ":" + pwhash + ":" + language;
-				response += ":" + (database == null ? "" : database) + ":";
+				response = "BIG:"	// JVM byte-order is big-endian
+					+ username + ":" + pwhash + ":" + language
+					+ ":" + (database == null ? "" : database) + ":";
 
 				return response;
 		}

@@ -144,7 +144,7 @@ final public class MonetDriver implements Driver {
 
 		int uri_port = uri.getPort();
 		if (uri_port > 0)
-			info.put("port", "" + uri_port);
+			info.put("port", Integer.toString(uri_port));
 
 		// check the database
 		String uri_path = uri.getPath();
@@ -404,7 +404,7 @@ final public class MonetDriver implements Driver {
 	 * @return the version string
 	 */
 	public static String getDriverVersion() {
-		return "" + DRIVERMAJOR + "." + DRIVERMINOR + " (" + DRIVERVERSIONSUFFIX + ")";
+		return DRIVERMAJOR + "." + DRIVERMINOR + " (" + DRIVERVERSIONSUFFIX + ")";
 	}
 
 	public static int getDriverMajorVersion() {
