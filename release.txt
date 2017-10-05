@@ -2,8 +2,8 @@ RELEASE NOTES
 MonetDB JDBC driver version 2.26 (Liberica/MCL-1.15)
 Release date: 2017-07-28
 
-This JDBC driver is designed for use with MonetDB, a main-memory
-database.  For more information see https://www.monetdb.org/.
+This JDBC driver is designed for use with MonetDB, a main-memory column-store RDBMS.
+For more information see https://www.monetdb.org/
 
 The MonetDB JDBC connection URL format is:
   jdbc:monetdb://<hostname>[:<portnr>]/<databasename>[?<property>=<value>[;<property>=<value>]]
@@ -11,21 +11,24 @@ The MonetDB JDBC connection URL format is:
 The databasename must be provided and be equal to the name of the database served by the
 mserver5 process listening on the specified host and port number (default port is 50000).
 
-Supported properties are:
+Supported connection properties are:
 	user=<login name>
 	password=<secret value>
 	so_timeout=<time in milliseconds>
-	hash=<SHA1 or MD5>
-	language=<mal or sql>
-	treat_blob_as_binary=true
-	treat_clob_as_varchar=true
-	debug=true
+	hash=<SHA512, SHA384, SHA256, SHA1 and MD5>
+	language=<sql or mal>		default is: sql
+	treat_blob_as_binary=true	default is: false
+	treat_clob_as_varchar=true	default is: false
+	debug=true			default is: false
 	logfile=<name of logfile>
 
 For example:
   jdbc:monetdb://localhost:41000/demo?user=monetdb;password=monetdb;so_timeout=7000;treat_clob_as_varchar=true
 
 See also: https://www.monetdb.org/Documentation/Manuals/SQLreference/Programming/JDBC
+
+In a java program you can use: DatabaseMetaData.getClientInfoProperties();
+to retrieve the connection properties information from the driver.
 
 
 The MonetDB JDBC driver complies to JDBC 4.1 definition, see

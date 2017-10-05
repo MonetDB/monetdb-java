@@ -3807,8 +3807,10 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		"SELECT 'language', 16, 'sql', 'language (sql or mal) used to parse commands in MonetDB server' UNION ALL " +
 		"SELECT 'database', 1024, 'demo', 'name of database. It matches the dbfarm subdirectory name' UNION ALL " +
 		"SELECT 'debug', 5, 'false', 'boolean flag true or false' UNION ALL " +
-		"SELECT 'hash', 128, '', 'hash string' UNION ALL " +
-		"SELECT 'treat_blob_as_binary', 5, 'false', 'boolean flag true or false' UNION ALL " +
+		"SELECT 'logfile', 1024, 'monet_######.log', 'name of logfile used when debug is enabled' UNION ALL " +
+		"SELECT 'hash', 128, '', 'hash methods list to use in server connection. Supported are SHA512, SHA384, SHA256, SHA1 and MD5' UNION ALL " +
+		"SELECT 'treat_blob_as_binary', 5, 'false', 'should blob columns be mapped to Types.VARBINARY instead of default Types.BLOB in ResultSets and PreparedStatements' UNION ALL " +
+		"SELECT 'treat_clob_as_varchar', 5, 'false', 'should clob columns be mapped to Types.VARCHAR instead of default Types.CLOB in ResultSets and PreparedStatements' UNION ALL " +
 		"SELECT 'so_timeout', 10, '0', 'timeout (in milliseconds) of communication socket. 0 means no timeout is set' " +
 		"ORDER BY \"NAME\"";
 

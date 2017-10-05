@@ -13,7 +13,7 @@
   This custom clob mapping informs generic JDBC programs to fetch clob
   column values via method ResultSet.getString() instead of getClob()
   and Clob.getCharacterStream() and next fetching from the stream.
-  As MonetDB server MAPI communication protocol do not support
+  As MonetDB server MAPI communication protocol does not support
   streaming of parts of a CLOB value, the current implementation is to
   send over the whole CLOB value as a string. Therefore there is no
   performance gain when fetching those Clob values via getClob() and
