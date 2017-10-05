@@ -14,6 +14,7 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.List;
@@ -292,12 +293,12 @@ public class MonetStatement
 	 * aborting an SQL statement.  This method can be used by one thread to
 	 * cancel a statement that is being executed by another thread.
 	 *
-	 * @throws SQLException if a database access error occurs or the cancel
-	 *                      operation is not supported
+	 * @throws SQLException - if a database access error occurs or the cancel operation is not supported
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
 	@Override
 	public void cancel() throws SQLException {
-		throw new SQLException("Query cancelling is currently not supported by the DBMS.", "0A000");
+		throw new SQLFeatureNotSupportedException("Query cancelling is currently not supported by the driver.", "0A000");
 	}
 
 	/**
