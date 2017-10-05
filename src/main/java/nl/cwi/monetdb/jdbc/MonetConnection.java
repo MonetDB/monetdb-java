@@ -207,14 +207,16 @@ public class MonetConnection
 		if (treatBlobAsVarBinary_prop != null) {
 			treatBlobAsVarBinary = Boolean.parseBoolean(treatBlobAsVarBinary_prop);
 			conn_props.setProperty("treat_blob_as_binary", Boolean.toString(treatBlobAsVarBinary));
-			typeMap.put("blob", Byte[].class);
+			if (treatBlobAsVarBinary)
+				typeMap.put("blob", Byte[].class);
 		}
 
 		String treatClobAsVarChar_prop = props.getProperty("treat_clob_as_varchar");
 		if (treatClobAsVarChar_prop != null) {
 			treatClobAsVarChar = Boolean.parseBoolean(treatClobAsVarChar_prop);
 			conn_props.setProperty("treat_clob_as_varchar", Boolean.toString(treatClobAsVarChar));
-			typeMap.put("clob", String.class);
+			if (treatClobAsVarChar)
+				typeMap.put("clob", String.class);
 		}
 
 		int sockTimeout = 0;
@@ -2549,8 +2551,9 @@ public class MonetConnection
 					 * then ignore this call.  If it is set to 0 we get a
 					 * prompt after the server sent it's header.
 					 */
-					int size = cachesize == 0 ? DEF_FETCHSIZE : cachesize;
-					size = maxrows != 0 ? Math.min(maxrows, size) : size;
+					int size = (cachesize == 0 ? DEF_FETCHSIZE : cachesize);
+					if (maxrows > 0 && maxrows < size)
+						size = maxrows;
 					// don't do work if it's not needed
 					if (lang == LANG_SQL && size != curReplySize && templ != commandTempl) {
 						sendControlCommand("reply_size " + size);
