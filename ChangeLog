@@ -1,6 +1,11 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Oct  5 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected method Connection.prepareCall(). It used to return null.
+  Now it throws an SQLFeatureNotSupportedException to comply with the
+  JDBC specification.
+
 * Thu Sep 28 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Added possibility to let the JDBC driver return columnType value
   Types.VARCHAR instead of Types.CLOB in case the result column of a

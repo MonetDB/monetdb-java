@@ -160,6 +160,7 @@ public class MonetConnection
 	MonetConnection(Properties props)
 		throws SQLException, IllegalArgumentException
 	{
+	// for debug: System.out.println("New connection object. Received properties are: " + props.toString());
 		// get supported property values from the props argument.
 		// When a value is found add it to the internal conn_props list for use by getClientInfo().
 		this.hostname = props.getProperty("host");
@@ -631,6 +632,16 @@ public class MonetConnection
 		return false;
 	}
 
+	/**
+	 * Converts the given SQL statement into the system's native SQL grammar.
+	 * A driver may convert the JDBC SQL grammar into its system's native SQL grammar prior to sending it.
+	 * This method returns the native form of the statement that the driver would have sent.
+	 *
+	 * Parameters:
+	 *   sql - an SQL statement that may contain one or more '?' parameter placeholders.
+	 * Returns: the native form of this statement
+	 * Throws: SQLException - if a database access error occurs or this method is called on a closed connection
+	 */
 	@Override
 	public String nativeSQL(String sql) {
 		/* there is currently no way to get the native MonetDB rewritten SQL string back, so just return the original string */
@@ -638,22 +649,77 @@ public class MonetConnection
 		return sql;
 	}
 
+	/**
+	 * Creates a CallableStatement object for calling database stored procedures.
+	 * The CallableStatement object provides methods for setting up its IN and OUT parameters,
+	 * and methods for executing the call to a stored procedure.
+	 *
+	 * Note: This method is optimized for handling stored procedure call statements.
+	 *       Some drivers may send the call statement to the database when the method prepareCall is done;
+	 *       others may wait until the CallableStatement object is executed. This has no direct effect
+	 *       on users; however, it does affect which method throws certain SQLExceptions.
+	 *
+	 * Result sets created using the returned CallableStatement object will by default be type TYPE_FORWARD_ONLY
+	 * and have a concurrency level of CONCUR_READ_ONLY.
+	 * The holdability of the created result sets can be determined by calling getHoldability().
+	 *
+	 * Parameters:
+	 *   sql - an SQL statement that may contain one or more '?' parameter placeholders.
+	 *	Typically this statement is specified using JDBC call escape syntax.
+	 * Returns: a new default CallableStatement object containing the pre-compiled SQL statement
+	 * Throws: SQLException - if a database access error occurs or this method is called on a closed connection
+	 */
 	@Override
-	public CallableStatement prepareCall(String sql) {
-		/* not implemented yet */
-		return null;
+	public CallableStatement prepareCall(String sql) throws SQLException {
+		return prepareCall(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
 	}
 
+	/**
+	 * Creates a CallableStatement object that will generate ResultSet objects with the given type and concurrency.
+	 * This method is the same as the prepareCall method above, but it allows the default result set type and concurrency to be overridden.
+	 * The holdability of the created result sets can be determined by calling getHoldability().
+	 *
+	 * Parameters:
+	 *   sql - a String object that is the SQL statement to be sent to the database; may contain on or more '?' parameters
+	 *	Typically this statement is specified using JDBC call escape syntax.
+	 *   resultSetType - a result set type; one of ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, or ResultSet.TYPE_SCROLL_SENSITIVE
+	 *   resultSetConcurrency - a concurrency type; one of ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
+	 * Returns: a new CallableStatement object containing the pre-compiled SQL statement that
+	 *	will produce ResultSet objects with the given type and concurrency
+	 * Throws:
+	 *   SQLException - if a database access error occurs, this method is called on a closed connection or
+	 *		the given parameters are not ResultSet constants indicating type and concurrency
+	 *   SQLFeatureNotSupportedException - if the JDBC driver does not support this method or
+	 *		this method is not supported for the specified result set type and result set concurrency.
+	 */
 	@Override
-	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) {
-		/* not implemented yet */
-		return null;
+	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+		return prepareCall(sql, resultSetType, resultSetConcurrency, ResultSet.HOLD_CURSORS_OVER_COMMIT);
 	}
 
+	/**
+	 * Creates a CallableStatement object that will generate ResultSet objects with the given type and concurrency.
+	 * This method is the same as the prepareCall method above, but it allows the default result set type, result set concurrency type and holdability to be overridden.
+	 *
+	 * Parameters:
+	 *   sql - a String object that is the SQL statement to be sent to the database; may contain on or more '?' parameters
+	 *	Typically this statement is specified using JDBC call escape syntax.
+	 *   resultSetType - a result set type; one of ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, or ResultSet.TYPE_SCROLL_SENSITIVE
+	 *   resultSetConcurrency - a concurrency type; one of ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
+	 *   resultSetHoldability - one of the following ResultSet constants: ResultSet.HOLD_CURSORS_OVER_COMMIT or ResultSet.CLOSE_CURSORS_AT_COMMIT
+	 * Returns: a new CallableStatement object, containing the pre-compiled SQL statement, that will generate ResultSet objects with the given type, concurrency, and holdability
+	 * Throws:
+	 *   SQLException - if a database access error occurs, this method is called on a closed connection or
+	 *		the given parameters are not ResultSet constants indicating type, concurrency, and holdability
+	 *   SQLFeatureNotSupportedException - if the JDBC driver does not support this method or
+	 *		this method is not supported for the specified result set type, result set holdability and result set concurrency.
+	 */
 	@Override
-	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) {
-		/* not implemented yet */
-		return null;
+	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+		throws SQLException
+	{
+		throw new SQLFeatureNotSupportedException("prepareCall() not yet supported", "0A000");
+		/* a request to implement prepareCall() has already been logged, see https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402 */
 	}
 
 	/**
