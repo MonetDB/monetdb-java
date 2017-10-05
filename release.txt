@@ -6,7 +6,7 @@ This JDBC driver is designed for use with MonetDB, a main-memory column-store RD
 For more information see https://www.monetdb.org/
 
 The MonetDB JDBC connection URL format is:
-  jdbc:monetdb://<hostname>[:<portnr>]/<databasename>[?<property>=<value>[;<property>=<value>]]
+  jdbc:monetdb://<hostname>[:<portnr>]/<databasename>[?<property>=<value>[&<property>=<value>]]
 
 The databasename must be provided and be equal to the name of the database served by the
 mserver5 process listening on the specified host and port number (default port is 50000).
@@ -23,7 +23,7 @@ Supported connection properties are:
 	logfile=<name of logfile>
 
 For example:
-  jdbc:monetdb://localhost:41000/demo?user=monetdb;password=monetdb;so_timeout=7000;treat_clob_as_varchar=true
+  jdbc:monetdb://localhost:41000/demo?user=monetdb&password=monetdb&so_timeout=7000&treat_clob_as_varchar=true
 
 See also: https://www.monetdb.org/Documentation/Manuals/SQLreference/Programming/JDBC
 
