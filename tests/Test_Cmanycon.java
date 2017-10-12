@@ -31,8 +31,8 @@ public class Test_Cmanycon {
 
 			// now try to nicely close them
 			i = 0;
-			for (Iterator it = cons.iterator(); it.hasNext(); i++) {
-				Connection con = (Connection)(it.next());
+			for (Iterator<Connection> it = cons.iterator(); it.hasNext(); i++) {
+				Connection con = it.next();
 
 				// see if the connection still works
 				System.out.print("Closing Connection " + i + "...");

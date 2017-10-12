@@ -31,8 +31,8 @@ public class Test_PSmanycon {
 
 			// now try to nicely execute them
 			i = 0;
-			for (Iterator it = pss.iterator(); it.hasNext(); i++) {
-				PreparedStatement pstmt = (PreparedStatement)(it.next());
+			for (Iterator<PreparedStatement> it = pss.iterator(); it.hasNext(); i++) {
+				PreparedStatement pstmt = it.next();
 
 				// see if the connection still works
 				System.out.print("Executing PreparedStatement " + i + "...");
