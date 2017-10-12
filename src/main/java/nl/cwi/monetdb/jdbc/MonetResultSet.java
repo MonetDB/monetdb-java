@@ -70,14 +70,9 @@ public class MonetResultSet
 	extends MonetWrapper
 	implements ResultSet, AutoCloseable
 {
-	// the following have default access modifier for the MonetVirtualResultSet subclass
-	/** The current line of the buffer split in columns */
-	final TupleLineParser tlp;
-	/** The current position of the cursor for this ResultSet object */
-	int curRow = 0;
-
-	// a blank final is immutable once assigned in the constructor
-	/** A Header to retrieve lines from */
+	/** The parental Statement object */
+	private final Statement statement;
+	/** A Header to retrieve lines from. Note: it will be null in case of a MonetVirtualResultSet ! */
 	private final MonetConnection.ResultSetResponse header;
 	/** The names of the columns in this ResultSet */
 	private final String[] columns;
@@ -85,11 +80,15 @@ public class MonetResultSet
 	private final String[] types;
 	/** The JDBC SQL types of the columns in this ResultSet. The content will be derived from the MonetDB types[] */
 	private final int[] JdbcSQLTypes;
-	/** The number of rows in this ResultSet */
-	final int tupleCount;
 
-	/** The parental Statement object */
-	private final Statement statement;
+	// the following have protected access modifier for the MonetVirtualResultSet subclass
+	// they are accessed from MonetVirtualResultSet.absolute()
+	/** The current line of the buffer split in columns */
+	protected final TupleLineParser tlp;
+	/** The current position of the cursor for this ResultSet object */
+	protected int curRow = 0;
+	/** The number of rows in this ResultSet */
+	protected final int tupleCount;
 
 	/** The type of this ResultSet (forward or scrollable) */
 	private int type = TYPE_FORWARD_ONLY;
@@ -246,12 +245,10 @@ public class MonetResultSet
 	 */
 	@Override
 	public boolean absolute(int row) throws SQLException {
+		checkNotClosed();
 		if (row != curRow + 1 && type == TYPE_FORWARD_ONLY)
 			throw new SQLException("(Absolute) positioning not allowed on forward " +
 				" only result sets!", "M1M05");
-
-		if (header.isClosed())
-			throw new SQLException("ResultSet is closed!", "M1M20");
 
 		// first calculate what the JDBC row is
 		if (row < 0) {
@@ -264,13 +261,13 @@ public class MonetResultSet
 		else if (row > tupleCount + 1)
 			row = tupleCount + 1;	// after last
 
-		String tmpLine = header.getLine(row - 1);
-
 		// store it
 		curRow = row;
 
+		String tmpLine = (header != null) ? header.getLine(row - 1) : null;
 		if (tmpLine == null)
 			return false;
+
 		try {
 			tlp.parse(tmpLine);
 		} catch (MCLParseException e) {
@@ -337,10 +334,12 @@ public class MonetResultSet
 	 *
 	 * @param columnLabel the name of the column
 	 * @return the column index of the given column name
-	 * @throws SQLException if the ResultSet object does not contain columnLabel
+	 * @throws SQLException if the ResultSet object does not contain a column labeled columnLabel,
+	 *	a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public int findColumn(String columnLabel) throws SQLException {
+		checkNotClosed();
 		if (columnLabel != null) {
 			final int array_size = columns.length;
 			for (int i = 0; i < array_size; i++) {
@@ -416,11 +415,11 @@ public class MonetResultSet
 	 * value as a stream of uninterpreted bytes; if the value is SQL
 	 * NULL, the value returned is null
 	 * @throws SQLException if the columnIndex is not valid; if a
-	 * database access error occurs or this method is called on a closed
-	 * result set
+	 * database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public InputStream getBinaryStream(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			switch (JdbcSQLTypes[columnIndex - 1]) {
 				case Types.BLOB:
@@ -461,8 +460,7 @@ public class MonetResultSet
 	 * value as a stream of uninterpreted bytes; if the value is SQL
 	 * NULL, the result is null
 	 * @throws SQLException if the columnLabel is not valid; if a
-	 * database access error occurs or this method is called on a closed
-	 * result set
+	 * database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public InputStream getBinaryStream(String columnLabel) throws SQLException {
@@ -477,10 +475,11 @@ public class MonetResultSet
 	 * @return a java.io.Reader object that contains the column value;
 	 *         if the value is SQL NULL, the value returned is null in
 	 *         the Java programming language.
-	 * @throws SQLException if a database access error occurs
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public Reader getCharacterStream(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -555,10 +554,11 @@ public class MonetResultSet
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a Blob object representing the SQL BLOB value in the
 	 *         specified column
-	 * @throws SQLException if a database access error occurs
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public Blob getBlob(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -596,10 +596,11 @@ public class MonetResultSet
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a Clob object representing the SQL CLOB value in the
 	 *         specified column
-	 * @throws SQLException if a database access error occurs
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public Clob getClob(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -671,10 +672,11 @@ public class MonetResultSet
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value (full precision); if the value is SQL NULL,
 	 *         the value returned is null in the Java programming language.
-	 * @throws SQLException if a database access error occurs
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public BigDecimal getBigDecimal(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -698,13 +700,14 @@ public class MonetResultSet
 	 * @param scale the number of digits to the right of the decimal point
 	 * @return the column value (full precision); if the value is SQL NULL,
 	 *         the value returned is null in the Java programming language.
-	 * @throws SQLException if a database access error occurs
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	@Deprecated
 	public BigDecimal getBigDecimal(int columnIndex, int scale)
 		throws SQLException
 	{
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -763,10 +766,12 @@ public class MonetResultSet
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is false
-	 * @throws SQLException if there is no such column
+	 * @throws SQLException if the columnIndex is not valid; if a database access error occurs
+	 *	or this method is called on a closed result set
 	 */
 	@Override
 	public boolean getBoolean(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -845,10 +850,11 @@ public class MonetResultSet
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is 0
-	 * @throws SQLException if a database access error occurs
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public byte getByte(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -886,10 +892,11 @@ public class MonetResultSet
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned
 	 *         is null
-	 * @throws SQLException if a database access error occurs
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public byte[] getBytes(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -990,12 +997,12 @@ public class MonetResultSet
 	 * ResultSet object as a double in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is 0
-	 * @throws SQLException if there is no such column
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
+	 * @throws SQLException if there is no such column or this method is called on a closed result set
 	 */
 	@Override
 	public double getDouble(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -1016,8 +1023,7 @@ public class MonetResultSet
 	 * ResultSet object as a double in the Java programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is 0
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
 	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
@@ -1039,7 +1045,6 @@ public class MonetResultSet
 
 	/**
 	 * Retrieves the fetch direction for this ResultSet object.
-	 * <b>currently not implemented</b>
 	 *
 	 * @return the current fetch direction for this ResultSet object
 	 */
@@ -1053,7 +1058,6 @@ public class MonetResultSet
 	 * object will be processed. The initial value is determined by the
 	 * Statement object that produced this ResultSet object.
 	 * The fetch direction may be changed at any time.
-	 * <b>currently not implemented</b>
 	 *
 	 * @param direction - an int specifying the suggested fetch direction;
 	 * one of ResultSet.FETCH_FORWARD, ResultSet.FETCH_REVERSE, or ResultSet.FETCH_UNKNOWN
@@ -1110,12 +1114,12 @@ public class MonetResultSet
 	 * ResultSet object as a float in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is 0
-	 * @throws SQLException if there is no such column
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
+	 * @throws SQLException if there is no such column or this method is called on a closed result set
 	 */
 	@Override
 	public float getFloat(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -1150,10 +1154,11 @@ public class MonetResultSet
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
-	 * @throws SQLException if there is no such column
+	 * @throws SQLException if there is no such column or this method is called on a closed result set
 	 */
 	@Override
 	public int getInt(int columnIndex) throws SQLException {
+		checkNotClosed();
 		String val = "";
 		try {
 			val = tlp.values[columnIndex - 1];
@@ -1201,10 +1206,11 @@ public class MonetResultSet
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
-	 * @throws SQLException if there is no such column
+	 * @throws SQLException if there is no such column or this method is called on a closed result set
 	 */
 	@Override
 	public long getLong(int columnIndex) throws SQLException {
+		checkNotClosed();
 		String val = "";
 		try {
 			val = tlp.values[columnIndex - 1];
@@ -1238,14 +1244,14 @@ public class MonetResultSet
 	 * ResultSet object as a long in the Java programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is 0
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
 	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
 	public long getLong(String columnLabel) throws SQLException {
 		return getLong(findColumn(columnLabel));
 	}
+
 
 	/* helper for the anonymous class inside getMetaData */
 	private abstract class rsmdw extends MonetWrapper implements ResultSetMetaData {}
@@ -1261,14 +1267,23 @@ public class MonetResultSet
 		return new rsmdw() {
 			// for the more expensive methods (getPrecision(), getScale(), isNullable()), we provide a simple cache
 			// caches to store precision, scale and isNullable values from getColumns()
-			final int array_size = columns.length + 1;  // add 1 as in JDBC columns start from 1 (array from 0).
-			private boolean[] _is_fetched	= new boolean[array_size];
-			private int[] _precision	= new int[array_size];
-			private int[] _scale		= new int[array_size];
-			private int[] _isNullable	= new int[array_size];
-			private boolean[] _isAutoincrement = new boolean[array_size];
+			private final int array_size = columns.length + 1;  // add 1 as in JDBC columns start from 1 (array from 0).
+			private final boolean[] _is_fetched	= new boolean[array_size];
+			private final int[] _precision	= new int[array_size];
+			private final int[] _scale		= new int[array_size];
+			private final int[] _isNullable	= new int[array_size];
+			private final boolean[] _isAutoincrement = new boolean[array_size];
 			private Connection conn = null;
 			private DatabaseMetaData dbmd = null;
+
+			/**
+			 * A private utility method to check validity of column index number
+			 * @throws an SQLDataException when invalid column index number
+			 */
+			private void checkColumnIndexValidity(int column) throws SQLDataException {
+				if (column < 1 || column > columns.length)
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+			}
 
 			/**
 			 * A private method to fetch the precision, scale, isNullable and isAutoincrement value for a fully qualified column.
@@ -1278,8 +1293,7 @@ public class MonetResultSet
 			 */
 			private void fetchColumnInfo(int column) throws SQLException
 			{
-				if (column <= 0 || column > columns.length)
-					throw newSQLInvalidColumnIndexException(column);
+				checkColumnIndexValidity(column);
 
 				_is_fetched[column] = true;
 				_precision[column] = 0;
@@ -1342,13 +1356,14 @@ public class MonetResultSet
 			 */
 			@Override
 			public boolean isAutoIncrement(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				try {
 					if (_is_fetched[column] != true) {
 						fetchColumnInfo(column);
 					}
 					return _isAutoincrement[column];
 				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 			}
 
@@ -1392,7 +1407,8 @@ public class MonetResultSet
 			 * @returns true
 			 */
 			@Override
-			public boolean isSearchable(int column) {
+			public boolean isSearchable(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				return true;
 			}
 
@@ -1407,7 +1423,8 @@ public class MonetResultSet
 			 * @returns false
 			 */
 			@Override
-			public boolean isCurrency(int column) {
+			public boolean isCurrency(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				return false;
 			}
 			
@@ -1462,12 +1479,13 @@ public class MonetResultSet
 			 */
 			@Override
 			public int getColumnDisplaySize(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				int ret = 1;
 				if (header != null) {
 					try {
 						ret = header.getColumnLengths()[column - 1];
 					} catch (IndexOutOfBoundsException e) {
-						throw newSQLInvalidColumnIndexException(column);
+						throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 					}
 				}
 				return ret;
@@ -1482,6 +1500,7 @@ public class MonetResultSet
 			 */
 			@Override
 			public String getSchemaName(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				if (header != null) {
 					// figure the name out
 					try {
@@ -1491,7 +1510,7 @@ public class MonetResultSet
 							return (dot >= 0) ? schema.substring(0, dot) : "";
 						}
 					} catch (IndexOutOfBoundsException e) {
-						throw newSQLInvalidColumnIndexException(column);
+						throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 					}
 				}
 				return "";
@@ -1505,6 +1524,7 @@ public class MonetResultSet
 			 */
 			@Override
 			public String getTableName(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				if (header != null) {
 					// figure the name out
 					try {
@@ -1514,7 +1534,7 @@ public class MonetResultSet
 							return (dot >= 0) ? table.substring(dot + 1) : table;
 						}
 					} catch (IndexOutOfBoundsException e) {
-						throw newSQLInvalidColumnIndexException(column);
+						throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 					}
 				}
 				return "";
@@ -1532,6 +1552,7 @@ public class MonetResultSet
 			 */
 			@Override
 			public int getPrecision(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				try {
 					if (_is_fetched[column] != true) {
 						fetchColumnInfo(column);
@@ -1590,7 +1611,7 @@ public class MonetResultSet
 					}
 					return _precision[column];
 				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 			}
 
@@ -1606,13 +1627,14 @@ public class MonetResultSet
 			 */
 			@Override
 			public int getScale(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				try {
 					if (_is_fetched[column] != true) {
 						fetchColumnInfo(column);
 					}
 					return _scale[column];
 				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 			}
 
@@ -1628,13 +1650,14 @@ public class MonetResultSet
 			 */
 			@Override
 			public int isNullable(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				try {
 					if (_is_fetched[column] != true) {
 						fetchColumnInfo(column);
 					}
 					return _isNullable[column];
 				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 			}
 
@@ -1648,6 +1671,7 @@ public class MonetResultSet
 			 */
 			@Override
 			public String getCatalogName(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				return null;	// MonetDB does NOT support catalogs
 
 			}
@@ -1661,7 +1685,8 @@ public class MonetResultSet
 			 * @return true if so; false otherwise
 			 */
 			@Override
-			public boolean isReadOnly(int column) {
+			public boolean isReadOnly(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				return true;
 			}
 
@@ -1673,7 +1698,8 @@ public class MonetResultSet
 			 * @return true if so; false otherwise
 			 */
 			@Override
-			public boolean isWritable(int column) {
+			public boolean isWritable(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				return false;
 			}
 
@@ -1685,7 +1711,8 @@ public class MonetResultSet
 			 * @return true if so; false otherwise
 			 */
 			@Override
-			public boolean isDefinitelyWritable(int column) {
+			public boolean isDefinitelyWritable(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				return false;
 			}
 
@@ -1706,6 +1733,7 @@ public class MonetResultSet
 			 */
 			@Override
 			public String getColumnClassName(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				if (conn == null) {
 					// first time, get a Connection object and cache it for all next columns
 					conn = getStatement().getConnection();
@@ -1728,7 +1756,7 @@ public class MonetResultSet
 					}
 					throw new SQLException("column type mapping null: " + MonetDBType, "M0M03");
 				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 			}
 
@@ -1755,10 +1783,11 @@ public class MonetResultSet
 			 */
 			@Override
 			public String getColumnName(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				try {
 					return columns[column - 1];
 				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 			}
 
@@ -1771,10 +1800,11 @@ public class MonetResultSet
 			 */
 			@Override
 			public int getColumnType(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				try {
 					return JdbcSQLTypes[column - 1];
 				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 			}
 
@@ -1789,10 +1819,11 @@ public class MonetResultSet
 			 */
 			@Override
 			public String getColumnTypeName(int column) throws SQLException {
+				checkColumnIndexValidity(column);
 				try {
 					return types[column - 1];
 				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidColumnIndexException(column);
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 			}
 
@@ -1817,12 +1848,14 @@ public class MonetResultSet
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a java.lang.Object holding the column value or null
-	 * @throws SQLException if a database access error occurs
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public Object getObject(int columnIndex) throws SQLException {
 		// Many generic JDBC programs use getObject(colnr) to retrieve value objects from a resultset
 		// For speed the implementation should be as fast as possible, so avoid method calls (by inlining code) where possible
+		checkNotClosed();
+
 		final int JdbcType;
 		final String val;
 		try {
@@ -1993,15 +2026,15 @@ public class MonetResultSet
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param map a java.util.Map object that contains the mapping from SQL
 	 *        type names to classes in the Java programming language
-	 * @return an Object in the Java programming language representing the SQL
-	 *         value
-	 * @throws SQLException if a database access error occurs
+	 * @return an Object in the Java programming language representing the SQL value
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
 	public Object getObject(int columnIndex, Map<String,Class<?>> map)
 		throws SQLException
 	{
+		checkNotClosed();
 		final String val;
 		final String MonetDBtype;
 		try {
@@ -2238,6 +2271,7 @@ public class MonetResultSet
 	 */
 	@Override
 	public <T> T getObject(int columnIndex, Class<T> type) throws SQLException {
+		checkNotClosed();
 		if (type == null)
 			throw new SQLException("type is null", "M1M05");
 
@@ -2341,7 +2375,7 @@ public class MonetResultSet
 	 *
 	 * @param columnLabel the SQL name of the column
 	 * @return a java.lang.Object holding the column value
-	 * @throws SQLException if a database access error occurs
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public Object getObject(String columnLabel) throws SQLException {
@@ -2358,7 +2392,7 @@ public class MonetResultSet
 	 * @param map a java.util.Map object that contains the mapping from SQL
 	 *        type names to classes in the Java programming language
 	 * @return an Object representing the SQL value in the specified column
-	 * @throws SQLException if a database access error occurs
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public Object getObject(String columnLabel, Map<String,Class<?>> map) throws SQLException {
@@ -2425,12 +2459,12 @@ public class MonetResultSet
 	 * ResultSet object as a short in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is 0
-	 * @throws SQLException if there is no such column
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
+	 * @throws SQLException if there is no such column or this method is called on a closed result set
 	 */
 	@Override
 	public short getShort(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -2451,8 +2485,7 @@ public class MonetResultSet
 	 * ResultSet object as a short in the Java programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is 0
+	 * @return the column value; if the value is SQL NULL, the value returned is 0
 	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
@@ -2461,12 +2494,12 @@ public class MonetResultSet
 	}
 
 	/**
-	 * Retrieves the Statement object that produced this ResultSet object. If
-	 * the result set was generated some other way, such as by a
-	 * DatabaseMetaData method, this method returns null.
+	 * Retrieves the Statement object that produced this ResultSet object.
+	 * If the result set was generated some other way, such as by a
+	 * DatabaseMetaData method, this method may return null.
 	 *
-	 * @return the Statement object that produced this ResultSet object or null
-	 *         if the result set was produced some other way
+	 * @return the Statement object that produced this ResultSet object or
+	 *         null if the result set was produced some other way
 	 */
 	@Override
 	public Statement getStatement() {
@@ -2478,12 +2511,12 @@ public class MonetResultSet
 	 * ResultSet object as a String in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
-	 * @throws SQLException if there is no such column
+	 * @return the column value; if the value is SQL NULL, the value returned is null
+	 * @throws SQLException if there is no such column or this method is called on a closed result set
 	 */
 	@Override
 	public String getString(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -2502,8 +2535,7 @@ public class MonetResultSet
 	 * ResultSet object as a String in the Java programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @return the column value; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
@@ -2518,8 +2550,7 @@ public class MonetResultSet
 	 * and LONGNVARCHAR columns.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @return the column value; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if there is no such column
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
@@ -2536,8 +2567,7 @@ public class MonetResultSet
 	 * and LONGNVARCHAR columns.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @return the column value; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 * @throws SQLFeatureNotSupportedException the JDBC driver does
 	 *         not support this method
@@ -2597,14 +2627,14 @@ public class MonetResultSet
 	 *
 	 * @param cal the Calendar to use/fill when parsing the date/time
 	 * @param col the column to parse
-	 * @param type the corresponding java.sql.Types type of the calling
-	 *        function
+	 * @param type the corresponding java.sql.Types type of the calling function
 	 * @return the fractional seconds (nanos) or -1 if the value is NULL
 	 * @throws SQLException if a database error occurs
 	 */
 	private int getJavaDate(Calendar cal, int columnIndex, int type)
 		throws SQLException
 	{
+		checkNotClosed();
 		if (cal == null)
 			throw new IllegalArgumentException("No Calendar object given!");
 
@@ -2724,7 +2754,7 @@ public class MonetResultSet
 					}
 					while (ctr++ < 9)
 						nanos *= 10;
-				} catch(MCLParseException e) {
+				} catch (MCLParseException e) {
 					addWarning(e.getMessage() +
 							" found: '" + monDate[e.getErrorOffset()] + "'" +
 							" in: \"" + monetDate + "\"" +
@@ -2748,7 +2778,7 @@ public class MonetResultSet
 	 * @return the intrinsic value of the char
 	 * @throws MCLParseException if c is not a digit
 	 */
-	private final static int getIntrinsicValue(char c, int pos)
+	private static final int getIntrinsicValue(char c, int pos)
 		throws MCLParseException
 	{
 		// note: don't use Character.isDigit() here, because
@@ -2766,8 +2796,7 @@ public class MonetResultSet
 	 * language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @return the column value as a java.sql.Date object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 * @see #getDate(int col, Calendar cal)
 	 */
@@ -2785,14 +2814,14 @@ public class MonetResultSet
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param cal the java.util.Calendar object to use in constructing the date
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @return the column value as a java.sql.Date object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public java.sql.Date getDate(int columnIndex, Calendar cal)
 		throws SQLException
 	{
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -2822,10 +2851,8 @@ public class MonetResultSet
 	 * ResultSet object as a java.sql.Date object in the Java programming
 	 * language.
 	 *
-	 * @param columnLabel the SQL name of the column from which to retrieve the
-	 *        value
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @param columnLabel the SQL name of the column from which to retrieve the value
+	 * @return the column value as a java.sql.Date object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -2840,11 +2867,9 @@ public class MonetResultSet
 	 * millisecond value for the date if the underlying database does not store
 	 * timezone information.
 	 *
-	 * @param columnLabel the SQL name of the column from which to retrieve the
-	 *        value
+	 * @param columnLabel the SQL name of the column from which to retrieve the value
 	 * @param cal the java.util.Calendar object to use in constructing the date
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @return the column value as a java.sql.Date object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -2860,8 +2885,7 @@ public class MonetResultSet
 	 * language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @return the column value as a java.sql.Time object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -2877,17 +2901,15 @@ public class MonetResultSet
 	 * timezone information.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @param cal the java.util.Calendar object to use in constructing the
-	 *        timestamp
-	 * @return the column value as a java.sql.Time object; if the value is
-	 *         SQL NULL, the value returned is null in the Java programming
-	 *         language
+	 * @param cal the java.util.Calendar object to use in constructing the timestamp
+	 * @return the column value as a java.sql.Time object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public Time getTime(int columnIndex, Calendar cal)
 		throws SQLException
 	{
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -2918,8 +2940,7 @@ public class MonetResultSet
 	 * language.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @return the column value as a java.sql.Time object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -2935,11 +2956,8 @@ public class MonetResultSet
 	 * timezone information.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @param cal the java.util.Calendar object to use in constructing the
-	 *        timestamp
-	 * @return the column value as a java.sql.Time object; if the value is
-	 *         SQL NULL, the value returned is null in the Java programming
-	 *         language
+	 * @param cal the java.util.Calendar object to use in constructing the timestamp
+	 * @return the column value as a java.sql.Time object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -2955,8 +2973,7 @@ public class MonetResultSet
 	 * language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @return the column value as a java.sql.Timestamp object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -2972,17 +2989,15 @@ public class MonetResultSet
 	 * store timezone information.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @param cal the java.util.Calendar object to use in constructing the
-	 *        timestamp
-	 * @return the column value as a java.sql.Timestamp object; if the value is
-	 *         SQL NULL, the value returned is null in the Java programming
-	 *         language
+	 * @param cal the java.util.Calendar object to use in constructing the timestamp
+	 * @return the column value as a java.sql.Timestamp object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public Timestamp getTimestamp(int columnIndex, Calendar cal)
 		throws SQLException
 	{
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -3018,8 +3033,7 @@ public class MonetResultSet
 	 * language.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned
-	 *         is null
+	 * @return the column value as a java.sql.Timestamp object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -3035,11 +3049,8 @@ public class MonetResultSet
 	 * store timezone information.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @param cal the java.util.Calendar object to use in constructing the
-	 *        timestamp
-	 * @return the column value as a java.sql.Timestamp object; if the value is
-	 *         SQL NULL, the value returned is null in the Java programming
-	 *         language
+	 * @param cal the java.util.Calendar object to use in constructing the timestamp
+	 * @return the column value as a java.sql.Timestamp object; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -3066,16 +3077,13 @@ public class MonetResultSet
 	 * of this ResultSet object as a java.net.URL object in the Java
 	 * programming language.
 	 *
-	 * @param columnIndex the index of the column 1 is the first,
-	 *                    2 is the second,...
-	 * @return the column value as a java.net.URL object; if the value
-	 *         is SQL NULL, the value returned is null in the Java
-	 *         programming language
-	 * @throws SQLException if a database access error occurs, or if a
-	 *         URL is malformed
+	 * @param columnIndex the index of the column 1 is the first, 2 is the second,...
+	 * @return the column value as a java.net.URL object; if the value is SQL NULL, the value returned is null
+	 * @throws SQLException if a database access error occurs, or if a URL is malformed
 	 */
 	@Override
 	public URL getURL(int columnIndex) throws SQLException {
+		checkNotClosed();
 		try {
 			String val = tlp.values[columnIndex - 1];
 			if (val == null) {
@@ -3099,11 +3107,8 @@ public class MonetResultSet
 	 * programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value as a java.net.URL object; if the value
-	 *         is SQL NULL, the value returned is null in the Java
-	 *         programming language
-	 * @throws SQLException if a database access error occurs, or if a
-	 *         URL is malformed
+	 * @return the column value as a java.net.URL object; if the value is SQL NULL, the value returned is null
+	 * @throws SQLException if a database access error occurs, or if a URL is malformed
 	 */
 	@Override
 	public URL getURL(String columnLabel) throws SQLException {
@@ -3122,14 +3127,11 @@ public class MonetResultSet
 	 * Note: Subsequent warnings will be chained to this SQLWarning.
 	 *
 	 * @return the first SQLWarning object or null if there are none
-	 * @throws SQLException if a database access error occurs or this method is
-	 *         called on a closed connection
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public SQLWarning getWarnings() throws SQLException {
-		if (header != null && header.isClosed())
-			throw new SQLException("Cannot call on closed ResultSet", "M1M20");
-
+		checkNotClosed();
 		// if there are no warnings, this will be null, which fits with the
 		// specification.
 		return warnings;
@@ -3141,9 +3143,11 @@ public class MonetResultSet
 	 *
 	 * @return true if the cursor is after the last row; false if the cursor is
 	 *         at any other position or the result set contains no rows
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
-	public boolean isAfterLast() {
+	public boolean isAfterLast() throws SQLException {
+		checkNotClosed();
 		return curRow == tupleCount + 1;
 	}
 
@@ -3153,9 +3157,11 @@ public class MonetResultSet
 	 *
 	 * @return true if the cursor is before the first row; false if the cursor
 	 *         is at any other position or the result set contains no rows
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
-	public boolean isBeforeFirst() {
+	public boolean isBeforeFirst() throws SQLException {
+		checkNotClosed();
 		return curRow == 0;
 	}
 
@@ -3164,11 +3170,11 @@ public class MonetResultSet
 	 * ResultSet is closed if the method close has been called on it, or
 	 * if it is automatically closed.
 	 *
-	 * @return true if this ResultSet object is closed; false if it is
-	 *         still open
+	 * @return true if this ResultSet object is closed; false if it is still open
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
-	public boolean isClosed() {
+	public boolean isClosed() throws SQLException {
 		return header != null && header.isClosed();
 	}
 
@@ -3177,9 +3183,11 @@ public class MonetResultSet
 	 * object.
 	 *
 	 * @return true if the cursor is on the first row; false otherwise
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
-	public boolean isFirst() {
+	public boolean isFirst() throws SQLException {
+		checkNotClosed();
 		return curRow == 1;
 	}
 
@@ -3187,9 +3195,11 @@ public class MonetResultSet
 	 * Retrieves whether the cursor is on the last row of this ResultSet object.
 	 *
 	 * @return true if the cursor is on the last row; false otherwise
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
-	public boolean isLast() {
+	public boolean isLast() throws SQLException {
+		checkNotClosed();
 		return curRow == tupleCount;
 	}
 
@@ -3200,6 +3210,7 @@ public class MonetResultSet
 	 *         in the result set
 	 * @throws SQLException if a database access error occurs or the result set
 	 *         type is TYPE_FORWARD_ONLY
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public boolean last() throws SQLException {
@@ -3278,6 +3289,7 @@ public class MonetResultSet
 	 */
 	@Override
 	public boolean rowDeleted() throws SQLException {
+		checkNotClosed();
 		return false;
 	}
 
@@ -3297,6 +3309,7 @@ public class MonetResultSet
 	 */
 	@Override
 	public boolean rowInserted() throws SQLException {
+		checkNotClosed();
 		return false;
 	}
 
@@ -3316,6 +3329,7 @@ public class MonetResultSet
 	 */
 	@Override
 	public boolean rowUpdated() throws SQLException {
+		checkNotClosed();
 		return false;
 	}
 
@@ -3782,8 +3796,7 @@ public class MonetResultSet
 	 * its value and then call the method wasNull to see if the value read was
 	 * SQL NULL.
 	 *
-	 * @return true if the last column value read was SQL NULL and false
-	 *          otherwise
+	 * @return true if the last column value read was SQL NULL and false otherwise
 	 */
 	@Override
 	public boolean wasNull() {
@@ -3801,11 +3814,21 @@ public class MonetResultSet
 	 * @param reason the warning message
 	 */
 	private void addWarning(String reason, String sqlstate) {
+		SQLWarning warng = new SQLWarning(reason, sqlstate);
 		if (warnings == null) {
-			warnings = new SQLWarning(reason, sqlstate);
+			warnings = warng;
 		} else {
-			warnings.setNextWarning(new SQLWarning(reason, sqlstate));
+			warnings.setNextWarning(warng);
 		}
+	}
+
+	/**
+	 * Local helper method to test whether the ResultSet object is closed
+	 * When closed it throws an SQLException
+	 */
+	private void checkNotClosed() throws SQLException {
+		if (isClosed())
+			throw new SQLException("ResultSet is closed", "M1M20");
 	}
 
 	/**
@@ -3816,7 +3839,7 @@ public class MonetResultSet
 	 * @param colIdx the column index number
 	 * @return a new created SQLDataException object with SQLState 22010
 	 */
-	public final static SQLDataException newSQLInvalidColumnIndexException(int colIdx) {
+	public static final SQLDataException newSQLInvalidColumnIndexException(int colIdx) {
 		return new SQLDataException("Invalid Column Index number: " + colIdx, "22010");
 	}
 
@@ -3828,7 +3851,7 @@ public class MonetResultSet
 	 * @param error the NumberFormatException
 	 * @return a new created SQLDataException object with SQLState 22003
 	 */
-	private final static SQLDataException newSQLNumberFormatException(NumberFormatException error) {
+	private static final SQLDataException newSQLNumberFormatException(NumberFormatException error) {
 		return new SQLDataException("Could not convert value to a number. " + error.getMessage(), "22003");
 	}
 
@@ -3840,7 +3863,7 @@ public class MonetResultSet
 	 * @param name the method name
 	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000
 	 */
-	private final static SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
+	private static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
 		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 }
