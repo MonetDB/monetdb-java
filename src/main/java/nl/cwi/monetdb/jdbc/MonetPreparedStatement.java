@@ -2685,7 +2685,7 @@ public class MonetPreparedStatement
 	 * @param paramIdx the parameter index number
 	 * @return a new created SQLDataException object with SQLState 22010
 	 */
-	private final static SQLDataException newSQLInvalidParameterIndexException(int paramIdx) {
+	private static final SQLDataException newSQLInvalidParameterIndexException(int paramIdx) {
 		return new SQLDataException("Invalid Parameter Index number: " + paramIdx, "22010");
 	}
 
@@ -2697,7 +2697,7 @@ public class MonetPreparedStatement
 	 * @param name the method name
 	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000
 	 */
-	private final static SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
+	private static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
 		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 }

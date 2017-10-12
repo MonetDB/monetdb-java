@@ -127,19 +127,19 @@ public class MonetConnection
 	private int curReplySize = -1;	// the server by default uses -1 (all)
 
 	/** A template to apply to each query (like pre and post fixes), filled in constructor */
-	final String[] queryTempl = new String[3]; // pre, post, sep
+	public final String[] queryTempl = new String[3]; // pre, post, sep
 
 	/** A template to apply to each command (like pre and post fixes), filled in constructor */
-	final String[] commandTempl = new String[3]; // pre, post, sep
+	private final String[] commandTempl = new String[3]; // pre, post, sep
 
 	/** the SQL language */
-	final static int LANG_SQL = 0;
+	private static final int LANG_SQL = 0;
 	/** the MAL language (officially *NOT* supported) */
-	final static int LANG_MAL = 3;
+	private static final int LANG_MAL = 3;
 	/** an unknown language */
-	final static int LANG_UNKNOWN = -1;
+	private static final int LANG_UNKNOWN = -1;
 	/** The language which is used */
-	final int lang;
+	private final int lang;
 
 	/** Whether or not BLOB is mapped to Types.VARBINARY instead of Types.BLOB within this connection */
 	private boolean treatBlobAsVarBinary = false;
@@ -1754,15 +1754,16 @@ public class MonetConnection
 	 * @param reason the warning message
 	 */
 	void addWarning(String reason, String sqlstate) {
+		SQLWarning warng = new SQLWarning(reason, sqlstate);
 		if (warnings == null) {
-			warnings = new SQLWarning(reason, sqlstate);
+			warnings = warng;
 		} else {
-			warnings.setNextWarning(new SQLWarning(reason, sqlstate));
+			warnings.setNextWarning(warng);
 		}
 	}
 
 	/** the default number of rows that are (attempted to) read at once */
-	private final static int DEF_FETCHSIZE = 250;
+	private static final int DEF_FETCHSIZE = 250;
 	/** The sequence counter */
 	private static int seqCounter = 0;
 
@@ -1865,10 +1866,10 @@ public class MonetConnection
 		/** A parser for header lines */
 		HeaderLineParser hlp;
 
-		private final static int NAMES	= 0;
-		private final static int TYPES	= 1;
-		private final static int TABLES	= 2;
-		private final static int LENS	= 3;
+		private static final int NAMES	= 0;
+		private static final int TYPES	= 1;
+		private static final int TABLES	= 2;
+		private static final int LENS	= 3;
 
 
 		/**
@@ -2004,7 +2005,7 @@ public class MonetConnection
 		 * @param stop where the relevant data stops
 		 * @return an array of Strings
 		 */
-		final private String[] getValues(char[] chrLine, int start, int stop) {
+		private final String[] getValues(char[] chrLine, int start, int stop) {
 			int elem = 0;
 			String[] values = new String[columncount];
 
@@ -2457,15 +2458,15 @@ public class MonetConnection
 	// {{{ ResponseList class implementation
 	class ResponseList {
 		/** The cache size (number of rows in a DataBlockResponse object) */
-		final int cachesize;
+		private final int cachesize;
 		/** The maximum number of results for this query */
-		final int maxrows;
+		private final int maxrows;
 		/** The ResultSet type to produce */
-		final int rstype;
+		private final int rstype;
 		/** The ResultSet concurrency to produce */
-		final int rsconcur;
+		private final int rsconcur;
 		/** The sequence number of this ResponseList */
-		final int seqnr;
+		private final int seqnr;
 		/** A list of the Responses associated with the query,
 		 *  in the right order */
 		private List<Response> responses;
@@ -2877,11 +2878,11 @@ public class MonetConnection
 	static class SendThread extends Thread {
 		/** The state WAIT represents this thread to be waiting for
 		 *  something to do */
-		private final static int WAIT = 0;
+		private static final int WAIT = 0;
 		/** The state QUERY represents this thread to be executing a query */
-		private final static int QUERY = 1;
+		private static final int QUERY = 1;
 		/** The state SHUTDOWN is the final state that ends this thread */
-		private final static int SHUTDOWN = -1;
+		private static final int SHUTDOWN = -1;
 
 		private String[] templ;
 		private String query;

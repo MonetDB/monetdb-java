@@ -477,12 +477,12 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	// SQL query parts shared by four get<Type>Functions() below
-	private final static String FunctionsSelect = "SELECT DISTINCT \"name\" FROM \"sys\".\"functions\" ";
-	private final static String FunctionsWhere = "WHERE \"id\" IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1 AND \"name\" = 'arg_1' AND \"type\" IN ";
+	private static final String FunctionsSelect = "SELECT DISTINCT \"name\" FROM \"sys\".\"functions\" ";
+	private static final String FunctionsWhere = "WHERE \"id\" IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1 AND \"name\" = 'arg_1' AND \"type\" IN ";
 	// Scalar functions sql_max(x, y) and sql_min(x, y) are defined in sys.args only for type 'any'.
 	// Easiest way to include them in the Num, Str and TimeDate lists is to add them explicitly via UNION SQL:
-	private final static String AddFunctionsMaxMin = " UNION SELECT 'sql_max' UNION SELECT 'sql_min'";
-	private final static String FunctionsOrderBy1 = " ORDER BY 1";
+	private static final String AddFunctionsMaxMin = " UNION SELECT 'sql_max' UNION SELECT 'sql_min'";
+	private static final String FunctionsOrderBy1 = " ORDER BY 1";
 
 	@Override
 	public String getNumericFunctions() {
@@ -2619,7 +2619,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 
-	private final static String keyQuery =
+	private static final String keyQuery =
 	"SELECT cast(null AS varchar(1)) AS \"PKTABLE_CAT\", " +
 		"\"pkschema\".\"name\" AS \"PKTABLE_SCHEM\", " +
 		"\"pktable\".\"name\" AS \"PKTABLE_NAME\", " +
