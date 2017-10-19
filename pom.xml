@@ -6,7 +6,7 @@
 
 	<groupId>monetdb</groupId>
 	<artifactId>monetdb-jdbc</artifactId>
-	<version>2.26</version>
+	<version>2.27</version>
 	<name>${project.groupId}:${project.artifactId}</name>
 	<description>MonetDB JDBC driver</description>
 	<url>https://www.monetdb.org</url>
@@ -45,9 +45,9 @@
 	</distributionManagement>
 
 	<scm>
-		<connection>scm:hg:https://dev.monetdb.org/hg/MonetDB/</connection>
-		<developerConnection>scm:hg:ssh://hg@dev.monetdb.org/MonetDB/</developerConnection>
-		<url>https://dev.monetdb.org/hg/MonetDB/</url>
+		<connection>scm:hg:https://dev.monetdb.org/hg/monetdb-java/</connection>
+		<developerConnection>scm:hg:ssh://hg@dev.monetdb.org/monetdb-java/</developerConnection>
+		<url>https://dev.monetdb.org/hg/monetdb-java/</url>
 	</scm>
 
 	<properties>
