@@ -37,7 +37,7 @@ import java.io.UnsupportedEncodingException;
  * This class is client-oriented, as it doesn't take into account the
  * messages as the server receives them.
  *
- * @author Fabian Groffen <Fabian.Groffen>
+ * @author Fabian Groffen
  * @see nl.cwi.monetdb.mcl.net.MapiSocket
  * @see nl.cwi.monetdb.mcl.io.BufferedMCLWriter
  */
@@ -80,6 +80,7 @@ public class BufferedMCLReader extends BufferedReader {
 	 *
 	 * @param in An InputStream
 	 * @param enc Encoding
+	 * @throws UnsupportedEncodingException If encoding is not supported
 	 */
 	public BufferedMCLReader(InputStream in, String enc)
 		throws UnsupportedEncodingException

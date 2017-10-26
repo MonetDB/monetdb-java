@@ -50,7 +50,7 @@ import nl.cwi.monetdb.mcl.parser.MCLParseException;
  * calling the connect() method to influence the login process.  Only
  * after a successful call to connect() the BufferedReader and
  * BufferedWriter can be retrieved.
- * <br />
+ *
  * For each line read, it is determined what type of line it is
  * according to the MonetDB MAPI protocol.  This results in a line to be
  * PROMPT, HEADER, RESULT, ERROR or UNKNOWN.  Use the getLineType()
@@ -59,7 +59,7 @@ import nl.cwi.monetdb.mcl.parser.MCLParseException;
  *
  * For debugging purposes a socket level debugging is implemented where
  * each and every interaction to and from the MonetDB server is logged
- * to a file on disk.<br />
+ * to a file on disk.
  * Incoming messages are prefixed by "RX" (received by the driver),
  * outgoing messages by "TX" (transmitted by the driver).  Special
  * decoded non-human readable messages are prefixed with "RD" and "TD"

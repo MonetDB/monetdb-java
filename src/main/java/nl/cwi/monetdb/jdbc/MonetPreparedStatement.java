@@ -386,7 +386,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public ResultSetMetaData getMetaData() {
+	public ResultSetMetaData getMetaData() throws SQLException {
 		if (rscolcnt == 3)
 			return null; // not sufficient data with pre-Dec2011 PREPARE
 
@@ -2173,7 +2173,7 @@ public class MonetPreparedStatement
 	}
 
 	/**
-	 * Sets the designated parameter to the given REF(<structured-type>) value.
+	 * Sets the designated parameter to the given REF(&lt;structured-type&gt;) value.
 	 * The driver converts this to an SQL REF value when it sends it to the
 	 * database.
 	 *

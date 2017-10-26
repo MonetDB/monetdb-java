@@ -20,7 +20,7 @@ import java.io.InputStreamReader;
  * This file contains a function to extract files from its including Jar
  * package.
  *
- * @author Ying Zhang <Y.Zhang@cwi.nl>
+ * @author Ying Zhang "Y.Zhang@cwi.nl"
  * @version 0.1
  */
 

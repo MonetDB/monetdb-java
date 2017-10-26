@@ -534,6 +534,7 @@ public final class JdbcClient {
 	 *
 	 * @param hasFile a boolean indicating whether a file is used as input
 	 * @param doEcho a boolean indicating whether to echo the given input
+	 * @param scolonterm whether a ';' makes this query part complete
 	 * @param user a String representing the username of the current user
 	 * @throws IOException if an IO exception occurs
 	 * @throws SQLException if a database related error occurs

@@ -13,7 +13,7 @@ package nl.cwi.monetdb.mcl.parser;
  * number of values that are expected are known upfront to speed up
  * allocation and validation.
  *
- * @author Fabian Groffen <Fabian.Groffen>
+ * @author Fabian Groffen
  */
 public class TupleLineParser extends MCLParser {
 	/**
@@ -34,7 +34,7 @@ public class TupleLineParser extends MCLParser {
 	 *
 	 * @param source a String which should be parsed
 	 * @return 0, as there is no 'type' of TupleLine
-	 * @throws ParseException if an error occurs during parsing
+	 * @throws MCLParseException if an error occurs during parsing
 	 */
 	@Override
 	public int parse(String source) throws MCLParseException {

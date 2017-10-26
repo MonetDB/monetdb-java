@@ -20,7 +20,7 @@ import java.nio.CharBuffer;
  * bonus is that it can return if another field should be present in the
  * soheader.
  *
- * @author Fabian Groffen <Fabian.Groffen>
+ * @author Fabian Groffen
  */
 public class StartOfHeaderParser {
 	private CharBuffer soh = null;

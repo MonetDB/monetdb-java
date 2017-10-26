@@ -17,6 +17,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLNonTransientConnectionException;
@@ -521,7 +522,7 @@ public class MonetConnection
 	 * @return the holdability, one of
 	 *         ResultSet.HOLD_CURSORS_OVER_COMMIT or
 	 *         ResultSet.CLOSE_CURSORS_AT_COMMIT
-	 * @see #setHoldability()
+	 * @see #setHoldability(int)
 	 */
 	@Override
 	public int getHoldability() {
@@ -1429,7 +1430,7 @@ public class MonetConnection
 	 * @since 1.6
 	 */
 	@Override
-	public void setClientInfo(String name, String value) throws java.sql.SQLClientInfoException {
+	public void setClientInfo(String name, String value) throws SQLClientInfoException {
 		if (name == null || name.isEmpty()) {
 			addWarning("setClientInfo: missing property name", "01M07");
 			return;
@@ -1484,7 +1485,7 @@ public class MonetConnection
 	 * @since 1.6
 	 */
 	@Override
-	public void setClientInfo(Properties props) throws java.sql.SQLClientInfoException {
+	public void setClientInfo(Properties props) throws SQLClientInfoException {
 		if (props != null) {
 			for (Entry<Object, Object> entry : props.entrySet()) {
 				setClientInfo(entry.getKey().toString(),
@@ -1641,7 +1642,7 @@ public class MonetConnection
 
 
 	/**
-	 * Returns the MonetDB JDBC Connection URL (without user name and password).
+	 * @return the MonetDB JDBC Connection URL (without user name and password).
 	 * Defined as public because it is called from: MonetDatabaseMetaData.java getURL()
 	 */
 	public String getJDBCURL() {
@@ -1652,20 +1653,20 @@ public class MonetConnection
 	}
 
 	/**
-	 * Returns whether the JDBC BLOB type should be mapped to VARBINARY type.
+	 * @return whether the JDBC BLOB type should be mapped to VARBINARY type.
 	 * This allows generic JDBC programs to fetch Blob data via getBytes()
 	 * instead of getBlob() and Blob.getBinaryStream() to reduce overhead.
 	 */
-	boolean mapBlobAsVarBinary() {
+	public boolean mapBlobAsVarBinary() {
 		return treatBlobAsVarBinary;
 	}
 
 	/**
-	 * Returns whether the JDBC CLOB type should be mapped to VARCHAR type.
+	 * @return whether the JDBC CLOB type should be mapped to VARCHAR type.
 	 * This allows generic JDBC programs to fetch Clob data via getString()
 	 * instead of getClob() and Clob.getCharacterStream() to reduce overhead.
 	 */
-	boolean mapClobAsVarChar() {
+	public boolean mapClobAsVarChar() {
 		return treatClobAsVarChar;
 	}
 

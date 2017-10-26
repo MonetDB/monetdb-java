@@ -403,7 +403,7 @@ public class MonetResultSet
 	 * of this ResultSet object as a stream of uninterpreted bytes. The
 	 * value can then be read in chunks from the stream. This method is
 	 * particularly suitable for retrieving large LONGVARBINARY values.
-	 * <br/><br/>
+	 *
 	 * Note: All the data in the returned stream must be read prior to
 	 * getting the value of any other column. The next call to a getter
 	 * method implicitly closes the stream. Also, a stream may return 0
@@ -446,7 +446,7 @@ public class MonetResultSet
 	 * of this ResultSet object as a stream of uninterpreted bytes. The
 	 * value can then be read in chunks from the stream. This method is
 	 * particularly suitable for retrieving large LONGVARBINARY  values.
-	 * <br/><br/>
+	 *
 	 * Note: All the data in the returned stream must be read prior to
 	 * getting the value of any other column. The next call to a getter
 	 * method implicitly closes the stream. Also, a stream may return 0

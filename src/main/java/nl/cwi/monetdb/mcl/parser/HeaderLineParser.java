@@ -14,7 +14,7 @@ package nl.cwi.monetdb.mcl.parser;
  * a metadata header in the MCL protocol either as string or integer
  * values.
  *
- * @author Fabian Groffen <Fabian.Groffen>
+ * @author Fabian Groffen
  */
 public class HeaderLineParser extends MCLParser {
 	private int type;

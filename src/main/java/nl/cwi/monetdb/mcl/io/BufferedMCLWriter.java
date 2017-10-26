@@ -32,7 +32,7 @@ import java.io.Writer;
  * each write must be answered by the server.  That also makes this
  * class client-oriented when a reader is registered.
  *
- * @author Fabian Groffen <Fabian.Groffen>
+ * @author Fabian Groffen
  * @see nl.cwi.monetdb.mcl.net.MapiSocket
  * @see nl.cwi.monetdb.mcl.io.BufferedMCLReader
  */
@@ -55,6 +55,7 @@ public class BufferedMCLWriter extends BufferedWriter {
 	 *
 	 * @param in An OutputStream
 	 * @param enc Encoding
+	 * @throws UnsupportedEncodingException If encoding is not supported
 	 */
 	public BufferedMCLWriter(OutputStream in, String enc)
 		throws UnsupportedEncodingException

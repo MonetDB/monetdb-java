@@ -21,12 +21,12 @@ import java.sql.SQLOutput;
  * The INET class represents the INET datatype in MonetDB.
  * It represents a IPv4 address with a certain mask applied.
  * Currently, IPv6 is not supported.
- * <br />
+ *
  * The input format for INET is x.x.x.x/y where x.x.x.x is an IP address
  * and y is the number of bits in the netmask. If the /y part is left
  * off, then the netmask is 32, and the value represents just a single
  * host. On display, the /y portion is suppressed if the netmask is 32.
- * <br />
+ *
  * This class allows to retrieve the value of this INET as InetAddress.
  * This is probably meaningful only and only if the netmask is 32.
  * The getNetmaskBits() method can be used to retrieve the subnet bits.

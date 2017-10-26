@@ -268,7 +268,7 @@ final public class MonetDriver implements Driver {
 	}
 
 	/**
-	 * Reports whether this driver is a genuine JDBC Compliant&tm; driver. A
+	 * Reports whether this driver is a genuine JDBC Compliant&trade; driver. A
 	 * driver may only report true here if it passes the JDBC compliance tests;
 	 * otherwise it is required to return false.
 	 *
