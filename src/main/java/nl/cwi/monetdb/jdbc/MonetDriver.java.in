@@ -160,14 +160,14 @@ public final class MonetDriver implements Driver {
 		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call (MAPI connection only)"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
 		props.add(prop);
 
-		prop = new DriverPropertyInfo("follow_redirects", "true");
-		prop.required = false;
-		prop.description = "Whether redirects issued by the server should be followed (MAPI connection only)";
-		props.add(prop);
-
 		prop = new DriverPropertyInfo("treat_blob_as_binary", "false");
 		prop.required = false;
-		prop.description = "Whether BLOBs on the server should be treated as LONGVARBINARY types, thus mapped to byte[] (MAPI connection only)";
+		prop.description = "Whether BLOBs on the server should be treated as BINARY types, thus mapped to byte[] (MAPI connection only)";
+		props.add(prop);
+
+		prop = new DriverPropertyInfo("treat_clob_as_varchar", "false");
+		prop.required = false;
+		prop.description = "Whether CLOBs on the server should be treated and handled as VARCHAR types in the JDBC driver (MAPI connection only)"; // recommend for increased performance due to less overhead
 		props.add(prop);
 
 		prop = new DriverPropertyInfo("treat_clob_as_longvarchar", "false");
@@ -185,7 +185,7 @@ public final class MonetDriver implements Driver {
 	}
 
 	/**
-	 * Reports whether this driver is a genuine JDBC Compliant&tm; driver. A
+	 * Reports whether this driver is a genuine JDBC Compliant&trade; driver. A
 	 * driver may only report true here if it passes the JDBC compliance tests;
 	 * otherwise it is required to return false.
 	 *
@@ -297,7 +297,7 @@ public final class MonetDriver implements Driver {
 	 * @return the version string
 	 */
 	public static String getDriverVersion() {
-		return "" + DRIVERMAJOR + "." + DRIVERMINOR + " (" + DRIVERVERSIONSUFFIX + ")";
+		return DRIVERMAJOR + "." + DRIVERMINOR + " (" + DRIVERVERSIONSUFFIX + ")";
 	}
 
 	public static int getDriverMajorVersion() {
@@ -339,8 +339,9 @@ public final class MonetDriver implements Driver {
 	 * "password" properties should be included in the Properties object.
 	 *
 	 * @param url the URL of the database to which to connect
-	 * @param info a list of arbitrary string tag/value pairs as connection  arguments. Normally at least a "user" and
-	 * "password" property  should be included
+	 * @param info a list of arbitrary string tag/value pairs as connection
+	 *        arguments. Normally at least a "user" and "password" property
+	 *        should be included
 	 * @return a Connection object that represents a connection to the URL
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -348,25 +349,32 @@ public final class MonetDriver implements Driver {
 		int tmp;
 		boolean isEmbedded;
 		Properties props = new Properties();
-		props.putAll(info);
-		info = props;
 
 		if (!acceptsURL(url))
 			throw new SQLException("Invalid URL: it does not start with: " + MONETURL, "08M26");
 
 		if(!url.startsWith("jdbc:monetdb:embedded:")) {
 			// url should be of style jdbc:monetdb://<host>/<database>
+
+			// set the optional properties and their defaults here
+			props.put("port", PORT);
+			props.put("debug", "false");
+			props.put("language", "sql");	// mal, sql, <future>
+			props.put("so_timeout", "0");
+			props.putAll(info);
+			info = props;
+
 			isEmbedded = false;
 			URI uri;
 			try {
 				uri = new URI(url.substring(5));
 			} catch (URISyntaxException e) {
-				throw new SQLException(e.toString(), "08M26");
+				throw new SQLNonTransientConnectionException(e.toString(), "08M26");
 			}
 
 			String uri_host = uri.getHost();
 			if (uri_host == null)
-				throw new SQLException("Invalid URL: no hostname given or unparsable in '" + url + "'", "08M26");
+				throw new SQLNonTransientConnectionException("Invalid URL: no hostname given or unparsable in '" + url + "'", "08M26");
 			info.put("host", uri_host);
 
 			int uri_port = uri.getPort();
@@ -393,6 +401,9 @@ public final class MonetDriver implements Driver {
 			}
 		} else {
 			// url should be of style jdbc:monetdb:embedded:<directory>
+			props.putAll(info);
+			info = props;
+
 			isEmbedded = true;
 			info.put("directory", url.substring(22));
 		}

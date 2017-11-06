@@ -17,6 +17,7 @@ import java.sql.Connection;
 import java.sql.Statement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,8 +28,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * A Statement suitable for the MonetDB database.
  * 
  * The object used for executing a static SQL statement and returning
- * the results it produces.<br />
- * 
+ * the results it produces.
+ *
  * By default, only one {@link ResultSet} object per Statement object can be
  * open at the same time. Therefore, if the reading of one ResultSet
  * object is interleaved with the reading of another, each must have
@@ -40,7 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * executeQuery() which returns a ResultSet where from results can be
  * read and executeUpdate() which doesn't return the affected rows.
  * Commit and rollback are implemented, as is the autoCommit mechanism
- * which relies on server side auto commit.<br />
+ * which relies on server side auto commit.
  * Multi-result queries are supported using the getMoreResults() method.
  *
  * @author Martin van Dinther
@@ -146,7 +147,6 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * ordered according to the order in which they were added to the
 	 * batch.  The elements in the array returned by the method
 	 * executeBatch may be one of the following:
-	 * <br />
 	 * <ol>
 	 * <li>A number greater than or equal to zero -- indicates that the
 	 * command was processed successfully and is an update count giving
@@ -167,7 +167,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * If one of the commands attempts to return a result set, an
 	 * SQLException is added to the SQLException list and thrown
 	 * afterwards execution.  Failing queries result in SQLExceptions
-	 * too and may cause subparts of the batch to fail as well.<br />
+	 * too and may cause subparts of the batch to fail as well.
 	 *
 	 * @return an array of update counts containing one element for each
 	 *         command in the batch.  The elements of the array are ordered
@@ -263,16 +263,15 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	}
 
 	/**
-     * Cancels this Statement object if both the DBMS and driver support
-	 * aborting an SQL statement.  This method can be used by one thread to
-	 * cancel a statement that is being executed by another thread.
+	 * Cancels this Statement object if both the DBMS and driver support aborting an SQL statement.
+	 * This method can be used by one thread to cancel a statement that is being executed by another thread.
 	 *
-	 * @throws SQLException if a database access error occurs or the cancel
-	 *                      operation is not supported
+	 * @throws SQLException - if a database access error occurs or this method is called on a closed Statement
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
 	@Override
 	public void cancel() throws SQLException {
-		throw new SQLException("Query cancelling is currently not supported by the DBMS.", "0A000");
+		throw new SQLFeatureNotSupportedException("Query cancelling is currently not supported by the driver.", "0A000");
 	}
 
 	/**
@@ -303,6 +302,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 		// close previous ResultSet, if not closed already
 		if (lastResponseList != null) {
 			lastResponseList.close();
+			lastResponseList = null;
 		}
 		closed = true;
 	}
@@ -509,7 +509,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * @param sql an SQL INSERT, UPDATE or DELETE statement or an SQL statement
 	 *        that returns nothing
 	 * @return either the row count for INSERT, UPDATE  or DELETE statements, or
-	 *         0 for SQL statements that return nothing<br />
+	 *         0 for SQL statements that return nothing
 	 * @throws SQLException if a database access error occurs or the given SQL
 	 *         statement produces a ResultSet object
 	 */
@@ -697,10 +697,12 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 *
 	 * @return the current column size limit for columns storing
 	 *         character and binary values; zero means there is no limit
+	 * @throws SQLException if a database access error occurs
+	 * @see #setMaxFieldSize(int max)
 	 */
 	@Override
-	public int getMaxFieldSize() {
-		return 0;
+	public int getMaxFieldSize() throws SQLException {
+		return 2*1024*1024*1024 - 2;	// MonetDB supports null terminated strings of max 2GB, see function: int UTF8_strlen()
 	}
 
 	/**
@@ -710,9 +712,11 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 *
 	 * @return the current maximum number of rows for a ResultSet object
 	 *         produced by this Statement object; zero means there is no limit
+	 * @throws SQLException if a database access error occurs
+	 * @see #setMaxRows(int max)
 	 */
 	@Override
-	public int getMaxRows() {
+	public int getMaxRows() throws SQLException {
 		return maxRows;
 	}
 
@@ -721,7 +725,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * ResultSet object, and implicitly closes any current ResultSet object(s)
 	 * obtained with the method getResultSet.
 	 *
-	 * There are no more results when the following is true:<br />
+	 * There are no more results when the following is true:
 	 * (!getMoreResults() &amp;&amp; (getUpdateCount() == -1)
 	 *
 	 * @return true if the next result is a ResultSet object; false if it is
@@ -739,7 +743,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * ResultSet object(s) according to the instructions specified by the given
 	 * flag, and returns true if the next result is a ResultSet object.
 	 *
-	 * There are no more results when the following is true:<br />
+	 * There are no more results when the following is true:
 	 * (!getMoreResults() &amp;&amp; (getUpdateCount() == -1)
 	 *
 	 * @param current one of the following Statement constants indicating what
@@ -1002,6 +1006,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 *        is no limit
 	 * @throws SQLException if a database access error occurs or the
 	 *         condition max &gt;= 0 is not satisfied
+	 * @see #getMaxFieldSize()
 	 */
 	@Override
 	public void setMaxFieldSize(int max) throws SQLException {
@@ -1019,7 +1024,8 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * rows are silently dropped.
 	 *
 	 * @param max the new max rows limit; zero means there is no limit
-	 * @throws SQLException if the condition max >= 0 is not satisfied
+	 * @throws SQLException if the condition max &gt;= 0 is not satisfied
+	 * @see #getMaxRows()
 	 */
 	@Override
 	public void setMaxRows(int max) throws SQLException {
@@ -1149,10 +1155,11 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * @param reason the warning message
 	 */
 	private void addWarning(String reason, String sqlstate) {
+		SQLWarning warng = new SQLWarning(reason, sqlstate);
 		if (warnings == null) {
-			warnings = new SQLWarning(reason, sqlstate);
+			warnings = warng;
 		} else {
-			warnings.setNextWarning(new SQLWarning(reason, sqlstate));
+			warnings.setNextWarning(warng);
 		}
 	}
 

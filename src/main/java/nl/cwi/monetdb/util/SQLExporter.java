@@ -436,6 +436,7 @@ public class SQLExporter extends Exporter {
 	 * to the output writer.
 	 *
 	 * @param rs the ResultSet to write out
+	 * @throws SQLException if a database related error occurs
 	 */
 	public void resultSetToTable(ResultSet rs) throws SQLException {
 		ResultSetMetaData md = rs.getMetaData();

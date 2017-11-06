@@ -11,8 +11,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
 <!--
 
   Build file to allow ant (http://jakarta.apache.org/ant/) to be used
-  to build the MonetDB Java libraries, such as the JDBC and XML:DB
-  drivers.
+  to build the MonetDB Java packages, such as the JDBC driver.
 
 -->
 
@@ -32,12 +31,16 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
 
   <property file="build.properties" />
 
-  <property name="jdbc-jar" value="${jardir}/monetdb-jdbc-new-${JDBC_MAJOR}.${JDBC_MINOR}.jar" />
-  <property name="jdbcclient-jar" value="${jardir}/jdbcclient.jar" />
-  <property name="jmonetdb-jar" value="${jardir}/jmonetdb.jar" />
-  <property name="mcl-jar" value="${jardir}/monetdb-mcl-${MCL_MAJOR}.${MCL_MINOR}.jar" />
-
-  <property name="mero-control-jar" value="${jardir}/merocontrol.jar" />
+  <property name="jdbc-jar"
+    value="${jardir}/monetdb-jdbc-new-${JDBC_MAJOR}.${JDBC_MINOR}.jar" />
+  <property name="jdbcclient-jar"
+    value="${jardir}/jdbcclient.jar" />
+  <property name="jmonetdb-jar"
+    value="${jardir}/jmonetdb.jar" />
+  <property name="mcl-jar"
+    value="${jardir}/monetdb-mcl-${MCL_MAJOR}.${MCL_MINOR}.jar" />
+  <property name="mero-control-jar"
+    value="${jardir}/merocontrol.jar" />
 
   <!-- 
 
@@ -57,9 +60,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
   <!-- full target -->
   <target name="all">
     <antcall target="distjdbc" />
-
     <antcall target="distmerocontrol" />
-
     <antcall target="doc" />
   </target>
 
@@ -113,11 +114,11 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
     </jar>
   </target>
 
-  <!-- a convenience jar of JDBC plus the JdbcClient utililty -->
+  <!-- a convenience jar of jdbcclient command line program plus JDBC driver -->
   <target name="jar_jdbcclient"
     depends="compile_mcl,compile_jdbc,compile_util,compile_client"
     unless="uptodate.jdbcclient-jar">
-    <echo message="Building JDBC + JdbcClient convenience jar" />
+    <echo message="Building jdbcclient + JDBC driver convenience jar" />
     <jar jarfile="${jdbcclient-jar}">
       <fileset dir="${builddir}">
         <include name="${jdbc-package}/**/*.class" />
@@ -251,8 +252,8 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
   </target>
 
   <!--
-  This generates MonetDriver.java.in from its ".java.in" equivalents.  It's
-  required for importing the driver version properties.
+  This generates MonetDriver.java from its ".java.in" equivalent.
+  It's required for importing the driver version properties.
   -->
   <target name="driver" depends="prepare" unless="uptodate.drivers">
     <tstamp>
@@ -349,7 +350,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
 
   <!-- documentation target -->
   <target name="doc"
-    depends="compile_mcl,compile_jdbc,compile_util,compile_client,compile_mero_control">
+    depends="driver">
     <javadoc
       destdir="${docdir}"
       author="true"
@@ -358,14 +359,6 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2017 MonetDB B.V.
       windowtitle="MonetDB Java APIs">
 
       <fileset dir="${srcdir}" defaultexcludes="yes">
-        <include name="${jdbc-package}/**/*.java" />
-        <include name="${mcl-package}/**/*.java" />
-        <include name="${client-package}/**/*.java" />
-        <include name="${util-package}/**/*.java" />
-        <include name="${mero-control-package}/**/*.java" />
-      </fileset>
-
-      <fileset dir="${builddir}/src" defaultexcludes="yes">
         <include name="${jdbc-package}/**/*.java" />
         <include name="${mcl-package}/**/*.java" />
         <include name="${client-package}/**/*.java" />

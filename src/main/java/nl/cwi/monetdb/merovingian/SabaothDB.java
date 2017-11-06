@@ -15,7 +15,7 @@ import java.util.Date;
  *
  * This Class implements a parser for the string representation of a
  * sabaoth information struct as returned by monetdbd.
- * <br />
+ *
  * Currently this class implements version 1 and 2 of the sabdb
  * serialisation.
  *

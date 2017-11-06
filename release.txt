@@ -1,11 +1,36 @@
 RELEASE NOTES
-MonetDB JDBC driver version 2.26 (Liberica/MCL-1.15)
-Release date: 2017-07-28
+MonetDB JDBC driver version 2.27 (Liberica/MCL-1.16)
+Release date: 2017-10-23
 
-This JDBC driver is designed for use with MonetDB, a main-memory
-database.  For more information see https://www.monetdb.org/.
+This JDBC driver is designed for use with MonetDB, a main-memory column-store RDBMS.
+For more information see https://www.monetdb.org/
 
-The JDBC driver complies to JDBC 4.1 definition, see
+The MonetDB JDBC connection URL format to use is:
+  jdbc:monetdb://<hostname>[:<portnr>]/<databasename>[?<property>=<value>[&<property>=<value>]]
+
+Note: For a successful connection the database name part must be provided
+ and be equal to the name of the database served by the mserver5 process running on
+ the specified host and listening to the specified port number (default port is 50000).
+
+Supported connection properties are:
+	user=<login name>
+	password=<secret value>
+	so_timeout=<time in milliseconds>
+	hash=<SHA512, SHA384, SHA256, SHA1 and MD5>
+	language=<sql or mal>		default is: sql
+	treat_blob_as_binary=true	default is: false
+	treat_clob_as_varchar=true	default is: false
+	debug=true			default is: false
+	logfile=<name of logfile>
+
+For example:
+  jdbc:monetdb://localhost:41000/mydb?user=monetdb&password=monetdb&so_timeout=7000&treat_clob_as_varchar=true
+
+See also: https://www.monetdb.org/Documentation/Manuals/SQLreference/Programming/JDBC
+
+
+JDBC COMPLIANCE
+The MonetDB JDBC driver complies to JDBC 4.1 definition, see
  http://docs.oracle.com/javase/7/docs/technotes/guides/jdbc/index.html
 
 Note: as of Jul2015 release we compile all the java sources to target: Java 1.7

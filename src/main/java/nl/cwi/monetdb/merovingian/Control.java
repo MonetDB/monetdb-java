@@ -33,7 +33,7 @@ import java.util.Properties;
  * This class implements the protocol specific bits to perform all
  * possible actions against a merovingian server that has remote control
  * facilities enabled.
- * <br />
+ *
  * In the merovingian world, other merovingians in the vicinity are
  * known to each merovingian, allowing to perform cluster wide actions.
  * The implementation taken in this class is to require one known
@@ -56,6 +56,9 @@ public class Control {
 	/**
 	 * Constructs a new Control object.
 	 *
+	 * @param host - IP address or DNS
+	 * @param port - port number
+	 * @param passphrase - phrase used to pass authorisation
 	 * @throws IllegalArgumentException if host, port or passphrase are
 	 * null or &lt;= 0
 	 */
@@ -294,10 +297,12 @@ public class Control {
 	/**
 	 * Test whether a specific database exists. 
 	 * 
-	 * @param database
+	 * @param database name of database
 	 * @return true, iff database already exists.
-	 * @throws MerovingianException
-	 * @throws IOException
+	 * @throws MerovingianException if performing the command failed at
+	 *         the merovingian side
+	 * @throws IOException if connecting to or communicating with
+	 *         merovingian failed
 	 */
 	public boolean exists(String database) throws MerovingianException, IOException {
 		List<SabaothDB> all = getAllStatuses();

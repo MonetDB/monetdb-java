@@ -117,6 +117,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			for (int i = 0; rs.next(); i++) {
 				monetdbType[i] = rs.getString(type_colnr);
 				javaType[i] = MonetDriver.getJavaType(monetdbType[i]);
+				if (javaType[i] == Types.CLOB) {
+					if (connection.mapClobAsVarChar())
+						javaType[i] = Types.VARCHAR;
+				} else
+				if (javaType[i] == Types.BLOB) {
+					if (connection.mapBlobAsVarBinary())
+						javaType[i] = Types.VARBINARY;
+				}
 				digits[i] = rs.getInt(digits_colnr);
 				scale[i] = rs.getInt(scale_colnr);
 				if (rscolcnt == 3)
@@ -295,7 +303,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *         driver cannot return a ResultSetMetaData object
 	 */
 	@Override
-	public ResultSetMetaData getMetaData() {
+	public ResultSetMetaData getMetaData() throws SQLException {
 		if (rscolcnt == 3)
 			return null; // not sufficient data with pre-Dec2011 PREPARE
 
@@ -1999,7 +2007,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	}
 
 	/**
-	 * Sets the designated parameter to the given REF(<structured-type>) value.
+	 * Sets the designated parameter to the given REF(&lt;structured-type&gt;) value.
 	 * The driver converts this to an SQL REF value when it sends it to the
 	 * database.
 	 *
@@ -2454,7 +2462,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 */
 	private String transform() throws SQLException {
 		StringBuilder buf = new StringBuilder(8 + 12 * size);
-		buf.append("exec ").append(id).append('(');
+		buf.append("execute ").append(id).append('(');
 		// check if all columns are set and do a replace
 		int col = 0;
 		for (int i = 0; i < size; i++) {
@@ -2481,7 +2489,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @param paramIdx the parameter index number
 	 * @return a new created SQLDataException object with SQLState 22010
 	 */
-	private static SQLDataException newSQLInvalidParameterIndexException(int paramIdx) {
+	private static final SQLDataException newSQLInvalidParameterIndexException(int paramIdx) {
 		return new SQLDataException("Invalid Parameter Index number: " + paramIdx, "22010");
 	}
 
@@ -2493,7 +2501,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @param name the method name
 	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000
 	 */
-	private static SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
+	private static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
 		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 }

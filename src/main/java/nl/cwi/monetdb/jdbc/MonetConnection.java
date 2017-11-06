@@ -84,10 +84,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	private Map<Statement,?> statements = new WeakHashMap<>();
 	/** The number of results we receive from the server at once */
 	private int curReplySize = -1; // the server by default uses -1 (all)
-	/** Whether or not BLOB is mapped to LONGVARBINARY within the driver */
-	private final boolean blobIsBinary;
-	/** Whether or not CLOB is mapped to LONGVARCHAR within the driver */
-	private final boolean clobIsLongChar;
+	/** Whether or not BLOB is mapped to Types.VARBINARY instead of Types.BLOB within this connection */
+	private final boolean treatBlobAsVarBinary;
+	/** Whether or not CLOB is mapped to Types.VARCHAR instead of Types.CLOB within this connection */
+	private final boolean treatClobAsVarChar;
 	/** The underlying proticol provided by the connection (MAPI or embedded) */
 	protected AbstractProtocol protocol;
 	/** Tells if the connection is embedded or not */
@@ -103,8 +103,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		this.conn_props = props;
 		this.hash = hash;
 		this.language = language;
-		this.blobIsBinary = blobIsBinary;
-		this.clobIsLongChar = clobIsLongChar;
+		this.treatBlobAsVarBinary = blobIsBinary;
+		this.treatClobAsVarChar = clobIsLongChar;
 		//"instance of" should be cleanner, but this is faster.
 		this.isEmbedded = props.getProperty("embedded", "false").equals("true");
 	}
@@ -373,6 +373,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * Retrieves the current holdability of ResultSet objects created using this Connection object.
 	 *
 	 * @return the holdability, one of ResultSet.HOLD_CURSORS_OVER_COMMIT or ResultSet.CLOSE_CURSORS_AT_COMMIT
+	 * @see #setHoldability(int)
 	 */
 	@Override
 	public int getHoldability() {
@@ -475,6 +476,16 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		return false;
 	}
 
+	/**
+	 * Converts the given SQL statement into the system's native SQL grammar.
+	 * A driver may convert the JDBC SQL grammar into its system's native SQL grammar prior to sending it.
+	 * This method returns the native form of the statement that the driver would have sent.
+	 *
+	 * Parameters:
+	 *   sql - an SQL statement that may contain one or more '?' parameter placeholders.
+	 * Returns: the native form of this statement
+	 * Throws: SQLException - if a database access error occurs or this method is called on a closed connection
+	 */
 	@Override
 	public String nativeSQL(String sql) {
 		/* there is currently no way to get the native MonetDB rewritten SQL string back, so just return the original string */
@@ -482,22 +493,77 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		return sql;
 	}
 
+	/**
+	 * Creates a CallableStatement object for calling database stored procedures.
+	 * The CallableStatement object provides methods for setting up its IN and OUT parameters,
+	 * and methods for executing the call to a stored procedure.
+	 *
+	 * Note: This method is optimized for handling stored procedure call statements.
+	 *       Some drivers may send the call statement to the database when the method prepareCall is done;
+	 *       others may wait until the CallableStatement object is executed. This has no direct effect
+	 *       on users; however, it does affect which method throws certain SQLExceptions.
+	 *
+	 * Result sets created using the returned CallableStatement object will by default be type TYPE_FORWARD_ONLY
+	 * and have a concurrency level of CONCUR_READ_ONLY.
+	 * The holdability of the created result sets can be determined by calling getHoldability().
+	 *
+	 * Parameters:
+	 *   sql - an SQL statement that may contain one or more '?' parameter placeholders.
+	 *	Typically this statement is specified using JDBC call escape syntax.
+	 * Returns: a new default CallableStatement object containing the pre-compiled SQL statement
+	 * Throws: SQLException - if a database access error occurs or this method is called on a closed connection
+	 */
 	@Override
-	public CallableStatement prepareCall(String sql) {
-		/* not implemented yet */
-		return null;
+	public CallableStatement prepareCall(String sql) throws SQLException {
+		return prepareCall(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
 	}
 
+	/**
+	 * Creates a CallableStatement object that will generate ResultSet objects with the given type and concurrency.
+	 * This method is the same as the prepareCall method above, but it allows the default result set type and concurrency to be overridden.
+	 * The holdability of the created result sets can be determined by calling getHoldability().
+	 *
+	 * Parameters:
+	 *   sql - a String object that is the SQL statement to be sent to the database; may contain on or more '?' parameters
+	 *	Typically this statement is specified using JDBC call escape syntax.
+	 *   resultSetType - a result set type; one of ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, or ResultSet.TYPE_SCROLL_SENSITIVE
+	 *   resultSetConcurrency - a concurrency type; one of ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
+	 * Returns: a new CallableStatement object containing the pre-compiled SQL statement that
+	 *	will produce ResultSet objects with the given type and concurrency
+	 * Throws:
+	 *   SQLException - if a database access error occurs, this method is called on a closed connection or
+	 *		the given parameters are not ResultSet constants indicating type and concurrency
+	 *   SQLFeatureNotSupportedException - if the JDBC driver does not support this method or
+	 *		this method is not supported for the specified result set type and result set concurrency.
+	 */
 	@Override
-	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) {
-		/* not implemented yet */
-		return null;
+	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+		return prepareCall(sql, resultSetType, resultSetConcurrency, ResultSet.HOLD_CURSORS_OVER_COMMIT);
 	}
 
+	/**
+	 * Creates a CallableStatement object that will generate ResultSet objects with the given type and concurrency.
+	 * This method is the same as the prepareCall method above, but it allows the default result set type, result set concurrency type and holdability to be overridden.
+	 *
+	 * Parameters:
+	 *   sql - a String object that is the SQL statement to be sent to the database; may contain on or more '?' parameters
+	 *	Typically this statement is specified using JDBC call escape syntax.
+	 *   resultSetType - a result set type; one of ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, or ResultSet.TYPE_SCROLL_SENSITIVE
+	 *   resultSetConcurrency - a concurrency type; one of ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
+	 *   resultSetHoldability - one of the following ResultSet constants: ResultSet.HOLD_CURSORS_OVER_COMMIT or ResultSet.CLOSE_CURSORS_AT_COMMIT
+	 * Returns: a new CallableStatement object, containing the pre-compiled SQL statement, that will generate ResultSet objects with the given type, concurrency, and holdability
+	 * Throws:
+	 *   SQLException - if a database access error occurs, this method is called on a closed connection or
+	 *		the given parameters are not ResultSet constants indicating type, concurrency, and holdability
+	 *   SQLFeatureNotSupportedException - if the JDBC driver does not support this method or
+	 *		this method is not supported for the specified result set type, result set holdability and result set concurrency.
+	 */
 	@Override
-	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability) {
-		/* not implemented yet */
-		return null;
+	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+		throws SQLException
+	{
+		throw new SQLFeatureNotSupportedException("prepareCall() not yet supported", "0A000");
+		/* a request to implement prepareCall() has already been logged, see https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402 */
 	}
 
 	/**
@@ -1104,7 +1170,11 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 			}
 		} catch (SQLException se) {
 			String msg = se.getMessage();
-			if (msg != null && msg.equals("Current transaction is aborted (please ROLLBACK)")) {
+			// System.out.println(se.getSQLState() + " Con.isValid(): " + msg);
+			if (msg != null && msg.equalsIgnoreCase("Current transaction is aborted (please ROLLBACK)")) {
+				// Must use equalsIgnoreCase() here because up to Jul2017 release 'Current' was 'current' so with lowercase c.
+				// It changed to 'Current' after Jul2017 release. We need to support all server versions.
+				// SQLState = 25005
 				isValid = true;
 			}
 			/* ignore stmt errors/exceptions, we are only testing if the connection is still alive and usable */
@@ -1201,7 +1271,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * @since 1.6
 	 */
 	@Override
-	public void setClientInfo(String name, String value) throws java.sql.SQLClientInfoException {
+	public void setClientInfo(String name, String value) throws SQLClientInfoException {
 		if (name == null || name.isEmpty()) {
 			addWarning("setClientInfo: missing property name", "01M07");
 			return;
@@ -1213,10 +1283,19 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 			return;
 		}
 		// only set value for supported property names
-		if (name.equals("host") || name.equals("port") || name.equals("user") || name.equals("password") ||
-				name.equals("database") || name.equals("language") || name.equals("so_timeout") ||
-				name.equals("hash") || name.equals("treat_blob_as_binary") || name.equals("follow_redirects") ||
-				name.equals("treat_clob_as_longvarchar") || name.equals("embedded") || name.equals("directory")) {
+		if (name.equals("host") ||
+		    name.equals("port") ||
+		    name.equals("user") ||
+		    name.equals("password") ||
+		    name.equals("database") ||
+		    name.equals("language") ||
+		    name.equals("so_timeout") ||
+		    name.equals("hash") ||
+		    name.equals("treat_blob_as_binary") ||
+		    name.equals("treat_clob_as_varchar") ||
+		    name.equals("embedded") ||
+		    name.equals("directory"))
+		{
 			conn_props.setProperty(name, value);
 		} else {
 			addWarning("setClientInfo: " + name + "is not a recognised property", "01M07");
@@ -1247,7 +1326,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * @since 1.6
 	 */
 	@Override
-	public void setClientInfo(Properties props) throws java.sql.SQLClientInfoException {
+	public void setClientInfo(Properties props) throws SQLClientInfoException {
 		if (props != null) {
 			for (Map.Entry<Object, Object> entry : props.entrySet()) {
 				setClientInfo(entry.getKey().toString(), entry.getValue().toString());
@@ -1385,20 +1464,24 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		}
 	}
 
-	//== end methods of interface Connection
+	//== end methods of interface java.sql.Connection
 
 	/**
-	 * Returns whether the BLOB type should be mapped to BINARY type.
+	 * @return whether the JDBC BLOB type should be mapped to VARBINARY type.
+	 * This allows generic JDBC programs to fetch Blob data via getBytes()
+	 * instead of getBlob() and Blob.getBinaryStream() to reduce overhead.
 	 */
-	public boolean getBlobAsBinary() {
-		return blobIsBinary;
+	public boolean mapBlobAsVarBinary() {
+		return treatBlobAsVarBinary;
 	}
 
 	/**
-	 * Returns whether the CLOB type should be mapped to LONGVARCHAR type.
+	 * @return whether the JDBC CLOB type should be mapped to VARCHAR type.
+	 * This allows generic JDBC programs to fetch Clob data via getString()
+	 * instead of getClob() and Clob.getCharacterStream() to reduce overhead.
 	 */
-	public boolean getClobAsLongChar() {
-		return clobIsLongChar;
+	public boolean mapClobAsVarChar() {
+		return treatClobAsVarChar;
 	}
 
 	/**
@@ -1451,10 +1534,11 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * @param reason the warning message
 	 */
 	void addWarning(String reason, String sqlstate) {
+		SQLWarning warng = new SQLWarning(reason, sqlstate);
 		if (warnings == null) {
-			warnings = new SQLWarning(reason, sqlstate);
+			warnings = warng;
 		} else {
-			warnings.setNextWarning(new SQLWarning(reason, sqlstate));
+			warnings.setNextWarning(warng);
 		}
 	}
 
@@ -1463,7 +1547,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * left as responsibility to the caller to prevent concurrent access.
 	 */
 	public class ResponseList {
-
 		/** The cache size (number of rows in a DataBlockResponse object) */
 		private final int cachesize;
 		/** The maximum number of results for this query */

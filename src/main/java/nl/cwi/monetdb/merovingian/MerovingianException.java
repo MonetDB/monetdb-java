@@ -19,6 +19,8 @@ package nl.cwi.monetdb.merovingian;
  * @version 1.0
  */
 public class MerovingianException extends Exception {
+	private static final long serialVersionUID = 101L;
+
 	public MerovingianException(String reason) {
 		super(reason);
 	}

@@ -12,10 +12,10 @@ import java.util.*;
 public class Test_PSmanycon {
 	public static void main(String[] args) throws Exception {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
-		List<PreparedStatement> pss = new ArrayList<>(100);	// Connections go in here
+		List<PreparedStatement> pss = new ArrayList<>(100);	// PreparedStatements go in here
 
 		try {
-			// spawn a lot of Connections, just for fun...
+			// spawn a lot of Connections with 1 PreparedStatement, just for fun...
 			int i;
 			for (i = 0; i < 50; i++) {
 				System.out.print("Establishing Connection " + i + "...");
@@ -31,8 +31,8 @@ public class Test_PSmanycon {
 
 			// now try to nicely execute them
 			i = 0;
-			for (Iterator it = pss.iterator(); it.hasNext(); i++) {
-				PreparedStatement pstmt = (PreparedStatement)(it.next());
+			for (Iterator<PreparedStatement> it = pss.iterator(); it.hasNext(); i++) {
+				PreparedStatement pstmt = it.next();
 
 				// see if the connection still works
 				System.out.print("Executing PreparedStatement " + i + "...");
@@ -43,6 +43,8 @@ public class Test_PSmanycon {
 				if (!rs.next())
 					throw new Exception("ResultSet is empty");
 				System.out.print(" result: " + rs.getString(1));
+
+				// close the connection and associated resources
 				pstmt.getConnection().close();
 				System.out.println(", done");
 

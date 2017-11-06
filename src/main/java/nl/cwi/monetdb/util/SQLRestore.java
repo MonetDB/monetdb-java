@@ -98,8 +98,8 @@ public class SQLRestore {
 	/**
 	 * Restores a given SQL dump to the database.
 	 *
-	 * @param source
-	 * @throws IOException
+	 * @param source file object
+	 * @throws IOException when IO exception occurred
 	 */
 	public void restore(File source) throws IOException {
 		MapiConnection server = new MapiConnection(null,null, "sql", false, true, _host, _port, _dbName);
