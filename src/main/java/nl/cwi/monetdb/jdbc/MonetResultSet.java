@@ -2830,17 +2830,18 @@ public class MonetResultSet
 			}
 			lastReadWasNull = false;
 			if (cal == null) {
-				if (val.contains("-") && !val.contains(":") && !val.contains("+")) {
-					// try to convert string in JDBC date escape format yyyy-[m]m-[d]d directly to a Date object
+				// try to convert string directly to a Date object
+				// Note: the string must be in JDBC date escape format: yyyy-[m]m-[d]d
+				try {
 					return java.sql.Date.valueOf(val);
+				} catch (IllegalArgumentException iae) {
+					// this happens if string doesn't match the format, such as for years < 1000 (including negative years)
+					// in those cases just continue and use slower getJavaDate(cal, columnIndex, Types.DATE) method
 				}
 				cal = Calendar.getInstance();
 			}
 			int ret = getJavaDate(cal, columnIndex, Types.DATE);
 			return ret == -1 ? null : new java.sql.Date(cal.getTimeInMillis());
-		} catch (IllegalArgumentException iae) {
-			throw new SQLDataException("Could not convert value to a Date. Expected JDBC date escape format yyyy-[m]m-[d]d. "
-				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -2918,17 +2919,18 @@ public class MonetResultSet
 			}
 			lastReadWasNull = false;
 			if (cal == null) {
-				if (!val.contains("-") && val.contains(":") && !val.contains("+")) {
-					// try to convert string in JDBC time escape format hh:mm:ss directly to a Time object
+				// try to convert string directly to a Time object
+				// Note: the string must be in JDBC time escape format: hh:mm:ss
+				try {
 					return Time.valueOf(val);
+				} catch (IllegalArgumentException iae) {
+					// this happens if string doesn't match the format or hh >= 24 or mm >= 60 or ss >= 60
+					// in those cases just continue and use slower getJavaDate(cal, columnIndex, Types.TIME) method
 				}
 				cal = Calendar.getInstance();
 			}
 			int ret = getJavaDate(cal, columnIndex, Types.TIME);
 			return ret == -1 ? null : new Time(cal.getTimeInMillis());
-		} catch (IllegalArgumentException iae) {
-			throw new SQLDataException("Could not convert value to a Time. Expected JDBC time escape format hh:mm:ss. "
-				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -3006,9 +3008,13 @@ public class MonetResultSet
 			}
 			lastReadWasNull = false;
 			if (cal == null) {
-				if (val.contains("-") && val.contains(":") && !val.contains("+")) {
-					// try to convert string in JDBC timestamp escape format yyyy-[m]m-[d]d hh:mm:ss[.f...] directly to a Timestamp object
+				// try to convert the string directly to a Timestamp object
+				// Note: the string must be in JDBC timestamp escape format: yyyy-[m]m-[d]d hh:mm:ss[.f...]
+				try {
 					return Timestamp.valueOf(val);
+				} catch (IllegalArgumentException iae) {
+					// this happens if string doesn't match the format, such as for years < 1000 (including negative years)
+					// in those cases just continue and use slower getJavaDate(cal, columnIndex, Types.TIMESTAMP) method
 				}
 				cal = Calendar.getInstance();
 			}
@@ -3019,9 +3025,6 @@ public class MonetResultSet
 			Timestamp ts = new Timestamp(cal.getTimeInMillis());
 			ts.setNanos(nanos);
 			return ts;
-		} catch (IllegalArgumentException iae) {
-			throw new SQLDataException("Could not convert value to a Timestamp. Expected JDBC time escape format yyyy-[m]m-[d]d hh:mm:ss[.f...]. "
-				+ iae.getMessage(), "22007"); // 22007 = invalid datetime format
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
