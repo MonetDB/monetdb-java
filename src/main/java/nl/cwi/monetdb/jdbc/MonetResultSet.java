@@ -3669,7 +3669,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 *
 	 * @param reason the warning message
 	 */
-	private void addWarning(String reason, String sqlstate) {
+	public void addWarning(String reason, String sqlstate) {
 		SQLWarning warng = new SQLWarning(reason, sqlstate);
 		if (warnings == null) {
 			warnings = warng;
