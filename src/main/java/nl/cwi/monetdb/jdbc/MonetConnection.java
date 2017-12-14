@@ -1645,11 +1645,11 @@ public class MonetConnection
 	 * @return the MonetDB JDBC Connection URL (without user name and password).
 	 * Defined as public because it is called from: MonetDatabaseMetaData.java getURL()
 	 */
-	public String getJDBCURL() {
+	String getJDBCURL() {
 		String language = "";
 		if (lang == LANG_MAL)
 			language = "?language=mal";
-		return "jdbc:monetdb://" + hostname + ":" + port + "/" + database + language;
+		return MonetDriver.MONETURL + hostname + ":" + port + "/" + database + language;
 	}
 
 	/**
@@ -1657,7 +1657,7 @@ public class MonetConnection
 	 * This allows generic JDBC programs to fetch Blob data via getBytes()
 	 * instead of getBlob() and Blob.getBinaryStream() to reduce overhead.
 	 */
-	public boolean mapBlobAsVarBinary() {
+	boolean mapBlobAsVarBinary() {
 		return treatBlobAsVarBinary;
 	}
 
@@ -1666,7 +1666,7 @@ public class MonetConnection
 	 * This allows generic JDBC programs to fetch Clob data via getString()
 	 * instead of getClob() and Clob.getCharacterStream() to reduce overhead.
 	 */
-	public boolean mapClobAsVarChar() {
+	boolean mapClobAsVarChar() {
 		return treatClobAsVarChar;
 	}
 

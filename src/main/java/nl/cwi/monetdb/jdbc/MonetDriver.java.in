@@ -48,7 +48,7 @@ final public class MonetDriver implements Driver {
 	// the url kind will be jdbc:monetdb://<host>[:<port>]/<database>
 	// Chapter 9.2.1 from Sun JDBC 3.0 specification
 	/** The prefix of a MonetDB url */
-	private static final String MONETURL = "jdbc:monetdb://";
+	static final String MONETURL = "jdbc:monetdb://";
 	/** Major version of this driver */
 	private static final int DRIVERMAJOR = @JDBC_MAJOR@;
 	/** Minor version of this driver */
@@ -114,7 +114,10 @@ final public class MonetDriver implements Driver {
 	public Connection connect(String url, Properties info)
 		throws SQLException
 	{
-		int tmp;
+		// url should be of style jdbc:monetdb://<host>/<database>
+		if (!acceptsURL(url))
+			throw new SQLNonTransientConnectionException("Invalid URL: it does not start with: " + MONETURL, "08M26");
+
 		Properties props = new Properties();
 		// set the optional properties and their defaults here
 		props.put("port", PORT);
@@ -122,12 +125,9 @@ final public class MonetDriver implements Driver {
 		props.put("language", "sql");	// mal, sql, <future>
 		props.put("so_timeout", "0");
 
-		props.putAll(info);
+		if (info != null)
+			props.putAll(info);
 		info = props;
-
-		// url should be of style jdbc:monetdb://<host>/<database>
-		if (!acceptsURL(url))
-			throw new SQLNonTransientConnectionException("Invalid URL: it does not start with: " + MONETURL, "08M26");
 
 		// remove leading "jdbc:" so the rest is a valid hierarchical URI
 		URI uri;
@@ -148,24 +148,25 @@ final public class MonetDriver implements Driver {
 
 		// check the database
 		String uri_path = uri.getPath();
-		if (uri_path != null && uri_path.length() != 0) {
-			uri_path = uri_path.substring(1);
-			if (!uri_path.trim().isEmpty())
+		if (uri_path != null && !uri_path.isEmpty()) {
+			uri_path = uri_path.substring(1).trim();
+			if (!uri_path.isEmpty())
 				info.put("database", uri_path);
 		}
 
 		String uri_query = uri.getQuery();
 		if (uri_query != null) {
-			// handle additional arguments
+			int pos;
+			// handle additional connection properties separated by the & character
 			String args[] = uri_query.split("&");
 			for (int i = 0; i < args.length; i++) {
-				tmp = args[i].indexOf('=');
-				if (tmp > 0)
-					info.put(args[i].substring(0, tmp), args[i].substring(tmp + 1));
+				pos = args[i].indexOf('=');
+				if (pos > 0)
+					info.put(args[i].substring(0, pos), args[i].substring(pos + 1));
 			}
 		}
 
-		// finally return the Connection as requested
+		// finally return the Connection object as requested
 		return new MonetConnection(info);
 	}
 
@@ -407,11 +408,11 @@ final public class MonetDriver implements Driver {
 		return DRIVERMAJOR + "." + DRIVERMINOR + " (" + DRIVERVERSIONSUFFIX + ")";
 	}
 
-	public static int getDriverMajorVersion() {
+	static int getDriverMajorVersion() {
 		return DRIVERMAJOR;
 	}
 
-	public static int getDriverMinorVersion() {
+	static int getDriverMinorVersion() {
 		return DRIVERMINOR;
 	}
 }
