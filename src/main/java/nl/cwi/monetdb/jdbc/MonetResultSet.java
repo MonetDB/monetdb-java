@@ -2638,12 +2638,14 @@ public class MonetResultSet
 		if (cal == null)
 			throw new IllegalArgumentException("No Calendar object given!");
 
+		final String monetDateStr;
 		final String monetDate;
 		final String MonetDBType;
 		int JdbcType;
+		boolean negativeYear = false;
 		try {
-			monetDate = tlp.values[columnIndex - 1];
-			if (monetDate == null) {
+			monetDateStr = tlp.values[columnIndex - 1];
+			if (monetDateStr == null) {
 				lastReadWasNull = true;
 				return -1;
 			}
@@ -2658,6 +2660,14 @@ public class MonetResultSet
 			    JdbcType == Types.CLOB)
 			{
 				JdbcType = type;
+			}
+
+			if ((JdbcType == Types.DATE || JdbcType == Types.TIMESTAMP) && monetDateStr.startsWith("-")) {
+				// the SimpleDateFormat parsers do not support to parse negative year numbers, deal with it separately
+				negativeYear = true;
+				monetDate = monetDateStr.substring(1);
+			} else {
+				monetDate = monetDateStr;
 			}
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
@@ -2702,35 +2712,47 @@ public class MonetResultSet
 				}
 				timestampFormat.setTimeZone(ptz);
 				pdate = timestampFormat.parse(monetDate, ppos);
+				// if parsing with timestampFormat failed try to parse it in dateFormat
+				if (pdate == null && monetDate.length() <= 10 && monetDate.contains("-")) {
+					if (dateFormat == null) {
+						// first time usage, create and keep the dateFormat object for next usage
+						dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+					}
+					dateFormat.setTimeZone(ptz);
+					pdate = dateFormat.parse(monetDate, ppos);
+				}
 				break;
 			default:
-				addWarning("unsupported data type", "01M03");
-				cal.clear();
-				return 0;
+				throw new SQLException("Internal error, unsupported data type: " + type, "01M03");
 		}
 		if (pdate == null) {
 			// parsing failed
+			String errMsg;
 			int epos = ppos.getErrorIndex();
 			if (epos == -1) {
-				addWarning("parsing '" + monetDate + "' failed", "01M10");
+				errMsg = "parsing '" + monetDateStr + "' failed";
 			} else if (epos < monetDate.length()) {
-				addWarning("parsing failed," +
-						 " found: '" + monetDate.charAt(epos) + "'" +
-						 " in: \"" + monetDate + "\"" +
-						 " at pos: " + epos, "01M10");
+				errMsg = "parsing failed," +
+					 " found: '" + monetDate.charAt(epos) + "'" +
+					 " in: \"" + monetDateStr + "\"" +
+					 " at pos: " + (epos + (negativeYear ? 2 : 1));
 			} else {
-				addWarning("parsing failed, expected more data after '" +
-						monetDate + "'", "01M10");
+				errMsg = "parsing failed, expected more data after '" +	monetDateStr + "'";
 			}
-			// default value
-			cal.clear();
-			return 0;
+			throw new SQLException(errMsg, "01M10");
 		}
-		cal.setTime(pdate);
 
-		int nanos = 0;
+		cal.setTime(pdate);
+		if (negativeYear) {
+			// System.out.println("Current cal: " + cal.toString());
+			// using cal.set(Calendar.YEAR, -(cal.get(Calendar.YEAR))); does not work. We must set the ERA instead
+			cal.set(Calendar.ERA, java.util.GregorianCalendar.BC);
+			// System.out.println("Corrected cal: " + cal.toString());
+		}
+
 		if (JdbcType == Types.TIME || JdbcType == Types.TIMESTAMP) {
 			// parse additional nanos (if any)
+			int nanos = 0;
 			int pos = ppos.getIndex();
 			char[] monDate = monetDate.toCharArray();
 			if (pos < monDate.length && monDate[pos] == '.') {
@@ -2760,12 +2782,13 @@ public class MonetResultSet
 							" in: \"" + monetDate + "\"" +
 							" at pos: " + e.getErrorOffset(), "01M10");
 					// default value
-					cal.clear();
 					nanos = 0;
 				}
 			}
+			return nanos;
 		}
-		return nanos;
+
+		return 0;
 	}
 
 	/**
