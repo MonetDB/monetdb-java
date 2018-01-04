@@ -7,6 +7,7 @@
  */
 
 import java.sql.*;
+import java.io.StringReader;
 import java.util.*;
 import java.nio.charset.Charset;
 
@@ -26,18 +27,37 @@ public class Test_PSlargebatchval {
 		for (int i = 0; i < 8170;i++) {
 			repeatedErrorStr.append(errorStr);
 		}
+		String largeStr = repeatedErrorStr.toString();
 
 		try {
 			stmt.execute("CREATE TABLE x (c INT, a CLOB, b DOUBLE)");
 			pstmt = con.prepareStatement("INSERT INTO x VALUES (?,?,?)");
-			pstmt.setLong(1, 1);
-			pstmt.setString(2, repeatedErrorStr.toString());
+
+			pstmt.setLong(1, 1L);
+			pstmt.setString(2, largeStr);
 			pstmt.setDouble(3, 1.0);
 			pstmt.addBatch();
 			pstmt.executeBatch();
-			stmt.execute("DROP TABLE x");
+
+			/* test issue reported at https://www.monetdb.org/bugzilla/show_bug.cgi?id=3470 */
+			pstmt.setLong(1, -2L);
+			pstmt.setClob(2, new StringReader(largeStr));
+			pstmt.setDouble(3, -2.0);
+			pstmt.addBatch();
+			pstmt.executeBatch();
+
+			Clob myClob = con.createClob();
+			myClob.setString(1L, largeStr);
+
+			pstmt.setLong(1, 123456789L);
+			pstmt.setClob(2, myClob);
+			pstmt.setDouble(3, 12345678901.98765);
+			pstmt.addBatch();
+			pstmt.executeBatch();
 
 			pstmt.close();
+
+			stmt.execute("DROP TABLE x");
 			stmt.close();
 		} catch (SQLException e) {
 			System.out.println("FAILED :( "+ e.getMessage());
