@@ -23,18 +23,20 @@ Supported connection properties are:
 	debug=true			default is: false
 	logfile=<name of logfile>
 
+Multiple connection properties are separated by the & character.
 For example:
   jdbc:monetdb://localhost:41000/mydb?user=monetdb&password=monetdb&so_timeout=7000&treat_clob_as_varchar=true
 
 See also: https://www.monetdb.org/Documentation/Manuals/SQLreference/Programming/JDBC
 
+Note: as of Jul2015 release (monetdb-jdbc-2.17.jar) we compile all
+ the java sources to target: Java 1.7 so you need a JRE/JDK JVM
+ of version 1.7 or higher to use it.
+
 
 JDBC COMPLIANCE
 The MonetDB JDBC driver complies to JDBC 4.1 definition, see
  http://docs.oracle.com/javase/7/docs/technotes/guides/jdbc/index.html
-
-Note: as of Jul2015 release we compile all the java sources to target: Java 1.7
-so you need a JRE/JDK of version 1.7 or higher to use it.
 
 Within the current implementation not all functionalities of the JDBC
 interface are available.  It is believed, however, that this
@@ -69,6 +71,7 @@ Currently implemented JDBC 4.1 interfaces include:
   * java.sql.Statement
     The next features/methods are NOT implemented:
     - cancel (query execution cannot be terminated, once started)
+      see also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6222
     - execute with column indices or names
     - executeUpdate with column indices or names
     - setMaxFieldSize
@@ -121,6 +124,7 @@ Currently implemented JDBC 4.1 interfaces include:
 The next java.sql.* interfaces are NOT implemented:
   * java.sql.Array
   * java.sql.CallableStatement  (use Statement or PreparedStatement instead)
+     see also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402
   * java.sql.NClob
   * java.sql.Ref
   * java.sql.Rowid
