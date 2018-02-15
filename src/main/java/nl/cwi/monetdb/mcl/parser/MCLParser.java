@@ -26,9 +26,7 @@ package nl.cwi.monetdb.mcl.parser;
 public abstract class MCLParser {
 	/** The String values found while parsing.  Public, you may touch it. */
 	public final String values[];
-	/** The int values found while parsing.  Public, you may touch it. */
-	public final int intValues[];
-	private int colnr;
+	protected int colnr;
 
 	/**
 	 * Creates an MCLParser targetted at a given number of field values.
@@ -39,7 +37,6 @@ public abstract class MCLParser {
 	 */
 	protected MCLParser(int capacity) {
 		values = new String[capacity];
-		intValues = new int[capacity];
 	}
 
 	/**
@@ -51,7 +48,6 @@ public abstract class MCLParser {
 	 * @throws MCLParseException if source cannot be (fully) parsed by
 	 * this parser
 	 * @see #next()
-	 * @see #nextInt()
 	 * @see #hasNext()
 	 */
 	abstract public int parse(String source) throws MCLParseException;
@@ -70,7 +66,6 @@ public abstract class MCLParser {
 	 * @return true if the next call to next() or nextInt() is bound to
 	 * succeed
 	 * @see #next()
-	 * @see #nextInt()
 	 */
 	final public boolean hasNext() {
 		return colnr < values.length;
@@ -83,23 +78,9 @@ public abstract class MCLParser {
 	 * determine if the call to next() will succeed.
 	 *
 	 * @return the current field value
-	 * @see #nextInt()
 	 * @see #hasNext()
 	 */
 	final public String next() {
 		return values[colnr++];
-	}
-
-	/**
-	 * Returns the current field value as integer, and advances the
-	 * field counter to the next value.  This method has the same
-	 * characteristics as the next() method, apart from returning the
-	 * field value as an integer.
-	 *
-	 * @return the current field value as integer
-	 * @see #next()
-	 */
-	final public int nextInt() {
-		return intValues[colnr++];
 	}
 }

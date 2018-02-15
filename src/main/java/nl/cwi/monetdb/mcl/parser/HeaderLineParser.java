@@ -17,12 +17,14 @@ package nl.cwi.monetdb.mcl.parser;
  * @author Fabian Groffen
  */
 public class HeaderLineParser extends MCLParser {
-	private int type;
-
-	public final static int NAME   = 1;
+	/* types of meta data supported by MCL protocol */
+	public final static int NAME   = 1;	// name of column
 	public final static int LENGTH = 2;
-	public final static int TABLE  = 3;
+	public final static int TABLE  = 3;	// may include the schema name
 	public final static int TYPE   = 4;
+
+	 /** The int values found while parsing.  Public, you may touch it. */
+	public final int intValues[];
 
 	/**
 	 * Constructs a HeaderLineParser which expects columncount columns.
@@ -31,6 +33,7 @@ public class HeaderLineParser extends MCLParser {
 	 */
 	public HeaderLineParser(int columncount) {
 		super(columncount);
+		intValues = new int[columncount];
 	}
 
 	/**
@@ -53,6 +56,7 @@ public class HeaderLineParser extends MCLParser {
 		int pos = 0;
 		boolean foundChar = false;
 		boolean nameFound = false;
+
 		// find header name searching from the end of the line
 		for (int i = len - 1; i >= 0; i--) {
 			switch (chrLine[i]) {
@@ -83,6 +87,7 @@ public class HeaderLineParser extends MCLParser {
 			throw new MCLParseException("invalid header, no header name found", pos);
 
 		// depending on the name of the header, we continue
+		int type = 0;
 		switch (chrLine[pos]) {
 			case 'n':
 				if (len - pos == 4 && source.regionMatches(pos + 1, "name", 1, 3)) {
