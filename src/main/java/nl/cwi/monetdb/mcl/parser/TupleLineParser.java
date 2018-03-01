@@ -38,13 +38,10 @@ public class TupleLineParser extends MCLParser {
 	 */
 	@Override
 	public int parse(String source) throws MCLParseException {
-		int len = source.length();
-		char[] chrLine = new char[len];
-		source.getChars(0, len, chrLine, 0);
-
+		final int len = source.length();
 		// first detect whether this is a single value line (=) or a
 		// real tuple ([)
-		if (chrLine[0] == '=') {
+		if (len >= 1 && source.charAt(0) == '=') {
 			if (values.length != 1)
 				throw new MCLParseException(values.length +
 						" columns expected, but only single value found");
@@ -54,21 +51,22 @@ public class TupleLineParser extends MCLParser {
 
 			// reset colnr
 			reset();
-
 			return 0;
 		}
 
-		// extract separate fields by examining string, char for char
-		boolean inString = false, escaped = false;
-		int cursor = 2, column = 0;
-		StringBuilder uesc = new StringBuilder();
+		if (!source.startsWith("["))
+			throw new MCLParseException("Expected a data row starting with [");
+
+		// It is a tuple. Extract separate fields by examining the string data char for char
+		final char[] chrLine = source.toCharArray();	// convert whole string to char[] to avoid overhead of source.charAt(i) calls TODO: measure the overhead
+		boolean inString = false, escaped = false, fieldHasEscape = false;
+		final StringBuilder uesc = new StringBuilder(128);	// used for building field string value when an escape is present in the field value
+		int column = 0, cursor = 2;
 		for (int i = 2; i < len; i++) {
 			switch(chrLine[i]) {
-				default:
-					escaped = false;
-					break;
 				case '\\':
 					escaped = !escaped;
+					fieldHasEscape = true;
 					break;
 				case '"':
 					/**
@@ -89,98 +87,125 @@ public class TupleLineParser extends MCLParser {
 					} else if (!escaped) {
 						inString = false;
 					}
-
 					// reset escaped flag
 					escaped = false;
 					break;
-				case '\t':
+				case '\t':		// potential field separator found
 					if (!inString &&
-						(i > 0 && chrLine[i - 1] == ',') ||
-						(i + 1 == len - 1 && chrLine[++i] == ']')) // dirty
+						((chrLine[i - 1] == ',') ||		// found field separator: ,\t
+						 ((i + 1 == len - 1) && chrLine[++i] == ']'))) // found last field: \t]
 					{
-						// split!
+						// extract the field value as a string, without the potential escape codes
+						final int endpos = i - 2;	// minus the tab and the comma or ]
 						if (chrLine[cursor] == '"' &&
-							chrLine[i - 2] == '"')
+						    chrLine[endpos] == '"')	// field is surrounded by double quotes, so a string with possible escape codes
 						{
-							// reuse the StringBuilder by cleaning it
-							uesc.delete(0, uesc.length());
-							// prevent capacity increasements
-							uesc.ensureCapacity((i - 2) - (cursor + 1));
-							for (int pos = cursor + 1; pos < i - 2; pos++) {
-								if (chrLine[pos] == '\\' && pos + 1 < i - 2) {
-									pos++;
-									// escapedStr and GDKstrFromStr in gdk_atoms.c only
-									// support \\ \f \n \r \t \" and \377
-									switch (chrLine[pos]) {
-										case '\\':
-											uesc.append('\\');
-											break;
-										case 'f':
-											uesc.append('\f');
-											break;
-										case 'n':
-											uesc.append('\n');
-											break;
-										case 'r':
-											uesc.append('\r');
-											break;
-										case 't':
-											uesc.append('\t');
-											break;
-										case '"':
-											uesc.append('"');
-											break;
-										case '0': case '1': case '2': case '3':
-											// this could be an octal number, let's check it out
-											if (pos + 2 < i - 2 &&
-												chrLine[pos + 1] >= '0' && chrLine[pos + 1] <= '7' &&
-												chrLine[pos + 2] >= '0' && chrLine[pos + 2] <= '7'
-											) {
-												// we got an octal number
-												try {
-													uesc.append((char)(Integer.parseInt("" + chrLine[pos] + chrLine[pos + 1] + chrLine[pos + 2], 8)));
-													pos += 2;
-												} catch (NumberFormatException e) {
-													// hmmm, this point should never be reached actually...
-													throw new AssertionError("Flow error, should never try to parse non-number");
+							if (fieldHasEscape) {
+								// reuse the StringBuilder by cleaning it
+								uesc.delete(0, uesc.length());
+								// prevent capacity increasements
+								uesc.ensureCapacity(endpos - (cursor + 1));
+								// parse the field value (excluding the double quotes) and convert it to a string without any escape characters
+								for (int pos = cursor + 1; pos < endpos; pos++) {
+									char chr = chrLine[pos];
+									if (chr == '\\' && pos + 1 < endpos) {
+										// we detected an escape
+										// escapedStr and GDKstrFromStr in gdk_atoms.c only
+										// support \\ \f \n \r \t \" and \377
+										pos++;
+										chr = chrLine[pos];
+										switch (chr) {
+											case '\\':
+												uesc.append('\\');
+												break;
+											case 'f':
+												uesc.append('\f');
+												break;
+											case 'n':
+												uesc.append('\n');
+												break;
+											case 'r':
+												uesc.append('\r');
+												break;
+											case 't':
+												uesc.append('\t');
+												break;
+											case '"':
+												uesc.append('"');
+												break;
+											case '0': case '1': case '2': case '3':
+												// this could be an octal number, let's check it out
+												if (pos + 2 < endpos) {
+													char chr2 = chrLine[pos + 1];
+													char chr3 = chrLine[pos + 2];
+													if (chr2 >= '0' && chr2 <= '7' && chr3 >= '0' && chr3 <= '7') {
+														// we got an octal number between \000 and \377
+														try {
+															uesc.append((char)(Integer.parseInt("" + chr + chr2 + chr3, 8)));
+															pos += 2;
+														} catch (NumberFormatException e) {
+															// hmmm, this point should never be reached actually...
+															throw new AssertionError("Flow error, should never try to parse non-number");
+														}
+													} else {
+														// do default action if number seems not to be an octal number
+														uesc.append(chr);
+													}
+												} else {
+													// do default action if number seems not to be an octal number
+													uesc.append(chr);
 												}
-											} else {
-												// do default action if number seems not to be correct
-												uesc.append(chrLine[pos]);
-											}
-											break;
-										default:
-											// this is wrong usage of escape, just ignore the \-escape and print the char
-											uesc.append(chrLine[pos]);
-											break;
+												break;
+											default:
+												// this is wrong usage of escape, just ignore the \-escape and print the char
+												uesc.append(chr);
+												break;
+										}
+									} else {
+										uesc.append(chr);
 									}
-								} else {
-									uesc.append(chrLine[pos]);
 								}
+								// put the unescaped string in the right place
+								values[column] = uesc.toString();
+							} else {
+								// the field is a string surrounded by double quotes and without escape chars
+								cursor++;
+								String fieldVal = new String(chrLine, cursor, endpos - cursor);
+								// if (fieldVal.contains("\\")) {
+								//	throw new MCLParseException("Invalid parsing: detected a \\ in double quoted string: " + fieldVal);
+								// }
+								values[column] = fieldVal;
 							}
-
-							// put the unescaped string in the right place
-							values[column++] = uesc.toString();
-						} else if ((i - 1) - cursor == 4 && source.indexOf("NULL", cursor) == cursor) {
-							values[column++] = null;
+						} else if (((i - 1 - cursor) == 4) && source.indexOf("NULL", cursor) == cursor) {
+							// the field contains NULL, so no value
+							values[column] = null;
 						} else {
-							values[column++] = source.substring(cursor, i - 1);
+							// the field is a string NOT surrounded by double quotes and thus without escape chars
+							String fieldVal = new String(chrLine, cursor, i - 1 - cursor);
+							// if (fieldVal.contains("\\")) {
+							//	throw new MCLParseException("Invalid parsing: detected a \\ in unquoted string: " + fieldVal);
+							// }
+							values[column] = fieldVal;
 						}
 						cursor = i + 1;
+						fieldHasEscape = false;		// reset for next field scan
+						column++;
 					}
-
 					// reset escaped flag
 					escaped = false;
 					break;
-			}
-		}
+				default:
+					escaped = false;
+					break;
+			} // end of switch()
+		} // end of for()
+
 		// check if this result is of the size we expected it to be
 		if (column != values.length)
 			throw new MCLParseException("illegal result length: " + column + "\nlast read: " + (column > 0 ? values[column - 1] : "<none>"));
 
 		// reset colnr
 		reset();
-
 		return 0;
 	}
 }
