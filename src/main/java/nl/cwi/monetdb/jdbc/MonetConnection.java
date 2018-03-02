@@ -200,11 +200,24 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	/**
 	 * Sends a control command to the server.
 	 *
-	 * @param commandID the command identifier according to {@link ControlCommands} listing
+	 * @param commandID The command identifier according to {@link ControlCommands} listing
 	 * @param data The integer to send according to the control command
 	 * @throws SQLException if an IO exception or a database error occurs
 	 */
 	public abstract void sendControlCommand(int commandID, int data) throws SQLException;
+
+	/**
+	 * Execute a batch of SQL query statements.
+	 *
+	 * @param statement The original MonetStatement where the batch comes from
+	 * @param batch The list of queries to execute
+	 * @param counts The return of the update statement of each input query
+	 * @param e An exception to be thrown if an error occurs
+	 * @return If all queries in the batch executed successfully or not
+	 * @throws SQLException if an IO exception or a database error occurs
+	 */
+	protected abstract boolean executeNextQueryBatch(MonetStatement statement, List<String> batch, int[] counts,
+													 BatchUpdateException e) throws SQLException;
 
 	/**
 	 * Releases this Connection object's database and JDBC resources immediately instead of waiting for them to be

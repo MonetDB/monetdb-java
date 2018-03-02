@@ -9,6 +9,7 @@
 package nl.cwi.monetdb.mcl.connection.mapi;
 
 import nl.cwi.monetdb.jdbc.MonetConnection;
+import nl.cwi.monetdb.jdbc.MonetStatement;
 import nl.cwi.monetdb.mcl.connection.ControlCommands;
 import nl.cwi.monetdb.mcl.connection.MCLException;
 import nl.cwi.monetdb.mcl.connection.helpers.ChannelSecurity;
@@ -22,6 +23,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteOrder;
+import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLNonTransientConnectionException;
@@ -249,6 +251,55 @@ public class MapiConnection extends MonetConnection {
 		} catch (IOException e) {
 			throw new SQLNonTransientConnectionException(e.getMessage(), "08000");
 		}
+	}
+
+	/**
+	 * Execute a batch query in a MAPI connection.
+	 *
+	 * @param statement The original MonetStatement where the batch comes from
+	 * @param batch The list of queries to execute
+	 * @param counts The return of the update statement of each input query
+	 * @param e An exception to be thrown if an error occurs
+	 * @return If all queries in the batch executed successfully or not
+	 * @throws SQLException if an IO exception or a database error occurs
+	 */
+	@Override
+	protected boolean executeNextQueryBatch(MonetStatement statement, List<String> batch, int[] counts, BatchUpdateException e) throws SQLException {
+		int offset = 0;
+		boolean first = true, error = false;
+		int builderSize = this.initialStringBuilderSize();
+		StringBuilder tmpBatch = new StringBuilder(builderSize);
+		String sep = this.getLanguage().getQueryTemplateIndex(2);
+		for (int i = 0; i < batch.size(); i++) {
+			String tmp = batch.get(i);
+			if (sep.length() + tmp.length() > builderSize) {
+				// The thing is too big. Way too big. Since it won't be optimal anyway, just add it to whatever we
+				// have and continue.
+				if (!first) {
+					tmpBatch.append(sep);
+				}
+				tmpBatch.append(tmp);
+				// send and receive
+				error |= statement.internalBatch(tmpBatch.toString(), counts, offset, i + 1, e);
+				offset = i;
+				tmpBatch.delete(0, tmpBatch.length());
+				first = true;
+				continue;
+			}
+			if (tmpBatch.length() + sep.length() + tmp.length() >= builderSize) {
+				// send and receive
+				error |= statement.internalBatch(tmpBatch.toString(), counts, offset, i + 1, e);
+				offset = i;
+				tmpBatch.delete(0, tmpBatch.length());
+				first = true;
+			}
+			if (!first) tmpBatch.append(sep);
+			first = false;
+			tmpBatch.append(tmp);
+		}
+		// send and receive
+		error |= statement.internalBatch(tmpBatch.toString(), counts, offset, counts.length, e);
+		return error;
 	}
 
 	/**

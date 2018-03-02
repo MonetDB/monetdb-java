@@ -186,43 +186,9 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 				return new int[0];
 
 			int[] counts = new int[batch.size()];
-			int offset = 0;
-			boolean first = true;
-			boolean error = false;
-
 			BatchUpdateException e = new BatchUpdateException("Error(s) occurred while executing the batch, see next SQLExceptions for details", "22000", counts);
-			int builderSize = connection.initialStringBuilderSize();
-			StringBuilder tmpBatch = new StringBuilder(builderSize);
-			String sep = connection.getLanguage().getQueryTemplateIndex(2);
-			for (int i = 0; i < batch.size(); i++) {
-				String tmp = batch.get(i);
-				if (sep.length() + tmp.length() > builderSize) {
-					// The thing is too big. Way too big. Since it won't be optimal anyway, just add it to whatever we
-					// have and continue.
-					if (!first) {
-						tmpBatch.append(sep);
-					}
-					tmpBatch.append(tmp);
-					// send and receive
-					error |= internalBatch(tmpBatch.toString(), counts, offset, i + 1, e);
-					offset = i;
-					tmpBatch.delete(0, tmpBatch.length());
-					first = true;
-					continue;
-				}
-				if (tmpBatch.length() + sep.length() + tmp.length() >= builderSize) {
-					// send and receive
-					error |= internalBatch(tmpBatch.toString(), counts, offset, i + 1, e);
-					offset = i;
-					tmpBatch.delete(0, tmpBatch.length());
-					first = true;
-				}
-				if (!first) tmpBatch.append(sep);
-				first = false;
-				tmpBatch.append(tmp);
-			}
-			// send and receive
-			error |= internalBatch(tmpBatch.toString(), counts, offset, counts.length, e);
+			MonetConnection con = (MonetConnection) this.getConnection();
+			boolean error = con.executeNextQueryBatch(this, this.batch, counts, e);
 
 			// throw BatchUpdateException if it contains something
 			if (error)
@@ -234,7 +200,18 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 		}
 	}
 
-	private boolean internalBatch(String batch, int[] counts, int offset, int max, BatchUpdateException e)
+	/**
+	 * Please don't use this method!! It is just for internal use only!!!
+	 *
+	 * @param batch The next batch to execute
+	 * @param counts The array of results of each batch
+	 * @param offset The offset in the array of results
+	 * @param max The max capacity in the array of results
+	 * @param e An exception to be thrown if an error occurs
+	 * @return If all queries in the batch executed successfully or not
+	 * @throws BatchUpdateException if an IO exception or a database error occurs
+	 */
+	public boolean internalBatch(String batch, int[] counts, int offset, int max, BatchUpdateException e)
 			throws BatchUpdateException {
 		try {
 			boolean type = internalExecute(batch);
