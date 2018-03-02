@@ -264,7 +264,8 @@ public class MapiConnection extends MonetConnection {
 	 * @throws SQLException if an IO exception or a database error occurs
 	 */
 	@Override
-	protected boolean executeNextQueryBatch(MonetStatement statement, List<String> batch, int[] counts, BatchUpdateException e) throws SQLException {
+	protected boolean executeNextQueryBatch(MonetStatement statement, List<String> batch, int[] counts,
+											BatchUpdateException e) throws SQLException {
 		int offset = 0;
 		boolean first = true, error = false;
 		int builderSize = this.initialStringBuilderSize();
