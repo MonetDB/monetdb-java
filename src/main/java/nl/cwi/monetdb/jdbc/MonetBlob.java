@@ -16,16 +16,18 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 
 /**
- * The MonetBlob class implements the {@link java.sql.Blob} interface.  Because
- * MonetDB/SQL currently has no support for streams, this class is a
+ * The MonetBlob class implements the {@link java.sql.Blob} interface.
+ *
+ * Because MonetDB/SQL currently has no support for streams, this class is a
  * shallow wrapper of a byte[].  It is more or less supplied to
  * enable an application that depends on it to run.  It may be obvious
  * that it is a real resource expensive workaround that contradicts the
  * benefits for a Blob: avoidance of huge resource consumption.
+ * <b>Use of this class is highly discouraged.</b>
  *
  * @author Fabian Groffen
  */
-public class MonetBlob implements Blob {
+public final class MonetBlob implements Blob {
 	private byte[] buf;
 
 	protected MonetBlob(byte[] data) {
@@ -45,7 +47,7 @@ public class MonetBlob implements Blob {
 	}
 
 	/* internal utility method */
-	private void checkBufIsNotNull() throws SQLException {
+	final private void checkBufIsNotNull() throws SQLException {
 		if (buf == null)
 			throw new SQLException("This MonetBlob has been freed", "M1M20");
 	}
@@ -63,8 +65,6 @@ public class MonetBlob implements Blob {
 	 *
 	 * @throws SQLException if an error occurs releasing the Blob's
 	 *         resources
-	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public void free() throws SQLException {
@@ -77,8 +77,6 @@ public class MonetBlob implements Blob {
 	 *
 	 * @return a stream containing the BLOB data
 	 * @throws SQLException if there is an error accessing the BLOB value
-	 * @throws SQLFeatureNotSupportedException if the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public InputStream getBinaryStream() throws SQLException {
@@ -100,21 +98,20 @@ public class MonetBlob implements Blob {
 	 * @throws SQLException if pos is less than 1 or if pos is
 	 *         greater than the number of bytes in the Blob or if pos +
 	 *         length is greater than the number of bytes in the Blob
-	 * @throws SQLFeatureNotSupportedException if the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public InputStream getBinaryStream(long pos, long length)
 		throws SQLException
 	{
 		checkBufIsNotNull();
-		if (pos < 1)
-			throw new SQLException("pos is less than 1", "M1M05");
-		if (pos - 1 > buf.length)
-			throw new SQLException("pos is greater than the number of bytes in the Blob", "M1M05");
-		if (pos - 1 + length > buf.length)
-			throw new SQLException("pos + length is greater than the number of bytes in the Blob", "M1M05");
-		return new ByteArrayInputStream(buf, (int)(pos - 1), (int)length);
+		if (pos < 1 || pos > buf.length) {
+			throw new SQLException("Invalid pos value: " + pos, "M1M05");
+		}
+		if (length < 0 || pos - 1 + length > buf.length) {
+			throw new SQLException("Invalid length value: " + length, "M1M05");
+		}
+
+		return new ByteArrayInputStream(buf, (int) pos - 1, (int) length);
 	}
 
 	/**
@@ -134,6 +131,13 @@ public class MonetBlob implements Blob {
 	@Override
 	public byte[] getBytes(long pos, int length) throws SQLException {
 		checkBufIsNotNull();
+		if (pos < 1 || pos > buf.length) {
+			throw new SQLException("Invalid pos value: " + pos, "M1M05");
+		}
+		if (length < 0 || pos - 1 + length > buf.length) {
+			throw new SQLException("Invalid length value: " + length, "M1M05");
+		}
+
 		try {
 			return java.util.Arrays.copyOfRange(buf, (int) pos - 1, (int) pos - 1 + length);
 		} catch (IndexOutOfBoundsException e) {
@@ -170,6 +174,9 @@ public class MonetBlob implements Blob {
 	 */
 	@Override
 	public long position(Blob pattern, long start) throws SQLException {
+		if (pattern == null) {
+			throw new SQLException("Missing pattern object", "M1M05");
+		}
 		return position(pattern.getBytes(1L, (int)pattern.length()), start);
 	}
 
@@ -188,14 +195,22 @@ public class MonetBlob implements Blob {
 	@Override
 	public long position(byte[] pattern, long start) throws SQLException {
 		checkBufIsNotNull();
+		if (pattern == null) {
+			throw new SQLException("Missing pattern object", "M1M05");
+		}
+		if (start < 1 || start > buf.length) {
+			throw new SQLException("Invalid start value: " + start, "M1M05");
+		}
 		try {
-			for (int i = (int)(start - 1); i < buf.length - pattern.length; i++) {
+			final int patternLength = pattern.length;
+			final int bufLength = buf.length;
+			for (int i = (int)(start - 1); i < bufLength - patternLength; i++) {
 				int j;
-				for (j = 0; j < pattern.length; j++) {
+				for (j = 0; j < patternLength; j++) {
 					if (buf[i + j] != pattern[j])
 						break;
 				}
-				if (j == pattern.length)
+				if (j == patternLength)
 					return i;
 			}
 		} catch (IndexOutOfBoundsException e) {
@@ -238,10 +253,13 @@ public class MonetBlob implements Blob {
 	 *        that this Blob object represents
 	 * @return the number of bytes written
 	 * @throws SQLException if there is an error accessing the
-	 *         BLOB value
+	 *         BLOB value or if pos is less than 1
 	 */
 	@Override
 	public int setBytes(long pos, byte[] bytes) throws SQLException {
+		if (bytes == null) {
+			throw new SQLException("Missing bytes[] object", "M1M05");
+		}
 		return setBytes(pos, bytes, 1, bytes.length);
 	}
 
@@ -261,13 +279,26 @@ public class MonetBlob implements Blob {
 	 *        from the array of bytes bytes
 	 * @return the number of bytes written
 	 * @throws SQLException if there is an error accessing the
-	 *         BLOB value
+	 *         BLOB value or if pos is less than 1
 	 */
 	@Override
 	public int setBytes(long pos, byte[] bytes, int offset, int len)
 		throws SQLException
 	{
 		checkBufIsNotNull();
+		if (bytes == null) {
+			throw new SQLException("Missing bytes[] object", "M1M05");
+		}
+		if (pos < 1 || pos > Integer.MAX_VALUE) {
+			throw new SQLException("Invalid pos value: " + pos, "M1M05");
+		}
+		if (len < 0 || pos + len > buf.length) {
+			throw new SQLException("Invalid len value: " + len, "M1M05");
+		}
+		if (offset < 0 || offset > bytes.length) {
+			throw new SQLException("Invalid offset value: " + offset, "M1M05");
+		}
+
 		try {
 			/* transactions? what are you talking about? */
 			for (int i = (int)pos; i < len; i++)
@@ -290,6 +321,9 @@ public class MonetBlob implements Blob {
 	@Override
 	public void truncate(long len) throws SQLException {
 		checkBufIsNotNull();
+		if (len < 0 || len > buf.length) {
+			throw new SQLException("Invalid len value: " + len, "M1M05");
+		}
 		if (buf.length > len) {
 			byte[] newbuf = new byte[(int)len];
 			for (int i = 0; i < len; i++)
