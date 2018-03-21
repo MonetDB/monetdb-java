@@ -1163,7 +1163,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 */
 	@Override
 	public boolean isValid(int timeout) throws SQLException {
-		if (timeout < 0)
+		if (!isEmbedded && timeout < 0)
 			throw new SQLException("timeout is less than 0", "M1M05");
 		if (closed)
 			return false;
@@ -1175,16 +1175,19 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		try {
 			stmt = createStatement();
 			if (stmt != null) {
-				int original_timeout = stmt.getQueryTimeout();
-				if (timeout > 0 && original_timeout != timeout) {
-					// we need to change the requested timeout for this test query
-					stmt.setQueryTimeout(timeout);
+				int original_timeout = 0;
+				if(!isEmbedded) {
+					original_timeout = stmt.getQueryTimeout();
+					if (timeout > 0 && original_timeout != timeout) {
+						// we need to change the requested timeout for this test query
+						stmt.setQueryTimeout(timeout);
+					}
 				}
 				rs = stmt.executeQuery("SELECT 1");
 				if (rs != null && rs.next()) {
 					isValid = true;
 				}
-				if (timeout > 0 && original_timeout != timeout) {
+				if (!isEmbedded && timeout > 0 && original_timeout != timeout) {
 					// restore the original server timeout value
 					stmt.setQueryTimeout(original_timeout);
 				}
