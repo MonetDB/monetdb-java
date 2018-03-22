@@ -180,6 +180,16 @@ public final class MonetDriver implements Driver {
 		prop.description = "What language to use for MonetDB conversations (experts only)";
 		props.add(prop);
 
+		prop = new DriverPropertyInfo("silentFlag", "true");
+		prop.required = false;
+		prop.description = "Don't produce output from the server (i.e. debug) (Embedded connection only)";
+		props.add(prop);
+
+		prop = new DriverPropertyInfo("sequentialFlag", "false");
+		prop.required = false;
+		prop.description = "Use sequential pipeline instead of default pipeline (Embedded connection only)";
+		props.add(prop);
+
 		DriverPropertyInfo[] dpi = new DriverPropertyInfo[props.size()];
 		return props.toArray(dpi);
 	}
@@ -428,6 +438,9 @@ public final class MonetDriver implements Driver {
 		if(isEmbedded) { //instantiate the connection
 			try {
 				String directory = props.getProperty("directory");
+				Boolean silentFlag = props.getProperty("silentFlag", "true").equals("true");
+				Boolean sequentialFlag = props.getProperty("sequentialFlag", "false").equals("true");
+
 				if (directory != null && (directory.trim().isEmpty() || directory.equals(":memory:")))
 					directory = null;
 				if(embeddedConnectionClass == null) {
@@ -437,8 +450,8 @@ public final class MonetDriver implements Driver {
 					}
 				}
 				res = (MonetConnection) embeddedConnectionClass
-					.getDeclaredConstructor(Properties.class, String.class, String.class, String.class)
-					.newInstance(props, hash, language, directory);
+					.getDeclaredConstructor(Properties.class, String.class, String.class, String.class, Boolean.class, Boolean.class)
+					.newInstance(props, hash, language, directory, silentFlag, sequentialFlag);
 			} catch (InvocationTargetException | InstantiationException | IllegalAccessException |
 					 NoSuchMethodException | ClassNotFoundException e) {
 				throw new SQLNonTransientConnectionException(e);

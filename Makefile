@@ -10,4 +10,4 @@ doc:
 
 clean:
 	rm -f src/main/java/nl/cwi/monetdb/jdbc/MonetDriver.java
-	rm -rf build tests/build jars doc
+	rm -rf build tests/build jars doc target

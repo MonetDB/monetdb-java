@@ -1318,7 +1318,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		    name.equals("treat_blob_as_binary") ||
 		    name.equals("treat_clob_as_varchar") ||
 		    name.equals("embedded") ||
-		    name.equals("directory"))
+		    name.equals("directory") ||
+		    name.equals("silentFlag") ||
+		    name.equals("sequentialFlag"))
 		{
 			conn_props.setProperty(name, value);
 		} else {
