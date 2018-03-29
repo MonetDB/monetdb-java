@@ -2144,9 +2144,9 @@ public class MonetConnection
 			int blockLine = (row - blockOffset) % cacheSize;
 
 			// do we have the right block loaded? (optimistic try)
-			DataBlockResponse rawr;
-			// load block if appropriate
-			if ((rawr = resultBlocks[block]) == null) {
+			DataBlockResponse rawr = resultBlocks[block];
+			if (rawr == null) {
+				// load block
 				/// TODO: ponder about a maximum number of blocks to keep
 				///       in memory when dealing with random access to
 				///       reduce memory blow-up
