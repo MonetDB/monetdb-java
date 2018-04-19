@@ -3909,6 +3909,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			.append(" WHEN 3 THEN ").append(DatabaseMetaData.functionNoTable)
 			.append(" WHEN 4 THEN ").append(DatabaseMetaData.functionNoTable)
 			.append(" WHEN 5 THEN ").append(DatabaseMetaData.functionReturnsTable)
+			.append(" WHEN 6 THEN ").append(DatabaseMetaData.functionNoTable)
+			.append(" WHEN 7 THEN ").append(DatabaseMetaData.functionNoTable)
 			.append(" ELSE ").append(DatabaseMetaData.functionResultUnknown).append(" END AS \"FUNCTION_TYPE\", " +
 			// only the id value uniquely identifies a function. Include it to be able to differentiate between multiple overloaded functions with the same name
 			"cast(\"functions\".\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +

@@ -2,6 +2,11 @@
 # This file is updated with Maddlog
 
 * Thu Apr 19 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected method DatabaseMetaData.getFunctions() for result column
+  FUNCTION_TYPE.  It used to return DatabaseMetaData.functionResultUnknown
+  value for when the internal function type was 6 (Analytic function) or 7
+  (Loader function).  It now returns DatabaseMetaData.functionNoTable value
+  for those functions.
 - DatabaseMetaData methods getTables(), getColumns(), getProcedures() and
   getFunctions() now return the comment in the REMARKS result column when a
   comment has been set for the table / view / column / procedure / function
