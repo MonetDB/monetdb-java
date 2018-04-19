@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Apr 19 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- DatabaseMetaData methods getTables(), getColumns(), getProcedures() and
+  getFunctions() now return the comment in the REMARKS result column when a
+  comment has been set for the table / view / column / procedure / function
+  via the SQL command COMMENT ON <db-object> IS 'comment-text'.
+
 * Mon Oct 23 2017 Sjoerd Mullender <sjoerd@acm.org>
 - Compiled and released new jars: monetdb-jdbc-2.27.jar, monetdb-mcl-1.16.jar
   and updated jdbcclient.jar

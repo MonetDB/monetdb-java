@@ -23,7 +23,7 @@ import java.util.ArrayList;
  * A DatabaseMetaData object suitable for the MonetDB database.
  *
  * @author Fabian Groffen, Martin van Dinther
- * @version 0.6
+ * @version 0.7
  */
 public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaData {
 	private Connection con;
@@ -1705,21 +1705,25 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		String procedureNamePattern
 	) throws SQLException
 	{
+		boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
 		StringBuilder query = new StringBuilder(980);
 		query.append("SELECT cast(null as varchar(1)) AS \"PROCEDURE_CAT\", " +
 			"\"schemas\".\"name\" AS \"PROCEDURE_SCHEM\", " +
 			"\"functions\".\"name\" AS \"PROCEDURE_NAME\", " +
 			"cast(null as char(1)) AS \"Field4\", " +
 			"cast(null as char(1)) AS \"Field5\", " +
-			"cast(null as char(1)) AS \"Field6\", " +
-			"cast(\"functions\".\"func\" as varchar(9999)) AS \"REMARKS\", " +
+			"cast(null as char(1)) AS \"Field6\", ")
+			.append(useCommentsTable ? "COALESCE(\"comments\".\"remark\", cast(\"functions\".\"func\" as varchar(9999)))" : "cast(\"functions\".\"func\" as varchar(9999))").append(" AS \"REMARKS\", " +
 			// in MonetDB procedures have no return value by design.
 			"CAST(").append(DatabaseMetaData.procedureNoResult).append(" AS smallint) AS \"PROCEDURE_TYPE\", " +
 			// only the id value uniquely identifies a procedure. Include it to be able to differentiate between multiple overloaded procedures with the same name
 			"cast(\"functions\".\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
-		"FROM \"sys\".\"functions\" JOIN \"sys\".\"schemas\" ON (\"functions\".\"schema_id\" = \"schemas\".\"id\") " +
+		"FROM \"sys\".\"functions\" JOIN \"sys\".\"schemas\" ON (\"functions\".\"schema_id\" = \"schemas\".\"id\") ");
+		if (useCommentsTable) {
+			query.append("LEFT OUTER JOIN \"sys\".\"comments\" ON (\"functions\".\"id\" = \"comments\".\"id\") ");
+		}
 		// include procedures only (type = 2). Others will be returned via getFunctions()
-		"WHERE \"functions\".\"type\" = 2");
+		query.append("WHERE \"functions\".\"type\" = 2");
 
 		if (catalog != null && catalog.length() > 0) {
 			// none empty catalog selection.
@@ -1732,7 +1736,6 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		if (procedureNamePattern != null) {
 			query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(procedureNamePattern));
 		}
-
 		query.append(" ORDER BY \"PROCEDURE_SCHEM\", \"PROCEDURE_NAME\", \"SPECIFIC_NAME\"");
 
 		return executeMetaDataQuery(query.toString());
@@ -1837,11 +1840,11 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"CAST('' as varchar(3)) AS \"IS_NULLABLE\", " +
 			// the specific name contains the function id, in order to be able to match the args to the correct overloaded procedure name
 			"cast(\"functions\".\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
-		"FROM \"sys\".\"args\", \"sys\".\"functions\", \"sys\".\"schemas\" " +
-		"WHERE \"args\".\"func_id\" = \"functions\".\"id\" " +
-		"AND \"functions\".\"schema_id\" = \"schemas\".\"id\" " +
+		"FROM \"sys\".\"args\" " +
+		"JOIN \"sys\".\"functions\" ON (\"args\".\"func_id\" = \"functions\".\"id\") " +
+		"JOIN \"sys\".\"schemas\" ON (\"functions\".\"schema_id\" = \"schemas\".\"id\") " +
 		// include procedures only (type = 2). Others will be returned via getFunctionColumns()
-		"AND \"functions\".\"type\" = 2");
+		"WHERE \"functions\".\"type\" = 2");
 
 		if (catalog != null && catalog.length() > 0) {
 			// none empty catalog selection.
@@ -1950,6 +1953,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		boolean preJul2015 = ("11.19.15".compareTo(getDatabaseProductVersion()) >= 0);
 		/* for debug: System.out.println("getDatabaseProductVersion() is " + getDatabaseProductVersion() + "  preJul2015 is " + preJul2015); */
 
+		boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
 		StringBuilder query = new StringBuilder(1600);
 		if (preJul2015 && types != null && types.length > 0) {
 			// we need to filter on the constructed "TABLE_TYPE" expression, this is only possible when we use a subquery in the FROM
@@ -1972,13 +1976,17 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		} else {
 			query.append("\"table_types\".\"table_type_name\" AS \"TABLE_TYPE\", ");
 		}
-		query.append("\"tables\".\"query\" AS \"REMARKS\", " +
+		query.append(useCommentsTable ? "COALESCE(\"comments\".\"remark\", \"tables\".\"query\")" : "\"tables\".\"query\"").append(" AS \"REMARKS\", " +
 			"cast(null as char(1)) AS \"TYPE_CAT\", " +
 			"cast(null as char(1)) AS \"TYPE_SCHEM\", " +
 			"cast(null as char(1)) AS \"TYPE_NAME\", " +
 			"cast(null as char(1)) AS \"SELF_REFERENCING_COL_NAME\", " +
 			"cast(null as char(1)) AS \"REF_GENERATION\" " +
-			"FROM \"sys\".\"tables\", \"sys\".\"schemas\"");
+			"FROM \"sys\".\"tables\"");
+		if (useCommentsTable) {
+			query.append(" LEFT OUTER JOIN \"sys\".\"comments\" ON (\"tables\".\"id\" = \"comments\".\"id\")");
+		}
+		query.append(", \"sys\".\"schemas\"");
 		if (!preJul2015) {
 			query.append(", \"sys\".\"table_types\"");
 		}
@@ -2195,6 +2203,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		String columnNamePattern
 	) throws SQLException
 	{
+		boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
 		StringBuilder query = new StringBuilder(2450);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
@@ -2209,8 +2218,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 				"WHEN \"columns\".\"type\" IN ('int', 'smallint', 'tinyint', 'bigint', 'hugeint', 'float', 'real', 'double', 'oid', 'wrd') THEN 2 " +
 				"ELSE 0 END AS int) AS \"NUM_PREC_RADIX\", " +
 			"cast(CASE \"null\" WHEN true THEN ").append(ResultSetMetaData.columnNullable)
-			.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls).append(" END AS int) AS \"NULLABLE\", " +
-			"cast(null AS varchar(1)) AS \"REMARKS\", " +
+			.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls).append(" END AS int) AS \"NULLABLE\", ")
+			.append(useCommentsTable ? "\"comments\".\"remark\"" : "cast(null AS varchar(1))").append(" AS \"REMARKS\", " +
 			"\"columns\".\"default\" AS \"COLUMN_DEF\", " +
 			"cast(0 as int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 as int) AS \"SQL_DATETIME_SUB\", " +
@@ -2223,11 +2232,14 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"cast(null AS smallint) AS \"SOURCE_DATA_TYPE\", " +
 			"cast(CASE WHEN \"columns\".\"default\" IS NOT NULL AND \"columns\".\"default\" LIKE 'next value for %' THEN 'YES' ELSE 'NO' END AS varchar(3)) AS \"IS_AUTOINCREMENT\", " +
 			"cast('NO' AS varchar(3)) AS \"IS_GENERATEDCOLUMN\" " +
-		"FROM \"sys\".\"columns\", " +
-			"\"sys\".\"tables\", " +
-			"\"sys\".\"schemas\" " +
-		"WHERE \"columns\".\"table_id\" = \"tables\".\"id\" " +
-			"AND \"tables\".\"schema_id\" = \"schemas\".\"id\"");
+		"FROM \"sys\".\"columns\"");
+		if (useCommentsTable) {
+			query.append(" LEFT OUTER JOIN \"sys\".\"comments\" ON (\"columns\".\"id\" = \"comments\".\"id\")");
+		}
+		query.append(", \"sys\".\"tables\"" +
+			", \"sys\".\"schemas\" " +
+		"WHERE \"columns\".\"table_id\" = \"tables\".\"id\"" +
+		"  AND \"tables\".\"schema_id\" = \"schemas\".\"id\"");
 
 		if (catalog != null && catalog.length() > 0) {
 			// none empty catalog selection.
@@ -3277,7 +3289,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"\"schemas\".\"name\" AS \"TYPE_SCHEM\", " +
 			"\"types\".\"sqlname\" AS \"TYPE_NAME\", " +
 			"CASE \"types\".\"sqlname\"" +
-				// next 4 UDTs are known
+				// next 4 UDTs are standard
 				" WHEN 'inet' THEN 'nl.cwi.monetdb.jdbc.types.INET'" +
 				" WHEN 'json' THEN 'java.lang.String'" +
 				" WHEN 'url'  THEN 'nl.cwi.monetdb.jdbc.types.URL'" +
@@ -3287,9 +3299,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 				.append(" ELSE ").append(Types.STRUCT).append(" END AS int) AS \"DATA_TYPE\", " +
 			"\"types\".\"systemname\" AS \"REMARKS\", " +
 			"cast(null as smallint) AS \"BASE_TYPE\" " +
-			"FROM \"sys\".\"types\" JOIN \"sys\".\"schemas\" ON \"types\".\"schema_id\" = \"schemas\".\"id\" " +
-			// exclude the built-in types (I assume they always have id <= 99 and eclass < 15)
-			"WHERE \"types\".\"id\" > 99 AND \"types\".\"eclass\" >= 15");
+		"FROM \"sys\".\"types\" JOIN \"sys\".\"schemas\" ON \"types\".\"schema_id\" = \"schemas\".\"id\" " +
+		// exclude the built-in types (I assume they always have id <= 99 and eclass < 15)
+		"WHERE \"types\".\"id\" > 99 AND \"types\".\"eclass\" >= 15");
 
 		if (catalog != null && catalog.length() > 0) {
 			// none empty catalog selection.
@@ -3302,6 +3314,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		if (typeNamePattern != null) {
 			query.append(" AND \"types\".\"sqlname\" ").append(composeMatchPart(typeNamePattern));
 		}
+
 		if (types != null && types.length > 0) {
 			query.append(") AS getUDTs WHERE \"DATA_TYPE\" IN (");
 			for (int i = 0; i < types.length; i++) {
@@ -3866,11 +3879,12 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			String functionNamePattern)
 		throws SQLException
 	{
+		boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
 		StringBuilder query = new StringBuilder(800);
 		query.append("SELECT cast(null as varchar(1)) AS \"FUNCTION_CAT\", " +
 			"\"schemas\".\"name\" AS \"FUNCTION_SCHEM\", " +
-			"\"functions\".\"name\" AS \"FUNCTION_NAME\", " +
-			"cast(\"functions\".\"func\" as varchar(9999)) AS \"REMARKS\", " +
+			"\"functions\".\"name\" AS \"FUNCTION_NAME\", ")
+			.append(useCommentsTable ? "COALESCE(\"comments\".\"remark\", cast(\"functions\".\"func\" as varchar(9999)))" : "cast(\"functions\".\"func\" as varchar(9999))").append(" AS \"REMARKS\", " +
 			"CASE \"functions\".\"type\"" +
 				" WHEN 1 THEN ").append(DatabaseMetaData.functionNoTable)
 			.append(" WHEN 2 THEN ").append(DatabaseMetaData.functionNoTable)
@@ -3880,10 +3894,12 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			.append(" ELSE ").append(DatabaseMetaData.functionResultUnknown).append(" END AS \"FUNCTION_TYPE\", " +
 			// only the id value uniquely identifies a function. Include it to be able to differentiate between multiple overloaded functions with the same name
 			"cast(\"functions\".\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
-		"FROM \"sys\".\"functions\", \"sys\".\"schemas\" " +
-		"WHERE \"functions\".\"schema_id\" = \"schemas\".\"id\" " +
-		// exclude procedures (type = 2). Those need to be returned via getProcedures()
-		"AND \"functions\".\"type\" <> 2");
+		"FROM \"sys\".\"functions\" JOIN \"sys\".\"schemas\" ON (\"functions\".\"schema_id\" = \"schemas\".\"id\") ");
+		if (useCommentsTable) {
+			query.append("LEFT OUTER JOIN \"sys\".\"comments\" ON (\"functions\".\"id\" = \"comments\".\"id\") ");
+		}
+		// only functions, so exclude procedures (type = 2). Those will to be returned via getProcedures()
+		query.append("WHERE \"functions\".\"type\" <> 2");
 
 		if (catalog != null && catalog.length() > 0) {
 			// none empty catalog selection.
@@ -3994,11 +4010,11 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"CAST('' as varchar(3)) AS \"IS_NULLABLE\", " +
 			// the specific name contains the function id, in order to be able to match the args to the correct overloaded function name
 			"cast(\"functions\".\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
-		"FROM \"sys\".\"args\", \"sys\".\"functions\", \"sys\".\"schemas\" " +
-		"WHERE \"args\".\"func_id\" = \"functions\".\"id\" " +
-		"AND \"functions\".\"schema_id\" = \"schemas\".\"id\" " +
-		// exclude procedures (type = 2). Those need to be returned via getProcedureColumns()
-		"AND \"functions\".\"type\" <> 2");
+		"FROM \"sys\".\"args\" " +
+		"JOIN \"sys\".\"functions\" ON (\"args\".\"func_id\" = \"functions\".\"id\") " +
+		"JOIN \"sys\".\"schemas\" ON (\"functions\".\"schema_id\" = \"schemas\".\"id\") " +
+		// only functions, so exclude procedures (type = 2). Those will to be returned via getProcedureColumns()
+		"WHERE \"functions\".\"type\" <> 2");
 
 		if (catalog != null && catalog.length() > 0) {
 			// none empty catalog selection.

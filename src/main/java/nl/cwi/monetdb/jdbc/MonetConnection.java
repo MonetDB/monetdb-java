@@ -147,6 +147,11 @@ public class MonetConnection
 	/** Whether or not CLOB is mapped to Types.VARCHAR instead of Types.CLOB within this connection */
 	private boolean treatClobAsVarChar = false;
 
+	// Internal cache for determining if system table sys.comments (new as of Mar2018 release) exists on server
+	private boolean queriedCommentsTable = false;
+	private boolean hasCommentsTable = false;
+
+
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
 	 * current implementation limits itself to storing the given host,
@@ -1668,6 +1673,46 @@ public class MonetConnection
 	 */
 	boolean mapClobAsVarChar() {
 		return treatClobAsVarChar;
+	}
+
+	/**
+	 * Internal utility method to query the server to find out if it has
+	 * the system table sys.comments (which is new as of Mar2018 release).
+	 * The result is cached and reused, so that we only test the query once per connection.
+	 * This method is used by methods from MonetDatabaseMetaData.
+	 */
+	boolean commentsTableExists() {
+		if (queriedCommentsTable)
+			return hasCommentsTable;
+
+		queriedCommentsTable = true;	// set flag, so the querying part below is done only once, at first invocation.
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = createStatement();
+			if (stmt != null) {
+				rs = stmt.executeQuery( "SELECT \"id\", \"remark\" FROM \"sys\".\"comments\" LIMIT 1");
+				if (rs != null) {
+					rs.next();
+					hasCommentsTable = true;
+				}
+			}
+		} catch (SQLException se) {
+			/* ignore */
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException e) { /* ignore */ }
+			}
+			if (stmt != null) {
+				try {
+					 stmt.close();
+				} catch (SQLException e) { /* ignore */ }
+			}
+		}
+// for debug: System.out.println("commentsTableExists returns: " + hasCommentsTable);
+		return hasCommentsTable;
 	}
 
 	/**
