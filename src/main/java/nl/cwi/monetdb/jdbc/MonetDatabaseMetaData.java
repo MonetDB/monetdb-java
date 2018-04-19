@@ -411,7 +411,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		String keywords = getConcatenatedStringFromQuery("SELECT \"keyword\" FROM \"sys\".\"keywords\" ORDER BY 1");
 
 		/* An old MonetDB server (pre Jul2015 release) will not have a table sys.keywords and return an empty String */
-		return (keywords.length() > 0) ? keywords :
+		return (keywords.isEmpty()) ?
 			/* for old servers return static list (as returned in clients/odbc/driver/SQLGetInfo.c case SQL_KEYWORDS:) */
 			"ADMIN,AFTER,AGGREGATE,ALWAYS,ASYMMETRIC,ATOMIC," +
 			"AUTO_INCREMENT,BEFORE,BIGINT,BIGSERIAL,BINARY,BLOB," +
@@ -431,7 +431,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"UNBOUNDED,UNCOMMITTED,UNENCRYPTED,WHILE,XMLAGG," +
 			"XMLATTRIBUTES,XMLCOMMENT,XMLCONCAT,XMLDOCUMENT," +
 			"XMLELEMENT,XMLFOREST,XMLNAMESPACES,XMLPARSE,XMLPI," +
-			"XMLQUERY,XMLSCHEMA,XMLTEXT,XMLVALIDATE";
+			"XMLQUERY,XMLSCHEMA,XMLTEXT,XMLVALIDATE"
+			: keywords;
 	}
 
 	/**
@@ -1725,17 +1726,19 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		// include procedures only (type = 2). Others will be returned via getFunctions()
 		query.append("WHERE \"functions\".\"type\" = 2");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
+		} else {
+			if (schemaPattern != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+			}
+			if (procedureNamePattern != null) {
+				query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(procedureNamePattern));
+			}
 		}
-		if (schemaPattern != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
-		}
-		if (procedureNamePattern != null) {
-			query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(procedureNamePattern));
-		}
+
 		query.append(" ORDER BY \"PROCEDURE_SCHEM\", \"PROCEDURE_NAME\", \"SPECIFIC_NAME\"");
 
 		return executeMetaDataQuery(query.toString());
@@ -1846,20 +1849,22 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		// include procedures only (type = 2). Others will be returned via getFunctionColumns()
 		"WHERE \"functions\".\"type\" = 2");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
+		} else {
+			if (schemaPattern != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+			}
+			if (procedureNamePattern != null) {
+				query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(procedureNamePattern));
+			}
+			if (columnNamePattern != null) {
+				query.append(" AND \"args\".\"name\" ").append(composeMatchPart(columnNamePattern));
+			}
 		}
-		if (schemaPattern != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
-		}
-		if (procedureNamePattern != null) {
-			query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(procedureNamePattern));
-		}
-		if (columnNamePattern != null) {
-			query.append(" AND \"args\".\"name\" ").append(composeMatchPart(columnNamePattern));
-		}
+
 		query.append(" ORDER BY \"PROCEDURE_SCHEM\", \"PROCEDURE_NAME\", \"SPECIFIC_NAME\", \"ORDINAL_POSITION\"");
 
 		return executeMetaDataQuery(query.toString());
@@ -1995,17 +2000,19 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			query.append(" AND \"tables\".\"type\" = \"table_types\".\"table_type_id\"");
 		}
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
+		} else {
+			if (schemaPattern != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+			}
+			if (tableNamePattern != null) {
+				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
+			}
 		}
-		if (schemaPattern != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
-		}
-		if (tableNamePattern != null) {
-			query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
-		}
+
 		if (types != null && types.length > 0) {
 			if (preJul2015) {
 				query.append(") AS \"getTables\" WHERE \"TABLE_TYPE\" IN (");
@@ -2056,7 +2063,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 				"cast(null as char(1)) AS \"TABLE_CATALOG\" " +
 			"FROM \"sys\".\"schemas\"");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" WHERE 1 = 0");
@@ -2241,19 +2248,20 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		"WHERE \"columns\".\"table_id\" = \"tables\".\"id\"" +
 		"  AND \"tables\".\"schema_id\" = \"schemas\".\"id\"");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
-		}
-		if (schemaPattern != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
-		}
-		if (tableNamePattern != null) {
-			query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
-		}
-		if (columnNamePattern != null) {
-			query.append(" AND \"columns\".\"name\" ").append(composeMatchPart(columnNamePattern));
+		} else {
+			if (schemaPattern != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+			}
+			if (tableNamePattern != null) {
+				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
+			}
+			if (columnNamePattern != null) {
+				query.append(" AND \"columns\".\"name\" ").append(composeMatchPart(columnNamePattern));
+			}
 		}
 
 		query.append(" ORDER BY \"TABLE_SCHEM\", \"TABLE_NAME\", \"ORDINAL_POSITION\"");
@@ -2331,19 +2339,20 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"AND \"privileges\".\"auth_id\" = \"grantees\".\"id\" " +
 			"AND \"privileges\".\"grantor\" = \"grantors\".\"id\"");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
-		}
-		if (schemaPattern != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
-		}
-		if (tableNamePattern != null) {
-			query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
-		}
-		if (columnNamePattern != null) {
-			query.append(" AND \"columns\".\"name\" ").append(composeMatchPart(columnNamePattern));
+		} else {
+			if (schemaPattern != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+			}
+			if (tableNamePattern != null) {
+				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
+			}
+			if (columnNamePattern != null) {
+				query.append(" AND \"columns\".\"name\" ").append(composeMatchPart(columnNamePattern));
+			}
 		}
 
 		query.append(" ORDER BY \"TABLE_SCHEM\", \"TABLE_NAME\", \"COLUMN_NAME\", \"PRIVILEGE\"");
@@ -2416,16 +2425,17 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"AND \"privileges\".\"auth_id\" = \"grantees\".\"id\" " +
 			"AND \"privileges\".\"grantor\" = \"grantors\".\"id\"");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
-		}
-		if (schemaPattern != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
-		}
-		if (tableNamePattern != null) {
-			query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
+		} else {
+			if (schemaPattern != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+			}
+			if (tableNamePattern != null) {
+				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
+			}
 		}
 
 		query.append(" ORDER BY \"TABLE_SCHEM\", \"TABLE_NAME\", \"PRIVILEGE\"");
@@ -2498,22 +2508,26 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"AND \"tables\".\"schema_id\" = \"schemas\".\"id\" " +
 			"AND \"keys\".\"type\" IN (0, 1)");	// only primary keys (type = 0) and unique keys (type = 1), not fkeys (type = 2)
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
-		}
-		if (schema != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schema));
-		}
-		if (table != null) {
-			query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(table));
-		}
-		if (scope != DatabaseMetaData.bestRowSession && scope != DatabaseMetaData.bestRowTransaction && scope != DatabaseMetaData.bestRowTemporary) {
-			query.append(" AND 1 = 0");
-		}
-		if (!nullable) {
-			query.append(" AND \"columns\".\"null\" = false");
+		} else {
+			if (scope != DatabaseMetaData.bestRowSession
+			 && scope != DatabaseMetaData.bestRowTransaction
+			 && scope != DatabaseMetaData.bestRowTemporary) {
+				query.append(" AND 1 = 0");
+			} else {
+				if (schema != null) {
+					query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schema));
+				}
+				if (table != null) {
+					query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(table));
+				}
+				if (!nullable) {
+					query.append(" AND \"columns\".\"null\" = false");
+				}
+			}
 		}
 
 		query.append(" ORDER BY \"keys\".\"type\", \"columns\".\"name\"");
@@ -2614,16 +2628,17 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"AND \"tables\".\"schema_id\" = \"schemas\".\"id\" " +
 			"AND \"keys\".\"type\" = 0");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
-		}
-		if (schema != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schema));
-		}
-		if (table != null) {
-			query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(table));
+		} else {
+			if (schema != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schema));
+			}
+			if (table != null) {
+				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(table));
+			}
 		}
 
 		query.append(" ORDER BY \"TABLE_SCHEM\", \"TABLE_NAME\", \"COLUMN_NAME\"");
@@ -2732,16 +2747,17 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		StringBuilder query = new StringBuilder(keyQuery.length() + 250);
 		query.append(keyQuery);
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
-		}
-		if (schema != null) {
-			query.append(" AND \"fkschema\".\"name\" ").append(composeMatchPart(schema));
-		}
-		if (table != null) {
-			query.append(" AND \"fktable\".\"name\" ").append(composeMatchPart(table));
+		} else {
+			if (schema != null) {
+				query.append(" AND \"fkschema\".\"name\" ").append(composeMatchPart(schema));
+			}
+			if (table != null) {
+				query.append(" AND \"fktable\".\"name\" ").append(composeMatchPart(table));
+			}
 		}
 
 		query.append(" ORDER BY \"PKTABLE_SCHEM\", \"PKTABLE_NAME\", \"PK_NAME\", \"KEY_SEQ\"");
@@ -2815,16 +2831,17 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		StringBuilder query = new StringBuilder(keyQuery.length() + 250);
 		query.append(keyQuery);
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
-		}
-		if (schema != null) {
-			query.append(" AND \"pkschema\".\"name\" ").append(composeMatchPart(schema));
-		}
-		if (table != null) {
-			query.append(" AND \"pktable\".\"name\" ").append(composeMatchPart(table));
+		} else {
+			if (schema != null) {
+				query.append(" AND \"pkschema\".\"name\" ").append(composeMatchPart(schema));
+			}
+			if (table != null) {
+				query.append(" AND \"pktable\".\"name\" ").append(composeMatchPart(table));
+			}
 		}
 
 		query.append(" ORDER BY \"FKTABLE_SCHEM\", \"FKTABLE_NAME\", \"FK_NAME\", \"KEY_SEQ\"");
@@ -2910,28 +2927,25 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		StringBuilder query = new StringBuilder(keyQuery.length() + 350);
 		query.append(keyQuery);
 
-		if (pcatalog != null && pcatalog.length() > 0) {
+		if ((pcatalog != null && !pcatalog.isEmpty())
+		 || (fcatalog != null && !fcatalog.isEmpty())) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
-		}
-		if (pschema != null) {
-			query.append(" AND \"pkschema\".\"name\" ").append(composeMatchPart(pschema));
-		}
-		if (ptable != null) {
-			query.append(" AND \"pktable\".\"name\" ").append(composeMatchPart(ptable));
-		}
+		} else {
+			if (pschema != null) {
+				query.append(" AND \"pkschema\".\"name\" ").append(composeMatchPart(pschema));
+			}
+			if (ptable != null) {
+				query.append(" AND \"pktable\".\"name\" ").append(composeMatchPart(ptable));
+			}
 
-		if (fcatalog != null && fcatalog.length() > 0) {
-			// none empty catalog selection.
-			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
-		}
-		if (fschema != null) {
-			query.append(" AND \"fkschema\".\"name\" ").append(composeMatchPart(fschema));
-		}
-		if (ftable != null) {
-			query.append(" AND \"fktable\".\"name\" ").append(composeMatchPart(ftable));
+			if (fschema != null) {
+				query.append(" AND \"fkschema\".\"name\" ").append(composeMatchPart(fschema));
+			}
+			if (ftable != null) {
+				query.append(" AND \"fktable\".\"name\" ").append(composeMatchPart(ftable));
+			}
 		}
 
 		query.append(" ORDER BY \"FKTABLE_SCHEM\", \"FKTABLE_NAME\", \"FK_NAME\", \"KEY_SEQ\"");
@@ -3089,14 +3103,14 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	{
 		String table_row_count = "0";
 
-		if (!approximate && schema != null && table != null && schema.length() > 0 && table.length() > 0) {
+		if (!approximate && schema != null && table != null && !schema.isEmpty() && !table.isEmpty()) {
 			// we need the exact cardinality for one specific fully qualified table
 			ResultSet count = null;
 			try {
 				count = executeMetaDataQuery("SELECT COUNT(*) FROM \"" + schema + "\".\"" + table + "\"");
 				if (count != null && count.next()) {
 					String count_value = count.getString(1);
-					if (count_value != null && count_value.length() > 0)
+					if (count_value != null && !count_value.isEmpty())
 						table_row_count = count_value;
 				}
 			} catch (SQLException e) {
@@ -3137,20 +3151,22 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"AND \"objects\".\"name\" = \"columns\".\"name\" " +
 			"AND (\"keys\".\"type\" IS NULL OR \"keys\".\"type\" = 1)");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
+		} else {
+			if (schema != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schema));
+			}
+			if (table != null) {
+				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(table));
+			}
+			if (unique) {
+				query.append(" AND \"keys\".\"name\" IS NOT NULL");
+			}
 		}
-		if (schema != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schema));
-		}
-		if (table != null) {
-			query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(table));
-		}
-		if (unique) {
-			query.append(" AND \"keys\".\"name\" IS NOT NULL");
-		}
+
 		query.append(" ORDER BY \"NON_UNIQUE\", \"TYPE\", \"INDEX_NAME\", \"ORDINAL_POSITION\"");
 
 		return executeMetaDataQuery(query.toString());
@@ -3303,16 +3319,17 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		// exclude the built-in types (I assume they always have id <= 99 and eclass < 15)
 		"WHERE \"types\".\"id\" > 99 AND \"types\".\"eclass\" >= 15");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
-		}
-		if (schemaPattern != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
-		}
-		if (typeNamePattern != null) {
-			query.append(" AND \"types\".\"sqlname\" ").append(composeMatchPart(typeNamePattern));
+		} else {
+			if (schemaPattern != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+			}
+			if (typeNamePattern != null) {
+				query.append(" AND \"types\".\"sqlname\" ").append(composeMatchPart(typeNamePattern));
+			}
 		}
 
 		if (types != null && types.length > 0) {
@@ -3325,6 +3342,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			}
 			query.append(")");
 		}
+
 		query.append(" ORDER BY \"DATA_TYPE\", \"TYPE_SCHEM\", \"TYPE_NAME\"");
 
 		return executeMetaDataQuery(query.toString());
@@ -3901,16 +3919,17 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		// only functions, so exclude procedures (type = 2). Those will to be returned via getProcedures()
 		query.append("WHERE \"functions\".\"type\" <> 2");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
-		}
-		if (schemaPattern != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
-		}
-		if (functionNamePattern != null) {
-			query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(functionNamePattern));
+		} else {
+			if (schemaPattern != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+			}
+			if (functionNamePattern != null) {
+				query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(functionNamePattern));
+			}
 		}
 
 		query.append(" ORDER BY \"FUNCTION_SCHEM\", \"FUNCTION_NAME\", \"SPECIFIC_NAME\"");
@@ -4016,20 +4035,22 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		// only functions, so exclude procedures (type = 2). Those will to be returned via getProcedureColumns()
 		"WHERE \"functions\".\"type\" <> 2");
 
-		if (catalog != null && catalog.length() > 0) {
+		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
+		} else {
+			if (schemaPattern != null) {
+				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+			}
+			if (functionNamePattern != null) {
+				query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(functionNamePattern));
+			}
+			if (columnNamePattern != null) {
+				query.append(" AND \"args\".\"name\" ").append(composeMatchPart(columnNamePattern));
+			}
 		}
-		if (schemaPattern != null) {
-			query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
-		}
-		if (functionNamePattern != null) {
-			query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(functionNamePattern));
-		}
-		if (columnNamePattern != null) {
-			query.append(" AND \"args\".\"name\" ").append(composeMatchPart(columnNamePattern));
-		}
+
 		query.append(" ORDER BY \"FUNCTION_SCHEM\", \"FUNCTION_NAME\", \"SPECIFIC_NAME\", \"ORDINAL_POSITION\"");
 
 		return executeMetaDataQuery(query.toString());
