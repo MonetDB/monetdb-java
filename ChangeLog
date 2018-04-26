@@ -1,16 +1,23 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Apr 26 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved DatabaseMetaData methods getTablePrivileges() and
+  getColumnPrivileges() by returning also any combination of privileges
+  for the table or column in the PRIVILEGE result column. Previously only
+  single privileges (SELECT or UPDATE or INSERT or DELETE or EXECUTE or
+  GRANT) would be returned.
+
 * Thu Apr 19 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected method DatabaseMetaData.getFunctions() for result column
   FUNCTION_TYPE.  It used to return DatabaseMetaData.functionResultUnknown
   value for when the internal function type was 6 (Analytic function) or 7
   (Loader function).  It now returns DatabaseMetaData.functionNoTable value
-  for those functions.
+  for those function types.
 - DatabaseMetaData methods getTables(), getColumns(), getProcedures() and
   getFunctions() now return the comment in the REMARKS result column when a
   comment has been set for the table / view / column / procedure / function
-  via the SQL command COMMENT ON <db-object> IS 'comment-text'.
+  via the SQL command COMMENT ON <db-object type> <qname> IS 'comment-text'.
 
 * Mon Oct 23 2017 Sjoerd Mullender <sjoerd@acm.org>
 - Compiled and released new jars: monetdb-jdbc-2.27.jar, monetdb-mcl-1.16.jar

@@ -147,6 +147,10 @@ public class MonetConnection
 	/** Whether or not CLOB is mapped to Types.VARCHAR instead of Types.CLOB within this connection */
 	private boolean treatClobAsVarChar = false;
 
+	// Internal cache for determining if system table sys.privilege_codes (new as of Jul2017 release) exists on server
+	private boolean queriedPrivilege_codesTable = false;
+	private boolean hasPrivilege_codesTable = false;
+
 	// Internal cache for determining if system table sys.comments (new as of Mar2018 release) exists on server
 	private boolean queriedCommentsTable = false;
 	private boolean hasCommentsTable = false;
@@ -1682,19 +1686,42 @@ public class MonetConnection
 	 * This method is used by methods from MonetDatabaseMetaData.
 	 */
 	boolean commentsTableExists() {
-		if (queriedCommentsTable)
-			return hasCommentsTable;
+		if (!queriedCommentsTable) {
+			hasCommentsTable = existsSysTable("comments");
+			queriedCommentsTable = true;	// set flag, so the querying is done only at first invocation.
+		}
+		return hasCommentsTable;
+	}
 
-		queriedCommentsTable = true;	// set flag, so the querying part below is done only once, at first invocation.
+	/**
+	 * Internal utility method to query the server to find out if it has
+	 * the system table sys.privilege_codes (which is new as of Jul2017 release).
+	 * The result is cached and reused, so that we only test the query once per connection.
+	 * This method is used by methods from MonetDatabaseMetaData.
+	 */
+	boolean privilege_codesTableExists() {
+		if (!queriedPrivilege_codesTable) {
+			hasPrivilege_codesTable = existsSysTable("privilege_codes");
+			queriedPrivilege_codesTable = true;	// set flag, so the querying is done only at first invocation.
+		}
+		return hasPrivilege_codesTable;
+	}
+
+	/**
+	 * Internal utility method to query the server to find out if it has the system table sys.<tablename>.
+	 */
+	private boolean existsSysTable(String tablename) {
+		boolean exists = false;
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
 			stmt = createStatement();
 			if (stmt != null) {
-				rs = stmt.executeQuery( "SELECT \"id\", \"remark\" FROM \"sys\".\"comments\" LIMIT 1");
+				rs = stmt.executeQuery("SELECT id FROM sys._tables WHERE name = '"
+							+ tablename
+							+ "' AND schema_id IN (SELECT id FROM sys.schemas WHERE name = 'sys')");
 				if (rs != null) {
-					rs.next();
-					hasCommentsTable = true;
+					exists = rs.next(); // if a row is available it exists, else not
 				}
 			}
 		} catch (SQLException se) {
@@ -1711,8 +1738,8 @@ public class MonetConnection
 				} catch (SQLException e) { /* ignore */ }
 			}
 		}
-// for debug: System.out.println("commentsTableExists returns: " + hasCommentsTable);
-		return hasCommentsTable;
+// for debug: System.out.println("testTableExists(" + tablename + ") returns: " + exists);
+		return exists;
 	}
 
 	/**

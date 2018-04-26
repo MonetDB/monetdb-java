@@ -2306,13 +2306,15 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		String columnNamePattern
 	) throws SQLException
 	{
+		boolean usePrivilege_codesTable = ((MonetConnection)con).privilege_codesTableExists();
 		StringBuilder query = new StringBuilder(1100);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
 			"\"tables\".\"name\" AS \"TABLE_NAME\", " +
 			"\"columns\".\"name\" AS \"COLUMN_NAME\", " +
 			"\"grantors\".\"name\" AS \"GRANTOR\", " +
-			"\"grantees\".\"name\" AS \"GRANTEE\", " +
+			"\"grantees\".\"name\" AS \"GRANTEE\", ")
+		.append(usePrivilege_codesTable ? "\"privilege_codes\".\"privilege_code_name\"" :
 			"cast(CASE \"privileges\".\"privileges\" " +
 				"WHEN 1 THEN 'SELECT' " +
 				"WHEN 2 THEN 'UPDATE' " +
@@ -2321,7 +2323,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 				"WHEN 16 THEN 'EXECUTE' " +
 				"WHEN 32 THEN 'GRANT' " +
 				"ELSE NULL " +
-			"END AS varchar(7)) AS \"PRIVILEGE\", " +
+			"END AS varchar(7))").append(" AS \"PRIVILEGE\", " +
 			"cast(CASE \"privileges\".\"grantable\" " +
 				"WHEN 0 THEN 'NO' " +
 				"WHEN 1 THEN 'YES' " +
@@ -2332,12 +2334,18 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"\"sys\".\"schemas\", " +
 			"\"sys\".\"columns\", " +
 			"\"sys\".\"auths\" AS \"grantors\", " +
-			"\"sys\".\"auths\" AS \"grantees\" " +
-		"WHERE \"privileges\".\"obj_id\" = \"columns\".\"id\" " +
+			"\"sys\".\"auths\" AS \"grantees\" ");
+		if (usePrivilege_codesTable) {
+			query.append(", \"sys\".\"privilege_codes\" ");
+		}
+		query.append("WHERE \"privileges\".\"obj_id\" = \"columns\".\"id\" " +
 			"AND \"columns\".\"table_id\" = \"tables\".\"id\" " +
 			"AND \"tables\".\"schema_id\" = \"schemas\".\"id\" " +
 			"AND \"privileges\".\"auth_id\" = \"grantees\".\"id\" " +
 			"AND \"privileges\".\"grantor\" = \"grantors\".\"id\"");
+		if (usePrivilege_codesTable) {
+			query.append(" AND \"privileges\".\"privileges\" = \"privilege_codes\".\"privilege_code_id\"");
+		}
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
@@ -2395,12 +2403,14 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		String tableNamePattern
 	) throws SQLException
 	{
+		boolean usePrivilege_codesTable = ((MonetConnection)con).privilege_codesTableExists();
 		StringBuilder query = new StringBuilder(1000);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
 			"\"tables\".\"name\" AS \"TABLE_NAME\", " +
 			"\"grantors\".\"name\" AS \"GRANTOR\", " +
-			"\"grantees\".\"name\" AS \"GRANTEE\", " +
+			"\"grantees\".\"name\" AS \"GRANTEE\", ")
+		.append(usePrivilege_codesTable ? "\"privilege_codes\".\"privilege_code_name\"" :
 			"cast(CASE \"privileges\".\"privileges\" " +
 				"WHEN 1 THEN 'SELECT' " +
 				"WHEN 2 THEN 'UPDATE' " +
@@ -2409,7 +2419,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 				"WHEN 16 THEN 'EXECUTE' " +
 				"WHEN 32 THEN 'GRANT' " +
 				"ELSE NULL " +
-			"END AS varchar(7)) AS \"PRIVILEGE\", " +
+			"END AS varchar(7))").append(" AS \"PRIVILEGE\", " +
 			"cast(CASE \"privileges\".\"grantable\" " +
 				"WHEN 0 THEN 'NO' " +
 				"WHEN 1 THEN 'YES' " +
@@ -2419,11 +2429,17 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"\"sys\".\"tables\", " +
 			"\"sys\".\"schemas\", " +
 			"\"sys\".\"auths\" AS \"grantors\", " +
-			"\"sys\".\"auths\" AS \"grantees\" " +
-		"WHERE \"privileges\".\"obj_id\" = \"tables\".\"id\" " +
+			"\"sys\".\"auths\" AS \"grantees\" ");
+		if (usePrivilege_codesTable) {
+			query.append(", \"sys\".\"privilege_codes\" ");
+		}
+		query.append("WHERE \"privileges\".\"obj_id\" = \"tables\".\"id\" " +
 			"AND \"tables\".\"schema_id\" = \"schemas\".\"id\" " +
 			"AND \"privileges\".\"auth_id\" = \"grantees\".\"id\" " +
 			"AND \"privileges\".\"grantor\" = \"grantors\".\"id\"");
+		if (usePrivilege_codesTable) {
+			query.append(" AND \"privileges\".\"privileges\" = \"privilege_codes\".\"privilege_code_id\"");
+		}
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// none empty catalog selection.
