@@ -2,6 +2,13 @@
 # This file is updated with Maddlog
 
 * Thu Apr 26 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected and extended output of DatabaseMetaData methods
+  getTimeDateFunctions() and getSystemFunctions().  The Date/Time functions
+  (curdate, current_date, current_time, current_timestamp, curtime,
+  local_timezone, localtime, localtimestamp) were returned by
+  getSystemFunctions() but are now returned by getTimeDateFunctions().
+  getTimeDateFunctions() now also lists functions: date_to_str, extract, now,
+  str_to_date, str_to_time, str_to_timestamp, time_to_str and timestamp_to_str.
 - Improved DatabaseMetaData methods getTablePrivileges() and
   getColumnPrivileges() by returning also any combination of privileges
   for the table or column in the PRIVILEGE result column. Previously only

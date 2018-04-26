@@ -510,6 +510,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"WHERE \"id\" NOT IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1)" +
 			" AND \"id\" IN (SELECT \"function_id\" FROM \"sys\".\"systemfunctions\")" +
 			" AND \"type\" = 1" +	// only scalar functions
+			// exclude functions which belong to the 'mtime' module
+			" AND \"mod\" <> 'mtime'" +
+			" AND \"name\" NOT IN ('localtime', 'localtimestamp')" +
 			// add system functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'cast'" +
 			" UNION SELECT 'convert'" +
@@ -523,9 +526,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	@Override
 	public String getTimeDateFunctions() {
-		String match =
-			"('date', 'time', 'timestamp', 'timetz', 'timestamptz', 'sec_interval', 'month_interval') )";
-		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + AddFunctionsMaxMin + FunctionsOrderBy1);
+		String wherePart = "WHERE \"mod\" = 'mtime' OR \"name\" IN ('localtime', 'localtimestamp') UNION SELECT 'extract' UNION SELECT 'now'";
+		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + AddFunctionsMaxMin + FunctionsOrderBy1);
 	}
 
 	/**
