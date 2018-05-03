@@ -155,7 +155,7 @@ public class MonetPreparedStatement
 			int column_colnr = rs.findColumn("column");
 			for (int i = 0; rs.next(); i++) {
 				monetdbType[i] = rs.getString(type_colnr);
-				javaType[i] = MonetDriver.getJavaType(monetdbType[i]);
+				javaType[i] = MonetDriver.getJdbcSQLType(monetdbType[i]);
 				if (javaType[i] == Types.CLOB) {
 					if (connection.mapClobAsVarChar())
 						javaType[i] = Types.VARCHAR;
@@ -253,7 +253,7 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void clearParameters() {
-		for (int i = 0; i < values.length; i++) {
+		for (int i = 0; i < size; i++) {
 			values[i] = null;
 		}
 	}

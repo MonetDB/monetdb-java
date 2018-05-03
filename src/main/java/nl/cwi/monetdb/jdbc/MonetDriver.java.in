@@ -355,23 +355,22 @@ final public class MonetDriver implements Driver {
 	}
 
 	/**
-	 * Returns the java.sql.Types equivalent of the given MonetDB type.
+	 * Returns the java.sql.Types equivalent of the given MonetDB type name.
 	 *
-	 * @param type the type as used by MonetDB
-	 * @return the mathing java.sql.Types constant or java.sql.Types.OTHER if
-	 *         nothing matched on the given string
+	 * @param type the SQL data type name as used by MonetDB
+	 * @return the matching java.sql.Types constant or
+	 *         java.sql.Types.OTHER if nothing matched the given type name
 	 */
-	static int getJavaType(String type) {
-		// match the column type on a java.sql.Types constant
+	static int getJdbcSQLType(String type) {
+		// find the column type name in the typeMap
 		Integer tp = typeMap.get(type);
 		if (tp != null) {
 			return tp.intValue();
-		} else {
-			// this should not be able to happen
-			// do not assert, since maybe future versions introduce
-			// new types
-			return Types.OTHER;
 		}
+		// When type name is not found in the map, for instance
+		// when it is a new type (not yet added in the above typeMap) or
+		// when type name is: any or geometry or geometrya or mbr or ptr or table.
+		return Types.OTHER;
 	}
 
 	/**
