@@ -22,8 +22,6 @@ import nl.cwi.monetdb.mcl.io.*;
 
 public class SQLcopyinto {
 	public static void main(String[] args) throws Exception {
-		// make sure the driver is loaded
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
 		// request a connection suitable for Monet from the driver manager
 		// note that the database specifier is currently not implemented, for
 		// Monet itself can't access multiple databases.

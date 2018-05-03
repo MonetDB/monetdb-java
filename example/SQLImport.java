@@ -37,8 +37,6 @@ public class SQLImport {
 		// open the file
 		BufferedReader fr = new BufferedReader(new FileReader(args[0]));
 
-		// make sure the driver is loaded
-		Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
 		// request a connection suitable for Monet from the driver manager
 		// note that the database specifier is currently not implemented, for
 		// Monet itself can't access multiple databases.
