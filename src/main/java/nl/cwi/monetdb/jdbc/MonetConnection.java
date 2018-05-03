@@ -12,6 +12,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -248,8 +249,8 @@ public class MonetConnection
 		// check mandatory input arguments
 		if (hostname == null || hostname.isEmpty())
 			throw new IllegalArgumentException("Missing or empty host name");
-		if (port <= 0)
-			throw new IllegalArgumentException("Invalid port number. It should not be " + (port < 0 ? "negative" : "0"));
+		if (port <= 0 || port > 65535)
+			throw new IllegalArgumentException("Invalid port number: " + port + ". It should not be " + (port < 0 ? "negative" : (port > 65535 ? "larger than 65535" : "0")));
 		if (username == null || username.isEmpty())
 			throw new IllegalArgumentException("Missing or empty user name");
 		if (password == null || password.isEmpty())
@@ -305,6 +306,8 @@ public class MonetConnection
 			String error = in.waitForPrompt();
 			if (error != null)
 				throw new SQLNonTransientConnectionException((error.length() > 6) ? error.substring(6) : error, "08001");
+		} catch (UnknownHostException e) {
+			throw new SQLNonTransientConnectionException("Unknown Host (" + hostname + "): " + e.getMessage(), "08006");
 		} catch (IOException e) {
 			throw new SQLNonTransientConnectionException("Unable to connect (" + hostname + ":" + port + "): " + e.getMessage(), "08006");
 		} catch (MCLParseException e) {

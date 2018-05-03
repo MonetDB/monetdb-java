@@ -23,6 +23,7 @@ import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.Socket;
 import java.net.SocketException;
+import java.net.UnknownHostException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.MessageDigest;
@@ -242,17 +243,19 @@ public final class MapiSocket {
 	 * thrown when a redirect is encountered.
 	 *
 	 * @param host the hostname, or null for the loopback address
-	 * @param port the port number
+	 * @param port the port number (must be between 0 and 65535, inclusive)
 	 * @param user the username
 	 * @param pass the password
 	 * @return A List with informational (warning) messages. If this
 	 *		list is empty; then there are no warnings.
 	 * @throws IOException if an I/O error occurs when creating the socket
+	 * @throws SocketException - if there is an error in the underlying protocol, such as a TCP error.
+	 * @throws UnknownHostException if the IP address of the host could not be determined
 	 * @throws MCLParseException if bogus data is received
 	 * @throws MCLException if an MCL related error occurs
 	 */
 	public List<String> connect(String host, int port, String user, String pass)
-		throws IOException, MCLParseException, MCLException
+		throws IOException, UnknownHostException, SocketException, MCLParseException, MCLException
 	{
 		// Wrap around the internal connect that needs to know if it
 		// should really make a TCP connection or not.
@@ -260,7 +263,7 @@ public final class MapiSocket {
 	}
 
 	private List<String> connect(String host, int port, String user, String pass, boolean makeConnection)
-		throws IOException, MCLParseException, MCLException
+		throws IOException, UnknownHostException, SocketException, MCLParseException, MCLException
 	{
 		if (ttl-- <= 0)
 			throw new MCLException("Maximum number of redirects reached, aborting connection attempt. Sorry.");
