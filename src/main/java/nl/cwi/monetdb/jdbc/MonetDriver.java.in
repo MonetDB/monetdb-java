@@ -212,60 +212,70 @@ final public class MonetDriver implements Driver {
 		if (!acceptsURL(url))
 			return null;
 
-		List<DriverPropertyInfo> props = new ArrayList<DriverPropertyInfo>();
+		String[] boolean_choices = new String[] { "true", "false" };
+		String[] language_choices = new String[] { "sql", "mal" };
+		String[] hash_choices = new String[] { "SHA512", "SHA384", "SHA256", "SHA1", "MD5" };
+		DriverPropertyInfo[] dpi = new DriverPropertyInfo[9];	// we currently support 9 connection properties
 
-		DriverPropertyInfo prop = new DriverPropertyInfo("user", info.getProperty("user"));
+		DriverPropertyInfo prop = new DriverPropertyInfo("user", info != null ? info.getProperty("user") : null);
 		prop.required = true;
 		prop.description = "The user loginname to use when authenticating on the database server";
-		props.add(prop);
+		dpi[0] = prop;
 
-		prop = new DriverPropertyInfo("password", info.getProperty("password"));
+		prop = new DriverPropertyInfo("password", info != null ? info.getProperty("password") : null);
 		prop.required = true;
 		prop.description = "The password to use when authenticating on the database server";
-		props.add(prop);
+		dpi[1] = prop;
 
 		prop = new DriverPropertyInfo("debug", "false");
 		prop.required = false;
 		prop.description = "Whether or not to create a log file for debugging purposes";
-		props.add(prop);
+		prop.choices = boolean_choices;
+		dpi[2] = prop;
 
-		prop = new DriverPropertyInfo("logfile", "");
+		prop = new DriverPropertyInfo("logfile", null);
 		prop.required = false;
 		prop.description = "The filename to write the debug log to. Only takes effect if debug is set to true. If the file exists, an incrementing number is added, till the filename is unique.";
-		props.add(prop);
+		dpi[3] = prop;
 
 		prop = new DriverPropertyInfo("language", "sql");
 		prop.required = false;
 		prop.description = "What language to use for MonetDB conversations (experts only)";
-		props.add(prop);
+		prop.choices = language_choices;
+		dpi[4] = prop;
 
-		prop = new DriverPropertyInfo("hash", "");
+		prop = new DriverPropertyInfo("hash", null);
 		prop.required = false;
 		prop.description = "Force the use of the given hash algorithm during challenge response (one of SHA1, MD5, plain)";
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("follow_redirects", "true");
-		prop.required = false;
-		prop.description = "Whether redirects issued by the server should be followed";
-		props.add(prop);
+		prop.choices = hash_choices;
+		dpi[5] = prop;
 
 		prop = new DriverPropertyInfo("treat_blob_as_binary", "false");
 		prop.required = false;
-		prop.description = "Whether BLOBs on the server should be treated as BINARY types, thus mapped to byte[]";
-		props.add(prop);
+		prop.description = "Should blob columns be mapped to Types.VARBINARY instead of default Types.BLOB in ResultSets and PreparedStatements";
+		prop.choices = boolean_choices;
+		dpi[6] = prop;
 
 		prop = new DriverPropertyInfo("treat_clob_as_varchar", "false");
 		prop.required = false;
-		prop.description = "Whether CLOBs on the server should be treated and handled as VARCHAR types in the JDBC driver"; // recommend for increased performance due to less overhead
-		props.add(prop);
+		prop.description = "Should clob columns be mapped to Types.VARCHAR instead of default Types.CLOB in ResultSets and PreparedStatements"; // recommend for increased performance due to less overhead
+		prop.choices = boolean_choices;
+		dpi[7] = prop;
 
 		prop = new DriverPropertyInfo("so_timeout", "0");
 		prop.required = false;
 		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
-		props.add(prop);
+		dpi[8] = prop;
 
-		DriverPropertyInfo[] dpi = new DriverPropertyInfo[props.size()];
-		return props.toArray(dpi);
+/* next property is no longer supported in: new MonetConnection(props)
+		prop = new DriverPropertyInfo("follow_redirects", "true");
+		prop.required = false;
+		prop.description = "Whether redirects issued by the server should be followed";
+		prop.choices = boolean_choices;
+		dpi[9] = prop;
+*/
+
+		return dpi;
 	}
 
 	/**
