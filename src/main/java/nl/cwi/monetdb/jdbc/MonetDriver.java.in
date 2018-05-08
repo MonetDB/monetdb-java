@@ -195,11 +195,13 @@ public final class MonetDriver implements Driver {
 		prop = new DriverPropertyInfo("silentFlag", "true");
 		prop.required = false;
 		prop.description = "Don't produce output from the server (i.e. debug) (Embedded connection only)";
+		prop.choices = boolean_choices;
 		dpi[9] = prop;
 
 		prop = new DriverPropertyInfo("sequentialFlag", "false");
 		prop.required = false;
 		prop.description = "Use sequential pipeline instead of default pipeline (Embedded connection only)";
+		prop.choices = boolean_choices;
 		dpi[10] = prop;
 
 /* next property is no longer supported in: new MonetConnection(props)
