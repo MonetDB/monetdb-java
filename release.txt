@@ -44,7 +44,7 @@ implementation is rich enough to be suitable for a majority of
 application settings.
 
 Below a list of (un)supported features can be found.
-Please read this list if you intend to use this driver.
+Please read this list if you intend to use this JDBC driver.
 
 If you feel some features are missing or have encountered an issue/bug,
 please let us know at our bugtracker:
@@ -59,19 +59,20 @@ Currently implemented JDBC 4.1 interfaces include:
     - createArrayOf, createNClob, createStruct, createSQLXML
     - createStatement with result set holdability
     - prepareCall (CallableStatement is not supported)
+       see also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402
     - prepareStatement with array of column indices or column names
-    - setHoldability (close/hold cursors over commit is not
-      configurable)
-  NOTE: be sure to check for warnings after setting concurrencies or
-        isolation levels; MonetDB currently does not support anything
-        else but "fully serializable" transactions.
+    - setHoldability (close/hold cursors over commit is not configurable)
+
+    NOTE: be sure to check for warnings after setting concurrencies or
+          isolation levels; MonetDB currently does not support anything
+          else but "fully serializable" transactions.
 
   * java.sql.DatabaseMetaData
 
   * java.sql.Statement
     The next features/methods are NOT implemented:
     - cancel (query execution cannot be terminated, once started)
-      see also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6222
+       see also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6222
     - execute with column indices or names
     - executeUpdate with column indices or names
     - setMaxFieldSize

@@ -138,60 +138,79 @@ public final class MonetDriver implements Driver {
 		if (!acceptsURL(url))
 			return null;
 
-		List<DriverPropertyInfo> props = new ArrayList<>();
+		String[] boolean_choices = new String[] { "true", "false" };
+		String[] language_choices = new String[] { "sql", "mal" };
+		String[] hash_choices = new String[] { "SHA512", "SHA384", "SHA256", "SHA1", "MD5" };
+		DriverPropertyInfo[] dpi = new DriverPropertyInfo[11];	// we currently support 11 connection properties
 
-		DriverPropertyInfo prop = new DriverPropertyInfo("user", info.getProperty("user"));
+		DriverPropertyInfo prop = new DriverPropertyInfo("user", info != null ? info.getProperty("user") : null);
 		prop.required = true;
-		prop.description = "The user name to use when authenticating on the database server";
-		props.add(prop);
+		prop.description = "The user loginname to use when authenticating on the database server";
+		dpi[0] = prop;
 
-		prop = new DriverPropertyInfo("password", info.getProperty("password"));
+		prop = new DriverPropertyInfo("password", info != null ? info.getProperty("password") : null);
 		prop.required = true;
 		prop.description = "The password to use when authenticating on the database server";
-		props.add(prop);
+		dpi[1] = prop;
 
-		prop = new DriverPropertyInfo("hash", "");
+		prop = new DriverPropertyInfo("debug", "false");
+		prop.description = "Whether or not to create a log file for debugging purposes (MAPI connection only)";
+		prop.choices = boolean_choices;
+		dpi[2] = prop;
+
+		prop = new DriverPropertyInfo("logfile", null);
+		prop.required = false;
+		prop.description = "The filename to write the debug log to. Only takes effect if debug is set to true. If the file exists, an incrementing number is added, till the filename is unique. (MAPI connection only)";
+		dpi[3] = prop;
+
+		prop = new DriverPropertyInfo("language", "sql");
+		prop.required = false;
+		prop.description = "What language to use for MonetDB conversations (MAPI connection only) (experts only)";
+		prop.choices = language_choices;
+		dpi[4] = prop;
+
+		prop = new DriverPropertyInfo("hash", null);
 		prop.required = false;
 		prop.description = "Force the use of the given hash algorithm during challenge response (one of SHA1, MD5, plain) (MAPI connection only)";
-		props.add(prop);
+		prop.choices = hash_choices;
+		dpi[5] = prop;
+
+		prop = new DriverPropertyInfo("treat_blob_as_binary", "false");
+		prop.required = false;
+		prop.description = "Should blob columns be mapped to Types.VARBINARY instead of default Types.BLOB in ResultSets and PreparedStatements (MAPI connection only)";
+		prop.choices = boolean_choices;
+		dpi[6] = prop;
+
+		prop = new DriverPropertyInfo("treat_clob_as_varchar", "false");
+		prop.required = false;
+		prop.description = "Should clob columns be mapped to Types.VARCHAR instead of default Types.CLOB in ResultSets and PreparedStatements (MAPI connection only)"; // recommend for increased performance due to less overhead
+		prop.choices = boolean_choices;
+		dpi[7] = prop;
 
 		prop = new DriverPropertyInfo("so_timeout", "0");
 		prop.required = false;
 		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call (MAPI connection only)"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("treat_blob_as_binary", "false");
-		prop.required = false;
-		prop.description = "Whether BLOBs on the server should be treated as BINARY types, thus mapped to byte[] (MAPI connection only)";
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("treat_clob_as_varchar", "false");
-		prop.required = false;
-		prop.description = "Whether CLOBs on the server should be treated and handled as VARCHAR types in the JDBC driver (MAPI connection only)"; // recommend for increased performance due to less overhead
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("treat_clob_as_longvarchar", "false");
-		prop.required = false;
-		prop.description = "Whether CLOBs on the server should be treated as LONGVARCHAR types, thus mapped to String (MAPI connection only)";
-		props.add(prop);
-
-		prop = new DriverPropertyInfo("language", "sql");
-		prop.required = false;
-		prop.description = "What language to use for MonetDB conversations (experts only)";
-		props.add(prop);
+		dpi[8] = prop;
 
 		prop = new DriverPropertyInfo("silentFlag", "true");
 		prop.required = false;
 		prop.description = "Don't produce output from the server (i.e. debug) (Embedded connection only)";
-		props.add(prop);
+		dpi[9] = prop;
 
 		prop = new DriverPropertyInfo("sequentialFlag", "false");
 		prop.required = false;
 		prop.description = "Use sequential pipeline instead of default pipeline (Embedded connection only)";
-		props.add(prop);
+		dpi[10] = prop;
 
-		DriverPropertyInfo[] dpi = new DriverPropertyInfo[props.size()];
-		return props.toArray(dpi);
+/* next property is no longer supported in: new MonetConnection(props)
+		prop = new DriverPropertyInfo("follow_redirects", "true");
+		prop.required = false;
+		prop.description = "Whether redirects issued by the server should be followed";
+		prop.choices = boolean_choices;
+		dpi[11] = prop;
+*/
+
+		return dpi;
 	}
 
 	/**
@@ -260,20 +279,22 @@ public final class MonetDriver implements Driver {
 	}
 
 	/**
-	 * Returns the java.sql.Types equivalent of the given MonetDB type.
+	 * Returns the java.sql.Types equivalent of the given MonetDB type name.
 	 *
-	 * @param type the type as used by MonetDB
-	 * @return the matching java.sql.Types constant or java.sql.Types.OTHER if nothing matched on the given string
+	 * @param type the SQL data type name as used by MonetDB
+	 * @return the matching java.sql.Types constant or
+	 *         java.sql.Types.OTHER if nothing matched the given type name
 	 */
-	public static int getJavaType(String type) {
-		// match the currentColumns type on a java.sql.Types constant
+	public static int getJdbcSQLType(String type) {
+		// find the column type name in the typeMap
 		Integer tp = typeMap.get(type);
 		if (tp != null) {
-			return tp;
-		} else {
-			// this should not be able to happen do not assert, since maybe future versions introduce new types
-			return Types.OTHER;
+			return tp.intValue();
 		}
+		// When type name is not found in the map, for instance
+		// when it is a new type (not yet added in the above typeMap) or
+		// when type name is: any or geometry or geometrya or mbr or ptr or table.
+		return Types.OTHER;
 	}
 
 	private static String TypeMapppingSQL = null; // cache to optimise getSQLTypeMap()

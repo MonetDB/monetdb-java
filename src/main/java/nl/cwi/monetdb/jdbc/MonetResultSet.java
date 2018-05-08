@@ -145,7 +145,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 		} catch (SQLException se) { /* ignore it */ }
 
 		for (int i = 0; i < types.length; i++) {
-			int javaSQLtype = MonetDriver.getJavaType(types[i]);
+			int javaSQLtype = MonetDriver.getJdbcSQLType(types[i]);
 			if (javaSQLtype == Types.CLOB) {
 				if (connection != null && connection.mapClobAsVarChar())
 					javaSQLtype = Types.VARCHAR;

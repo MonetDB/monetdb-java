@@ -15,7 +15,6 @@ import java.sql.*;
  */
 public class PreparedExample {
 	public static void main(String[] args) throws Exception {
-		//Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");
 		Connection con = DriverManager.getConnection("jdbc:monetdb://localhost/notused", "monetdb", "monetdb");
 		PreparedStatement st = con.prepareStatement("SELECT ? AS a1, ? AS a2");
 		ResultSet rs;

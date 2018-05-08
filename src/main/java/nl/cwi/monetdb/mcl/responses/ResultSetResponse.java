@@ -133,7 +133,7 @@ public class ResultSetResponse implements IIncompleteResponse {
 	 */
 	private void populateJdbcSQLTypesArray() {
 		for (int i = 0; i < this.type.length; i++) {
-			int javaSQLtype = MonetDriver.getJavaType(this.type[i]);
+			int javaSQLtype = MonetDriver.getJdbcSQLType(this.type[i]);
 			if (javaSQLtype == Types.BLOB && con.mapBlobAsVarBinary()) {
 				javaSQLtype = Types.LONGVARBINARY;
 			}

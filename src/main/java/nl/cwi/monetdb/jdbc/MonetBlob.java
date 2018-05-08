@@ -18,16 +18,18 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.util.Arrays;
 
 /**
- * The MonetBlob class implements the {@link java.sql.Blob} interface.  Because
- * MonetDB/SQL currently has no support for streams, this class is a
+ * The MonetBlob class implements the {@link java.sql.Blob} interface.
+ *
+ * Because MonetDB/SQL currently has no support for streams, this class is a
  * shallow wrapper of a byte[].  It is more or less supplied to
  * enable an application that depends on it to run.  It may be obvious
  * that it is a real resource expensive workaround that contradicts the
  * benefits for a Blob: avoidance of huge resource consumption.
+ * <b>Use of this class is highly discouraged.</b>
  *
  * @author Fabian Groffen
  */
-public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
+public final class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 
 	private byte[] buffer;
 
@@ -63,8 +65,13 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 * This method frees the Blob object and releases the resources that it holds. The object is invalid once the
 	 * free method is called.
 	 *
-	 * After free has been called, any attempt to invoke a method other than free will result in a SQLException being
-	 * thrown. If free is called multiple times, the subsequent calls to free are treated as a no-op.
+	 * After free has been called, any attempt to invoke a method other
+	 * than free will result in a SQLException being thrown. If free is
+	 * called multiple times, the subsequent calls to free are treated
+	 * as a no-op.
+	 *
+	 * @throws SQLException if an error occurs releasing the Blob's
+	 *         resources
 	 */
 	@Override
 	public void free() throws SQLException {
@@ -87,23 +94,27 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 * Returns an InputStream object that contains a partial Blob value, starting with the byte specified by pos,
 	 * which is length bytes in length.
 	 *
-	 * @param pos the offset to the first byte of the partial value to be retrieved. The first byte in the Blob is at
-	 * position 1
-	 * @param length the length in bytes of the partial value to be retrieved
-	 * @return InputStream through which the partial Blob value can be read.
-	 * @throws SQLException if pos is less than 1 or if pos is greater than the number of bytes in the Blob or if pos +
-	 * length is greater than the number of bytes in the Blob
+	 * @param pos the offset to the first byte of the partial value to
+	 *        be retrieved. The first byte in the Blob is at position 1
+	 * @param length the length in bytes of the partial value to be
+	 *        retrieved
+	 * @return InputStream through which the partial Blob value can be
+	 *         read.
+	 * @throws SQLException if pos is less than 1 or if pos is
+	 *         greater than the number of bytes in the Blob or if pos +
+	 *         length is greater than the number of bytes in the Blob
 	 */
 	@Override
 	public InputStream getBinaryStream(long pos, long length) throws SQLException {
 		checkBufIsNotNull();
-		if (pos < 1)
-			throw new SQLException("pos is less than 1", "M1M05");
-		if (pos - 1 > buffer.length)
-			throw new SQLException("pos is greater than the number of bytes in the Blob", "M1M05");
-		if (pos - 1 + length > buffer.length)
-			throw new SQLException("pos + length is greater than the number of bytes in the Blob", "M1M05");
-		return new ByteArrayInputStream(buffer, (int)(pos - 1), (int)length);
+		if (pos < 1 || pos > buffer.length) {
+			throw new SQLException("Invalid pos value: " + pos, "M1M05");
+		}
+		if (length < 0 || pos - 1 + length > buffer.length) {
+			throw new SQLException("Invalid length value: " + length, "M1M05");
+		}
+
+		return new ByteArrayInputStream(buffer, (int) pos - 1, (int) length);
 	}
 
 	/**
@@ -120,6 +131,13 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	@Override
 	public byte[] getBytes(long pos, int length) throws SQLException {
 		checkBufIsNotNull();
+		if (pos < 1 || pos > buffer.length) {
+			throw new SQLException("Invalid pos value: " + pos, "M1M05");
+		}
+		if (length < 0 || pos - 1 + length > buffer.length) {
+			throw new SQLException("Invalid length value: " + length, "M1M05");
+		}
+
 		try {
 			return java.util.Arrays.copyOfRange(buffer, (int) pos - 1, (int) pos - 1 + length);
 		} catch (IndexOutOfBoundsException e) {
@@ -150,6 +168,9 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 */
 	@Override
 	public long position(Blob pattern, long start) throws SQLException {
+		if (pattern == null) {
+			throw new SQLException("Missing pattern object", "M1M05");
+		}
 		return position(pattern.getBytes(1L, (int)pattern.length()), start);
 	}
 
@@ -165,14 +186,22 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	@Override
 	public long position(byte[] pattern, long start) throws SQLException {
 		checkBufIsNotNull();
+		if (pattern == null) {
+			throw new SQLException("Missing pattern object", "M1M05");
+		}
+		if (start < 1 || start > buffer.length) {
+			throw new SQLException("Invalid start value: " + start, "M1M05");
+		}
 		try {
-			for (int i = (int)(start - 1); i < buffer.length - pattern.length; i++) {
+			final int patternLength = pattern.length;
+			final int bufLength = buffer.length;
+			for (int i = (int)(start - 1); i < bufLength - patternLength; i++) {
 				int j;
-				for (j = 0; j < pattern.length; j++) {
+				for (j = 0; j < patternLength; j++) {
 					if (buffer[i + j] != pattern[j])
 						break;
 				}
-				if (j == pattern.length)
+				if (j == patternLength)
 					return i;
 			}
 		} catch (IndexOutOfBoundsException e) {
@@ -208,10 +237,14 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 * @param pos the position in the BLOB object at which to start writing
 	 * @param bytes the array of bytes to be written to the BLOB value that this Blob object represents
 	 * @return the number of bytes written
-	 * @throws SQLException if there is an error accessing the BLOB value
+	 * @throws SQLException if there is an error accessing the
+	 *         BLOB value or if pos is less than 1
 	 */
 	@Override
 	public int setBytes(long pos, byte[] bytes) throws SQLException {
+		if (bytes == null) {
+			throw new SQLException("Missing bytes[] object", "M1M05");
+		}
 		return setBytes(pos, bytes, 1, bytes.length);
 	}
 
@@ -226,11 +259,25 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	 * @param offset the offset into the array bytes at which to start reading the bytes to be set
 	 * @param len the number of bytes to be written to the BLOB value from the array of bytes bytes
 	 * @return the number of bytes written
-	 * @throws SQLException if there is an error accessing the BLOB value
+	 * @throws SQLException if there is an error accessing the
+	 *         BLOB value or if pos is less than 1
 	 */
 	@Override
 	public int setBytes(long pos, byte[] bytes, int offset, int len) throws SQLException {
 		checkBufIsNotNull();
+		if (bytes == null) {
+			throw new SQLException("Missing bytes[] object", "M1M05");
+		}
+		if (pos < 1 || pos > Integer.MAX_VALUE) {
+			throw new SQLException("Invalid pos value: " + pos, "M1M05");
+		}
+		if (len < 0 || pos + len > buffer.length) {
+			throw new SQLException("Invalid len value: " + len, "M1M05");
+		}
+		if (offset < 0 || offset > bytes.length) {
+			throw new SQLException("Invalid offset value: " + offset, "M1M05");
+		}
+
 		try {
 			/* transactions? what are you talking about? */
 			System.arraycopy(bytes, offset - 1 + (int) pos, buffer, (int) pos, len - (int) pos);
@@ -249,6 +296,9 @@ public class MonetBlob implements Blob, Serializable, Comparable<MonetBlob> {
 	@Override
 	public void truncate(long len) throws SQLException {
 		checkBufIsNotNull();
+		if (len < 0 || len > buffer.length) {
+			throw new SQLException("Invalid len value: " + len, "M1M05");
+		}
 		if (buffer.length > len) {
 			byte[] newbuf = new byte[(int)len];
 			System.arraycopy(buffer, 0, newbuf, 0, (int) len);

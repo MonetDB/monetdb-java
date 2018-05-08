@@ -14,8 +14,9 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 
 /**
- * The MonetClob class implements the {@link java.sql.Clob} interface.  Because
- * MonetDB/SQL currently has no support for streams, this class is a
+ * The MonetClob class implements the {@link java.sql.Clob} interface.
+ *
+ * Because MonetDB/SQL currently has no support for streams, this class is a
  * shallow wrapper of a {@link StringBuilder}.  It is more or less supplied to
  * enable an application that depends on it to run.  It may be obvious
  * that it is a real resource expensive workaround that contradicts the
@@ -24,7 +25,7 @@ import java.sql.SQLFeatureNotSupportedException;
  *
  * @author Fabian Groffen
  */
-public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
+public final class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 
 	private final StringBuilder buffer;
 
@@ -64,7 +65,9 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 * Retrieves the CLOB value designated by this Clob object as an ascii stream.
 	 *
 	 * @return a java.io.InputStream object containing the CLOB data
-     * @throws SQLException if there is an error accessing the CLOB value
+	 * @throws SQLException - if there is an error accessing the CLOB value
+	 * @throws SQLFeatureNotSupportedException this JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public InputStream getAsciiStream() throws SQLException {
@@ -79,7 +82,7 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 * (or as a stream of characters).
 	 *
 	 * @return a java.io.Reader object containing the CLOB data
-     * @throws SQLException if there is an error accessing the CLOB value
+	 * @throws SQLException - if there is an error accessing the CLOB value
 	 */
 	@Override
 	public Reader getCharacterStream() throws SQLException {
@@ -95,11 +98,19 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 * Clob is at position 1.
 	 * @param length the length in characters of the partial value to be retrieved.
 	 * @return Reader through which the partial Clob value can be read.
-     * @throws SQLException if there is an error accessing the CLOB value
+	 * @throws SQLException - if pos is less than 1
+	 *         or if pos is greater than the number of characters in the Clob
+	 *         or if pos + length is greater than the number of characters in the Clob
 	 */
 	@Override
 	public Reader getCharacterStream(long pos, long length) throws SQLException {
 		checkBufIsNotNull();
+		if (pos < 1 || pos > buffer.length()) {
+			throw new SQLException("Invalid pos value: " + pos, "M1M05");
+		}
+		if (length < 0 || pos -1 + length > buffer.length()) {
+			throw new SQLException("Invalid length value: " + length, "M1M05");
+		}
 		return new StringReader(getSubString(pos, (int)length));
 	}
 
@@ -109,16 +120,26 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 *
 	 * @param pos the first character of the substring to be extracted. The first character is at position 1.
 	 * @param length the number of consecutive characters to be copied
-	 * @return a String that is the specified substring in the CLOB value designated by this Clob object
-	 * @throws SQLException if there is an error accessing the CLOB value
+	 * @return a String that is the specified substring in the
+	 *         CLOB value designated by this Clob object
+	 * @throws SQLException - if pos is less than 1
+	 *         or if pos is greater than the number of characters in the Clob
+	 *         or if pos + length is greater than the number of characters in the Clob
+	 * @throws SQLException - if there is an error accessing the CLOB value
 	 */
 	@Override
 	public String getSubString(long pos, int length) throws SQLException {
 		checkBufIsNotNull();
+		if (pos < 1 || pos > buffer.length()) {
+			throw new SQLException("Invalid pos value: " + pos, "M1M05");
+		}
+		if (length < 0 || pos -1 + length > buffer.length()) {
+			throw new SQLException("Invalid length value: " + length, "M1M05");
+		}
 		try {
 			return buffer.substring((int)(pos - 1), (int)(pos - 1 + length));
 		} catch (IndexOutOfBoundsException e) {
-			throw new SQLException(e.getMessage());
+			throw new SQLException(e.getMessage(), "M1M05");
 		}
 	}
 
@@ -139,14 +160,18 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 * The search begins at position start.
 	 *
 	 * @param searchstr the Clob object for which to search
-	 * @param start the position at which to begin searching; the first position is 1
-	 * @return the position at which the Clob object appears or -1 if it is not present; the first position is 1
-	 * @throws SQLException if there is an error accessing the CLOB value
+	 * @param start the position at which to begin searching;
+	 *        the first position is 1
+	 * @return the position at which the Clob object appears or
+	 *         -1 if it is not present; the first position is 1
+	 * @throws SQLException - if there is an error accessing the CLOB value
 	 */
 	@Override
 	public long position(Clob searchstr, long start) throws SQLException {
-		checkBufIsNotNull();
-		return position(searchstr.getSubString(1L, (int)(searchstr.length())), start);
+		if (searchstr == null) {
+			throw new SQLException("Missing searchstr object", "M1M05");
+		}
+		return position(searchstr.toString(), start);
 	}
 
 	/**
@@ -154,81 +179,147 @@ public class MonetClob implements Clob, Serializable, Comparable<MonetClob> {
 	 * represented by this Clob object.  The search begins at position start.
 	 *
 	 * @param searchstr the substring for which to search
-	 * @param start the position at which to begin searching; the first position is 1
-	 * @return the position at which the substring appears or -1 if it is not present; the first position is 1
-	 * @throws SQLException if there is an error accessing the CLOB value
+	 * @param start the position at which to begin searching;
+	 *        the first position is 1
+	 * @return the position at which the substring appears or
+	 *         -1 if it is not present; the first position is 1
+	 * @throws SQLException - if there is an error accessing the CLOB value
 	 */
 	@Override
 	public long position(String searchstr, long start) throws SQLException {
 		checkBufIsNotNull();
+		if (searchstr == null) {
+			throw new SQLException("Missing searchstr object", "M1M05");
+		}
+		if (start < 1 || start > buffer.length()) {
+			throw new SQLException("Invalid start value: " + start, "M1M05");
+		}
 		return (long)(buffer.indexOf(searchstr, (int)(start - 1)));
 	}
 
+	/**
+	 * Retrieves a stream to be used to write Ascii characters to the CLOB value that this
+	 * Clob object represents, starting at position pos. Characters written to the stream
+	 * will overwrite the existing characters in the Clob object starting at the position pos.
+	 * If the end of the Clob value is reached while writing characters to the stream,
+	 * then the length of the Clob value will be increased to accomodate the extra characters.
+	 *
+	 * Note: If the value specified for pos is greater then the length+1 of the CLOB value
+	 * then the behavior is undefined. Some JDBC drivers may throw a SQLException while
+	 * other drivers may support this operation.
+	 *
+	 * @param pos - the position at which to start writing to this CLOB object; The first position is 1
+	 * @return the stream to which ASCII encoded characters can be written
+	 * @throws SQLException - if there is an error accessing the CLOB value or if pos is less than 1
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
+	 */
 	@Override
 	public OutputStream setAsciiStream(long pos) throws SQLException {
 		throw new SQLFeatureNotSupportedException("Method setAsciiStream(long pos) not supported", "0A000");
 	}
 
+	/**
+	 * Retrieves a stream to be used to write a stream of Unicode characters to the CLOB value that
+	 * this Clob object represents, starting at position pos. Characters written to the stream
+	 * will overwrite the existing characters in the Clob object starting at the position pos.
+	 * If the end of the Clob value is reached while writing characters to the stream,
+	 * then the length of the Clob value will be increased to accomodate the extra characters.
+	 *
+	 * Note: If the value specified for pos is greater then the length+1 of the CLOB value
+	 * then the behavior is undefined. Some JDBC drivers may throw a SQLException while
+	 * other drivers may support this operation.
+	 *
+	 * @param pos - the position at which to start writing to this CLOB object; The first position is 1
+	 * @return the stream to which Unicode encoded characters can be written
+	 * @throws SQLException - if there is an error accessing the CLOB value or if pos is less than 1
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
+	 */
 	@Override
 	public Writer setCharacterStream(long pos) throws SQLException {
 		throw new SQLFeatureNotSupportedException("Method setCharacterStream(long pos) not supported", "0A000");
 	}
 
 	/**
-	 * Writes the given Java String to the CLOB  value that this Clob object designates at the position pos.
+	 * Writes the given Java String to the CLOB value that this Clob object designates at the position pos.
+	 * The string will overwrite the existing characters in the Clob object starting at the position pos.
+	 * If the end of the Clob value is reached while writing the given string, then the length of
+	 * the Clob value will be increased to accomodate the extra characters.
 	 *
 	 * @param pos the position at which to start writing to the CLOB value that this Clob object represents
 	 * @param str the string to be written to the CLOB value that this Clob designates
 	 * @return the number of characters written
-	 * @throws SQLException if there is an error accessing the CLOB value
+	 * @throws SQLException if there is an error accessing the
+	 *         CLOB value or if pos is less than 1
 	 */
 	@Override
 	public int setString(long pos, String str) throws SQLException {
-		return setString(pos, str, 1, str.length());
+		if (str == null) {
+			throw new SQLException("Missing str object", "M1M05");
+		}
+		return setString(pos, str, 0, str.length());
 	}
 
 	/**
 	 * Writes len characters of str, starting at character offset, to the CLOB value that this Clob represents.
+	 * The string will overwrite the existing characters in the Clob object starting at the position pos.
+	 * If the end of the Clob value is reached while writing the given string, then the length of
+	 * the Clob value will be increased to accomodate the extra characters.
 	 *
 	 * @param pos the position at which to start writing to this CLOB object
 	 * @param str the string to be written to the CLOB value that this Clob object represents
 	 * @param offset the offset into str to start reading the characters to be written
 	 * @param len the number of characters to be written
 	 * @return the number of characters written
-	 * @throws SQLException if there is an error accessing the CLOB value
+	 * @throws SQLException if there is an error accessing the
+	 *         CLOB value or if pos is less than 1
 	 */
 	@Override
 	public int setString(long pos, String str, int offset, int len) throws SQLException {
 		checkBufIsNotNull();
-		int buflen = buffer.length();
-		int retlen = Math.min(buflen, (int)(pos - 1 + len));
-		if (retlen > 0) {
-			buffer.replace((int)(pos - 1), (int)(pos + retlen), str.substring(offset - 1, (offset + len)));
-			return retlen;
-		} else {
-			return 0;
+		if (str == null) {
+			throw new SQLException("Missing str object", "M1M05");
 		}
+		if (pos < 1 || pos > Integer.MAX_VALUE) {
+			throw new SQLException("Invalid pos value: " + pos, "M1M05");
+		}
+		if (offset < 0 || offset > str.length()) {
+			throw new SQLException("Invalid offset value: " + offset, "M1M05");
+		}
+		if (len < 1 || (offset + len) > str.length()) {
+			throw new SQLException("Invalid len value: " + len, "M1M05");
+		}
+
+		int ipos = (int) pos;
+		if ((ipos + len) > buffer.capacity()) {
+			buffer.ensureCapacity(ipos + len);
+		}
+		buffer.replace(ipos - 1, ipos + len, str.substring(offset, (offset + len)));
+		return len;
 	}
 
 	/**
 	 * Truncates the CLOB value that this Clob designates to have a length of len characters.
 	 *
-	 * @param len the length, in bytes, to which the CLOB value should be truncated
-	 * @throws SQLException if there is an error accessing the CLOB value
+	 * @param len the length, in bytes, to which the CLOB value
+	 *        should be truncated
+	 * @throws SQLException if there is an error accessing the
+	 *         CLOB value or if len is less than 0
 	 */
 	@Override
 	public void truncate(long len) throws SQLException {
 		checkBufIsNotNull();
-		buffer.setLength((int) len);
+		if (len < 0 || len > buffer.length()) {
+			throw new SQLException("Invalid len value: " + len, "M1M05");
+		}
+		buffer.delete((int)len, buffer.length());
 	}
 
 	/**
 	 * Returns the String behind this Clob.  This is a MonetClob extension that does not violate nor is described in
 	 * the Clob interface.
 	 *
-	 * @return the String this Clob wraps.
+	 * @return the String this Clob wraps or "null" when this Clob is freed.
 	 */
-	@Override
 	public String toString() {
 		if (buffer == null || buffer.length() == 0)
 			return "null";
