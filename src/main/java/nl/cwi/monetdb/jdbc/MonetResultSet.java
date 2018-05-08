@@ -2629,7 +2629,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 					if(res == null) {
 						return null;
 					}
-					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset();
+					if(cal != null) {
+						millis += cal.getTimeZone().getRawOffset();
+					}
 					break;
 				case 2013: //Types.TIME_WITH_TIMEZONE:
 				case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
@@ -2649,11 +2652,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 					if(res == null) {
 						return null;
 					}
-					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset();
+					if(cal != null) {
+						millis += cal.getTimeZone().getRawOffset();
+					}
 					break;
 				default:
 					this.addWarning("unsupported data type", "01M03");
-					cal.clear();
+					if(cal != null) {
+						cal.clear();
+					}
 					millis = 0;
 			}
 			return new Date(millis);
@@ -2707,7 +2715,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 */
 	@Override
 	public Time getTime(int columnIndex) throws SQLException {
-		return getTime(columnIndex, null);
+		return getTime(columnIndex, Calendar.getInstance());
 	}
 
 	/**
@@ -2735,8 +2743,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
 					if(res == null) {
 						return null;
+					}	
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset();
+					if(cal != null) {
+						millis += cal.getTimeZone().getRawOffset();
 					}
-					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
 					break;
 				case 2013: //Types.TIME_WITH_TIMEZONE:
 				case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
@@ -2756,11 +2767,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 					if(res == null) {
 						return null;
 					}
-					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset();
+					if(cal != null) {
+						millis += cal.getTimeZone().getRawOffset();
+					}
 					break;
 				default:
 					this.addWarning("unsupported data type", "01M03");
-					cal.clear();
+					if(cal != null) {
+						cal.clear();
+					}
 					millis = 0;
 			}
 			return new Time(millis);
@@ -2783,7 +2799,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 */
 	@Override
 	public Time getTime(String columnLabel) throws SQLException {
-		return getTime(findColumn(columnLabel), null);
+		return getTime(findColumn(columnLabel), Calendar.getInstance());
 	}
 
 	/**
@@ -2813,7 +2829,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 */
 	@Override
 	public Timestamp getTimestamp(int columnIndex) throws SQLException {
-		return getTimestamp(columnIndex, null);
+		return getTimestamp(columnIndex, Calendar.getInstance());
 	}
 
 	/**
@@ -2842,7 +2858,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 					if(res == null) {
 						return null;
 					}
-					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset();
+					if(cal != null) {
+						millis += cal.getTimeZone().getRawOffset();
+					}
 					break;
 				case 2013: //Types.TIME_WITH_TIMEZONE:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
@@ -2857,7 +2876,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 						return null;
 					}
 					nanos = currentBlock.getLastNanos();
-					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset();
+					if(cal != null) {
+						millis += cal.getTimeZone().getRawOffset();
+					}
 					break;
 				case 2014: //Types.TIMESTAMP_WITH_TIMEZONE:
 					res = (Calendar) currentBlock.getValueAsObject(columnIndex - 1);
@@ -2877,11 +2899,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 					if(res == null) {
 						return null;
 					}
-					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset() + cal.getTimeZone().getRawOffset();
+					millis = res.getTimeInMillis() - res.getTimeZone().getRawOffset();
+					if(cal != null) {
+						millis += cal.getTimeZone().getRawOffset();
+					}
 					break;
 				default:
 					this.addWarning("unsupported data type", "01M03");
-					cal.clear();
+					if(cal != null) {
+						cal.clear();
+					}
 					millis = 0;
 			}
 			Timestamp result = new Timestamp(millis);
@@ -2906,7 +2933,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 */
 	@Override
 	public Timestamp getTimestamp(String columnLabel) throws SQLException {
-		return getTimestamp(findColumn(columnLabel), null);
+		return getTimestamp(findColumn(columnLabel), Calendar.getInstance());
 	}
 
 	/**
