@@ -300,7 +300,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	/**
 	 * Does the database treat mixed case unquoted SQL identifiers
 	 * as case sensitive and as a result store them in mixed case?
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns false.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns false.
 	 *
 	 * @return false
 	 */
@@ -345,7 +345,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	/**
 	 * Does the database treat mixed case quoted SQL identifiers as
 	 * case sensitive and as a result store them in mixed case?
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 *
 	 * @return true if so
 	 */
@@ -390,7 +390,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	/**
 	 * What is the string used to quote SQL identifiers?
 	 * This returns a space if identifier quoting isn't supported.
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver
+	 * A JDBC Compliant <sup>TM</sup> driver
 	 * will always use a double quote character.
 	 *
 	 * @return the quoting string
@@ -578,7 +578,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *
 	 * <p>If so, the SQL AS clause can be used to provide names for
 	 * computed columns or to provide alias names for columns as required.
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 *
 	 * <p>e.g.
 	 *
@@ -597,7 +597,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Are concatenations between NULL and non-NULL values NULL?
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 *
 	 * @return true if so
 	 */
@@ -763,7 +763,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Are table correlation names supported?
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 *
 	 * @return true if so
 	 */
@@ -844,7 +844,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Is the escape character in "LIKE" clauses supported?
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 *
 	 * @return true if so
 	 */
@@ -877,7 +877,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Can columns be defined as non-nullable.
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 *
 	 * @return true if so
 	 */
@@ -925,7 +925,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Does this driver support the ANSI-92 entry level SQL grammar?
-	 * All JDBC Compliant <sup><font size=-2>TM</font></sup> drivers must return true.
+	 * All JDBC Compliant <sup>TM</sup> drivers must return true.
 	 *
 	 * @return true if so
 	 */
@@ -1201,7 +1201,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Are subqueries in comparison expressions supported?
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 * MonetDB also supports this
 	 *
 	 * @return true if so; false otherwise
@@ -1213,7 +1213,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Are subqueries in 'exists' expressions supported?
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 *
 	 * @return true if so; false otherwise
 	 */
@@ -1224,7 +1224,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Are subqueries in 'in' statements supported?
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 *
 	 * @return true if so; false otherwise
 	 */
@@ -1235,7 +1235,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Are subqueries in quantified expressions supported?
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 *
 	 * (No idea what this is, but we support a good deal of
 	 * subquerying.)
@@ -1249,7 +1249,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Are correlated subqueries supported?
-	 * A JDBC Compliant <sup><font size=-2>TM</font></sup> driver always returns true.
+	 * A JDBC Compliant <sup>TM</sup> driver always returns true.
 	 *
 	 * (a.k.a. subselect in from?)
 	 *
