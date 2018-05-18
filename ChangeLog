@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed May 23 2018 Sjoerd Mullender <sjoerd@acm.org>
+- Compiled and released new jars: monetdb-jdbc-2.28.jar, monetdb-mcl-1.17.jar
+  and updated jdbcclient.jar
+
 * Thu Apr 26 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected and extended output of DatabaseMetaData methods
   getTimeDateFunctions() and getSystemFunctions().  The Date/Time functions
@@ -25,4 +29,11 @@
   getFunctions() now return the comment in the REMARKS result column when a
   comment has been set for the table / view / column / procedure / function
   via the SQL command COMMENT ON <db-object type> <qname> IS 'comment-text'.
+
+* Thu Dec 14 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Fixed a problem with retrieving Dates and Timestamps which contained a
+  year value less than 1000. It would throw an SQLDataException with message:
+   Could not convert value to a Date. Expected JDBC date escape format
+   yyyy-[m]m-[d]d.
+  See also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6468
 
