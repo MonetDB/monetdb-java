@@ -643,7 +643,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 		/* the generated key should be an integer, because (wait for it) other 
 		 * frameworks such as spring expect this. */
 		types[0] = "BIGINT";
-		jdbcTypes[0] = MonetDriver.getJavaType(types[0]);
+		jdbcTypes[0] = MonetDriver.getJdbcSQLType(types[0]);
 
 		results = new Object[1];
 		results[0] = new long[1];
