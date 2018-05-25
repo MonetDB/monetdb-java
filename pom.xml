@@ -25,12 +25,6 @@
 			<organization>MonetDB</organization>
 			<organizationUrl>https://www.monetdb.org</organizationUrl>
 		</developer>
-		<developer>
-			<name>Dimitar Nedev</name>
-			<email>dimitar.nedev@monetdbsolutions.com</email>
-			<organization>MonetDB Solutions</organization>
-			<organizationUrl>https://www.monetdbsolutions.com</organizationUrl>
-		</developer>
 	</developers>
 
 	<distributionManagement>
