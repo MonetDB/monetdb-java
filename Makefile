@@ -1,4 +1,5 @@
 all: src/main/java/nl/cwi/monetdb/jdbc/MonetDriver.java
+	. ./build.properties; sed -e "s/@JDBC_MAJOR@/$$JDBC_MAJOR/g;s/@JDBC_MINOR@/$$JDBC_MINOR/g" upload_jdbc_new.sh.in > upload_jdbc_new.sh
 	ant -f build.xml distjdbc distmerocontrol
 	cd tests; ant -f build.xml jar_jdbctests
 
