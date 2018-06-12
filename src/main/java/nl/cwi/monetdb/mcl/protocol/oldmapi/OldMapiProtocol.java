@@ -20,6 +20,7 @@ import nl.cwi.monetdb.mcl.responses.ResultSetResponse;
 import nl.cwi.monetdb.mcl.responses.UpdateResponse;
 
 import java.io.IOException;
+import java.nio.Buffer;
 import java.nio.CharBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Map;
@@ -126,7 +127,7 @@ public class OldMapiProtocol extends AbstractProtocol {
 			newbuffer.put("!22000");
 			newbuffer.put(this.lineBuffer.array(), 0, limit);
 			newbuffer.limit(limit + 6);
-			newbuffer.flip();
+			((Buffer)newbuffer).flip();
 			this.lineBuffer = newbuffer;
 		}
 		this.lineBuffer.position(1);

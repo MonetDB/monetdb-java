@@ -14,6 +14,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.CharBuffer;
@@ -56,7 +57,7 @@ public abstract class AbstractSocket implements Closeable {
 		this.bufferIn = ByteBuffer.wrap(new byte[getFullBlockSize()]);
 		this.bufferOut = ByteBuffer.wrap(new byte[getFullBlockSize()]);
 		this.stringsDecoded = CharBuffer.allocate(getFullBlockSize());
-		this.stringsDecoded.flip();
+		((Buffer)this.stringsDecoded).flip();
 		this.stringsEncoded = CharBuffer.allocate(getFullBlockSize());
 	}
 
@@ -151,7 +152,7 @@ public abstract class AbstractSocket implements Closeable {
 		this.utf8Decoder.reset();
 		this.utf8Decoder.decode(this.bufferIn, this.stringsDecoded,true);
 		this.utf8Decoder.flush(this.stringsDecoded);
-		this.stringsDecoded.flip();
+		((Buffer)this.stringsDecoded).flip();
 	}
 
 	/**
@@ -193,7 +194,7 @@ public abstract class AbstractSocket implements Closeable {
 		}
 		this.stringsDecoded.position(sourcePosition);
 		lineBuffer.position(destinationPosition);
-		lineBuffer.flip();
+		((Buffer)lineBuffer).flip();
 		return lineBuffer;
 	}
 
@@ -204,7 +205,7 @@ public abstract class AbstractSocket implements Closeable {
 	 * @throws IOException If an error in the underlying connection happened
 	 */
 	private void writeToOutputBuffer(boolean toFlush) throws IOException {
-		this.stringsEncoded.flip();
+		((Buffer)this.stringsEncoded).flip();
 		this.utf8Encoder.reset();
 		CoderResult res;
 		int written = 0;

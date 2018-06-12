@@ -8,6 +8,7 @@
 
 package nl.cwi.monetdb.mcl.connection.helpers;
 
+import java.nio.Buffer;
 import java.nio.CharBuffer;
 
 /**
@@ -56,7 +57,7 @@ public final class BufferReallocator {
 	public static CharBuffer reallocateBuffer(CharBuffer buffer) {
 		int newCapacity = getNewCapacity(buffer);
 		CharBuffer newBuffer = CharBuffer.wrap(new char[newCapacity]);
-		buffer.flip();
+		((Buffer)buffer).flip();
 		newBuffer.put(buffer.array());
 		return newBuffer;
 	}

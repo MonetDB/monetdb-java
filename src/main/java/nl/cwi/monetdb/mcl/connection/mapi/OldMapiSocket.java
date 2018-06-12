@@ -11,6 +11,7 @@ package nl.cwi.monetdb.mcl.connection.mapi;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 /**
@@ -241,7 +242,7 @@ public class OldMapiSocket extends AbstractSocket {
 						connection.getPort() + ": Incomplete block read from stream");
 			}
 			b.position(size);
-			b.flip();
+			((Buffer)b).flip();
 			return size;
 		}
 

@@ -16,6 +16,7 @@ import nl.cwi.monetdb.mcl.connection.helpers.TimestampHelper;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 
 import java.math.BigDecimal;
+import java.nio.Buffer;
 import java.nio.CharBuffer;
 import java.sql.Types;
 import java.util.Calendar;
@@ -163,7 +164,7 @@ final class OldMapiTupleLineParser {
 								}
 							}
 							// put the unescaped string in the right place
-							tupleLineBuffer.flip();
+							((Buffer)tupleLineBuffer).flip();
 							oldMapiStringToJavaDataConversion(protocol, tupleLineBuffer.array(), 0,
 									tupleLineBuffer.limit(), lineNumber, values[column], typesMap[column]);
 						} else if ((i - 1) - cursor == 4 && OldMapiTupleLineParserHelper.charIndexOf(array,
