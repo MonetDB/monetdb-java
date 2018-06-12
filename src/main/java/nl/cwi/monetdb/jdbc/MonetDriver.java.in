@@ -48,7 +48,7 @@ import java.util.logging.Logger;
  * given the default (@JDBC_DEF_PORT@) will be used.
  *
  * @author Fabian Groffen, Pedro Ferreira
- * @version @JDBC_MAJOR@.@JDBC_MINOR@ (@JDBC_VER_SUFFIX@)
+ * @version @JDBC_MAJOR@.@JDBC_MINOR@@JDBC_SNAPSHOT@ (@JDBC_VER_SUFFIX@)
  */
 public final class MonetDriver implements Driver {
 	// the url kind will be jdbc:monetdb://<host>[:<port>]/<database> (in a MAPI connection)
@@ -60,6 +60,8 @@ public final class MonetDriver implements Driver {
 	private static final int DRIVERMAJOR = @JDBC_MAJOR@;
 	/** Minor version of this driver */
 	private static final int DRIVERMINOR = @JDBC_MINOR@;
+	/** Is a snapshot release of the driver */
+	private static final String DRIVERSNAPSHOT = "@JDBC_SNAPSHOT@";
 
 	/** Version suffix string */
 	private static final String DRIVERVERSIONSUFFIX =
@@ -330,7 +332,7 @@ public final class MonetDriver implements Driver {
 	 * @return the version string
 	 */
 	public static String getDriverVersion() {
-		return DRIVERMAJOR + "." + DRIVERMINOR + " (" + DRIVERVERSIONSUFFIX + ")";
+		return DRIVERMAJOR + "." + DRIVERMINOR + DRIVERSNAPSHOT + " (" + DRIVERVERSIONSUFFIX + ")";
 	}
 
 	public static int getDriverMajorVersion() {

@@ -32,13 +32,13 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
   <property file="build.properties" />
 
   <property name="jdbc-jar"
-    value="${jardir}/monetdb-jdbc-new-${JDBC_MAJOR}.${JDBC_MINOR}.jar" />
+    value="${jardir}/monetdb-jdbc-new-${JDBC_MAJOR}.${JDBC_MINOR}${JDBC_SNAPSHOT}.jar" />
   <property name="jdbcclient-jar"
     value="${jardir}/jdbcclient.jar" />
   <property name="jmonetdb-jar"
     value="${jardir}/jmonetdb.jar" />
   <property name="mcl-jar"
-    value="${jardir}/monetdb-mcl-${MCL_MAJOR}.${MCL_MINOR}.jar" />
+    value="${jardir}/monetdb-mcl-${MCL_MAJOR}.${MCL_MINOR}${MCL_SNAPSHOT}.jar" />
   <property name="mero-control-jar"
     value="${jardir}/merocontrol.jar" />
 
@@ -263,8 +263,10 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
     <!-- Some defaults -->
     <filter token="JDBC_MAJOR" value="${JDBC_MAJOR}" />
     <filter token="JDBC_MINOR" value="${JDBC_MINOR}" />
+    <filter token="JDBC_SNAPSHOT" value="${JDBC_SNAPSHOT}" />
     <filter token="MCL_MAJOR" value="${MCL_MAJOR}" />
     <filter token="MCL_MINOR" value="${MCL_MINOR}" />
+    <filter token="MCL_SNAPSHOT" value="${MCL_SNAPSHOT}" />
     <filter token="JDBC_DEF_PORT" value="${JDBC_DEF_PORT}" />
     <filter token="JDBC_VER_SUFFIX" value="${JDBC_VER_SUFFIX} ${TODAY}" />
 
@@ -279,7 +281,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
   	  tofile="src/main/java/nl/cwi/monetdb/jdbc/MonetDriver.java.in"
   	  filtering="yes" />
 
-    <echo message="Configured build for the ${JDBC_MAJOR}.${JDBC_MINOR} (${JDBC_VER_SUFFIX}) edition driver" />
+    <echo message="Configured build for the ${JDBC_MAJOR}.${JDBC_MINOR}${JDBC_SNAPSHOT} (${JDBC_VER_SUFFIX}) edition driver" />
   </target>
 
   <!-- Prepares the build directory and sets some variables -->
