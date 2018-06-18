@@ -1168,7 +1168,7 @@ public class MonetConnection
 	@Override
 	public String toString() {
 		return "MonetDB Connection (" + getJDBCURL() + ") " +
-				(closed ? "connected" : "disconnected");
+				(closed ? "disconnected" : "connected");
 	}
 
 	//== Java 1.6 methods (JDBC 4.0)
