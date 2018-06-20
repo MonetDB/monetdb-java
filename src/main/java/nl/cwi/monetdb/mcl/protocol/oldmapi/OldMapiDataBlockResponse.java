@@ -226,6 +226,9 @@ public class OldMapiDataBlockResponse extends AbstractDataBlockResponse {
 
 	@Override
 	public String getValueAsString(int column) {
+		if(this.checkValueIsNull(column)) {
+			return null;
+		}
 		switch (this.jdbcSQLTypes[column]) {
 			case Types.CHAR:
 			case Types.VARCHAR:
@@ -274,6 +277,9 @@ public class OldMapiDataBlockResponse extends AbstractDataBlockResponse {
 
 	@Override
 	public Object getValueAsObject(int column) {
+		if(this.checkValueIsNull(column)) {
+			return null;
+		}
 		switch (this.jdbcSQLTypes[column]) {
 			case Types.BOOLEAN:
 				return ((byte[]) this.data[column])[this.blockLine] == 1;
