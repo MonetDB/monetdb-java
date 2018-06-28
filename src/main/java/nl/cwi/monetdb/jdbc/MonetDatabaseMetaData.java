@@ -107,25 +107,27 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	/**
-	 * Can all the procedures returned by getProcedures be called
-	 * by the current user?
+	 * Retrieves whether the current user can call all the procedures
+	 * returned by the method getProcedures.
 	 *
-	 * @return true if so
+	 * @return false because we currently return all procedures from sys.functions
+	 *    and do not filter on EXECUTE privilege or procedure ownership.
 	 */
 	@Override
 	public boolean allProceduresAreCallable() {
-		return true;
+		return false;
 	}
 
 	/**
-	 * Can all the tables returned by getTable be SELECTed by
-	 * the current user?
+	 * Retrieves whether the current user can use all the tables
+	 * returned by the method getTables in a SELECT statement.
 	 *
-	 * @return true because we only have one user a.t.m.
+	 * @return false because we currently return all tables from sys.tables
+	 *    and do not filter on SELECT privilege or table ownership.
 	 */
 	@Override
 	public boolean allTablesAreSelectable() {
-		return true;
+		return false;
 	}
 
 	/**
@@ -1698,6 +1700,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	"" retrieves those without a schema;
 	 *	null means that the schema name should not be used to narrow the search
 	 * @param procedureNamePattern - a procedure name pattern; must match the procedure name as it is stored in the database
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet - each row is a procedure description
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -1807,7 +1810,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	"" retrieves those without a schema;
 	 *	null means that the schema name should not be used to narrow the search
 	 * @param procedureNamePattern - a procedure name pattern; must match the procedure name as it is stored in the database
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @param columnNamePattern - a column name pattern; must match the column name as it is stored in the database
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet - each row describes a stored procedure parameter or column
 	 * @throws SQLException if a database-access error occurs
 	 * @see #getSearchStringEscape
@@ -1877,7 +1882,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Returns a SQL match part string where depending on the input value we
-	 * compose an exact match (use =) or match with wildcards (use LIKE)
+	 * compose an exact match (use =) or match with wildcards (use LIKE) or IS NULL
 	 *
 	 * @param in the string to match
 	 * @return the SQL match part string
@@ -1941,6 +1946,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	null means that the schema name should not be used to narrow the search
 	 * @param tableNamePattern - a table name pattern; must match the table name as it is stored in the database
 	 *	For all tables this should be "%"
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @param types - a list of table types, which must be from the list of table types returned
 	 *	from getTableTypes(),to include; null returns all types
 	 * @return ResultSet - each row is a table description
@@ -2199,7 +2205,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	null means that the schema name should not be used to narrow the search
 	 * @param tableNamePattern - a table name pattern; must match the table name as it is stored in the database
 	 *	For all tables this should be "%"
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @param columnNamePattern - a column name pattern; must match the column name as it is stored in the database
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet - each row is a column description
 	 * @throws SQLException if a database error occurs
 	 * @see #getSearchStringEscape
@@ -2295,7 +2303,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schemaPattern a schema name; "" retrieves those without a schema
 	 * @param tableNamePattern a table name
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @param columnNamePattern a column name pattern
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet each row is a column privilege description
 	 * @see #getSearchStringEscape
 	 * @throws SQLException if a database error occurs
@@ -2394,6 +2404,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schemaPattern a schema name pattern; "" retrieves those without a schema
 	 * @param tableNamePattern a table name pattern
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet each row is a table privilege description
 	 * @see #getSearchStringEscape
 	 * @throws SQLException if a database error occurs
@@ -2491,6 +2502,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schema a schema name; "" retrieves those without a schema
 	 * @param table a table name
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @param scope the scope of interest; use same values as SCOPE
 	 * @param nullable include columns that are nullable?
 	 * @return ResultSet each row is a column description
@@ -2577,6 +2589,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schema a schema name; "" retrieves those without a schema
 	 * @param table a table name
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet each row is a column description
 	 * @throws SQLException if a database error occurs
 	 */
@@ -2617,9 +2630,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *	</OL>
 	 *
 	 * @param catalog a catalog name; "" retrieves those without a catalog
-	 * @param schema a schema name pattern; "" retrieves those
-	 * without a schema
+	 * @param schema a schema name pattern; "" retrieves those without a schema
 	 * @param table a table name
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet each row is a primary key column description
 	 * @throws SQLException if a database error occurs
 	 */
@@ -2754,6 +2767,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schema a schema name pattern; "" retrieves those without a schema
 	 * @param table a table name
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet each row is a primary key column description
 	 * @see #getExportedKeys
 	 * @throws SQLException if a database error occurs
@@ -2838,6 +2852,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schema a schema name pattern; "" retrieves those without a schema
 	 * @param table a table name
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet each row is a foreign key column description
 	 * @see #getImportedKeys
 	 * @throws SQLException if a database error occurs
@@ -2925,9 +2940,11 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param pcatalog primary key catalog name; "" retrieves those without a catalog
 	 * @param pschema primary key schema name pattern; "" retrieves those without a schema
 	 * @param ptable primary key table name
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @param fcatalog foreign key catalog name; "" retrieves those without a catalog
 	 * @param fschema foreign key schema name pattern; "" retrieves those without a schema
 	 * @param ftable koreign key table name
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet each row is a foreign key column description
 	 * @throws SQLException if a database error occurs
 	 * @see #getImportedKeys
@@ -3102,6 +3119,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schema a schema name pattern; "" retrieves those without a schema
 	 * @param table a table name
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @param unique when true, return only indices for unique values;
 	 *	   when false, return indices regardless of whether unique or not
 	 * @param approximate when true, result is allowed to reflect approximate
@@ -3468,10 +3486,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *
 	 * @param catalog a catalog name; "" retrieves those without a catalog;
 	 *		  <code>null</code> means drop catalog name from the selection criteria
-	 * @param schemaPattern a schema name pattern; "" retrieves those
-	 *		  without a schema
-	 * @param typeNamePattern a UDT name pattern; may be a fully-qualified
-	 *		  name
+	 * @param schemaPattern a schema name pattern; "" retrieves those without a schema
+	 * @param typeNamePattern a UDT name pattern; may be a fully-qualified name
 	 * @return a <code>ResultSet</code> object in which a row gives information
 	 *		   about the designated UDT
 	 * @throws SQLException if a database access error occurs
@@ -3516,10 +3532,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *
 	 * @param catalog a catalog name; "" retrieves those without a catalog;
 	 *		  <code>null</code> means drop catalog name from the selection criteria
-	 * @param schemaPattern a schema name pattern; "" retrieves those
-	 *		  without a schema
-	 * @param tableNamePattern a table name pattern; may be a fully-qualified
-	 *		  name
+	 * @param schemaPattern a schema name pattern; "" retrieves those without a schema
+	 * @param tableNamePattern a table name pattern; may be a fully-qualified name
 	 * @return a <code>ResultSet</code> object in which each row is a type description
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -3905,6 +3919,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *        not be used to narrow the search
 	 * @param functionNamePattern a function name pattern; must match
 	 *        the function name as it is stored in the database
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet - each row is a function description
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -4008,8 +4023,10 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 *        not be used to narrow the search
 	 * @param functionNamePattern a procedure name pattern; must match the
 	 *        function name as it is stored in the database
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @param columnNamePattern a parameter name pattern; must match the
 	 *        parameter or column name as it is stored in the database
+	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE "%" condition is added to be evaluated).
 	 * @return ResultSet - each row describes a user function parameter,
 	 *         column or return type
 	 * @throws SQLException - if a database access error occurs
