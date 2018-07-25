@@ -2082,6 +2082,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			case Types.NCHAR:
 			case Types.NVARCHAR:
 			case Types.LONGNVARCHAR:
+			case Types.OTHER:
 			{
 				String castprefix = "";
 				switch (paramMonetdbType) {

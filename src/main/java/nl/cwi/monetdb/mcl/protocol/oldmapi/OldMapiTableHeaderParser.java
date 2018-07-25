@@ -114,21 +114,59 @@ final class OldMapiTableHeaderParser {
 	 */
 	private static void getStringValues(char[] array, int stop, String[] stringValues) {
 		int elem = 0, start = 2;
+		boolean inString = false, escaped = false;
 
-		for (int i = start + 1; i < stop; i++) {
-			if (array[i] == '\t' && array[i - 1] == ',') {
-				if (array[start] == '"') {
-					start++;  // skip leading double quote
-				}
-				stringValues[elem++] = new String(array, start, i - (array[i - 2] == '"' ? 2 : 1) - start);
-				start = i + 1;
+		for (int i = start; i < stop; i++) {
+			switch(array[i]) {
+				case '\\':
+					escaped = !escaped;
+					break;
+				case '"':
+					/**
+					 * If all strings are wrapped between two quotes, a \" can
+					 * never exist outside a string. Thus if we believe that we
+					 * are not within a string, we can safely assume we're about
+					 * to enter a string if we find a quote.
+					 * If we are in a string we should stop being in a string if
+					 * we find a quote which is not prefixed by a \, for that
+					 * would be an escaped quote. However, a nasty situation can
+					 * occur where the string is like "test \\" as obvious, a
+					 * test for a \ in front of a " doesn't hold here for all
+					 * cases. Because "test \\\"" can exist as well, we need to
+					 * know if a quote is prefixed by an escaping slash or not.
+					 */
+					if (!inString) {
+						inString = true;
+					} else if (!escaped) {
+						inString = false;
+					}
+					// reset escaped flag
+					escaped = false;
+					break;
+				case ',':
+					if (!inString && array[i + 1] == '\t') {
+						// we found the field separator
+						if (array[start] == '"')
+							start++;  // skip leading double quote
+						if (elem < stringValues.length) {
+							stringValues[elem++] = new String(array, start, i - (array[i - 1] == '"' ? 1 : 0) - start);
+						}
+						i++;
+						start = i + 1;	// reset start for the next name, skipping the field separator (a comma and tab)
+					}
+					// reset escaped flag
+					escaped = false;
+					break;
+				default:
+					escaped = false;
+					break;
 			}
 		}
 		// add the left over part (last column)
-		if (array[start] == '"') {
+		if (array[start] == '"')
 			start++;  // skip leading double quote
-		}
-		stringValues[elem] = new String(array, start, stop - (array[stop - 1] == '"' ? 1 : 0) - start);
+		if (elem < stringValues.length)
+			stringValues[elem] = new String(array, start, stop - (array[stop - 1] == '"' ? 1 : 0) - start);
 	}
 
 	/**

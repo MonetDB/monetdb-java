@@ -10,6 +10,7 @@ import java.net.URL;
 import java.sql.*;
 
 import nl.cwi.monetdb.jdbc.MonetINET;
+import nl.cwi.monetdb.jdbc.MonetURL;
 
 public class Test_PSsqldata {
 	public static void main(String[] args) throws Exception {
@@ -62,8 +63,8 @@ public class Test_PSsqldata {
 							MonetINET inet = (MonetINET)x;
 							System.out.println("\t" + inet.getAddress() + "/" + inet.getNetmaskBits());
 							System.out.println("\t" + inet.getInetAddress().toString());
-						} else if (x instanceof URL) {
-							URL url = (URL)x;
+						} else if (x instanceof MonetURL) {
+							MonetURL url = (MonetURL)x;
 							System.out.println("\t" + url.toString());
 						}
 					}
