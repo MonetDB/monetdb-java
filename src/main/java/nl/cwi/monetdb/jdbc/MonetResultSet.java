@@ -200,8 +200,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			row = tupleCount + 1;	// after last
 
 		this.curRow = row;
-		this.currentBlock = header.getDataBlockCorrespondingToLine(row - 1);
-		return this.curRow <= this.tupleCount;
+		boolean overlap = row <= this.tupleCount;
+		if(overlap)
+			this.currentBlock = header.getDataBlockCorrespondingToLine(row - 1);
+		return overlap;
 	}
 
 	/**

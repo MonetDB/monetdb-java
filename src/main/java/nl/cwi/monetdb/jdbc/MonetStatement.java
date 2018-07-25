@@ -637,21 +637,24 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	public ResultSet getGeneratedKeys() throws SQLException {
 		String[] columns = new String[1], types = new String[1];
 		int[] jdbcTypes = new int[1];
-		Object[] results;
+		String[][] results;
 
 		columns[0] = "GENERATED_KEY";
 		/* the generated key should be an integer, because (wait for it) other 
 		 * frameworks such as spring expect this. */
-		types[0] = "BIGINT";
+		types[0] = "STRING";
 		jdbcTypes[0] = MonetDriver.getJdbcSQLType(types[0]);
 
-		results = new Object[1];
-		results[0] = new long[1];
-
 		if (header instanceof UpdateResponse) {
-			((long[]) results[0])[0] = ((UpdateResponse)header).getLastid();
+			long lastid = ((UpdateResponse)header).getLastid();
+			if (lastid == -1) {
+				results = new String[0][1];
+			} else {
+				results = new String[1][1];
+				results[0][0] = Long.toString(lastid);
+			}
 		} else {
-			((long[]) results[0])[0] = -1;
+			results = new String[0][1];
 		}
 
 		try {
@@ -1210,13 +1213,23 @@ final class MonetVirtualResultSet extends MonetResultSet {
 	}
 
 	@Override
-	public int getInt(int column) throws SQLException {
-		return (int) ((long[]) results[0])[0];
+	public long getLong(int column) throws SQLException {
+		return Long.parseLong(((String[]) results[0])[0]);
 	}
 
 	@Override
-	public long getLong(int column) throws SQLException {
-		return ((long[]) results[0])[0];
+	public int getInt(int column) throws SQLException {
+		return (int) this.getLong(column);
+	}
+
+	@Override
+	public String getString(int column) throws SQLException {
+		return ((String[]) results[0])[0];
+	}
+
+	@Override
+	public Object getObject(int column) throws SQLException {
+		return this.getLong(column);
 	}
 
 	/**
