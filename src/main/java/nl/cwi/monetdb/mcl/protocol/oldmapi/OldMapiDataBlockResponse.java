@@ -38,8 +38,9 @@ public class OldMapiDataBlockResponse extends AbstractDataBlockResponse {
 	/** The last parsed nanos values for timestamps */
 	private int lastNanos;
 
-	OldMapiDataBlockResponse(int rowcount, int columncount, AbstractProtocol protocol, int[] JdbcSQLTypes) {
-		super(rowcount, protocol, JdbcSQLTypes);
+	OldMapiDataBlockResponse(int rowcount, int columncount, AbstractProtocol protocol, int[] JdbcSQLTypes,
+							 String[] types) {
+		super(rowcount, protocol, JdbcSQLTypes, types);
 		this.pos = -1;
 		this.data = new Object[columncount];
 	}

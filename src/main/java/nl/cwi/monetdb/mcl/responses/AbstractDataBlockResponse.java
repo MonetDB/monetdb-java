@@ -44,6 +44,8 @@ public abstract class AbstractDataBlockResponse implements IIncompleteResponse {
 	public final int rowcount;
 	/** The JdbcSQLTypes mapping */
 	public final int[] jdbcSQLTypes;
+	/** The types mapping */
+	public final String[] types;
 	/** whether the last read field (via some getXyz() method) was NULL */
 	public boolean lastReadWasNull = true;
 
@@ -54,10 +56,11 @@ public abstract class AbstractDataBlockResponse implements IIncompleteResponse {
 	 * @param protocol the underlying protocol
 	 * @param JdbcSQLTypes an array of the JDBC mappings of the columns
 	 */
-	public AbstractDataBlockResponse(int rowcount, AbstractProtocol protocol, int[] JdbcSQLTypes) {
+	public AbstractDataBlockResponse(int rowcount, AbstractProtocol protocol, int[] JdbcSQLTypes, String[] types) {
 		this.rowcount = rowcount;
 		this.protocol = protocol;
 		this.jdbcSQLTypes = JdbcSQLTypes;
+		this.types = types;
 	}
 
 	/**

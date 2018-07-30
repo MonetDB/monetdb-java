@@ -191,10 +191,21 @@ public class OldMapiProtocol extends AbstractProtocol {
 		return new AutoCommitResponse(ac);
 	}
 
+	/**
+	 * Get an empty OldMapiDataBlockResponse from the server.
+	 *
+	 * @param rowcount - Number of tuples
+	 * @param columncount - Number of tuples
+	 * @param protocol - This protocol
+	 * @param JdbcSQLTypes - the types array
+	 * @param types - the description of the types array
+	 * @return An OldMapiDataBlockResponse instance
+	 */
 	@Override
 	public AbstractDataBlockResponse getAnEmptyDataBlockResponse(int rowcount, int columncount,
-																 AbstractProtocol protocol, int[] JdbcSQLTypes) {
-		return new OldMapiDataBlockResponse(rowcount, columncount, protocol, JdbcSQLTypes);
+																 AbstractProtocol protocol, int[] JdbcSQLTypes,
+																 String[] types) {
+		return new OldMapiDataBlockResponse(rowcount, columncount, protocol, JdbcSQLTypes, types);
 	}
 
 	/**

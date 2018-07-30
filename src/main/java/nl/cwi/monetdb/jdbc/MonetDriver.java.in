@@ -265,7 +265,7 @@ public final class MonetDriver implements Driver {
 		typeMap.put("json", Types.OTHER);
 		// typeMap.put("mbr", Types.???);
 		typeMap.put("month_interval", Types.INTEGER);
-		// typeMap.put("oid", Types.BIGINT);
+		typeMap.put("oid", Types.OTHER);
 		// typeMap.put("ptr", Types.???);
 		typeMap.put("real", Types.REAL);
 		typeMap.put("sec_interval", Types.BIGINT);

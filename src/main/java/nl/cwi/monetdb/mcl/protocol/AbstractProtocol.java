@@ -212,11 +212,12 @@ public abstract class AbstractProtocol {
 	 * @param columncount - Number of tuples
 	 * @param protocol - This protocol
 	 * @param JdbcSQLTypes - the types array
+	 * @param types - the description of the types array
 	 * @return An AbstractDataBlockResponse instance
 	 */
 	public abstract AbstractDataBlockResponse getAnEmptyDataBlockResponse(int rowcount, int columncount,
 																		  AbstractProtocol protocol,
-																		  int[] JdbcSQLTypes);
+																		  int[] JdbcSQLTypes, String[] types);
 
 	/**
 	 * Gets the next DataBlockResponse response from the server, belonging to a ResultSetResponse

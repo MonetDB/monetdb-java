@@ -1222,6 +1222,21 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
 					return bigdec == null ? 0 : bigdec.intValue();
+				case Types.OTHER:
+					if ("oid".equals(types[columnIndex - 1])) {
+						String val = currentBlock.getValueAsString(columnIndex - 1);
+						if(currentBlock.isLastReadWasNull()) {
+							return 0;
+						}
+						int len = val.length();
+						if (len > 2 && val.endsWith("@0")) {
+							try {
+								return Integer.parseInt(val.substring(0, len - 2));
+							} catch (NumberFormatException nfe) {
+								throw newSQLNumberFormatException(nfe);
+							}
+						}
+					}
 				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
 					throw new SQLException("Conversion from " + types[columnIndex - 1] +
 							" to integer type not supported", "M1M05");
@@ -1294,6 +1309,21 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 				case Types.DECIMAL:
 					BigDecimal bigdec = (BigDecimal) currentBlock.getValueAsObject(columnIndex - 1);
 					return bigdec == null ? 0 : bigdec.longValue();
+				case Types.OTHER:
+					if ("oid".equals(types[columnIndex - 1])) {
+						String val = currentBlock.getValueAsString(columnIndex - 1);
+						if(currentBlock.isLastReadWasNull()) {
+							return 0;
+						}
+						int len = val.length();
+						if (len > 2 && val.endsWith("@0")) {
+							try {
+								return Long.parseLong(val.substring(0, len - 2));
+							} catch (NumberFormatException nfe) {
+								throw newSQLNumberFormatException(nfe);
+							}
+						}
+					}
 				default: //OTHERS, BLOB, LONGVARBINARY, TIME...
 					throw new SQLException("Conversion from " + types[columnIndex - 1] +
 							" to long type not supported", "M1M05");
@@ -3736,5 +3766,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 */
 	private static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
 		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
+	}
+
+	/**
+	 * Small helper method that formats the "Could not convert value to a number" message
+	 * and creates a new SQLDataException object whose SQLState is set
+	 * to "22003": Numeric value out of range.
+	 *
+	 * @param error the NumberFormatException
+	 * @return a new created SQLDataException object with SQLState 22003
+	 */
+	private static final SQLDataException newSQLNumberFormatException(NumberFormatException error) {
+		return new SQLDataException("Could not convert value to a number. " + error.getMessage(), "22003");
 	}
 }

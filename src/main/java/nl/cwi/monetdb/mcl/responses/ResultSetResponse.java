@@ -123,7 +123,7 @@ public class ResultSetResponse implements IIncompleteResponse {
 
 		this.resultBlocks = new AbstractDataBlockResponse[(tuplecount / cacheSize) + 1];
 		this.resultBlocks[0] = con.getProtocol().getAnEmptyDataBlockResponse(rowcount, columncount,
-				con.getProtocol(), this.JdbcSQLTypes);
+				con.getProtocol(), this.JdbcSQLTypes, this.type);
 	}
 
 	/**
@@ -162,7 +162,7 @@ public class ResultSetResponse implements IIncompleteResponse {
 	public AbstractDataBlockResponse addDataBlockResponse(int offset, int rowcount) {
 		int block = (offset - blockOffset) / cacheSize;
 		AbstractDataBlockResponse res = con.getProtocol().getAnEmptyDataBlockResponse(rowcount,
-				this.getColumncount(), this.con.getProtocol(), JdbcSQLTypes);
+				this.getColumncount(), this.con.getProtocol(), JdbcSQLTypes, type);
 		resultBlocks[block] = res;
 		return res;
 	}
