@@ -263,7 +263,8 @@ public class MonetStatement
 		try {
 			boolean type = internalExecute(batch);
 			int count = -1;
-			if (!type) count = getUpdateCount();
+			if (!type)
+				count = getUpdateCount();
 			do {
 				if (offset >= max)
 					throw new SQLException("Overflow: don't use multi statements when batching (" + max + ")", "M1M16");
@@ -277,8 +278,7 @@ public class MonetStatement
 					counts[offset] = count;
 				}
 				offset++;
-			} while ((type = getMoreResults()) ||
-					(count = getUpdateCount()) != -1);
+			} while ((type = getMoreResults()) || (count = getUpdateCount()) != -1);
 		} catch (SQLException ex) {
 			e.setNextException(ex);
 			for (; offset < max; offset++) {
@@ -771,7 +771,7 @@ public class MonetStatement
 	 * @see #setMaxFieldSize(int max)
 	 */
 	@Override
-	public int getMaxFieldSize() throws SQLException {
+	public int getMaxFieldSize() {
 		return 2*1024*1024*1024 - 2;	// MonetDB supports null terminated strings of max 2GB, see function: int UTF8_strlen()
 	}
 
@@ -786,7 +786,7 @@ public class MonetStatement
 	 * @see #setMaxRows(int max)
 	 */
 	@Override
-	public int getMaxRows() throws SQLException {
+	public int getMaxRows() {
 		return maxRows;
 	}
 
@@ -894,7 +894,7 @@ public class MonetStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public int getResultSetHoldability() throws SQLException {
+	public int getResultSetHoldability() {
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
@@ -1250,7 +1250,6 @@ final class MonetVirtualResultSet extends MonetResultSet {
 		String[][] results
 	) throws IllegalArgumentException {
 		super(statement, columns, types, results.length);
-
 		this.results = results;
 		closed = false;
 	}
@@ -1277,14 +1276,17 @@ final class MonetVirtualResultSet extends MonetResultSet {
 			row = tupleCount + row + 1;
 		}
 		// now place the row not farther than just before or after the result
-		if (row < 0) row = 0;	// before first
-		else if (row > tupleCount + 1) row = tupleCount + 1;	// after last
+		if (row < 0)
+			row = 0;	// before first
+		else if (row > tupleCount + 1)
+			row = tupleCount + 1;	// after last
 
 		// store it
 		curRow = row;
 
 		// see if we have the row
-		if (row < 1 || row > tupleCount) return false;
+		if (row < 1 || row > tupleCount)
+			return false;
 
 		for (int i = 0; i < results[row - 1].length; i++) {
 			tlp.values[i] = results[row - 1][i];
