@@ -156,6 +156,9 @@ public class MonetConnection
 	private boolean queriedCommentsTable = false;
 	private boolean hasCommentsTable = false;
 
+	/** The last set query timeout on the server as used by Statement and PreparedStatement (and CallableStatement in future) */
+	protected int lastSetQueryTimeout = 0;	// 0 means no timeout, which is the default on the server
+
 
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
