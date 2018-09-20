@@ -2,7 +2,8 @@
 # This file is updated with Maddlog
 
 * Thu Sep 20 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Improved example program SQLcopyinto,java and added to tests directory
+- Improved example program SQLcopyinto.java and moved it to tests directory
+  for automatic testing.
 
 * Thu Jun 28 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected return values of DatabaseMetaData methods
