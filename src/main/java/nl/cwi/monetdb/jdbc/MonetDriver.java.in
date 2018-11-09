@@ -116,7 +116,7 @@ final public class MonetDriver implements Driver {
 	{
 		// url should be of style jdbc:monetdb://<host>/<database>
 		if (!acceptsURL(url))
-			throw new SQLNonTransientConnectionException("Invalid URL: it does not start with: " + MONETURL, "08M26");
+			return null;
 
 		Properties props = new Properties();
 		// set the optional properties and their defaults here
@@ -134,12 +134,12 @@ final public class MonetDriver implements Driver {
 		try {
 			uri = new URI(url.substring(5));
 		} catch (URISyntaxException e) {
-			throw new SQLNonTransientConnectionException(e.toString(), "08M26");
+			return null;
 		}
 
 		String uri_host = uri.getHost();
 		if (uri_host == null)
-			throw new SQLNonTransientConnectionException("Invalid URL: no hostname given or unparsable in '" + url + "'", "08M26");
+			return null;
 		info.put("host", uri_host);
 
 		int uri_port = uri.getPort();
