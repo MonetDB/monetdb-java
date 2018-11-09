@@ -59,9 +59,11 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	/** Whether this Statement object is closed or not */
 	protected boolean closed;
 	/** Whether the application wants this Statement object to be pooled */
-	boolean poolable;
+	protected boolean poolable;
 	/** Whether this Statement should be closed if the last ResultSet closes */
 	private boolean closeOnCompletion = false;
+	/** The timeout (in sec) for the query to return, 0 means no timeout */
+	private int queryTimeout = 0;
 	/** The size of the blocks of results to ask for at the server */
 	private int fetchSize = 0;
 	/** The maximum number of rows to return in a ResultSet, 0 indicates unlimited */
@@ -93,6 +95,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 		this.connection = connection;
 		this.resultSetType = resultSetType;
 		this.resultSetConcurrency = resultSetConcurrency;
+		this.queryTimeout = connection.lastSetQueryTimeout;
 
 		// check our limits, and generate warnings as appropriate
 		if (resultSetConcurrency != ResultSet.CONCUR_READ_ONLY) {
@@ -216,7 +219,8 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 		try {
 			boolean type = internalExecute(batch);
 			int count = -1;
-			if (!type) count = getUpdateCount();
+			if (!type)
+				count = getUpdateCount();
 			do {
 				if (offset >= max)
 					throw new SQLException("Overflow: don't use multi statements when batching (" + max + ")", "M1M16");
@@ -451,6 +455,25 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 			lastResponseList = null;
 		}
 
+		if (queryTimeout != connection.lastSetQueryTimeout) {
+			// set requested/changed queryTimeout on the server side first
+			Statement st = null;
+			try {
+				st = connection.createStatement();
+				String callstmt = "CALL \"sys\".\"settimeout\"(" + queryTimeout + ")";
+				// for debug: System.out.println("Before: " + callstmt);
+				st.execute(callstmt);
+				// for debug: System.out.println("After : " + callstmt);
+				connection.lastSetQueryTimeout = queryTimeout;
+			}
+			/* do not catch SQLException here, as we want to know it when it fails */
+			finally {
+				if (st != null) {
+					 st.close();
+				}
+			}
+		}
+
 		// create a container for the result
 		lastResponseList = connection.new ResponseList(fetchSize, maxRows, resultSetType, resultSetConcurrency);
 		// fill the header list by processing the query
@@ -681,7 +704,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * @see #setMaxFieldSize(int max)
 	 */
 	@Override
-	public int getMaxFieldSize() throws SQLException {
+	public int getMaxFieldSize() {
 		return 2*1024*1024*1024 - 2;	// MonetDB supports null terminated strings of max 2GB, see function: int UTF8_strlen()
 	}
 
@@ -696,7 +719,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * @see #setMaxRows(int max)
 	 */
 	@Override
-	public int getMaxRows() throws SQLException {
+	public int getMaxRows() {
 		return maxRows;
 	}
 
@@ -762,27 +785,8 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * @see #setQueryTimeout(int)
 	 */
 	@Override
-	public int getQueryTimeout() throws SQLException {
-		Statement st = null;
-		ResultSet rs = null;
-		try {
-			st = connection.createStatement();
-			rs = st.executeQuery("SELECT \"querytimeout\" FROM \"sys\".\"sessions\"() WHERE \"active\"");
-			if (rs != null && rs.next()) {
-				// MonetDB stores querytimeout in a bigint, so correctly deal with big int values
-				long timeout = rs.getLong(1);
-				return (timeout > Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int) timeout;
-			}
-		/* do not catch SQLException here, as we want to know it when it fails */
-		} finally {
-			if (rs != null) {
-				rs.close();
-			}
-			if (st != null) {
-				 st.close();
-			}
-		}
-		return 0;	// in case the query didn't return a result (which should normally never happen)
+	public int getQueryTimeout() {
+		return queryTimeout;
 	}
 
 	/**
@@ -815,7 +819,7 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public int getResultSetHoldability() throws SQLException {
+	public int getResultSetHoldability() {
 		return ResultSet.HOLD_CURSORS_OVER_COMMIT;
 	}
 
@@ -1027,20 +1031,9 @@ public class MonetStatement extends MonetWrapper implements Statement, AutoClose
 	 */
 	@Override
 	public void setQueryTimeout(int seconds) throws SQLException {
-		if (seconds < 0) {
+		if (seconds < 0)
 			throw new SQLException("Illegal timeout value: " + seconds, "M1M05");
-		}
-		Statement st = null;
-		try {
-			st = connection.createStatement();
-			// CALL "sys"."settimeout"(int_value)
-			st.execute("CALL \"sys\".\"settimeout\"(" + seconds + ")");
-		/* do not catch SQLException here, as we want to know it when it fails */
-		} finally {
-			if (st != null) {
-				 st.close();
-			}
-		}
+		queryTimeout = seconds;
 	}
 
 	//== 1.6 methods (JDBC 4.0)
@@ -1202,14 +1195,19 @@ final class MonetVirtualResultSet extends MonetResultSet {
 			row = tupleCount + row + 1;
 		}
 		// now place the row not farther than just before or after the result
-		if (row < 0) row = 0;	// before first
-		else if (row > tupleCount + 1) row = tupleCount + 1;	// after last
+		if (row < 0)
+			row = 0;	// before first
+		else if (row > tupleCount + 1)
+			row = tupleCount + 1;	// after last
 
 		// store it
 		this.curRow = row;
 
 		// see if we have the row
-		return !(row < 1 || row > tupleCount);
+		if (row < 1 || row > tupleCount)
+			return false;
+
+		return true;
 	}
 
 	@Override

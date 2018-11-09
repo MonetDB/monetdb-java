@@ -178,6 +178,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	private boolean queriedCommentsTable = false;
 	private boolean hasCommentsTable = false;
 
+	/** The last set query timeout on the server as used by Statement and PreparedStatement (and CallableStatement in future) */
+	protected int lastSetQueryTimeout = 0;	// 0 means no timeout, which is the default on the server
 
 	/**
 	 * Gets the initial value for the StringBuilder size.
@@ -1026,7 +1028,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 */
 	@Override
 	public String toString() {
-		return "MonetDB Connection (" + this.getJDBCURL() + ") " + (closed ? "disconnected" : "connected");
+		return "MonetDB Connection (" + getJDBCURL() + ") " +
+				(closed ? "disconnected" : "connected");
 	}
 
 	/**

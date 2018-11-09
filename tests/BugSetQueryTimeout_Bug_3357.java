@@ -16,22 +16,26 @@ public class BugSetQueryTimeout_Bug_3357 {
 		try {
 			System.out.println("QueryTimeout = " + st.getQueryTimeout());
 
-			st.setQueryTimeout(123);
-			System.out.println("QueryTimeout = " + st.getQueryTimeout());
-
-			st.setQueryTimeout(2134567890);
-			System.out.println("QueryTimeout = " + st.getQueryTimeout());
-
-			st.setQueryTimeout(0);
-			System.out.println("QueryTimeout = " + st.getQueryTimeout());
-
-			st.setQueryTimeout(-1);	// to generate an SQLException as negative timeouts are invalid
-			System.out.println("QueryTimeout = " + st.getQueryTimeout());
+			testTimeout(st, 123);
+			testTimeout(st, 123);
+			testTimeout(st, 2134567890);
+			testTimeout(st, 0);
+			testTimeout(st, 0);
+			testTimeout(st, -1);	// to generate an SQLException as negative timeouts are invalid
 		} catch (SQLException se) {
 			System.out.println("setQueryTimeout(timeout_value) throws: " + se);
 		} finally {
 			st.close();
 		}
 		con.close();
+	}
+
+	private static void testTimeout(Statement st, int secs) throws SQLException {
+		st.setQueryTimeout(secs);
+		// as the call to set the timeout is delayed till a statement is executed, issue a select statment
+		ResultSet rs = st.executeQuery("SELECT " + secs);
+		if (rs != null)
+			rs.close();
+		System.out.println("QueryTimeout = " + st.getQueryTimeout());
 	}
 }

@@ -1,39 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
-* Wed May 23 2018 Sjoerd Mullender <sjoerd@acm.org>
-- Compiled and released new jars: monetdb-jdbc-2.28.jar, monetdb-mcl-1.17.jar
-  and updated jdbcclient.jar
+* Thu Sep 20 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved example program SQLcopyinto.java and moved it to tests directory
+  for automatic testing.
 
-* Thu Apr 26 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Corrected and extended output of DatabaseMetaData methods
-  getTimeDateFunctions() and getSystemFunctions().  The Date/Time functions
-  (curdate, current_date, current_time, current_timestamp, curtime,
-  local_timezone, localtime, localtimestamp) were returned by
-  getSystemFunctions() but are now returned by getTimeDateFunctions().
-  getTimeDateFunctions() now also lists functions: date_to_str, extract, now,
-  str_to_date, str_to_time, str_to_timestamp, time_to_str and timestamp_to_str.
-- Improved DatabaseMetaData methods getTablePrivileges() and
-  getColumnPrivileges() by returning also any combination of privileges
-  for the table or column in the PRIVILEGE result column. Previously only
-  single privileges (SELECT or UPDATE or INSERT or DELETE or EXECUTE or
-  GRANT) would be returned.
-
-* Thu Apr 19 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Corrected method DatabaseMetaData.getFunctions() for result column
-  FUNCTION_TYPE.  It used to return DatabaseMetaData.functionResultUnknown
-  value for Analytic (functions.type 6) and Loader function (functions type 7).
-  It now returns DatabaseMetaData.functionNoTable for Analytic functions and
-  DatabaseMetaData.functionReturnsTable for Loader functions.
-- DatabaseMetaData methods getTables(), getColumns(), getProcedures() and
-  getFunctions() now return the comment in the REMARKS result column when a
-  comment has been set for the table / view / column / procedure / function
-  via the SQL command COMMENT ON <db-object type> <qname> IS 'comment-text'.
-
-* Thu Dec 14 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Fixed a problem with retrieving Dates and Timestamps which contained a
-  year value less than 1000. It would throw an SQLDataException with message:
-   Could not convert value to a Date. Expected JDBC date escape format
-   yyyy-[m]m-[d]d.
-  See also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6468
+* Thu Jun 28 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected return values of DatabaseMetaData methods
+  allTablesAreSelectable() and allProceduresAreCallable().
+  They used to return true but now return false.
 
