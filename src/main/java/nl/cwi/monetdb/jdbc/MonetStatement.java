@@ -735,7 +735,7 @@ public class MonetStatement
 		 * frameworks such as spring expect this. */
 		types[0] = "BIGINT";
 
-		if (header instanceof MonetConnection.UpdateResponse) {
+		if (header != null && header instanceof MonetConnection.UpdateResponse) {
 			String lastid = ((MonetConnection.UpdateResponse)header).lastid;
 			if (lastid.equals("-1")) {
 				results = new String[0][1];
@@ -838,7 +838,7 @@ public class MonetStatement
 		// we default to keep current result, which requires no action
 		header = lastResponseList.getNextResponse();
 
-		return (header instanceof MonetConnection.ResultSetResponse);
+		return (header != null && header instanceof MonetConnection.ResultSetResponse);
 	}
 
 	/**
@@ -865,7 +865,7 @@ public class MonetStatement
 	 */
 	@Override
 	public ResultSet getResultSet() throws SQLException {
-		return (header instanceof MonetConnection.ResultSetResponse)
+		return (header != null && header instanceof MonetConnection.ResultSetResponse)
 			? new MonetResultSet(this,
 					(MonetConnection.ResultSetResponse)header)
 			: null;
@@ -919,10 +919,12 @@ public class MonetStatement
 	@Override
 	public int getUpdateCount() throws SQLException {
 		int ret = -1;
-		if (header instanceof MonetConnection.UpdateResponse) {
-			ret = ((MonetConnection.UpdateResponse)header).count;
-		} else if (header instanceof MonetConnection.SchemaResponse) {
-			ret = ((MonetConnection.SchemaResponse)header).state;
+		if (header != null) {
+			if (header instanceof MonetConnection.UpdateResponse) {
+				ret = ((MonetConnection.UpdateResponse)header).count;
+			} else if (header instanceof MonetConnection.SchemaResponse) {
+				ret = ((MonetConnection.SchemaResponse)header).state;
+			}
 		}
 
 		return ret;
