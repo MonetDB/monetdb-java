@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * The current state of this Statement is that it only implements the
  * executeQuery() which returns a ResultSet where from results can be
- * read and executeUpdate() which doesn't return the affected rows.
+ * read and executeUpdate() which returns the affected rows for DML.
  * Commit and rollback are implemented, as is the autoCommit mechanism
  * which relies on server side auto commit.
  * Multi-result queries are supported using the getMoreResults() method.
@@ -381,7 +381,7 @@ public class MonetStatement
 	 *        using the method getGeneratedKeys; one of the following
 	 *        constants: Statement.RETURN_GENERATED_KEYS or
 	 *        Statement.NO_GENERATED_KEYS
-	 * @return true if the first result is a ResultSet  object; false if
+	 * @return true if the first result is a ResultSet object; false if
 	 *         it is an update count or there are no results
 	 * @throws SQLException - if a database access error occurs or the
 	 *         second parameter supplied to this method is not
@@ -417,7 +417,7 @@ public class MonetStatement
 	 *
 	 * The execute method executes an SQL statement and indicates the
 	 * form of the first result. You must then use the methods
-	 * getResultSet or getUpdateCount  to retrieve the result, and
+	 * getResultSet or getUpdateCount to retrieve the result, and
 	 * getMoreResults to move to any subsequent result(s).
 	 *
 	 * MonetDB only supports returing the generated key for one column,
@@ -461,7 +461,7 @@ public class MonetStatement
 	 *
 	 * The execute method executes an SQL statement and indicates the
 	 * form of the first result. You must then use the methods
-	 * getResultSet or getUpdateCount  to retrieve the result, and
+	 * getResultSet or getUpdateCount to retrieve the result, and
 	 * getMoreResults to move to any subsequent result(s).
 	 *
 	 * MonetDB only supports returing the generated key for one column,
@@ -767,7 +767,6 @@ public class MonetStatement
 	 *
 	 * @return the current column size limit for columns storing
 	 *         character and binary values; zero means there is no limit
-	 * @throws SQLException if a database access error occurs
 	 * @see #setMaxFieldSize(int max)
 	 */
 	@Override
@@ -782,7 +781,6 @@ public class MonetStatement
 	 *
 	 * @return the current maximum number of rows for a ResultSet object
 	 *         produced by this Statement object; zero means there is no limit
-	 * @throws SQLException if a database access error occurs
 	 * @see #setMaxRows(int max)
 	 */
 	@Override
@@ -850,7 +848,6 @@ public class MonetStatement
 	 *
 	 * @return the current query timeout limit in seconds; zero means
 	 *         there is no limit
-	 * @throws SQLException if a database access error occurs
 	 * @see #setQueryTimeout(int)
 	 */
 	@Override
@@ -891,7 +888,6 @@ public class MonetStatement
 	 *
 	 * @return either ResultSet.HOLD_CURSORS_OVER_COMMIT or
 	 *         ResultSet.CLOSE_CURSORS_AT_COMMIT
-	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public int getResultSetHoldability() {
