@@ -90,9 +90,9 @@ public class SQLcopyinto {
 			// System.out.println("host: " + host + " port: " + port + " login: " + login + " passwd: " + passw);
 
 			System.out.println("Before connecting to MonetDB server via MapiSocket");
-			List warning = server.connect(host, port, login, passw);
+			List<String> warning = server.connect(host, port, login, passw);
 			if (warning != null) {
-				for (Iterator it = warning.iterator(); it.hasNext(); ) {
+				for (Iterator<String> it = warning.iterator(); it.hasNext(); ) {
 					System.out.println("Warning: " + it.next().toString());
 				}
 			}

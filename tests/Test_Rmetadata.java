@@ -74,10 +74,10 @@ public class Test_Rmetadata {
 	}
 
 	private static String isInstance(Object obj, String type) {
-		if (obj == null)
+		if (obj == null || type == null)
 			return("(null)");
 		try {
-			Class c = Class.forName(type);
+			Class<?> c = Class.forName(type);
 			if (c.isInstance(obj)) {
 				return(obj.getClass().getName() + " is an instance of " + type);
 			} else {

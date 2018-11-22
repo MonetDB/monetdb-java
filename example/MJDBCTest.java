@@ -18,7 +18,7 @@ import java.sql.*;
 public class MJDBCTest {
 	public static void main(String[] args) throws Exception {
 		String MonetDB_JDBC_URL = "jdbc:monetdb://localhost:50000/demo";	// change host, port and databasename
-		Connection con;
+		Connection con = null;
 		try {
 			con = DriverManager.getConnection(MonetDB_JDBC_URL, "monetdb", "monetdb");
 		} catch (SQLException e) {
