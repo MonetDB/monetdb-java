@@ -67,5 +67,5 @@ JDBC 4.1 defines the following SQLException subclass mappings:
    null SQLTimeoutException
 
 See also: http://docs.oracle.com/javase/7/docs/api/java/sql/SQLException.html
-See also: https://en.wikibooks.org/wiki/Structured_Query_Language/SQLSTATE
+See also: https://en.wikipedia.org/wiki/SQLSTATE
 
