@@ -13,7 +13,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.sql.Blob;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 
 /**
  * The MonetBlob class implements the {@link java.sql.Blob} interface.
@@ -239,7 +238,7 @@ public final class MonetBlob implements Blob {
 	 */
 	@Override
 	public OutputStream setBinaryStream(long pos) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Method setBinaryStream(long pos) not supported", "0A000");
+		throw MonetWrapper.newSQLFeatureNotSupportedException("setBinaryStream");
 	}
 
 	/**

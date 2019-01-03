@@ -29,7 +29,6 @@ import java.sql.RowId;
 import java.sql.SQLData;
 import java.sql.SQLDataException;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLOutput;
 import java.sql.SQLXML;
 import java.sql.Struct;
@@ -965,6 +964,8 @@ public class MonetPreparedStatement
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x an Array object that maps an SQL ARRAY value
 	 * @throws SQLException if a database access error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public void setArray(int parameterIndex, Array x) throws SQLException {
@@ -1010,6 +1011,8 @@ public class MonetPreparedStatement
 	 * @param x the Java input stream that contains the ASCII parameter value
 	 * @param length the number of bytes in the stream
 	 * @throws SQLException if a database access error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public void setAsciiStream(int parameterIndex, InputStream x, int length)
@@ -1310,8 +1313,6 @@ public class MonetPreparedStatement
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param reader the java.io.Reader object that contains the Unicode data
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public void setCharacterStream(int parameterIndex, Reader reader)
@@ -1376,8 +1377,6 @@ public class MonetPreparedStatement
 	 * @param reader an object that contains the data to set the parameter
 	 *          value to
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public void setClob(int parameterIndex, Reader reader) throws SQLException {
@@ -1548,8 +1547,6 @@ public class MonetPreparedStatement
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
@@ -1566,8 +1563,6 @@ public class MonetPreparedStatement
 	 * @param value the parameter value
 	 * @param length the number of characters in the parameter data.
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public void setNCharacterStream(int parameterIndex, Reader value, long length)
@@ -1641,8 +1636,6 @@ public class MonetPreparedStatement
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public void setNString(int parameterIndex, String value) throws SQLException {
@@ -1777,6 +1770,8 @@ public class MonetPreparedStatement
 	 *              reader.  For all other types, this value will be
 	 *              ignored.
 	 * @throws SQLException if a database access error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 * @see Types
 	 */
 	@Override
@@ -2567,6 +2562,8 @@ public class MonetPreparedStatement
 	 *          parameter value as two-byte Unicode characters
 	 * @param length the number of bytes in the stream
 	 * @throws SQLException if a database access error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	@Deprecated
@@ -2687,17 +2684,5 @@ public class MonetPreparedStatement
 	 */
 	private static final SQLDataException newSQLInvalidParameterIndexException(int paramIdx) {
 		return new SQLDataException("Invalid Parameter Index number: " + paramIdx, "22010");
-	}
-
-	/**
-	 * Small helper method that formats the "Method ... not implemented" message
-	 * and creates a new SQLFeatureNotSupportedException object
-	 * whose SQLState is set to "0A000": feature not supported.
-	 *
-	 * @param name the method name
-	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000
-	 */
-	private static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
-		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 }

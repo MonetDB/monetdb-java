@@ -316,7 +316,7 @@ final public class MonetDriver implements Driver {
 	 */
 	@Override
 	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		throw new SQLFeatureNotSupportedException("java.util.logging not in use", "0A000");
+		throw MonetWrapper.newSQLFeatureNotSupportedException("getParentLogger");
 	}
 
 	//== end methods of interface driver

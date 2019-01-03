@@ -15,7 +15,6 @@ import java.io.StringReader;
 import java.io.Writer;
 import java.sql.Clob;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 
 /**
  * The MonetClob class implements the {@link java.sql.Clob} interface.
@@ -71,7 +70,7 @@ public final class MonetClob implements Clob {
 	 */
 	@Override
 	public InputStream getAsciiStream() throws SQLException {
-		throw new SQLFeatureNotSupportedException("Method getAsciiStream() not supported", "0A000");
+		throw MonetWrapper.newSQLFeatureNotSupportedException("getAsciiStream");
 	}
 
 	/**
@@ -221,7 +220,7 @@ public final class MonetClob implements Clob {
 	 */
 	@Override
 	public OutputStream setAsciiStream(long pos) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Method setAsciiStream(long pos) not supported", "0A000");
+		throw MonetWrapper.newSQLFeatureNotSupportedException("setAsciiStream");
 	}
 
 	/**
@@ -242,7 +241,7 @@ public final class MonetClob implements Clob {
 	 */
 	@Override
 	public Writer setCharacterStream(long pos) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Method setCharacterStream(long pos) not supported", "0A000");
+		throw MonetWrapper.newSQLFeatureNotSupportedException("setCharacterStream");
 	}
 
 	/**

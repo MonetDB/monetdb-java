@@ -9,6 +9,7 @@
 package nl.cwi.monetdb.jdbc;
 
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 
 /**
  * A Wrapper class which provide the ability to retrieve the delegate instance
@@ -74,5 +75,17 @@ public class MonetWrapper implements java.sql.Wrapper {
 			return (T) this;
 		}
 		throw new SQLException("Cannot unwrap to interface: " + (iface != null ? iface.getName() : ""), "0A000");
+	}
+
+	/**
+	 * Small helper method that formats the "Method ... not implemented" message
+	 * and creates a new SQLFeatureNotSupportedException object
+	 * whose SQLState is set to "0A000": feature not supported.
+	 *
+	 * @param name the method name
+	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000
+	 */
+	static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
+		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 }

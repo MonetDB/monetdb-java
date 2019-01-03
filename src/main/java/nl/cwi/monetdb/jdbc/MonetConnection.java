@@ -20,7 +20,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLNonTransientConnectionException;
 import java.sql.SQLWarning;
 import java.sql.Savepoint;
@@ -513,7 +512,7 @@ public class MonetConnection
 	 * @see #setAutoCommit(boolean)
 	 */
 	@Override
-	public boolean getAutoCommit() throws SQLException {
+	public boolean getAutoCommit() {
 		return autoCommit;
 	}
 
@@ -521,11 +520,9 @@ public class MonetConnection
 	 * Retrieves this Connection object's current catalog name.
 	 *
 	 * @return the current catalog name or null if there is none
-	 * @throws SQLException if a database access error occurs or the
-	 *         current language is not SQL
 	 */
 	@Override
-	public String getCatalog() throws SQLException {
+	public String getCatalog() {
 		// MonetDB does NOT support catalogs
 		return null;
 	}
@@ -653,10 +650,8 @@ public class MonetConnection
 	 * A driver may convert the JDBC SQL grammar into its system's native SQL grammar prior to sending it.
 	 * This method returns the native form of the statement that the driver would have sent.
 	 *
-	 * Parameters:
-	 *   sql - an SQL statement that may contain one or more '?' parameter placeholders.
-	 * Returns: the native form of this statement
-	 * Throws: SQLException - if a database access error occurs or this method is called on a closed connection
+	 * @param sql - an SQL statement that may contain one or more '?' parameter placeholders.
+	 * @return the native form of this statement
 	 */
 	@Override
 	public String nativeSQL(String sql) {
@@ -679,11 +674,11 @@ public class MonetConnection
 	 * and have a concurrency level of CONCUR_READ_ONLY.
 	 * The holdability of the created result sets can be determined by calling getHoldability().
 	 *
-	 * Parameters:
-	 *   sql - an SQL statement that may contain one or more '?' parameter placeholders.
+	 * @param sql - an SQL statement that may contain one or more '?' parameter placeholders.
 	 *	Typically this statement is specified using JDBC call escape syntax.
-	 * Returns: a new default CallableStatement object containing the pre-compiled SQL statement
-	 * Throws: SQLException - if a database access error occurs or this method is called on a closed connection
+	 * @return a new default CallableStatement object containing the pre-compiled SQL statement
+	 * @throws SQLException - if a database access error occurs or this method is called on a closed connection
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method.
 	 */
 	@Override
 	public CallableStatement prepareCall(String sql) throws SQLException {
@@ -695,18 +690,16 @@ public class MonetConnection
 	 * This method is the same as the prepareCall method above, but it allows the default result set type and concurrency to be overridden.
 	 * The holdability of the created result sets can be determined by calling getHoldability().
 	 *
-	 * Parameters:
-	 *   sql - a String object that is the SQL statement to be sent to the database; may contain on or more '?' parameters
+	 * @param sql - a String object that is the SQL statement to be sent to the database; may contain on or more '?' parameters
 	 *	Typically this statement is specified using JDBC call escape syntax.
-	 *   resultSetType - a result set type; one of ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, or ResultSet.TYPE_SCROLL_SENSITIVE
-	 *   resultSetConcurrency - a concurrency type; one of ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
-	 * Returns: a new CallableStatement object containing the pre-compiled SQL statement that
+	 * @param resultSetType - a result set type; one of ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, or ResultSet.TYPE_SCROLL_SENSITIVE
+	 * @param resultSetConcurrency - a concurrency type; one of ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
+	 * @return a new CallableStatement object containing the pre-compiled SQL statement that
 	 *	will produce ResultSet objects with the given type and concurrency
-	 * Throws:
-	 *   SQLException - if a database access error occurs, this method is called on a closed connection or
-	 *		the given parameters are not ResultSet constants indicating type and concurrency
-	 *   SQLFeatureNotSupportedException - if the JDBC driver does not support this method or
-	 *		this method is not supported for the specified result set type and result set concurrency.
+	 * @throws SQLException - if a database access error occurs, this method is called on a closed connection or
+	 *	the given parameters are not ResultSet constants indicating type and concurrency
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method or
+	 *	this method is not supported for the specified result set type and result set concurrency.
 	 */
 	@Override
 	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
@@ -717,24 +710,22 @@ public class MonetConnection
 	 * Creates a CallableStatement object that will generate ResultSet objects with the given type and concurrency.
 	 * This method is the same as the prepareCall method above, but it allows the default result set type, result set concurrency type and holdability to be overridden.
 	 *
-	 * Parameters:
-	 *   sql - a String object that is the SQL statement to be sent to the database; may contain on or more '?' parameters
+	 * @param sql - a String object that is the SQL statement to be sent to the database; may contain on or more '?' parameters
 	 *	Typically this statement is specified using JDBC call escape syntax.
-	 *   resultSetType - a result set type; one of ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, or ResultSet.TYPE_SCROLL_SENSITIVE
-	 *   resultSetConcurrency - a concurrency type; one of ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
-	 *   resultSetHoldability - one of the following ResultSet constants: ResultSet.HOLD_CURSORS_OVER_COMMIT or ResultSet.CLOSE_CURSORS_AT_COMMIT
-	 * Returns: a new CallableStatement object, containing the pre-compiled SQL statement, that will generate ResultSet objects with the given type, concurrency, and holdability
-	 * Throws:
-	 *   SQLException - if a database access error occurs, this method is called on a closed connection or
-	 *		the given parameters are not ResultSet constants indicating type, concurrency, and holdability
-	 *   SQLFeatureNotSupportedException - if the JDBC driver does not support this method or
-	 *		this method is not supported for the specified result set type, result set holdability and result set concurrency.
+	 * @param resultSetType - a result set type; one of ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE, or ResultSet.TYPE_SCROLL_SENSITIVE
+	 * @param resultSetConcurrency - a concurrency type; one of ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
+	 * @param resultSetHoldability - one of the following ResultSet constants: ResultSet.HOLD_CURSORS_OVER_COMMIT or ResultSet.CLOSE_CURSORS_AT_COMMIT
+	 * @return a new CallableStatement object, containing the pre-compiled SQL statement, that will generate ResultSet objects with the given type, concurrency, and holdability
+	 * @throws SQLException - if a database access error occurs, this method is called on a closed connection or
+	 *	the given parameters are not ResultSet constants indicating type, concurrency, and holdability
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method or
+	 *	this method is not supported for the specified result set type, result set holdability and result set concurrency.
 	 */
 	@Override
 	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
 		throws SQLException
 	{
-		throw new SQLFeatureNotSupportedException("prepareCall() not yet supported", "0A000");
+		throw newSQLFeatureNotSupportedException("prepareCall");
 		/* a request to implement prepareCall() has already been logged, see https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402 */
 	}
 
@@ -839,8 +830,7 @@ public class MonetConnection
 		} catch (IllegalArgumentException e) {
 			throw new SQLException(e.toString(), "M0M03");
 		}
-		// we don't have to catch SQLException because that is declared to
-		// be thrown
+		// we don't have to catch SQLException because that is declared to be thrown
 	}
 
 	/**
@@ -879,11 +869,10 @@ public class MonetConnection
 	@Override
 	public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
 		if (autoGeneratedKeys != Statement.RETURN_GENERATED_KEYS &&
-			autoGeneratedKeys != Statement.NO_GENERATED_KEYS)
+		    autoGeneratedKeys != Statement.NO_GENERATED_KEYS)
 			throw new SQLException("Invalid argument, expected RETURN_GENERATED_KEYS or NO_GENERATED_KEYS", "M1M05");
 
-		/* MonetDB has no way to disable this, so just do the normal
-		 * thing ;) */
+		/* MonetDB has no way to disable this, so just do the normal thing ;) */
 		return prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
 	}
 
@@ -904,19 +893,16 @@ public class MonetConnection
 	 * Result sets created using the returned PreparedStatement object will by default be type TYPE_FORWARD_ONLY and have
 	 * a concurrency level of CONCUR_READ_ONLY. The holdability of the created result sets can be determined by calling getHoldability().
 	 *
-	 * Parameters:
-	 *     sql - an SQL statement that may contain one or more '?' IN parameter placeholders
-	 *     columnIndexes - an array of column indexes indicating the columns that should be returned from the inserted row or rows
-	 * Returns:
-	 *     a new PreparedStatement object, containing the pre-compiled statement, that is capable of
-	 *     returning the auto-generated keys designated by the given array of column indexes
-	 * Throws:
-	 *     SQLException - if a database access error occurs or this method is called on a closed connection
-	 *     SQLFeatureNotSupportedException - if the JDBC driver does not support this method
+	 * @param sql - an SQL statement that may contain one or more '?' IN parameter placeholders
+	 * @param columnIndexes - an array of column indexes indicating the columns that should be returned from the inserted row or rows
+	 * @return a new PreparedStatement object, containing the pre-compiled statement, that is capable of
+	 * 	returning the auto-generated keys designated by the given array of column indexes
+	 * @throws SQLException - if a database access error occurs or this method is called on a closed connection
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
 	@Override
 	public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
-		throw new SQLFeatureNotSupportedException("prepareStatement(String sql, int[] columnIndexes) not supported", "0A000");
+		throw newSQLFeatureNotSupportedException("prepareStatement(String sql, int[] columnIndexes)");
 	}
 
 	/**
@@ -936,19 +922,16 @@ public class MonetConnection
 	 * Result sets created using the returned PreparedStatement object will by default be type TYPE_FORWARD_ONLY and have
 	 * a concurrency level of CONCUR_READ_ONLY. The holdability of the created result sets can be determined by calling getHoldability().
 	 *
-	 * Parameters:
-	 *     sql - an SQL statement that may contain one or more '?' IN parameter placeholders
-	 *     columnNames - an array of column names indicating the columns that should be returned from the inserted row or rows
-	 * Returns:
-	 *     a new PreparedStatement object, containing the pre-compiled statement, that is capable of
-	 *     returning the auto-generated keys designated by the given array of column names
-	 * Throws:
-	 *     SQLException - if a database access error occurs or this method is called on a closed connection
-	 *     SQLFeatureNotSupportedException - if the JDBC driver does not support this method
+	 * @param sql - an SQL statement that may contain one or more '?' IN parameter placeholders
+	 * @param columnNames - an array of column names indicating the columns that should be returned from the inserted row or rows
+	 * @return a new PreparedStatement object, containing the pre-compiled statement, that is capable of
+	 * 	returning the auto-generated keys designated by the given array of column names
+	 * @throws SQLException - if a database access error occurs or this method is called on a closed connection
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
 	@Override
 	public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
-		throw new SQLFeatureNotSupportedException("prepareStatement(String sql, String[] columnNames) not supported", "0A000");
+		throw newSQLFeatureNotSupportedException("prepareStatement(String sql, String[] columnNames)");
 	}
 
 	/**
@@ -1049,7 +1032,7 @@ public class MonetConnection
 	 * does not support catalogs, it will silently ignore this request.
 	 */
 	@Override
-	public void setCatalog(String catalog) throws SQLException {
+	public void setCatalog(String catalog) {
 		// silently ignore this request as MonetDB does not support catalogs
 	}
 
@@ -1061,13 +1044,15 @@ public class MonetConnection
 	 * @param holdability - a ResultSet holdability constant; one of
 	 *	ResultSet.HOLD_CURSORS_OVER_COMMIT or
 	 *	ResultSet.CLOSE_CURSORS_AT_COMMIT
+	 * @throws SQLException - if a database access error occurs or this method is called on a closed connection
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method or argument
 	 * @see #getHoldability()
 	 */
 	@Override
 	public void setHoldability(int holdability) throws SQLException {
 		// we only support ResultSet.HOLD_CURSORS_OVER_COMMIT
 		if (holdability != ResultSet.HOLD_CURSORS_OVER_COMMIT)
-			throw new SQLFeatureNotSupportedException("setHoldability(CLOSE_CURSORS_AT_COMMIT) not supported", "0A000");
+			throw newSQLFeatureNotSupportedException("setHoldability(CLOSE_CURSORS_AT_COMMIT)");
 	}
 
 	/**
@@ -1205,7 +1190,7 @@ public class MonetConnection
 	 */
 	@Override
 	public java.sql.Array createArrayOf(String typeName, Object[] elements) throws SQLException {
-		throw new SQLFeatureNotSupportedException("createArrayOf() not supported", "0A000");
+		throw newSQLFeatureNotSupportedException("createArrayOf");
 	}
 
 
@@ -1256,7 +1241,7 @@ public class MonetConnection
 	 */
 	@Override
 	public java.sql.NClob createNClob() throws SQLException {
-		throw new SQLFeatureNotSupportedException("createNClob() not supported", "0A000");
+		throw newSQLFeatureNotSupportedException("createNClob");
 	}
 
 	/**
@@ -1276,7 +1261,7 @@ public class MonetConnection
 	 */
 	@Override
 	public java.sql.Struct createStruct(String typeName, Object[] attributes) throws SQLException {
-		throw new SQLFeatureNotSupportedException("createStruct() not supported", "0A000");
+		throw newSQLFeatureNotSupportedException("createStruct");
 	}
 
 	/**
@@ -1293,7 +1278,7 @@ public class MonetConnection
 	 */
 	@Override
 	public java.sql.SQLXML createSQLXML() throws SQLException {
-		throw new SQLFeatureNotSupportedException("createSQLXML() not supported", "0A000");
+		throw newSQLFeatureNotSupportedException("createSQLXML");
 	}
 
 	/**
@@ -1885,8 +1870,6 @@ public class MonetConnection
 		/**
 		 * Instructs the Response implementation to close and do the
 		 * necessary clean up procedures.
-		 *
-		 * @throws SQLException
 		 */
 		public abstract void close();
 	}
@@ -2408,8 +2391,6 @@ public class MonetConnection
 		/**
 		 * Instructs the Response implementation to close and do the
 		 * necessary clean up procedures.
-		 *
-		 * @throws SQLException
 		 */
 		@Override
 		public void close() {
@@ -2592,7 +2573,8 @@ public class MonetConnection
 				// free resources if we're running forward only
 				if (curResponse >= 0 && curResponse < responses.size()) {
 					Response tmp = responses.get(curResponse);
-					if (tmp != null) tmp.close();
+					if (tmp != null)
+						tmp.close();
 					responses.set(curResponse, null);
 				}
 			}
@@ -2613,7 +2595,8 @@ public class MonetConnection
 		 * @param i the index position of the header to close
 		 */
 		void closeResponse(int i) {
-			if (i < 0 || i >= responses.size()) return;
+			if (i < 0 || i >= responses.size())
+				return;
 			Response tmp = responses.set(i, null);
 			if (tmp != null)
 				tmp.close();

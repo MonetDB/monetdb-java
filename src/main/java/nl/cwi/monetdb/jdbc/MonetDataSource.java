@@ -215,6 +215,6 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 */
 	@Override
 	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
-		throw new SQLFeatureNotSupportedException("java.util.logging not in use", "0A000");
+		throw newSQLFeatureNotSupportedException("getParentLogger");
 	}
 }
