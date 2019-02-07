@@ -4178,5 +4178,27 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		return true;
 	}
 
+	//== 1.8 methods (JDBC 4.2)
+
+	/**
+	 * Retrieves the maximum number of bytes this database allows for the logical size for a LOB.
+	 * The default implementation will return 0
+	 * @return the maximum number of bytes
+	 */
+	@Override
+	public long getMaxLogicalLobSize() {
+		return 0;
+	}
+
+	/**
+	 * Retrieves whether this database supports REF CURSOR.
+	 * The default implementation will return false
+	 * @return true if so, false otherwise
+	 */
+	@Override
+	public boolean supportsRefCursors() {
+		return false;
+	}
+
 	//== end methods interface DatabaseMetaData
 }
