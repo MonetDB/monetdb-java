@@ -481,20 +481,20 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	// SQL query parts shared by four get<Type>Functions() below
-	private static final String FunctionsSelect = "SELECT DISTINCT \"name\" FROM \"sys\".\"functions\" ";
-	private static final String FunctionsWhere = "WHERE \"id\" IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1 AND \"name\" = 'arg_1' AND \"type\" IN ";
-	// Scalar functions sql_max(x, y) and sql_min(x, y) are defined in sys.args only for type 'any'.
-	// Easiest way to include them in the Num, Str and TimeDate lists is to add them explicitly via UNION SQL:
-	private static final String AddFunctionsMaxMin = " UNION SELECT 'sql_max' UNION SELECT 'sql_min'";
+	private static final String FunctionsSelect = "SELECT DISTINCT \"name\" FROM \"sys\".\"functions\" WHERE ";
+	private static final String FunctionsWhere = "(\"id\" IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1 AND \"name\" = 'arg_1' AND \"type\" IN ";
+	// Scalar functions sql_max(x,y), sql_min(x,y), greatest(x,y) and least(x,y) are defined in sys.args for type 'any' and usable as num, str and timedate functions.
+	private static final String OrFunctionsMaxMin = " OR \"name\" IN ('sql_max','sql_min','least','greatest')";
 	private static final String FunctionsOrderBy1 = " ORDER BY 1";
 
 	@Override
 	public String getNumericFunctions() {
 		String match =
 			"('tinyint', 'smallint', 'int', 'bigint', 'hugeint', 'decimal', 'double', 'real') )" +
+			" AND \"type\" = 1" +	// only scalar functions
 			// exclude functions which belong to the 'str' module
-			" AND \"mod\" <> 'str'";
-		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + AddFunctionsMaxMin + FunctionsOrderBy1);
+			" AND \"mod\" <> 'str')";	// to filter out string functions: 'code' and 'space'
+		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + FunctionsOrderBy1);
 	}
 
 	@Override
@@ -502,24 +502,23 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		String match =
 			"('char', 'varchar', 'clob', 'json') )" +
 			// include functions which belong to the 'str' module
-			" OR \"mod\" = 'str'";
-		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + AddFunctionsMaxMin + FunctionsOrderBy1);
+			" OR \"mod\" = 'str')";
+		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + FunctionsOrderBy1);
 	}
 
 	@Override
 	public String getSystemFunctions() {
 		String wherePart =
-			"WHERE \"id\" NOT IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1)" +
-			" AND \"id\" IN (SELECT \"function_id\" FROM \"sys\".\"systemfunctions\")" +
+			"\"id\" NOT IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1)" +	// without any args
+			" AND \"id\" IN (SELECT \"function_id\" FROM \"sys\".\"systemfunctions\")" +	// only functions marked as system
 			" AND \"type\" = 1" +	// only scalar functions
 			// exclude functions which belong to the 'mtime' module
 			" AND \"mod\" <> 'mtime'" +
-			" AND \"name\" NOT IN ('localtime', 'localtimestamp')" +
+			" AND \"name\" NOT IN ('localtime','localtimestamp')" +
 			// add system functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'cast'" +
-			" UNION SELECT 'convert'" +
 			" UNION SELECT 'coalesce'" +
-			" UNION SELECT 'extract'" +
+			" UNION SELECT 'convert'" +
 			" UNION SELECT 'ifthenelse'" +
 			" UNION SELECT 'isnull'" +
 			" UNION SELECT 'nullif'";
@@ -528,8 +527,13 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	@Override
 	public String getTimeDateFunctions() {
-		String wherePart = "WHERE \"mod\" = 'mtime' OR \"name\" IN ('localtime', 'localtimestamp') UNION SELECT 'extract' UNION SELECT 'now'";
-		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + AddFunctionsMaxMin + FunctionsOrderBy1);
+		String wherePart =
+			 "\"mod\" = 'mtime' OR \"name\" IN ('epoch','localtime','localtimestamp')";
+		String unionPart =
+			// add time date functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
+			" UNION SELECT 'extract'" +
+			" UNION SELECT 'now'";
+		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + OrFunctionsMaxMin + unionPart + FunctionsOrderBy1);
 	}
 
 	/**

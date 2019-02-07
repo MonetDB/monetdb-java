@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Feb  7 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved MonetDatabaseMetaData methods:
+  - getNumericFunctions(): it no longer lists aggregate functions: avg, prod and sum
+  - getSystemFunctions(): it no longer lists timedate function: extract
+  - getTimeDateFunctions(): it now also lists function: epoch
+
 * Thu Sep 20 2018 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved example program SQLcopyinto.java and moved it to tests directory
   for automatic testing.
