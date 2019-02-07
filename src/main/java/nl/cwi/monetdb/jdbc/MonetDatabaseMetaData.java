@@ -3049,9 +3049,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		query.append("SELECT \"sqlname\" AS \"TYPE_NAME\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("\"sqlname\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"\"digits\" AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
-			"cast(CASE WHEN \"systemname\" IN ('str', 'inet', 'json', 'url', 'uuid') THEN ''''" +
+			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','blob','sqlblob') THEN ''''" +
 				" ELSE NULL END AS varchar(2)) AS \"LITERAL_PREFIX\", " +
-			"cast(CASE WHEN \"systemname\" IN ('str', 'inet', 'json', 'url', 'uuid') THEN ''''" +
+			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','blob','sqlblob') THEN ''''" +
 				" ELSE NULL END AS varchar(2)) AS \"LITERAL_SUFFIX\", " +
 			"CASE WHEN \"sqlname\" IN ('char', 'varchar') THEN 'max length'" +
 				" WHEN \"sqlname\" = 'decimal' THEN 'precision, scale'" +
@@ -3059,10 +3059,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 				" ELSE NULL END AS \"CREATE_PARAMS\", " +
 			"cast(CASE WHEN \"systemname\" = 'oid' THEN ").append(DatabaseMetaData.typeNoNulls)
 				.append(" ELSE ").append(DatabaseMetaData.typeNullable).append(" END AS smallint) AS \"NULLABLE\", " +
-			"CASE WHEN \"systemname\" IN ('str', 'json', 'url') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
-			"cast(CASE \"systemname\" WHEN 'table' THEN ").append(DatabaseMetaData.typePredNone)
-				.append(" WHEN 'str' THEN ").append(DatabaseMetaData.typePredChar)
-				.append(" WHEN 'sqlblob' THEN ").append(DatabaseMetaData.typePredChar)
+			"CASE WHEN \"systemname\" IN ('str','json','url') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
+			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','blob','sqlblob') THEN ").append(DatabaseMetaData.typeSearchable)
 				.append(" ELSE ").append(DatabaseMetaData.typePredBasic).append(" END AS smallint) AS \"SEARCHABLE\", " +
 			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','real','double','sec_interval','month_interval') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
 			"CASE \"sqlname\" WHEN 'decimal' THEN true ELSE false END AS \"FIXED_PREC_SCALE\", " +
