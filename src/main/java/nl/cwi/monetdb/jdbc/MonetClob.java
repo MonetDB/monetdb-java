@@ -15,6 +15,7 @@ import java.io.StringReader;
 import java.io.Writer;
 import java.sql.Clob;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 
 /**
  * The MonetClob class implements the {@link java.sql.Clob} interface.

@@ -32,6 +32,7 @@ import java.sql.RowId;
 import java.sql.SQLData;
 import java.sql.SQLDataException;
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLInput;
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
