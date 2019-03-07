@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Mar  7 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved MonetDatabaseMetaData methods:
+  - getNumericFunctions(): it now includes functions: degrees, fuse, ms_round, ms_str, ms_trunc and radians.
+  - getStringFunctions(): it now includes function: position.
+  - supportsIntegrityEnhancementFacility() now returns false, as we do not enforce CHECK constraints yet.
+
 * Thu Feb  7 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved MonetDatabaseMetaData methods:
   - getNumericFunctions(): it no longer lists aggregate functions: avg, prod and sum

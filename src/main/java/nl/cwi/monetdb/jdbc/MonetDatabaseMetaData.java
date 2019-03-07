@@ -493,7 +493,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"('tinyint', 'smallint', 'int', 'bigint', 'hugeint', 'decimal', 'double', 'real') )" +
 			" AND \"type\" = 1" +	// only scalar functions
 			// exclude functions which belong to the 'str' module
-			" AND \"mod\" <> 'str')";	// to filter out string functions: 'code' and 'space'
+			" AND \"mod\" <> 'str')" +	// to filter out string functions: 'code' and 'space'
+			" OR \"name\" IN ('degrees','fuse','ms_round','ms_str','ms_trunc','radians')";
 		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + FunctionsOrderBy1);
 	}
 
@@ -503,7 +504,10 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			"('char', 'varchar', 'clob', 'json') )" +
 			// include functions which belong to the 'str' module
 			" OR \"mod\" = 'str')";
-		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + FunctionsOrderBy1);
+		String unionPart =
+			// add system functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
+			" UNION SELECT 'position'";
+		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + unionPart + FunctionsOrderBy1);
 	}
 
 	@Override
@@ -528,7 +532,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	@Override
 	public String getTimeDateFunctions() {
 		String wherePart =
-			 "\"mod\" = 'mtime' OR \"name\" IN ('epoch','localtime','localtimestamp')";
+			 "\"mod\" IN ('mtime','timestamp') OR \"name\" IN ('localtime','localtimestamp')";
 		String unionPart =
 			// add time date functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'extract'" +
