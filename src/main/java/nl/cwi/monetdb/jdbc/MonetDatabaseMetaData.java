@@ -965,13 +965,21 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Is the SQL Integrity Enhancement Facility supported?
-	 * Our best guess is that this means support for constraints
+	 *
+	 * The SQL Integrity Enhancement facility offers additional tools for referential integrity,
+	 * CHECK constraint clauses, and DEFAULT clauses. Referential integrity allows specification of
+	 * primary and foreign keys with the requirement that no foreign key row may be inserted or
+	 * updated unless a matching primary key row exists. Check clauses allow specification of
+	 * inter-column constraints to be maintained by the database system.
+	 * Default clauses provide optional default values for missing data. 
+	 *
+	 * We currently do not supprt CHECK constraints (see bug 3568) nor deferrable FK constraints.
 	 *
 	 * @return true if so
 	 */
 	@Override
 	public boolean supportsIntegrityEnhancementFacility() {
-		return true;
+		return false;
 	}
 
 	/**
