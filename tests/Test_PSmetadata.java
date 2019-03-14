@@ -58,19 +58,7 @@ public class Test_PSmetadata {
 				System.out.println("\twritable      " + rsmd.isWritable(col));
 			}
 
-			pmd = pstmt.getParameterMetaData();
-			System.out.println("1. 1 parameter:\t" + pmd.getParameterCount());
-			for (int col = 1; col <= pmd.getParameterCount(); col++) {
-				System.out.println("" + col + ".");
-				System.out.println("\tnullable      " + pmd.isNullable(col));
-				System.out.println("\tsigned        " + pmd.isSigned(col));
-				System.out.println("\tprecision     " + pmd.getPrecision(col));
-				System.out.println("\tscale         " + pmd.getScale(col));
-				System.out.println("\ttype          " + pmd.getParameterType(col));
-				System.out.println("\ttypename      " + pmd.getParameterTypeName(col));
-				System.out.println("\tclassname     " + pmd.getParameterClassName(col));
-				System.out.println("\tmode          " + pmd.getParameterMode(col));
-			}
+			showParams(pstmt);
 		} catch (SQLException e) {
 			System.out.println("failed :( "+ e.getMessage());
 			System.out.println("ABORTING TEST!!!");
@@ -78,5 +66,50 @@ public class Test_PSmetadata {
 
 		con.rollback();
 		con.close();
+	}
+
+	// some utility methods for showing table content and params meta data
+	static void showParams(PreparedStatement stmt) {
+		try {
+			ParameterMetaData pmd = stmt.getParameterMetaData();
+			System.out.println(pmd.getParameterCount() + " parameters reported:");
+			for (int parm = 1; parm <= pmd.getParameterCount(); parm++) {
+				System.out.print(parm + ".");
+				int nullable = pmd.isNullable(parm);
+				System.out.println("\tnullable  " + nullable + " (" + paramNullableName(nullable) + ")");
+				System.out.println("\tsigned    " + pmd.isSigned(parm));
+				System.out.println("\tprecision " + pmd.getPrecision(parm));
+				System.out.println("\tscale     " + pmd.getScale(parm));
+				System.out.println("\ttype      " + pmd.getParameterType(parm));
+				System.out.println("\ttypename  " + pmd.getParameterTypeName(parm));
+				System.out.println("\tclassname " + pmd.getParameterClassName(parm));
+				int mode = pmd.getParameterMode(parm);
+				System.out.println("\tmode      " + mode + " (" + paramModeName(mode) + ")");
+			}
+		} catch (SQLException e) {
+			System.out.println("showParams failed: " + e.getMessage());
+		}
+	}
+
+	static String paramNullableName(int nullable) {
+		if (nullable == ParameterMetaData.parameterNoNulls)
+			return "NO";
+		if (nullable == ParameterMetaData.parameterNullable)
+			return "YA";
+		if (nullable == ParameterMetaData.parameterNullableUnknown)
+			return "UNKNOWN";
+		return "INVALID" + nullable;
+	}
+
+	static String paramModeName(int mode) {
+		if (mode == ParameterMetaData.parameterModeIn)
+			return "IN";
+		if (mode == ParameterMetaData.parameterModeInOut)
+			return "INOUT";
+		if (mode == ParameterMetaData.parameterModeOut)
+			return "OUT";
+		if (mode == ParameterMetaData.parameterModeUnknown)
+			return "UNKNOWN";
+		return "INVALID" + mode;
 	}
 }
