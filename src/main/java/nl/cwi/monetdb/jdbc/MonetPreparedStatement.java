@@ -45,7 +45,7 @@ import java.util.Map;
  *
  * This implementation of the PreparedStatement interface uses the
  * capabilities of the MonetDB/SQL backend to prepare and execute
- * queries.  The backend takes care of finding the '?'s in the input and
+ * statements.  The backend takes care of finding the '?'s in the input and
  * returns the types it expects for them.
  *
  * An example of a server response on a prepare query is:
@@ -690,7 +690,15 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public String getColumnClassName(int column) throws SQLException {
-				return MonetResultSet.getClassForType(getColumnType(column)).getName();
+				String typeName = getColumnTypeName(column);
+				Map<String,Class<?>> map = getConnection().getTypeMap();
+				Class<?> c;
+				if (map.containsKey(typeName)) {
+					c = (Class)map.get(typeName);
+				} else {
+					c = MonetResultSet.getClassForType(getColumnType(column));
+				}
+				return c.getName();
 			}
 
 			/**
@@ -789,7 +797,6 @@ public class MonetPreparedStatement
 					if (column[i] == null)
 						cnt++;
 				}
-
 				return cnt;
 			}
 
@@ -828,10 +835,17 @@ public class MonetPreparedStatement
 					case Types.TINYINT:
 					case Types.SMALLINT:
 					case Types.INTEGER:
-					case Types.BIGINT:
 					case Types.REAL:
 					case Types.FLOAT:
 					case Types.DOUBLE:
+						return true;
+					case Types.BIGINT:
+						String monettype = getParameterTypeName(param);
+						if (monettype != null) {
+							if ("oid".equals(monettype)
+							 || "ptr".equals(monettype))
+								return false;
+						}
 						return true;
 					case Types.BIT: // we don't use type BIT, it's here for completeness
 					case Types.BOOLEAN:
@@ -940,7 +954,7 @@ public class MonetPreparedStatement
 
 			/**
 			 * Retrieves the designated parameter's mode.
-			 * For MonetDB/SQL this is currently always unknown.
+			 * For MonetDB/SQL we currently only support INput parameters.
 			 *
 			 * @param param - the first parameter is 1, the second is 2, ...
 			 * @return mode of the parameter; one of
@@ -952,7 +966,7 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public int getParameterMode(int param) throws SQLException {
-				return ParameterMetaData.parameterModeUnknown;
+				return ParameterMetaData.parameterModeIn;
 			}
 		};
 	}
