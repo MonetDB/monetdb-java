@@ -156,7 +156,7 @@ public class MonetConnection
 	private boolean queriedCommentsTable = false;
 	private boolean hasCommentsTable = false;
 
-	/** The last set query timeout on the server as used by Statement and PreparedStatement (and CallableStatement in future) */
+	/** The last set query timeout on the server as used by Statement, PreparedStatement and CallableStatement */
 	protected int lastSetQueryTimeout = 0;	// 0 means no timeout, which is the default on the server
 
 
@@ -502,8 +502,7 @@ public class MonetConnection
 		} catch (IllegalArgumentException e) {
 			throw new SQLException(e.toString(), "M0M03");
 		}
-		// we don't have to catch SQLException because that is declared to
-		// be thrown
+		// we don't have to catch SQLException because that is declared to be thrown
 	}
 
 	/**
@@ -726,8 +725,21 @@ public class MonetConnection
 	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
 		throws SQLException
 	{
-		throw newSQLFeatureNotSupportedException("prepareCall");
-		/* a request to implement prepareCall() has already been logged, see https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402 */
+		try {
+			CallableStatement ret = new MonetCallableStatement(
+				this,
+				resultSetType,
+				resultSetConcurrency,
+				resultSetHoldability,
+				sql
+			);
+			// store it in the map for when we close...
+			statements.put(ret, null);
+			return ret;
+		} catch (IllegalArgumentException e) {
+			throw new SQLException(e.toString(), "M0M03");
+		}
+		// we don't have to catch SQLException because that is declared to be thrown
 	}
 
 	/**

@@ -55,11 +55,9 @@ Currently implemented JDBC 4.1 interfaces include:
   * java.sql.Driver
 
   * java.sql.Connection
-    The next features/methods are NOT implemented:
+    The next features/methods are NOT useable/supported:
     - createArrayOf, createNClob, createStruct, createSQLXML
     - createStatement with result set holdability
-    - prepareCall (CallableStatement is not supported)
-       see also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402
     - prepareStatement with array of column indices or column names
     - setHoldability (close/hold cursors over commit is not configurable)
 
@@ -70,7 +68,7 @@ Currently implemented JDBC 4.1 interfaces include:
   * java.sql.DatabaseMetaData
 
   * java.sql.Statement
-    The next features/methods are NOT implemented:
+    The next features/methods are NOT useable/supported:
     - cancel (query execution cannot be terminated, once started)
        see also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6222
     - execute with column indices or names
@@ -80,7 +78,7 @@ Currently implemented JDBC 4.1 interfaces include:
     - setEscapeProcessing on
 
   * java.sql.PreparedStatement
-    The next features/methods are NOT implemented:
+    The next features/methods are NOT useable/supported:
     - setArray
     - setAsciiStream, setBinaryStream, setUnicodeStream
     - setBlob
@@ -89,8 +87,17 @@ Currently implemented JDBC 4.1 interfaces include:
 
   * java.sql.ParameterMetaData
 
+  * java.sql.CallableStatement
+    The next methods are NOT useable/supported:
+    - all getXyz(parameterIndex/parameterName, ...) methods because
+      output parameters in stored procedures are not supported by MonetDB
+    - all registerOutParameter(parameterIndex/parameterName, int sqlType, ...) methods
+      because output parameters in stored procedures are not supported by MonetDB
+    - wasNull() method because output parameters in stored procedures are
+      not supported by MonetDB
+
   * java.sql.ResultSet
-    The next features/methods are NOT implemented:
+    The next features/methods are NOT useable/supported:
     - getArray
     - getAsciiStream, getUnicodeStream
     - getNClob
@@ -105,12 +112,12 @@ Currently implemented JDBC 4.1 interfaces include:
 
   * java.sql.Blob
     A simple implementation using a byte[] to store the whole BLOB
-    The next features/methods are NOT implemented:
+    The next features/methods are NOT useable/supported:
     - setBinaryStream
 
   * java.sql.Clob
     A simple implementation using a StringBuilder to store the whole CLOB
-    The next features/methods are NOT implemented:
+    The next features/methods are NOT useable/supported:
     - getAsciiStream
     - setAsciiStream
     - setCharacterStream
@@ -124,8 +131,6 @@ Currently implemented JDBC 4.1 interfaces include:
 
 The next java.sql.* interfaces are NOT implemented:
   * java.sql.Array
-  * java.sql.CallableStatement  (use Statement or PreparedStatement instead)
-     see also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402
   * java.sql.NClob
   * java.sql.Ref
   * java.sql.Rowid
