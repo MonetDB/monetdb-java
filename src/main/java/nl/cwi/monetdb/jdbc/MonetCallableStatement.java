@@ -119,7 +119,7 @@ public class MonetCallableStatement
 		int len = query.length();
 		StringBuilder buf = new StringBuilder(len);
 		int countAccolades = 0;
-		// simple scanner which copies all characters except the first '{' and next '}' character
+		// simple scanner which copies all characters except the first '{' and matching '}' character
 		// we currently do not check if 'call' appears after the first '{' and before the '}' character
 		// we currently also do not deal correctly with { or } appearing as comment or as part of a string value
 		for (int i = 0; i < len; i++) {
@@ -152,11 +152,11 @@ public class MonetCallableStatement
 	 */
 	private int nameToIndex(String parameterName) throws SQLException {
 		if (parameterName == null)
-			throw new SQLException("Missing parameterName value", "22010");
+			throw new SQLException("Missing parameterName value", "22002");
 		try {
 			return Integer.parseInt(parameterName);
 		} catch (NumberFormatException nfe) {
-			throw new SQLException("Cannot convert parameterName '" + parameterName + "'to integer value", "22010");
+			throw new SQLException("Cannot convert parameterName '" + parameterName + "' to integer value", "22010");
 		}
 	}
 
