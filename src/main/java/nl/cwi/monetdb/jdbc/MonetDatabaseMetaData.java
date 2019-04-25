@@ -532,7 +532,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	@Override
 	public String getTimeDateFunctions() {
 		String wherePart =
-			 "\"mod\" IN ('mtime','timestamp') OR \"name\" IN ('localtime','localtimestamp')";
+			 "\"mod\" IN ('mtime','timestamp') OR \"name\" IN ('localtime','localtimestamp','date_trunc')";
 		String unionPart =
 			// add time date functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'extract'" +

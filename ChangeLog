@@ -16,7 +16,7 @@
 - Improved MonetDatabaseMetaData methods:
   - getNumericFunctions(): it no longer lists aggregate functions: avg, prod and sum
   - getSystemFunctions(): it no longer lists timedate function: extract
-  - getTimeDateFunctions(): it now also lists function: epoch
+  - getTimeDateFunctions(): it now also lists functions: date_trunc, epoch
 - Corrected MonetDatabaseMetaData method getTypeInfo() for result column
   SEARCHABLE. It now returns DatabaseMetaData.typeSearchable for all
   string data types including 'inet','json','url','uuid' and 'blob'.
