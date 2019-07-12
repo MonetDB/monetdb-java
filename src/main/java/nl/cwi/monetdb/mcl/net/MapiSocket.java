@@ -273,6 +273,7 @@ public final class MapiSocket {
 			con.setSoTimeout(this.soTimeout);
 			// set nodelay, as it greatly speeds up small messages (like we often do)
 			con.setTcpNoDelay(true);
+			con.setKeepAlive(true);
 
 			fromMonet = new BlockInputStream(con.getInputStream());
 			toMonet = new BlockOutputStream(con.getOutputStream());
