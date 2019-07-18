@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 import java.sql.*;
@@ -11,7 +11,7 @@ import java.sql.*;
 public class BugResultSetMetaData_Bug_6183 {
 	static final String dqTblName = "\"my dq_table\"";
 	static final String[] dqColNames = { "\"my space\"", "\"my, comma_space\"", "\"my$dollar\"", "\"my#hash\"", "\"my	tab\""
-			, "\"my	,tab_comma\"", "\"my,	comma_tab\"", "\"my\\\"backslash_doublequote\"", "\"Abc\"", "\" \"", "\"123\"" };
+			, "\"my	,tab_comma\"", "\"my,	comma_tab\"", "\"my\"\"double_doublequote\"", "\"Abc\"", "\" \"", "\"123\"" };
 
 	public static void main(String[] args) throws Exception {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers

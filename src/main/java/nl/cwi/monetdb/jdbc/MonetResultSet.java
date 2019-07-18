@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 package nl.cwi.monetdb.jdbc;
@@ -474,7 +474,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * @return a java.io.Reader object that contains the column value; if the value is SQL NULL, the value returned is
 	 * null in the Java programming language.
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
 	 */
 	@Override
 	public Reader getNCharacterStream(int columnIndex) throws SQLException {
@@ -489,8 +488,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * @return a java.io.Reader object that contains the column value; if the value is SQL NULL, the value returned is
 	 * null in the Java programming language.
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public Reader getNCharacterStream(String columnLabel) throws SQLException {
@@ -2266,8 +2263,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @param type Class representing the Java data type to convert the designated column to
 	 * @return an instance of type holding the column value
-	 * @throws SQLException if conversion is not supported, type is null or another error occurs. The getCause() method
-	 * of the exception may provide a more detailed exception, for example, if a conversion error occurs
+	 * @throws SQLException if conversion is not supported, type is
+	 *         null or another error occurs. The getCause() method of
+	 *         the exception may provide a more detailed exception, for
+	 *         example, if a conversion error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
@@ -2293,8 +2294,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * specified, then the label is the name of the column
 	 * @param type Class representing the Java data type to convert the designated column to
 	 * @return an instance of type holding the column value
-	 * @throws SQLException if conversion is not supported, type is null or another error occurs. The getCause() method
-	 * of the exception may provide a more detailed exception, for example, if a conversion error occurs
+	 * @throws SQLException if conversion is not supported, type is
+	 *         null or another error occurs. The getCause() method of
+	 *         the exception may provide a more detailed exception, for
+	 *         example, if a conversion error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public <T> T getObject(String columnLabel, Class<T> type) throws SQLException {
@@ -2568,7 +2573,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if there is no such column
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
 	 */
 	@Override
 	public String getNString(int columnIndex) throws SQLException {
@@ -2584,7 +2588,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is null
 	 * @throws SQLException if the ResultSet object does not contain columnLabel
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
 	 */
 	@Override
 	public String getNString(String columnLabel) throws SQLException {
@@ -3208,7 +3211,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 *
 	 * Throws:
 	 *     SQLException - if a database access error occurs or this method is called on a closed result set
-	 *     SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 * Since: 1.2
 	 * See Also: DatabaseMetaData.deletesAreDetected(int)
 	 */
@@ -3228,7 +3230,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 *
 	 * Throws:
 	 *     SQLException - if a database access error occurs or this method is called on a closed result set
-	 *     SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 * Since: 1.2
 	 * See Also: DatabaseMetaData.insertsAreDetected(int)
 	 */
@@ -3248,7 +3249,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 *
 	 * Throws:
 	 *     SQLException - if a database access error occurs or this method is called on a closed result set
-	 *     SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 * Since: 1.2
 	 * See Also: DatabaseMetaData.updatesAreDetected(int)
 	 */
@@ -3258,7 +3258,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 		return false;
 	}
 
-	/* the next methods are all related to updateable result sets, which we currently do not support */
+	/* Next methods are all related to updateable result sets, which we do not support.
+	 * @throws SQLFeatureNotSupportedException if the JDBC driver does not support this method
+	 */
 	@Override
 	public void cancelRowUpdates() throws SQLException {
 		throw newSQLFeatureNotSupportedException("cancelRowUpdates");
@@ -3300,7 +3302,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	@Override
-	public void updateAsciiStream(int columnIndex, InputStream xh) throws SQLException {
+	public void updateAsciiStream(int columnIndex, InputStream x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateAsciiStream");
 	}
 
@@ -3675,12 +3677,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	@Override
-	public void updateSQLXML(String columnLabel, SQLXML x) throws SQLException {
+	public void updateSQLXML(int columnIndex, SQLXML x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateSQLXML");
 	}
 
 	@Override
-	public void updateSQLXML(int columnIndex, SQLXML x) throws SQLException {
+	public void updateSQLXML(String columnLabel, SQLXML x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateSQLXML");
 	}
 
@@ -3755,17 +3757,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 */
 	public static final SQLDataException newSQLInvalidColumnIndexException(int colIdx) {
 		return new SQLDataException("Invalid Column Index number: " + colIdx, "22010");
-	}
-
-	/**
-	 * Small helper method that formats the "Method ... not implemented" message
-	 * and creates a new SQLFeatureNotSupportedException object whose SQLState is set to "0A000": feature not supported.
-	 *
-	 * @param name the method name
-	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000
-	 */
-	private static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
-		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 
 	/**

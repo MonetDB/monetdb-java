@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 import java.sql.*;
@@ -14,17 +14,16 @@ import nl.cwi.monetdb.jdbc.MonetURL;
 public class Bug_PrepStmtSetString_6382 {
 	public static void main(String[] args) throws Exception {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
-		Connection con = DriverManager.getConnection(args[0]);
-		System.out.println("0. true\t" + con.getAutoCommit());
-
+		Connection con = null;
 		Statement stmt = null;
 		PreparedStatement pstmt = null;
-		ParameterMetaData pmd = null;
 		ResultSet rs = null;
-		ResultSetMetaData rsmd = null;
+		final String tableName = "PrepStmtSetString_6382";
 		try {
+			con = DriverManager.getConnection(args[0]);
+			System.out.println("0. true\t" + con.getAutoCommit());
+
 			stmt = con.createStatement();
-			String tableName = "PrepStmtSetString_6382";
 			System.out.println("Creating table " + tableName);
 			stmt.executeUpdate("CREATE TABLE " + tableName + " (myint INT, myvarchar VARCHAR(15), myjson JSON, myuuid UUID, myurl URL, myinet INET)");
 
@@ -37,7 +36,7 @@ public class Bug_PrepStmtSetString_6382 {
 
 			System.out.println("Creating a prepared statement with 6 parameters and inserting rows using setInt(), setString(), setNull(), setNString(), setURL(), setObject().");
 			pstmt = con.prepareStatement("INSERT INTO " + tableName + " VALUES (?,?, ? ,?,? , ?)");
-			pmd = pstmt.getParameterMetaData();
+			ParameterMetaData pmd = pstmt.getParameterMetaData();
 			int pcount = pmd.getParameterCount();
 			System.out.println("Prepared Statement has " + pcount + " parameters:" + (pcount != 6 ? " ERROR: Expected 6 parameters!" : ""));
 			for (int p = 1; p <= pcount; p++) {
@@ -65,7 +64,7 @@ public class Bug_PrepStmtSetString_6382 {
 			System.out.println("Inserted " + inserted + " row");
 
 			row++;  // row 5
-			pstmt.setLong(1, row);
+			pstmt.setLong(1, (long)row);
 			pstmt.setString(2, "row " + row);
 			pstmt.setNull(4, 0);
 			pstmt.setURL(5, new java.net.URL("https://www.cwi.nl/"));
@@ -110,7 +109,7 @@ public class Bug_PrepStmtSetString_6382 {
 
 			System.out.println("List contents of TABLE " + tableName + " after " + row + " rows inserted");
 			rs = stmt.executeQuery("SELECT * FROM " + tableName + " ORDER BY 1");
-			rsmd = rs.getMetaData();
+			ResultSetMetaData rsmd = rs.getMetaData();
 			int colcount = rsmd.getColumnCount();
 			System.out.println("Query has " + colcount + " output columns." + (colcount != 6 ? " ERROR: Expected 6 columns!" : ""));
 			row = 0;
@@ -132,13 +131,10 @@ public class Bug_PrepStmtSetString_6382 {
 				System.err.println("FAILED :( " + e.getMessage());
 			System.err.println("ABORTING TEST!!!");
 		} finally {
-			if (rs != null)
-				rs.close();
-			if (pstmt != null)
-				pstmt.close();
-			if (stmt != null)
-				stmt.close();
-			con.close();
+			try { if (rs != null)    rs.close(); } catch (SQLException e) { /* ignore */ }
+			try { if (pstmt != null) pstmt.close(); } catch (SQLException e) { /* ignore */ }
+			try { if (stmt != null)  stmt.close(); } catch (SQLException e) { /* ignore */ }
+			try { if (con != null)   con.close(); } catch (SQLException e) { /* ignore */ }
 		}
 	}
 }

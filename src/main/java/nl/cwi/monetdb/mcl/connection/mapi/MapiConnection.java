@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 package nl.cwi.monetdb.mcl.connection.mapi;
@@ -323,7 +323,7 @@ public class MapiConnection extends MonetConnection {
 		return res;
 	}
 
-	private List<String> connect(String host, int port, String user, String pass, boolean makeConnection)
+	public List<String> connect(String host, int port, String user, String pass, boolean makeConnection)
 			throws IOException, ProtocolException, MCLException {
 		if (ttl-- <= 0)
 			throw new MCLException("Maximum number of redirects reached, aborting connection attempt. Sorry.");

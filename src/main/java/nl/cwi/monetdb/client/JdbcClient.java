@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 package nl.cwi.monetdb.client;
@@ -444,7 +444,7 @@ public final class JdbcClient {
 							" v" + dbmd.getDriverVersion());
 					}
 					out.println("Current Schema: " + con.getSchema());
-					out.println("Type \\q to quit, \\h for a list of available commands");
+					out.println("Type \\q to quit (you can also use: quit or exit), \\? or \\h for a list of available commands");
 					out.flush();
 				}
 				processInteractive(false, doEcho, scolonterm, user);
@@ -605,76 +605,85 @@ public final class JdbcClient {
 				doProcess = true;
 				if (wasComplete) {
 					doProcess = false;
-					// check for commands only when the previous row was
-					// complete
-					if (command.equals("\\q")) {
+					// check for commands only when the previous row was complete
+					if (command.equals("\\q") || command.equals("quit") || command.equals("exit")) {
 						// quit
 						break;
-					} else if (command.startsWith("\\h")) {
+					} else if (command.equals("\\?") || command.equals("\\h")) {
 						out.println("Available commands:");
-						out.println("\\q      quits this program");
-						out.println("\\h      this help screen");
-						if (dbmd != null)
-							out.println("\\d      list available tables and views in current schema");
-						out.println("\\d<obj> describes the given table or view");
-						out.println("\\l<uri> executes the contents of the given file or URL");
-						out.println("\\i<uri> batch executes the inserts from the given file or URL");
+						out.println("\\q       quits this program (you can also use: quit or exit)");
+						if (dbmd != null) {
+							out.println("\\d       list available tables and views in current schema");
+							out.println("\\dS      list available system tables and views in sys schema");
+							out.println("\\d <obj> describes the given table or view");
+						}
+						out.println("\\l<uri>  executes the contents of the given file or URL");
+						out.println("\\i<uri>  batch executes the inserts from the given file or URL");
+						out.println("\\? or \\h this help screen");
 					} else if (dbmd != null && command.startsWith("\\d")) {
 						ResultSet tbl = null;
 						try {
-							String object = command.substring(2).trim();
-							if (scolonterm && object.endsWith(";"))
-								object = object.substring(0, object.length() - 1);
-							if (object.isEmpty()) {
-								// list available tables and views in current schema
-								String current_schema = con.getSchema();
-								tbl = dbmd.getTables(null, current_schema, null, null);
+							if (command.equals("\\dS")) {
+								// list available system tables and views in sys schema
+								tbl = dbmd.getTables(null, "sys", null, null);
 
 								// give us a list of all non-system tables and views (including temp ones)
 								while (tbl.next()) {
 									String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
-									if (tableType != null && !tableType.startsWith("SYSTEM "))
+									if (tableType != null && tableType.startsWith("SYSTEM "))
 										out.println(tableType + "\t" +
 											tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
 											tbl.getString(3));	// 3 = "TABLE_NAME"
 								}
-								tbl.close();
-								tbl = null;
 							} else {
-								// describes the given table or view
-								String schema;
-								String obj_nm = object;
-								boolean found = false;
-								int dot = object.indexOf(".");
-								if (dot > 0) {
-									// use specified schema
-									schema = object.substring(0, dot);
-									obj_nm = object.substring(dot + 1);
+								String object = command.substring(2).trim();
+								if (scolonterm && object.endsWith(";"))
+									object = object.substring(0, object.length() - 1);
+								if (object.isEmpty()) {
+									// list available user tables and views in current schema
+									tbl = dbmd.getTables(null, con.getSchema(), null, null);
+
+									// give us a list of all non-system tables and views (including temp ones)
+									while (tbl.next()) {
+										String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
+										if (tableType != null && !tableType.startsWith("SYSTEM "))
+											out.println(tableType + "\t" +
+												tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
+												tbl.getString(3));	// 3 = "TABLE_NAME"
+									}
 								} else {
-									// use current schema
-									schema = con.getSchema();
-								}
-								tbl = dbmd.getTables(null, schema, obj_nm, null);
-								while (tbl.next() && !found) {
-									String tableName = tbl.getString(3);	// 3 = "TABLE_NAME"
-									String schemaName = tbl.getString(2);	// 2 = "TABLE_SCHEM"
-									if (obj_nm.equals(tableName) && schema.equals(schemaName)) {
-										// we found it, describe it
-										exporter.dumpSchema(dbmd,
+									// describes the given table or view
+									String schema;
+									String obj_nm = object;
+									boolean found = false;
+									int dot = object.indexOf(".");
+									if (dot > 0) {
+										// use specified schema
+										schema = object.substring(0, dot);
+										obj_nm = object.substring(dot + 1);
+									} else {
+										// use current schema
+										schema = con.getSchema();
+									}
+									tbl = dbmd.getTables(null, schema, obj_nm, null);
+									while (tbl.next() && !found) {
+										String tableName = tbl.getString(3);	// 3 = "TABLE_NAME"
+										String schemaName = tbl.getString(2);	// 2 = "TABLE_SCHEM"
+										if (obj_nm.equals(tableName) && schema.equals(schemaName)) {
+											// we found it, describe it
+											exporter.dumpSchema(dbmd,
 												tbl.getString(4),	// 4 = "TABLE_TYPE"
 												tbl.getString(1),	// 1 = "TABLE_CAT"
 												schemaName,
 												tableName);
 
-										found = true;
-										break;
+											found = true;
+											break;
+										}
 									}
+									if (!found)
+										System.err.println("Unknown table or view: " + object);
 								}
-								tbl.close();
-								tbl = null;
-
-								if (!found)
-									System.err.println("Unknown table or view: " + object);
 							}
 						} catch (SQLException e) {
 							out.flush();

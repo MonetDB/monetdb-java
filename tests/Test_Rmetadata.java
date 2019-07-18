@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 import java.sql.*;
@@ -73,10 +73,10 @@ public class Test_Rmetadata {
 	}
 
 	private static String isInstance(Object obj, String type) {
-		if (obj == null)
+		if (obj == null || type == null)
 			return("(null)");
 		try {
-			Class c = Class.forName(type);
+			Class<?> c = Class.forName(type);
 			if (c.isInstance(obj)) {
 				return(obj.getClass().getName() + " is an instance of " + type);
 			} else {

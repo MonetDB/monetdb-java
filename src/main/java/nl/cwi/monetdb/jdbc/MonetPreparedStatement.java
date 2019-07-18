@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 package nl.cwi.monetdb.jdbc;
@@ -30,7 +30,7 @@ import java.util.Map;
  *
  * This implementation of the PreparedStatement interface uses the
  * capabilities of the MonetDB/SQL backend to prepare and execute
- * queries.  The backend takes care of finding the '?'s in the input and
+ * statements.  The backend takes care of finding the '?'s in the input and
  * returns the types it expects for them.
  *
  * An example of a server response on a prepare query is:
@@ -566,7 +566,15 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			 */
 			@Override
 			public String getColumnClassName(int column) throws SQLException {
-				return MonetResultSet.getClassForType(getColumnType(column)).getName();
+				String typeName = getColumnTypeName(column);
+				Map<String,Class<?>> map = getConnection().getTypeMap();
+				Class<?> c;
+				if (map.containsKey(typeName)) {
+					c = (Class)map.get(typeName);
+				} else {
+					c = MonetResultSet.getClassForType(getColumnType(column));
+				}
+				return c.getName();
 			}
 
 			/**
@@ -660,7 +668,6 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					if (column[i] == null)
 						cnt++;
 				}
-
 				return cnt;
 			}
 
@@ -694,11 +701,22 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					case Types.SMALLINT:
 					case Types.INTEGER:
 					case Types.REAL:
+					case Types.FLOAT:
 					case Types.DOUBLE:
-					case Types.BIGINT:
-					case Types.NUMERIC:
-					case Types.DECIMAL:
 						return true;
+					case Types.BIGINT:
+						String monettype = getParameterTypeName(param);
+						if (monettype != null) {
+							if ("oid".equals(monettype)
+							 || "ptr".equals(monettype))
+								return false;
+						}
+						return true;
+					case Types.BIT: // we don't use type BIT, it's here for completeness
+					case Types.BOOLEAN:
+					case Types.DATE:
+					case Types.TIME:
+					case Types.TIMESTAMP:
 					default:
 						return false;
 				}
@@ -801,7 +819,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 
 			/**
 			 * Retrieves the designated parameter's mode.
-			 * For MonetDB/SQL this is currently always unknown.
+			 * For MonetDB/SQL we currently only support INput parameters.
 			 *
 			 * @param param - the first parameter is 1, the second is 2, ...
 			 * @return mode of the parameter; one of
@@ -813,7 +831,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			 */
 			@Override
 			public int getParameterMode(int param) throws SQLException {
-				return ParameterMetaData.parameterModeUnknown;
+				return ParameterMetaData.parameterModeIn;
 			}
 		};
 	}
@@ -826,6 +844,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x an Array object that maps an SQL ARRAY value
 	 * @throws SQLException if a database access error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public void setArray(int parameterIndex, Array x) throws SQLException {
@@ -869,6 +889,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @param x the Java input stream that contains the ASCII parameter value
 	 * @param length the number of bytes in the stream
 	 * @throws SQLException if a database access error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
@@ -1396,8 +1418,6 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
@@ -1414,8 +1434,6 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @param value the parameter value
 	 * @param length the number of characters in the parameter data.
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {
@@ -1487,8 +1505,6 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param value the parameter value
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public void setNString(int parameterIndex, String value) throws SQLException {
@@ -1619,6 +1635,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *              reader.  For all other types, this value will be
 	 *              ignored.
 	 * @throws SQLException if a database access error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 * @see Types
 	 */
 	@Override
@@ -2377,6 +2395,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *          parameter value as two-byte Unicode characters
 	 * @param length the number of bytes in the stream
 	 * @throws SQLException if a database access error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	@Deprecated
@@ -2492,17 +2512,5 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 */
 	private static final SQLDataException newSQLInvalidParameterIndexException(int paramIdx) {
 		return new SQLDataException("Invalid Parameter Index number: " + paramIdx, "22010");
-	}
-
-	/**
-	 * Small helper method that formats the "Method ... not implemented" message
-	 * and creates a new SQLFeatureNotSupportedException object
-	 * whose SQLState is set to "0A000": feature not supported.
-	 *
-	 * @param name the method name
-	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000
-	 */
-	private static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
-		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 }

@@ -3,12 +3,13 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 package nl.cwi.monetdb.jdbc;
 
 import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
 
 /**
  * A Wrapper class which provide the ability to retrieve the delegate instance
@@ -74,5 +75,17 @@ public class MonetWrapper implements java.sql.Wrapper {
 			return (T) this;
 		}
 		throw new SQLException("Cannot unwrap to interface: " + (iface != null ? iface.getName() : ""), "0A000");
+	}
+
+	/**
+	 * Small helper method that formats the "Method ... not implemented" message
+	 * and creates a new SQLFeatureNotSupportedException object
+	 * whose SQLState is set to "0A000": feature not supported.
+	 *
+	 * @param name the method name
+	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000
+	 */
+	static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
+		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 }

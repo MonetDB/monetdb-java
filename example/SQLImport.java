@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 import java.sql.*;
@@ -14,7 +14,7 @@ import java.io.*;
  * it's simpleness it only supports SQL queries which entirely are on one line.
  *
  * This program reads a file line by line, and feeds the line into a running
- * Mserver on the localhost. Upon error, the error is reported and the program
+ * Mserver5 on the localhost. Upon error, the error is reported and the program
  * continues reading and executing lines.
  * A very lousy way of implementing options is used to somewhat configure the
  * behaviour of the program in order to be a bit more verbose or commit after
@@ -37,11 +37,11 @@ public class SQLImport {
 		// open the file
 		BufferedReader fr = new BufferedReader(new FileReader(args[0]));
 
-		// request a connection suitable for Monet from the driver manager
+		// request a connection suitable for MonetDB from the driver manager
 		// note that the database specifier is currently not implemented, for
-		// Monet itself can't access multiple databases.
+		// MonetDB itself can't access multiple databases.
 		// turn on debugging
-		Connection con = DriverManager.getConnection("jdbc:monetdb://localhost/database?debug=true", "monetdb", "monetdb");
+		Connection con = DriverManager.getConnection("jdbc:monetdb://localhost/demo?debug=true", "monetdb", "monetdb");
 
 		boolean beVerbose = false;
 		if (args.length == 3) {
@@ -58,13 +58,15 @@ public class SQLImport {
 
 		String query;
 		for (int i = 1; (query = fr.readLine()) != null; i++) {
-			if (beVerbose) System.out.println(query);
+			if (beVerbose)
+				System.out.println(query);
 			try {
 				// execute the query, no matter what it is
 				stmt.execute(query);
 			} catch (SQLException e) {
 				System.out.println("Error on line " + i + ": " + e.getMessage());
-				if (!beVerbose) System.out.println(query);
+				if (!beVerbose)
+					System.out.println(query);
 			}
 		}
 

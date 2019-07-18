@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 package nl.cwi.monetdb.jdbc;
@@ -481,20 +481,21 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	}
 
 	// SQL query parts shared by four get<Type>Functions() below
-	private static final String FunctionsSelect = "SELECT DISTINCT \"name\" FROM \"sys\".\"functions\" ";
-	private static final String FunctionsWhere = "WHERE \"id\" IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1 AND \"name\" = 'arg_1' AND \"type\" IN ";
-	// Scalar functions sql_max(x, y) and sql_min(x, y) are defined in sys.args only for type 'any'.
-	// Easiest way to include them in the Num, Str and TimeDate lists is to add them explicitly via UNION SQL:
-	private static final String AddFunctionsMaxMin = " UNION SELECT 'sql_max' UNION SELECT 'sql_min'";
+	private static final String FunctionsSelect = "SELECT DISTINCT \"name\" FROM \"sys\".\"functions\" WHERE ";
+	private static final String FunctionsWhere = "(\"id\" IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1 AND \"name\" = 'arg_1' AND \"type\" IN ";
+	// Scalar functions sql_max(x,y), sql_min(x,y), greatest(x,y) and least(x,y) are defined in sys.args for type 'any' and usable as num, str and timedate functions.
+	private static final String OrFunctionsMaxMin = " OR \"name\" IN ('sql_max','sql_min','least','greatest')";
 	private static final String FunctionsOrderBy1 = " ORDER BY 1";
 
 	@Override
 	public String getNumericFunctions() {
 		String match =
 			"('tinyint', 'smallint', 'int', 'bigint', 'hugeint', 'decimal', 'double', 'real') )" +
+			" AND \"type\" = 1" +	// only scalar functions
 			// exclude functions which belong to the 'str' module
-			" AND \"mod\" <> 'str'";
-		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + AddFunctionsMaxMin + FunctionsOrderBy1);
+			" AND \"mod\" <> 'str')" +	// to filter out string functions: 'code' and 'space'
+			" OR \"name\" IN ('degrees','fuse','ms_round','ms_str','ms_trunc','radians')";
+		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + FunctionsOrderBy1);
 	}
 
 	@Override
@@ -502,24 +503,26 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		String match =
 			"('char', 'varchar', 'clob', 'json') )" +
 			// include functions which belong to the 'str' module
-			" OR \"mod\" = 'str'";
-		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + AddFunctionsMaxMin + FunctionsOrderBy1);
+			" OR \"mod\" = 'str')";
+		String unionPart =
+			// add system functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
+			" UNION SELECT 'position'";
+		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + unionPart + FunctionsOrderBy1);
 	}
 
 	@Override
 	public String getSystemFunctions() {
 		String wherePart =
-			"WHERE \"id\" NOT IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1)" +
-			" AND \"id\" IN (SELECT \"function_id\" FROM \"sys\".\"systemfunctions\")" +
+			"\"id\" NOT IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1)" +	// without any args
+			" AND \"id\" IN (SELECT \"function_id\" FROM \"sys\".\"systemfunctions\")" +	// only functions marked as system
 			" AND \"type\" = 1" +	// only scalar functions
 			// exclude functions which belong to the 'mtime' module
 			" AND \"mod\" <> 'mtime'" +
-			" AND \"name\" NOT IN ('localtime', 'localtimestamp')" +
+			" AND \"name\" NOT IN ('localtime','localtimestamp')" +
 			// add system functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'cast'" +
-			" UNION SELECT 'convert'" +
 			" UNION SELECT 'coalesce'" +
-			" UNION SELECT 'extract'" +
+			" UNION SELECT 'convert'" +
 			" UNION SELECT 'ifthenelse'" +
 			" UNION SELECT 'isnull'" +
 			" UNION SELECT 'nullif'";
@@ -528,8 +531,13 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	@Override
 	public String getTimeDateFunctions() {
-		String wherePart = "WHERE \"mod\" = 'mtime' OR \"name\" IN ('localtime', 'localtimestamp') UNION SELECT 'extract' UNION SELECT 'now'";
-		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + AddFunctionsMaxMin + FunctionsOrderBy1);
+		String wherePart =
+			 "\"mod\" IN ('mtime','timestamp') OR \"name\" IN ('localtime','localtimestamp','date_trunc')";
+		String unionPart =
+			// add time date functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
+			" UNION SELECT 'extract'" +
+			" UNION SELECT 'now'";
+		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + OrFunctionsMaxMin + unionPart + FunctionsOrderBy1);
 	}
 
 	/**
@@ -961,13 +969,21 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	/**
 	 * Is the SQL Integrity Enhancement Facility supported?
-	 * Our best guess is that this means support for constraints
+	 *
+	 * The SQL Integrity Enhancement facility offers additional tools for referential integrity,
+	 * CHECK constraint clauses, and DEFAULT clauses. Referential integrity allows specification of
+	 * primary and foreign keys with the requirement that no foreign key row may be inserted or
+	 * updated unless a matching primary key row exists. Check clauses allow specification of
+	 * inter-column constraints to be maintained by the database system.
+	 * Default clauses provide optional default values for missing data. 
+	 *
+	 * We currently do not supprt CHECK constraints (see bug 3568) nor deferrable FK constraints.
 	 *
 	 * @return true if so
 	 */
 	@Override
 	public boolean supportsIntegrityEnhancementFacility() {
-		return true;
+		return false;
 	}
 
 	/**
@@ -3045,9 +3061,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 		query.append("SELECT \"sqlname\" AS \"TYPE_NAME\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("\"sqlname\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"\"digits\" AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
-			"cast(CASE WHEN \"systemname\" IN ('str', 'inet', 'json', 'url', 'uuid') THEN ''''" +
+			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','blob','sqlblob') THEN ''''" +
 				" ELSE NULL END AS varchar(2)) AS \"LITERAL_PREFIX\", " +
-			"cast(CASE WHEN \"systemname\" IN ('str', 'inet', 'json', 'url', 'uuid') THEN ''''" +
+			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','blob','sqlblob') THEN ''''" +
 				" ELSE NULL END AS varchar(2)) AS \"LITERAL_SUFFIX\", " +
 			"CASE WHEN \"sqlname\" IN ('char', 'varchar') THEN 'max length'" +
 				" WHEN \"sqlname\" = 'decimal' THEN 'precision, scale'" +
@@ -3055,10 +3071,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 				" ELSE NULL END AS \"CREATE_PARAMS\", " +
 			"cast(CASE WHEN \"systemname\" = 'oid' THEN ").append(DatabaseMetaData.typeNoNulls)
 				.append(" ELSE ").append(DatabaseMetaData.typeNullable).append(" END AS smallint) AS \"NULLABLE\", " +
-			"CASE WHEN \"systemname\" IN ('str', 'json', 'url') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
-			"cast(CASE \"systemname\" WHEN 'table' THEN ").append(DatabaseMetaData.typePredNone)
-				.append(" WHEN 'str' THEN ").append(DatabaseMetaData.typePredChar)
-				.append(" WHEN 'sqlblob' THEN ").append(DatabaseMetaData.typePredChar)
+			"CASE WHEN \"systemname\" IN ('str','json','url') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
+			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','blob','sqlblob') THEN ").append(DatabaseMetaData.typeSearchable)
 				.append(" ELSE ").append(DatabaseMetaData.typePredBasic).append(" END AS smallint) AS \"SEARCHABLE\", " +
 			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','real','double','sec_interval','month_interval') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
 			"CASE \"sqlname\" WHEN 'decimal' THEN true ELSE false END AS \"FIXED_PREC_SCALE\", " +
@@ -4172,6 +4186,28 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	@Override
 	public boolean generatedKeyAlwaysReturned() throws SQLException {
 		return true;
+	}
+
+	//== 1.8 methods (JDBC 4.2)
+
+	/**
+	 * Retrieves the maximum number of bytes this database allows for the logical size for a LOB.
+	 * The default implementation will return 0
+	 * @return the maximum number of bytes
+	 */
+	@Override
+	public long getMaxLogicalLobSize() {
+		return 0;
+	}
+
+	/**
+	 * Retrieves whether this database supports REF CURSOR.
+	 * The default implementation will return false
+	 * @return true if so, false otherwise
+	 */
+	@Override
+	public boolean supportsRefCursors() {
+		return false;
 	}
 
 	//== end methods interface DatabaseMetaData

@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 import java.sql.*;
@@ -90,9 +90,9 @@ public class SQLcopyinto {
 			// System.out.println("host: " + host + " port: " + port + " login: " + login + " passwd: " + passw);
 
 			System.out.println("Before connecting to MonetDB server via MapiSocket");
-			List warning =  server.connect("monetdb", "monetdb");
+			List<String> warning = server.connect(host, port, login, passw, true);
 			if (warning != null) {
-				for (Iterator it = warning.iterator(); it.hasNext(); ) {
+				for (Iterator<String> it = warning.iterator(); it.hasNext(); ) {
 					System.out.println("Warning: " + it.next().toString());
 				}
 			}

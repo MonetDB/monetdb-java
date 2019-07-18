@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2018 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
  */
 
 package nl.cwi.monetdb.jdbc;
@@ -71,10 +71,7 @@ public final class MonetClob implements Clob, Serializable, Comparable<MonetClob
 	 */
 	@Override
 	public InputStream getAsciiStream() throws SQLException {
-		checkBufIsNotNull();
-		if (buffer.length() == 0)
-			throw new SQLException("This Clob has been freed", "M1M20");
-		return new ByteArrayInputStream(buffer.toString().getBytes());
+		throw MonetWrapper.newSQLFeatureNotSupportedException("getAsciiStream");
 	}
 
 	/**
@@ -215,7 +212,7 @@ public final class MonetClob implements Clob, Serializable, Comparable<MonetClob
 	 */
 	@Override
 	public OutputStream setAsciiStream(long pos) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Method setAsciiStream(long pos) not supported", "0A000");
+		throw MonetWrapper.newSQLFeatureNotSupportedException("setAsciiStream");
 	}
 
 	/**
@@ -236,7 +233,7 @@ public final class MonetClob implements Clob, Serializable, Comparable<MonetClob
 	 */
 	@Override
 	public Writer setCharacterStream(long pos) throws SQLException {
-		throw new SQLFeatureNotSupportedException("Method setCharacterStream(long pos) not supported", "0A000");
+		throw MonetWrapper.newSQLFeatureNotSupportedException("setCharacterStream");
 	}
 
 	/**
