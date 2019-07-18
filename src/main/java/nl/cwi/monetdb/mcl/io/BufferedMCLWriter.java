@@ -74,7 +74,6 @@ public class BufferedMCLWriter extends BufferedWriter {
 		write('\n');
 	}
 
-
 	/**
 	 * Registers the given reader in this writer.  A registered reader
 	 * receives a linetype reset when a line is written from this
@@ -97,6 +96,7 @@ public class BufferedMCLWriter extends BufferedWriter {
 	public void writeLine(String line) throws IOException {
 		write(line);
 		flush();
+
 		// reset reader state, last line isn't valid any more now
 		if (reader != null)
 			reader.setLineType(null);

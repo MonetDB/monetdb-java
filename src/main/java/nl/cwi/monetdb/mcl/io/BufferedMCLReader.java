@@ -62,7 +62,7 @@ public class BufferedMCLReader extends BufferedReader {
 	public final static int INFO     = '#';
 
 	/** The type of the last line read */
-	private int lineType;
+	private int lineType = UNKNOWN;
 
 	/**
 	 * Create a buffering character-input stream that uses a
@@ -97,8 +97,7 @@ public class BufferedMCLReader extends BufferedReader {
 	 *
 	 * Warning: until the server properly prefixes all of its error
 	 * messages with SQLSTATE codes, this method prefixes all errors it
-	 * sees without sqlstate with the generic data exception code
-	 * (22000).
+	 * sees without sqlstate with the generic data exception code (22000).
 	 *
 	 * @return A String containing the contents of the line, not
 	 *         including any line-termination characters, or null if the
@@ -109,8 +108,9 @@ public class BufferedMCLReader extends BufferedReader {
 	public String readLine() throws IOException {
 		String r = super.readLine();
 		setLineType(r);
-		if (lineType == ERROR && !r.matches("^![0-9A-Z]{5}!.+"))
+		if (lineType == ERROR && r != null && !r.matches("^![0-9A-Z]{5}!.+")) {
 			r = "!22000!" + r.substring(1);
+		}
 		return r;
 	}
 	
@@ -121,37 +121,38 @@ public class BufferedMCLReader extends BufferedReader {
 	 * @param line the string to examine
 	 */
 	public void setLineType(String line) {
-		lineType = UNKNOWN;
-		if (line == null || line.length() == 0)
+		if (line == null || line.isEmpty()) {
+			lineType = UNKNOWN;
 			return;
+		}
 		switch (line.charAt(0)) {
-			case '!':
-				lineType = ERROR;
-				break;
-			case '&':
-				lineType = SOHEADER;
-				break;
-			case '%':
-				lineType = HEADER;
-				break;
-			case '[':
-				lineType = RESULT;
-				break;
-			case '=':
-				lineType = RESULT;
-				break;
-			case '^':
-				lineType = REDIRECT;
-				break;
-			case '#':
-				lineType = INFO;
-				break;
 			case '.':
 				lineType = PROMPT;
 				break;
 			case ',':
 				lineType = MORE;
 				break;
+			case '[':	/* multi field result */
+			case '=':	/* single value result */
+				lineType = RESULT;
+				break;
+			case '%':
+				lineType = HEADER;
+				break;
+			case '&':
+				lineType = SOHEADER;
+				break;
+			case '#':
+				lineType = INFO;
+				break;
+			case '!':
+				lineType = ERROR;
+				break;
+			case '^':
+				lineType = REDIRECT;
+				break;
+			default:
+				lineType = UNKNOWN;
 		}
 	}
 
@@ -159,8 +160,8 @@ public class BufferedMCLReader extends BufferedReader {
 	 * getLineType returns the type of the last line read.
 	 *
 	 * @return an integer representing the kind of line this is, one of the
-	 *         following constants: UNKNOWN, HEADER, ERROR, PROMPT,
-	 *         RESULT, REDIRECT, INFO
+	 *         following constants: UNKNOWN, HEADER, ERROR, PROMPT, MORE,
+	 *         RESULT, SOHEADER, REDIRECT, INFO
 	 */
 	public int getLineType() {
 		return lineType;
@@ -169,8 +170,7 @@ public class BufferedMCLReader extends BufferedReader {
 	/**
 	 * Reads up till the MonetDB prompt, indicating the server is ready
 	 * for a new command.  All read data is discarded.  If the last line
-	 * read by readLine() was a prompt, this method will immediately
-	 * return.
+	 * read by readLine() was a prompt, this method will immediately return.
 	 *
 	 * If there are errors present in the lines that are read, then they
 	 * are put in one string and returned <b>after</b> the prompt has
@@ -184,6 +184,7 @@ public class BufferedMCLReader extends BufferedReader {
 	final public synchronized String waitForPrompt() throws IOException {
 		String tmp;
 		StringBuilder ret = new StringBuilder(128);
+
 		while (lineType != PROMPT) {
 			tmp = readLine();
 			if (tmp == null)
