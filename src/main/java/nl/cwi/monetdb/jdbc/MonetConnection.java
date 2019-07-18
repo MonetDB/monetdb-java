@@ -274,8 +274,7 @@ public class MonetConnection
 		// we're debugging here... uhm, should be off in real life
 		if (debug) {
 			try {
-				String fname = props.getProperty("logfile", "monet_" +
-					System.currentTimeMillis() + ".log");
+				String fname = props.getProperty("logfile", "monet_" + System.currentTimeMillis() + ".log");
 				File f = new File(fname);
 				int ext = fname.lastIndexOf('.');
 				if (ext < 0)
@@ -287,7 +286,7 @@ public class MonetConnection
 					f = new File(pre + "-" + i + suf);
 				}
 
-				server.debug(f.getAbsolutePath());
+				server.debug(f.getAbsolutePath());	// enable logging on the MapiSocket level
 			} catch (IOException ex) {
 				throw new SQLNonTransientConnectionException("Opening logfile failed: " + ex.getMessage(), "08M01");
 			}
@@ -1766,50 +1765,48 @@ public class MonetConnection
 	}
 
 	/**
-	 * Sends the given string to MonetDB as regular statement, making
-	 * sure there is a prompt after the command is sent.  All possible
-	 * returned information is discarded.  Encountered errors are
-	 * reported.
+	 * Sends the given string to MonetDB as regular SQL statement/query using queryTempl
+	 * Making sure there is a prompt after the command is sent.  All possible
+	 * returned information is discarded.  Encountered errors are reported.
 	 *
 	 * @param command the exact string to send to MonetDB
 	 * @throws SQLException if an IO exception or a database error occurs
 	 */
-	void sendIndependentCommand(String command) throws SQLException {
-		synchronized (server) {
-			try {
-				out.writeLine(
-						(queryTempl[0] == null ? "" : queryTempl[0]) +
-						command +
-						(queryTempl[1] == null ? "" : queryTempl[1]));
-				String error = in.waitForPrompt();
-				if (error != null)
-					throw new SQLException(error.substring(6), error.substring(0, 5));
-			} catch (SocketTimeoutException e) {
-				close(); // JDBC 4.1 semantics: abort()
-				throw new SQLNonTransientConnectionException("connection timed out", "08M33");
-			} catch (IOException e) {
-				throw new SQLNonTransientConnectionException(e.getMessage(), "08000");
-			}
-		}
+	private void sendIndependentCommand(String command) throws SQLException {
+		sendCommand(command, true);
 	}
 
 	/**
-	 * Sends the given string to MonetDB as control statement, making
-	 * sure there is a prompt after the command is sent.  All possible
-	 * returned information is discarded.  Encountered errors are
-	 * reported.
+	 * Sends the given string to MonetDB as control statement using commandTempl
+	 * Making sure there is a prompt after the command is sent.  All possible
+	 * returned information is discarded.  Encountered errors are reported.
 	 *
 	 * @param command the exact string to send to MonetDB
 	 * @throws SQLException if an IO exception or a database error occurs
 	 */
 	void sendControlCommand(String command) throws SQLException {
 		// send X command
+		sendCommand(command, false);
+	}
+
+	/**
+	 * Sends the given string to MonetDB as command/query using commandTempl or queryTempl
+	 * Making sure there is a prompt after the command is sent.  All possible
+	 * returned information is discarded.  Encountered errors are reported.
+	 *
+	 * @param command the exact string to send to MonetDB
+	 * @param usequeryTempl send the command using a queryTempl? else it is send using commandTempl
+	 * @throws SQLException if an IO exception or a database error occurs
+	 */
+	private void sendCommand(String command, boolean usequeryTempl) throws SQLException {
+		String cmd = usequeryTempl ?
+			(queryTempl[0] == null ? "" : queryTempl[0]) + command + (queryTempl[1] == null ? "" : queryTempl[1])
+			:
+			(commandTempl[0] == null ? "" : commandTempl[0]) + command + (commandTempl[1] == null ? "" : commandTempl[1]);
+
 		synchronized (server) {
 			try {
-				out.writeLine(
-						(commandTempl[0] == null ? "" : commandTempl[0]) +
-						command +
-						(commandTempl[1] == null ? "" : commandTempl[1]));
+				out.writeLine(cmd);
 				String error = in.waitForPrompt();
 				if (error != null)
 					throw new SQLException(error.substring(6), error.substring(0, 5));
@@ -2710,7 +2707,7 @@ public class MonetConnection
 					// to blocking behaviour when the buffer is full.  Because
 					// the server will be writing back results to us, it will
 					// eventually block as well when its TCP buffer gets full,
-					// as we are blocking an not consuming from it.  The result
+					// as we are blocking and not consuming from it.  The result
 					// is a state where both client and server want to write,
 					// but block.
 					if (query.length() > MapiSocket.BLOCK) {
