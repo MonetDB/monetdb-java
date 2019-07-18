@@ -10,15 +10,12 @@ package nl.cwi.monetdb.mcl.net;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
-import java.io.EOFException;
 import java.io.FileWriter;
 import java.io.FilterInputStream;
 import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.Socket;
@@ -32,7 +29,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import nl.cwi.monetdb.mcl.MCLException;
 import nl.cwi.monetdb.mcl.io.BufferedMCLReader;
@@ -111,16 +107,18 @@ public final class MapiSocket {
 	private String language = "sql";
 	/** The hash methods to use (null = default) */
 	private String hash = null;
+
 	/** Whether we should follow redirects */
 	private boolean followRedirects = true;
 	/** How many redirections do we follow until we're fed up with it? */
 	private int ttl = 10;
+
 	/** Whether we are debugging or not */
 	private boolean debug = false;
 	/** The Writer for the debug log-file */
 	private Writer log;
 
-	/** The blocksize (hardcoded in compliance with stream.mx) */
+	/** The blocksize (hardcoded in compliance with MonetDB common/stream/stream.h) */
 	public final static int BLOCK = 8 * 1024 - 2;
 
 	/** A short in two bytes for holding the block size in bytes */
@@ -201,7 +199,7 @@ public final class MapiSocket {
 	 * operation to have effect.
 	 *
 	 * @param s The specified timeout, in milliseconds.  A timeout
-	 *        of zero is interpreted as an infinite timeout.
+	 *        of zero will disable timeout (i.e., timeout of infinity).
 	 * @throws SocketException Issue with the socket
 	 */
 	public void setSoTimeout(int s) throws SocketException {
@@ -209,7 +207,7 @@ public final class MapiSocket {
 			throw new IllegalArgumentException("timeout can't be negative");
 		}
 		this.soTimeout = s;
-		// limit time to wait on blocking operations (0 = indefinite)
+		// limit time to wait on blocking operations
 		if (con != null) {
 			con.setSoTimeout(s);
 		}
@@ -229,7 +227,7 @@ public final class MapiSocket {
 	}
 
 	/**
-	 * Enables/disables debug
+	 * Enables/disables debug mode with logging to file
 	 *
 	 * @param debug Value to set
 	 */
@@ -266,7 +264,7 @@ public final class MapiSocket {
 		throws IOException, UnknownHostException, SocketException, MCLParseException, MCLException
 	{
 		if (ttl-- <= 0)
-			throw new MCLException("Maximum number of redirects reached, aborting connection attempt. Sorry.");
+			throw new MCLException("Maximum number of redirects reached, aborting connection attempt.");
 
 		if (makeConnection) {
 			con = new Socket(host, port);
@@ -288,28 +286,20 @@ public final class MapiSocket {
 
 		String c = reader.readLine();
 		reader.waitForPrompt();
-		writer.writeLine(
-				getChallengeResponse(
-					c,
-					user,
-					pass,
-					language,
-					database,
-					hash
-					)
-				);
-
-		// read monet response till prompt
+		writer.writeLine(getChallengeResponse(c, user, pass, language, database, hash));
+		// read monetdb mserver response till prompt
 		List<String> redirects = new ArrayList<String>();
 		List<String> warns = new ArrayList<String>();
 		String err = "", tmp;
 		int lineType;
 		do {
-			if ((tmp = reader.readLine()) == null)
+			tmp = reader.readLine();
+			if (tmp == null)
 				throw new IOException("Read from " +
 						con.getInetAddress().getHostName() + ":" +
 						con.getPort() + ": End of stream reached");
-			if ((lineType = reader.getLineType()) == BufferedMCLReader.ERROR) {
+			lineType = reader.getLineType();
+			if (lineType == BufferedMCLReader.ERROR) {
 				err += "\n" + tmp.substring(7);
 			} else if (lineType == BufferedMCLReader.INFO) {
 				warns.add(tmp.substring(1));
@@ -317,10 +307,12 @@ public final class MapiSocket {
 				redirects.add(tmp.substring(1));
 			}
 		} while (lineType != BufferedMCLReader.PROMPT);
+
 		if (err.length() > 0) {
 			close();
-			throw new MCLException(err.trim());
+			throw new MCLException(err);
 		}
+
 		if (!redirects.isEmpty()) {
 			if (followRedirects) {
 				// Ok, server wants us to go somewhere else.  The list
@@ -353,8 +345,7 @@ public final class MapiSocket {
 							if (tmp.equals("database")) {
 								tmp = args[i].substring(pos + 1);
 								if (!tmp.equals(database)) {
-									warns.add("redirect points to different " +
-											"database: " + tmp);
+									warns.add("redirect points to different database: " + tmp);
 									setDatabase(tmp);
 								}
 							} else if (tmp.equals("language")) {
@@ -393,7 +384,7 @@ public final class MapiSocket {
 					if (tmp != null && tmp.length() > 0) {
 						tmp = tmp.substring(1).trim();
 						if (!tmp.isEmpty() && !tmp.equals(database)) {
-							warns.add("redirect points to different " + "database: " + tmp);
+							warns.add("redirect points to different database: " + tmp);
 							setDatabase(tmp);
 						}
 					}
@@ -424,6 +415,7 @@ public final class MapiSocket {
 	 * string is null, a challengeless response is returned.
 	 *
 	 * @param chalstr the challenge string
+	 *	for example: H8sRMhtevGd:mserver:9:PROT10,RIPEMD160,SHA256,SHA1,MD5,COMPRESSION_SNAPPY,COMPRESSION_LZ4:LIT:SHA512:
 	 * @param username the username to use
 	 * @param password the password to use
 	 * @param language the language to use
@@ -438,80 +430,76 @@ public final class MapiSocket {
 			String database,
 			String hash
 	) throws MCLParseException, MCLException, IOException {
-		String response;
-		String algo;
-
 		// parse the challenge string, split it on ':'
 		String[] chaltok = chalstr.split(":");
-		if (chaltok.length <= 4)
-			throw new MCLParseException("Server challenge string unusable!  Challenge contains too few tokens: " + chalstr);
+		if (chaltok.length <= 5)
+			throw new MCLParseException("Server challenge string unusable! It contains too few (" + chaltok.length + ") tokens: " + chalstr);
 
 		// challenge string to use as salt/key
 		String challenge = chaltok[0];
-		String servert = chaltok[1];
 		try {
-			version = Integer.parseInt(chaltok[2].trim());	// protocol version
+			version = Integer.parseInt(chaltok[2]);	// protocol version
 		} catch (NumberFormatException e) {
-			throw new MCLParseException("Protocol version unparseable: " + chaltok[3]);
+			throw new MCLParseException("Protocol version (" + chaltok[2] + ") unparseable as integer.");
 		}
 
 		// handle the challenge according to the version it is
 		switch (version) {
-			default:
-				throw new MCLException("Unsupported protocol version: " + version);
 			case 9:
-				// proto 9 is like 8, but uses a hash instead of the
-				// plain password, the server tells us which hash in the
-				// challenge after the byte-order
+				// proto 9 is like 8, but uses a hash instead of the plain password
+				// the server tells us (in 6th token) which hash in the
+				// challenge after the byte-order token
 
+				String algo;
+				String pwhash = chaltok[5];
 				/* NOTE: Java doesn't support RIPEMD160 :( */
-				if (chaltok[5].equals("SHA512")) {
+				if (pwhash.equals("SHA512")) {
 					algo = "SHA-512";
-				} else if (chaltok[5].equals("SHA384")) {
+				} else if (pwhash.equals("SHA384")) {
 					algo = "SHA-384";
-				} else if (chaltok[5].equals("SHA256")) {
+				} else if (pwhash.equals("SHA256")) {
 					algo = "SHA-256";
 				/* NOTE: Java doesn't support SHA-224 */
-				} else if (chaltok[5].equals("SHA1")) {
+				} else if (pwhash.equals("SHA1")) {
 					algo = "SHA-1";
-				} else if (chaltok[5].equals("MD5")) {
+				} else if (pwhash.equals("MD5")) {
 					algo = "MD5";
 				} else {
-					throw new MCLException("Unsupported password hash: " + chaltok[5]);
+					throw new MCLException("Unsupported password hash: " + pwhash);
 				}
-
 				try {
 					MessageDigest md = MessageDigest.getInstance(algo);
 					md.update(password.getBytes("UTF-8"));
 					byte[] digest = md.digest();
 					password = toHex(digest);
 				} catch (NoSuchAlgorithmException e) {
-					throw new AssertionError("internal error: " + e.toString());
+					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e.toString());
 				} catch (UnsupportedEncodingException e) {
-					throw new AssertionError("internal error: " + e.toString());
+					throw new MCLException("This JVM does not support UTF-8 encoding\n" + e.toString());
 				}
 
 				// proto 7 (finally) used the challenge and works with a
 				// password hash.  The supported implementations come
 				// from the server challenge.  We chose the best hash
-				// we can find, in the order SHA1, MD5, plain.  Also,
-				// the byte-order is reported in the challenge string,
+				// we can find, in the order SHA512, SHA1, MD5, plain.
+				// Also the byte-order is reported in the challenge string,
 				// which makes sense, since only blockmode is supported.
 				// proto 8 made this obsolete, but retained the
-				// byte-order report for future "binary" transports.  In
-				// proto 8, the byte-order of the blocks is always little
+				// byte-order report for future "binary" transports.
+				// In proto 8, the byte-order of the blocks is always little
 				// endian because most machines today are.
-				String hashes = (hash == null ? chaltok[3] : hash);
-				Set<String> hashesSet = new HashSet<String>(Arrays.asList(hashes.toUpperCase().split("[, ]")));
+				String hashes = (hash == null || hash.isEmpty()) ? chaltok[3] : hash;
+				HashSet<String> hashesSet = new HashSet<String>(Arrays.asList(hashes.toUpperCase().split("[, ]")));	// split on comma or space
 
 				// if we deal with merovingian, mask our credentials
-				if (servert.equals("merovingian") && !language.equals("control")) {
+				if (chaltok[1].equals("merovingian") && !language.equals("control")) {
 					username = "merovingian";
 					password = "merovingian";
 				}
-				String pwhash;
-				algo = null;
 
+				// reuse variables algo and pwhash
+				algo = null;
+				pwhash = null;
 				if (hashesSet.contains("SHA512")) {
 					algo = "SHA-512";
 					pwhash = "{SHA512}";
@@ -528,44 +516,39 @@ public final class MapiSocket {
 					algo = "MD5";
 					pwhash = "{MD5}";
 				} else {
-					throw new MCLException("no supported password hashes in " + hashes);
+					throw new MCLException("no supported hash algorithms found in " + hashes);
 				}
-				if (algo != null) {
-					try {
-						MessageDigest md = MessageDigest.getInstance(algo);
-						md.update(password.getBytes("UTF-8"));
-						md.update(challenge.getBytes("UTF-8"));
-						byte[] digest = md.digest();
-						pwhash += toHex(digest);
-					} catch (NoSuchAlgorithmException e) {
-						throw new AssertionError("internal error: " + e.toString());
-					} catch (UnsupportedEncodingException e) {
-						throw new AssertionError("internal error: " + e.toString());
-					}
+				try {
+					MessageDigest md = MessageDigest.getInstance(algo);
+					md.update(password.getBytes("UTF-8"));
+					md.update(challenge.getBytes("UTF-8"));
+					byte[] digest = md.digest();
+					pwhash += toHex(digest);
+				} catch (NoSuchAlgorithmException e) {
+					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e.toString());
+				} catch (UnsupportedEncodingException e) {
+					throw new MCLException("This JVM does not support UTF-8 encoding\n" + e.toString());
 				}
-				// TODO: some day when we need this, we should store
-				// this
+
+				// TODO: some day when we need this, we should store this
 				if (chaltok[4].equals("BIG")) {
 					// byte-order of server is big-endian
 				} else if (chaltok[4].equals("LIT")) {
 					// byte-order of server is little-endian
 				} else {
-					throw new MCLParseException("Invalid byte-order: " + chaltok[5]);
+					throw new MCLParseException("Invalid byte-order: " + chaltok[4]);
 				}
 
 				// generate response
-				response = "BIG:"	// JVM byte-order is big-endian
-					+ username + ":" + pwhash + ":" + language
-					+ ":" + (database == null ? "" : database) + ":";
-
+				String response = "BIG:"	// JVM byte-order is big-endian
+					+ username + ":"
+					+ pwhash + ":"
+					+ language + ":"
+					+ (database == null ? "" : database) + ":";
 				return response;
+			default:
+				throw new MCLException("Unsupported protocol version: " + version);
 		}
-	}
-
-	private static char hexChar(int n) {
-		return (n > 9)
-			? (char) ('a' + (n - 10))
-			: (char) ('0' + n);
 	}
 
 	/**
@@ -584,6 +567,13 @@ public final class MapiSocket {
 		}
 		return new String(result);
 	}
+
+	private static char hexChar(int n) {
+		return (n > 9)
+			? (char) ('a' + (n - 10))
+			: (char) ('0' + n);
+	}
+
 
 	/**
 	 * Returns an InputStream that reads from this open connection on
@@ -656,12 +646,13 @@ public final class MapiSocket {
 	 * encouraged to start debugging before actually connecting the
 	 * socket.
 	 *
-	 * @param out to write the log to
+	 * @param out to write the log to a print stream
 	 * @throws IOException if the file could not be opened for writing
 	 */
-	public void debug(PrintStream out) throws IOException {
-		debug(new PrintWriter(out));
-	}
+// disabled as it is not used by JDBC driver code
+//	public void debug(PrintStream out) throws IOException {
+//		debug(new PrintWriter(out));
+//	}
 
 	/**
 	 * Enables logging to a stream what is read and written from and to
@@ -670,11 +661,19 @@ public final class MapiSocket {
 	 * socket.
 	 *
 	 * @param out to write the log to
-	 * @throws IOException if the file could not be opened for writing
 	 */
-	public void debug(Writer out) throws IOException {
+	public void debug(Writer out) {
 		log = out;
 		debug = true;
+	}
+
+	/**
+	 * Get the log Writer.
+	 *
+	 * @return the log writer
+	 */
+	public Writer getLogWriter() {
+		return log;
 	}
 
 	/**
@@ -1024,8 +1023,9 @@ public final class MapiSocket {
 	}
 
 	/**
-	 * Closes the streams and socket connected to the server if
-	 * possible.  If an error occurs during disconnecting it is ignored.
+	 * Closes the streams and socket connected to the server if possible.
+	 * If an error occurs at closing a resource, it is ignored so as many
+	 * resources as possible are closed.
 	 */
 	public synchronized void close() {
 		if (writer != null) {
@@ -1054,7 +1054,7 @@ public final class MapiSocket {
 		}
 		if (con != null) {
 			try {
-				con.close();
+				con.close();	// close the socket
 				con = null;
 			} catch (IOException e) { /* ignore it */ }
 		}
