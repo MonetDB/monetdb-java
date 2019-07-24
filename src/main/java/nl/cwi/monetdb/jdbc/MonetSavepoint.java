@@ -26,13 +26,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * Because the IDs which get generated are a logical sequence, application
  * wide, two concurrent transactions are guaranteed to not to have the same
- * save point identifiers. In this implementation the validaty of save points
+ * save point identifiers. In this implementation the validity of save points
  * is determined by the server, which makes this a light implementation.
  *
  * @author Fabian Groffen
  * @version 1.0
  */
-public class MonetSavepoint implements Savepoint {
+public final class MonetSavepoint implements Savepoint {
 	/** The id of the last created Savepoint */
 	private static AtomicInteger highestId = new AtomicInteger(0);
 
@@ -41,13 +41,20 @@ public class MonetSavepoint implements Savepoint {
 	/** The id of this Savepoint */
 	private final int id;
 
+	/**
+	 * Creates a named MonetSavepoint object
+	 */
 	public MonetSavepoint(String name) throws IllegalArgumentException {
-		if (name == null) throw new IllegalArgumentException("null not allowed");
+		if (name == null || name.isEmpty())
+			throw new IllegalArgumentException("missing savepoint name string");
 
 		this.id = getNextId();
 		this.name = name;
 	}
 
+	/**
+	 * Creates an unnamed MonetSavepoint object
+	 */
 	public MonetSavepoint() {
 		this.id = getNextId();
 		this.name = null;
@@ -63,10 +70,10 @@ public class MonetSavepoint implements Savepoint {
 	 */
 	@Override
 	public int getSavepointId() throws SQLException {
-		if (name != null) throw
-			new SQLException("Cannot getID for named savepoint", "3B000");
+		if (name != null)
+			throw new SQLException("Cannot getID for named savepoint", "3B000");
 
-		return getId();
+		return id;
 	}
 
 	/**
@@ -78,8 +85,8 @@ public class MonetSavepoint implements Savepoint {
 	 */
 	@Override
 	public String getSavepointName() throws SQLException {
-		if (name == null) throw
-			new SQLException("Unable to retrieve name of unnamed savepoint", "3B000");
+		if (name == null)
+			throw new SQLException("Unable to retrieve name of unnamed savepoint", "3B000");
 
 		return name;
 	}
@@ -98,8 +105,8 @@ public class MonetSavepoint implements Savepoint {
 	}
 
 	/**
-	 * Returns the name to use when referencing this save point to the MonetDB
-	 * database. The returned value is guaranteed to be unique and consists of
+	 * Returns the constructed internal name to use when referencing this save point to the
+	 * MonetDB database. The returned value is guaranteed to be unique and consists of
 	 * a prefix string and a sequence number.
 	 *
 	 * @return the unique savepoint name
@@ -130,7 +137,7 @@ public class MonetSavepoint implements Savepoint {
 	 *
 	 * @return the highest id returned by a call to getNextId()
 	 */
-	private static int getHighestId() {
-		return highestId.get();
-	}
+//	private static int getHighestId() {
+//		return highestId.get();
+//	}
 }
