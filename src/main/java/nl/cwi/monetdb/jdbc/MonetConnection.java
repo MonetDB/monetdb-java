@@ -402,11 +402,6 @@ public class MonetConnection
 			}
 			// close the socket
 			server.close();
-			// close active SendThread if any
-			if (sendThread != null) {
-				sendThread.shutdown();
-				sendThread = null;
-			}
 			// report ourselves as closed
 			closed = true;
 		}
@@ -1862,9 +1857,6 @@ public class MonetConnection
 	/** The sequence counter */
 	private static int seqCounter = 0;
 
-	/** An optional thread that is used for sending large queries */
-	private SendThread sendThread = null;
-
 	/**
 	 * A Response is a message sent by the server to indicate some
 	 * action has taken place, and possible results of that action.
@@ -2693,7 +2685,6 @@ public class MonetConnection
 		void executeQuery(String[] templ, String query)
 			throws SQLException
 		{
-			boolean sendThreadInUse = false;
 			String error = null;
 
 			try {
@@ -2723,29 +2714,8 @@ public class MonetConnection
 					}
 					// }}} set reply size
 
-					// If the query is larger than the TCP buffer size, use a
-					// special send thread to avoid deadlock with the server due
-					// to blocking behaviour when the buffer is full.  Because
-					// the server will be writing back results to us, it will
-					// eventually block as well when its TCP buffer gets full,
-					// as we are blocking and not consuming from it.  The result
-					// is a state where both client and server want to write,
-					// but block.
-					if (query.length() > MapiSocket.BLOCK) {
-						// get a reference to the send thread
-						if (sendThread == null)
-							sendThread = new SendThread(out);
-						// tell it to do some work!
-						sendThread.runQuery(templ, query);
-						sendThreadInUse = true;
-					} else {
-						// this is a simple call, which is a lot cheaper and will
-						// always succeed for small queries.
-						out.writeLine(
-								(templ[0] == null ? "" : templ[0]) +
-								query +
-								(templ[1] == null ? "" : templ[1]));
-					}
+					// send query to the server
+					out.writeLine( (templ[0] == null ? "" : templ[0]) + query + (templ[1] == null ? "" : templ[1]) );
 
 					// go for new results
 					String tmpLine = in.readLine();
@@ -2881,17 +2851,6 @@ public class MonetConnection
 					} // end of while (linetype != BufferedMCLReader.PROMPT)
 				} // end of synchronized (server)
 
-				// if we used the sendThread, make sure it has finished
-				if (sendThreadInUse) {
-					String tmp = sendThread.getErrors();
-					if (tmp != null) {
-						if (error == null) {
-							error = "08000!" + tmp;
-						} else {
-							error += "\n08000!" + tmp;
-						}
-					}
-				}
 				if (error != null) {
 					SQLException ret = null;
 					String[] errors = error.split("\n");
@@ -2917,147 +2876,6 @@ public class MonetConnection
 				closed = true;
 				throw new SQLNonTransientConnectionException(e.getMessage() + " (mserver5 still alive?)", "08006");
 			}
-		}
-	}
-	// }}}
-
-	/**
-	 * A thread to send a query to the server.  When sending large
-	 * amounts of data to a server, the output buffer of the underlying
-	 * communication socket may overflow.  In such case the sending
-	 * process blocks.  In order to prevent deadlock, it might be
-	 * desirable that the driver as a whole does not block.  This thread
-	 * facilitates the prevention of such 'full block', because this
-	 * separate thread only will block.<br />
-	 * This thread is designed for reuse, as thread creation costs are
-	 * high.
-	 */
-	// {{{ SendThread class implementation
-	static class SendThread extends Thread {
-		/** The state WAIT represents this thread to be waiting for
-		 *  something to do */
-		private static final int WAIT = 0;
-		/** The state QUERY represents this thread to be executing a query */
-		private static final int QUERY = 1;
-		/** The state SHUTDOWN is the final state that ends this thread */
-		private static final int SHUTDOWN = -1;
-
-		private String[] templ;
-		private String query;
-		private BufferedMCLWriter out;
-		private String error;
-		private int state = WAIT;
-
-		final Lock sendLock = new ReentrantLock();
-		final Condition queryAvailable = sendLock.newCondition();
-		final Condition waiting = sendLock.newCondition();
-
-		/**
-		 * Constructor which immediately starts this thread and sets it
-		 * into daemon mode.
-		 *
-		 * @param monet the socket to write to
-		 */
-		public SendThread(BufferedMCLWriter out) {
-			super("SendThread");
-			setDaemon(true);
-			this.out = out;
-			start();
-		}
-
-		@Override
-		public void run() {
-			sendLock.lock();
-			try {
-				while (true) {
-					while (state == WAIT) {
-						try {
-							queryAvailable.await();
-						} catch (InterruptedException e) {
-							// woken up, eh?
-						}
-					}
-					if (state == SHUTDOWN)
-						break;
-
-					// state is QUERY here
-					try {
-						out.writeLine(
-								(templ[0] == null ? "" : templ[0]) +
-								query +
-								(templ[1] == null ? "" : templ[1]));
-					} catch (IOException e) {
-						error = e.getMessage();
-					}
-
-					// update our state, and notify, maybe someone is waiting
-					// for us in throwErrors
-					state = WAIT;
-					waiting.signal();
-				}
-			} finally {
-				sendLock.unlock();
-			}
-		}
-
-		/**
-		 * Starts sending the given query over the given socket.  Beware
-		 * that the thread should be finished (can be assured by calling
-		 * throwErrors()) before this method is called!
-		 *
-		 * @param templ the query template
-		 * @param query the query itself
-		 * @throws SQLException if this SendThread is already in use
-		 */
-		public void runQuery(String[] templ, String query) throws SQLException {
-			sendLock.lock();
-			try {
-				if (state != WAIT)
-					throw new SQLException("SendThread already in use or shutting down!", "M0M03");
-
-				this.templ = templ;
-				this.query = query;
-
-				// let the thread know there is some work to do
-				state = QUERY;
-				queryAvailable.signal();
-			} finally {
-				sendLock.unlock();
-			}
-		}
-
-		/**
-		 * Returns errors encountered during the sending process.
-		 *
-		 * @return the errors or null if none
-		 */
-		public String getErrors() {
-			sendLock.lock();
-			try {
-				// make sure the thread is in WAIT state, not QUERY
-				while (state == QUERY) {
-					try {
-						waiting.await();
-					} catch (InterruptedException e) {
-						// just try again
-					}
-				}
-				if (state == SHUTDOWN)
-					error = "SendThread is shutting down";
-			} finally {
-				sendLock.unlock();
-			}
-			return error;
-		}
-
-		/**
-		 * Requests this SendThread to stop.
-		 */
-		public void shutdown() {
-			sendLock.lock();
-			state = SHUTDOWN;
-			sendLock.unlock();
-			this.interrupt();  // break any wait conditions
 		}
 	}
 	// }}}
