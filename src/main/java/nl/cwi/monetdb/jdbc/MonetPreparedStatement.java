@@ -81,8 +81,6 @@ public class MonetPreparedStatement
 
 	private final String[] values;
 
-	private final MonetConnection connection;
-
 	/* placeholders for date/time pattern formats created once (only when needed), used multiple times */
 	/** Format of a timestamp with RFC822 time zone */
 	private SimpleDateFormat mTimestampZ;
@@ -140,8 +138,6 @@ public class MonetPreparedStatement
 		table = new String[size];
 		column = new String[size];
 		values = new String[size];
-
-		this.connection = connection;
 
 		// fill the arrays
 		ResultSet rs = super.getResultSet();
@@ -218,8 +214,6 @@ public class MonetPreparedStatement
 		id = -1;
 		size = -1;
 		rscolcnt = -1;
-
-		this.connection = connection;
 	}
 	*/
 

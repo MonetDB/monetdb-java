@@ -1258,7 +1258,7 @@ public class MonetResultSet
 	 * @return the description of this ResultSet object's columns
 	 */
 	@Override
-	public ResultSetMetaData getMetaData() {
+	public ResultSetMetaData getMetaData() throws SQLException {
 		// return inner class which implements the ResultSetMetaData interface
 		return new rsmdw() {
 			// for the more expensive methods (getPrecision(), getScale(), isNullable()), we provide a simple cache
@@ -1269,8 +1269,8 @@ public class MonetResultSet
 			private final int[] _scale		= new int[array_size];
 			private final int[] _isNullable	= new int[array_size];
 			private final boolean[] _isAutoincrement = new boolean[array_size];
-			private Connection conn = null;
-			private DatabaseMetaData dbmd = null;
+			private final Connection conn = getStatement().getConnection();
+			private final DatabaseMetaData dbmd = conn.getMetaData();
 
 			/**
 			 * A private utility method to check validity of column index number
@@ -1304,14 +1304,6 @@ public class MonetResultSet
 					if (tblName != null && !tblName.isEmpty()) {
 						String colName = getColumnName(column);
 						if (colName != null && !colName.isEmpty()) {
-							if (conn == null) {
-								// first time, get a Connection object and cache it for all next columns
-								conn = getStatement().getConnection();
-							}
-							if (conn != null && dbmd == null) {
-								// first time, get a MetaData object and cache it for all next columns
-								dbmd = conn.getMetaData();
-							}
 							if (dbmd != null) {
 								// for precision, scale, isNullable and isAutoincrement we query the information from data dictionary
 								ResultSet colInfo = dbmd.getColumns(null, schName, tblName, colName);
@@ -1730,10 +1722,6 @@ public class MonetResultSet
 			@Override
 			public String getColumnClassName(int column) throws SQLException {
 				checkColumnIndexValidity(column);
-				if (conn == null) {
-					// first time, get a Connection object and cache it for all next columns
-					conn = getStatement().getConnection();
-				}
 				try {
 					String MonetDBType = types[column - 1];
 					Class<?> type = null;

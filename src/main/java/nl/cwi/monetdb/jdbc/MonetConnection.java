@@ -1933,13 +1933,11 @@ public class MonetConnection
 		/** A List of result blocks (chunks of size fetchSize/cacheSize) */
 		private DataBlockResponse[] resultBlocks;
 
-		/** A bitmap telling whether the headers are set or not */
-		private boolean[] isSet;
 		/** Whether this Response is closed */
 		private boolean closed;
 
 		/** The Connection that we should use when requesting a new block */
-		private MonetConnection.ResponseList parent;
+		private final MonetConnection.ResponseList parent;
 		/** Whether the fetchSize was explitly set by the user */
 		private boolean cacheSizeSetExplicitly = false;
 		/** Whether we should send an Xclose command to the server
@@ -1951,6 +1949,8 @@ public class MonetConnection
 		/** A parser for header lines */
 		HeaderLineParser hlp;
 
+		/** A boolean array telling whether the headers are set or not */
+		private final boolean[] isSet;
 		private static final int NAMES	= 0;
 		private static final int TYPES	= 1;
 		private static final int TABLES	= 2;
@@ -1978,7 +1978,7 @@ public class MonetConnection
 				int seq)
 			throws SQLException
 		{
-			isSet = new boolean[7];
+			isSet = new boolean[4];
 			this.parent = parent;
 			if (parent.cachesize == 0) {
 				/* Below we have to calculate how many "chunks" we need
@@ -2008,15 +2008,11 @@ public class MonetConnection
 			this.id = id;
 			this.tuplecount = tuplecount;
 			this.columncount = columncount;
-			this.resultBlocks =
-				new DataBlockResponse[(tuplecount / cacheSize) + 1];
+			this.resultBlocks = new DataBlockResponse[(tuplecount / cacheSize) + 1];
 
 			hlp = new HeaderLineParser(columncount);
 
-			resultBlocks[0] = new DataBlockResponse(
-				rowcount,
-				parent.rstype == ResultSet.TYPE_FORWARD_ONLY
-			);
+			resultBlocks[0] = new DataBlockResponse(rowcount, parent.rstype == ResultSet.TYPE_FORWARD_ONLY);
 		}
 
 		/**

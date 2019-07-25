@@ -53,7 +53,7 @@ public class MonetStatement
 	static final int DEF_MAXROWS = 0;
 
 	/** The parental Connection object */
-	private MonetConnection connection;
+	protected final MonetConnection connection;
 	/** The last ResponseList object this Statement produced */
 	private MonetConnection.ResponseList lastResponseList;
 	/** The last Response that this object uses */
@@ -522,7 +522,9 @@ public class MonetStatement
 			/* do not catch SQLException here, as we want to know it when it fails */
 			finally {
 				if (st != null) {
-					 st.close();
+					try {
+						 st.close();
+					} catch (SQLException e) { /* ignore */ }
 				}
 			}
 		}

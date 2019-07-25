@@ -26,7 +26,7 @@ import java.util.ArrayList;
  * @version 0.7
  */
 public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaData {
-	private Connection con;
+	private final Connection con;
 
 	// Internal cache for 3 server environment values
 	private String env_current_user;
