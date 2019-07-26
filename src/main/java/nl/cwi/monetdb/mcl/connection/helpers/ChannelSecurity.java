@@ -8,6 +8,9 @@
 
 package nl.cwi.monetdb.mcl.connection.helpers;
 
+import nl.cwi.monetdb.mcl.protocol.ProtocolException;
+
+import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
@@ -43,15 +46,11 @@ public final class ChannelSecurity {
 	 * @param toDigests The Strings to digest
 	 * @return The Strings digest as a hexadecimal string
 	 */
-	public static String digestStrings(String algorithm, byte[]... toDigests) {
-		try {
-			MessageDigest md = MessageDigest.getInstance(algorithm);
-			for (byte[] str : toDigests) {
-				md.update(str);
-			}
-			return toHex(md.digest());
-		} catch (NoSuchAlgorithmException e) {
-			throw new AssertionError("internal error: " + e.toString());
+	public static String digestStrings(String algorithm, byte[]... toDigests) throws NoSuchAlgorithmException {
+		MessageDigest md = MessageDigest.getInstance(algorithm);
+		for (byte[] str : toDigests) {
+			md.update(str);
 		}
+		return toHex(md.digest());
 	}
 }

@@ -18,11 +18,13 @@ import nl.cwi.monetdb.mcl.protocol.ServerResponses;
 import nl.cwi.monetdb.mcl.protocol.oldmapi.OldMapiProtocol;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteOrder;
+import java.security.NoSuchAlgorithmException;
 import java.sql.BatchUpdateException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -326,12 +328,13 @@ public class MapiConnection extends MonetConnection {
 	public List<String> connect(String host, int port, String user, String pass, boolean makeConnection)
 			throws IOException, ProtocolException, MCLException {
 		if (ttl-- <= 0)
-			throw new MCLException("Maximum number of redirects reached, aborting connection attempt. Sorry.");
+			throw new MCLException("Maximum number of redirects reached, aborting connection attempt.");
 
 		if (makeConnection) {
 			this.protocol = new OldMapiProtocol(new OldMapiSocket(this.hostname, this.port, this));
 			//set nodelay, as it greatly speeds up small messages (like we often do)
 			((OldMapiProtocol)this.protocol).getSocket().setTcpNoDelay(true);
+			((OldMapiProtocol)this.protocol).getSocket().setKeepAlive(true);
 			((OldMapiProtocol)this.protocol).getSocket().setSoTimeout(this.soTimeout);
 		}
 
@@ -469,21 +472,17 @@ public class MapiConnection extends MonetConnection {
 										String database, String hash) throws ProtocolException, MCLException,
 			IOException {
 		String response;
-		String algo;
-
 		// parse the challenge string, split it on ':'
 		String[] chaltok = chalstr.split(":");
-		if (chaltok.length <= 4)
-			throw new ProtocolException("Server challenge string unusable! Challenge contains too few tokens: "
-					+ chalstr);
+		if (chaltok.length <= 5)
+			throw new MCLException("Server challenge string unusable! It contains too few (" + chaltok.length + ") tokens: " + chalstr);
 
 		// challenge string to use as salt/key
 		String challenge = chaltok[0];
-		String servert = chaltok[1];
 		try {
-			this.version = Integer.parseInt(chaltok[2].trim()); // protocol version
+			version = Integer.parseInt(chaltok[2]);	// protocol version
 		} catch (NumberFormatException e) {
-			throw new ProtocolException("Protocol version unparseable: " + chaltok[2]);
+			throw new MCLException("Protocol version (" + chaltok[2] + ") unparseable as integer.");
 		}
 
 		switch (chaltok[4]) {
@@ -501,47 +500,57 @@ public class MapiConnection extends MonetConnection {
 		// handle the challenge according to the version it is
 		switch (this.version) {
 			case 9:
-				// proto 9 is like 8, but uses a hash instead of the plain password, the server tells us which hash in
-				// the challenge after the byte-order
+				// proto 9 is like 8, but uses a hash instead of the plain password
+				// the server tells us (in 6th token) which hash in the
+				// challenge after the byte-order token
+
+				String algo;
+				String pwhash = chaltok[5];
 				/* NOTE: Java doesn't support RIPEMD160 :( */
-				switch (chaltok[5]) {
-					case "SHA512":
-						algo = "SHA-512";
-						break;
-					case "SHA384":
-						algo = "SHA-384";
-						break;
-					case "SHA256":
-						algo = "SHA-256";
-				/* NOTE: Java supports SHA-224 only on 8 */
-						break;
-					case "SHA1":
-						algo = "SHA-1";
-						break;
-					case "MD5":
-						algo = "MD5";
-						break;
-					default:
-						throw new MCLException("Unsupported password hash: " + chaltok[5]);
+				if (pwhash.equals("SHA512")) {
+					algo = "SHA-512";
+				} else if (pwhash.equals("SHA384")) {
+					algo = "SHA-384";
+				} else if (pwhash.equals("SHA256")) {
+					algo = "SHA-256";
+					/* NOTE: Java doesn't support SHA-224 */
+				} else if (pwhash.equals("SHA1")) {
+					algo = "SHA-1";
+				} else if (pwhash.equals("MD5")) {
+					algo = "MD5";
+				} else {
+					throw new MCLException("Unsupported password hash: " + pwhash);
+				}
+				try {
+					password = ChannelSecurity.digestStrings(algo, password.getBytes("UTF-8"));
+				} catch (NoSuchAlgorithmException e) {
+					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e.toString());
+				} catch (UnsupportedEncodingException e) {
+					throw new MCLException("This JVM does not support UTF-8 encoding\n" + e.toString());
 				}
 
-				password = ChannelSecurity.digestStrings(algo, password.getBytes("UTF-8"));
-
-				// proto 7 (finally) used the challenge and works with a password hash. The supported implementations
-				// come from the server challenge. We chose the best hash we can find, in the order SHA1, MD5, plain.
-				// Also, the byte-order is reported in the challenge string. proto 8 made this obsolete, but retained
-				// the byte-order report for future "binary" transports. In proto 8, the byte-order of the blocks is
-				// always little endian because most machines today are.
-				String hashes = (hash == null ? chaltok[3] : hash);
-				Set<String> hashesSet = new HashSet<>(Arrays.asList(hashes.toUpperCase().split("[, ]")));
+				// proto 7 (finally) used the challenge and works with a
+				// password hash.  The supported implementations come
+				// from the server challenge.  We chose the best hash
+				// we can find, in the order SHA512, SHA1, MD5, plain.
+				// Also the byte-order is reported in the challenge string,
+				// which makes sense, since only blockmode is supported.
+				// proto 8 made this obsolete, but retained the
+				// byte-order report for future "binary" transports.
+				// In proto 8, the byte-order of the blocks is always little
+				// endian because most machines today are.
+				String hashes = (hash == null || hash.isEmpty()) ? chaltok[3] : hash;
+				HashSet<String> hashesSet = new HashSet<String>(Arrays.asList(hashes.toUpperCase().split("[, ]")));	// split on comma or space
 
 				// if we deal with merovingian, mask our credentials
-				if (servert.equals("merovingian") && !language.equals("control")) {
+				if (chaltok[1].equals("merovingian") && !language.equals("control")) {
 					username = "merovingian";
 					password = "merovingian";
 				}
-				String pwhash;
 
+				// reuse variables algo and pwhash
+				algo = null;
+				pwhash = null;
 				if (hashesSet.contains("SHA512")) {
 					algo = "SHA-512";
 					pwhash = "{SHA512}";
@@ -558,11 +567,26 @@ public class MapiConnection extends MonetConnection {
 					algo = "MD5";
 					pwhash = "{MD5}";
 				} else {
-					throw new MCLException("No supported password hashes in " + hashes);
+					throw new MCLException("no supported hash algorithms found in " + hashes);
 				}
 
-				pwhash += ChannelSecurity.digestStrings(algo, password.getBytes("UTF-8"),
-						challenge.getBytes("UTF-8"));
+				try {
+					pwhash += ChannelSecurity.digestStrings(algo, password.getBytes("UTF-8"),
+							challenge.getBytes("UTF-8"));
+				} catch (NoSuchAlgorithmException e) {
+					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e.toString());
+				} catch (UnsupportedEncodingException e) {
+					throw new MCLException("This JVM does not support UTF-8 encoding\n" + e.toString());
+				}
+
+				// TODO: some day when we need this, we should store this
+				if (chaltok[4].equals("BIG")) {
+					// byte-order of server is big-endian
+				} else if (chaltok[4].equals("LIT")) {
+					// byte-order of server is little-endian
+				} else {
+					throw new ProtocolException("Invalid byte-order: " + chaltok[4]);
+				}
 
 				// generate response
 				response = "BIG:";	// JVM byte-order is big-endian

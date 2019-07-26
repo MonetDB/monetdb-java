@@ -92,6 +92,16 @@ public abstract class AbstractSocket implements Closeable {
 	}
 
 	/**
+	 * Sets the TCP keep alive feature in the underlying socket.
+	 *
+	 * @param on A true or false value
+	 * @throws SocketException If an error in the underlying connection happened
+	 */
+	void setKeepAlive(boolean on) throws SocketException {
+		socket.setKeepAlive(on);
+	}
+
+	/**
 	 * Sets the underlying socket Endianness.
 	 *
 	 * @param bo A ByteOrder order value either Little-endian or Big-endian
