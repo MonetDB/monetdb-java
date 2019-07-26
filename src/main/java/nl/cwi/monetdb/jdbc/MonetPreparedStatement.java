@@ -48,8 +48,10 @@ import java.util.Map;
  * @author Fabian Groffen, Martin van Dinther, Pedro Ferreira
  * @version 0.5v
  */
-public class MonetPreparedStatement extends MonetStatement implements PreparedStatement, AutoCloseable {
-
+public class MonetPreparedStatement
+	extends MonetStatement
+	implements PreparedStatement, AutoCloseable
+{
 	private final MonetConnection connection;
 	private final String[] monetdbType;
 	private final int[] javaType;
@@ -61,17 +63,26 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	private final int id;
 	private final int size;
 	private final int rscolcnt;
+
 	private final String[] values;
 
-	private final SimpleDateFormat mTimestampZ;
-	private final SimpleDateFormat mTimestamp;
-	private final SimpleDateFormat mTimeZ;
-	private final SimpleDateFormat mTime;
-	private final SimpleDateFormat mDate;
+	/* placeholders for date/time pattern formats created once (only when needed), used multiple times */
+	/** Format of a timestamp with RFC822 time zone */
+	private SimpleDateFormat mTimestampZ;
+	/** Format of a timestamp */
+	private SimpleDateFormat mTimestamp;
+	/** Format of a time with RFC822 time zone */
+	private SimpleDateFormat mTimeZ;
+	/** Format of a time */
+	private SimpleDateFormat mTime;
+	/** Format of a date used by mserver */
+	private SimpleDateFormat mDate;
 
 	/**
-	 * MonetPreparedStatement constructor which checks the arguments for validity. A MonetPreparedStatement is backed
-	 * by a {@link MonetStatement}, which deals with most of the required stuff of this class.
+	 * MonetPreparedStatement constructor which checks the arguments for
+	 * validity.  A MonetPreparedStatement is backed by a
+	 * {@link MonetStatement}, which deals with most of the required stuff of
+	 * this class.
 	 *
 	 * @param connection the connection that created this Statement
 	 * @param resultSetType type of {@link ResultSet} to produce
@@ -80,9 +91,20 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if an error occurs during login
 	 * @throws IllegalArgumentException is one of the arguments is null or empty
 	 */
-	MonetPreparedStatement(MonetConnection connection, int resultSetType, int resultSetConcurrency,
-						   int resultSetHoldability, String prepareQuery) throws SQLException, IllegalArgumentException {
-		super(connection, resultSetType, resultSetConcurrency, resultSetHoldability);
+	MonetPreparedStatement(
+			MonetConnection connection,
+			int resultSetType,
+			int resultSetConcurrency,
+			int resultSetHoldability,
+			String prepareQuery)
+		throws SQLException, IllegalArgumentException
+	{
+		super(
+			connection,
+			resultSetType,
+			resultSetConcurrency,
+			resultSetHoldability
+		);
 
 		if (!super.execute("PREPARE " + prepareQuery))
 			throw new SQLException("Unexpected server response", "M0M10");
@@ -149,10 +171,50 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		mDate = connection.getProtocol().getMonetDate();
 	}
 
+	/**
+	 * Constructs an empty MonetPreparedStatement.  This constructor is
+	 * in particular useful for extensions of this class.
+	 *
+	 * @param connection the connection that created this Statement
+	 * @param resultSetType type of ResultSet to produce
+	 * @param resultSetConcurrency concurrency of ResultSet to produce
+	 * @throws SQLException if an error occurs during login
+	 */
+	/* Disabled this constructor code as it is not part of the JDBC interface
+	   It may be enabled again when a subclass is constructed which needs it.
+	MonetPreparedStatement(
+			MonetConnection connection,
+			int resultSetType,
+			int resultSetConcurrency,
+			int resultSetHoldability)
+		throws SQLException
+	{
+		super(
+			connection,
+			resultSetType,
+			resultSetConcurrency,
+			resultSetHoldability
+		);
+		// initialise blank finals
+		monetdbType = null;
+		javaType = null;
+		digits = null;
+		scale = null;
+		schema = null;
+		table = null;
+		column = null;
+		values = null;
+		id = -1;
+		size = -1;
+		rscolcnt = -1;
+	}
+	*/
+
 	//== methods interface PreparedStatement
 
 	/**
-	 * Adds a set of parameters to this PreparedStatement object's batch of commands.
+	 * Adds a set of parameters to this PreparedStatement object's batch
+	 * of commands.
 	 *
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -195,9 +257,10 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * getUpdateCount to retrieve the result; you must call
 	 * getMoreResults to move to any subsequent result(s).
 	 *
-	 * @return true if the first result is a ResultSet object; false if the first result is an update count or there is
-	 * no result
-	 * @throws SQLException if a database access error occurs or an argument is supplied to this method
+	 * @return true if the first result is a ResultSet object; false if the
+	 *              first result is an update count or there is no result
+	 * @throws SQLException if a database access error occurs or an argument
+	 *                      is supplied to this method
 	 */
 	@Override
 	public boolean execute() throws SQLException {
@@ -211,49 +274,55 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	}
 
 	/**
-	 * Executes the SQL query in this PreparedStatement object and returns the ResultSet object generated by the query.
+	 * Executes the SQL query in this PreparedStatement object and returns the
+	 * ResultSet object generated by the query.
 	 *
-	 * @return a ResultSet object that contains the data produced by the query never null
-	 * @throws SQLException if a database access error occurs or the SQL statement does not return a ResultSet object
+	 * @return a ResultSet object that contains the data produced by the query;
+	 *         never null
+	 * @throws SQLException if a database access error occurs or the SQL
+	 *                      statement does not return a ResultSet object
 	 */
 	@Override
 	public ResultSet executeQuery() throws SQLException {
-		if (!execute())
+		if (execute() != true)
 			throw new SQLException("Query did not produce a result set", "M1M19");
 
 		return getResultSet();
 	}
 
-	/** override the executeQuery from the Statement to throw an SQLException */
+	/** override the executeQuery from the Statement to throw an SQLException*/
 	@Override
 	public ResultSet executeQuery(String q) throws SQLException {
 		throw new SQLException("This method is not available in a PreparedStatement!", "M1M05");
 	}
 
 	/**
-	 * Executes the SQL statement in this PreparedStatement object, which must be an SQL INSERT, UPDATE or DELETE
-	 * statement; or an SQL statement that returns nothing, such as a DDL statement.
+	 * Executes the SQL statement in this PreparedStatement object, which must
+	 * be an SQL INSERT, UPDATE or DELETE statement; or an SQL statement that
+	 * returns nothing, such as a DDL statement.
 	 *
 	 * @return either (1) the row count for INSERT, UPDATE, or DELETE
 	 *         statements or (2) 0 for SQL statements that return nothing
-	 * @throws SQLException if a database access error occurs or the SQL statement returns a ResultSet object
+	 * @throws SQLException if a database access error occurs or the SQL
+	 *                     statement returns a ResultSet object
 	 */
 	@Override
 	public int executeUpdate() throws SQLException {
-		if (execute())
+		if (execute() != false)
 			throw new SQLException("Query produced a result set", "M1M17");
+
 		return getUpdateCount();
 	}
 
-	/** override the executeUpdate from the Statement to throw an SQLException */
+	/** override the executeUpdate from the Statement to throw an SQLException*/
 	@Override
 	public int executeUpdate(String q) throws SQLException {
 		throw new SQLException("This method is not available in a PreparedStatement!", "M1M05");
 	}
 
 	/**
-	 * Returns the index (0..size-1) in the backing arrays for the given resultset column number or an SQLException
-	 * when not found
+	 * Returns the index (0..size-1) in the backing arrays for the given
+	 * resultset column number or an SQLException when not found
 	 */
 	private int getColumnIdx(int colnr) throws SQLException {
 		int curcol = 0;
@@ -267,7 +336,6 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		}
 		throw new SQLException("No such column with index: " + colnr, "M1M05");
 	}
-
 	/**
 	 * Returns the index (0..size-1) in the backing arrays for the given
 	 * parameter number or an SQLException when not found
@@ -285,6 +353,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		throw new SQLException("No such parameter with index: " + paramnr, "M1M05");
 	}
 
+
 	/* helper for the anonymous class inside getMetaData */
 	private abstract class rsmdw extends MonetWrapper implements ResultSetMetaData {}
 	/**
@@ -301,6 +370,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *
 	 * @return the description of a ResultSet object's columns or null if the
 	 *         driver cannot return a ResultSetMetaData object
+	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
@@ -312,7 +382,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			/**
 			 * Returns the number of columns in this ResultSet object.
 			 *
-			 * @return the number of columns
+			 * @returns the number of columns
 			 */
 			@Override
 			public int getColumnCount() {
@@ -339,7 +409,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 				 * query call to pull the IS_AUTOINCREMENT value for this column.
 				 * See also ResultSetMetaData.isAutoIncrement()
 				 */
-				// For now we simply always return false.
+				// For now we simply allways return false.
 				return false;
 			}
 
@@ -347,28 +417,37 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			 * Indicates whether a column's case matters.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return if the column is case sensitive
+			 * @returns false
 			 */
 			@Override
 			public boolean isCaseSensitive(int column) throws SQLException {
 				switch (getColumnType(column)) {
-					case Types.CLOB:
 					case Types.CHAR:
-					case Types.VARCHAR:
-					case Types.LONGVARCHAR:
+					case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+					case Types.CLOB:
 						return true;
-					default:
-						return false;
+					case Types.VARCHAR:
+						String monettype = getColumnTypeName(column);
+						if (monettype != null) {
+							// data of type inet or uuid is not case sensitive
+							if ("inet".equals(monettype)
+							 || "uuid".equals(monettype))
+								return false;
+						}
+						return true;
 				}
+
+				return false;
 			}
 
 			/**
-			 * Indicates whether the designated column can be used in a where clause.
+			 * Indicates whether the designated column can be used in a
+			 * where clause.
 			 *
 			 * Returning true for all here, even for CLOB, BLOB.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return true
+			 * @returns true
 			 */
 			@Override
 			public boolean isSearchable(int column) {
@@ -376,12 +455,14 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Indicates whether the designated column is a cash value. From the MonetDB database perspective it is by
-			 * definition unknown whether the value is a currency, because there are no currency datatypes such as
-			 * MONEY. With this knowledge we can always return false here.
+			 * Indicates whether the designated column is a cash value.
+			 * From the MonetDB database perspective it is by definition
+			 * unknown whether the value is a currency, because there are
+			 * no currency datatypes such as MONEY.  With this knowledge
+			 * we can always return false here.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return false
+			 * @returns false
 			 */
 			@Override
 			public boolean isCurrency(int column) {
@@ -389,7 +470,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Indicates whether values in the designated column are signed numbers.
+			 * Indicates whether values in the designated column are signed
+			 * numbers.
 			 * Within MonetDB all numeric types (except oid and ptr) are signed.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
@@ -399,14 +481,22 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			public boolean isSigned(int column) throws SQLException {
 				// we can hardcode this, based on the colum type
 				switch (getColumnType(column)) {
+					case Types.NUMERIC:
+					case Types.DECIMAL:
 					case Types.TINYINT:
 					case Types.SMALLINT:
 					case Types.INTEGER:
 					case Types.REAL:
+					case Types.FLOAT:
 					case Types.DOUBLE:
+						return true;
 					case Types.BIGINT:
-					case Types.NUMERIC:
-					case Types.DECIMAL:
+						String monettype = getColumnTypeName(column);
+						if (monettype != null) {
+							if ("oid".equals(monettype)
+							 || "ptr".equals(monettype))
+								return false;
+						}
 						return true;
 					default:
 						return false;
@@ -414,10 +504,12 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Indicates the designated column's normal maximum width in characters.
+			 * Indicates the designated column's normal maximum width in
+			 * characters.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return the normal maximum number of characters allowed as the width of the designated column
+			 * @return the normal maximum number of characters allowed as the
+			 *         width of the designated column
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
@@ -461,8 +553,10 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Get the designated column's number of decimal digits. This method is currently very expensive as it
-			 * needs to retrieve the information from the database using an SQL query.
+			 * Get the designated column's number of decimal digits.
+			 * This method is currently very expensive as it needs to
+			 * retrieve the information from the database using an SQL
+			 * query.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return precision
@@ -478,8 +572,10 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Gets the designated column's number of digits to right of the decimal point. This method is currently
-			 * very expensive as it needs to retrieve the information from the database using an SQL query.
+			 * Gets the designated column's number of digits to right of
+			 * the decimal point.  This method is currently very
+			 * expensive as it needs to retrieve the information from
+			 * the database using an SQL query.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return scale
@@ -495,8 +591,10 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Indicates the nullability of values in the designated column. This method is currently very expensive as
-			 * it needs to retrieve the information from the database using an SQL query.
+			 * Indicates the nullability of values in the designated
+			 * column.  This method is currently very expensive as it
+			 * needs to retrieve the information from the database using
+			 * an SQL query.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return nullability
@@ -512,7 +610,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			 * MonetDB does not support the catalog naming concept as in: catalog.schema.table naming scheme
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return the name of the catalog for the table in which the given column appears or "" if not applicable
+			 * @return the name of the catalog for the table in which the given
+			 *         column appears or "" if not applicable
 			 */
 			@Override
 			public String getCatalogName(int column) throws SQLException {
@@ -520,8 +619,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Indicates whether the designated column is definitely not writable.  MonetDB does not support cursor
-			 * updates, so nothing is writable.
+			 * Indicates whether the designated column is definitely not
+			 * writable.  MonetDB does not support cursor updates, so
+			 * nothing is writable.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
@@ -532,7 +632,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Indicates whether it is possible for a write on the designated column to succeed.
+			 * Indicates whether it is possible for a write on the
+			 * designated column to succeed.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
@@ -543,7 +644,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Indicates whether a write on the designated column will definitely succeed.
+			 * Indicates whether a write on the designated column will
+			 * definitely succeed.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
@@ -554,14 +656,18 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Returns the fully-qualified name of the Java class whose instances are manufactured if the method
-			 * ResultSet.getObject is called to retrieve a value from the column.  ResultSet.getObject may return a
-			 * subclass of the class returned by this method.
+			 * Returns the fully-qualified name of the Java class whose
+			 * instances are manufactured if the method
+			 * ResultSet.getObject is called to retrieve a value from
+			 * the column.  ResultSet.getObject may return a subclass of
+			 * the class returned by this method.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return the fully-qualified name of the class in the Java programming language that would be used by the
-			 * method ResultSet.getObject to retrieve the value in the specified column. This is the class name used
-			 * for custom mapping.
+			 * @return the fully-qualified name of the class in the Java
+			 *         programming language that would be used by the method
+			 *         ResultSet.getObject to retrieve the value in the
+			 *         specified column. This is the class name used for custom
+			 *         mapping.
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
@@ -578,8 +684,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Gets the designated column's suggested title for use in printouts and displays. This is currently equal
-			 * to getColumnName().
+			 * Gets the designated column's suggested title for use in
+			 * printouts and displays. This is currently equal to
+			 * getColumnName().
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return the suggested column title
@@ -593,7 +700,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			/**
 			 * Gets the designated column's name
 			 *
-			 * @param colnr the first column is 1, the second is 2, ...
+			 * @param column the first column is 1, the second is 2, ...
 			 * @return the column name
 			 * @throws SQLException if there is no such column
 			 */
@@ -626,8 +733,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			 * Retrieves the designated column's database-specific type name.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return type name used by the database. If the column type is a user-defined type, then a
-			 * fully-qualified type name is returned.
+			 * @return type name used by the database. If the column type is a
+			 *         user-defined type, then a fully-qualified type name is
+			 *         returned.
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
@@ -644,17 +752,20 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	/* helper class for the anonymous class in getParameterMetaData */
 	private abstract class pmdw extends MonetWrapper implements ParameterMetaData {}
 	/**
-	 * Retrieves the number, types and properties of this PreparedStatement object's parameters.
+	 * Retrieves the number, types and properties of this
+	 * PreparedStatement object's parameters.
 	 *
-	 * @return a ParameterMetaData object that contains information about the number, types and properties of this
-	 * PreparedStatement object's parameters
+	 * @return a ParameterMetaData object that contains information
+	 *         about the number, types and properties of this
+	 *         PreparedStatement object's parameters
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public ParameterMetaData getParameterMetaData() throws SQLException {
 		return new pmdw() {
 			/**
-			 * Retrieves the number of parameters in the PreparedStatement object for which this ParameterMetaData
+			 * Retrieves the number of parameters in the
+			 * PreparedStatement object for which this ParameterMetaData
 			 * object contains information.
 			 *
 			 * @return the number of parameters
@@ -672,13 +783,16 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Retrieves whether null values are allowed in the designated parameter.
+			 * Retrieves whether null values are allowed in the
+			 * designated parameter.
 			 *
 			 * This is currently always unknown for MonetDB/SQL.
 			 *
 			 * @param param the first parameter is 1, the second is 2, ...
-			 * @return the nullability status of the given parameter; one of ParameterMetaData.parameterNoNulls,
-			 * ParameterMetaData.parameterNullable, or ParameterMetaData.parameterNullableUnknown
+			 * @return the nullability status of the given parameter;
+			 *         one of ParameterMetaData.parameterNoNulls,
+			 *         ParameterMetaData.parameterNullable, or
+			 *         ParameterMetaData.parameterNullableUnknown
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
@@ -687,7 +801,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			}
 
 			/**
-			 * Retrieves whether values for the designated parameter can be signed numbers.
+			 * Retrieves whether values for the designated parameter can
+			 * be signed numbers.
 			 *
 			 * @param param the first parameter is 1, the second is 2, ...
 			 * @return true if so; false otherwise
@@ -695,7 +810,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			 */
 			@Override
 			public boolean isSigned(int param) throws SQLException {
-				// we can hardcode this, based on the column type
+				// we can hardcode this, based on the colum type
 				switch (getParameterType(param)) {
 					case Types.TINYINT:
 					case Types.SMALLINT:
@@ -810,7 +925,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 				Map<String,Class<?>> map = getConnection().getTypeMap();
 				Class<?> c;
 				if (map.containsKey(typeName)) {
-					c = map.get(typeName);
+					c = (Class)map.get(typeName);
 				} else {
 					c = MonetResultSet.getClassForType(getParameterType(param));
 				}
@@ -870,7 +985,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *         not support this method
 	 */
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x) throws SQLException {
+	public void setAsciiStream(int parameterIndex, InputStream x)
+		throws SQLException
+	{
 		throw newSQLFeatureNotSupportedException("setAsciiStream");
 	}
 
@@ -893,7 +1010,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *         not support this method
 	 */
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x, int length) throws SQLException {
+	public void setAsciiStream(int parameterIndex, InputStream x, int length)
+		throws SQLException
+	{
 		throw newSQLFeatureNotSupportedException("setAsciiStream");
 	}
 
@@ -917,7 +1036,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *         not support this method
 	 */
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x, long length) throws SQLException {
+	public void setAsciiStream(int parameterIndex, InputStream x, long length)
+		throws SQLException
+	{
 		throw newSQLFeatureNotSupportedException("setAsciiStream");
 	}
 
@@ -940,8 +1061,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 
 		// if precision is now greater than that of the db, throw an error:
 		if (x.precision() > digits[i]) {
-			throw new SQLDataException("DECIMAL value exceeds allowed digits/scale: " + x.toPlainString() +
-					" (" + digits[i] + "/" + scale[i] + ")", "22003");
+			throw new SQLDataException("DECIMAL value exceeds allowed digits/scale: " + x.toPlainString() + " (" + digits[i] + "/" + scale[i] + ")", "22003");
 		}
 
 		// MonetDB doesn't like leading 0's, since it counts them as part of
@@ -974,7 +1094,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *         not support this method
 	 */
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x) throws SQLException {
+	public void setBinaryStream(int parameterIndex, InputStream x)
+		throws SQLException
+	{
 		throw newSQLFeatureNotSupportedException("setBinaryStream");
 	}
 
@@ -996,7 +1118,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *         not support this method
 	 */
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x, int length) throws SQLException {
+	public void setBinaryStream(int parameterIndex, InputStream x, int length)
+		throws SQLException
+	{
 		throw newSQLFeatureNotSupportedException("setBinaryStream");
 	}
 
@@ -1018,7 +1142,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 *         not support this method
 	 */
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x, long length) throws SQLException {
+	public void setBinaryStream(int parameterIndex, InputStream x, long length)
+		throws SQLException
+	{
 		throw newSQLFeatureNotSupportedException("setBinaryStream");
 	}
 
@@ -1029,6 +1155,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x a Blob object that maps an SQL BLOB value
 	 * @throws SQLException if a database access error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public void setBlob(int parameterIndex, InputStream x) throws SQLException {
@@ -1079,7 +1207,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * should be sent to the server as a LONGVARBINARY or a BLOB.
 	 *
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
-	 * @param is an object that contains the data to set the parameter value to
+	 * @param is an object that contains the data to set the parameter
+	 *           value to
 	 * @param length the number of bytes in the parameter data
 	 * @throws SQLException if a database access error occurs
 	 */
@@ -1128,7 +1257,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		setValue(parameterIndex, Byte.toString(x));
 	}
 
-	private static final String HEXES = "0123456789ABCDEF";
+	static final String HEXES = "0123456789ABCDEF";
 	/**
 	 * Sets the designated parameter to the given Java array of bytes. The
 	 * driver converts this to an SQL VARBINARY or LONGVARBINARY (depending
@@ -1147,8 +1276,11 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		}
 
 		StringBuilder hex = new StringBuilder(x.length * 2);
-		for (byte aX : x) {
-			hex.append(HEXES.charAt((aX & 0xF0) >> 4)).append(HEXES.charAt((aX & 0x0F)));
+		byte b;
+		for (int i = 0; i < x.length; i++) {
+			b = x[i];
+			hex.append(HEXES.charAt((b & 0xF0) >> 4))
+				.append(HEXES.charAt((b & 0x0F)));
 		}
 		setValue(parameterIndex, "blob '" + hex.toString() + "'");
 	}
@@ -1170,7 +1302,12 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setCharacterStream(int parameterIndex, Reader reader, int length) throws SQLException {
+	public void setCharacterStream(
+		int parameterIndex,
+		Reader reader,
+		int length)
+		throws SQLException
+	{
 		if (reader == null) {
 			setNull(parameterIndex, -1);
 			return;
@@ -1201,7 +1338,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setCharacterStream(int parameterIndex, Reader reader) throws SQLException {
+	public void setCharacterStream(int parameterIndex, Reader reader)
+		throws SQLException
+	{
 		setCharacterStream(parameterIndex, reader, 0);
 	}
 
@@ -1222,7 +1361,12 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setCharacterStream(int parameterIndex, Reader reader, long length) throws SQLException {
+	public void setCharacterStream(
+		int parameterIndex,
+		Reader reader,
+		long length)
+		throws SQLException
+	{
 		// given the implementation of the int-version, downcast is ok
 		setCharacterStream(parameterIndex, reader, (int)length);
 	}
@@ -1302,7 +1446,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		}
 		// simply serialise the CLOB into a variable for now... far from
 		// efficient, but might work for a few cases...
-		CharBuffer buf = CharBuffer.allocate((int) length); // have to down cast :(
+		CharBuffer buf = CharBuffer.allocate((int)length); // have to down cast :(
 		try {
 			reader.read(buf);
 		} catch (IOException e) {
@@ -1324,7 +1468,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setDate(int parameterIndex, Date x) throws SQLException {
+	public void setDate(int parameterIndex, java.sql.Date x)
+		throws SQLException
+	{
 		setDate(parameterIndex, x, null);
 	}
 
@@ -1343,7 +1489,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setDate(int parameterIndex, Date x, Calendar cal) throws SQLException {
+	public void setDate(int parameterIndex, java.sql.Date x, Calendar cal)
+		throws SQLException
+	{
 		if (x == null) {
 			setNull(parameterIndex, -1);
 			return;
@@ -1436,7 +1584,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setNCharacterStream(int parameterIndex, Reader value, long length) throws SQLException {
+	public void setNCharacterStream(int parameterIndex, Reader value, long length)
+		throws SQLException
+	{
 		setCharacterStream(parameterIndex, value, length);
 	}
 
@@ -1551,7 +1701,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setNull(int parameterIndex, int sqlType, String typeName) throws SQLException {
+	public void setNull(int parameterIndex, int sqlType, String typeName)
+		throws SQLException
+	{
 		// MonetDB/SQL's NULL needs no type
 		setNull(parameterIndex, sqlType);
 	}
@@ -1600,7 +1752,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setObject(int parameterIndex, Object x, int targetSqlType) throws SQLException {
+	public void setObject(int parameterIndex, Object x, int targetSqlType)
+		throws SQLException
+	{
 		setObject(parameterIndex, x, targetSqlType, 0);
 	}
 
@@ -1640,11 +1794,18 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @see Types
 	 */
 	@Override
-	public void setObject(int parameterIndex, Object x, int targetSqlType, int scale) throws SQLException {
+	public void setObject(
+		int parameterIndex,
+		Object x,
+		int targetSqlType,
+		int scale)
+		throws SQLException
+	{
 		if (x == null) {
 			setNull(parameterIndex, -1);
 			return;
 		}
+
 		// this is according to table B-5
 		if (x instanceof String) {
 			setString(parameterIndex, (String)x);
@@ -1660,13 +1821,13 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			switch (targetSqlType) {
 				case Types.TINYINT:
 					setByte(parameterIndex, num.byteValue());
-					break;
+				break;
 				case Types.SMALLINT:
 					setShort(parameterIndex, num.shortValue());
-					break;
+				break;
 				case Types.INTEGER:
 					setInt(parameterIndex, num.intValue());
-					break;
+				break;
 				case Types.BIGINT:
 					if (x instanceof BigDecimal) {
 						BigDecimal bd = (BigDecimal)x;
@@ -1674,23 +1835,23 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					} else {
 						setLong(parameterIndex, num.longValue());
 					}
-					break;
+				break;
 				case Types.REAL:
 					setFloat(parameterIndex, num.floatValue());
-					break;
+				break;
 				case Types.FLOAT:
 				case Types.DOUBLE:
 					setDouble(parameterIndex, num.doubleValue());
-					break;
+				break;
 				case Types.DECIMAL:
 				case Types.NUMERIC:
 					if (x instanceof BigDecimal) {
 						setBigDecimal(parameterIndex, (BigDecimal)x);
 					} else {
 						setBigDecimal(parameterIndex,
-								new BigDecimal(num.doubleValue()));
+							new BigDecimal(num.doubleValue()));
 					}
-					break;
+				break;
 				case Types.BIT:
 				case Types.BOOLEAN:
 					if (num.doubleValue() != 0.0) {
@@ -1698,13 +1859,13 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					} else {
 						setBoolean(parameterIndex, false);
 					}
-					break;
+				break;
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 					setString(parameterIndex, x.toString());
-					break;
+				break;
 				default:
 					throw new SQLException("Conversion not allowed", "M1M05");
 			}
@@ -1713,23 +1874,23 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			switch (targetSqlType) {
 				case Types.TINYINT:
 					setByte(parameterIndex, (byte)(val ? 1 : 0));
-					break;
+				break;
 				case Types.SMALLINT:
 					setShort(parameterIndex, (short)(val ? 1 : 0));
-					break;
+				break;
 				case Types.INTEGER:
 					setInt(parameterIndex, (val ? 1 : 0));  // do not cast to (int) as it generates a compiler warning
-					break;
+				break;
 				case Types.BIGINT:
 					setLong(parameterIndex, (long)(val ? 1 : 0));
-					break;
+				break;
 				case Types.REAL:
 					setFloat(parameterIndex, (float)(val ? 1.0 : 0.0));
-					break;
+				break;
 				case Types.FLOAT:
 				case Types.DOUBLE:
 					setDouble(parameterIndex, (val ? 1.0 : 0.0));  // do no cast to (double) as it generates a compiler warning
-					break;
+				break;
 				case Types.DECIMAL:
 				case Types.NUMERIC:
 				{
@@ -1744,13 +1905,13 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 				case Types.BIT:
 				case Types.BOOLEAN:
 					setBoolean(parameterIndex, val);
-					break;
+				break;
 				case Types.CHAR:
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 					setString(parameterIndex, x.toString());
-					break;
+				break;
 				default:
 					throw new SQLException("Conversion not allowed", "M1M05");
 			}
@@ -1759,7 +1920,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			switch (targetSqlType) {
 				case Types.BIGINT:
 					setLong(parameterIndex, num.longValue());
-					break;
+				break;
 				case Types.DECIMAL:
 				case Types.NUMERIC:
 				{
@@ -1776,7 +1937,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 				case Types.LONGVARCHAR:
 				case Types.CLOB:
 					setString(parameterIndex, x.toString());
-					break;
+				break;
 				default:
 					throw new SQLException("Conversion not allowed", "M1M05");
 			}
@@ -1786,7 +1947,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 				case Types.VARBINARY:
 				case Types.LONGVARBINARY:
 					setBytes(parameterIndex, (byte[])x);
-					break;
+				break;
 				default:
 					throw new SQLException("Conversion not allowed", "M1M05");
 			}
@@ -1883,8 +2044,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 					// with the actual sqltype the server expects, or we
 					// will get an error back
 					setValue(
-							paramnr,
-							sqltype + " '" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'"
+						paramnr,
+						sqltype + " '" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'"
 					);
 				}
 
@@ -2085,6 +2246,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			setNull(parameterIndex, -1);
 			return;
 		}
+
 		int paramIdx = getParamIdx(parameterIndex);	// this will throw a SQLException if parameter can not be found
 
 		/* depending on the parameter data type (as expected by MonetDB) we
@@ -2292,7 +2454,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTime(int parameterIndex, Time x, Calendar cal) throws SQLException {
+	public void setTime(int parameterIndex, Time x, Calendar cal)
+		throws SQLException
+	{
 		if (x == null) {
 			setNull(parameterIndex, -1);
 			return;
@@ -2304,7 +2468,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
 			String RFC822 = mTimeZ.format(x);
-			setValue(parameterIndex, "timetz '" + RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
+			setValue(parameterIndex, "timetz '" +
+					RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
 			// calendar given, since we told the server our timezone at
@@ -2329,7 +2494,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTimestamp(int parameterIndex, Timestamp x) throws SQLException {
+	public void setTimestamp(int parameterIndex, Timestamp x)
+		throws SQLException
+	{
 		setTimestamp(parameterIndex, x, null);
 	}
 
@@ -2350,7 +2517,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal) throws SQLException {
+	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal)
+		throws SQLException
+	{
 		if (x == null) {
 			setNull(parameterIndex, -1);
 			return;
@@ -2362,7 +2531,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
 			String RFC822 = mTimestampZ.format(x);
-			setValue(parameterIndex, "timestamptz '" + RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
+			setValue(parameterIndex, "timestamptz '" +
+					RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
 			// calendar given, since we told the server our timezone at
@@ -2400,7 +2570,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 */
 	@Override
 	@Deprecated
-	public void setUnicodeStream(int parameterIndex, InputStream x, int length) throws SQLException {
+	public void setUnicodeStream(int parameterIndex, InputStream x, int length)
+		throws SQLException
+	{
 		throw newSQLFeatureNotSupportedException("setUnicodeStream");
 	}
 
@@ -2421,8 +2593,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 		}
 
 		String val = x.toString();
-		setValue(parameterIndex, "url '" + val.replaceAll("\\\\", "\\\\\\\\")
-				.replaceAll("'", "\\\\'") + "'");
+		setValue(parameterIndex,
+			"url '" + val.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'"
+		);
 	}
 
 	/**
@@ -2451,7 +2624,8 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	}
 
 	/**
-	 * Call close to release the server-sided handle for this PreparedStatement.
+	 * Call close to release the server-sided handle for this
+	 * PreparedStatement.
 	 */
 	@Override
 	protected void finalize() {
@@ -2461,8 +2635,9 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	//== end methods interface PreparedStatement
 
 	/**
-	 * Sets the given index with the supplied value. If the given index is out of bounds, and SQLException is thrown.
-	 * The given value should never be null.
+	 * Sets the given index with the supplied value. If the given index is
+	 * out of bounds, and SQLException is thrown.  The given value should
+	 * never be null.
 	 *
 	 * @param parameterIndex the parameter index
 	 * @param val the exact String representation to set
@@ -2483,7 +2658,7 @@ public class MonetPreparedStatement extends MonetStatement implements PreparedSt
 	 */
 	private String transform() throws SQLException {
 		StringBuilder buf = new StringBuilder(8 + 12 * size);
-		buf.append("execute ").append(id).append('(');
+		buf.append("exec ").append(id).append('(');
 		// check if all columns are set and do a replace
 		int col = 0;
 		for (int i = 0; i < size; i++) {

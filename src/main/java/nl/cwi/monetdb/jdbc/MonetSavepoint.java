@@ -26,13 +26,13 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  * Because the IDs which get generated are a logical sequence, application
  * wide, two concurrent transactions are guaranteed to not to have the same
- * save point identifiers. In this implementation the validaty of save points
+ * save point identifiers. In this implementation the validity of save points
  * is determined by the server, which makes this a light implementation.
  *
  * @author Fabian Groffen
  * @version 1.0
  */
-public class MonetSavepoint implements Savepoint {
+public final class MonetSavepoint implements Savepoint {
 	/** The id of the last created Savepoint */
 	private static AtomicInteger highestId = new AtomicInteger(0);
 
@@ -41,20 +41,29 @@ public class MonetSavepoint implements Savepoint {
 	/** The id of this Savepoint */
 	private final int id;
 
+	/**
+	 * Creates a named MonetSavepoint object
+	 */
 	public MonetSavepoint(String name) throws IllegalArgumentException {
-		if (name == null)
-		    throw new IllegalArgumentException("Null name not allowed");
+		if (name == null || name.isEmpty())
+			throw new IllegalArgumentException("missing savepoint name string");
+
 		this.id = getNextId();
 		this.name = name;
 	}
 
+	/**
+	 * Creates an unnamed MonetSavepoint object
+	 */
 	public MonetSavepoint() {
 		this.id = getNextId();
 		this.name = null;
 	}
 
+
 	/**
-	 * Retrieves the generated ID for the savepoint that this Savepoint object represents.
+	 * Retrieves the generated ID for the savepoint that this Savepoint object
+	 * represents.
 	 *
 	 * @return the numeric ID of this savepoint
 	 * @throws SQLException if this is a named savepoint
@@ -63,11 +72,13 @@ public class MonetSavepoint implements Savepoint {
 	public int getSavepointId() throws SQLException {
 		if (name != null)
 			throw new SQLException("Cannot getID for named savepoint", "3B000");
-		return getId();
+
+		return id;
 	}
 
 	/**
-	 * Retrieves the name of the savepoint that this Savepoint object represents.
+	 * Retrieves the name of the savepoint that this Savepoint object
+	 * represents.
 	 *
 	 * @return the name of this savepoint
 	 * @throws SQLException if this is an un-named savepoint
@@ -76,14 +87,16 @@ public class MonetSavepoint implements Savepoint {
 	public String getSavepointName() throws SQLException {
 		if (name == null)
 			throw new SQLException("Unable to retrieve name of unnamed savepoint", "3B000");
+
 		return name;
 	}
 
 	//== end of methods from Savepoint interface
 
 	/**
-	 * Retrieves the savepoint id, like the getSavepointId method with the only difference that this method will always
-	 * return the id, regardless of whether it is named or not.
+	 * Retrieves the savepoint id, like the getSavepointId method with the only
+	 * difference that this method will always return the id, regardless of
+	 * whether it is named or not.
 	 *
 	 * @return the numeric ID of this savepoint
 	 */
@@ -92,8 +105,9 @@ public class MonetSavepoint implements Savepoint {
 	}
 
 	/**
-	 * Returns the name to use when referencing this save point to the MonetDB database. The returned value is
-	 * guaranteed to be unique and consists of a prefix string and a sequence number.
+	 * Returns the constructed internal name to use when referencing this save point to the
+	 * MonetDB database. The returned value is guaranteed to be unique and consists of
+	 * a prefix string and a sequence number.
 	 *
 	 * @return the unique savepoint name
 	 */
@@ -109,7 +123,8 @@ public class MonetSavepoint implements Savepoint {
 	 * Therefore two successive calls to this method need not to have a
 	 * difference of 1.
 	 *
-	 * @return the next int which is guaranteed to be higher than the one at the last call to this method.
+	 * @return the next int which is guaranteed to be higher than the one
+	 *         at the last call to this method.
 	 */
 	private static int getNextId() {
 		return highestId.incrementAndGet();
@@ -122,7 +137,7 @@ public class MonetSavepoint implements Savepoint {
 	 *
 	 * @return the highest id returned by a call to getNextId()
 	 */
-	private static int getHighestId() {
-		return highestId.get();
-	}
+//	private static int getHighestId() {
+//		return highestId.get();
+//	}
 }

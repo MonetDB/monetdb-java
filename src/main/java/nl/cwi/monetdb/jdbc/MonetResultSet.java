@@ -44,8 +44,10 @@ import java.util.UUID;
  * @author Fabian Groffen, Martin van Dinther, Pedro Ferreira
  * @version 0.8
  */
-public class MonetResultSet extends MonetWrapper implements ResultSet, AutoCloseable {
-
+public class MonetResultSet
+		extends MonetWrapper
+		implements ResultSet, AutoCloseable
+{
 	/** The current position of the cursor for this ResultSet object */
 	int curRow = 0;
 	// a blank final is immutable once assigned in the constructor
@@ -78,6 +80,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * @param statement the statement which created this ResultSet
 	 * @param header a header containing the query, resultset type, etc.
 	 * @throws IllegalArgumentException if called with null or invalid value for one of the arguments
+	 * @throws SQLException is a protocol error occurs
 	 */
 	MonetResultSet(Statement statement, ResultSetResponse header) throws IllegalArgumentException {
 		if (statement == null) {
@@ -109,6 +112,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * @param types the column types
 	 * @param results the number of rows in the ResultSet
 	 * @throws IllegalArgumentException if called with null or invalid value for one of the arguments
+	 * @throws IOException if communicating with monet failed
+	 * @throws SQLException is a protocol error occurs
 	 */
 	MonetResultSet(Statement statement, String[] columns, String[] types, int[] JdbcSQLTypes, int results)
 			throws IllegalArgumentException {
@@ -124,6 +129,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 		if (results < 0) {
 			throw new IllegalArgumentException("Negative rowcount not allowed!");
 		}
+
 		this.statement = statement;
 		this.header = null;
 		this.fetchSize = 0;
@@ -158,35 +164,41 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 		}
 	}
 
+
 	//== methods of interface ResultSet
 
 	// Chapter 14.2.2 Sun JDBC 3.0 Specification
-
 	/**
 	 * Moves the cursor to the given row number in this ResultSet object.
 	 *
-	 * If the row number is positive, the cursor moves to the given row number with respect to the beginning of the
-	 * result set. The first row is row 1, the second is row 2, and so on.
+	 * If the row number is positive, the cursor moves to the given row number
+	 * with respect to the beginning of the result set. The first row is row 1,
+	 * the second is row 2, and so on.
 	 *
-	 * If the given row number is negative, the cursor moves to an absolute row position with respect to the end of the
-	 * result set. For example, calling the method absolute(-1) positions the cursor on the last row; calling the
+	 * If the given row number is negative, the cursor moves to an absolute row
+	 * position with respect to the end of the result set. For example, calling
+	 * the method absolute(-1) positions the cursor on the last row; calling the
 	 * method absolute(-2) moves the cursor to the next-to-last row, and so on.
 	 *
-	 * An attempt to position the cursor beyond the first/last row in the result set leaves the cursor before the first
-	 * row or after the last row.
-	 * Note: calling absolute(1) is the same as calling first(). Calling absolute(-1) is the same as calling last().
+	 * An attempt to position the cursor beyond the first/last row in the result
+	 * set leaves the cursor before the first row or after the last row.
+	 * Note: calling absolute(1) is the same as calling first(). Calling
+	 *       absolute(-1) is the same as calling last().
 	 *
-	 * @param row the number of the row to which the cursor should move. A positive number indicates the row number
-	 *        counting from the beginning of the result set; a negative number indicates the row number counting from
-	 *        the end of the result set
+	 * @param row the number of the row to which the cursor should move. A
+	 *        positive number indicates the row number counting from the
+	 *        beginning of the result set; a negative number indicates the row
+	 *        number counting from the end of the result set
 	 * @return true if the cursor is on the result set; false otherwise
-	 * @throws SQLException if a database access error occurs, or the result set type is TYPE_FORWARD_ONLY
+	 * @throws SQLException if a database access error occurs, or the result set
+	 *         type is TYPE_FORWARD_ONLY
 	 */
 	@Override
 	public boolean absolute(int row) throws SQLException {
 		checkNotClosed();
 		if (row != curRow + 1 && type == TYPE_FORWARD_ONLY)
-			throw new SQLException("(Absolute) positioning not allowed on forward only result sets!", "M1M05");
+			throw new SQLException("(Absolute) positioning not allowed on forward " +
+				" only result sets!", "M1M05");
 
 		// first calculate what the JDBC row is
 		if (row < 0) {
@@ -199,7 +211,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 		else if (row > tupleCount + 1)
 			row = tupleCount + 1;	// after last
 
-		this.curRow = row;
+		// store it
+		curRow = row;
+
 		boolean overlap = row <= this.tupleCount;
 		if(overlap)
 			this.currentBlock = header.getDataBlockCorrespondingToLine(row - 1);
@@ -207,10 +221,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Moves the cursor to the end of this ResultSet object, just after the last row. This method has no effect if the
-	 * result set contains no rows.
+	 * Moves the cursor to the end of this ResultSet object, just after the last
+	 * row. This method has no effect if the result set contains no rows.
 	 *
-	 * @throws SQLException if a database access error occurs or the result set type is TYPE_FORWARD_ONLY
+	 * @throws SQLException if a database access error occurs or the result set
+	 *         type is TYPE_FORWARD_ONLY
 	 */
 	@Override
 	public void afterLast() throws SQLException {
@@ -218,10 +233,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Moves the cursor to the front of this ResultSet object, just before the first row. This method has no effect
-	 * if the result set contains no rows.
+	 * Moves the cursor to the front of this ResultSet object, just before the
+	 * first row. This method has no effect if the result set contains no rows.
 	 *
-	 * @throws SQLException if a database access error occurs or the result set type is TYPE_FORWARD_ONLY
+	 * @throws SQLException if a database access error occurs or the result set
+	 *         type is TYPE_FORWARD_ONLY
 	 */
 	@Override
 	public void beforeFirst() throws SQLException {
@@ -229,8 +245,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Clears all warnings reported for this ResultSet object. After a call to this method, the method getWarnings
-	 * returns null until a new warning is reported for this ResultSet object.
+	 * Clears all warnings reported for this ResultSet object. After a call to
+	 * this method, the method getWarnings returns null until a new warning is
+	 * reported for this ResultSet object.
 	 */
 	@Override
 	public void clearWarnings() {
@@ -238,24 +255,24 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Releases this ResultSet object's database (and JDBC) resources immediately instead of waiting for this to happen
-	 * when it is automatically closed.
+	 * Releases this ResultSet object's database (and JDBC) resources
+	 * immediately instead of waiting for this to happen when it is
+	 * automatically closed.
 	 */
 	@Override
 	public void close() {
 		if (header != null && !header.isClosed()) {
 			header.close();
 		}
-		if (statement instanceof MonetStatement) {
+		if (statement instanceof MonetStatement)
 			((MonetStatement)statement).closeIfCompletion();
-		}
 	}
 
 	// Chapter 14.2.3 from Sun JDBC 3.0 specification
-
 	/**
-	 * Maps the given ResultSet column name to its ResultSet column index. Column names supplied to getter methods are
-	 * case insensitive. If a select list contains the same column more than once, the first instance of the
+	 * Maps the given ResultSet column name to its ResultSet column index.
+	 * Column names supplied to getter methods are case insensitive. If a select
+	 * list contains the same column more than once, the first instance of the
 	 * column will be returned.
 	 *
 	 * @param columnLabel the name of the column
@@ -284,8 +301,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	/**
 	 * Moves the cursor to the first row in this ResultSet object.
 	 *
-	 * @return true if the cursor is on a valid row; false if there are no rows in the result set
-	 * @throws SQLException - if a database access error occurs or the result set type is TYPE_FORWARD_ONLY
+	 * @return true if the cursor is on a valid row; false if there are no rows
+	 *         in the result set
+	 * @throws SQLException - if a database access error occurs or the result
+	 *         set type is TYPE_FORWARD_ONLY
 	 */
 	@Override
 	public boolean first() throws SQLException {
@@ -296,12 +315,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	public Array getArray(int columnIndex) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getArray");
 	}
-
 	@Override
 	public Array getArray(String columnLabel) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getArray");
 	}
 
+	/* Mapi doesn't allow something for streams at the moment, thus all not implemented for now */
 	@Override
 	public InputStream getAsciiStream(int columnIndex) throws SQLException {
 		try {
@@ -334,7 +353,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 	}
-
 	@Override
 	public InputStream getAsciiStream(String columnLabel) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getAsciiStream");
@@ -345,7 +363,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	public InputStream getUnicodeStream(int columnIndex) throws SQLException {
 		throw newSQLFeatureNotSupportedException("getUnicodeStream");
 	}
-
 	@Override
 	@Deprecated
 	public InputStream getUnicodeStream(String columnLabel) throws SQLException {
@@ -428,8 +445,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.io.Reader
-	 * object.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a java.io.Reader object.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a java.io.Reader object that contains the column value;
@@ -453,12 +470,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.io.Reader
-	 * object.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a java.io.Reader object.
 	 *
 	 * @param columnLabel the name of the column
-	 * @return a java.io.Reader object that contains the column value; if the value is SQL NULL, the value returned is
-	 * null in the Java programming language.
+	 * @return a java.io.Reader object that contains the column value;
+	 *         if the value is SQL NULL, the value returned is null in
+	 *         the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -467,12 +485,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.io.Reader
-	 * object. It is intended for use when accessing NCHAR, NVARCHAR and LONGNVARCHAR columns.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a java.io.Reader object. It is
+	 * intended for use when accessing NCHAR,NVARCHAR and LONGNVARCHAR
+	 * columns.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return a java.io.Reader object that contains the column value; if the value is SQL NULL, the value returned is
-	 * null in the Java programming language.
+	 * @return a java.io.Reader object that contains the column value;
+	 *         if the value is SQL NULL, the value returned is null in
+	 *         the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -481,12 +502,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.io.Reader
-	 * object. It is intended for use when accessing NCHAR, NVARCHAR and LONGNVARCHAR columns.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a java.io.Reader object. It is
+	 * intended for use when accessing NCHAR,NVARCHAR and LONGNVARCHAR
+	 * columns.
 	 *
 	 * @param columnLabel the name of the column
-	 * @return a java.io.Reader object that contains the column value; if the value is SQL NULL, the value returned is
-	 * null in the Java programming language.
+	 * @return a java.io.Reader object that contains the column value;
+	 *         if the value is SQL NULL, the value returned is null in
+	 *         the Java programming language.
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -495,8 +519,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a Blob object in
-	 * the Java programming language.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a Blob object in the Java programming
+	 * language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a Blob object representing the SQL BLOB value in the
@@ -518,11 +543,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a Blob object in the
-	 * Java programming language.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a Blob object in the Java programming
+	 * language.
 	 *
-	 * @param columnLabel the name of the column from which to retrieve the value
-	 * @return a Blob object representing the SQL BLOB value in the specified column
+	 * @param columnLabel the name of the column from which to retrieve
+	 *        the value
+	 * @return a Blob object representing the SQL BLOB value in the
+	 *         specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -531,7 +559,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a Clob object in the
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a Clob object in the
 	 * Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
@@ -554,11 +583,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a Clob object in the
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a Clob object in the
 	 * Java programming language.
 	 *
-	 * @param columnLabel the name of the column from which to retrieve the value
-	 * @return a Clob object representing the SQL CLOB value in the specified column
+	 * @param columnLabel the name of the column from which to retrieve
+	 *        the value
+	 * @return a Clob object representing the SQL CLOB value in the
+	 *         specified column
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -567,13 +599,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a NClob object in the
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a NClob object in the
 	 * Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return a NClob object representing the SQL NCLOB value in the specified column
+	 * @return a NClob object representing the SQL NCLOB value in the
+	 *         specified column
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public NClob getNClob(int columnIndex) throws SQLException {
@@ -581,13 +616,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a NClob object in the
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a NClob object in the
 	 * Java programming language.
 	 *
-	 * @param columnLabel the name of the column from which to retrieve the value
-	 * @return a NClob object representing the SQL NCLOB value in the specified column
+	 * @param columnLabel the name of the column from which to retrieve
+	 *        the value
+	 * @return a NClob object representing the SQL NCLOB value in the
+	 *         specified column
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public NClob getNClob(String columnLabel) throws SQLException {
@@ -706,14 +745,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 */
 	@Override
 	@Deprecated
-	public BigDecimal getBigDecimal(String columnLabel, int scale) throws SQLException {
+	public BigDecimal getBigDecimal(String columnLabel, int scale)
+		throws SQLException
+	{
 		return getBigDecimal(findColumn(columnLabel), scale);
 	}
 
 	// See Sun JDBC Specification 3.0 Table B-6
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a boolean in the Java
-	 * programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a boolean in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned
@@ -774,11 +815,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a boolean in the Java
-	 * programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a boolean in the Java programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned is false
+	 * @return the column value; if the value is SQL NULL, the value returned
+	 *         is false
 	 * @throws SQLException if the ResultSet object does not contain columnLabel
 	 */
 	@Override
@@ -787,8 +829,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a byte in the Java
-	 * programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a byte in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned
@@ -901,11 +943,18 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a byte array in the
-	 * Java programming language. The bytes represent the raw values returned by the driver.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a byte array in the Java programming language. The
+	 * bytes represent the raw values returned by the driver.
+	 *
+	 * NOTE: Since the mapi protocol is ASCII-based, this method only returns
+	 *       Java byte representations of Strings, which is nothing more than
+	 *       an encoding into a sequence of bytes using the platform's default
+	 *       charset.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned is null
+	 * @return the column value; if the value is SQL NULL, the value returned
+	 *         is null
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -914,12 +963,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the concurrency mode of this ResultSet object. The concurrency used is determined by the Statement
-	 * object that created the result set.
+	 * Retrieves the concurrency mode of this ResultSet object. The concurrency
+	 * used is determined by the Statement object that created the result set.
 	 *
-	 * NOTE: MonetDB only supports read-only result sets, and will always return ResultSet.CONCUR_READ_ONLY
+	 * NOTE: MonetDB only supports read-only result sets, and will always return
+	 *       ResultSet.CONCUR_READ_ONLY
 	 *
-	 * @return the concurrency type, either ResultSet.CONCUR_READ_ONLY or ResultSet.CONCUR_UPDATABLE
+	 * @return the concurrency type, either ResultSet.CONCUR_READ_ONLY or
+	 *         ResultSet.CONCUR_UPDATABLE
 	 */
 	@Override
 	public int getConcurrency() {
@@ -940,8 +991,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * cursor used by a ResultSet object. The current row of a ResultSet object
 	 * is also the current row of this SQL cursor.
 	 *
-	 * Note: If positioned update is not supported, a SQLException is thrown. MonetDB currently doesn't support updates,
-	 * so the SQLException is thrown for now.
+	 * Note: If positioned update is not supported, a SQLException is thrown.
+	 *       MonetDB currently doesn't support updates, so the SQLException is
+	 *       thrown for now.
 	 *
 	 * @return the SQL name for this ResultSet object's cursor
 	 * @throws SQLException if a database access error occurs
@@ -1027,7 +1079,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	/**
 	 * Retrieves the holdability of this ResultSet object.
 	 *
-	 * @return either ResultSet.HOLD_CURSORS_OVER_COMMIT or ResultSet.CLOSE_CURSORS_AT_COMMIT
+	 * @return either ResultSet.HOLD_CURSORS_OVER_COMMIT or
+	 *         ResultSet.CLOSE_CURSORS_AT_COMMIT
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -1057,13 +1110,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	@Override
 	public void setFetchDirection(int direction) throws SQLException {
 		switch (direction) {
-			case ResultSet.FETCH_FORWARD:
-				break;
-			case ResultSet.FETCH_REVERSE:
-			case ResultSet.FETCH_UNKNOWN:
-				throw new SQLException("Not supported direction " + direction, "0A000");
-			default:
-				throw new SQLException("Illegal direction: " + direction, "M1M05");
+		case ResultSet.FETCH_FORWARD:
+			break;
+		case ResultSet.FETCH_REVERSE:
+		case ResultSet.FETCH_UNKNOWN:
+			throw new SQLException("Not supported direction " + direction, "0A000");
+		default:
+			throw new SQLException("Illegal direction: " + direction, "M1M05");
 		}
 	}
 
@@ -1161,8 +1214,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a float in the Java
-	 * programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a float in the Java programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
@@ -1174,8 +1227,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as an int in the
-	 * Java programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as an int in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
@@ -1248,8 +1301,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as an int in the
-	 * Java programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as an int in the Java programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
@@ -1261,8 +1314,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a long in the Java
-	 * programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a long in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
@@ -1335,8 +1388,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a long in the Java
-	 * programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a long in the Java programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
@@ -1347,16 +1400,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 		return getLong(findColumn(columnLabel));
 	}
 
+
 	/* helper for the anonymous class inside getMetaData */
 	private abstract class rsmdw extends MonetWrapper implements ResultSetMetaData {}
-
 	/**
-	 * Retrieves the number, types and properties of this ResultSet object's columns.
+	 * Retrieves the number, types and properties of this ResultSet object's
+	 * columns.
 	 *
 	 * @return the description of this ResultSet object's columns
 	 */
 	@Override
-	public ResultSetMetaData getMetaData() {
+	public ResultSetMetaData getMetaData() throws SQLException {
 		// return inner class which implements the ResultSetMetaData interface
 		return new rsmdw() {
 			// for the more expensive methods (getPrecision(), getScale(), isNullable()), we provide a simple cache
@@ -1367,12 +1421,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			private final int[] _scale		= new int[array_size];
 			private final int[] _isNullable	= new int[array_size];
 			private final boolean[] _isAutoincrement = new boolean[array_size];
-			private Connection conn = null;
-			private DatabaseMetaData dbmd = null;
+			private final Connection conn = getStatement().getConnection();
+			private final DatabaseMetaData dbmd = conn.getMetaData();
 
 			/**
 			 * A private utility method to check validity of column index number
-			 * @throws SQLDataException when invalid column index number
+			 * @throws an SQLDataException when invalid column index number
 			 */
 			private void checkColumnIndexValidity(int column) throws SQLDataException {
 				if (column < 1 || column > columns.length)
@@ -1402,14 +1456,6 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 					if (tblName != null && !tblName.isEmpty()) {
 						String colName = getColumnName(column);
 						if (colName != null && !colName.isEmpty()) {
-							if (conn == null) {
-								// first time, get a Connection object and cache it for all next columns
-								conn = getStatement().getConnection();
-							}
-							if (conn != null && dbmd == null) {
-								// first time, get a MetaData object and cache it for all next columns
-								dbmd = conn.getMetaData();
-							}
 							if (dbmd != null) {
 								// for precision, scale, isNullable and isAutoincrement we query the information from data dictionary
 								ResultSet colInfo = dbmd.getColumns(null, schName, tblName, colName);
@@ -1434,7 +1480,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			/**
 			 * Returns the number of columns in this ResultSet object.
 			 *
-			 * @return the number of columns
+			 * @returns the number of columns
 			 */
 			@Override
 			public int getColumnCount() {
@@ -1452,7 +1498,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			public boolean isAutoIncrement(int column) throws SQLException {
 				checkColumnIndexValidity(column);
 				try {
-					if (!_is_fetched[column]) {
+					if (_is_fetched[column] != true) {
 						fetchColumnInfo(column);
 					}
 					return _isAutoincrement[column];
@@ -1465,7 +1511,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			 * Indicates whether a column's case matters.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return true for all character string columns else false
+			 * @returns true for all character string columns else false
 			 */
 			@Override
 			public boolean isCaseSensitive(int column) throws SQLException {
@@ -1490,7 +1536,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			 * real column existing in a table or not...
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return true
+			 * @returns true
 			 */
 			@Override
 			public boolean isSearchable(int column) throws SQLException {
@@ -1506,7 +1552,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			 * we can always return false here.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return false
+			 * @returns false
 			 */
 			@Override
 			public boolean isCurrency(int column) throws SQLException {
@@ -1515,7 +1561,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			}
 			
 			/**
-			 * Indicates whether values in the designated column are signed numbers.
+			 * Indicates whether values in the designated column are signed
+			 * numbers.
 			 * Within MonetDB all numeric types (except oid and ptr) are signed.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
@@ -1523,6 +1570,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			 */
 			@Override
 			public boolean isSigned(int column) throws SQLException {
+				// we can hardcode this, based on the colum type
 				switch (getColumnType(column)) {
 					case Types.TINYINT:
 					case Types.SMALLINT:
@@ -1539,10 +1587,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			}
 
 			/**
-			 * Indicates the designated column's normal maximum width in characters.
+			 * Indicates the designated column's normal maximum width in
+			 * characters.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return the normal maximum number of characters allowed as the width of the designated column
+			 * @return the normal maximum number of characters allowed as the
+			 *         width of the designated column
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
@@ -1609,8 +1659,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			}
 
 			/**
-			 * Get the designated column's number of decimal digits. This method is currently very expensive as it needs
-			 * to retrieve the information from the database using an SQL query.
+			 * Get the designated column's number of decimal digits.
+			 * This method is currently very expensive as it needs to
+			 * retrieve the information from the database using an SQL
+			 * query.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return precision
@@ -1620,12 +1672,12 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			public int getPrecision(int column) throws SQLException {
 				checkColumnIndexValidity(column);
 				try {
-					if (!_is_fetched[column]) {
+					if (_is_fetched[column] != true) {
 						fetchColumnInfo(column);
 					}
 					if (_precision[column] == 0) {
-						// apparently no precision could be fetched use columnDisplaySize() value for variable
-						// length data types
+						// apparently no precision could be fetched
+						// use columnDisplaySize() value for variable length data types
 						switch (getColumnType(column)) {
 							case Types.CHAR:
 							case Types.VARCHAR:
@@ -1694,7 +1746,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			public int getScale(int column) throws SQLException {
 				checkColumnIndexValidity(column);
 				try {
-					if (!_is_fetched[column]) {
+					if (_is_fetched[column] != true) {
 						fetchColumnInfo(column);
 					}
 					return _scale[column];
@@ -1710,15 +1762,14 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			 * an SQL query.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return the nullability status of the given column; one of columnNoNulls, columnNullable or
-			 * columnNullableUnknown
+			 * @return the nullability status of the given column; one of columnNoNulls, columnNullable or columnNullableUnknown
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public int isNullable(int column) throws SQLException {
 				checkColumnIndexValidity(column);
 				try {
-					if (!_is_fetched[column]) {
+					if (_is_fetched[column] != true) {
 						fetchColumnInfo(column);
 					}
 					return _isNullable[column];
@@ -1739,11 +1790,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			public String getCatalogName(int column) throws SQLException {
 				checkColumnIndexValidity(column);
 				return null;	// MonetDB does NOT support catalogs
+
 			}
 
 			/**
-			 * Indicates whether the designated column is definitely not writable.  MonetDB does not support
-			 * cursor updates, so nothing is writable.
+			 * Indicates whether the designated column is definitely not
+			 * writable.  MonetDB does not support cursor updates, so
+			 * nothing is writable.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
@@ -1755,7 +1808,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			}
 
 			/**
-			 * Indicates whether it is possible for a write on the designated column to succeed.
+			 * Indicates whether it is possible for a write on the
+			 * designated column to succeed.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
@@ -1767,7 +1821,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			}
 
 			/**
-			 * Indicates whether a write on the designated column will definitely succeed.
+			 * Indicates whether a write on the designated column will
+			 * definitely succeed.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
@@ -1796,17 +1851,13 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			@Override
 			public String getColumnClassName(int column) throws SQLException {
 				checkColumnIndexValidity(column);
-				if (conn == null) {
-					// first time, get a Connection object and cache it for all next columns
-					conn = getStatement().getConnection();
-				}
 				try {
 					String MonetDBType = types[column - 1];
 					Class<?> type = null;
 					if (conn != null) {
 						Map<String,Class<?>> map = conn.getTypeMap();
 						if (map != null && map.containsKey(MonetDBType)) {
-							type = map.get(MonetDBType);
+							type = (Class)map.get(MonetDBType);
 						}
 					}
 					if (type == null) {
@@ -1823,8 +1874,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			}
 
 			/**
-			 * Gets the designated column's suggested title for use in printouts and displays. This is currently equal
-			 * to getColumnName().
+			 * Gets the designated column's suggested title for use in
+			 * printouts and displays. This is currently equal to
+			 * getColumnName().
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return the suggested column title
@@ -1836,7 +1888,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			}
 
 			/**
-			 * Gets the designated column's name.
+			 * Gets the designated column's name
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return the column name
@@ -1873,8 +1925,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 			 * Retrieves the designated column's database-specific type name.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return type name used by the database. If the column type is a user-defined type, then a
-			 * fully-qualified type name is returned.
+			 * @return type name used by the database. If the column type is a
+			 *         user-defined type, then a fully-qualified type name is
+			 *         returned.
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
@@ -1904,7 +1957,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * types. In the JDBC 2.0 API, the behavior of method getObject is extended
 	 * to materialize data of SQL user-defined types. When a column contains a
 	 * structured or distinct value, the behavior of this method is as if it
-	 * were a call to: getObject(columnIndex, this.getStatement().getInternalConnection().getTypeMap()).
+	 * were a call to: getObject(columnIndex, this.getStatement().getConnection().getTypeMap()).
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a java.lang.Object holding the column value or null
@@ -1915,6 +1968,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 		// Many generic JDBC programs use getObject(colnr) to retrieve value objects from a resultset
 		// For speed the implementation should be as fast as possible, so avoid method calls (by inlining code) where possible
 		checkNotClosed();
+
 		final int JdbcType;
 		try {
 			JdbcType = JdbcSQLTypes[columnIndex - 1];
@@ -2003,8 +2057,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 
 	private boolean classImplementsSQLData(Class<?> cl) {
 		Class<?>[] cls = cl.getInterfaces();
-		for (Class<?> cl1 : cls) {
-			if (cl1 == SQLData.class)
+		for (int i = 0; i < cls.length; i++) {
+			if (cls[i] == SQLData.class)
 				return true;
 		}
 		return false;
@@ -2261,7 +2315,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * Additional conversions may be supported and are vendor defined.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @param type Class representing the Java data type to convert the designated column to
+	 * @param type Class representing the Java data type to convert the
+	 *        designated column to
 	 * @return an instance of type holding the column value
 	 * @throws SQLException if conversion is not supported, type is
 	 *         null or another error occurs. The getCause() method of
@@ -2290,9 +2345,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * supported.  If the conversion is not supported or null is
 	 * specified for the type, a SQLException is thrown.
 	 *
-	 * @param columnLabel the label for the column specified with the SQL AS clause. If the SQL AS clause was not
-	 * specified, then the label is the name of the column
-	 * @param type Class representing the Java data type to convert the designated column to
+	 * @param columnLabel the label for the column specified with the
+	 *        SQL AS clause. If the SQL AS clause was not specified,
+	 *        then the label is the name of the column
+	 * @param type Class representing the Java data type to convert the
+	 *        designated column to
 	 * @return an instance of type holding the column value
 	 * @throws SQLException if conversion is not supported, type is
 	 *         null or another error occurs. The getCause() method of
@@ -2307,16 +2364,19 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Helper method to support the getObject and ResultsetMetaData.getColumnClassName JDBC methods.
+	 * Helper method to support the getObject and
+	 * ResultsetMetaData.getColumnClassName JDBC methods.
 	 *
 	 * @param type a value from java.sql.Types
 	 * @return a Class object from which an instance would be returned
 	 */
 	static Class<?> getClassForType(int type) {
 		/**
-		 * This switch returns the types as objects according to table B-3 from Oracle's JDBC specification 4.1
+		 * This switch returns the types as objects according to table B-3 from
+		 * Oracle's JDBC specification 4.1
 		 */
-		switch(type) { // keep this switch regarding the returned classes aligned with getObject(int, Map) !
+		// keep this switch regarding the returned classes aligned with getObject(int, Map) !
+		switch(type) {
 			case Types.CHAR:
 			case Types.VARCHAR:
 			case Types.LONGVARCHAR:
@@ -2367,7 +2427,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * built-in types specified in the JDBC specification. If the value is an
 	 * SQL NULL, the driver returns a Java null.
 	 *
-	 * This method may also be used to read database-specific abstract data types.
+	 * This method may also be used to read database-specific abstract data
+	 * types.
 	 *
 	 * @param columnLabel the SQL name of the column
 	 * @return a java.lang.Object holding the column value
@@ -2406,7 +2467,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the current row number. The first row is number 1, the second number 2, and so on.
+	 * Retrieves the current row number. The first row is number 1, the second
+	 * number 2, and so on.
 	 *
 	 * @return the current row number; 0 if there is no current row
 	 */
@@ -2421,9 +2483,11 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @return the column value; if the value is SQL NULL, the value returned is null
+	 * @return the column value; if the value is SQL NULL, the value returned
+	 *         is null
 	 * @throws SQLException if there is no such column
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public RowId getRowId(int columnIndex) throws SQLException {
@@ -2431,13 +2495,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.sql.RowId
-	 * object in the Java programming language.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a java.sql.RowId object in the Java
+	 * programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
-	 * @return the column value; if the value is SQL NULL, the value returned is null
+	 * @return the column value; if the value is SQL NULL, the value returned
+	 *         is null
 	 * @throws SQLException if the ResultSet object does not contain columnLabel
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public RowId getRowId(String columnLabel) throws SQLException {
@@ -2445,8 +2512,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a short in the Java
-	 * programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a short in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
@@ -2504,8 +2571,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a short in the Java
-	 * programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a short in the Java programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
 	 * @return the column value; if the value is SQL NULL, the value returned is 0
@@ -2530,8 +2597,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a String in the Java
-	 * programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a String in the Java programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value; if the value is SQL NULL, the value returned is null
@@ -2595,13 +2662,15 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet as a java.sql.SQLXML object
-	 * in the Java programming language.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet as a java.sql.SQLXML object in the Java
+	 * programming language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return a SQLXML object that maps an SQL XML value
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public SQLXML getSQLXML(int columnIndex) throws SQLException {
@@ -2609,14 +2678,17 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet as a java.sql.SQLXML object
-	 * in the Java programming language.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet as a java.sql.SQLXML object in the Java
+	 * programming language.
 	 *
-	 * @param columnLabel the label for the column specified with the SQL AS clause. If the SQL AS clause was not
-	 * specified, then the label is the name of the column
+	 * @param columnLabel the label for the column specified with the SQL AS
+	 *        clause. If the SQL AS clause was not specified, then the
+	 *        label is the name of the column
 	 * @return a SQLXML object that maps an SQL XML value
 	 * @throws SQLException if a database access error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does not support this method
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
 	 */
 	@Override
 	public SQLXML getSQLXML(String columnLabel) throws SQLException {
@@ -2741,8 +2813,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.sql.Time
-	 * object in the Java programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a java.sql.Time object in the Java programming
+	 * language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value as a java.sql.Time object; if the value is SQL NULL, the value returned is null
@@ -2825,8 +2898,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.sql.Time
-	 * object in the Java programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a java.sql.Time object in the Java programming
+	 * language.
 	 *
 	 * @param columnLabel the SQL name of the column
 	 * @return the column value as a java.sql.Time object; if the value is SQL NULL, the value returned is null
@@ -2850,13 +2924,16 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Time getTime(String columnLabel, Calendar cal) throws SQLException {
+	public Time getTime(String columnLabel, Calendar cal)
+		throws SQLException
+	{
 		return getTime(findColumn(columnLabel), cal);
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.sql.Timestamp
-	 * object in the Java programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a java.sql.Timestamp object in the Java programming
+	 * language.
 	 *
 	 * @param columnIndex the first column is 1, the second is 2, ...
 	 * @return the column value as a java.sql.Timestamp object; if the value is SQL NULL, the value returned is null
@@ -2959,8 +3036,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.sql.Timestamp
-	 * object in the Java programming language.
+	 * Retrieves the value of the designated column in the current row of this
+	 * ResultSet object as a java.sql.Timestamp object in the Java programming
+	 * language.
 	 *
 	 * @param columnLabel the SQL name of the column
 	 * @return the column value as a java.sql.Timestamp object; if the value is SQL NULL, the value returned is null
@@ -2984,7 +3062,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Timestamp getTimestamp(String columnLabel, Calendar cal) throws SQLException {
+	public Timestamp getTimestamp(String columnLabel, Calendar cal)
+		throws SQLException
+	{
 		return getTimestamp(findColumn(columnLabel), cal);
 	}
 
@@ -2992,7 +3072,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * Retrieves the type of this ResultSet object. The type is determined by
 	 * the Statement object that created the result set.
 	 *
-	 * @return ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE or ResultSet.TYPE_SCROLL_SENSITIVE
+	 * @return ResultSet.TYPE_FORWARD_ONLY, ResultSet.TYPE_SCROLL_INSENSITIVE,
+	 *         or ResultSet.TYPE_SCROLL_SENSITIVE
 	 */
 	@Override
 	public int getType() {
@@ -3000,8 +3081,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.net.URL
-	 * object in the Java programming language.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a java.net.URL object in the Java
+	 * programming language.
 	 *
 	 * @param columnIndex the index of the column 1 is the first, 2 is the second,...
 	 * @return the column value as a java.net.URL object; if the value is SQL NULL, the value returned is null
@@ -3038,8 +3120,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row of this ResultSet object as a java.net.URL object
-	 * in the Java programming language.
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object as a java.net.URL object in the Java
+	 * programming language.
 	 *
 	 * @param columnLabel the SQL name of the column
 	 * @return the column value as a java.net.URL object; if the value is SQL NULL, the value returned is null
@@ -3073,7 +3156,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves whether the cursor is after the last row in this ResultSet object.
+	 * Retrieves whether the cursor is after the last row in this ResultSet
+	 * object.
 	 *
 	 * @return true if the cursor is after the last row; false if the cursor is
 	 *         at any other position or the result set contains no rows
@@ -3086,7 +3170,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves whether the cursor is before the first row in this ResultSet object.
+	 * Retrieves whether the cursor is before the first row in this ResultSet
+	 * object.
 	 *
 	 * @return true if the cursor is before the first row; false if the cursor
 	 *         is at any other position or the result set contains no rows
@@ -3099,8 +3184,9 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves whether this ResultSet object has been closed. A ResultSet is closed if the method close has been
-	 * called on it, or if it is automatically closed.
+	 * Retrieves whether this ResultSet object has been closed. A
+	 * ResultSet is closed if the method close has been called on it, or
+	 * if it is automatically closed.
 	 *
 	 * @return true if this ResultSet object is closed; false if it is still open
 	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
@@ -3111,7 +3197,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	}
 
 	/**
-	 * Retrieves whether the cursor is on the first row of this ResultSet object.
+	 * Retrieves whether the cursor is on the first row of this ResultSet
+	 * object.
 	 *
 	 * @return true if the cursor is on the first row; false otherwise
 	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
@@ -3158,8 +3245,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 * next will implicitly close it. A ResultSet object's warning chain is
 	 * cleared when a new row is read.
 	 *
-	 * @return true if the new current row is valid; false if there are no more rows
-	 * @throws SQLException if a database access error occurs or ResultSet is closed
+	 * @return true if the new current row is valid; false if there are no
+	 *         more rows
+	 * @throws SQLException if a database access error occurs or ResultSet is
+	 *         closed
 	 */
 	@Override
 	public boolean next() throws SQLException {
@@ -3169,9 +3258,10 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	/**
 	 * Moves the cursor to the previous row in this ResultSet object.
 	 *
-	 * @return true if the cursor is on a valid row; false if it is off the result set
-	 * @throws SQLException if a database access error occurs or ResultSet is closed or the result set type is
-	 * TYPE_FORWARD_ONLY
+	 * @return true if the cursor is on a valid row; false if it is off
+	 *         the result set
+	 * @throws SQLException if a database access error occurs or ResultSet is
+	 *         closed or the result set type is TYPE_FORWARD_ONLY
 	 */
 	@Override
 	public boolean previous() throws SQLException {
@@ -3245,7 +3335,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	 *
 	 * Note: Support for the rowUpdated method is optional with a result set concurrency of CONCUR_READ_ONLY
 	 *
-	 * Returns: true if the current row is detected to have been visibly updated by the owner or another;false otherwise
+	 * Returns: true if the current row is detected to have been visibly updated by the owner or another; false otherwise
 	 *
 	 * Throws:
 	 *     SQLException - if a database access error occurs or this method is called on a closed result set
@@ -3257,6 +3347,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 		checkNotClosed();
 		return false;
 	}
+
 
 	/* Next methods are all related to updateable result sets, which we do not support.
 	 * @throws SQLFeatureNotSupportedException if the JDBC driver does not support this method
@@ -3290,6 +3381,7 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 	public void refreshRow() throws SQLException {
 		throw newSQLFeatureNotSupportedException("refreshRow");
 	}
+
 
 	@Override
 	public void updateArray(int columnIndex, Array x) throws SQLException {
@@ -3750,7 +3842,8 @@ public class MonetResultSet extends MonetWrapper implements ResultSet, AutoClose
 
 	/**
 	 * Small helper method that formats the "Invalid Column Index number ..." message
-	 * and creates a new SQLDataException object whose SQLState is set to "22010": invalid indicator parameter value.
+	 * and creates a new SQLDataException object whose SQLState is set
+	 * to "22010": invalid indicator parameter value.
 	 *
 	 * @param colIdx the column index number
 	 * @return a new created SQLDataException object with SQLState 22010

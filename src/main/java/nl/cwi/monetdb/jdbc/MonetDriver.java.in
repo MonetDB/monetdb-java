@@ -131,9 +131,11 @@ public final class MonetDriver implements Driver {
 	 * getPropertyInfo method.
 	 *
 	 * @param url the URL of the database to which to connect
-	 * @param info a proposed list of tag/value pairs that will be sent on connect open
-	 * @return an array of DriverPropertyInfo objects describing possible properties. This array may be an empty array
-	 * if no properties are required.
+	 * @param info a proposed list of tag/value pairs that will be sent on
+	 *        connect open
+	 * @return an array of DriverPropertyInfo objects describing possible
+	 *         properties. This array may be an empty array if no properties
+	 *         are required.
 	 */
 	@Override
 	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
@@ -260,10 +262,11 @@ public final class MonetDriver implements Driver {
 
 	//== end methods of interface driver
 
+
 	/** A static Map containing the mapping between MonetDB types and Java SQL types */
 	/* use SELECT sqlname, * FROM sys.types order by 1, id; to view all MonetDB types */
 	/* see http://docs.oracle.com/javase/7/docs/api/java/sql/Types.html to view all supported java SQL types */
-	private static Map<String, Integer> typeMap = new HashMap<>();
+	private static java.util.Map<String, Integer> typeMap = new java.util.HashMap<String, Integer>();
 	static {
 		// fill the typeMap once
 		// typeMap.put("any", Types.???);
@@ -319,17 +322,17 @@ public final class MonetDriver implements Driver {
 		return Types.OTHER;
 	}
 
-	private static String TypeMapppingSQL = null; // cache to optimise getSQLTypeMap()
-
 	/**
 	 * Returns a String usable in an SQL statement to map the server types
 	 * to values of java.sql.Types using the global static type map.
 	 * The returned string will be a SQL CASE x statement where the x is
-	 * replaced with the given currentColumns name (or expression) string.
+	 * replaced with the given column name (or expression) string.
 	 *
-	 * @param column a String representing the value that should be evaluated in the SQL CASE statement
+	 * @param column a String representing the value that should be evaluated
+	 *               in the SQL CASE statement
 	 * @return a SQL CASE statement
 	 */
+	private static String TypeMapppingSQL = null;	// cache to optimise getSQLTypeMap()
 	static String getSQLTypeMap(String column) {
 		if (TypeMapppingSQL == null) {
 			// first time, compose TypeMappping SQL string

@@ -26,7 +26,7 @@ import java.util.ArrayList;
  * @version 0.7
  */
 public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaData {
-	private Connection con;
+	private final Connection con;
 
 	// Internal cache for 3 server environment values
 	private String env_current_user;
@@ -512,6 +512,8 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 
 	@Override
 	public String getSystemFunctions() {
+		// Note: As of Apr2019 (11.33.3) release the system table systemfunctions is replaced by a view which queries functions.system
+		// TODO: Replace join to sys.systemfunctions with " AND \"system\" " but only if the server-version is >= 11.33.3
 		String wherePart =
 			"\"id\" NOT IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1)" +	// without any args
 			" AND \"id\" IN (SELECT \"function_id\" FROM \"sys\".\"systemfunctions\")" +	// only functions marked as system

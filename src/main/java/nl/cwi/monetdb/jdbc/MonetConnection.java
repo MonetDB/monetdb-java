@@ -11,7 +11,6 @@ package nl.cwi.monetdb.jdbc;
 import nl.cwi.monetdb.mcl.connection.ControlCommands;
 import nl.cwi.monetdb.mcl.connection.IMonetDBLanguage;
 import nl.cwi.monetdb.mcl.connection.MCLException;
-import nl.cwi.monetdb.mcl.connection.SenderThread;
 import nl.cwi.monetdb.mcl.protocol.AbstractProtocol;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.ServerResponses;
@@ -50,8 +49,10 @@ import java.util.concurrent.Executor;
  * @author Fabian Groffen, Martin van Dinther, Pedro Ferreira
  * @version 1.3
  */
-public abstract class MonetConnection extends MonetWrapper implements Connection, AutoCloseable {
-
+public abstract class MonetConnection
+		extends MonetWrapper
+		implements Connection, AutoCloseable
+{
 	/** The sequence counter */
 	private static int SeqCounter = 0;
 
@@ -66,18 +67,22 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 
 	/** The successful processed input properties */
 	protected final Properties conn_props;
+
 	/** The language to connect with */
 	protected IMonetDBLanguage language;
+
 	/** Authentication hash method */
 	protected final String hash;
-	/** An optional thread that is used for sending large queries */
-	private SenderThread senderThread;
+
 	/** Whether this Connection is closed (and cannot be used anymore) */
 	private boolean closed;
+
 	/** Whether this Connection is in autocommit mode */
 	private boolean autoCommit = true;
+
 	/** The stack of warnings for this Connection object */
-	private SQLWarning warnings;
+	private SQLWarning warnings = null;
+
 	/** The Connection specific mapping of user defined types to Java types */
 	private Map<String,Class<?>> typeMap = new HashMap<String,Class<?>>() {
 		private static final long serialVersionUID = 1L; {
@@ -86,25 +91,32 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		}
 	};
 
-	// See javadoc for documentation about WeakHashMap if you don't know what it does !!!NOW!!!
-	// (only when you deal with it of course)
+	// See javadoc for documentation about WeakHashMap if you don't know what
+	// it does !!!NOW!!! (only when you deal with it of course)
 	/** A Map containing all (active) Statements created from this Connection */
-	private Map<Statement,?> statements = new WeakHashMap<>();
+	private Map<Statement,?> statements = new WeakHashMap<Statement, Object>();
+
 	/** The number of results we receive from the server at once */
-	private int curReplySize = -1; // the server by default uses -1 (all)
+	private int curReplySize = -1;	// the server by default uses -1 (all)
 	/** Whether or not BLOB is mapped to Types.VARBINARY instead of Types.BLOB within this connection */
-	private final boolean treatBlobAsVarBinary;
+	private boolean treatBlobAsVarBinary = false;
 	/** Whether or not CLOB is mapped to Types.VARCHAR instead of Types.CLOB within this connection */
-	private final boolean treatClobAsVarChar;
+	private boolean treatClobAsVarChar = false;
 	/** The underlying proticol provided by the connection (MAPI or embedded) */
 	protected AbstractProtocol protocol;
 	/** Tells if the connection is embedded or not */
 	private final boolean isEmbedded;
 
 	/**
-	 * Constructor of a Connection for MonetDB. At this moment the current implementation limits itself to storing the
-	 * given host, database, username and password for later use by the createStatement() call.  This constructor is
-	 * only accessible to classes from the jdbc package.
+	 * Constructor of a Connection for MonetDB. At this moment the
+	 * current implementation limits itself to storing the given host,
+	 * database, username and password for later use by the
+	 * createStatement() call.  This constructor is only accessible to
+	 * classes from the jdbc package.
+	 *
+	 * @param props a Property hashtable holding the properties needed for connecting
+	 * @throws SQLException if a database error occurs
+	 * @throws IllegalArgumentException is one of the arguments is null or empty
 	 */
 	public MonetConnection(Properties props, String hash, IMonetDBLanguage language, boolean blobIsBinary,
 						   boolean clobIsLongChar) {
@@ -181,6 +193,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	/** The last set query timeout on the server as used by Statement, PreparedStatement and CallableStatement */
 	protected int lastSetQueryTimeout = 0;	// 0 means no timeout, which is the default on the server
 
+
 	/**
 	 * Gets the initial value for the StringBuilder size.
 	 *
@@ -239,10 +252,23 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 													 BatchUpdateException e) throws SQLException;
 
 	/**
-	 * Releases this Connection object's database and JDBC resources immediately instead of waiting for them to be
-	 * automatically released. All Statements created from this Connection will be closed when this method is called.
+	 * Clears all warnings reported for this Connection object. After a
+	 * call to this method, the method getWarnings returns null until a
+	 * new warning is reported for this Connection object.
+	 */
+	@Override
+	public void clearWarnings() {
+		warnings = null;
+	}
+
+	/**
+	 * Releases this Connection object's database and JDBC resources
+	 * immediately instead of waiting for them to be automatically
+	 * released. All Statements created from this Connection will be
+	 * closed when this method is called.
 	 *
-	 * Calling the method close on a Connection object that is already closed is a no-op.
+	 * Calling the method close on a Connection object that is already
+	 * closed is a no-op.
 	 */
 	@Override
 	public void close() {
@@ -259,11 +285,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		} catch (IOException e) {
 			// ignore it
 		}
-		// close active SendThread if any
-		if (senderThread != null) {
-			senderThread.shutdown();
-			senderThread = null;
-		}
 		// report ourselves as closed
 		closed = true;
 	}
@@ -278,28 +299,21 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		super.finalize();
 	}
 
-	//== methods of interface Connection
-
 	/**
-	 * Clears all warnings reported for this Connection object. After a call to this method, the method getWarnings
-	 * returns null until a new warning is reported for this Connection object.
-	 */
-	@Override
-	public void clearWarnings() {
-		warnings = null;
-	}
-
-	/**
-	 * Makes all changes made since the previous commit/rollback permanent and releases any database locks currently
-	 * held by this Connection object. This method should be used only when auto-commit mode has been disabled.
+	 * Makes all changes made since the previous commit/rollback
+	 * permanent and releases any database locks currently held by this
+	 * Connection object.  This method should be used only when
+	 * auto-commit mode has been disabled.
 	 *
-	 * @throws SQLException if a database access error occurs or this Connection object is in auto-commit mode
+	 * @throws SQLException if a database access error occurs or this
+	 *         Connection object is in auto-commit mode
 	 * @see #setAutoCommit(boolean)
 	 */
 	@Override
 	public void commit() throws SQLException {
-		// note: can't use sendIndependentCommand here because we need to process the auto_commit state the server gives
-		this.sendTransactionCommand("COMMIT");
+		// note: can't use sendIndependentCommand here because we need
+		// to process the auto_commit state the server gives
+		sendTransactionCommand("COMMIT");
 	}
 
 	/**
@@ -400,9 +414,12 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	}
 
 	/**
-	 * Retrieves the current holdability of ResultSet objects created using this Connection object.
+	 * Retrieves the current holdability of ResultSet objects created
+	 * using this Connection object.
 	 *
-	 * @return the holdability, one of ResultSet.HOLD_CURSORS_OVER_COMMIT or ResultSet.CLOSE_CURSORS_AT_COMMIT
+	 * @return the holdability, one of
+	 *         ResultSet.HOLD_CURSORS_OVER_COMMIT or
+	 *         ResultSet.CLOSE_CURSORS_AT_COMMIT
 	 * @see #setHoldability(int)
 	 */
 	@Override
@@ -424,16 +441,18 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 */
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
-		if (!this.language.getRepresentation().equals("sql")) {
+		if (!this.language.getRepresentation().equals("sql"))
 			throw new SQLException("This method is only supported in SQL mode", "M0M04");
-		}
+
 		return new MonetDatabaseMetaData(this);
 	}
 
 	/**
-	 * Retrieves this Connection object's current transaction isolation level.
+	 * Retrieves this Connection object's current transaction isolation
+	 * level.
 	 *
-	 * @return the current transaction isolation level, which will be Connection.TRANSACTION_SERIALIZABLE
+	 * @return the current transaction isolation level, which will be
+	 *         Connection.TRANSACTION_SERIALIZABLE
 	 */
 	@Override
 	public int getTransactionIsolation() {
@@ -441,10 +460,12 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	}
 
 	/**
-	 * Retrieves the Map object associated with this Connection object. Unless the application has added an entry,
-	 * the type map returned will be empty.
+	 * Retrieves the Map object associated with this Connection object.
+	 * Unless the application has added an entry, the type map returned
+	 * will be empty.
 	 *
-	 * @return the java.util.Map object associated with this Connection object
+	 * @return the java.util.Map object associated with this Connection
+	 *         object
 	 */
 	@Override
 	public Map<String,Class<?>> getTypeMap() {
@@ -458,19 +479,22 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * the method SQLWarning.getNextWarning on the warning that was
 	 * retrieved previously.
 	 *
-	 * This method may not be called on a closed connection; doing so will cause an SQLException to be thrown.
+	 * This method may not be called on a closed connection; doing so
+	 * will cause an SQLException to be thrown.
 	 *
 	 * Note: Subsequent warnings will be chained to this SQLWarning.
 	 *
 	 * @return the first SQLWarning object or null if there are none
-	 * @throws SQLException if a database access error occurs or this method is called on a closed connection
+	 * @throws SQLException if a database access error occurs or this method is
+	 *         called on a closed connection
 	 */
 	@Override
 	public SQLWarning getWarnings() throws SQLException {
-		if (closed) {
+		if (closed)
 			throw new SQLException("Cannot call on closed Connection", "M1M20");
-		}
-		// if there are no warnings, this will be null, which fits with the specification.
+
+		// if there are no warnings, this will be null, which fits with the
+		// specification.
 		return warnings;
 	}
 
@@ -486,7 +510,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * can determine that a connection is invalid by catching any
 	 * exceptions that might be thrown when an operation is attempted.
 	 *
-	 * @return true if this Connection object is closed; false if it is still open
+	 * @return true if this Connection object is closed; false if it is
+	 *         still open
 	 */
 	@Override
 	public boolean isClosed() {
@@ -688,10 +713,16 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 */
 	@Override
 	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
-			throws SQLException {
+		throws SQLException
+	{
 		try {
-			PreparedStatement ret = new MonetPreparedStatement(this, resultSetType, resultSetConcurrency,
-					resultSetHoldability, sql);
+			PreparedStatement ret = new MonetPreparedStatement(
+				this,
+				resultSetType,
+				resultSetConcurrency,
+				resultSetHoldability,
+				sql
+			);
 			// store it in the map for when we close...
 			statements.put(ret, null);
 			return ret;
@@ -814,20 +845,20 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 */
 	@Override
 	public void releaseSavepoint(Savepoint savepoint) throws SQLException {
-		if (!(savepoint instanceof MonetSavepoint)) {
+		if (!(savepoint instanceof MonetSavepoint))
 			throw new SQLException("This driver can only handle savepoints it created itself", "M0M06");
-		}
-		MonetSavepoint sp = (MonetSavepoint) savepoint;
+
+		MonetSavepoint sp = (MonetSavepoint)savepoint;
+
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-		this.sendTransactionCommand("RELEASE SAVEPOINT " + sp.getName());
+		sendTransactionCommand("RELEASE SAVEPOINT " + sp.getName());
 	}
 
 	/**
 	 * Undoes all changes made in the current transaction and releases
-	 * any database locks currently held by this Connection object. This
-	 * method should be used only when auto-commit mode has been
-	 * disabled.
+	 * any database locks currently held by this Connection object.
+	 * This method should be used only when auto-commit mode has been disabled.
 	 *
 	 * @throws SQLException if a database access error occurs or this
 	 *         Connection object is in auto-commit mode
@@ -837,15 +868,13 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	public void rollback() throws SQLException {
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-		// create a container for the result
-		this.sendTransactionCommand("ROLLBACK");
+		sendTransactionCommand("ROLLBACK");
 	}
 
 	/**
 	 * Undoes all changes made after the given Savepoint object was set.
 	 *
-	 * This method should be used only when auto-commit has been
-	 * disabled.
+	 * This method should be used only when auto-commit has been disabled.
 	 *
 	 * @param savepoint the Savepoint object to roll back to
 	 * @throws SQLException if a database access error occurs, the
@@ -854,15 +883,14 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 */
 	@Override
 	public void rollback(Savepoint savepoint) throws SQLException {
-		if (!(savepoint instanceof MonetSavepoint)) {
+		if (!(savepoint instanceof MonetSavepoint))
 			throw new SQLException("This driver can only handle savepoints it created itself", "M0M06");
-		}
 
 		MonetSavepoint sp = (MonetSavepoint)savepoint;
+
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-		// create a container for the result
-		this.sendTransactionCommand("ROLLBACK TO SAVEPOINT " + sp.getName());
+		sendTransactionCommand("ROLLBACK TO SAVEPOINT " + sp.getName());
 	}
 
 	/**
@@ -871,8 +899,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * will be executed and committed as individual transactions.
 	 * Otherwise, its SQL statements are grouped into transactions that
 	 * are terminated by a call to either the method commit or the
-	 * method rollback. By default, new connections are in auto-commit
-	 * mode.
+	 * method rollback. By default, new connections are in auto-commit mode.
 	 *
 	 * The commit occurs when the statement completes or the next
 	 * execute occurs, whichever comes first. In the case of statements
@@ -939,9 +966,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 */
 	@Override
 	public void setReadOnly(boolean readOnly) throws SQLException {
-		if (readOnly) {
+		if (readOnly == true)
 			addWarning("cannot setReadOnly(true): read-only Connection mode not supported", "01M08");
-		}
 	}
 
 	/**
@@ -956,17 +982,16 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	public Savepoint setSavepoint() throws SQLException {
 		// create a new Savepoint object
 		MonetSavepoint sp = new MonetSavepoint();
+
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-		// create a container for the result
-		this.sendTransactionCommand("SAVEPOINT " + sp.getName());
+		sendTransactionCommand("SAVEPOINT " + sp.getName());
 		return sp;
 	}
 
 	/**
-	 * Creates a savepoint with the given name in the current
-	 * transaction and returns the new Savepoint object that represents
-	 * it.
+	 * Creates a savepoint with the given name in the current transaction
+	 * and returns the new Savepoint object that represents it.
 	 *
 	 * @param name a String containing the name of the savepoint
 	 * @return the new Savepoint object
@@ -982,28 +1007,30 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		} catch (IllegalArgumentException e) {
 			throw new SQLException(e.getMessage(), "M0M03");
 		}
+
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
-		// create a container for the result
-		this.sendTransactionCommand("SAVEPOINT " + sp.getName());
+		sendTransactionCommand("SAVEPOINT " + sp.getName());
 		return sp;
 	}
 
 	/**
 	 * Attempts to change the transaction isolation level for this
 	 * Connection object to the one given.  The constants defined in the
-	 * interface Connection are the possible transaction isolation
-	 * levels.
+	 * interface Connection are the possible transaction isolation levels.
 	 *
-	 * @param level one of the following Connection constants: Connection.TRANSACTION_READ_UNCOMMITTED,
-	 *        Connection.TRANSACTION_READ_COMMITTED, Connection.TRANSACTION_REPEATABLE_READ, or
+	 * @param level one of the following Connection constants:
+	 *        Connection.TRANSACTION_READ_UNCOMMITTED,
+	 *        Connection.TRANSACTION_READ_COMMITTED,
+	 *        Connection.TRANSACTION_REPEATABLE_READ, or
 	 *        Connection.TRANSACTION_SERIALIZABLE.
 	 */
 	@Override
 	public void setTransactionIsolation(int level) {
 		if (level != TRANSACTION_SERIALIZABLE) {
 			addWarning("MonetDB only supports fully serializable " +
-					"transactions, continuing with transaction level raised to TRANSACTION_SERIALIZABLE", "01M09");
+				"transactions, continuing with transaction level " +
+				"raised to TRANSACTION_SERIALIZABLE", "01M09");
 		}
 	}
 
@@ -1031,6 +1058,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 				(closed ? "disconnected" : "connected");
 	}
 
+	//== Java 1.6 methods (JDBC 4.0)
+
 	/**
 	 * Factory method for creating Array objects.
 	 *
@@ -1053,12 +1082,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 *        type or a standard SQL type supported by this database.
 	 *        This is the value returned by Array.getBaseTypeName
 	 * @return an Array object whose elements map to the specified SQL type
-	 * @throws SQLException if a database error occurs, the JDBC type
-	 *         is not appropriate for the typeName and the conversion is
-	 *         not supported, the typeName is null or this method is
-	 *         called on a closed connection
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this data type
+	 * @throws SQLException - if a database error occurs, the JDBC type is not appropriate for the typeName and
+	 *         the conversion is not supported, the typeName is null or this method is called on a closed connection
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this data type
 	 * @since 1.6
 	 */
 	@Override
@@ -1067,8 +1093,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	}
 
 
-	//== end methods of interface java.sql.Connection
-
 	/**
 	 * Constructs an object that implements the Clob interface. The
 	 * object returned initially contains no data. The setAsciiStream,
@@ -1076,8 +1100,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * may be used to add data to the Clob.
 	 *
 	 * @return a MonetClob instance
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support MonetClob objects that can be filled in
+	 * @throws SQLException - if an object that implements the Clob interface can not be constructed,
+	 *         this method is called on a closed connection or a database access error occurs.
 	 * @since 1.6
 	 */
 	@Override
@@ -1092,13 +1116,14 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * data to the Blob.
 	 *
 	 * @return a MonetBlob instance
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support MonetBlob objects that can be filled in
+	 * @throws SQLException - if an object that implements the Blob interface can not be constructed,
+	 *         this method is called on a closed connection or a database access error occurs.
 	 * @since 1.6
 	 */
 	@Override
 	public java.sql.Blob createBlob() throws SQLException {
-		return new MonetBlob(new byte[1]);
+		byte[] buf = new byte[1];
+		return new MonetBlob(buf);
 	}
 
 	/**
@@ -1108,8 +1133,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * may be used to add data to the NClob.
 	 *
 	 * @return an NClob instance
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support MonetNClob objects that can be filled in
+	 * @throws SQLException - if an object that implements the NClob interface can not be constructed,
+	 *         this method is called on a closed connection or a database access error occurs.
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this data type
 	 * @since 1.6
 	 */
 	@Override
@@ -1127,10 +1153,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * @param attributes the attributes that populate the returned object
 	 * @return a Struct object that maps to the given SQL type and is
 	 *         populated with the given attributes
-	 * @throws SQLException if a database error occurs, the typeName
-	 *         is null or this method is called on a closed connection
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this data type
+	 * @throws SQLException - if an object that implements the Struct interface can not be constructed,
+	 *         this method is called on a closed connection or a database access error occurs.
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this data type
 	 * @since 1.6
 	 */
 	@Override
@@ -1145,8 +1170,9 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * interface may be used to add data to the SQLXML object.
 	 *
 	 * @return An object that implements the SQLXML interface
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this data type
+	 * @throws SQLException - if an object that implements the SQLXML interface can not be constructed,
+	 *         this method is called on a closed connection or a database access error occurs.
+	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this data type
 	 * @since 1.6
 	 */
 	@Override
@@ -1179,7 +1205,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		if (closed)
 			return false;
 
-		// ping db using query: select 1;
+		// ping monetdb server using query: select 1;
 		Statement stmt = null;
 		ResultSet rs = null;
 		boolean isValid = false;
@@ -1325,6 +1351,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		    name.equals("database") ||
 		    name.equals("language") ||
 		    name.equals("so_timeout") ||
+		    name.equals("debug") ||
 		    name.equals("hash") ||
 		    name.equals("treat_blob_as_binary") ||
 		    name.equals("treat_clob_as_varchar") ||
@@ -1337,6 +1364,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		} else {
 			addWarning("setClientInfo: " + name + "is not a recognised property", "01M07");
 		}
+		return;
 	}
 
 	/**
@@ -1366,31 +1394,42 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	public void setClientInfo(Properties props) throws SQLClientInfoException {
 		if (props != null) {
 			for (Map.Entry<Object, Object> entry : props.entrySet()) {
-				setClientInfo(entry.getKey().toString(), entry.getValue().toString());
+				setClientInfo(entry.getKey().toString(),
+						entry.getValue().toString());
 			}
 		}
 	}
+
+
+	//== Java 1.7 methods (JDBC 4.1)
 
 	/**
 	 * Sets the given schema name to access.
 	 *
 	 * @param schema the name of a schema in which to work
-	 * @throws SQLException if a database access error occurs or this method is called on a closed connection
+	 * @throws SQLException if a database access error occurs or this
+	 *         method is called on a closed connection
 	 * @since 1.7
 	 */
 	@Override
 	public void setSchema(String schema) throws SQLException {
 		if (closed)
 			throw new SQLException("Cannot call on closed Connection", "M1M20");
-		if (schema == null)
+		if (schema == null || schema.isEmpty())
 			throw new SQLException("Missing schema name", "M1M05");
 
-		Statement st = createStatement();
-		schema = schema.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'");
+		Statement st = null;
 		try {
-			st.execute("SET SCHEMA \"" + schema + "\"");
+			st = createStatement();
+			if (st != null)
+				st.execute("SET SCHEMA \"" + schema + "\"");
+		// do not catch any Exception, just let it propagate
 		} finally {
-			st.close();
+			if (st != null) {
+				try {
+					 st.close();
+				} catch (SQLException e) { /* ignore */ }
+			}
 		}
 	}
 
@@ -1398,26 +1437,42 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * Retrieves this Connection object's current schema name.
 	 *
 	 * @return the current schema name or null if there is none
-	 * @throws SQLException if a database access error occurs or this method is called on a closed connection
+	 * @throws SQLException if a database access error occurs or this
+	 *         method is called on a closed connection
+	 * @since 1.7
 	 */
 	@Override
 	public String getSchema() throws SQLException {
-		if (closed) {
+		if (closed)
 			throw new SQLException("Cannot call on closed Connection", "M1M20");
-		}
-		String cur_schema;
-		Statement st = createStatement();
+
+		String cur_schema = null;
+		Statement st = null;
 		ResultSet rs = null;
 		try {
-			rs = st.executeQuery("SELECT CURRENT_SCHEMA");
-			if (!rs.next())
-				throw new SQLException("Row expected", "02000");
-			cur_schema = rs.getString(1);
+			st = createStatement();
+			if (st != null) {
+				rs = st.executeQuery("SELECT CURRENT_SCHEMA");
+				if (rs != null) {
+					if (rs.next())
+						cur_schema = rs.getString(1);
+				}
+			}
+		// do not catch any Exception, just let it propagate
 		} finally {
-			if (rs != null)
-				rs.close();
-			st.close();
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException e) { /* ignore */ }
+			}
+			if (st != null) {
+				try {
+					 st.close();
+				} catch (SQLException e) { /* ignore */ }
+			}
 		}
+		if (cur_schema == null)
+			throw new SQLException("Failed to fetch schema name", "02000");
 		return cur_schema;
 	}
 
@@ -1432,9 +1487,13 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * Calling abort marks the connection closed and releases any
 	 * resources. Calling abort on a closed connection is a no-op.
 	 *
-	 * @param executor The Executor implementation which will be used by abort
-	 * @throws SQLException if a database access error occurs or the executor is null
-	 * @throws SecurityException if a security manager exists and its checkPermission method denies calling abort
+	 * @param executor The Executor implementation which will be used by
+	 *        abort
+	 * @throws SQLException if a database access error occurs or the
+	 *         executor is null
+	 * @throws SecurityException if a security manager exists and
+	 *         its checkPermission method denies calling abort
+	 * @since 1.7
 	 */
 	@Override
 	public void abort(Executor executor) throws SQLException {
@@ -1457,10 +1516,14 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	 * isClosed or Connection.isValid methods, will result in a
 	 * SQLException.
 	 *
-	 * @param executor The Executor implementation which will be used by setNetworkTimeout
-	 * @param millis The time in milliseconds to wait for the database operation to complete
-	 * @throws SQLException if a database access error occurs, this method is called on a closed connection, the
-	 * executor is null, or the value specified for seconds is less than 0.
+	 * @param executor The Executor implementation which will be used by
+	 *        setNetworkTimeout
+	 * @param millis The time in milliseconds to wait for the
+	 *        database operation to complete
+	 * @throws SQLException if a database access error occurs, this
+	 *         method is called on a closed connection, the executor is
+	 *         null, or the value specified for seconds is less than 0.
+	 * @since 1.7
 	 */
 	@Override
 	public void setNetworkTimeout(Executor executor, int millis) throws SQLException {
@@ -1500,6 +1563,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 			throw new SQLNonTransientConnectionException(e.getMessage(), "08000");
 		}
 	}
+
 
 	//== end methods of interface java.sql.Connection
 
@@ -1604,10 +1668,12 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	}
 
 	/**
-	 * Sends the given string to MonetDB as regular statement, making sure there is a prompt after the command is sent.
-	 * All possible returned information is discarded. Encountered errors are reported.
+	 * Sends the given string to MonetDB as command/query using commandTempl or queryTempl
+	 * Making sure there is a prompt after the command is sent.  All possible
+	 * returned information is discarded.  Encountered errors are reported.
 	 *
 	 * @param command the exact string to send to MonetDB
+	 * @param usequeryTempl send the command using a queryTempl? else it is send using commandTempl
 	 * @throws SQLException if an IO exception or a database error occurs
 	 */
 	void sendIndependentCommand(String command) throws SQLException {
@@ -1628,8 +1694,10 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	}
 
 	/**
-	 * Adds a warning to the pile of warnings this Connection object has. If there were no warnings (or clearWarnings
-	 * was called) this warning will be the first, otherwise this warning will get appended to the current warning.
+	 * Adds a warning to the pile of warnings this Connection object
+	 * has.  If there were no warnings (or clearWarnings was called)
+	 * this warning will be the first, otherwise this warning will get
+	 * appended to the current warning.
 	 *
 	 * @param reason the warning message
 	 */
@@ -1643,9 +1711,11 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 	}
 
 	/**
-	 * A list of Response objects. Responses are added to this list. Methods of this class are not synchronized. This is
-	 * left as responsibility to the caller to prevent concurrent access.
+	 * A list of Response objects.  Responses are added to this list.
+	 * Methods of this class are not synchronized.  This is left as
+	 * responsibility to the caller to prevent concurrent access.
 	 */
+	// {{{ ResponseList class implementation
 	public class ResponseList {
 		/** The cache size (number of rows in a DataBlockResponse object) */
 		private final int cachesize;
@@ -1657,28 +1727,39 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		private final int rsconcur;
 		/** The sequence number of this ResponseList */
 		private final int seqnr;
-		/** A list of the Responses associated with the query, in the right order */
-		private final List<IResponse> responses = new ArrayList<>();
-		/** A map of ResultSetResponses, used for additional DataBlockResponse mapping */
+		/** A list of the Responses associated with the query,
+		 *  in the right order */
+		private final List<IResponse> responses;
+		/** A map of ResultSetResponses, used for additional
+		 *  DataBlockResponse mapping */
 		private Map<Integer, ResultSetResponse> rsresponses;
+
 		/** The current header returned by getNextResponse() */
-		private int curResponse = -1;
+		private int curResponse;
 
 		/**
-		 * Main constructor. The query argument can either be a String or List.  An SQLException is thrown if another
-		 * object instance is supplied.
+		 * Main constructor.  The query argument can either be a String
+		 * or List.  An SQLException is thrown if another object
+		 * instance is supplied.
 		 *
 		 * @param cachesize overall cachesize to use
 		 * @param maxrows maximum number of rows to allow in the set
 		 * @param rstype the type of result sets to produce
 		 * @param rsconcur the concurrency of result sets to produce
 		 */
-		ResponseList(int cachesize, int maxrows, int rstype, int rsconcur) {
+		ResponseList(
+				int cachesize,
+				int maxrows,
+				int rstype,
+				int rsconcur
+		) throws SQLException {
 			this.cachesize = cachesize;
 			this.maxrows = maxrows;
 			this.rstype = rstype;
 			this.rsconcur = rsconcur;
-			this.seqnr = SeqCounter++;
+			responses = new ArrayList<IResponse>();
+			curResponse = -1;
+			seqnr = SeqCounter++;
 		}
 
 		public int getCachesize() {
@@ -1698,7 +1779,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		}
 
 		/**
-		 * Retrieves the next available response, or null if there are no more responses.
+		 * Retrieves the next available response, or null if there are
+		 * no more responses.
 		 *
 		 * @return the next Response available or null
 		 */
@@ -1714,7 +1796,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 			}
 			curResponse++;
 			if (curResponse >= responses.size()) {
-				// ResponseList is obviously completed so, there are no more responses
+				// ResponseList is obviously completed so, there are no
+				// more responses
 				return null;
 			} else {
 				// return this response
@@ -1723,7 +1806,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		}
 
 		/**
-		 * Closes the Response at index i, if not null.
+		 * Closes the Reponse at index i, if not null.
 		 *
 		 * @param i the index position of the header to close
 		 */
@@ -1752,7 +1835,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		}
 
 		/**
-		 * Closes this ResponseList by closing all the Responses in this ResponseList.
+		 * Closes this ResponseList by closing all the Responses in this
+		 * ResponseList.
 		 */
 		public void close() {
 			for (int i = 0; i < responses.size(); i++) {
@@ -1761,7 +1845,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		}
 
 		/**
-		 * Returns whether this ResponseList has still unclosed Responses.
+		 * Returns whether this ResponseList has still unclosed
+		 * Responses.
 		 */
 		boolean hasUnclosedResponses() {
 			for (IResponse r : responses) {
@@ -1772,7 +1857,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		}
 
 		/**
-		 * Executes the query contained in this ResponseList, and stores the Responses resulting from this query in this
+		 * Executes the query contained in this ResponseList, and
+		 * stores the Responses resulting from this query in this
 		 * ResponseList.
 		 *
 		 * @throws SQLException if a database error occurs
@@ -1785,24 +1871,28 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 		 * Internal executor of queries.
 		 *
 		 * @param templ the template to fill in
-		 * @param query the query to execute
+		 * @param the query to execute
 		 * @throws SQLException if a database error occurs
 		 */
 		@SuppressWarnings("fallthrough")
-		public void executeQuery(String[] templ, String query) throws SQLException {
+		public void executeQuery(String[] templ, String query)
+			throws SQLException
+		{
 			String error = null;
 
 			try {
-				// make sure we're ready to send query; read data till we have the prompt it is possible (and most
-				// likely) that we already have the prompt and do not have to skip any lines. Ignore errors from
-				// previous result sets.
+				// make sure we're ready to send query; read data till we
+				// have the prompt it is possible (and most likely) that we
+				// already have the prompt and do not have to skip any
+				// lines.  Ignore errors from previous result sets.
 				protocol.waitUntilPrompt();
 
 				// {{{ set reply size
-				/*
-				 * Change the reply size of the server.  If the given value is the same as the current value known
-				 * to use, then ignore this call.  If it is set to 0 we get a prompt after the server sent it's
-				 * header.
+				/**
+				 * Change the reply size of the server.  If the given
+				 * value is the same as the current value known to use,
+				 * then ignore this call.  If it is set to 0 we get a
+				 * prompt after the server sent it's header.
 				 *
 				 * 2017: For now, in the embedded connection, the value set cachesize will be always the default one.
 				 */
@@ -1817,23 +1907,8 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 				}
 				// }}} set reply size
 
-				// If the query is larger than the TCP buffer size, use a special send thread to avoid deadlock with
-				// the server due to blocking behaviour when the buffer is full. Because the server will be writing
-				// back results to us, it will eventually block as well when its TCP buffer gets full, as we are
-				// blocking an not consuming from it. The result is a state where both client and server want to
-				// write, but block.
-				if (query.length() > getBlockSize()) {
-					// get a reference to the send thread
-					if (senderThread == null) {
-						senderThread = new SenderThread(protocol);
-					}
-					// tell it to do some work!
-					senderThread.runQuery(templ, query);
-				} else {
-					// this is a simple call, which is a lot cheaper and will always succeed for small queries.
-					protocol.writeNextQuery((templ[0] == null) ? "" : templ[0], query,
-							(templ[1] == null) ? "" : templ[1]);
-				}
+				// send query to the server
+				protocol.writeNextQuery((templ[0] == null) ? "" : templ[0], query,  (templ[1] == null) ? "" : templ[1]);
 
 				// go for new results
 				protocol.fetchNextResponseData();
@@ -1896,12 +1971,14 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 								nextResponse = protocol.getCurrentServerResponse();
 								break;
 							}
+
 							// immediately handle errors after parsing the header (res may be null)
 							if (error != null) {
 								protocol.waitUntilPrompt();
 								nextResponse = protocol.getCurrentServerResponse();
 								break;
 							}
+
 							// here we have a res object, which we can start filling
 							if (res instanceof IIncompleteResponse) {
 								IIncompleteResponse iter = (IIncompleteResponse) res;
@@ -1918,28 +1995,29 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 									}
 								}
 							}
-
-							if (error != null) {
+							if (error != null)
 								break;
-							}
 
-							// it is of no use to store DataBlockResponses, you never want to retrieve them directly
-							// anyway
-							if (!(res instanceof AbstractDataBlockResponse)) {
+							// it is of no use to store DataBlockReponses, you never want to
+							// retrieve them directly anyway
+							if (!(res instanceof AbstractDataBlockResponse))
 								responses.add(res);
-							}
-							// read the next line (can be prompt, new result, error, etc.) before we start the loop over
+
+							// read the next line (can be prompt, new result, error, etc.)
+							// before we start the loop over
 							protocol.fetchNextResponseData();
 							nextResponse = protocol.getCurrentServerResponse();
 							break;
 						case ServerResponses.INFO:
 							addWarning(protocol.getRemainingStringLine(0), "01000");
-							// read the next line (can be prompt, new result, error, etc.) before we start the loop over
+							// read the next line (can be prompt, new result, error, etc.)
+							// before we start the loop over
 							protocol.fetchNextResponseData();
 							nextResponse = protocol.getCurrentServerResponse();
 							break;
 						case ServerResponses.ERROR:
-							// read everything till the prompt (should be error) we don't know if we ignore some
+							// read everything till the prompt (should be
+							// error) we don't know if we ignore some
 							// garbage here... but the log should reveal that
 							error = protocol.getRemainingStringLine(0);
 							protocol.waitUntilPrompt();
@@ -1950,17 +2028,6 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 					}
 				}
 
-				// if we used the senderThread, make sure it has finished
-				if (senderThread != null) {
-					String tmp = senderThread.getErrors();
-					if (tmp != null) {
-						if (error == null) {
-							error = "08000!" + tmp;
-						} else {
-							error += "\n08000!" + tmp;
-						}
-					}
-				}
 				if (error != null) {
 					SQLException ret = null;
 					String[] errorsList = error.split("\n");
@@ -1982,7 +2049,7 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 					throw ret;
 				}
 			} catch (SocketTimeoutException e) {
-				this.close(); // JDBC 4.1 semantics, abort()
+				close(); // JDBC 4.1 semantics, abort()
 				throw new SQLNonTransientConnectionException("connection timed out", "08M33");
 			} catch (IOException e) {
 				closed = true;
@@ -1990,4 +2057,5 @@ public abstract class MonetConnection extends MonetWrapper implements Connection
 			}
 		}
 	}
+	// }}}
 }
