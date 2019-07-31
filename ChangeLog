@@ -2,6 +2,9 @@
 # This file is updated with Maddlog
 
 * Wed Jul 31 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Optimised MonetStatement memory resource usage by only creating an ArrayList
+  and ReentrantLock object when the batch methods addBatch() or executeBatch()
+  are called. In most Statement usages those methods are not called.
 - Implemented method MonetClob.getAsciiStream()
 
 * Thu Mar 21 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>

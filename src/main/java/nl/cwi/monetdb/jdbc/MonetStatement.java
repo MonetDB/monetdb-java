@@ -18,7 +18,6 @@ import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -80,7 +79,8 @@ public class MonetStatement
 	private int resultSetConcurrency = ResultSet.CONCUR_READ_ONLY;
 
 	/** A List to hold all queries of a batch */
-	private List<String> batch = new ArrayList<String>();
+	private ArrayList<String> batch = null;
+	private ReentrantLock batchLock = null;
 
 
 	/**
@@ -142,6 +142,10 @@ public class MonetStatement
 	 */
 	@Override
 	public void addBatch(String sql) throws SQLException {
+		if (batch == null) {
+			// create the ArrayList at first time use
+			batch = new ArrayList<String>();
+		}
 		batch.add(sql);
 	}
 
@@ -150,10 +154,9 @@ public class MonetStatement
 	 */
 	@Override
 	public void clearBatch() {
-		batch.clear();
+		if (batch != null)
+			batch.clear();
 	}
-
-	Lock batchLock = new ReentrantLock();
 
 	/**
 	 * Submits a batch of commands to the database for execution and if
@@ -195,26 +198,30 @@ public class MonetStatement
 	 */
 	@Override
 	public int[] executeBatch() throws SQLException {
-		// this method is synchronized to make sure noone gets inbetween the
-		// operations we execute below
+		if (batch == null || batch.isEmpty()) {
+			return new int[0];
+		}
 
+		// this method is synchronized/locked to make sure no one gets in between the
+		// operations we execute below
+		if (batchLock == null) {
+			// create a ReentrantLock at first time use
+			batchLock = new ReentrantLock();
+		}
 		batchLock.lock();
 		try {
-			// don't think long if there isn't much to do
-			if (batch.isEmpty())
-				return new int[0];
-
 			int[] counts = new int[batch.size()];
 			int offset = 0;
 			boolean first = true;
 			boolean error = false;
-
+			String sep = connection.queryTempl[2];
+			int sepLen = sep.length();
 			BatchUpdateException e = new BatchUpdateException("Error(s) occurred while executing the batch, see next SQLExceptions for details", "22000", counts);
 			StringBuilder tmpBatch = new StringBuilder(MapiSocket.BLOCK);
-			String sep = connection.queryTempl[2];
+
 			for (int i = 0; i < batch.size(); i++) {
 				String tmp = batch.get(i);
-				if (sep.length() + tmp.length() > MapiSocket.BLOCK) {
+				if (sepLen + tmp.length() > MapiSocket.BLOCK) {
 					// The thing is too big.  Way too big.  Since it won't
 					// be optimal anyway, just add it to whatever we have
 					// and continue.
@@ -222,25 +229,27 @@ public class MonetStatement
 						tmpBatch.append(sep);
 					tmpBatch.append(tmp);
 					// send and receive
-					error |= internalBatch(tmpBatch.toString(), counts, offset, i + 1, e);
+					error |= internalBatch(tmpBatch, counts, offset, i + 1, e);
 					offset = i;
 					tmpBatch.delete(0, tmpBatch.length());
 					first = true;
 					continue;
 				}
-				if (tmpBatch.length() + sep.length() + tmp.length() >= MapiSocket.BLOCK) {
+				if (tmpBatch.length() + sepLen + tmp.length() >= MapiSocket.BLOCK) {
 					// send and receive
-					error |= internalBatch(tmpBatch.toString(), counts, offset, i + 1, e);
+					error |= internalBatch(tmpBatch, counts, offset, i + 1, e);
 					offset = i;
 					tmpBatch.delete(0, tmpBatch.length());
 					first = true;
 				}
-				if (!first) tmpBatch.append(sep);
-				first = false;
+				if (first)
+					first = false;
+				else
+					tmpBatch.append(sep);
 				tmpBatch.append(tmp);
 			}
 			// send and receive
-			error |= internalBatch(tmpBatch.toString(), counts, offset, counts.length, e);
+			error |= internalBatch(tmpBatch, counts, offset, counts.length, e);
 
 			// throw BatchUpdateException if it contains something
 			if (error)
@@ -253,7 +262,7 @@ public class MonetStatement
 	}
 
 	private boolean internalBatch(
-			String batch,
+			StringBuilder batch,
 			int[] counts,
 			int offset,
 			int max,
@@ -261,7 +270,7 @@ public class MonetStatement
 		throws BatchUpdateException
 	{
 		try {
-			boolean type = internalExecute(batch);
+			boolean type = internalExecute(batch.toString());
 			int count = -1;
 			if (!type)
 				count = getUpdateCount();
