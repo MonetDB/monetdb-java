@@ -389,7 +389,7 @@ public class MonetPreparedStatement
 			/**
 			 * Returns the number of columns in this ResultSet object.
 			 *
-			 * @returns the number of columns
+			 * @return the number of columns
 			 */
 			@Override
 			public int getColumnCount() {
@@ -424,7 +424,7 @@ public class MonetPreparedStatement
 			 * Indicates whether a column's case matters.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @returns false
+			 * @return false
 			 */
 			@Override
 			public boolean isCaseSensitive(int column) throws SQLException {
@@ -454,7 +454,7 @@ public class MonetPreparedStatement
 			 * Returning true for all here, even for CLOB, BLOB.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @returns true
+			 * @return true
 			 */
 			@Override
 			public boolean isSearchable(int column) {
@@ -469,7 +469,7 @@ public class MonetPreparedStatement
 			 * we can always return false here.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @returns false
+			 * @return false
 			 */
 			@Override
 			public boolean isCurrency(int column) {

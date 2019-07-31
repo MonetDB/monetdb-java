@@ -70,6 +70,11 @@ public class MonetResultSet
 	extends MonetWrapper
 	implements ResultSet, AutoCloseable
 {
+	static final int DEF_RESULTSETTYPE = ResultSet.TYPE_FORWARD_ONLY;
+	static final int DEF_FETCHDIRECTION = ResultSet.FETCH_FORWARD;
+	static final int DEF_CONCURRENCY = ResultSet.CONCUR_READ_ONLY;
+	static final int DEF_HOLDABILITY = ResultSet.HOLD_CURSORS_OVER_COMMIT;
+
 	/** The parental Statement object */
 	private final Statement statement;
 	/** A Header to retrieve lines from. Note: it will be null in case of a MonetVirtualResultSet ! */
@@ -91,9 +96,9 @@ public class MonetResultSet
 	protected final int tupleCount;
 
 	/** The type of this ResultSet (forward or scrollable) */
-	private int type = TYPE_FORWARD_ONLY;
+	private int type = DEF_RESULTSETTYPE;
 	/** The concurrency of this ResultSet (currently only read-only) */
-	private int concurrency = CONCUR_READ_ONLY;
+	private int concurrency = DEF_CONCURRENCY;
 	/** The warnings for this ResultSet object */
 	private SQLWarning warnings;
 	/** whether the last read field (via some getXyz() method) was NULL */
@@ -1328,7 +1333,7 @@ public class MonetResultSet
 			/**
 			 * Returns the number of columns in this ResultSet object.
 			 *
-			 * @returns the number of columns
+			 * @return the number of columns
 			 */
 			@Override
 			public int getColumnCount() {
@@ -1359,7 +1364,7 @@ public class MonetResultSet
 			 * Indicates whether a column's case matters.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @returns true for all character string columns else false
+			 * @return true for all character string columns else false
 			 */
 			@Override
 			public boolean isCaseSensitive(int column) throws SQLException {
@@ -1392,7 +1397,7 @@ public class MonetResultSet
 			 * real column existing in a table or not...
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @returns true
+			 * @return true
 			 */
 			@Override
 			public boolean isSearchable(int column) throws SQLException {
@@ -1408,7 +1413,7 @@ public class MonetResultSet
 			 * we can always return false here.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @returns false
+			 * @return false
 			 */
 			@Override
 			public boolean isCurrency(int column) throws SQLException {

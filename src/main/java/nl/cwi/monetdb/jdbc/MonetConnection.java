@@ -433,14 +433,14 @@ public class MonetConnection
 	 *
 	 * Result sets created using the returned Statement object will by
 	 * default be type TYPE_FORWARD_ONLY and have a concurrency level of
-	 * CONCUR_READ_ONLY.
+	 * CONCUR_READ_ONLY and a holdability of HOLD_CURSORS_OVER_COMMIT.
 	 *
 	 * @return a new default Statement object
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public Statement createStatement() throws SQLException {
-		return createStatement(ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		return createStatement(MonetResultSet.DEF_RESULTSETTYPE, MonetResultSet.DEF_CONCURRENCY, MonetResultSet.DEF_HOLDABILITY);
 	}
 
 	/**
@@ -460,7 +460,7 @@ public class MonetConnection
 	 */
 	@Override
 	public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
-		return createStatement(resultSetType, resultSetConcurrency, ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		return createStatement(resultSetType, resultSetConcurrency, MonetResultSet.DEF_HOLDABILITY);
 	}
 
 	/**
@@ -676,7 +676,7 @@ public class MonetConnection
 	 */
 	@Override
 	public CallableStatement prepareCall(String sql) throws SQLException {
-		return prepareCall(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		return prepareCall(sql, MonetResultSet.DEF_RESULTSETTYPE, MonetResultSet.DEF_CONCURRENCY, MonetResultSet.DEF_HOLDABILITY);
 	}
 
 	/**
@@ -697,7 +697,7 @@ public class MonetConnection
 	 */
 	@Override
 	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
-		return prepareCall(sql, resultSetType, resultSetConcurrency, ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		return prepareCall(sql, resultSetType, resultSetConcurrency, MonetResultSet.DEF_HOLDABILITY);
 	}
 
 	/**
@@ -765,7 +765,7 @@ public class MonetConnection
 	 */
 	@Override
 	public PreparedStatement prepareStatement(String sql) throws SQLException {
-		return prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		return prepareStatement(sql, MonetResultSet.DEF_RESULTSETTYPE, MonetResultSet.DEF_CONCURRENCY, MonetResultSet.DEF_HOLDABILITY);
 	}
 
 	/**
@@ -790,7 +790,7 @@ public class MonetConnection
 	 */
 	@Override
 	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
-		return prepareStatement(sql, resultSetType, resultSetConcurrency, ResultSet.HOLD_CURSORS_OVER_COMMIT);
+		return prepareStatement(sql, resultSetType, resultSetConcurrency, MonetResultSet.DEF_HOLDABILITY);
 	}
 
 	/**
@@ -880,7 +880,7 @@ public class MonetConnection
 			throw new SQLException("Invalid argument, expected RETURN_GENERATED_KEYS or NO_GENERATED_KEYS", "M1M05");
 
 		/* MonetDB has no way to disable this, so just do the normal thing ;) */
-		return prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
+		return prepareStatement(sql, MonetResultSet.DEF_RESULTSETTYPE, MonetResultSet.DEF_CONCURRENCY, MonetResultSet.DEF_HOLDABILITY);
 	}
 
 	/**

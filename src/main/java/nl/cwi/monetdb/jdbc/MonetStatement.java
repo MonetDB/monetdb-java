@@ -42,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 0.7
+ * @version 0.8
  */
 public class MonetStatement
 	extends MonetWrapper
@@ -60,9 +60,9 @@ public class MonetStatement
 	/** The warnings this Statement object generated */
 	private SQLWarning warnings;
 	/** Whether this Statement object is closed or not */
-	protected boolean closed;
+	protected boolean closed = false;
 	/** Whether the application wants this Statement object to be pooled */
-	protected boolean poolable;
+	protected boolean poolable = false;
 	/** Whether this Statement should be closed if the last ResultSet closes */
 	private boolean closeOnCompletion = false;
 	/** The timeout (in sec) for the query to return, 0 means no timeout */
@@ -71,12 +71,12 @@ public class MonetStatement
 	private int fetchSize = 0;
 	/** The maximum number of rows to return in a ResultSet */
 	private int maxRows = DEF_MAXROWS;
-	/** The suggested direction of fetching data (implemented but not used) */
-	private int fetchDirection = ResultSet.FETCH_FORWARD;
 	/** The type of ResultSet to produce; i.e. forward only, random access */
-	private int resultSetType = ResultSet.TYPE_FORWARD_ONLY;
+	private int resultSetType = MonetResultSet.DEF_RESULTSETTYPE;
+	/** The suggested direction of fetching data (implemented but not used) */
+	private int fetchDirection = MonetResultSet.DEF_FETCHDIRECTION;
 	/** The concurrency of the ResultSet to produce */
-	private int resultSetConcurrency = ResultSet.CONCUR_READ_ONLY;
+	private int resultSetConcurrency = MonetResultSet.DEF_CONCURRENCY;
 
 	/** A List to hold all queries of a batch */
 	private ArrayList<String> batch = null;
@@ -84,15 +84,15 @@ public class MonetStatement
 
 
 	/**
-	 * MonetStatement constructor which checks the arguments for validity, tries
-	 * to set up a socket to MonetDB and attempts to login.
+	 * MonetStatement constructor which checks the arguments for validity.
 	 * This constructor is only accessible to classes from the jdbc package.
 	 *
 	 * @param connection the connection that created this Statement
 	 * @param resultSetType type of ResultSet to produce
 	 * @param resultSetConcurrency concurrency of ResultSet to produce
+	 * @param resultSetHoldability holdability of ResultSet after commit
 	 * @throws SQLException if an error occurs during login
-	 * @throws IllegalArgumentException is one of the arguments is null or empty
+	 * @throws IllegalArgumentException is one of the arguments null or empty
 	 */
 	MonetStatement(
 		MonetConnection connection,
@@ -105,9 +105,10 @@ public class MonetStatement
 			throw new IllegalArgumentException("No Connection given!");
 
 		this.connection = connection;
+		this.queryTimeout = connection.lastSetQueryTimeout;
+
 		this.resultSetType = resultSetType;
 		this.resultSetConcurrency = resultSetConcurrency;
-		this.queryTimeout = connection.lastSetQueryTimeout;
 
 		// check our limits, and generate warnings as appropriate
 		if (resultSetConcurrency != ResultSet.CONCUR_READ_ONLY) {
@@ -123,11 +124,8 @@ public class MonetStatement
 
 		// check type for supported holdability
 		if (resultSetHoldability != ResultSet.HOLD_CURSORS_OVER_COMMIT) {
-			addWarning("Close cursors at commit not supported, continuing with holdability to hold open cursors over commit.", "01M15");
+			addWarning("Close cursors at commit not supported, continuing with holdability to hold cursors open over commit.", "01M15");
 		}
-
-		closed = false;
-		poolable = false;
 	}
 
 	//== methods of interface Statement
