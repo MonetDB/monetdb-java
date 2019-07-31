@@ -494,7 +494,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			" AND \"type\" = 1" +	// only scalar functions
 			// exclude functions which belong to the 'str' module
 			" AND \"mod\" <> 'str')" +	// to filter out string functions: 'code' and 'space'
-			" OR \"name\" IN ('degrees','fuse','ms_round','ms_str','ms_trunc','radians')";
+			" OR \"name\" IN ('degrees','fuse','pi','ms_round','ms_str','ms_trunc','radians')";
 		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + FunctionsOrderBy1);
 	}
 
@@ -520,7 +520,7 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 			" AND \"type\" = 1" +	// only scalar functions
 			// exclude functions which belong to the 'mtime' module
 			" AND \"mod\" <> 'mtime'" +
-			" AND \"name\" NOT IN ('localtime','localtimestamp')" +
+			" AND \"name\" NOT IN ('localtime','localtimestamp','pi','rand')" +
 			// add system functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'cast'" +
 			" UNION SELECT 'coalesce'" +
@@ -1114,7 +1114,9 @@ public class MonetDatabaseMetaData extends MonetWrapper implements DatabaseMetaD
 	 */
 	@Override
 	public boolean supportsSchemasInIndexDefinitions() {
-		return true;
+		// we currently do NOT support: create index sch.tblidx on sch.tbl(col);
+		// only: create index tblidx on sch.tbl(col);
+		return false;
 	}
 
 	/**
