@@ -308,6 +308,7 @@ public class MonetStatement
 	@Override
 	public void cancel() throws SQLException {
 		throw new SQLFeatureNotSupportedException("Query cancelling is currently not supported by the driver.", "0A000");
+		// a request to implement this is already logged, see: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6222
 	}
 
 	/**
