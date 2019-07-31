@@ -1874,7 +1874,7 @@ public class MonetConnection
 		public abstract String addLine(String line, int linetype);
 
 		/**
-		 * Returns whether this Reponse expects more lines to be added
+		 * Returns whether this Response expects more lines to be added
 		 * to it.
 		 *
 		 * @return true if a next line should be added, false otherwise
@@ -2381,7 +2381,7 @@ public class MonetConnection
 		}
 
 		/**
-		 * Returns whether this Reponse expects more lines to be added
+		 * Returns whether this Response expects more lines to be added
 		 * to it.
 		 *
 		 * @return true if a next line should be added, false otherwise
@@ -2609,7 +2609,7 @@ public class MonetConnection
 		}
 
 		/**
-		 * Closes the Reponse at index i, if not null.
+		 * Closes the Response at index i, if not null.
 		 *
 		 * @param i the index position of the header to close
 		 */
@@ -2810,7 +2810,7 @@ public class MonetConnection
 							if (error != null)
 								break;
 
-							// it is of no use to store DataBlockReponses, you never want to
+							// it is of no use to store DataBlockResponses, you never want to
 							// retrieve them directly anyway
 							if (!(res instanceof DataBlockResponse))
 								responses.add(res);
