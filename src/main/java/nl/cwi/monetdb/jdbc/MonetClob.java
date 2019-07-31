@@ -8,6 +8,7 @@
 
 package nl.cwi.monetdb.jdbc;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Reader;
@@ -66,12 +67,11 @@ public final class MonetClob implements Clob {
 	 *
 	 * @return a java.io.InputStream object containing the CLOB data
 	 * @throws SQLException - if there is an error accessing the CLOB value
-	 * @throws SQLFeatureNotSupportedException this JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public InputStream getAsciiStream() throws SQLException {
-		throw MonetWrapper.newSQLFeatureNotSupportedException("getAsciiStream");
+		checkBufIsNotNull();
+		return new ByteArrayInputStream(buf.toString().getBytes());
 	}
 
 	/**
@@ -93,10 +93,8 @@ public final class MonetClob implements Clob {
 	 * characters in length.
 	 *
 	 * @param pos the offset to the first character of the partial value
-	 *        to be retrieved. The first character in the Clob is at
-	 *        position 1.
-	 * @param length the length in characters of the partial value to be
-	 *        retrieved.
+	 *        to be retrieved. The first character in the Clob is at position 1.
+	 * @param length the length in characters of the partial value to be retrieved.
 	 * @return Reader through which the partial Clob value can be read.
 	 * @throws SQLException - if pos is less than 1
 	 *         or if pos is greater than the number of characters in the Clob
@@ -104,11 +102,8 @@ public final class MonetClob implements Clob {
 	 */
 	@Override
 	public Reader getCharacterStream(long pos, long length) throws SQLException {
-		checkBufIsNotNull();
-		if (pos < 1 || pos > buf.length()) {
-			throw new SQLException("Invalid pos value: " + pos, "M1M05");
-		}
-		if (length < 0 || pos -1 + length > buf.length()) {
+		// buf and input argument pos will be checked in method getSubString(long, int)
+		if (length < 0 || length > Integer.MAX_VALUE) {
 			throw new SQLException("Invalid length value: " + length, "M1M05");
 		}
 		return new StringReader(getSubString(pos, (int)length));
@@ -173,6 +168,7 @@ public final class MonetClob implements Clob {
 	 */
 	@Override
 	public long position(Clob searchstr, long start) throws SQLException {
+		// buf and input argument start will be checked in method position(String, long)
 		if (searchstr == null) {
 			throw new SQLException("Missing searchstr object", "M1M05");
 		}
@@ -248,19 +244,17 @@ public final class MonetClob implements Clob {
 	/**
 	 * Writes the given Java String to the CLOB value that this Clob object designates at the position pos.
 	 * The string will overwrite the existing characters in the Clob object starting at the position pos.
-	 * If the end of the Clob value is reached while writing the given string, then the length of
-	 * the Clob value will be increased to accomodate the extra characters.
+	 * If the end of the Clob value is reached while writing the given string,
+	 * then the length of the Clob value will be increased to accomodate the extra characters.
 	 *
-	 * @param pos the position at which to start writing to the
-	 *        CLOB value that this Clob object represents
-	 * @param str the string to be written to the CLOB value that
-	 *        this Clob designates
+	 * @param pos the position at which to start writing to the CLOB value that this Clob object represents
+	 * @param str the string to be written to the CLOB value that this Clob designates
 	 * @return the number of characters written
-	 * @throws SQLException if there is an error accessing the
-	 *         CLOB value or if pos is less than 1
+	 * @throws SQLException if there is an error accessing the CLOB value or if pos is less than 1
 	 */
 	@Override
 	public int setString(long pos, String str) throws SQLException {
+		// buf will be checked in method setString(long, String, int, int)
 		if (str == null) {
 			throw new SQLException("Missing str object", "M1M05");
 		}
@@ -270,19 +264,15 @@ public final class MonetClob implements Clob {
 	/**
 	 * Writes len characters of str, starting at character offset, to the CLOB value that this Clob represents.
 	 * The string will overwrite the existing characters in the Clob object starting at the position pos.
-	 * If the end of the Clob value is reached while writing the given string, then the length of
-	 * the Clob value will be increased to accomodate the extra characters.
+	 * If the end of the Clob value is reached while writing the given string,
+	 * then the length of the Clob value will be increased to accomodate the extra characters.
 	 *
-	 * @param pos the position at which to start writing to this
-	 *        CLOB object
-	 * @param str the string to be written to the CLOB value that
-	 *        this Clob object represents
-	 * @param offset the offset into str to start reading the
-	 *        characters to be written
+	 * @param pos the position at which to start writing to this CLOB object
+	 * @param str the string to be written to the CLOB value that this Clob object represents
+	 * @param offset the offset into str to start reading the characters to be written
 	 * @param len the number of characters to be written
 	 * @return the number of characters written
-	 * @throws SQLException if there is an error accessing the
-	 *         CLOB value or if pos is less than 1
+	 * @throws SQLException if there is an error accessing the CLOB value or if pos is less than 1
 	 */
 	@Override
 	public int setString(long pos, String str, int offset, int len)
@@ -314,8 +304,7 @@ public final class MonetClob implements Clob {
 	 * Truncates the CLOB value that this Clob designates to
 	 * have a length of len characters.
 	 *
-	 * @param len the length, in bytes, to which the CLOB value
-	 *        should be truncated
+	 * @param len the length, in bytes, to which the CLOB value should be truncated
 	 * @throws SQLException if there is an error accessing the
 	 *         CLOB value or if len is less than 0
 	 */
@@ -326,17 +315,17 @@ public final class MonetClob implements Clob {
 			throw new SQLException("Invalid len value: " + len, "M1M05");
 		}
 		buf.delete((int)len, buf.length());
+		// Attempts to reduce storage used for the character sequence.
+		buf.trimToSize();
 	}
 
 
 	/**
-	 * Returns the String behind this Clob.  This is a MonetClob
-	 * extension that does not violate nor is described in the Clob
-	 * interface.
+	 * Returns a String from this MonetClob buf.
 	 *
-	 * @return the String this Clob wraps or "null" when this Clob is freed.
+	 * @return the String this MonetClob wraps or empty string when this MonetClob was freed.
 	 */
 	public String toString() {
-		return (buf == null) ? "null" : buf.toString();
+		return (buf != null) ? buf.toString() : "";
 	}
 }

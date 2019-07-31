@@ -1,6 +1,9 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Jul 31 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented method MonetClob.getAsciiStream()
+
 * Thu Mar 21 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Added implementation of java.sql.CallableStatement interface. Some standard
   Java applications require this JDBC interface for executing SQL stored procedures.

@@ -118,7 +118,6 @@ Currently implemented JDBC 4.1 interfaces include:
   * java.sql.Clob
     A simple implementation using a StringBuilder to store the whole CLOB
     The next features/methods are NOT useable/supported:
-    - getAsciiStream
     - setAsciiStream
     - setCharacterStream
 
