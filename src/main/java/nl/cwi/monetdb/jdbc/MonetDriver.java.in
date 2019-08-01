@@ -9,20 +9,15 @@
 package nl.cwi.monetdb.jdbc;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Driver;
 import java.sql.DriverManager;
 import java.sql.DriverPropertyInfo;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLNonTransientConnectionException;
 import java.sql.Types;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.logging.Logger;
 
 /**
  * A Driver suitable for the MonetDB database.
@@ -56,9 +51,6 @@ final public class MonetDriver implements Driver {
 	/** Version suffix string */
 	private static final String DRIVERVERSIONSUFFIX =
 		"@JDBC_VER_SUFFIX@ based on MCL v@MCL_MAJOR@.@MCL_MINOR@";
-	// We're not fully compliant, but what we support is compliant
-	/** Whether this driver is JDBC compliant or not */
-	private static final boolean MONETJDBCCOMPLIANT = false;
 
 	/** MonetDB default port to connect to */
 	private static final String PORT = "@JDBC_DEF_PORT@";
@@ -85,7 +77,7 @@ final public class MonetDriver implements Driver {
 	 * @return true if this driver understands the given URL; false otherwise
 	 */
 	@Override
-	public boolean acceptsURL(String url) {
+	public boolean acceptsURL(final String url) {
 		return url != null && url.startsWith(MONETURL);
 	}
 
@@ -111,14 +103,14 @@ final public class MonetDriver implements Driver {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Connection connect(String url, Properties info)
+	public Connection connect(final String url, Properties info)
 		throws SQLException
 	{
 		// url should be of style jdbc:monetdb://<host>/<database>
 		if (!acceptsURL(url))
 			return null;
 
-		Properties props = new Properties();
+		final Properties props = new Properties();
 		// set the optional properties and their defaults here
 		props.put("port", PORT);
 		props.put("debug", "false");
@@ -130,14 +122,14 @@ final public class MonetDriver implements Driver {
 		info = props;
 
 		// remove leading "jdbc:" so the rest is a valid hierarchical URI
-		URI uri;
+		final URI uri;
 		try {
 			uri = new URI(url.substring(5));
-		} catch (URISyntaxException e) {
+		} catch (java.net.URISyntaxException e) {
 			return null;
 		}
 
-		String uri_host = uri.getHost();
+		final String uri_host = uri.getHost();
 		if (uri_host == null)
 			return null;
 		info.put("host", uri_host);
@@ -154,11 +146,11 @@ final public class MonetDriver implements Driver {
 				info.put("database", uri_path);
 		}
 
-		String uri_query = uri.getQuery();
+		final String uri_query = uri.getQuery();
 		if (uri_query != null) {
 			int pos;
 			// handle additional connection properties separated by the & character
-			String args[] = uri_query.split("&");
+			final String args[] = uri_query.split("&");
 			for (int i = 0; i < args.length; i++) {
 				pos = args[i].indexOf('=');
 				if (pos > 0)
@@ -208,14 +200,14 @@ final public class MonetDriver implements Driver {
 	 *         are required.
 	 */
 	@Override
-	public DriverPropertyInfo[] getPropertyInfo(String url, Properties info) {
+	public DriverPropertyInfo[] getPropertyInfo(final String url, final Properties info) {
 		if (!acceptsURL(url))
 			return null;
 
-		String[] boolean_choices = new String[] { "true", "false" };
-		String[] language_choices = new String[] { "sql", "mal" };
-		String[] hash_choices = new String[] { "SHA512", "SHA384", "SHA256", "SHA1", "MD5" };
-		DriverPropertyInfo[] dpi = new DriverPropertyInfo[9];	// we currently support 9 connection properties
+		final String[] boolean_choices = new String[] { "true", "false" };
+		final String[] language_choices = new String[] { "sql", "mal" };
+		final String[] hash_choices = new String[] { "SHA512", "SHA384", "SHA256", "SHA1", "MD5" };
+		final DriverPropertyInfo[] dpi = new DriverPropertyInfo[9];	// we currently support 9 connection properties
 
 		DriverPropertyInfo prop = new DriverPropertyInfo("user", info != null ? info.getProperty("user") : null);
 		prop.required = true;
@@ -298,7 +290,8 @@ final public class MonetDriver implements Driver {
 	 */
 	@Override
 	public boolean jdbcCompliant() {
-		return MONETJDBCCOMPLIANT;
+		// We're not fully JDBC compliant, but what we support is compliant
+		return false;
 	}
 
 	/**
@@ -315,7 +308,7 @@ final public class MonetDriver implements Driver {
 	 * @since 1.7
 	 */
 	@Override
-	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+	public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
 		throw MonetWrapper.newSQLFeatureNotSupportedException("getParentLogger");
 	}
 
@@ -325,7 +318,7 @@ final public class MonetDriver implements Driver {
 	/** A static Map containing the mapping between MonetDB types and Java SQL types */
 	/* use SELECT sqlname, * FROM sys.types order by 1, id; to view all MonetDB types */
 	/* see http://docs.oracle.com/javase/7/docs/api/java/sql/Types.html to view all supported java SQL types */
-	private static java.util.Map<String, Integer> typeMap = new java.util.HashMap<String, Integer>();
+	private static final java.util.Map<String, Integer> typeMap = new java.util.HashMap<String, Integer>();
 	static {
 		// fill the typeMap once
 		// typeMap.put("any", Integer.valueOf(Types.???));
@@ -371,9 +364,9 @@ final public class MonetDriver implements Driver {
 	 * @return the matching java.sql.Types constant or
 	 *         java.sql.Types.OTHER if nothing matched the given type name
 	 */
-	static int getJdbcSQLType(String type) {
+	static final int getJdbcSQLType(final String type) {
 		// find the column type name in the typeMap
-		Integer tp = typeMap.get(type);
+		final Integer tp = typeMap.get(type);
 		if (tp != null) {
 			return tp.intValue();
 		}
@@ -394,10 +387,10 @@ final public class MonetDriver implements Driver {
 	 * @return a SQL CASE statement
 	 */
 	private static String TypeMapppingSQL = null;	// cache to optimise getSQLTypeMap()
-	static String getSQLTypeMap(String column) {
+	static final String getSQLTypeMap(final String column) {
 		if (TypeMapppingSQL == null) {
 			// first time, compose TypeMappping SQL string
-			StringBuilder val = new StringBuilder((typeMap.size() * (7 + 7 + 7 + 4)) + 14);
+			final StringBuilder val = new StringBuilder((typeMap.size() * (7 + 7 + 7 + 4)) + 14);
 			for (Entry<String, Integer> entry : typeMap.entrySet()) {
 				val.append(" WHEN '").append(entry.getKey()).append("' THEN ").append(entry.getValue().toString());
 			}
@@ -410,18 +403,18 @@ final public class MonetDriver implements Driver {
 
 	/**
 	 * Returns a touched up identifying version string of this driver.
-	 *
+	 * It is made public as it is called from  nl/cwi/monetdb/client/JdbcClient.java
 	 * @return the version string
 	 */
-	public static String getDriverVersion() {
+	public static final String getDriverVersion() {
 		return DRIVERMAJOR + "." + DRIVERMINOR + " (" + DRIVERVERSIONSUFFIX + ")";
 	}
 
-	static int getDriverMajorVersion() {
+	static final int getDriverMajorVersion() {
 		return DRIVERMAJOR;
 	}
 
-	static int getDriverMinorVersion() {
+	static final int getDriverMinorVersion() {
 		return DRIVERMINOR;
 	}
 }

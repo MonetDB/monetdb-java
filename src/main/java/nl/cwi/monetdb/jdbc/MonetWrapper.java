@@ -45,7 +45,7 @@ public class MonetWrapper implements java.sql.Wrapper {
 	 * @since 1.6
 	 */
 	@Override
-	public boolean isWrapperFor(Class<?> iface) throws SQLException {
+	public boolean isWrapperFor(final Class<?> iface) throws SQLException {
 		return iface != null && iface.isAssignableFrom(getClass());
 	}
 
@@ -70,7 +70,7 @@ public class MonetWrapper implements java.sql.Wrapper {
 	 */
 	@Override
 	@SuppressWarnings("unchecked")
-	public <T> T unwrap(Class<T> iface) throws SQLException {
+	public <T> T unwrap(final Class<T> iface) throws SQLException {
 		if (isWrapperFor(iface)) {
 			return (T) this;
 		}
@@ -85,7 +85,7 @@ public class MonetWrapper implements java.sql.Wrapper {
 	 * @param name the method name
 	 * @return a new created SQLFeatureNotSupportedException object with SQLState 0A000
 	 */
-	static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(String name) {
+	static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(final String name) {
 		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 }

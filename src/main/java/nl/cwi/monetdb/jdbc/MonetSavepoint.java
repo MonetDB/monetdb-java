@@ -9,7 +9,6 @@
 package nl.cwi.monetdb.jdbc;
 
 import java.sql.SQLException;
-import java.sql.Savepoint;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
@@ -32,9 +31,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @author Fabian Groffen
  * @version 1.0
  */
-public final class MonetSavepoint implements Savepoint {
+public final class MonetSavepoint implements java.sql.Savepoint {
 	/** The id of the last created Savepoint */
-	private static AtomicInteger highestId = new AtomicInteger(0);
+	private static final AtomicInteger highestId = new AtomicInteger(0);
 
 	/** The name of this Savepoint */
 	private final String name;
@@ -44,7 +43,7 @@ public final class MonetSavepoint implements Savepoint {
 	/**
 	 * Creates a named MonetSavepoint object
 	 */
-	public MonetSavepoint(String name) throws IllegalArgumentException {
+	public MonetSavepoint(final String name) throws IllegalArgumentException {
 		if (name == null || name.isEmpty())
 			throw new IllegalArgumentException("missing savepoint name string");
 
@@ -100,7 +99,7 @@ public final class MonetSavepoint implements Savepoint {
 	 *
 	 * @return the numeric ID of this savepoint
 	 */
-	int getId() {
+	final int getId() {
 		return id;
 	}
 
@@ -111,7 +110,7 @@ public final class MonetSavepoint implements Savepoint {
 	 *
 	 * @return the unique savepoint name
 	 */
-	String getName() {
+	final String getName() {
 		return "MonetDBSP" + id;
 	}
 
@@ -126,7 +125,7 @@ public final class MonetSavepoint implements Savepoint {
 	 * @return the next int which is guaranteed to be higher than the one
 	 *         at the last call to this method.
 	 */
-	private static int getNextId() {
+	private static final int getNextId() {
 		return highestId.incrementAndGet();
 	}
 

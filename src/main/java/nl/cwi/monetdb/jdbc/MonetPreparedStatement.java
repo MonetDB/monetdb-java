@@ -9,11 +9,10 @@
 package nl.cwi.monetdb.jdbc;
 
 import java.io.InputStream;
-import java.io.Reader;
 import java.io.IOException;
+import java.io.Reader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.math.RoundingMode;
 import java.net.URL;
 import java.nio.CharBuffer;
 import java.sql.Array;
@@ -107,11 +106,11 @@ public class MonetPreparedStatement
 	 * @throws IllegalArgumentException is one of the arguments is null or empty
 	 */
 	MonetPreparedStatement(
-			MonetConnection connection,
-			int resultSetType,
-			int resultSetConcurrency,
-			int resultSetHoldability,
-			String prepareQuery)
+			final MonetConnection connection,
+			final int resultSetType,
+			final int resultSetConcurrency,
+			final int resultSetHoldability,
+			final String prepareQuery)
 		throws SQLException, IllegalArgumentException
 	{
 		super(
@@ -140,15 +139,15 @@ public class MonetPreparedStatement
 		values = new String[size];
 
 		// fill the arrays
-		ResultSet rs = super.getResultSet();
+		final ResultSet rs = super.getResultSet();
 		if (rs != null) {
 			// System.out.println("After super.getResultSet();");
-			int type_colnr = rs.findColumn("type");
-			int digits_colnr = rs.findColumn("digits");
-			int scale_colnr = rs.findColumn("scale");
-			int schema_colnr = rs.findColumn("schema");
-			int table_colnr = rs.findColumn("table");
-			int column_colnr = rs.findColumn("column");
+			final int type_colnr = rs.findColumn("type");
+			final int digits_colnr = rs.findColumn("digits");
+			final int scale_colnr = rs.findColumn("scale");
+			final int schema_colnr = rs.findColumn("schema");
+			final int table_colnr = rs.findColumn("table");
+			final int column_colnr = rs.findColumn("column");
 			for (int i = 0; rs.next(); i++) {
 				monetdbType[i] = rs.getString(type_colnr);
 				javaType[i] = MonetDriver.getJdbcSQLType(monetdbType[i]);
@@ -232,7 +231,7 @@ public class MonetPreparedStatement
 
 	/** override the addBatch from the Statement to throw an SQLException */
 	@Override
-	public void addBatch(String q) throws SQLException {
+	public void addBatch(final String q) throws SQLException {
 		throw new SQLException("This method is not available in a PreparedStatement!", "M1M05");
 	}
 
@@ -276,7 +275,7 @@ public class MonetPreparedStatement
 
 	/** override the execute from the Statement to throw an SQLException */
 	@Override
-	public boolean execute(String q) throws SQLException {
+	public boolean execute(final String q) throws SQLException {
 		throw new SQLException("This method is not available in a PreparedStatement!", "M1M05");
 	}
 
@@ -297,9 +296,9 @@ public class MonetPreparedStatement
 		return getResultSet();
 	}
 
-	/** override the executeQuery from the Statement to throw an SQLException*/
+	/** override the executeQuery from the Statement to throw an SQLException */
 	@Override
-	public ResultSet executeQuery(String q) throws SQLException {
+	public ResultSet executeQuery(final String q) throws SQLException {
 		throw new SQLException("This method is not available in a PreparedStatement!", "M1M05");
 	}
 
@@ -321,9 +320,9 @@ public class MonetPreparedStatement
 		return getUpdateCount();
 	}
 
-	/** override the executeUpdate from the Statement to throw an SQLException*/
+	/** override the executeUpdate from the Statement to throw an SQLException */
 	@Override
-	public int executeUpdate(String q) throws SQLException {
+	public int executeUpdate(final String q) throws SQLException {
 		throw new SQLException("This method is not available in a PreparedStatement!", "M1M05");
 	}
 
@@ -331,7 +330,7 @@ public class MonetPreparedStatement
 	 * Returns the index (0..size-1) in the backing arrays for the given
 	 * resultset column number or an SQLException when not found
 	 */
-	private int getColumnIdx(int colnr) throws SQLException {
+	private final int getColumnIdx(final int colnr) throws SQLException {
 		int curcol = 0;
 		for (int i = 0; i < size; i++) {
 			/* when column[i] == null it is a parameter, when column[i] != null it is a result column of the prepared query */
@@ -347,7 +346,7 @@ public class MonetPreparedStatement
 	 * Returns the index (0..size-1) in the backing arrays for the given
 	 * parameter number or an SQLException when not found
 	 */
-	private int getParamIdx(int paramnr) throws SQLException {
+	private final int getParamIdx(final int paramnr) throws SQLException {
 		int curparam = 0;
 		for (int i = 0; i < size; i++) {
 			/* when column[i] == null it is a parameter, when column[i] != null it is a result column of the prepared query */
@@ -410,7 +409,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public boolean isAutoIncrement(int column) throws SQLException {
+			public boolean isAutoIncrement(final int column) throws SQLException {
 				/* TODO: in MonetDB only numeric (int, decimal) columns could be autoincrement/serial
 				 * This however requires an expensive dbmd.getColumns(null, schema, table, column)
 				 * query call to pull the IS_AUTOINCREMENT value for this column.
@@ -427,14 +426,14 @@ public class MonetPreparedStatement
 			 * @return false
 			 */
 			@Override
-			public boolean isCaseSensitive(int column) throws SQLException {
+			public boolean isCaseSensitive(final int column) throws SQLException {
 				switch (getColumnType(column)) {
 					case Types.CHAR:
 					case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
 					case Types.CLOB:
 						return true;
 					case Types.VARCHAR:
-						String monettype = getColumnTypeName(column);
+						final String monettype = getColumnTypeName(column);
 						if (monettype != null) {
 							// data of type inet or uuid is not case sensitive
 							if ("inet".equals(monettype)
@@ -457,7 +456,7 @@ public class MonetPreparedStatement
 			 * @return true
 			 */
 			@Override
-			public boolean isSearchable(int column) {
+			public boolean isSearchable(final int column) {
 				return true;
 			}
 
@@ -472,7 +471,7 @@ public class MonetPreparedStatement
 			 * @return false
 			 */
 			@Override
-			public boolean isCurrency(int column) {
+			public boolean isCurrency(final int column) {
 				return false;
 			}
 
@@ -485,7 +484,7 @@ public class MonetPreparedStatement
 			 * @return true if so; false otherwise
 			 */
 			@Override
-			public boolean isSigned(int column) throws SQLException {
+			public boolean isSigned(final int column) throws SQLException {
 				// we can hardcode this, based on the colum type
 				switch (getColumnType(column)) {
 					case Types.NUMERIC:
@@ -498,7 +497,7 @@ public class MonetPreparedStatement
 					case Types.DOUBLE:
 						return true;
 					case Types.BIGINT:
-						String monettype = getColumnTypeName(column);
+						final String monettype = getColumnTypeName(column);
 						if (monettype != null) {
 							if ("oid".equals(monettype)
 							 || "ptr".equals(monettype))
@@ -525,7 +524,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
-			public int getColumnDisplaySize(int column) throws SQLException {
+			public int getColumnDisplaySize(final int column) throws SQLException {
 				try {
 					return digits[getColumnIdx(column)];
 				} catch (IndexOutOfBoundsException e) {
@@ -541,7 +540,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public String getSchemaName(int column) throws SQLException {
+			public String getSchemaName(final int column) throws SQLException {
 				try {
 					return schema[getColumnIdx(column)];
 				} catch (IndexOutOfBoundsException e) {
@@ -556,7 +555,7 @@ public class MonetPreparedStatement
 			 * @return table name or "" if not applicable
 			 */
 			@Override
-			public String getTableName(int column) throws SQLException {
+			public String getTableName(final int column) throws SQLException {
 				try {
 					return table[getColumnIdx(column)];
 				} catch (IndexOutOfBoundsException e) {
@@ -575,7 +574,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int getPrecision(int column) throws SQLException {
+			public int getPrecision(final int column) throws SQLException {
 				try {
 					return digits[getColumnIdx(column)];
 				} catch (IndexOutOfBoundsException e) {
@@ -594,7 +593,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int getScale(int column) throws SQLException {
+			public int getScale(final int column) throws SQLException {
 				try {
 					return scale[getColumnIdx(column)];
 				} catch (IndexOutOfBoundsException e) {
@@ -613,7 +612,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int isNullable(int column) throws SQLException {
+			public int isNullable(final int column) throws SQLException {
 				return columnNullableUnknown;
 			}
 
@@ -626,7 +625,7 @@ public class MonetPreparedStatement
 			 *         column appears or "" if not applicable
 			 */
 			@Override
-			public String getCatalogName(int column) throws SQLException {
+			public String getCatalogName(final int column) throws SQLException {
 				return null;	// MonetDB does NOT support catalogs
 			}
 
@@ -639,7 +638,7 @@ public class MonetPreparedStatement
 			 * @return true if so; false otherwise
 			 */
 			@Override
-			public boolean isReadOnly(int column) {
+			public boolean isReadOnly(final int column) {
 				return true;
 			}
 
@@ -651,7 +650,7 @@ public class MonetPreparedStatement
 			 * @return true if so; false otherwise
 			 */
 			@Override
-			public boolean isWritable(int column) {
+			public boolean isWritable(final int column) {
 				return false;
 			}
 
@@ -663,7 +662,7 @@ public class MonetPreparedStatement
 			 * @return true if so; false otherwise
 			 */
 			@Override
-			public boolean isDefinitelyWritable(int column) {
+			public boolean isDefinitelyWritable(final int column) {
 				return false;
 			}
 
@@ -683,10 +682,10 @@ public class MonetPreparedStatement
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
-			public String getColumnClassName(int column) throws SQLException {
-				String typeName = getColumnTypeName(column);
-				Map<String,Class<?>> map = getConnection().getTypeMap();
-				Class<?> c;
+			public String getColumnClassName(final int column) throws SQLException {
+				final String typeName = getColumnTypeName(column);
+				final Map<String,Class<?>> map = getConnection().getTypeMap();
+				final Class<?> c;
 				if (map.containsKey(typeName)) {
 					c = (Class)map.get(typeName);
 				} else {
@@ -705,7 +704,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
-			public String getColumnLabel(int column) throws SQLException {
+			public String getColumnLabel(final int column) throws SQLException {
 				return getColumnName(column);
 			}
 
@@ -717,7 +716,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
-			public String getColumnName(int colnr) throws SQLException {
+			public String getColumnName(final int colnr) throws SQLException {
 				try {
 					return column[getColumnIdx(colnr)];
 				} catch (IndexOutOfBoundsException e) {
@@ -733,7 +732,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
-			public int getColumnType(int column) throws SQLException {
+			public int getColumnType(final int column) throws SQLException {
 				try {
 					return javaType[getColumnIdx(column)];
 				} catch (IndexOutOfBoundsException e) {
@@ -751,7 +750,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
-			public String getColumnTypeName(int column) throws SQLException {
+			public String getColumnTypeName(final int column) throws SQLException {
 				try {
 					return monetdbType[getColumnIdx(column)];
 				} catch (IndexOutOfBoundsException e) {
@@ -808,7 +807,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int isNullable(int param) throws SQLException {
+			public int isNullable(final int param) throws SQLException {
 				return ParameterMetaData.parameterNullableUnknown;
 			}
 
@@ -821,7 +820,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public boolean isSigned(int param) throws SQLException {
+			public boolean isSigned(final int param) throws SQLException {
 				// we can hardcode this, based on the colum type
 				switch (getParameterType(param)) {
 					case Types.NUMERIC:
@@ -834,7 +833,7 @@ public class MonetPreparedStatement
 					case Types.DOUBLE:
 						return true;
 					case Types.BIGINT:
-						String monettype = getParameterTypeName(param);
+						final String monettype = getParameterTypeName(param);
 						if (monettype != null) {
 							if ("oid".equals(monettype)
 							 || "ptr".equals(monettype))
@@ -860,7 +859,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int getPrecision(int param) throws SQLException {
+			public int getPrecision(final int param) throws SQLException {
 				try {
 					return digits[getParamIdx(param)];
 				} catch (IndexOutOfBoundsException e) {
@@ -877,7 +876,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int getScale(int param) throws SQLException {
+			public int getScale(final int param) throws SQLException {
 				try {
 					return scale[getParamIdx(param)];
 				} catch (IndexOutOfBoundsException e) {
@@ -893,7 +892,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int getParameterType(int param) throws SQLException {
+			public int getParameterType(final int param) throws SQLException {
 				try {
 					return javaType[getParamIdx(param)];
 				} catch (IndexOutOfBoundsException e) {
@@ -912,7 +911,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public String getParameterTypeName(int param) throws SQLException {
+			public String getParameterTypeName(final int param) throws SQLException {
 				try {
 					return monetdbType[getParamIdx(param)];
 				} catch (IndexOutOfBoundsException e) {
@@ -934,10 +933,10 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public String getParameterClassName(int param) throws SQLException {
-				String typeName = getParameterTypeName(param);
-				Map<String,Class<?>> map = getConnection().getTypeMap();
-				Class<?> c;
+			public String getParameterClassName(final int param) throws SQLException {
+				final String typeName = getParameterTypeName(param);
+				final Map<String,Class<?>> map = getConnection().getTypeMap();
+				final Class<?> c;
 				if (map.containsKey(typeName)) {
 					c = (Class)map.get(typeName);
 				} else {
@@ -959,7 +958,7 @@ public class MonetPreparedStatement
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int getParameterMode(int param) throws SQLException {
+			public int getParameterMode(final int param) throws SQLException {
 				return ParameterMetaData.parameterModeIn;
 			}
 		};
@@ -977,7 +976,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setArray(int parameterIndex, Array x) throws SQLException {
+	public void setArray(final int parameterIndex, final Array x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setArray");
 	}
 
@@ -999,7 +998,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x)
+	public void setAsciiStream(final int parameterIndex, final InputStream x)
 		throws SQLException
 	{
 		throw newSQLFeatureNotSupportedException("setAsciiStream");
@@ -1024,7 +1023,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x, int length)
+	public void setAsciiStream(final int parameterIndex, final InputStream x, final int length)
 		throws SQLException
 	{
 		throw newSQLFeatureNotSupportedException("setAsciiStream");
@@ -1050,7 +1049,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setAsciiStream(int parameterIndex, InputStream x, long length)
+	public void setAsciiStream(final int parameterIndex, final InputStream x, final long length)
 		throws SQLException
 	{
 		throw newSQLFeatureNotSupportedException("setAsciiStream");
@@ -1066,12 +1065,12 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setBigDecimal(int parameterIndex, BigDecimal x) throws SQLException {
+	public void setBigDecimal(final int parameterIndex, BigDecimal x) throws SQLException {
 		// get array position
-		int i = getParamIdx(parameterIndex);
+		final int i = getParamIdx(parameterIndex);
 
 		// round to the scale of the DB:
-		x = x.setScale(scale[i], RoundingMode.HALF_UP);
+		x = x.setScale(scale[i], java.math.RoundingMode.HALF_UP);
 
 		// if precision is now greater than that of the db, throw an error:
 		if (x.precision() > digits[i]) {
@@ -1083,7 +1082,7 @@ public class MonetPreparedStatement
 		// this to the exact number "0".)  Also strip off trailing
 		// numbers that are inherent to the double representation.
 		String xStr = x.toPlainString();
-		int dot = xStr.indexOf('.');
+		final int dot = xStr.indexOf('.');
 		if (dot >= 0)
 			xStr = xStr.substring(0, Math.min(xStr.length(), dot + 1 + scale[i]));
 		while (xStr.startsWith("0") && xStr.length() > 1)
@@ -1108,7 +1107,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x)
+	public void setBinaryStream(final int parameterIndex, final InputStream x)
 		throws SQLException
 	{
 		throw newSQLFeatureNotSupportedException("setBinaryStream");
@@ -1132,7 +1131,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x, int length)
+	public void setBinaryStream(final int parameterIndex, final InputStream x, final int length)
 		throws SQLException
 	{
 		throw newSQLFeatureNotSupportedException("setBinaryStream");
@@ -1156,7 +1155,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setBinaryStream(int parameterIndex, InputStream x, long length)
+	public void setBinaryStream(final int parameterIndex, final InputStream x, final long length)
 		throws SQLException
 	{
 		throw newSQLFeatureNotSupportedException("setBinaryStream");
@@ -1173,7 +1172,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setBlob(int parameterIndex, InputStream x) throws SQLException {
+	public void setBlob(final int parameterIndex, final InputStream x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setBlob");
 	}
 
@@ -1188,7 +1187,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setBlob(int parameterIndex, Blob x) throws SQLException {
+	public void setBlob(final int parameterIndex, final Blob x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setBlob");
 	}
 
@@ -1212,7 +1211,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setBlob(int parameterIndex, InputStream is, long length) throws SQLException {
+	public void setBlob(final int parameterIndex, final InputStream is, final long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setBlob");
 	}
 
@@ -1226,7 +1225,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setBoolean(int parameterIndex, boolean x) throws SQLException {
+	public void setBoolean(final int parameterIndex, final boolean x) throws SQLException {
 		setValue(parameterIndex, Boolean.toString(x));
 	}
 
@@ -1239,7 +1238,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setByte(int parameterIndex, byte x) throws SQLException {
+	public void setByte(final int parameterIndex, final byte x) throws SQLException {
 		setValue(parameterIndex, Byte.toString(x));
 	}
 
@@ -1255,13 +1254,13 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setBytes(int parameterIndex, byte[] x) throws SQLException {
+	public void setBytes(final int parameterIndex, final byte[] x) throws SQLException {
 		if (x == null) {
 			setNull(parameterIndex, -1);
 			return;
 		}
 
-		StringBuilder hex = new StringBuilder(x.length * 2);
+		final StringBuilder hex = new StringBuilder(x.length * 2);
 		byte b;
 		for (int i = 0; i < x.length; i++) {
 			b = x[i];
@@ -1289,9 +1288,9 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void setCharacterStream(
-		int parameterIndex,
-		Reader reader,
-		int length)
+		final int parameterIndex,
+		final Reader reader,
+		final int length)
 		throws SQLException
 	{
 		if (reader == null) {
@@ -1299,7 +1298,7 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		CharBuffer tmp = CharBuffer.allocate(length);
+		final CharBuffer tmp = CharBuffer.allocate(length);
 		try {
 			reader.read(tmp);
 		} catch (IOException e) {
@@ -1324,7 +1323,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setCharacterStream(int parameterIndex, Reader reader)
+	public void setCharacterStream(final int parameterIndex, final Reader reader)
 		throws SQLException
 	{
 		setCharacterStream(parameterIndex, reader, 0);
@@ -1348,9 +1347,9 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void setCharacterStream(
-		int parameterIndex,
-		Reader reader,
-		long length)
+		final int parameterIndex,
+		final Reader reader,
+		final long length)
 		throws SQLException
 	{
 		// given the implementation of the int-version, downcast is ok
@@ -1366,7 +1365,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setClob(int parameterIndex, Clob x) throws SQLException {
+	public void setClob(final int parameterIndex, final Clob x) throws SQLException {
 		if (x == null) {
 			setNull(parameterIndex, -1);
 			return;
@@ -1388,14 +1387,14 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setClob(int parameterIndex, Reader reader) throws SQLException {
+	public void setClob(final int parameterIndex, final Reader reader) throws SQLException {
 		if (reader == null) {
 			setNull(parameterIndex, -1);
 			return;
 		}
 		// Some buffer. Size of 8192 is default for BufferedReader, so...
-		char[] arr = new char[8192];
-		StringBuilder buf = new StringBuilder(8192 * 8);
+		final char[] arr = new char[8192];
+		final StringBuilder buf = new StringBuilder(8192 * 8);
 		int numChars;
 		try {
 			while ((numChars = reader.read(arr, 0, arr.length)) > 0) {
@@ -1425,14 +1424,14 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setClob(int parameterIndex, Reader reader, long length) throws SQLException {
+	public void setClob(final int parameterIndex, final Reader reader, final long length) throws SQLException {
 		if (reader == null || length < 0) {
 			setNull(parameterIndex, -1);
 			return;
 		}
 		// simply serialise the CLOB into a variable for now... far from
 		// efficient, but might work for a few cases...
-		CharBuffer buf = CharBuffer.allocate((int)length); // have to down cast :(
+		final CharBuffer buf = CharBuffer.allocate((int)length); // have to down cast :(
 		try {
 			reader.read(buf);
 		} catch (IOException e) {
@@ -1454,7 +1453,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setDate(int parameterIndex, java.sql.Date x)
+	public void setDate(final int parameterIndex, final java.sql.Date x)
 		throws SQLException
 	{
 		setDate(parameterIndex, x, null);
@@ -1475,7 +1474,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setDate(int parameterIndex, java.sql.Date x, Calendar cal)
+	public void setDate(final int parameterIndex, final java.sql.Date x, final Calendar cal)
 		throws SQLException
 	{
 		if (x == null) {
@@ -1504,7 +1503,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setDouble(int parameterIndex, double x) throws SQLException {
+	public void setDouble(final int parameterIndex, final double x) throws SQLException {
 		setValue(parameterIndex, Double.toString(x));
 	}
 
@@ -1517,7 +1516,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setFloat(int parameterIndex, float x) throws SQLException {
+	public void setFloat(final int parameterIndex, final float x) throws SQLException {
 		setValue(parameterIndex, Float.toString(x));
 	}
 
@@ -1530,7 +1529,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setInt(int parameterIndex, int x) throws SQLException {
+	public void setInt(final int parameterIndex, final int x) throws SQLException {
 		setValue(parameterIndex, Integer.toString(x));
 	}
 
@@ -1543,7 +1542,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setLong(int parameterIndex, long x) throws SQLException {
+	public void setLong(final int parameterIndex, final long x) throws SQLException {
 		setValue(parameterIndex, Long.toString(x));
 	}
 
@@ -1558,7 +1557,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setNCharacterStream(int parameterIndex, Reader value) throws SQLException {
+	public void setNCharacterStream(final int parameterIndex, final Reader value) throws SQLException {
 		setCharacterStream(parameterIndex, value, 0);
 	}
 
@@ -1574,7 +1573,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setNCharacterStream(int parameterIndex, Reader value, long length)
+	public void setNCharacterStream(final int parameterIndex, final Reader value, final long length)
 		throws SQLException
 	{
 		setCharacterStream(parameterIndex, value, length);
@@ -1592,7 +1591,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setNClob(int parameterIndex, Reader value) throws SQLException {
+	public void setNClob(final int parameterIndex, final Reader value) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNClob");
 	}
 
@@ -1608,7 +1607,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setNClob(int parameterIndex, NClob value) throws SQLException {
+	public void setNClob(final int parameterIndex, final NClob value) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNClob");
 	}
 
@@ -1632,7 +1631,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setNClob(int parameterIndex, Reader r, long length) throws SQLException {
+	public void setNClob(final int parameterIndex, final Reader r, final long length) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setNClob");
 	}
 
@@ -1647,7 +1646,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setNString(int parameterIndex, String value) throws SQLException {
+	public void setNString(final int parameterIndex, final String value) throws SQLException {
 		setString(parameterIndex, value);
 	}
 
@@ -1661,7 +1660,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setNull(int parameterIndex, int sqlType) throws SQLException {
+	public void setNull(final int parameterIndex, final int sqlType) throws SQLException {
 		// we discard the given type here, the backend converts the
 		// value NULL to whatever it needs for the column
 		setValue(parameterIndex, "NULL");
@@ -1691,7 +1690,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setNull(int parameterIndex, int sqlType, String typeName)
+	public void setNull(final int parameterIndex, final int sqlType, final String typeName)
 		throws SQLException
 	{
 		// MonetDB/SQL's NULL needs no type
@@ -1726,7 +1725,7 @@ public class MonetPreparedStatement
 	 *                      the given object is ambiguous
 	 */
 	@Override
-	public void setObject(int parameterIndex, Object x) throws SQLException {
+	public void setObject(final int parameterIndex, final Object x) throws SQLException {
 		setObject(parameterIndex, x, javaType[getParamIdx(parameterIndex)], 0);
 	}
 
@@ -1742,7 +1741,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setObject(int parameterIndex, Object x, int targetSqlType)
+	public void setObject(final int parameterIndex, final Object x, final int targetSqlType)
 		throws SQLException
 	{
 		setObject(parameterIndex, x, targetSqlType, 0);
@@ -1785,10 +1784,10 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void setObject(
-		int parameterIndex,
-		Object x,
-		int targetSqlType,
-		int scale)
+		final int parameterIndex,
+		final Object x,
+		final int targetSqlType,
+		final int scale)
 		throws SQLException
 	{
 		if (x == null) {
@@ -1807,7 +1806,7 @@ public class MonetPreparedStatement
 				x instanceof Float ||
 				x instanceof Double)
 		{
-			Number num = (Number)x;
+			final Number num = (Number)x;
 			switch (targetSqlType) {
 				case Types.TINYINT:
 					setByte(parameterIndex, num.byteValue());
@@ -1860,7 +1859,7 @@ public class MonetPreparedStatement
 					throw new SQLException("Conversion not allowed", "M1M05");
 			}
 		} else if (x instanceof Boolean) {
-			boolean val = ((Boolean)x).booleanValue();
+			final boolean val = ((Boolean)x).booleanValue();
 			switch (targetSqlType) {
 				case Types.TINYINT:
 					setByte(parameterIndex, (byte)(val ? 1 : 0));
@@ -1884,7 +1883,7 @@ public class MonetPreparedStatement
 				case Types.DECIMAL:
 				case Types.NUMERIC:
 				{
-					BigDecimal dec;
+					final BigDecimal dec;
 					try {
 						dec = new BigDecimal(val ? 1.0 : 0.0);
 					} catch (NumberFormatException e) {
@@ -1906,7 +1905,7 @@ public class MonetPreparedStatement
 					throw new SQLException("Conversion not allowed", "M1M05");
 			}
 		} else if (x instanceof BigInteger) {
-			BigInteger num = (BigInteger)x;
+			final BigInteger num = (BigInteger)x;
 			switch (targetSqlType) {
 				case Types.BIGINT:
 					setLong(parameterIndex, num.longValue());
@@ -1914,7 +1913,7 @@ public class MonetPreparedStatement
 				case Types.DECIMAL:
 				case Types.NUMERIC:
 				{
-					BigDecimal dec;
+					final BigDecimal dec;
 					try {
 						dec = new BigDecimal(num);
 					} catch (NumberFormatException e) {
@@ -2004,9 +2003,9 @@ public class MonetPreparedStatement
 			}
 		} else if (x instanceof Array) {
 			setArray(parameterIndex, (Array)x);
-		} else if (x instanceof Blob || x instanceof MonetBlob) {
+		} else if (x instanceof MonetBlob || x instanceof Blob) {
 			setBlob(parameterIndex, (Blob)x);
-		} else if (x instanceof Clob || x instanceof MonetClob) {
+		} else if (x instanceof MonetClob || x instanceof Clob) {
 			setClob(parameterIndex, (Clob)x);
 		} else if (x instanceof Struct) {
 			// I have no idea how to do this...
@@ -2024,10 +2023,10 @@ public class MonetPreparedStatement
 		} else if (x instanceof SQLXML) {
 			setSQLXML(parameterIndex, (SQLXML)x);
 		} else if (x instanceof SQLData) { // not in JDBC4.1???
-			SQLData sx = (SQLData)x;
+			final SQLData sx = (SQLData)x;
 			final int paramnr = parameterIndex;
 			final String sqltype = sx.getSQLTypeName();
-			SQLOutput out = new SQLOutput() {
+			final SQLOutput out = new SQLOutput() {
 				@Override
 				public void writeString(String x) throws SQLException {
 					// special situation, this is when a string
@@ -2188,7 +2187,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setRef(int parameterIndex, Ref x) throws SQLException {
+	public void setRef(final int parameterIndex, final Ref x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setRef");
 	}
 
@@ -2204,7 +2203,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setRowId(int parameterIndex, RowId x) throws SQLException {
+	public void setRowId(final int parameterIndex, final RowId x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setRowId");
 	}
 
@@ -2217,7 +2216,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setShort(int parameterIndex, short x) throws SQLException {
+	public void setShort(final int parameterIndex, final short x) throws SQLException {
 		setValue(parameterIndex, Short.toString(x));
 	}
 
@@ -2232,18 +2231,18 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setString(int parameterIndex, String x) throws SQLException {
+	public void setString(final int parameterIndex, final String x) throws SQLException {
 		if (x == null) {
 			setNull(parameterIndex, -1);
 			return;
 		}
 
-		int paramIdx = getParamIdx(parameterIndex);	// this will throw a SQLException if parameter can not be found
+		final int paramIdx = getParamIdx(parameterIndex);	// this will throw a SQLException if parameter can not be found
 
 		/* depending on the parameter data type (as expected by MonetDB) we
 		   may need to add the data type as cast prefix to the parameter value */
-		int paramJdbcType = javaType[paramIdx];
-		String paramMonetdbType = monetdbType[paramIdx];
+		final int paramJdbcType = javaType[paramIdx];
+		final String paramMonetdbType = monetdbType[paramIdx];
 
 		switch (paramJdbcType) {
 			case Types.CHAR:
@@ -2311,8 +2310,7 @@ public class MonetPreparedStatement
 						break;
 				}
 				/* in specific cases prefix the string with: inet or json or url or uuid */
-				setValue(parameterIndex,
-					castprefix + "'" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
+				setValue(parameterIndex, castprefix + "'" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
 				break;
 			}
 			case Types.TINYINT:
@@ -2379,7 +2377,7 @@ public class MonetPreparedStatement
 			case Types.BLOB:
 				// check if the string x contains pairs of hex chars to prevent
 				// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
-				int xlen = x.length();
+				final int xlen = x.length();
 				for (int i = 0; i < xlen; i++) {
 					char c = x.charAt(i);
 					if (c < '0' || c > '9') {
@@ -2410,7 +2408,7 @@ public class MonetPreparedStatement
 	 *         not support this method
 	 */
 	@Override
-	public void setSQLXML(int parameterIndex, SQLXML x) throws SQLException {
+	public void setSQLXML(final int parameterIndex, final SQLXML x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("setSQLXML");
 	}
 
@@ -2424,7 +2422,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTime(int parameterIndex, Time x) throws SQLException {
+	public void setTime(final int parameterIndex, final Time x) throws SQLException {
 		setTime(parameterIndex, x, null);
 	}
 
@@ -2444,7 +2442,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTime(int parameterIndex, Time x, Calendar cal)
+	public void setTime(final int parameterIndex, final Time x, final Calendar cal)
 		throws SQLException
 	{
 		if (x == null) {
@@ -2452,8 +2450,8 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		String MonetDBType = monetdbType[getParamIdx(parameterIndex)];
-		boolean hasTimeZone = ("timetz".equals(MonetDBType) || "timestamptz".equals(MonetDBType));
+		final String MonetDBType = monetdbType[getParamIdx(parameterIndex)];
+		final boolean hasTimeZone = ("timetz".equals(MonetDBType) || "timestamptz".equals(MonetDBType));
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
@@ -2461,9 +2459,8 @@ public class MonetPreparedStatement
 				// first time usage, create and keep the mTimeZ object for next usage
 				mTimeZ = new SimpleDateFormat("HH:mm:ss.SSSZ");
 			}
-			String RFC822 = mTimeZ.format(x);
-			setValue(parameterIndex, "timetz '" +
-					RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
+			final String RFC822 = mTimeZ.format(x);
+			setValue(parameterIndex, "timetz '" + RFC822.substring(0, 15) + ":" + RFC822.substring(15) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
 			// calendar given, since we told the server our timezone at
@@ -2492,7 +2489,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTimestamp(int parameterIndex, Timestamp x)
+	public void setTimestamp(final int parameterIndex, final Timestamp x)
 		throws SQLException
 	{
 		setTimestamp(parameterIndex, x, null);
@@ -2515,7 +2512,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setTimestamp(int parameterIndex, Timestamp x, Calendar cal)
+	public void setTimestamp(final int parameterIndex, final Timestamp x, final Calendar cal)
 		throws SQLException
 	{
 		if (x == null) {
@@ -2523,8 +2520,8 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		String MonetDBType = monetdbType[getParamIdx(parameterIndex)];
-		boolean hasTimeZone = ("timestamptz".equals(MonetDBType) || "timetz".equals(MonetDBType));
+		final String MonetDBType = monetdbType[getParamIdx(parameterIndex)];
+		final boolean hasTimeZone = ("timestamptz".equals(MonetDBType) || "timetz".equals(MonetDBType));
 		if (hasTimeZone) {
 			// timezone shouldn't matter, since the server is timezone
 			// aware in this case
@@ -2532,9 +2529,8 @@ public class MonetPreparedStatement
 				// first time usage, create and keep the mTimestampZ object for next usage
 				mTimestampZ = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
 			}
-			String RFC822 = mTimestampZ.format(x);
-			setValue(parameterIndex, "timestamptz '" +
-					RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
+			final String RFC822 = mTimestampZ.format(x);
+			setValue(parameterIndex, "timestamptz '" + RFC822.substring(0, 26) + ":" + RFC822.substring(26) + "'");
 		} else {
 			// server is not timezone aware for this field, and no
 			// calendar given, since we told the server our timezone at
@@ -2576,7 +2572,7 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	@Deprecated
-	public void setUnicodeStream(int parameterIndex, InputStream x, int length)
+	public void setUnicodeStream(final int parameterIndex, final InputStream x, final int length)
 		throws SQLException
 	{
 		throw newSQLFeatureNotSupportedException("setUnicodeStream");
@@ -2592,16 +2588,14 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setURL(int parameterIndex, URL x) throws SQLException {
+	public void setURL(final int parameterIndex, final URL x) throws SQLException {
 		if (x == null) {
 			setNull(parameterIndex, -1);
 			return;
 		}
 
-		String val = x.toString();
-		setValue(parameterIndex,
-			"url '" + val.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'"
-		);
+		final String val = x.toString();
+		setValue(parameterIndex, "url '" + val.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
 	}
 
 	/**
@@ -2649,7 +2643,7 @@ public class MonetPreparedStatement
 	 * @param val the exact String representation to set
 	 * @throws SQLException if the given index is out of bounds
 	 */
-	private void setValue(int parameterIndex, String val) throws SQLException {
+	private final void setValue(final int parameterIndex, final String val) throws SQLException {
 		values[getParamIdx(parameterIndex)] = (val == null ? "NULL" : val);
 	}
 
@@ -2662,8 +2656,8 @@ public class MonetPreparedStatement
 	 * @return the simple SQL string for the prepare query
 	 * @throws SQLException if not all columns are set
 	 */
-	private String transform() throws SQLException {
-		StringBuilder buf = new StringBuilder(8 + 12 * size);
+	private final String transform() throws SQLException {
+		final StringBuilder buf = new StringBuilder(8 + 12 * size);
 		buf.append("exec ").append(id).append('(');
 		// check if all columns are set and do a replace
 		int col = 0;
@@ -2691,7 +2685,7 @@ public class MonetPreparedStatement
 	 * @param paramIdx the parameter index number
 	 * @return a new created SQLDataException object with SQLState 22010
 	 */
-	private static final SQLDataException newSQLInvalidParameterIndexException(int paramIdx) {
+	private static final SQLDataException newSQLInvalidParameterIndexException(final int paramIdx) {
 		return new SQLDataException("Invalid Parameter Index number: " + paramIdx, "22010");
 	}
 }

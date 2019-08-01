@@ -14,7 +14,6 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import javax.sql.DataSource;
 import java.util.Properties;
-import java.util.logging.Logger;
 
 /**
  * A DataSource suitable for the MonetDB database.
@@ -28,9 +27,12 @@ import java.util.logging.Logger;
  * Additionally, pooled connections can be used when using a DataSource.
  *
  * @author Fabian Groffen
- * @version 0.1
+ * @version 0.2
  */
-public class MonetDataSource extends MonetWrapper implements DataSource {
+public final class MonetDataSource
+	extends MonetWrapper
+	implements DataSource
+{
 	private String description;
 	private int loginTimeout = 0;
 	private String user;
@@ -81,13 +83,13 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 * @throws SQLException if connecting to the database fails
 	 */
 	@Override
-	public Connection getConnection(String username, String password)
+	public Connection getConnection(final String username, final String password)
 		throws SQLException
 	{
 		if (loginTimeout > 0) {
 			/// could enable Socket.setSoTimeout(int timeout) here...
 		}
-		Properties props = new Properties();
+		final Properties props = new Properties();
 		props.put("user", username);
 		props.put("password", password);
 
@@ -113,7 +115,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 * @param seconds the number of seconds to wait before aborting the connect
 	 */
 	@Override
-	public void setLoginTimeout(int seconds) {
+	public void setLoginTimeout(final int seconds) {
 		loginTimeout = seconds;
 	}
 
@@ -134,7 +136,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 * @param out a PrintWriter - ignored
 	 */
 	@Override
-	public void setLogWriter(PrintWriter out) {
+	public void setLogWriter(final PrintWriter out) {
 	}
 
 	/**
@@ -143,7 +145,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 *
 	 * @param password the password
 	 */
-	public void setPassword(String password) {
+	public void setPassword(final String password) {
 		this.password = password;
 	}
 
@@ -161,7 +163,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 *
 	 * @param user the username
 	 */
-	public void setUser(String user) {
+	public void setUser(final String user) {
 		this.user = user;
 	}
 
@@ -179,7 +181,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 *
 	 * @param url the connection URL
 	 */
-	public void setDatabaseName(String url) {
+	public void setDatabaseName(final String url) {
 		this.url = url;
 	}
 
@@ -197,7 +199,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 *
 	 * @param description the description
 	 */
-	public void setDescription(String description) {
+	public void setDescription(final String description) {
 		this.description = description;
 	}
 
@@ -214,7 +216,7 @@ public class MonetDataSource extends MonetWrapper implements DataSource {
 	 *         not use java.util.logging
 	 */
 	@Override
-	public Logger getParentLogger() throws SQLFeatureNotSupportedException {
+	public java.util.logging.Logger getParentLogger() throws SQLFeatureNotSupportedException {
 		throw newSQLFeatureNotSupportedException("getParentLogger");
 	}
 }

@@ -12,7 +12,6 @@ import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
-import java.net.UnknownHostException;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -28,19 +27,12 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.WeakHashMap;
 import java.util.concurrent.Executor;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
-import nl.cwi.monetdb.jdbc.types.INET;
-import nl.cwi.monetdb.jdbc.types.URL;
-import nl.cwi.monetdb.mcl.MCLException;
 import nl.cwi.monetdb.mcl.io.BufferedMCLReader;
 import nl.cwi.monetdb.mcl.io.BufferedMCLWriter;
 import nl.cwi.monetdb.mcl.net.MapiSocket;
@@ -72,7 +64,7 @@ import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 1.3
+ * @version 1.4
  */
 public class MonetConnection
 	extends MonetWrapper
@@ -99,7 +91,7 @@ public class MonetConnection
 	/** The Writer to the server */
 	private final BufferedMCLWriter out;
 
-	/** A StartOfHeaderParser  declared for reuse. */
+	/** A StartOfHeaderParser declared for reuse. */
 	private StartOfHeaderParser sohp = new StartOfHeaderParser();
 
 	/** Whether this Connection is closed (and cannot be used anymore) */
@@ -115,15 +107,15 @@ public class MonetConnection
 	private Map<String,Class<?>> typeMap = new HashMap<String,Class<?>>() {
 		private static final long serialVersionUID = 1L;
 		{
-			put("inet", INET.class);
-			put("url",  URL.class);
+			put("inet", nl.cwi.monetdb.jdbc.types.INET.class);
+			put("url",  nl.cwi.monetdb.jdbc.types.URL.class);
 		}
 	};
 
 	// See javadoc for documentation about WeakHashMap if you don't know what
 	// it does !!!NOW!!! (only when you deal with it of course)
 	/** A Map containing all (active) Statements created from this Connection */
-	private Map<Statement,?> statements = new WeakHashMap<Statement, Object>();
+	private WeakHashMap<Statement,?> statements = new WeakHashMap<Statement, Object>();
 
 	/** The number of results we receive from the server at once */
 	private int curReplySize = -1;	// the server by default uses -1 (all)
@@ -171,7 +163,7 @@ public class MonetConnection
 	 * @throws SQLException if a database error occurs
 	 * @throws IllegalArgumentException is one of the arguments is null or empty
 	 */
-	MonetConnection(Properties props)
+	MonetConnection(final Properties props)
 		throws SQLException, IllegalArgumentException
 	{
 	// for debug: System.out.println("New connection object. Received properties are: " + props.toString());
@@ -181,7 +173,7 @@ public class MonetConnection
 		if (this.hostname != null)
 			conn_props.setProperty("host", this.hostname);
 
-		String port_prop = props.getProperty("port");
+		final String port_prop = props.getProperty("port");
 		if (port_prop != null) {
 			try {
 				this.port = Integer.parseInt(port_prop);
@@ -214,11 +206,11 @@ public class MonetConnection
 			conn_props.setProperty("debug", Boolean.toString(debug));
 		}
 
-		String hash = props.getProperty("hash");
+		final String hash = props.getProperty("hash");
 		if (hash != null)
 			conn_props.setProperty("hash", hash);
 
-		String treatBlobAsVarBinary_prop = props.getProperty("treat_blob_as_binary");
+		final String treatBlobAsVarBinary_prop = props.getProperty("treat_blob_as_binary");
 		if (treatBlobAsVarBinary_prop != null) {
 			treatBlobAsVarBinary = Boolean.parseBoolean(treatBlobAsVarBinary_prop);
 			conn_props.setProperty("treat_blob_as_binary", Boolean.toString(treatBlobAsVarBinary));
@@ -226,7 +218,7 @@ public class MonetConnection
 				typeMap.put("blob", Byte[].class);
 		}
 
-		String treatClobAsVarChar_prop = props.getProperty("treat_clob_as_varchar");
+		final String treatClobAsVarChar_prop = props.getProperty("treat_clob_as_varchar");
 		if (treatClobAsVarChar_prop != null) {
 			treatClobAsVarChar = Boolean.parseBoolean(treatClobAsVarChar_prop);
 			conn_props.setProperty("treat_clob_as_varchar", Boolean.toString(treatClobAsVarChar));
@@ -235,7 +227,7 @@ public class MonetConnection
 		}
 
 		int sockTimeout = 0;
-		String so_timeout_prop = props.getProperty("so_timeout");
+		final String so_timeout_prop = props.getProperty("so_timeout");
 		if (so_timeout_prop != null) {
 			try {
 				sockTimeout = Integer.parseInt(so_timeout_prop);
@@ -274,13 +266,14 @@ public class MonetConnection
 		// we're debugging here... uhm, should be off in real life
 		if (debug) {
 			try {
-				String fname = props.getProperty("logfile", "monet_" + System.currentTimeMillis() + ".log");
+				final String fname = props.getProperty("logfile", "monet_" + System.currentTimeMillis() + ".log");
 				File f = new File(fname);
+
 				int ext = fname.lastIndexOf('.');
 				if (ext < 0)
 					ext = fname.length();
-				String pre = fname.substring(0, ext);
-				String suf = fname.substring(ext);
+				final String pre = fname.substring(0, ext);
+				final String suf = fname.substring(ext);
 
 				for (int i = 1; f.exists(); i++) {
 					f = new File(pre + "-" + i + suf);
@@ -293,7 +286,7 @@ public class MonetConnection
 		}
 
 		try {
-			List<String> warnings = server.connect(hostname, port, username, password);
+			final java.util.List<String> warnings = server.connect(hostname, port, username, password);
 			for (String warning : warnings) {
 				addWarning(warning, "01M02");
 			}
@@ -305,18 +298,18 @@ public class MonetConnection
 			in = server.getReader();
 			out = server.getWriter();
 
-			String error = in.waitForPrompt();
+			final String error = in.waitForPrompt();
 			if (error != null)
 				throw new SQLNonTransientConnectionException((error.length() > 6) ? error.substring(6) : error, "08001");
-		} catch (UnknownHostException e) {
+		} catch (java.net.UnknownHostException e) {
 			throw new SQLNonTransientConnectionException("Unknown Host (" + hostname + "): " + e.getMessage(), "08006");
 		} catch (IOException e) {
 			throw new SQLNonTransientConnectionException("Unable to connect (" + hostname + ":" + port + "): " + e.getMessage(), "08006");
 		} catch (MCLParseException e) {
 			throw new SQLNonTransientConnectionException(e.getMessage(), "08001");
-		} catch (MCLException e) {
-			String[] connex = e.getMessage().split("\n");
-			SQLException sqle = new SQLNonTransientConnectionException(connex[0], "08001", e);
+		} catch (nl.cwi.monetdb.mcl.MCLException e) {
+			final String[] connex = e.getMessage().split("\n");
+			final SQLException sqle = new SQLNonTransientConnectionException(connex[0], "08001", e);
 			for (int i = 1; i < connex.length; i++) {
 				sqle.setNextException(new SQLNonTransientConnectionException(connex[1], "08001"));
 			}
@@ -355,7 +348,7 @@ public class MonetConnection
 			setAutoCommit(true);
 
 			// set our time zone on the server
-			Calendar cal = Calendar.getInstance();
+			final Calendar cal = Calendar.getInstance();
 			int offset = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
 			offset /= (60 * 1000); // milliseconds to minutes
 			String tz = offset < 0 ? "-" : "+";
@@ -459,7 +452,7 @@ public class MonetConnection
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Statement createStatement(int resultSetType, int resultSetConcurrency) throws SQLException {
+	public Statement createStatement(final int resultSetType, final int resultSetConcurrency) throws SQLException {
 		return createStatement(resultSetType, resultSetConcurrency, MonetResultSet.DEF_HOLDABILITY);
 	}
 
@@ -487,9 +480,9 @@ public class MonetConnection
 	 * concurrency, and holdability
 	 */
 	@Override
-	public Statement createStatement(int resultSetType, int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+	public Statement createStatement(final int resultSetType, final int resultSetConcurrency, final int resultSetHoldability) throws SQLException {
 		try {
-			Statement ret = new MonetStatement(this, resultSetType, resultSetConcurrency, resultSetHoldability);
+			final Statement ret = new MonetStatement(this, resultSetType, resultSetConcurrency, resultSetHoldability);
 			// store it in the map for when we close...
 			statements.put(ret, null);
 			return ret;
@@ -648,7 +641,7 @@ public class MonetConnection
 	 * @return the native form of this statement
 	 */
 	@Override
-	public String nativeSQL(String sql) {
+	public String nativeSQL(final String sql) {
 		/* there is currently no way to get the native MonetDB rewritten SQL string back, so just return the original string */
 		/* in future we may replace/remove the escape sequences { <escape-type> ...} before sending it to the server */
 		return sql;
@@ -672,10 +665,9 @@ public class MonetConnection
 	 *	Typically this statement is specified using JDBC call escape syntax.
 	 * @return a new default CallableStatement object containing the pre-compiled SQL statement
 	 * @throws SQLException - if a database access error occurs or this method is called on a closed connection
-	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method.
 	 */
 	@Override
-	public CallableStatement prepareCall(String sql) throws SQLException {
+	public CallableStatement prepareCall(final String sql) throws SQLException {
 		return prepareCall(sql, MonetResultSet.DEF_RESULTSETTYPE, MonetResultSet.DEF_CONCURRENCY, MonetResultSet.DEF_HOLDABILITY);
 	}
 
@@ -692,11 +684,9 @@ public class MonetConnection
 	 *	will produce ResultSet objects with the given type and concurrency
 	 * @throws SQLException - if a database access error occurs, this method is called on a closed connection or
 	 *	the given parameters are not ResultSet constants indicating type and concurrency
-	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method or
-	 *	this method is not supported for the specified result set type and result set concurrency.
 	 */
 	@Override
-	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+	public CallableStatement prepareCall(final String sql, final int resultSetType, final int resultSetConcurrency) throws SQLException {
 		return prepareCall(sql, resultSetType, resultSetConcurrency, MonetResultSet.DEF_HOLDABILITY);
 	}
 
@@ -712,15 +702,13 @@ public class MonetConnection
 	 * @return a new CallableStatement object, containing the pre-compiled SQL statement, that will generate ResultSet objects with the given type, concurrency, and holdability
 	 * @throws SQLException - if a database access error occurs, this method is called on a closed connection or
 	 *	the given parameters are not ResultSet constants indicating type, concurrency, and holdability
-	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method or
-	 *	this method is not supported for the specified result set type, result set holdability and result set concurrency.
 	 */
 	@Override
-	public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+	public CallableStatement prepareCall(final String sql, final int resultSetType, final int resultSetConcurrency, final int resultSetHoldability)
 		throws SQLException
 	{
 		try {
-			CallableStatement ret = new MonetCallableStatement(
+			final CallableStatement ret = new MonetCallableStatement(
 				this,
 				resultSetType,
 				resultSetConcurrency,
@@ -764,7 +752,7 @@ public class MonetConnection
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public PreparedStatement prepareStatement(String sql) throws SQLException {
+	public PreparedStatement prepareStatement(final String sql) throws SQLException {
 		return prepareStatement(sql, MonetResultSet.DEF_RESULTSETTYPE, MonetResultSet.DEF_CONCURRENCY, MonetResultSet.DEF_HOLDABILITY);
 	}
 
@@ -789,7 +777,7 @@ public class MonetConnection
 	 *         type and concurrency
 	 */
 	@Override
-	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws SQLException {
+	public PreparedStatement prepareStatement(final String sql, final int resultSetType, final int resultSetConcurrency) throws SQLException {
 		return prepareStatement(sql, resultSetType, resultSetConcurrency, MonetResultSet.DEF_HOLDABILITY);
 	}
 
@@ -820,11 +808,11 @@ public class MonetConnection
 	 * concurrency, and holdability
 	 */
 	@Override
-	public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency, int resultSetHoldability)
+	public PreparedStatement prepareStatement(final String sql, final int resultSetType, final int resultSetConcurrency, final int resultSetHoldability)
 		throws SQLException
 	{
 		try {
-			PreparedStatement ret = new MonetPreparedStatement(
+			final PreparedStatement ret = new MonetPreparedStatement(
 				this,
 				resultSetType,
 				resultSetConcurrency,
@@ -874,7 +862,7 @@ public class MonetConnection
 	 *         whether auto-generated keys should be returned
 	 */
 	@Override
-	public PreparedStatement prepareStatement(String sql, int autoGeneratedKeys) throws SQLException {
+	public PreparedStatement prepareStatement(final String sql, final int autoGeneratedKeys) throws SQLException {
 		if (autoGeneratedKeys != Statement.RETURN_GENERATED_KEYS &&
 		    autoGeneratedKeys != Statement.NO_GENERATED_KEYS)
 			throw new SQLException("Invalid argument, expected RETURN_GENERATED_KEYS or NO_GENERATED_KEYS", "M1M05");
@@ -908,7 +896,7 @@ public class MonetConnection
 	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
 	@Override
-	public PreparedStatement prepareStatement(String sql, int[] columnIndexes) throws SQLException {
+	public PreparedStatement prepareStatement(final String sql, final int[] columnIndexes) throws SQLException {
 		throw newSQLFeatureNotSupportedException("prepareStatement(String sql, int[] columnIndexes)");
 	}
 
@@ -937,7 +925,7 @@ public class MonetConnection
 	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
 	@Override
-	public PreparedStatement prepareStatement(String sql, String[] columnNames) throws SQLException {
+	public PreparedStatement prepareStatement(final String sql, final String[] columnNames) throws SQLException {
 		throw newSQLFeatureNotSupportedException("prepareStatement(String sql, String[] columnNames)");
 	}
 
@@ -952,11 +940,11 @@ public class MonetConnection
 	 *         transaction
 	 */
 	@Override
-	public void releaseSavepoint(Savepoint savepoint) throws SQLException {
+	public void releaseSavepoint(final Savepoint savepoint) throws SQLException {
 		if (!(savepoint instanceof MonetSavepoint))
 			throw new SQLException("This driver can only handle savepoints it created itself", "M0M06");
 
-		MonetSavepoint sp = (MonetSavepoint)savepoint;
+		final MonetSavepoint sp = (MonetSavepoint)savepoint;
 
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
@@ -990,11 +978,11 @@ public class MonetConnection
 	 *         object is currently in auto-commit mode
 	 */
 	@Override
-	public void rollback(Savepoint savepoint) throws SQLException {
+	public void rollback(final Savepoint savepoint) throws SQLException {
 		if (!(savepoint instanceof MonetSavepoint))
 			throw new SQLException("This driver can only handle savepoints it created itself", "M0M06");
 
-		MonetSavepoint sp = (MonetSavepoint)savepoint;
+		final MonetSavepoint sp = (MonetSavepoint)savepoint;
 
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
@@ -1026,7 +1014,7 @@ public class MonetConnection
 	 * @see #getAutoCommit()
 	 */
 	@Override
-	public void setAutoCommit(boolean autoCommit) throws SQLException {
+	public void setAutoCommit(final boolean autoCommit) throws SQLException {
 		if (this.autoCommit != autoCommit) {
 			sendControlCommand("auto_commit " + (autoCommit ? "1" : "0"));
 			this.autoCommit = autoCommit;
@@ -1039,7 +1027,7 @@ public class MonetConnection
 	 * does not support catalogs, it will silently ignore this request.
 	 */
 	@Override
-	public void setCatalog(String catalog) {
+	public void setCatalog(final String catalog) {
 		// silently ignore this request as MonetDB does not support catalogs
 	}
 
@@ -1056,7 +1044,7 @@ public class MonetConnection
 	 * @see #getHoldability()
 	 */
 	@Override
-	public void setHoldability(int holdability) throws SQLException {
+	public void setHoldability(final int holdability) throws SQLException {
 		// we only support ResultSet.HOLD_CURSORS_OVER_COMMIT
 		if (holdability != ResultSet.HOLD_CURSORS_OVER_COMMIT)
 			throw newSQLFeatureNotSupportedException("setHoldability(CLOSE_CURSORS_AT_COMMIT)");
@@ -1073,7 +1061,7 @@ public class MonetConnection
 	 *         method is called during a transaction.
 	 */
 	@Override
-	public void setReadOnly(boolean readOnly) throws SQLException {
+	public void setReadOnly(final boolean readOnly) throws SQLException {
 		if (readOnly == true)
 			addWarning("cannot setReadOnly(true): read-only Connection mode not supported", "01M08");
 	}
@@ -1089,7 +1077,7 @@ public class MonetConnection
 	@Override
 	public Savepoint setSavepoint() throws SQLException {
 		// create a new Savepoint object
-		MonetSavepoint sp = new MonetSavepoint();
+		final MonetSavepoint sp = new MonetSavepoint();
 
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
@@ -1107,9 +1095,9 @@ public class MonetConnection
 	 *         object is currently in auto-commit mode
 	 */
 	@Override
-	public Savepoint setSavepoint(String name) throws SQLException {
+	public Savepoint setSavepoint(final String name) throws SQLException {
 		// create a new Savepoint object
-		MonetSavepoint sp;
+		final MonetSavepoint sp;
 		try {
 			sp = new MonetSavepoint(name);
 		} catch (IllegalArgumentException e) {
@@ -1134,7 +1122,7 @@ public class MonetConnection
 	 *        Connection.TRANSACTION_SERIALIZABLE.
 	 */
 	@Override
-	public void setTransactionIsolation(int level) {
+	public void setTransactionIsolation(final int level) {
 		if (level != TRANSACTION_SERIALIZABLE) {
 			addWarning("MonetDB only supports fully serializable " +
 				"transactions, continuing with transaction level " +
@@ -1151,7 +1139,7 @@ public class MonetConnection
 	 *        this Connection  object's default type map
 	 */
 	@Override
-	public void setTypeMap(Map<String, Class<?>> map) {
+	public void setTypeMap(final Map<String, Class<?>> map) {
 		typeMap = map;
 	}
 
@@ -1196,7 +1184,7 @@ public class MonetConnection
 	 * @since 1.6
 	 */
 	@Override
-	public java.sql.Array createArrayOf(String typeName, Object[] elements) throws SQLException {
+	public java.sql.Array createArrayOf(final String typeName, final Object[] elements) throws SQLException {
 		throw newSQLFeatureNotSupportedException("createArrayOf");
 	}
 
@@ -1230,8 +1218,7 @@ public class MonetConnection
 	 */
 	@Override
 	public java.sql.Blob createBlob() throws SQLException {
-		byte[] buf = new byte[1];
-		return new MonetBlob(buf);
+		return new MonetBlob(new byte[1]);
 	}
 
 	/**
@@ -1307,7 +1294,7 @@ public class MonetConnection
 	 * @since 1.6
 	 */
 	@Override
-	public boolean isValid(int timeout) throws SQLException {
+	public boolean isValid(final int timeout) throws SQLException {
 		if (timeout < 0)
 			throw new SQLException("timeout is less than 0", "M1M05");
 		if (closed)
@@ -1320,7 +1307,7 @@ public class MonetConnection
 		try {
 			stmt = createStatement();
 			if (stmt != null) {
-				int original_timeout = stmt.getQueryTimeout();
+				final int original_timeout = stmt.getQueryTimeout();
 				if (timeout > 0 && original_timeout != timeout) {
 					// we need to change the requested timeout for this test query
 					stmt.setQueryTimeout(timeout);
@@ -1376,7 +1363,7 @@ public class MonetConnection
 	 * @since 1.6
 	 */
 	@Override
-	public String getClientInfo(String name) throws SQLException {
+	public String getClientInfo(final String name) throws SQLException {
 		if (name == null || name.isEmpty())
 			return null;
 		return conn_props.getProperty(name);
@@ -1437,7 +1424,7 @@ public class MonetConnection
 	 * @since 1.6
 	 */
 	@Override
-	public void setClientInfo(String name, String value) throws SQLClientInfoException {
+	public void setClientInfo(final String name, final String value) throws SQLClientInfoException {
 		if (name == null || name.isEmpty()) {
 			addWarning("setClientInfo: missing property name", "01M07");
 			return;
@@ -1465,7 +1452,6 @@ public class MonetConnection
 		} else {
 			addWarning("setClientInfo: " + name + "is not a recognised property", "01M07");
 		}
-		return;
 	}
 
 	/**
@@ -1492,11 +1478,10 @@ public class MonetConnection
 	 * @since 1.6
 	 */
 	@Override
-	public void setClientInfo(Properties props) throws SQLClientInfoException {
+	public void setClientInfo(final Properties props) throws SQLClientInfoException {
 		if (props != null) {
 			for (Entry<Object, Object> entry : props.entrySet()) {
-				setClientInfo(entry.getKey().toString(),
-						entry.getValue().toString());
+				setClientInfo(entry.getKey().toString(), entry.getValue().toString());
 			}
 		}
 	}
@@ -1513,7 +1498,7 @@ public class MonetConnection
 	 * @since 1.7
 	 */
 	@Override
-	public void setSchema(String schema) throws SQLException {
+	public void setSchema(final String schema) throws SQLException {
 		if (closed)
 			throw new SQLException("Cannot call on closed Connection", "M1M20");
 		if (schema == null || schema.isEmpty())
@@ -1597,7 +1582,7 @@ public class MonetConnection
 	 * @since 1.7
 	 */
 	@Override
-	public void abort(Executor executor) throws SQLException {
+	public void abort(final Executor executor) throws SQLException {
 		if (closed)
 			return;
 		if (executor == null)
@@ -1627,7 +1612,7 @@ public class MonetConnection
 	 * @since 1.7
 	 */
 	@Override
-	public void setNetworkTimeout(Executor executor, int millis) throws SQLException {
+	public void setNetworkTimeout(final Executor executor, final int millis) throws SQLException {
 		if (closed)
 			throw new SQLException("Cannot call on closed Connection", "M1M20");
 		if (executor == null)
@@ -1674,10 +1659,7 @@ public class MonetConnection
 	 * Defined as public because it is called from: MonetDatabaseMetaData.java getURL()
 	 */
 	String getJDBCURL() {
-		String language = "";
-		if (lang == LANG_MAL)
-			language = "?language=mal";
-		return MonetDriver.MONETURL + hostname + ":" + port + "/" + database + language;
+		return MonetDriver.MONETURL + hostname + ":" + port + "/" + database + (lang == LANG_MAL ? "?language=mal" : "");
 	}
 
 	/**
@@ -1729,7 +1711,7 @@ public class MonetConnection
 	/**
 	 * Internal utility method to query the server to find out if it has the system table sys.<tablename>.
 	 */
-	private boolean existsSysTable(String tablename) {
+	private boolean existsSysTable(final String tablename) {
 		boolean exists = false;
 		Statement stmt = null;
 		ResultSet rs = null;
@@ -1769,9 +1751,9 @@ public class MonetConnection
 	 * @param command the exact string to send to MonetDB
 	 * @throws SQLException if an IO exception or a database error occurs
 	 */
-	private void sendTransactionCommand(String command) throws SQLException {
+	private void sendTransactionCommand(final String command) throws SQLException {
 		// create a container for the result
-		ResponseList l = new ResponseList(0, 0, ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
+		final ResponseList l = new ResponseList(0, 0, ResultSet.FETCH_FORWARD, ResultSet.CONCUR_READ_ONLY);
 		// send the appropriate query string to the database
 		try {
 			l.processQuery(command);
@@ -1814,16 +1796,15 @@ public class MonetConnection
 	 * @param usequeryTempl send the command using a queryTempl? else it is send using commandTempl
 	 * @throws SQLException if an IO exception or a database error occurs
 	 */
-	private void sendCommand(String command, boolean usequeryTempl) throws SQLException {
-		String cmd = usequeryTempl ?
-			(queryTempl[0] == null ? "" : queryTempl[0]) + command + (queryTempl[1] == null ? "" : queryTempl[1])
-			:
-			(commandTempl[0] == null ? "" : commandTempl[0]) + command + (commandTempl[1] == null ? "" : commandTempl[1]);
+	private void sendCommand(final String command, final boolean usequeryTempl) throws SQLException {
+		final String cmd = usequeryTempl
+			? (queryTempl[0] == null ? "" : queryTempl[0]) + command + (queryTempl[1] == null ? "" : queryTempl[1])
+			: (commandTempl[0] == null ? "" : commandTempl[0]) + command + (commandTempl[1] == null ? "" : commandTempl[1]);
 
 		synchronized (server) {
 			try {
 				out.writeLine(cmd);
-				String error = in.waitForPrompt();
+				final String error = in.waitForPrompt();
 				if (error != null)
 					throw new SQLException(error.substring(6), error.substring(0, 5));
 			} catch (SocketTimeoutException e) {
@@ -1843,8 +1824,8 @@ public class MonetConnection
 	 *
 	 * @param reason the warning message
 	 */
-	void addWarning(String reason, String sqlstate) {
-		SQLWarning warng = new SQLWarning(reason, sqlstate);
+	private final void addWarning(final String reason, final String sqlstate) {
+		final SQLWarning warng = new SQLWarning(reason, sqlstate);
 		if (warnings == null) {
 			warnings = warng;
 		} else {
@@ -1939,7 +1920,7 @@ public class MonetConnection
 		/** The Connection that we should use when requesting a new block */
 		private final MonetConnection.ResponseList parent;
 		/** Whether the fetchSize was explitly set by the user */
-		private boolean cacheSizeSetExplicitly = false;
+		private final boolean cacheSizeSetExplicitly;
 		/** Whether we should send an Xclose command to the server
 		 *  if we close this Response */
 		private boolean destroyOnClose;
@@ -1947,7 +1928,7 @@ public class MonetConnection
 		private int blockOffset = 0;
 
 		/** A parser for header lines */
-		HeaderLineParser hlp;
+		private final HeaderLineParser hlp;
 
 		/** A boolean array telling whether the headers are set or not */
 		private final boolean[] isSet;
@@ -1970,12 +1951,12 @@ public class MonetConnection
 		 * @param seq the query sequence number
 		 */
 		ResultSetResponse(
-				int id,
-				int tuplecount,
-				int columncount,
-				int rowcount,
-				MonetConnection.ResponseList parent,
-				int seq)
+				final int id,
+				final int tuplecount,
+				final int columncount,
+				final int rowcount,
+				final MonetConnection.ResponseList parent,
+				final int seq)
 			throws SQLException
 		{
 			isSet = new boolean[4];
@@ -2026,7 +2007,7 @@ public class MonetConnection
 		 */
 		// {{{ addLine
 		@Override
-		public String addLine(String tmpLine, int linetype) {
+		public String addLine(final String tmpLine, final int linetype) {
 			if (isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES]) {
 				return resultBlocks[0].addLine(tmpLine, linetype);
 			}
@@ -2086,9 +2067,9 @@ public class MonetConnection
 		 * @param stop where the relevant data stops
 		 * @return an array of Strings
 		 */
-		private final String[] getValues(char[] chrLine, int start, int stop) {
+		private final String[] getValues(final char[] chrLine, int start, final int stop) {
 			int elem = 0;
-			String[] values = new String[columncount];
+			final String[] values = new String[columncount];
 
 			for (int i = start; i < stop; i++) {
 				if (chrLine[i] == '\t' && chrLine[i - 1] == ',') {
@@ -2110,8 +2091,8 @@ public class MonetConnection
 		 * @param offset the offset number of rows for this block
 		 * @param rr the DataBlockResponse to add
 		 */
-		void addDataBlockResponse(int offset, DataBlockResponse rr) {
-			int block = (offset - blockOffset) / cacheSize;
+		void addDataBlockResponse(final int offset, final DataBlockResponse rr) {
+			final int block = (offset - blockOffset) / cacheSize;
 			resultBlocks[block] = rr;
 		}
 
@@ -2124,13 +2105,13 @@ public class MonetConnection
 		 */
 		@Override
 		public void complete() throws SQLException {
-			String error = "";
-			if (!isSet[NAMES])  error = "name header missing\n";
-			if (!isSet[TYPES])  error += "type header missing\n";
-			if (!isSet[TABLES]) error += "table name header missing\n";
-			if (!isSet[LENS])   error += "column width header missing\n";
-			if (!error.isEmpty())
-				throw new SQLException(error, "M0M10");
+			final StringBuilder err = new StringBuilder(99);
+			if (!isSet[NAMES])  err.append("name header missing\n");
+			if (!isSet[TYPES])  err.append("type header missing\n");
+			if (!isSet[TABLES]) err.append("table name header missing\n");
+			if (!isSet[LENS])   err.append("column width header missing\n");
+			if (err.length() > 0)
+				throw new SQLException(err.toString(), "M0M10");
 		}
 
 		/**
@@ -2216,7 +2197,7 @@ public class MonetConnection
 		 *         is out of the scope of the result set
 		 * @throws SQLException if an database error occurs
 		 */
-		String getLine(int row) throws SQLException {
+		String getLine(final int row) throws SQLException {
 			if (row >= tuplecount || row < 0)
 				return null;
 
@@ -2345,14 +2326,14 @@ public class MonetConnection
 		/** The counter which keeps the current position in the data array */
 		private int pos;
 		/** Whether we can discard lines as soon as we have read them */
-		private boolean forwardOnly;
+		private final boolean forwardOnly;
 
 		/**
 		 * Constructs a DataBlockResponse object
 		 * @param size the size of the data array to create
 		 * @param forward whether this is a forward only result
 		 */
-		DataBlockResponse(int size, boolean forward) {
+		DataBlockResponse(final int size, final boolean forward) {
 			pos = -1;
 			data = new String[size];
 			forwardOnly = forward;
@@ -2370,7 +2351,7 @@ public class MonetConnection
 		 *         or additional lines are not allowed.
 		 */
 		@Override
-		public String addLine(String line, int linetype) {
+		public String addLine(final String line, final int linetype) {
 			if (linetype != BufferedMCLReader.RESULT)
 				return "protocol violation: unexpected line in data block: " + line;
 			// add to the backing array
@@ -2403,8 +2384,9 @@ public class MonetConnection
 		@Override
 		public void complete() throws SQLException {
 			if ((pos + 1) != data.length)
-				throw new SQLException("Inconsistent state detected!  Current block capacity: "
-					+ data.length + ", block usage: " + (pos + 1) + ".  Did MonetDB send what it promised to?", "M0M10");
+				throw new SQLException("Inconsistent state detected! Current block capacity: "
+					+ data.length + ", block usage: " + (pos + 1)
+					+ ". Did MonetDB send what it promised to?", "M0M10");
 		}
 
 		/**
@@ -2414,7 +2396,8 @@ public class MonetConnection
 		@Override
 		public void close() {
 			// feed all rows to the garbage collector
-			for (int i = 0; i < data.length; i++) data[i] = null;
+			for (int i = 0; i < data.length; i++)
+				data[i] = null;
 		}
 
 		/**
@@ -2425,9 +2408,9 @@ public class MonetConnection
 		 * @param line the row to retrieve
 		 * @return the requested row as String
 		 */
-		String getRow(int line) {
+		String getRow(final int line) {
 			if (forwardOnly) {
-				String ret = data[line];
+				final String ret = data[line];
 				data[line] = null;
 				return ret;
 			} else {
@@ -2450,14 +2433,14 @@ public class MonetConnection
 		public final int count;
 		public final String lastid;
 
-		public UpdateResponse(int cnt, String id) {
+		public UpdateResponse(final int cnt, final String id) {
 			// fill the blank finals
 			this.count = cnt;
 			this.lastid = id;
 		}
 
 		@Override
-		public String addLine(String line, int linetype) {
+		public String addLine(final String line, final int linetype) {
 			return "Header lines are not supported for an UpdateResponse";
 		}
 
@@ -2492,7 +2475,7 @@ public class MonetConnection
 		public final int state = Statement.SUCCESS_NO_INFO;
 
 		@Override
-		public String addLine(String line, int linetype) {
+		public String addLine(final String line, final int linetype) {
 			return "Header lines are not supported for a SchemaResponse";
 		}
 
@@ -2522,7 +2505,7 @@ public class MonetConnection
 	class AutoCommitResponse extends SchemaResponse {
 		public final boolean autocommit;
 
-		public AutoCommitResponse(boolean ac) {
+		public AutoCommitResponse(final boolean ac) {
 			// fill the blank final
 			this.autocommit = ac;
 		}
@@ -2548,10 +2531,10 @@ public class MonetConnection
 		private final int seqnr;
 		/** A list of the Responses associated with the query,
 		 *  in the right order */
-		private List<Response> responses;
+		private final ArrayList<Response> responses;
 		/** A map of ResultSetResponses, used for additional
 		 *  DataBlockResponse mapping */
-		private Map<Integer, ResultSetResponse> rsresponses;
+		private HashMap<Integer, ResultSetResponse> rsresponses;
 
 		/** The current header returned by getNextResponse() */
 		private int curResponse;
@@ -2567,10 +2550,10 @@ public class MonetConnection
 		 * @param rsconcur the concurrency of result sets to produce
 		 */
 		ResponseList(
-				int cachesize,
-				int maxrows,
-				int rstype,
-				int rsconcur
+			final int cachesize,
+			final int maxrows,
+			final int rstype,
+			final int rsconcur
 		) throws SQLException {
 			this.cachesize = cachesize;
 			this.maxrows = maxrows;
@@ -2591,7 +2574,7 @@ public class MonetConnection
 			if (rstype == ResultSet.TYPE_FORWARD_ONLY) {
 				// free resources if we're running forward only
 				if (curResponse >= 0 && curResponse < responses.size()) {
-					Response tmp = responses.get(curResponse);
+					final Response tmp = responses.get(curResponse);
 					if (tmp != null)
 						tmp.close();
 					responses.set(curResponse, null);
@@ -2613,10 +2596,10 @@ public class MonetConnection
 		 *
 		 * @param i the index position of the header to close
 		 */
-		void closeResponse(int i) {
+		void closeResponse(final int i) {
 			if (i < 0 || i >= responses.size())
 				return;
-			Response tmp = responses.set(i, null);
+			final Response tmp = responses.set(i, null);
 			if (tmp != null)
 				tmp.close();
 		}
@@ -2666,7 +2649,7 @@ public class MonetConnection
 		 *
 		 * @throws SQLException if a database error occurs
 		 */
-		void processQuery(String query) throws SQLException {
+		void processQuery(final String query) throws SQLException {
 			executeQuery(queryTempl, query);
 		}
 
@@ -2678,7 +2661,7 @@ public class MonetConnection
 		 * @throws SQLException if a database error occurs
 		 */
 		@SuppressWarnings("fallthrough")
-		void executeQuery(String[] templ, String query)
+		void executeQuery(final String[] templ, final String query)
 			throws SQLException
 		{
 			String error = null;
@@ -2728,10 +2711,10 @@ public class MonetConnection
 									throw new MCLParseException("Q_PARSE header not allowed here", 1);
 								case StartOfHeaderParser.Q_TABLE:
 								case StartOfHeaderParser.Q_PREPARE: {
-									int id = sohp.getNextAsInt();
+									final int id = sohp.getNextAsInt();
 									int tuplecount = sohp.getNextAsInt();
-									int columncount = sohp.getNextAsInt();
-									int rowcount = sohp.getNextAsInt();
+									final int columncount = sohp.getNextAsInt();
+									final int rowcount = sohp.getNextAsInt();
 									// enforce the maxrows setting
 									if (maxrows != 0 && tuplecount > maxrows)
 										tuplecount = maxrows;
@@ -2752,7 +2735,7 @@ public class MonetConnection
 									res = new SchemaResponse();
 									break;
 								case StartOfHeaderParser.Q_TRANS:
-									boolean ac = sohp.getNextAsString().equals("t") ? true : false;
+									final boolean ac = sohp.getNextAsString().equals("t") ? true : false;
 									if (autoCommit && ac) {
 										addWarning("Server enabled auto commit mode " +
 											"while local state already was auto commit.", "01M11");
@@ -2762,16 +2745,16 @@ public class MonetConnection
 									break;
 								case StartOfHeaderParser.Q_BLOCK: {
 									// a new block of results for a response...
-									int id = sohp.getNextAsInt();
+									final int id = sohp.getNextAsInt();
 									sohp.getNextAsInt();	// columncount
-									int rowcount = sohp.getNextAsInt();
-									int offset = sohp.getNextAsInt();
-									ResultSetResponse t = rsresponses.get(Integer.valueOf(id));
+									final int rowcount = sohp.getNextAsInt();
+									final int offset = sohp.getNextAsInt();
+									final ResultSetResponse t = (rsresponses != null) ? rsresponses.get(Integer.valueOf(id)) : null;
 									if (t == null) {
 										error = "M0M12!no ResultSetResponse with id " + id + " found";
 										break;
 									}
-									DataBlockResponse r = new DataBlockResponse(rowcount, t.getRSType() == ResultSet.TYPE_FORWARD_ONLY);
+									final DataBlockResponse r = new DataBlockResponse(rowcount, t.getRSType() == ResultSet.TYPE_FORWARD_ONLY);
 									t.addDataBlockResponse(offset, r);
 									res = r;
 								} break;
@@ -2849,9 +2832,9 @@ public class MonetConnection
 
 				if (error != null) {
 					SQLException ret = null;
-					String[] errors = error.split("\n");
+					final String[] errors = error.split("\n");
 					for (int i = 0; i < errors.length; i++) {
-						SQLException newErr;
+						final SQLException newErr;
 						if (errors[i].length() >= 6) {
 							newErr = new SQLException(errors[i].substring(6), errors[i].substring(0, 5));
 						} else {

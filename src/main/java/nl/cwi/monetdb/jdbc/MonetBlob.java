@@ -30,14 +30,14 @@ import java.sql.SQLFeatureNotSupportedException;
 public final class MonetBlob implements Blob {
 	private byte[] buf;
 
-	protected MonetBlob(byte[] data) {
+	protected MonetBlob(final byte[] data) {
 		buf = data;
 	}
-	
-	static MonetBlob create(String in) {
+
+	final static MonetBlob create(final String in) {
 		// unpack the HEX (BLOB) notation to real bytes
-		int len = in.length() / 2;
-		byte[] buf = new byte[len];
+		final int len = in.length() / 2;
+		final byte[] buf = new byte[len];
 		int offset;
 		for (int i = 0; i < len; i++) {
 			offset = 2 * i;
@@ -53,7 +53,7 @@ public final class MonetBlob implements Blob {
 	}
 
 	//== begin interface Blob
-	
+
 	/**
 	 * This method frees the Blob object and releases the resources that
 	 * it holds. The object is invalid once the free method is called.
@@ -63,17 +63,15 @@ public final class MonetBlob implements Blob {
 	 * called multiple times, the subsequent calls to free are treated
 	 * as a no-op.
 	 *
-	 * @throws SQLException if an error occurs releasing the Blob's
-	 *         resources
+	 * @throws SQLException if an error occurs releasing the Blob's resources
 	 */
 	@Override
 	public void free() throws SQLException {
 		buf = null;
 	}
-	
+
 	/**
-	 * Retrieves the BLOB value designated by this Blob instance as a
-	 * stream.
+	 * Retrieves the BLOB value designated by this Blob instance as a stream.
 	 *
 	 * @return a stream containing the BLOB data
 	 * @throws SQLException if there is an error accessing the BLOB value
@@ -91,16 +89,14 @@ public final class MonetBlob implements Blob {
 	 *
 	 * @param pos the offset to the first byte of the partial value to
 	 *        be retrieved. The first byte in the Blob is at position 1
-	 * @param length the length in bytes of the partial value to be
-	 *        retrieved
-	 * @return InputStream through which the partial Blob value can be
-	 *         read.
+	 * @param length the length in bytes of the partial value to be retrieved
+	 * @return InputStream through which the partial Blob value can be read.
 	 * @throws SQLException if pos is less than 1 or if pos is
 	 *         greater than the number of bytes in the Blob or if pos +
 	 *         length is greater than the number of bytes in the Blob
 	 */
 	@Override
-	public InputStream getBinaryStream(long pos, long length)
+	public InputStream getBinaryStream(final long pos, final long length)
 		throws SQLException
 	{
 		checkBufIsNotNull();
@@ -116,7 +112,7 @@ public final class MonetBlob implements Blob {
 
 	/**
 	 * Retrieves all or part of the BLOB value that this Blob object
-	 * represents, as an array of bytes.  This byte array contains up to
+	 * represents, as an array of bytes. This byte array contains up to
 	 * length consecutive bytes starting at position pos.
 	 *
 	 * @param pos the ordinal position of the first byte in the BLOB
@@ -125,11 +121,10 @@ public final class MonetBlob implements Blob {
 	 * @return a byte array containing up to length consecutive bytes
 	 *         from the BLOB value designated by this Blob object,
 	 *         starting with the byte at position pos.
-	 * @throws SQLException if there is an error accessing the
-	 *         BLOB value
+	 * @throws SQLException if there is an error accessing the BLOB value
 	 */
 	@Override
-	public byte[] getBytes(long pos, int length) throws SQLException {
+	public byte[] getBytes(final long pos, final int length) throws SQLException {
 		checkBufIsNotNull();
 		if (pos < 1 || pos > buf.length) {
 			throw new SQLException("Invalid pos value: " + pos, "M1M05");
@@ -161,39 +156,37 @@ public final class MonetBlob implements Blob {
 
 	/**
 	 * Retrieves the byte position in the BLOB value designated by this
-	 * Blob object at which pattern begins.  The search begins at
-	 * position start.
+	 * Blob object at which pattern begins. The search begins at position start.
 	 *
 	 * @param pattern the Blob object designating the BLOB value for
 	 *        which to search
 	 * @param start the position in the BLOB value at which to begin
 	 *        searching; the first position is 1
 	 * @return the position at which the pattern begins, else -1
-	 * @throws SQLException if there is an error accessing the
-	 *         BLOB value
+	 * @throws SQLException if there is an error accessing the BLOB value
 	 */
 	@Override
-	public long position(Blob pattern, long start) throws SQLException {
+	public long position(final Blob pattern, final long start) throws SQLException {
 		if (pattern == null) {
 			throw new SQLException("Missing pattern object", "M1M05");
 		}
+		// buf and input argument start will be checked in method position(byte{}, long)
 		return position(pattern.getBytes(1L, (int)pattern.length()), start);
 	}
 
 	/**
 	 * Retrieves the byte position at which the specified byte array
 	 * pattern begins within the BLOB value that this Blob object
-	 * represents.  The search for pattern begins at position start.
+	 * represents. The search for pattern begins at position start.
 	 *
 	 * @param pattern the byte array for which to search
 	 * @param start the position at which to begin searching;
 	 *        the first position is 1
 	 * @return the position at which the pattern appears, else -1
-	 * @throws SQLException if there is an error accessing the
-	 *         BLOB value
+	 * @throws SQLException if there is an error accessing the BLOB value
 	 */
 	@Override
-	public long position(byte[] pattern, long start) throws SQLException {
+	public long position(final byte[] pattern, final long start) throws SQLException {
 		checkBufIsNotNull();
 		if (pattern == null) {
 			throw new SQLException("Missing pattern object", "M1M05");
@@ -230,15 +223,14 @@ public final class MonetBlob implements Blob {
 	 *
 	 * @param pos the position in the BLOB value at which to start
 	 *            writing; the first position is 1
-	 * @return a java.io.OutputStream object to which data can be
-	 *         written
+	 * @return a java.io.OutputStream object to which data can be written
 	 * @throws SQLException if there is an error accessing the BLOB
 	 *         value or if pos is less than 1
 	 * @throws SQLFeatureNotSupportedException if the JDBC driver does
 	 *         not support this method
 	 */
 	@Override
-	public OutputStream setBinaryStream(long pos) throws SQLException {
+	public OutputStream setBinaryStream(final long pos) throws SQLException {
 		throw MonetWrapper.newSQLFeatureNotSupportedException("setBinaryStream");
 	}
 
@@ -247,42 +239,40 @@ public final class MonetBlob implements Blob {
 	 * object represents, starting at position pos, and returns the
 	 * number of bytes written.
 	 *
-	 * @param pos the position in the BLOB object at which to start
-	 *        writing
-	 * @param bytes the array of bytes to be written to the BLOB  value
+	 * @param pos the position in the BLOB object at which to start writing
+	 * @param bytes the array of bytes to be written to the BLOB value
 	 *        that this Blob object represents
 	 * @return the number of bytes written
 	 * @throws SQLException if there is an error accessing the
 	 *         BLOB value or if pos is less than 1
 	 */
 	@Override
-	public int setBytes(long pos, byte[] bytes) throws SQLException {
+	public int setBytes(final long pos, final byte[] bytes) throws SQLException {
 		if (bytes == null) {
 			throw new SQLException("Missing bytes[] object", "M1M05");
 		}
+		// buf and input argument pos will be checked in method setBytes(long, byte{}, int, int)
 		return setBytes(pos, bytes, 1, bytes.length);
 	}
 
 	/**
 	 * Writes all or part of the given byte array to the BLOB value that
-	 * this Blob object represents and returns the number of bytes
-	 * written.  Writing starts at position pos in the BLOB  value; len
-	 * bytes from the given byte array are written.
+	 * this Blob object represents and returns the number of bytes written.
+	 * Writing starts at position pos in the BLOB value; len bytes from
+	 * the given byte array are written.
 	 *
-	 * @param pos the position in the BLOB object at which to start
-	 *        writing
-	 * @param bytes the array of bytes to be written to this BLOB
-	 *        object
+	 * @param pos the position in the BLOB object at which to start writing
+	 * @param bytes the array of bytes to be written to this BLOB object
 	 * @param offset the offset into the array bytes at which to start
 	 *        reading the bytes to be set
-	 * @param len the number of bytes to be written to the BLOB  value
+	 * @param len the number of bytes to be written to the BLOB value
 	 *        from the array of bytes bytes
 	 * @return the number of bytes written
 	 * @throws SQLException if there is an error accessing the
 	 *         BLOB value or if pos is less than 1
 	 */
 	@Override
-	public int setBytes(long pos, byte[] bytes, int offset, int len)
+	public int setBytes(final long pos, final byte[] bytes, final int offset, final int len)
 		throws SQLException
 	{
 		checkBufIsNotNull();
@@ -310,22 +300,21 @@ public final class MonetBlob implements Blob {
 	}
 
 	/**
-	 * Truncates the BLOB value that this Blob  object represents to be
+	 * Truncates the BLOB value that this Blob object represents to be
 	 * len bytes in length.
 	 *
 	 * @param len the length, in bytes, to which the BLOB value
 	 *        should be truncated
-	 * @throws SQLException if there is an error accessing the
-	 *         BLOB value
+	 * @throws SQLException if there is an error accessing the BLOB value
 	 */
 	@Override
-	public void truncate(long len) throws SQLException {
+	public void truncate(final long len) throws SQLException {
 		checkBufIsNotNull();
 		if (len < 0 || len > buf.length) {
 			throw new SQLException("Invalid len value: " + len, "M1M05");
 		}
 		if (buf.length > len) {
-			byte[] newbuf = new byte[(int)len];
+			final byte[] newbuf = new byte[(int)len];
 			for (int i = 0; i < len; i++)
 				newbuf[i] = buf[i];
 			buf = newbuf;

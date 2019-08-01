@@ -87,11 +87,11 @@ public class MonetCallableStatement
 	 * @throws IllegalArgumentException is one of the arguments is null or empty
 	 */
 	MonetCallableStatement(
-			MonetConnection connection,
-			int resultSetType,
-			int resultSetConcurrency,
-			int resultSetHoldability,
-			String callQuery)
+			final MonetConnection connection,
+			final int resultSetType,
+			final int resultSetConcurrency,
+			final int resultSetHoldability,
+			final String callQuery)
 		throws SQLException, IllegalArgumentException
 	{
 		super(
@@ -107,17 +107,17 @@ public class MonetCallableStatement
 	 *  { [?=] call <procedure-name> [(<arg1>,<arg2>, ...)] }
 	 * and remove the JDBC escapes pairs: { and }
 	 */
-	private static String removeEscapes(String query) {
+	final private static String removeEscapes(final String query) {
 		if (query == null)
 			return null;
 
-		int firstAccOpen = query.indexOf("{");
+		final int firstAccOpen = query.indexOf("{");
 		if (firstAccOpen == -1)
 			// nothing to remove
 			return query;
 
-		int len = query.length();
-		StringBuilder buf = new StringBuilder(len);
+		final int len = query.length();
+		final StringBuilder buf = new StringBuilder(len);
 		int countAccolades = 0;
 		// simple scanner which copies all characters except the first '{' and matching '}' character
 		// we currently do not check if 'call' appears after the first '{' and before the '}' character
@@ -150,7 +150,7 @@ public class MonetCallableStatement
 	 *  this will only succeed for strings like: "1", "2", "3", etc
 	 *  throws SQLException if it cannot convert the string to an integer number
 	 */
-	private int nameToIndex(String parameterName) throws SQLException {
+	final private int nameToIndex(final String parameterName) throws SQLException {
 		if (parameterName == null)
 			throw new SQLException("Missing parameterName value", "22002");
 		try {

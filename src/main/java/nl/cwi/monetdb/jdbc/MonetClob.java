@@ -8,12 +8,9 @@
 
 package nl.cwi.monetdb.jdbc;
 
-import java.io.ByteArrayInputStream;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.Writer;
 import java.sql.Clob;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -31,10 +28,9 @@ import java.sql.SQLFeatureNotSupportedException;
  * @author Fabian Groffen
  */
 public final class MonetClob implements Clob {
-
 	private StringBuilder buf;
 
-	protected MonetClob(String in) {
+	protected MonetClob(final String in) {
 		buf = new StringBuilder(in);
 	}
 
@@ -71,7 +67,7 @@ public final class MonetClob implements Clob {
 	@Override
 	public InputStream getAsciiStream() throws SQLException {
 		checkBufIsNotNull();
-		return new ByteArrayInputStream(buf.toString().getBytes());
+		return new java.io.ByteArrayInputStream(buf.toString().getBytes());
 	}
 
 	/**
@@ -101,7 +97,7 @@ public final class MonetClob implements Clob {
 	 *         or if pos + length is greater than the number of characters in the Clob
 	 */
 	@Override
-	public Reader getCharacterStream(long pos, long length) throws SQLException {
+	public Reader getCharacterStream(final long pos, final long length) throws SQLException {
 		// buf and input argument pos will be checked in method getSubString(long, int)
 		if (length < 0 || length > Integer.MAX_VALUE) {
 			throw new SQLException("Invalid length value: " + length, "M1M05");
@@ -111,7 +107,7 @@ public final class MonetClob implements Clob {
 
 	/**
 	 * Retrieves a copy of the specified substring in the CLOB value
-	 * designated by this Clob object.  The substring begins at
+	 * designated by this Clob object. The substring begins at
 	 * position pos and has up to length consecutive characters.
 	 *
 	 * @param pos the first character of the substring to be
@@ -125,7 +121,7 @@ public final class MonetClob implements Clob {
 	 * @throws SQLException - if there is an error accessing the CLOB value
 	 */
 	@Override
-	public String getSubString(long pos, int length) throws SQLException {
+	public String getSubString(final long pos, final int length) throws SQLException {
 		checkBufIsNotNull();
 		if (pos < 1 || pos > buf.length()) {
 			throw new SQLException("Invalid pos value: " + pos, "M1M05");
@@ -156,7 +152,7 @@ public final class MonetClob implements Clob {
 
 	/**
 	 * Retrieves the character position at which the specified Clob
-	 * object searchstr appears in this Clob object.  The search
+	 * object searchstr appears in this Clob object. The search
 	 * begins at position start.
 	 *
 	 * @param searchstr the Clob object for which to search
@@ -167,7 +163,7 @@ public final class MonetClob implements Clob {
 	 * @throws SQLException - if there is an error accessing the CLOB value
 	 */
 	@Override
-	public long position(Clob searchstr, long start) throws SQLException {
+	public long position(final Clob searchstr, final long start) throws SQLException {
 		// buf and input argument start will be checked in method position(String, long)
 		if (searchstr == null) {
 			throw new SQLException("Missing searchstr object", "M1M05");
@@ -178,7 +174,7 @@ public final class MonetClob implements Clob {
 	/**
 	 * Retrieves the character position at which the specified
 	 * substring searchstr appears in the SQL CLOB value represented
-	 * by this Clob object.  The search begins at position start.
+	 * by this Clob object. The search begins at position start.
 	 *
 	 * @param searchstr the substring for which to search
 	 * @param start the position at which to begin searching;
@@ -188,7 +184,7 @@ public final class MonetClob implements Clob {
 	 * @throws SQLException - if there is an error accessing the CLOB value
 	 */
 	@Override
-	public long position(String searchstr, long start) throws SQLException {
+	public long position(final String searchstr, final long start) throws SQLException {
 		checkBufIsNotNull();
 		if (searchstr == null) {
 			throw new SQLException("Missing searchstr object", "M1M05");
@@ -216,7 +212,7 @@ public final class MonetClob implements Clob {
 	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
 	@Override
-	public OutputStream setAsciiStream(long pos) throws SQLException {
+	public java.io.OutputStream setAsciiStream(final long pos) throws SQLException {
 		throw MonetWrapper.newSQLFeatureNotSupportedException("setAsciiStream");
 	}
 
@@ -237,7 +233,7 @@ public final class MonetClob implements Clob {
 	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
 	@Override
-	public Writer setCharacterStream(long pos) throws SQLException {
+	public java.io.Writer setCharacterStream(final long pos) throws SQLException {
 		throw MonetWrapper.newSQLFeatureNotSupportedException("setCharacterStream");
 	}
 
@@ -253,7 +249,7 @@ public final class MonetClob implements Clob {
 	 * @throws SQLException if there is an error accessing the CLOB value or if pos is less than 1
 	 */
 	@Override
-	public int setString(long pos, String str) throws SQLException {
+	public int setString(final long pos, final String str) throws SQLException {
 		// buf will be checked in method setString(long, String, int, int)
 		if (str == null) {
 			throw new SQLException("Missing str object", "M1M05");
@@ -275,7 +271,7 @@ public final class MonetClob implements Clob {
 	 * @throws SQLException if there is an error accessing the CLOB value or if pos is less than 1
 	 */
 	@Override
-	public int setString(long pos, String str, int offset, int len)
+	public int setString(final long pos, final String str, final int offset, final int len)
 		throws SQLException
 	{
 		checkBufIsNotNull();
@@ -292,7 +288,7 @@ public final class MonetClob implements Clob {
 			throw new SQLException("Invalid len value: " + len, "M1M05");
 		}
 
-		int ipos = (int) pos;
+		final int ipos = (int) pos;
 		if ((ipos + len) > buf.capacity()) {
 			buf.ensureCapacity(ipos + len);
 		}
@@ -309,7 +305,7 @@ public final class MonetClob implements Clob {
 	 *         CLOB value or if len is less than 0
 	 */
 	@Override
-	public void truncate(long len) throws SQLException {
+	public void truncate(final long len) throws SQLException {
 		checkBufIsNotNull();
 		if (len < 0 || len > buf.length()) {
 			throw new SQLException("Invalid len value: " + len, "M1M05");
@@ -325,7 +321,7 @@ public final class MonetClob implements Clob {
 	 *
 	 * @return the String this MonetClob wraps or empty string when this MonetClob was freed.
 	 */
-	public String toString() {
+	final public String toString() {
 		return (buf != null) ? buf.toString() : "";
 	}
 }
