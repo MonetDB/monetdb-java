@@ -8,14 +8,9 @@
 
 package nl.cwi.monetdb.jdbc.types;
 
-import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.sql.SQLData;
 import java.sql.SQLDataException;
 import java.sql.SQLException;
-import java.sql.SQLInput;
-import java.sql.SQLOutput;
 
 /**
  * The INET class represents the INET datatype in MonetDB.
@@ -31,7 +26,7 @@ import java.sql.SQLOutput;
  * This is probably meaningful only and only if the netmask is 32.
  * The getNetmaskBits() method can be used to retrieve the subnet bits.
  */
-public class INET implements SQLData {
+public final class INET implements java.sql.SQLData {
 	private String inet;
 
 	@Override
@@ -40,14 +35,14 @@ public class INET implements SQLData {
 	}
 
 	@Override
-	public void readSQL(SQLInput stream, String typeName) throws SQLException {
+	public void readSQL(final java.sql.SQLInput stream, final String typeName) throws SQLException {
 		if (!"inet".equals(typeName))
 			throw new SQLException("can only use this class with 'inet' type", "M1M05");
 		inet = stream.readString();
 	}
 
 	@Override
-	public void writeSQL(SQLOutput stream) throws SQLException {
+	public void writeSQL(final java.sql.SQLOutput stream) throws SQLException {
 		stream.writeString(inet);
 	}
 
@@ -56,15 +51,16 @@ public class INET implements SQLData {
 		return inet;
 	}
 
-	public void fromString(String newinet) throws SQLException {
+	public void fromString(final String newinet) throws SQLException {
 		if (newinet == null) {
 			inet = newinet;
 			return;
 		}
+
 		String tinet = newinet;
-		int slash = newinet.indexOf('/');
+		final int slash = newinet.indexOf('/');
 		if (slash != -1) {
-			int netmask;
+			final int netmask;
 			// ok, see if it is a valid netmask
 			try {
 				netmask = Integer.parseInt(newinet.substring(slash + 1));
@@ -77,11 +73,11 @@ public class INET implements SQLData {
 			tinet = newinet.substring(0, slash);
 		}
 		// check dotted quad
-		String quads[] = tinet.split("\\.");
+		final String quads[] = tinet.split("\\.");
 		if (quads.length != 4)
 			throw new SQLDataException("expected dotted quad (xxx.xxx.xxx.xxx)", "22M29");
 		for (int i = 0; i < 4; i++) {
-			int quadv;
+			final int quadv;
 			try {
 				quadv = Integer.parseInt(quads[i]);
 			} catch (NumberFormatException nfe) {
@@ -99,13 +95,13 @@ public class INET implements SQLData {
 			return null;
 
 		// inet optionally has a /y part, if y < 32, chop it off
-		int slash = inet.indexOf('/');
+		final int slash = inet.indexOf('/');
 		if (slash != -1)
 			return inet.substring(0, slash);
 		return inet;
 	}
 
-	public void setAddress(String newinet) throws Exception {
+	public void setAddress(final String newinet) throws Exception {
 		if (newinet == null) {
 			inet = newinet;
 			return;
@@ -132,12 +128,12 @@ public class INET implements SQLData {
 		}
 	}
 
-	public void setNetmaskBits(int bits) throws Exception {
+	public void setNetmaskBits(final int bits) throws Exception {
 		String newinet = inet;
 		if (newinet == null) {
 			newinet = "0.0.0.0/" + bits;
 		} else {
-			int slash = newinet.indexOf('/');
+			final int slash = newinet.indexOf('/');
 			if (slash != -1) {
 				newinet = newinet.substring(0, slash + 1) + bits;
 			} else {
@@ -153,13 +149,13 @@ public class INET implements SQLData {
 
 		try {
 			return InetAddress.getByName(getAddress());
-		} catch (UnknownHostException uhe) {
+		} catch (java.net.UnknownHostException uhe) {
 			throw new SQLDataException("could not resolve IP address", "22M29");
 		}
 	}
 
-	public void setInetAddress(InetAddress iaddr) throws Exception {
-		if (!(iaddr instanceof Inet4Address))
+	public void setInetAddress(final InetAddress iaddr) throws Exception {
+		if (!(iaddr instanceof java.net.Inet4Address))
 			throw new Exception("only IPv4 are supported currently");
 		fromString(iaddr.getHostAddress());
 	}

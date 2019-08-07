@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * is determined by the server, which makes this a light implementation.
  *
  * @author Fabian Groffen
- * @version 1.0
+ * @version 1.1
  */
 public final class MonetSavepoint implements java.sql.Savepoint {
 	/** The id of the last created Savepoint */
@@ -45,7 +45,7 @@ public final class MonetSavepoint implements java.sql.Savepoint {
 	 */
 	public MonetSavepoint(final String name) throws IllegalArgumentException {
 		if (name == null || name.isEmpty())
-			throw new IllegalArgumentException("missing savepoint name string");
+			throw new IllegalArgumentException("Missing savepoint name");
 
 		this.id = getNextId();
 		this.name = name;
@@ -70,7 +70,7 @@ public final class MonetSavepoint implements java.sql.Savepoint {
 	@Override
 	public int getSavepointId() throws SQLException {
 		if (name != null)
-			throw new SQLException("Cannot getID for named savepoint", "3B000");
+			throw new SQLException("Cannot get ID of named savepoint", "3B000");
 
 		return id;
 	}
@@ -85,7 +85,7 @@ public final class MonetSavepoint implements java.sql.Savepoint {
 	@Override
 	public String getSavepointName() throws SQLException {
 		if (name == null)
-			throw new SQLException("Unable to retrieve name of unnamed savepoint", "3B000");
+			throw new SQLException("Cannot get name of un-named savepoint", "3B000");
 
 		return name;
 	}
@@ -111,7 +111,7 @@ public final class MonetSavepoint implements java.sql.Savepoint {
 	 * @return the unique savepoint name
 	 */
 	final String getName() {
-		return "MonetDBSP" + id;
+		return "JDBCSP" + id;
 	}
 
 

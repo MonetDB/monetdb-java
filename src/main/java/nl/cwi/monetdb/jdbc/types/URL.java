@@ -8,18 +8,13 @@
 
 package nl.cwi.monetdb.jdbc.types;
 
-import java.net.MalformedURLException;
-import java.sql.SQLData;
-import java.sql.SQLDataException;
 import java.sql.SQLException;
-import java.sql.SQLInput;
-import java.sql.SQLOutput;
 
 /**
  * The URL class represents the URL datatype in MonetDB.
  * It represents an URL, that is, a well-formed string conforming to RFC2396.
  */
-public class URL implements SQLData {
+public final class URL implements java.sql.SQLData {
 	private String url;
 
 	@Override
@@ -28,14 +23,14 @@ public class URL implements SQLData {
 	}
 
 	@Override
-	public void readSQL(SQLInput stream, String typeName) throws SQLException {
+	public void readSQL(final java.sql.SQLInput stream, final String typeName) throws SQLException {
 		if (!"url".equals(typeName))
 			throw new SQLException("can only use this class with 'url' type", "M1M05");
 		url = stream.readString();
 	}
 
 	@Override
-	public void writeSQL(SQLOutput stream) throws SQLException {
+	public void writeSQL(final java.sql.SQLOutput stream) throws SQLException {
 		stream.writeString(url);
 	}
 
@@ -44,11 +39,13 @@ public class URL implements SQLData {
 		return url;
 	}
 
-	public void fromString(String newurl) throws Exception {
+	public void fromString(final String newurl) throws Exception {
 		if (newurl == null) {
 			url = newurl;
 			return;
 		}
+
+		// parse the newurl on validity
 		new java.net.URL(newurl);
 		// if above doesn't fail (throws an Exception), it is fine
 		url = newurl;
@@ -60,12 +57,12 @@ public class URL implements SQLData {
 
 		try {
 			return new java.net.URL(url);
-		} catch (MalformedURLException mue) {
-			throw new SQLDataException("data is not a valid URL: " + mue.getMessage(), "22M30");
+		} catch (java.net.MalformedURLException mue) {
+			throw new java.sql.SQLDataException("data is not a valid URL: " + mue.getMessage(), "22M30");
 		}
 	}
 
-	public void setURL(java.net.URL nurl) throws Exception {
+	public void setURL(final java.net.URL nurl) throws Exception {
 		url = nurl.toString();
 	}
 }

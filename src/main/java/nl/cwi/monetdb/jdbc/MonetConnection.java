@@ -1892,7 +1892,7 @@ public class MonetConnection
 	 * <tt>&amp;"qt" "id" "tc" "cc" "rc"</tt>.
 	 */
 	// {{{ ResultSetResponse class implementation
-	class ResultSetResponse implements Response {
+	final class ResultSetResponse implements Response {
 		/** The number of columns in this result */
 		public final int columncount;
 		/** The total number of rows this result set has */
@@ -2319,7 +2319,7 @@ public class MonetConnection
 	 * object, it is possible for threads to get the same data.
 	 */
 	// {{{ DataBlockResponse class implementation
-	static class DataBlockResponse implements Response {
+	private final static class DataBlockResponse implements Response {
 		/** The String array to keep the data in */
 		private final String[] data;
 
@@ -2429,7 +2429,7 @@ public class MonetConnection
 	 * <tt>&amp;2 0 -1</tt>
 	 */
 	// {{{ UpdateResponse class implementation
-	static class UpdateResponse implements Response {
+	final static class UpdateResponse implements Response {
 		public final int count;
 		public final String lastid;
 
@@ -2502,7 +2502,7 @@ public class MonetConnection
 	 * <tt>&amp;4 (t|f)</tt>
 	 */
 	// {{{ AutoCommitResponse class implementation
-	class AutoCommitResponse extends SchemaResponse {
+	private final class AutoCommitResponse extends SchemaResponse {
 		public final boolean autocommit;
 
 		public AutoCommitResponse(final boolean ac) {
@@ -2518,7 +2518,7 @@ public class MonetConnection
 	 * responsibility to the caller to prevent concurrent access.
 	 */
 	// {{{ ResponseList class implementation
-	class ResponseList {
+	final class ResponseList {
 		/** The cache size (number of rows in a DataBlockResponse object) */
 		private final int cachesize;
 		/** The maximum number of results for this query */
