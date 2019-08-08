@@ -42,6 +42,9 @@ public final class MonetSavepoint implements java.sql.Savepoint {
 
 	/**
 	 * Creates a named MonetSavepoint object
+	 *
+	 * @param name of savepoint
+	 * @throws IllegalArgumentException if no or empty name is given
 	 */
 	public MonetSavepoint(final String name) throws IllegalArgumentException {
 		if (name == null || name.isEmpty())

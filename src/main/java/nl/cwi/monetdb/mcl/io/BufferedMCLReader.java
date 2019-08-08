@@ -11,7 +11,6 @@ package nl.cwi.monetdb.mcl.io;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 
@@ -41,7 +40,7 @@ import java.io.UnsupportedEncodingException;
  * @see nl.cwi.monetdb.mcl.net.MapiSocket
  * @see nl.cwi.monetdb.mcl.io.BufferedMCLWriter
  */
-public class BufferedMCLReader extends BufferedReader {
+public final class BufferedMCLReader extends BufferedReader {
 	/** "there is currently no line", or the the type is unknown is represented by UNKNOWN */
 	public final static int UNKNOWN  = 0;
 	/** a line starting with ! indicates ERROR */
@@ -70,7 +69,7 @@ public class BufferedMCLReader extends BufferedReader {
 	 *
 	 * @param in A Reader
 	 */
-	public BufferedMCLReader(Reader in) {
+	public BufferedMCLReader(final Reader in) {
 		super(in);
 	}
 
@@ -82,10 +81,10 @@ public class BufferedMCLReader extends BufferedReader {
 	 * @param enc Encoding
 	 * @throws UnsupportedEncodingException If encoding is not supported
 	 */
-	public BufferedMCLReader(InputStream in, String enc)
+	public BufferedMCLReader(final InputStream in, final String enc)
 		throws UnsupportedEncodingException
 	{
-		super(new InputStreamReader(in, enc));
+		super(new java.io.InputStreamReader(in, enc));
 	}
 
 	/**
@@ -120,7 +119,7 @@ public class BufferedMCLReader extends BufferedReader {
 	 *
 	 * @param line the string to examine
 	 */
-	public void setLineType(String line) {
+	public void setLineType(final String line) {
 		if (line == null || line.isEmpty()) {
 			lineType = UNKNOWN;
 			return;
@@ -182,8 +181,8 @@ public class BufferedMCLReader extends BufferedReader {
 	 * TODO(Wouter): should probably not have to be synchronized.
 	 */
 	final public synchronized String waitForPrompt() throws IOException {
+		final StringBuilder ret = new StringBuilder(128);
 		String tmp;
-		StringBuilder ret = new StringBuilder(128);
 
 		while (lineType != PROMPT) {
 			tmp = readLine();

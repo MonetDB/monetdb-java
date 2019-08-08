@@ -22,11 +22,9 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 
@@ -122,7 +120,7 @@ public final class MapiSocket {
 	public final static int BLOCK = 8 * 1024 - 2;
 
 	/** A short in two bytes for holding the block size in bytes */
-	private byte[] blklen = new byte[2];
+	private final byte[] blklen = new byte[2];
 
 	/**
 	 * Constructs a new MapiSocket.
@@ -138,7 +136,7 @@ public final class MapiSocket {
 	 *
 	 * @param db the database
 	 */
-	public void setDatabase(String db) {
+	public void setDatabase(final String db) {
 		this.database = db;
 	}
 
@@ -147,7 +145,7 @@ public final class MapiSocket {
 	 *
 	 * @param lang the language
 	 */
-	public void setLanguage(String lang) {
+	public void setLanguage(final String lang) {
 		this.language = lang;
 	}
 
@@ -160,7 +158,7 @@ public final class MapiSocket {
 	 *
 	 * @param hash the hash method to use
 	 */
-	public void setHash(String hash) {
+	public void setHash(final String hash) {
 		this.hash = hash;
 	}
 
@@ -172,7 +170,7 @@ public final class MapiSocket {
 	 *
 	 * @param r whether to follow redirects (true) or not (false)
 	 */
-	public void setFollowRedirects(boolean r) {
+	public void setFollowRedirects(final boolean r) {
 		this.followRedirects = r;
 	}
 
@@ -187,7 +185,7 @@ public final class MapiSocket {
 	 * @see #setFollowRedirects(boolean r)
 	 * @param t the number of redirects before an exception is thrown
 	 */
-	public void setTTL(int t) {
+	public void setTTL(final int t) {
 		this.ttl = t;
 	}
 
@@ -202,7 +200,7 @@ public final class MapiSocket {
 	 *        of zero will disable timeout (i.e., timeout of infinity).
 	 * @throws SocketException Issue with the socket
 	 */
-	public void setSoTimeout(int s) throws SocketException {
+	public void setSoTimeout(final int s) throws SocketException {
 		if (s < 0) {
 			throw new IllegalArgumentException("timeout can't be negative");
 		}
@@ -231,7 +229,7 @@ public final class MapiSocket {
 	 *
 	 * @param debug Value to set
 	 */
-	public void setDebug(boolean debug) {
+	public void setDebug(final boolean debug) {
 		this.debug = debug;
 	}
 
@@ -252,16 +250,16 @@ public final class MapiSocket {
 	 * @throws MCLParseException if bogus data is received
 	 * @throws MCLException if an MCL related error occurs
 	 */
-	public List<String> connect(String host, int port, String user, String pass)
-		throws IOException, UnknownHostException, SocketException, MCLParseException, MCLException
+	public List<String> connect(final String host, final int port, final String user, final String pass)
+		throws IOException, SocketException, UnknownHostException, MCLParseException, MCLException
 	{
 		// Wrap around the internal connect that needs to know if it
 		// should really make a TCP connection or not.
 		return connect(host, port, user, pass, true);
 	}
 
-	private List<String> connect(String host, int port, String user, String pass, boolean makeConnection)
-		throws IOException, UnknownHostException, SocketException, MCLParseException, MCLException
+	private List<String> connect(final String host, final int port, final String user, final String pass, final boolean makeConnection)
+		throws IOException, SocketException, UnknownHostException, MCLParseException, MCLException
 	{
 		if (ttl-- <= 0)
 			throw new MCLException("Maximum number of redirects reached, aborting connection attempt.");
@@ -280,16 +278,17 @@ public final class MapiSocket {
 				writer = new BufferedMCLWriter(toMonet, "UTF-8");
 				writer.registerReader(reader);
 			} catch (UnsupportedEncodingException e) {
-				throw new AssertionError(e.toString());
+				throw new MCLException(e.toString());
 			}
 		}
 
-		String c = reader.readLine();
+		final String c = reader.readLine();
 		reader.waitForPrompt();
 		writer.writeLine(getChallengeResponse(c, user, pass, language, database, hash));
+
 		// read monetdb mserver response till prompt
-		List<String> redirects = new ArrayList<String>();
-		List<String> warns = new ArrayList<String>();
+		final ArrayList<String> redirects = new ArrayList<String>();
+		final List<String> warns = new ArrayList<String>();
 		String err = "", tmp;
 		int lineType;
 		do {
@@ -324,20 +323,20 @@ public final class MapiSocket {
 				// "mapi:merovingian://proxy?arg=value&..."
 				// note that the extra arguments must be obeyed in both
 				// cases
-				String suri = redirects.get(0).toString();
+				final String suri = redirects.get(0).toString();
 				if (!suri.startsWith("mapi:"))
 					throw new MCLException("unsupported redirect: " + suri);
 
-				URI u;
+				final URI u;
 				try {
 					u = new URI(suri.substring(5));
-				} catch (URISyntaxException e) {
+				} catch (java.net.URISyntaxException e) {
 					throw new MCLParseException(e.toString());
 				}
 
 				tmp = u.getQuery();
 				if (tmp != null) {
-					String args[] = tmp.split("&");
+					final String args[] = tmp.split("&");
 					for (int i = 0; i < args.length; i++) {
 						int pos = args[i].indexOf("=");
 						if (pos > 0) {
@@ -388,7 +387,7 @@ public final class MapiSocket {
 							setDatabase(tmp);
 						}
 					}
-					int p = u.getPort();
+					final int p = u.getPort();
 					warns.addAll(connect(u.getHost(), p == -1 ? port : p, user, pass, true));
 					warns.add("Redirect by " + host + ":" + port + " to " + suri);
 				} else if (u.getScheme().equals("merovingian")) {
@@ -399,7 +398,7 @@ public final class MapiSocket {
 					throw new MCLException("unsupported scheme in redirect: " + suri);
 				}
 			} else {
-				StringBuilder msg = new StringBuilder("The server sent a redirect for this connection:");
+				final StringBuilder msg = new StringBuilder("The server sent a redirect for this connection:");
 				for (String it : redirects) {
 					msg.append(" [" + it + "]");
 				}
@@ -423,20 +422,18 @@ public final class MapiSocket {
 	 * @param hash the hash method(s) to use, or NULL for all supported hashes
 	 */
 	private String getChallengeResponse(
-			String chalstr,
+			final String chalstr,
 			String username,
 			String password,
-			String language,
-			String database,
-			String hash
+			final String language,
+			final String database,
+			final String hash
 	) throws MCLParseException, MCLException, IOException {
 		// parse the challenge string, split it on ':'
-		String[] chaltok = chalstr.split(":");
+		final String[] chaltok = chalstr.split(":");
 		if (chaltok.length <= 5)
 			throw new MCLParseException("Server challenge string unusable! It contains too few (" + chaltok.length + ") tokens: " + chalstr);
 
-		// challenge string to use as salt/key
-		String challenge = chaltok[0];
 		try {
 			version = Integer.parseInt(chaltok[2]);	// protocol version
 		} catch (NumberFormatException e) {
@@ -468,10 +465,9 @@ public final class MapiSocket {
 					throw new MCLException("Unsupported password hash: " + pwhash);
 				}
 				try {
-					MessageDigest md = MessageDigest.getInstance(algo);
+					final MessageDigest md = MessageDigest.getInstance(algo);
 					md.update(password.getBytes("UTF-8"));
-					byte[] digest = md.digest();
-					password = toHex(digest);
+					password = toHex(md.digest());
 				} catch (NoSuchAlgorithmException e) {
 					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e.toString());
 				} catch (UnsupportedEncodingException e) {
@@ -488,8 +484,8 @@ public final class MapiSocket {
 				// byte-order report for future "binary" transports.
 				// In proto 8, the byte-order of the blocks is always little
 				// endian because most machines today are.
-				String hashes = (hash == null || hash.isEmpty()) ? chaltok[3] : hash;
-				HashSet<String> hashesSet = new HashSet<String>(Arrays.asList(hashes.toUpperCase().split("[, ]")));	// split on comma or space
+				final String hashes = (hash == null || hash.isEmpty()) ? chaltok[3] : hash;
+				final HashSet<String> hashesSet = new HashSet<String>(java.util.Arrays.asList(hashes.toUpperCase().split("[, ]")));	// split on comma or space
 
 				// if we deal with merovingian, mask our credentials
 				if (chaltok[1].equals("merovingian") && !language.equals("control")) {
@@ -519,11 +515,10 @@ public final class MapiSocket {
 					throw new MCLException("no supported hash algorithms found in " + hashes);
 				}
 				try {
-					MessageDigest md = MessageDigest.getInstance(algo);
+					final MessageDigest md = MessageDigest.getInstance(algo);
 					md.update(password.getBytes("UTF-8"));
-					md.update(challenge.getBytes("UTF-8"));
-					byte[] digest = md.digest();
-					pwhash += toHex(digest);
+					md.update(chaltok[0].getBytes("UTF-8"));	// salt/key
+					pwhash += toHex(md.digest());
 				} catch (NoSuchAlgorithmException e) {
 					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e.toString());
 				} catch (UnsupportedEncodingException e) {
@@ -539,13 +534,12 @@ public final class MapiSocket {
 					throw new MCLParseException("Invalid byte-order: " + chaltok[4]);
 				}
 
-				// generate response
-				String response = "BIG:"	// JVM byte-order is big-endian
+				// compose and return response
+				return "BIG:"	// JVM byte-order is big-endian
 					+ username + ":"
 					+ pwhash + ":"
 					+ language + ":"
 					+ (database == null ? "" : database) + ":";
-				return response;
 			default:
 				throw new MCLException("Unsupported protocol version: " + version);
 		}
@@ -558,8 +552,8 @@ public final class MapiSocket {
 	 * @param digest the byte array to convert
 	 * @return the byte array as hexadecimal string
 	 */
-	private static String toHex(byte[] digest) {
-		char[] result = new char[digest.length * 2];
+	private final static String toHex(final byte[] digest) {
+		final char[] result = new char[digest.length * 2];
 		int pos = 0;
 		for (int i = 0; i < digest.length; i++) {
 			result[pos++] = hexChar((digest[i] & 0xf0) >> 4);
@@ -568,7 +562,7 @@ public final class MapiSocket {
 		return new String(result);
 	}
 
-	private static char hexChar(int n) {
+	private final static char hexChar(final int n) {
 		return (n > 9)
 			? (char) ('a' + (n - 10))
 			: (char) ('0' + n);
@@ -636,7 +630,7 @@ public final class MapiSocket {
 	 * @param filename the name of the file to write to
 	 * @throws IOException if the file could not be opened for writing
 	 */
-	public void debug(String filename) throws IOException {
+	public void debug(final String filename) throws IOException {
 		debug(new FileWriter(filename));
 	}
 
@@ -662,7 +656,7 @@ public final class MapiSocket {
 	 *
 	 * @param out to write the log to
 	 */
-	public void debug(Writer out) {
+	public void debug(final Writer out) {
 		log = out;
 		debug = true;
 	}
@@ -677,6 +671,25 @@ public final class MapiSocket {
 	}
 
 	/**
+	 * Writes a logline tagged with a timestamp using the given type and message
+	 * and optionally flushes afterwards.
+	 *
+	 * Used for debugging purposes only and represents a message data that is
+	 * connected to reading (RD or RX) or writing (TD or TX) to the socket.
+	 * R=Receive, T=Transmit, D=Data, X=??
+	 *
+	 * @param type  message type: either RD, RX, TD or TX
+	 * @param message  the message to log
+	 * @param flush  whether we need to flush buffered data to the logfile.
+	 * @throws IOException if an IO error occurs while writing to the logfile
+	 */
+	private final void log(final String type, final String message, final boolean flush) throws IOException {
+		log.write(type + System.currentTimeMillis() + ": " + message + "\n");
+		if (flush)
+			log.flush();
+	}
+
+	/**
 	 * Inner class that is used to write data on a normal stream as a
 	 * blocked stream.  A call to the flush() method will write a
 	 * "final" block to the underlying stream.  Non-final blocks are
@@ -685,16 +698,16 @@ public final class MapiSocket {
 	 * full size, and then flush it explicitly to have a final block
 	 * being written to the stream.
 	 */
-	class BlockOutputStream extends FilterOutputStream {
+	final class BlockOutputStream extends FilterOutputStream {
 		private int writePos = 0;
-		private byte[] block = new byte[BLOCK];
 		private int blocksize = 0;
+		private final byte[] block = new byte[BLOCK];
 
 		/**
 		 * Constructs this BlockOutputStream, backed by the given
 		 * OutputStream.  A BufferedOutputStream is internally used.
 		 */
-		public BlockOutputStream(OutputStream out) {
+		public BlockOutputStream(final OutputStream out) {
 			// always use a buffered stream, even though we know how
 			// much bytes to write/read, since this is just faster for
 			// some reason
@@ -726,7 +739,7 @@ public final class MapiSocket {
 		 * @param last whether this is the last block
 		 * @throws IOException if writing to the stream failed
 		 */
-		public void writeBlock(boolean last) throws IOException {
+		public void writeBlock(final boolean last) throws IOException {
 			if (last) {
 				// always fits, because of BLOCK's size
 				blocksize = (short)writePos;
@@ -744,24 +757,23 @@ public final class MapiSocket {
 			}
 
 			out.write(blklen);
-
 			// write the actual block
 			out.write(block, 0, writePos);
 
 			if (debug) {
 				if (last) {
-					logTd("write final block: " + writePos + " bytes");
+					log("TD ", "write final block: " + writePos + " bytes", false);
 				} else {
-					logTd("write block: " + writePos + " bytes");
+					log("TD ", "write block: " + writePos + " bytes", false);
 				}
-				logTx(new String(block, 0, writePos, "UTF-8"));
+				log("TX ", new String(block, 0, writePos, "UTF-8"), true);
 			}
 
 			writePos = 0;
 		}
 
 		@Override
-		public void write(int b) throws IOException {
+		public void write(final int b) throws IOException {
 			if (writePos == BLOCK) {
 				writeBlock(false);
 			}
@@ -769,12 +781,12 @@ public final class MapiSocket {
 		}
 
 		@Override
-		public void write(byte[] b) throws IOException {
+		public void write(final byte[] b) throws IOException {
 			write(b, 0, b.length);
 		}
 
 		@Override
-		public void write(byte[] b, int off, int len) throws IOException {
+		public void write(final byte[] b, int off, int len) throws IOException {
 			int t = 0;
 			while (len > 0) {
 				t = BLOCK - writePos;
@@ -805,16 +817,16 @@ public final class MapiSocket {
 	 * Inner class that is used to make the data on the blocked stream
 	 * available as a normal stream.
 	 */
-	class BlockInputStream extends FilterInputStream {
+	final class BlockInputStream extends FilterInputStream {
 		private int readPos = 0;
 		private int blockLen = 0;
-		private byte[] block = new byte[BLOCK + 3]; // \n.\n
+		private final byte[] block = new byte[BLOCK + 3]; // \n.\n
 
 		/**
 		 * Constructs this BlockInputStream, backed by the given
 		 * InputStream.  A BufferedInputStream is internally used.
 		 */
-		public BlockInputStream(InputStream in) {
+		public BlockInputStream(final InputStream in) {
 			// always use a buffered stream, even though we know how
 			// much bytes to write/read, since this is just faster for
 			// some reason
@@ -832,7 +844,7 @@ public final class MapiSocket {
 		}
 
 		@Override
-		public void mark(int readlimit) {
+		public void mark(final int readlimit) {
 			throw new AssertionError("Not implemented!");
 		}
 
@@ -853,10 +865,9 @@ public final class MapiSocket {
 		 *
 		 * @return false if reading the block failed due to EOF
 		 */
-		private boolean _read(byte[] b, int len) throws IOException {
+		private boolean _read(final byte[] b, int len) throws IOException {
 			int s;
 			int off = 0;
-
 			while (len > 0) {
 				s = in.read(b, off, len);
 				if (s == -1) {
@@ -864,15 +875,15 @@ public final class MapiSocket {
 					// able to read the whole, so make this fatal
 					if (off > 0) {
 						if (debug) {
-							logRd("the following incomplete block was received:");
-							logRx(new String(b, 0, off, "UTF-8"));
+							log("RD ", "the following incomplete block was received:", false);
+							log("RX ", new String(b, 0, off, "UTF-8"), true);
 						}
 						throw new IOException("Read from " +
 								con.getInetAddress().getHostName() + ":" +
 								con.getPort() + ": Incomplete block read from stream");
 					}
 					if (debug)
-						logRd("server closed the connection (EOF)");
+						log("RD ", "server closed the connection (EOF)", true);
 					return false;
 				}
 				len -= s;
@@ -919,26 +930,24 @@ public final class MapiSocket {
 
 			if (debug) {
 				if ((blklen[0] & 0x1) == 1) {
-					logRd("read final block: " + blockLen + " bytes");
+					log("RD ", "read final block: " + blockLen + " bytes", false);
 				} else {
-					logRd("read new block: " + blockLen + " bytes");
+					log("RD ", "read new block: " + blockLen + " bytes", false);
 				}
 			}
 
 			// sanity check to avoid bad servers make us do an ugly
 			// stack trace
 			if (blockLen > block.length)
-				throw new AssertionError("Server sent a block " +
-						"larger than BLOCKsize: " +
+				throw new IOException("Server sent a block larger than BLOCKsize: " +
 						blockLen + " > " + block.length);
 			if (!_read(block, blockLen))
-				return(-1);
+				return -1;
 
 			if (debug)
-				logRx(new String(block, 0, blockLen, "UTF-8"));
+				log("RX ", new String(block, 0, blockLen, "UTF-8"), true);
 
-			// if this is the last block, make it end with a newline and
-			// prompt
+			// if this is the last block, make it end with a newline and prompt
 			if ((blklen[0] & 0x1) == 1) {
 				if (blockLen > 0 && block[blockLen - 1] != '\n') {
 					// to terminate the block in a Reader
@@ -948,31 +957,32 @@ public final class MapiSocket {
 				block[blockLen++] = BufferedMCLReader.PROMPT;
 				block[blockLen++] = '\n';
 				if (debug)
-					logRd("inserting prompt");
+					log("RD ", "inserting prompt", true);
 			}
 
-			return(blockLen);
+			return blockLen;
 		}
 
 		@Override
 		public int read() throws IOException {
 			if (available() == 0) {
 				if (readBlock() == -1)
-					return(-1);
+					return -1;
 			}
 
 			if (debug)
-				logRx(new String(block, readPos, 1, "UTF-8"));
+				log("RX ", new String(block, readPos, 1, "UTF-8"), true);
+
 			return (int)block[readPos++];
 		}
 
 		@Override
-		public int read(byte[] b) throws IOException {
+		public int read(final byte[] b) throws IOException {
 			return read(b, 0, b.length);
 		}
 
 		@Override
-		public int read(byte[] b, int off, int len) throws IOException {
+		public int read(final byte[] b, int off, int len) throws IOException {
 			int t;
 			int size = 0;
 			while (size < len) {
@@ -1004,7 +1014,7 @@ public final class MapiSocket {
 		}
 
 		@Override
-		public long skip(long n) throws IOException {
+		public long skip(final long n) throws IOException {
 			long skip = n;
 			int t = 0;
 			while (skip > 0) {
@@ -1075,61 +1085,5 @@ public final class MapiSocket {
 	protected void finalize() throws Throwable {
 		close();
 		super.finalize();
-	}
-
-
-	/**
-	 * Writes a logline tagged with a timestamp using the given string.
-	 * Used for debugging purposes only and represents a message that is
-	 * connected to writing to the socket.  A logline might look like:
-	 * TX 152545124: Hello MonetDB!
-	 *
-	 * @param message the message to log
-	 * @throws IOException if an IO error occurs while writing to the logfile
-	 */
-	private void logTx(String message) throws IOException {
-		log.write("TX " + System.currentTimeMillis() + ": " + message + "\n");
-	}
-
-	/**
-	 * Writes a logline tagged with a timestamp using the given string.
-	 * Lines written using this log method are tagged as "added
-	 * metadata" which is not strictly part of the data sent.
-	 *
-	 * @param message the message to log
-	 * @throws IOException if an IO error occurs while writing to the logfile
-	 */
-	private void logTd(String message) throws IOException {
-		log.write("TD " + System.currentTimeMillis() + ": " + message + "\n");
-	}
-
-	/**
-	 * Writes a logline tagged with a timestamp using the given string,
-	 * and flushes afterwards.  Used for debugging purposes only and
-	 * represents a message that is connected to reading from the
-	 * socket.  The log is flushed after writing the line.  A logline
-	 * might look like:
-	 * RX 152545124: Hi JDBC!
-	 *
-	 * @param message the message to log
-	 * @throws IOException if an IO error occurs while writing to the logfile
-	 */
-	private void logRx(String message) throws IOException {
-		log.write("RX " + System.currentTimeMillis() + ": " + message + "\n");
-		log.flush();
-	}
-
-	/**
-	 * Writes a logline tagged with a timestamp using the given string,
-	 * and flushes afterwards.  Lines written using this log method are
-	 * tagged as "added metadata" which is not strictly part of the data
-	 * received.
-	 *
-	 * @param message the message to log
-	 * @throws IOException if an IO error occurs while writing to the logfile
-	 */
-	private void logRd(String message) throws IOException {
-		log.write("RD " + System.currentTimeMillis() + ": " + message + "\n");
-		log.flush();
 	}
 }

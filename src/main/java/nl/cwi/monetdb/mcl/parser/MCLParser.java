@@ -35,7 +35,7 @@ public abstract class MCLParser {
 	 *
 	 * @param capacity the number of field values to expect
 	 */
-	protected MCLParser(int capacity) {
+	protected MCLParser(final int capacity) {
 		values = new String[capacity];
 	}
 
@@ -50,7 +50,7 @@ public abstract class MCLParser {
 	 * @see #next()
 	 * @see #hasNext()
 	 */
-	abstract public int parse(String source) throws MCLParseException;
+	abstract public int parse(final String source) throws MCLParseException;
 
 	/**
 	 * Repositions the internal field offset to the start, such that the

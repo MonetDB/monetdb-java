@@ -15,13 +15,13 @@ package nl.cwi.monetdb.mcl.parser;
  *
  * @author Fabian Groffen
  */
-public class TupleLineParser extends MCLParser {
+public final class TupleLineParser extends MCLParser {
 	/**
 	 * Constructs a TupleLineParser which expects columncount columns.
 	 *
 	 * @param columncount the number of columns in the to be parsed string
 	 */
-	public TupleLineParser(int columncount) {
+	public TupleLineParser(final int columncount) {
 		super(columncount);
 	}
 
@@ -37,7 +37,7 @@ public class TupleLineParser extends MCLParser {
 	 * @throws MCLParseException if an error occurs during parsing
 	 */
 	@Override
-	public int parse(String source) throws MCLParseException {
+	public int parse(final String source) throws MCLParseException {
 		final int len = source.length();
 		// first detect whether this is a single value line (=) or a
 		// real tuple ([)
@@ -170,7 +170,7 @@ public class TupleLineParser extends MCLParser {
 							} else {
 								// the field is a string surrounded by double quotes and without escape chars
 								cursor++;
-								String fieldVal = new String(chrLine, cursor, endpos - cursor);
+								final String fieldVal = new String(chrLine, cursor, endpos - cursor);
 								// if (fieldVal.contains("\\")) {
 								//	throw new MCLParseException("Invalid parsing: detected a \\ in double quoted string: " + fieldVal);
 								// }
@@ -181,7 +181,7 @@ public class TupleLineParser extends MCLParser {
 							values[column] = null;
 						} else {
 							// the field is a string NOT surrounded by double quotes and thus without escape chars
-							String fieldVal = new String(chrLine, cursor, i - 1 - cursor);
+							final String fieldVal = new String(chrLine, cursor, i - 1 - cursor);
 							// if (fieldVal.contains("\\")) {
 							//	throw new MCLParseException("Invalid parsing: detected a \\ in unquoted string: " + fieldVal);
 							// }

@@ -11,7 +11,6 @@ package nl.cwi.monetdb.mcl.io;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 
@@ -36,7 +35,7 @@ import java.io.Writer;
  * @see nl.cwi.monetdb.mcl.net.MapiSocket
  * @see nl.cwi.monetdb.mcl.io.BufferedMCLReader
  */
-public class BufferedMCLWriter extends BufferedWriter {
+public final class BufferedMCLWriter extends BufferedWriter {
 	private BufferedMCLReader reader;
 
 	/**
@@ -45,7 +44,7 @@ public class BufferedMCLWriter extends BufferedWriter {
 	 *
 	 * @param in A Writer
 	 */
-	public BufferedMCLWriter(Writer in) {
+	public BufferedMCLWriter(final Writer in) {
 		super(in);
 	}
 
@@ -57,10 +56,10 @@ public class BufferedMCLWriter extends BufferedWriter {
 	 * @param enc Encoding
 	 * @throws UnsupportedEncodingException If encoding is not supported
 	 */
-	public BufferedMCLWriter(OutputStream in, String enc)
+	public BufferedMCLWriter(final OutputStream in, final String enc)
 		throws UnsupportedEncodingException
 	{
-		super(new OutputStreamWriter(in, enc));
+		super(new java.io.OutputStreamWriter(in, enc));
 	}
 
 	/**
@@ -81,7 +80,7 @@ public class BufferedMCLWriter extends BufferedWriter {
 	 *
 	 * @param r an BufferedMCLReader
 	 */
-	public void registerReader(BufferedMCLReader r) {
+	public void registerReader(final BufferedMCLReader r) {
 		reader = r;
 	}
 
@@ -93,7 +92,7 @@ public class BufferedMCLWriter extends BufferedWriter {
 	 * @param line The line to write
 	 * @throws IOException If an I/O error occurs
 	 */
-	public void writeLine(String line) throws IOException {
+	public void writeLine(final String line) throws IOException {
 		write(line);
 		flush();
 

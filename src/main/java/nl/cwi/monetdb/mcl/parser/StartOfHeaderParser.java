@@ -22,7 +22,7 @@ import java.nio.CharBuffer;
  *
  * @author Fabian Groffen
  */
-public class StartOfHeaderParser {
+public final class StartOfHeaderParser {
 	private CharBuffer soh = null;
 	private int len;
 	private int pos;
@@ -49,10 +49,10 @@ public class StartOfHeaderParser {
 	/** An unknown and unsupported response */
 	public final static int Q_UNKNOWN  =  0 ;
 
-	public final int parse(String in) throws MCLParseException {
+	public final int parse(final String in) throws MCLParseException {
 		soh = CharBuffer.wrap(in);
 		soh.get();	// skip the &
-		int type = soh.get();
+		final int type = soh.get();
 		switch (type) {
 			case Q_PARSE:
 			case Q_SCHEMA:
@@ -96,20 +96,22 @@ public class StartOfHeaderParser {
 	 * @throws MCLParseException if no numeric value could be read
 	 */
 	public final int getNextAsInt() throws MCLParseException {
-		boolean positive = true;
 		pos++;
 		if (!soh.hasRemaining())
 			throw new MCLParseException("unexpected end of string", soh.position() - 1);
-		int tmp = 0;
+
+		boolean positive = true;
 		char chr = soh.get();
 		// note: don't use Character.isDigit() here, because
 		// we only want ISO-LATIN-1 digits
-		if(chr == '-') {
+		if (chr == '-') {
 			positive = false;
 			if (!soh.hasRemaining())
 				throw new MCLParseException("unexpected end of string", soh.position() - 1);
 			chr = soh.get();
 		}
+
+		int tmp = 0;
 		if (chr >= '0' && chr <= '9') {
 			tmp = (int)chr - (int)'0';
 		} else {
@@ -132,12 +134,12 @@ public class StartOfHeaderParser {
 		pos++;
 		if (!soh.hasRemaining())
 			throw new MCLParseException("unexpected end of string", soh.position() - 1);
+
 		int cnt = 0;
 		soh.mark();
 		while (soh.hasRemaining() && soh.get() != ' ') {
 			cnt++;
 		}
-
 		soh.reset();
 
 		return soh.subSequence(0, cnt).toString();

@@ -8,8 +8,6 @@
 
 package nl.cwi.monetdb.mcl.parser;
 
-import java.text.ParseException;
-
 /**
  * When an MCLParseException is thrown, the MCL protocol is violated by
  * the sender.  In general a stream reader throws an
@@ -19,10 +17,7 @@ import java.text.ParseException;
  * give an error offset whenever possible.  Alternatively it makes sure
  * that the error message includes the offending data read.
  */
-public class MCLParseException extends ParseException {
-	/**
-	 * 
-	 */
+public class MCLParseException extends java.text.ParseException {
 	private static final long serialVersionUID = 1L;
 
 	public MCLParseException(String e) {

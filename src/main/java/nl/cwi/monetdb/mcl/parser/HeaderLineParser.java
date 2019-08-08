@@ -16,7 +16,7 @@ package nl.cwi.monetdb.mcl.parser;
  *
  * @author Fabian Groffen
  */
-public class HeaderLineParser extends MCLParser {
+public final class HeaderLineParser extends MCLParser {
 	/* types of meta data supported by MCL protocol */
 	public final static int NAME   = 1;	// name of column
 	public final static int LENGTH = 2;
@@ -31,7 +31,7 @@ public class HeaderLineParser extends MCLParser {
 	 *
 	 * @param columncount the number of columns in the to be parsed string
 	 */
-	public HeaderLineParser(int columncount) {
+	public HeaderLineParser(final int columncount) {
 		super(columncount);
 		intValues = new int[columncount];
 	}
@@ -50,8 +50,8 @@ public class HeaderLineParser extends MCLParser {
 	 * @throws MCLParseException if an error occurs during parsing
 	 */
 	@Override
-	public int parse(String source) throws MCLParseException {
-		char[] chrLine = source.toCharArray();
+	public int parse(final String source) throws MCLParseException {
+		final char[] chrLine = source.toCharArray();
 		int len = chrLine.length;
 		int pos = 0;
 		boolean foundChar = false;
@@ -122,7 +122,7 @@ public class HeaderLineParser extends MCLParser {
 	}
 
 	/**
-	 * Returns an array of Strings containing the values between
+	 * Fills an array of Strings containing the values between
 	 * ',\t' separators.
 	 *
 	 * As of Oct2014-SP1 release MAPI adds double quotes around names when
@@ -135,7 +135,7 @@ public class HeaderLineParser extends MCLParser {
 	 * @param start where the relevant data starts
 	 * @param stop where the relevant data stops
 	 */
-	final private void getValues(char[] chrLine, int start, int stop) {
+	private final void getValues(final char[] chrLine, int start, final int stop) {
 		int elem = 0;
 		boolean inString = false, escaped = false;
 
@@ -193,7 +193,7 @@ public class HeaderLineParser extends MCLParser {
 	}
 
 	/**
-	 * Returns an array of ints containing the values between
+	 * Fills an array of ints containing the values between
 	 * ',\t' separators.
 	 *
 	 * Feb2017 note - This integer parser doesn't have to parse negative
@@ -204,7 +204,7 @@ public class HeaderLineParser extends MCLParser {
 	 * @param start where the relevant data starts
 	 * @param stop where the relevant data stops
 	 */
-	final private void getIntValues(char[] chrLine, int start, int stop) throws MCLParseException {
+	private final void getIntValues(final char[] chrLine, final int start, final int stop) throws MCLParseException {
 		int elem = 0;
 		int tmp = 0;
 
@@ -212,7 +212,7 @@ public class HeaderLineParser extends MCLParser {
 			if (chrLine[i] == ',' && chrLine[i + 1] == '\t') {
 				intValues[elem++] = tmp;
 				tmp = 0;
-				start = i++;
+				i++;
 			} else {
 				// note: don't use Character.isDigit() here, because
 				// we only want ISO-LATIN-1 digits
