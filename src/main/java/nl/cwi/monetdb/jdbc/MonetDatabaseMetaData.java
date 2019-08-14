@@ -1750,7 +1750,7 @@ public class MonetDatabaseMetaData
 		query.append("WHERE \"functions\".\"type\" = 2");
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -1875,7 +1875,7 @@ public class MonetDatabaseMetaData
 		"WHERE \"functions\".\"type\" = 2");
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -2027,7 +2027,7 @@ public class MonetDatabaseMetaData
 		}
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -2090,7 +2090,7 @@ public class MonetDatabaseMetaData
 			"FROM \"sys\".\"schemas\"");
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" WHERE 1 = 0");
 		} else {
@@ -2276,7 +2276,7 @@ public class MonetDatabaseMetaData
 		"  AND \"tables\".\"schema_id\" = \"schemas\".\"id\"");
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -2377,7 +2377,7 @@ public class MonetDatabaseMetaData
 		}
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -2472,7 +2472,7 @@ public class MonetDatabaseMetaData
 		}
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -2556,7 +2556,7 @@ public class MonetDatabaseMetaData
 			"AND \"keys\".\"type\" IN (0, 1)");	// only primary keys (type = 0) and unique keys (type = 1), not fkeys (type = 2)
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -2677,7 +2677,7 @@ public class MonetDatabaseMetaData
 			"AND \"keys\".\"type\" = 0");
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -2800,7 +2800,7 @@ public class MonetDatabaseMetaData
 		query.append(keyQuery);
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -2888,7 +2888,7 @@ public class MonetDatabaseMetaData
 		query.append(keyQuery);
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -2987,7 +2987,7 @@ public class MonetDatabaseMetaData
 
 		if ((pcatalog != null && !pcatalog.isEmpty())
 		 || (fcatalog != null && !fcatalog.isEmpty())) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -3209,7 +3209,7 @@ public class MonetDatabaseMetaData
 			"AND (\"keys\".\"type\" IS NULL OR \"keys\".\"type\" = 1)");
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -3377,7 +3377,7 @@ public class MonetDatabaseMetaData
 		"WHERE \"types\".\"id\" > 99 AND \"types\".\"eclass\" >= 15");
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -3976,7 +3976,7 @@ public class MonetDatabaseMetaData
 		query.append("WHERE \"functions\".\"type\" <> 2");
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
@@ -4094,7 +4094,7 @@ public class MonetDatabaseMetaData
 		"WHERE \"functions\".\"type\" <> 2");
 
 		if (catalog != null && !catalog.isEmpty()) {
-			// none empty catalog selection.
+			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
