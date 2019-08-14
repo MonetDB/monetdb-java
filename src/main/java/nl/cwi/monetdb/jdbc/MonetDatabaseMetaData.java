@@ -481,60 +481,58 @@ public class MonetDatabaseMetaData
 	}
 
 	// SQL query parts shared by four get<Type>Functions() below
-	private static final String FunctionsSelect = "SELECT DISTINCT \"name\" FROM \"sys\".\"functions\" WHERE ";
-	private static final String FunctionsWhere = "(\"id\" IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1 AND \"name\" = 'arg_1' AND \"type\" IN ";
+	private static final String FunctionsSelect = "SELECT DISTINCT CASE WHEN \"language\" > 0 THEN s.\"name\"||'.'||f.\"name\" ELSE f.\"name\" END FROM \"sys\".\"functions\" f JOIN \"sys\".\"schemas\" s ON f.\"schema_id\" = s.\"id\" WHERE ";
+	private static final String FunctionsWhere = "(f.\"id\" IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1 AND \"name\" = 'arg_1' AND \"type\" IN ";
 	// Scalar functions sql_max(x,y), sql_min(x,y), greatest(x,y) and least(x,y) are defined in sys.args for type 'any' and usable as num, str and timedate functions.
-	private static final String OrFunctionsMaxMin = " OR \"name\" IN ('sql_max','sql_min','least','greatest')";
+	private static final String OrFunctionsMaxMin = " OR f.\"name\" IN ('sql_max','sql_min','least','greatest')";
 	private static final String FunctionsOrderBy1 = " ORDER BY 1";
 
 	@Override
 	public String getNumericFunctions() {
 		final String match =
-			"('tinyint', 'smallint', 'int', 'bigint', 'hugeint', 'decimal', 'double', 'real') )" +
-			" AND \"type\" = 1" +	// only scalar functions
-			// exclude functions which belong to the 'str' module
-			" AND \"mod\" <> 'str')" +	// to filter out string functions: 'code' and 'space'
-			" OR \"name\" IN ('degrees','fuse','pi','ms_round','ms_str','ms_trunc','radians')";
+			"('tinyint','smallint','int','bigint','hugeint','decimal','double','real'))" +
+			" AND \"type\" = 1" +	// only scalar functions, note that code(int) and space(int) will also be listed as string functions
+			// exclude functions which do not work
+			" AND f.\"name\" NOT IN ('not_uniques','rotate_xor_hash'))" +
+			// include specific functions which have no 1st arg (pi()) or it is not numeric
+			" OR f.\"name\" IN ('alpha','degrees','fuse','ms_round','ms_str','ms_trunc','pi','radians')";
 		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + FunctionsOrderBy1);
 	}
 
 	@Override
 	public String getStringFunctions() {
 		final String match =
-			"('char', 'varchar', 'clob', 'json') )" +
-			// include functions which belong to the 'str' module
-			" OR \"mod\" = 'str')";
+			"('char','varchar','clob','json','url'))" +
+			" AND \"type\" = 1" +	// only scalar functions
+			// exclude sql functions: get_value_for, next_value_for, restart
+			" AND \"mod\" <> 'sql')" +
+			// include specific functions code(int) and space(int) which belong to the 'str' module
+			" OR \"mod\" = 'str'" +
+			// include 3 specific json functions and udf reverse which accept a string arg
+			" OR f.\"name\" IN ('isarray','isobject','isvalid','reverse')";
 		final String unionPart =
-			// add system functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
+			// add functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'position'";
 		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + unionPart + FunctionsOrderBy1);
 	}
 
 	@Override
 	public String getSystemFunctions() {
-		// Note: As of Apr2019 (11.33.3) release the system table systemfunctions is replaced by a view which queries functions.system
-		// TODO: Replace join to sys.systemfunctions with " AND \"system\" " but only if the server-version is >= 11.33.3
 		final String wherePart =
-			"\"id\" NOT IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1)" +	// without any args
-			" AND \"id\" IN (SELECT \"function_id\" FROM \"sys\".\"systemfunctions\")" +	// only functions marked as system
-			" AND \"type\" = 1" +	// only scalar functions
-			// exclude functions which belong to the 'mtime' module
-			" AND \"mod\" <> 'mtime'" +
-			" AND \"name\" NOT IN ('localtime','localtimestamp','pi','rand')" +
-			// add system functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
-			" UNION SELECT 'cast'" +
-			" UNION SELECT 'coalesce'" +
-			" UNION SELECT 'convert'" +
-			" UNION SELECT 'ifthenelse'" +
-			" UNION SELECT 'isnull'" +
-			" UNION SELECT 'nullif'";
+			"f.\"name\" IN ('columnsize','debug','get_value_for','hash','hashsize','heapsize'" +
+			",'ifthenelse','imprintsize','isaurl','isauuid','isnull','masterclock','mastertick'" +
+			",'md5','newurl','next_value_for','password_hash','replicaclock','replicatick','uuid')" +
+			// add functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
+			" UNION ALL SELECT * FROM (VALUES('cast'),('coalesce'),('convert'),('nullif')) as sf";
 		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + FunctionsOrderBy1);
 	}
 
 	@Override
 	public String getTimeDateFunctions() {
 		final String wherePart =
-			 "\"mod\" IN ('mtime','timestamp') OR \"name\" IN ('localtime','localtimestamp','date_trunc')";
+			 "\"mod\" IN ('mtime','timestamp')" +
+			// include Date/Time functions which are located in 'str' module
+			" OR f.\"name\" IN ('localtime','localtimestamp','date_trunc')";
 		final String unionPart =
 			// add time date functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'extract'" +
