@@ -21,7 +21,7 @@ import java.sql.Types;
  * A DatabaseMetaData object suitable for the MonetDB database.
  *
  * @author Fabian Groffen, Martin van Dinther
- * @version 0.7
+ * @version 0.8
  */
 public class MonetDatabaseMetaData
 	extends MonetWrapper
@@ -957,7 +957,7 @@ public class MonetDatabaseMetaData
 	 * primary and foreign keys with the requirement that no foreign key row may be inserted or
 	 * updated unless a matching primary key row exists. Check clauses allow specification of
 	 * inter-column constraints to be maintained by the database system.
-	 * Default clauses provide optional default values for missing data. 
+	 * Default clauses provide optional default values for missing data.
 	 *
 	 * We currently do not supprt CHECK constraints (see bug 3568) nor deferrable FK constraints.
 	 *
@@ -1714,22 +1714,22 @@ public class MonetDatabaseMetaData
 		final boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
 		final StringBuilder query = new StringBuilder(980);
 		query.append("SELECT cast(null as char(1)) AS \"PROCEDURE_CAT\", " +
-			"\"schemas\".\"name\" AS \"PROCEDURE_SCHEM\", " +
-			"\"functions\".\"name\" AS \"PROCEDURE_NAME\", " +
+			"s.\"name\" AS \"PROCEDURE_SCHEM\", " +
+			"f.\"name\" AS \"PROCEDURE_NAME\", " +
 			"cast(null as char(1)) AS \"Field4\", " +
 			"cast(null as char(1)) AS \"Field5\", " +
 			"cast(null as char(1)) AS \"Field6\", ")
-			.append(useCommentsTable ? "COALESCE(\"comments\".\"remark\", cast(\"functions\".\"func\" as varchar(9999)))" : "cast(\"functions\".\"func\" as varchar(9999))").append(" AS \"REMARKS\", " +
+			.append(useCommentsTable ? "COALESCE(cm.\"remark\", cast(f.\"func\" as varchar(9999)))" : "cast(f.\"func\" as varchar(9999))").append(" AS \"REMARKS\", " +
 			// in MonetDB procedures have no return value by design.
 			"cast(").append(DatabaseMetaData.procedureNoResult).append(" AS smallint) AS \"PROCEDURE_TYPE\", " +
 			// only the id value uniquely identifies a procedure. Include it to be able to differentiate between multiple overloaded procedures with the same name
-			"cast(\"functions\".\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
-		"FROM \"sys\".\"functions\" JOIN \"sys\".\"schemas\" ON (\"functions\".\"schema_id\" = \"schemas\".\"id\") ");
+			"cast(f.\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
+		"FROM \"sys\".\"functions\" f JOIN \"sys\".\"schemas\" s ON (f.\"schema_id\" = s.\"id\") ");
 		if (useCommentsTable) {
-			query.append("LEFT OUTER JOIN \"sys\".\"comments\" ON (\"functions\".\"id\" = \"comments\".\"id\") ");
+			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON (f.\"id\" = cm.\"id\") ");
 		}
 		// include procedures only (type = 2). Others will be returned via getFunctions()
-		query.append("WHERE \"functions\".\"type\" = 2");
+		query.append("WHERE f.\"type\" = 2");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -1737,10 +1737,10 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schemaPattern != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
 			if (procedureNamePattern != null) {
-				query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(procedureNamePattern));
+				query.append(" AND f.\"name\" ").append(composeMatchPart(procedureNamePattern));
 			}
 		}
 
@@ -1826,35 +1826,35 @@ public class MonetDatabaseMetaData
 	) throws SQLException {
 		final StringBuilder query = new StringBuilder(2900);
 		query.append("SELECT cast(null as char(1)) AS \"PROCEDURE_CAT\", " +
-			"\"schemas\".\"name\" AS \"PROCEDURE_SCHEM\", " +
-			"\"functions\".\"name\" AS \"PROCEDURE_NAME\", " +
-			"\"args\".\"name\" AS \"COLUMN_NAME\", " +
-			"cast(CASE \"args\".\"inout\"" +
-				" WHEN 0 THEN (CASE \"args\".\"number\" WHEN 0 THEN ").append(DatabaseMetaData.procedureColumnReturn).append(" ELSE ").append(DatabaseMetaData.procedureColumnOut).append(" END)" +
+			"s.\"name\" AS \"PROCEDURE_SCHEM\", " +
+			"f.\"name\" AS \"PROCEDURE_NAME\", " +
+			"a.\"name\" AS \"COLUMN_NAME\", " +
+			"cast(CASE a.\"inout\"" +
+				" WHEN 0 THEN (CASE a.\"number\" WHEN 0 THEN ").append(DatabaseMetaData.procedureColumnReturn).append(" ELSE ").append(DatabaseMetaData.procedureColumnOut).append(" END)" +
 				" WHEN 1 THEN ").append(DatabaseMetaData.procedureColumnIn)
 				.append(" ELSE ").append(DatabaseMetaData.procedureColumnUnknown).append(" END AS smallint) AS \"COLUMN_TYPE\", " +
-			"cast(").append(MonetDriver.getSQLTypeMap("\"args\".\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
-			"\"args\".\"type\" AS \"TYPE_NAME\", " +
-			"CASE \"args\".\"type\" WHEN 'tinyint' THEN 3 WHEN 'smallint' THEN 5 WHEN 'int' THEN 10 WHEN 'bigint' THEN 19 WHEN 'hugeint' THEN 38 WHEN 'oid' THEN 19 WHEN 'wrd' THEN 19 ELSE \"args\".\"type_digits\" END AS \"PRECISION\", " +
-			"CASE \"args\".\"type\" WHEN 'tinyint' THEN 1 WHEN 'smallint' THEN 2 WHEN 'int' THEN 4 WHEN 'bigint' THEN 8 WHEN 'hugeint' THEN 16 WHEN 'oid' THEN 8 WHEN 'wrd' THEN 8 ELSE \"args\".\"type_digits\" END AS \"LENGTH\", " +
-			"cast(CASE WHEN \"args\".\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric','time','timetz','timestamp','timestamptz','sec_interval') THEN \"args\".\"type_scale\" ELSE NULL END AS smallint) AS \"SCALE\", " +
-			"cast(CASE WHEN \"args\".\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric') THEN 10 WHEN \"args\".\"type\" IN ('real','float','double') THEN 2 ELSE NULL END AS smallint) AS \"RADIX\", " +
+			"cast(").append(MonetDriver.getSQLTypeMap("a.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
+			"a.\"type\" AS \"TYPE_NAME\", " +
+			"CASE a.\"type\" WHEN 'tinyint' THEN 3 WHEN 'smallint' THEN 5 WHEN 'int' THEN 10 WHEN 'bigint' THEN 19 WHEN 'hugeint' THEN 38 WHEN 'oid' THEN 19 WHEN 'wrd' THEN 19 ELSE a.\"type_digits\" END AS \"PRECISION\", " +
+			"CASE a.\"type\" WHEN 'tinyint' THEN 1 WHEN 'smallint' THEN 2 WHEN 'int' THEN 4 WHEN 'bigint' THEN 8 WHEN 'hugeint' THEN 16 WHEN 'oid' THEN 8 WHEN 'wrd' THEN 8 ELSE a.\"type_digits\" END AS \"LENGTH\", " +
+			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric','time','timetz','timestamp','timestamptz','sec_interval') THEN a.\"type_scale\" ELSE NULL END AS smallint) AS \"SCALE\", " +
+			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric') THEN 10 WHEN a.\"type\" IN ('real','float','double') THEN 2 ELSE NULL END AS smallint) AS \"RADIX\", " +
 			"cast(").append(DatabaseMetaData.procedureNullableUnknown).append(" AS smallint) AS \"NULLABLE\", " +
 			"cast(null as char(1)) AS \"REMARKS\", " +
 			"cast(null as char(1)) AS \"COLUMN_DEF\", " +
 			"cast(0 as int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 as int) AS \"SQL_DATETIME_SUB\", " +
-			"cast(CASE WHEN \"args\".\"type\" IN ('char','varchar','clob') THEN \"args\".\"type_digits\" ELSE NULL END as int) AS \"CHAR_OCTET_LENGTH\", " +
+			"cast(CASE WHEN a.\"type\" IN ('char','varchar','clob') THEN a.\"type_digits\" ELSE NULL END as int) AS \"CHAR_OCTET_LENGTH\", " +
 			// in MonetDB procedures have no return value by design. The arguments in sys.args are numbered from 0 so we must add 1 to comply with the API specification.
-			"cast(\"args\".\"number\" + 1 as int) AS \"ORDINAL_POSITION\", " +
+			"cast(a.\"number\" + 1 as int) AS \"ORDINAL_POSITION\", " +
 			"cast('' as varchar(3)) AS \"IS_NULLABLE\", " +
 			// the specific name contains the function id, in order to be able to match the args to the correct overloaded procedure name
-			"cast(\"functions\".\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
-		"FROM \"sys\".\"args\" " +
-		"JOIN \"sys\".\"functions\" ON (\"args\".\"func_id\" = \"functions\".\"id\") " +
-		"JOIN \"sys\".\"schemas\" ON (\"functions\".\"schema_id\" = \"schemas\".\"id\") " +
+			"cast(f.\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
+		"FROM \"sys\".\"args\" a " +
+		"JOIN \"sys\".\"functions\" f ON (a.\"func_id\" = f.\"id\") " +
+		"JOIN \"sys\".\"schemas\" s ON (f.\"schema_id\" = s.\"id\") " +
 		// include procedures only (type = 2). Others will be returned via getFunctionColumns()
-		"WHERE \"functions\".\"type\" = 2");
+		"WHERE f.\"type\" = 2");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -1862,13 +1862,13 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schemaPattern != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
 			if (procedureNamePattern != null) {
-				query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(procedureNamePattern));
+				query.append(" AND f.\"name\" ").append(composeMatchPart(procedureNamePattern));
 			}
 			if (columnNamePattern != null) {
-				query.append(" AND \"args\".\"name\" ").append(composeMatchPart(columnNamePattern));
+				query.append(" AND a.\"name\" ").append(composeMatchPart(columnNamePattern));
 			}
 		}
 
@@ -1973,40 +1973,37 @@ public class MonetDatabaseMetaData
 			query.append("SELECT * FROM (");
 		}
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
-			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
-			"\"tables\".\"name\" AS \"TABLE_NAME\", ");
+			"s.\"name\" AS \"TABLE_SCHEM\", " +
+			"t.\"name\" AS \"TABLE_NAME\", ");
 		if (preJul2015) {
 			query.append(
-				"CASE WHEN \"tables\".\"system\" = true AND \"tables\".\"type\" IN (0, 10) AND \"tables\".\"temporary\" = 0 THEN 'SYSTEM TABLE' " +
-				"WHEN \"tables\".\"system\" = true AND \"tables\".\"type\" IN (1, 11) AND \"tables\".\"temporary\" = 0 THEN 'SYSTEM VIEW' " +
-				"WHEN \"tables\".\"system\" = false AND \"tables\".\"type\" = 0 AND \"tables\".\"temporary\" = 0 THEN 'TABLE' " +
-				"WHEN \"tables\".\"system\" = false AND \"tables\".\"type\" = 1 AND \"tables\".\"temporary\" = 0 THEN 'VIEW' " +
-				"WHEN \"tables\".\"system\" = true AND \"tables\".\"type\" IN (0, 20) AND \"tables\".\"temporary\" = 1 THEN 'SYSTEM SESSION TABLE' " +
-				"WHEN \"tables\".\"system\" = true AND \"tables\".\"type\" IN (1, 21) AND \"tables\".\"temporary\" = 1 THEN 'SYSTEM SESSION VIEW' " +
-				"WHEN \"tables\".\"system\" = false AND \"tables\".\"type\" IN (0, 30) AND \"tables\".\"temporary\" = 1 THEN 'SESSION TABLE' " +
-				"WHEN \"tables\".\"system\" = false AND \"tables\".\"type\" IN (1, 31) AND \"tables\".\"temporary\" = 1 THEN 'SESSION VIEW' " +
+				"CASE WHEN t.\"system\" = true AND t.\"type\" IN (0, 10) AND t.\"temporary\" = 0 THEN 'SYSTEM TABLE' " +
+				"WHEN t.\"system\" = true AND t.\"type\" IN (1, 11) AND t.\"temporary\" = 0 THEN 'SYSTEM VIEW' " +
+				"WHEN t.\"system\" = false AND t.\"type\" = 0 AND t.\"temporary\" = 0 THEN 'TABLE' " +
+				"WHEN t.\"system\" = false AND t.\"type\" = 1 AND t.\"temporary\" = 0 THEN 'VIEW' " +
+				"WHEN t.\"system\" = true AND t.\"type\" IN (0, 20) AND t.\"temporary\" = 1 THEN 'SYSTEM SESSION TABLE' " +
+				"WHEN t.\"system\" = true AND t.\"type\" IN (1, 21) AND t.\"temporary\" = 1 THEN 'SYSTEM SESSION VIEW' " +
+				"WHEN t.\"system\" = false AND t.\"type\" IN (0, 30) AND t.\"temporary\" = 1 THEN 'SESSION TABLE' " +
+				"WHEN t.\"system\" = false AND t.\"type\" IN (1, 31) AND t.\"temporary\" = 1 THEN 'SESSION VIEW' " +
 				"END AS \"TABLE_TYPE\", ");
 		} else {
-			query.append("\"table_types\".\"table_type_name\" AS \"TABLE_TYPE\", ");
+			query.append("tt.\"table_type_name\" AS \"TABLE_TYPE\", ");
 		}
-		query.append(useCommentsTable ? "COALESCE(\"comments\".\"remark\", \"tables\".\"query\")" : "\"tables\".\"query\"").append(" AS \"REMARKS\", " +
+		query.append(useCommentsTable ? "COALESCE(cm.\"remark\", t.\"query\")" : "t.\"query\"").append(" AS \"REMARKS\", " +
 			"cast(null as char(1)) AS \"TYPE_CAT\", " +
 			"cast(null as char(1)) AS \"TYPE_SCHEM\", " +
 			"cast(null as char(1)) AS \"TYPE_NAME\", " +
 			"cast(null as char(1)) AS \"SELF_REFERENCING_COL_NAME\", " +
 			"cast(null as char(1)) AS \"REF_GENERATION\" " +
-			"FROM \"sys\".\"tables\"");
+			"FROM \"sys\".\"tables\" t ");
+		if (!preJul2015) {
+			query.append("JOIN \"sys\".\"table_types\" tt ON t.\"type\" = tt.\"table_type_id\" ");
+		}
+		query.append("JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" ");
 		if (useCommentsTable) {
-			query.append(" LEFT OUTER JOIN \"sys\".\"comments\" ON (\"tables\".\"id\" = \"comments\".\"id\")");
+			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON t.\"id\" = cm.\"id\" ");
 		}
-		query.append(", \"sys\".\"schemas\"");
-		if (!preJul2015) {
-			query.append(", \"sys\".\"table_types\"");
-		}
-		query.append(" WHERE \"tables\".\"schema_id\" = \"schemas\".\"id\"");
-		if (!preJul2015) {
-			query.append(" AND \"tables\".\"type\" = \"table_types\".\"table_type_id\"");
-		}
+		query.append("WHERE 1 = 1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -2014,10 +2011,10 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schemaPattern != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
 			if (tableNamePattern != null) {
-				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
+				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
 			}
 		}
 
@@ -2025,7 +2022,7 @@ public class MonetDatabaseMetaData
 			if (preJul2015) {
 				query.append(") AS \"getTables\" WHERE \"TABLE_TYPE\" IN (");
 			} else {
-				query.append(" AND \"table_types\".\"table_type_name\" IN (");
+				query.append(" AND tt.\"table_type_name\" IN (");
 			}
 			for (int i = 0; i < types.length; i++) {
 				if (i > 0) {
@@ -2222,40 +2219,39 @@ public class MonetDatabaseMetaData
 		final boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
 		final StringBuilder query = new StringBuilder(2450);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
-			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
-			"\"tables\".\"name\" AS \"TABLE_NAME\", " +
-			"\"columns\".\"name\" AS \"COLUMN_NAME\", " +
-			"cast(").append(MonetDriver.getSQLTypeMap("\"columns\".\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
-			"\"columns\".\"type\" AS \"TYPE_NAME\", " +
-			"\"columns\".\"type_digits\" AS \"COLUMN_SIZE\", " +
+			"s.\"name\" AS \"TABLE_SCHEM\", " +
+			"t.\"name\" AS \"TABLE_NAME\", " +
+			"c.\"name\" AS \"COLUMN_NAME\", " +
+			"cast(").append(MonetDriver.getSQLTypeMap("c.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
+			"c.\"type\" AS \"TYPE_NAME\", " +
+			"c.\"type_digits\" AS \"COLUMN_SIZE\", " +
 			"0 AS \"BUFFER_LENGTH\", " +
-			"\"columns\".\"type_scale\" AS \"DECIMAL_DIGITS\", " +
-			"cast(CASE WHEN \"columns\".\"type\" IN ('decimal', 'numeric', 'sec_interval') THEN 10 " +
-				"WHEN \"columns\".\"type\" IN ('int', 'smallint', 'tinyint', 'bigint', 'hugeint', 'float', 'real', 'double', 'oid', 'wrd') THEN 2 " +
+			"c.\"type_scale\" AS \"DECIMAL_DIGITS\", " +
+			"cast(CASE WHEN c.\"type\" IN ('decimal', 'numeric', 'sec_interval') THEN 10 " +
+				"WHEN c.\"type\" IN ('int', 'smallint', 'tinyint', 'bigint', 'hugeint', 'float', 'real', 'double', 'oid', 'wrd') THEN 2 " +
 				"ELSE 0 END AS int) AS \"NUM_PREC_RADIX\", " +
-			"cast(CASE \"null\" WHEN true THEN ").append(ResultSetMetaData.columnNullable)
+			"cast(CASE c.\"null\" WHEN true THEN ").append(ResultSetMetaData.columnNullable)
 			.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls).append(" END AS int) AS \"NULLABLE\", ")
-			.append(useCommentsTable ? "\"comments\".\"remark\"" : "cast(null AS varchar(9999))").append(" AS \"REMARKS\", " +
-			"\"columns\".\"default\" AS \"COLUMN_DEF\", " +
+			.append(useCommentsTable ? "cm.\"remark\"" : "cast(null AS varchar(9999))").append(" AS \"REMARKS\", " +
+			"c.\"default\" AS \"COLUMN_DEF\", " +
 			"cast(0 as int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 as int) AS \"SQL_DATETIME_SUB\", " +
-			"cast(CASE WHEN \"columns\".\"type\" IN ('char','varchar','clob') THEN \"columns\".\"type_digits\" ELSE NULL END as int) AS \"CHAR_OCTET_LENGTH\", " +
-			"cast(\"columns\".\"number\" + 1 as int) AS \"ORDINAL_POSITION\", " +
-			"cast(CASE \"null\" WHEN true THEN 'YES' WHEN false THEN 'NO' ELSE '' END AS varchar(3)) AS \"IS_NULLABLE\", " +
+			"cast(CASE WHEN c.\"type\" IN ('char','varchar','clob') THEN c.\"type_digits\" ELSE NULL END as int) AS \"CHAR_OCTET_LENGTH\", " +
+			"cast(c.\"number\" + 1 as int) AS \"ORDINAL_POSITION\", " +
+			"cast(CASE c.\"null\" WHEN true THEN 'YES' WHEN false THEN 'NO' ELSE '' END AS varchar(3)) AS \"IS_NULLABLE\", " +
 			"cast(null AS char(1)) AS \"SCOPE_CATALOG\", " +
 			"cast(null AS char(1)) AS \"SCOPE_SCHEMA\", " +
 			"cast(null AS char(1)) AS \"SCOPE_TABLE\", " +
 			"cast(null AS smallint) AS \"SOURCE_DATA_TYPE\", " +
-			"cast(CASE WHEN \"columns\".\"default\" IS NOT NULL AND \"columns\".\"default\" LIKE 'next value for %' THEN 'YES' ELSE 'NO' END AS varchar(3)) AS \"IS_AUTOINCREMENT\", " +
+			"cast(CASE WHEN c.\"default\" IS NOT NULL AND c.\"default\" LIKE 'next value for %' THEN 'YES' ELSE 'NO' END AS varchar(3)) AS \"IS_AUTOINCREMENT\", " +
 			"cast('NO' AS varchar(3)) AS \"IS_GENERATEDCOLUMN\" " +
-		"FROM \"sys\".\"columns\"");
+		"FROM \"sys\".\"columns\" c " +
+		"JOIN \"sys\".\"tables\" t ON c.\"table_id\" = t.\"id\" " +
+		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" ");
 		if (useCommentsTable) {
-			query.append(" LEFT OUTER JOIN \"sys\".\"comments\" ON (\"columns\".\"id\" = \"comments\".\"id\")");
+			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON c.\"id\" = cm.\"id\" ");
 		}
-		query.append(", \"sys\".\"tables\"" +
-			", \"sys\".\"schemas\" " +
-		"WHERE \"columns\".\"table_id\" = \"tables\".\"id\"" +
-		"  AND \"tables\".\"schema_id\" = \"schemas\".\"id\"");
+		query.append("WHERE 1 = 1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -2263,13 +2259,13 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schemaPattern != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
 			if (tableNamePattern != null) {
-				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
+				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
 			}
 			if (columnNamePattern != null) {
-				query.append(" AND \"columns\".\"name\" ").append(composeMatchPart(columnNamePattern));
+				query.append(" AND c.\"name\" ").append(composeMatchPart(columnNamePattern));
 			}
 		}
 
@@ -2320,13 +2316,13 @@ public class MonetDatabaseMetaData
 		final boolean usePrivilege_codesTable = ((MonetConnection)con).privilege_codesTableExists();
 		final StringBuilder query = new StringBuilder(1100);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
-			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
-			"\"tables\".\"name\" AS \"TABLE_NAME\", " +
-			"\"columns\".\"name\" AS \"COLUMN_NAME\", " +
-			"\"grantors\".\"name\" AS \"GRANTOR\", " +
-			"\"grantees\".\"name\" AS \"GRANTEE\", ")
-		.append(usePrivilege_codesTable ? "\"privilege_codes\".\"privilege_code_name\"" :
-			"cast(CASE \"privileges\".\"privileges\" " +
+			"s.\"name\" AS \"TABLE_SCHEM\", " +
+			"t.\"name\" AS \"TABLE_NAME\", " +
+			"c.\"name\" AS \"COLUMN_NAME\", " +
+			"grantors.\"name\" AS \"GRANTOR\", " +
+			"grantees.\"name\" AS \"GRANTEE\", ")
+		.append(usePrivilege_codesTable ? "pc.\"privilege_code_name\"" :
+			"cast(CASE p.\"privileges\" " +
 				"WHEN 1 THEN 'SELECT' " +
 				"WHEN 2 THEN 'UPDATE' " +
 				"WHEN 4 THEN 'INSERT' " +
@@ -2335,28 +2331,21 @@ public class MonetDatabaseMetaData
 				"WHEN 32 THEN 'GRANT' " +
 				"ELSE NULL " +
 			"END AS varchar(7))").append(" AS \"PRIVILEGE\", " +
-			"cast(CASE \"privileges\".\"grantable\" " +
+			"cast(CASE p.\"grantable\" " +
 				"WHEN 0 THEN 'NO' " +
 				"WHEN 1 THEN 'YES' " +
 				"ELSE NULL " +
 			"END AS varchar(3)) AS \"IS_GRANTABLE\" " +
-		"FROM \"sys\".\"privileges\", " +
-			"\"sys\".\"tables\", " +
-			"\"sys\".\"schemas\", " +
-			"\"sys\".\"columns\", " +
-			"\"sys\".\"auths\" AS \"grantors\", " +
-			"\"sys\".\"auths\" AS \"grantees\" ");
+		"FROM \"sys\".\"privileges\" p " +
+		"JOIN \"sys\".\"columns\" c ON p.\"obj_id\" = c.\"id\" " +
+		"JOIN \"sys\".\"tables\" t ON c.\"table_id\" = t.\"id\" " +
+		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
+		"JOIN \"sys\".\"auths\" grantors ON p.\"grantor\" = grantors.\"id\" " +
+		"JOIN \"sys\".\"auths\" grantees ON p.\"auth_id\" = grantees.\"id\" ");
 		if (usePrivilege_codesTable) {
-			query.append(", \"sys\".\"privilege_codes\" ");
+			query.append("JOIN \"sys\".\"privilege_codes\" pc ON p.\"privileges\" = pc.\"privilege_code_id\" ");
 		}
-		query.append("WHERE \"privileges\".\"obj_id\" = \"columns\".\"id\" " +
-			"AND \"columns\".\"table_id\" = \"tables\".\"id\" " +
-			"AND \"tables\".\"schema_id\" = \"schemas\".\"id\" " +
-			"AND \"privileges\".\"auth_id\" = \"grantees\".\"id\" " +
-			"AND \"privileges\".\"grantor\" = \"grantors\".\"id\"");
-		if (usePrivilege_codesTable) {
-			query.append(" AND \"privileges\".\"privileges\" = \"privilege_codes\".\"privilege_code_id\"");
-		}
+		query.append("WHERE 1 = 1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -2364,13 +2353,13 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schemaPattern != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
 			if (tableNamePattern != null) {
-				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
+				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
 			}
 			if (columnNamePattern != null) {
-				query.append(" AND \"columns\".\"name\" ").append(composeMatchPart(columnNamePattern));
+				query.append(" AND c.\"name\" ").append(composeMatchPart(columnNamePattern));
 			}
 		}
 
@@ -2418,12 +2407,12 @@ public class MonetDatabaseMetaData
 		final boolean usePrivilege_codesTable = ((MonetConnection)con).privilege_codesTableExists();
 		final StringBuilder query = new StringBuilder(1000);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
-			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
-			"\"tables\".\"name\" AS \"TABLE_NAME\", " +
-			"\"grantors\".\"name\" AS \"GRANTOR\", " +
-			"\"grantees\".\"name\" AS \"GRANTEE\", ")
-		.append(usePrivilege_codesTable ? "\"privilege_codes\".\"privilege_code_name\"" :
-			"cast(CASE \"privileges\".\"privileges\" " +
+			"s.\"name\" AS \"TABLE_SCHEM\", " +
+			"t.\"name\" AS \"TABLE_NAME\", " +
+			"grantors.\"name\" AS \"GRANTOR\", " +
+			"grantees.\"name\" AS \"GRANTEE\", ")
+		.append(usePrivilege_codesTable ? "pc.\"privilege_code_name\"" :
+			"cast(CASE p.\"privileges\" " +
 				"WHEN 1 THEN 'SELECT' " +
 				"WHEN 2 THEN 'UPDATE' " +
 				"WHEN 4 THEN 'INSERT' " +
@@ -2432,26 +2421,20 @@ public class MonetDatabaseMetaData
 				"WHEN 32 THEN 'GRANT' " +
 				"ELSE NULL " +
 			"END AS varchar(7))").append(" AS \"PRIVILEGE\", " +
-			"cast(CASE \"privileges\".\"grantable\" " +
+			"cast(CASE p.\"grantable\" " +
 				"WHEN 0 THEN 'NO' " +
 				"WHEN 1 THEN 'YES' " +
 				"ELSE NULL " +
 			"END AS varchar(3)) AS \"IS_GRANTABLE\" " +
-		"FROM \"sys\".\"privileges\", " +
-			"\"sys\".\"tables\", " +
-			"\"sys\".\"schemas\", " +
-			"\"sys\".\"auths\" AS \"grantors\", " +
-			"\"sys\".\"auths\" AS \"grantees\" ");
+		"FROM \"sys\".\"privileges\" p " +
+		"JOIN \"sys\".\"tables\" t ON p.\"obj_id\" = t.\"id\" " +
+		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
+		"JOIN \"sys\".\"auths\" grantors ON p.\"grantor\" = grantors.\"id\" " +
+		"JOIN \"sys\".\"auths\" grantees ON p.\"auth_id\" = grantees.\"id\" ");
 		if (usePrivilege_codesTable) {
-			query.append(", \"sys\".\"privilege_codes\" ");
+			query.append("JOIN \"sys\".\"privilege_codes\" pc ON p.\"privileges\" = pc.\"privilege_code_id\" ");
 		}
-		query.append("WHERE \"privileges\".\"obj_id\" = \"tables\".\"id\" " +
-			"AND \"tables\".\"schema_id\" = \"schemas\".\"id\" " +
-			"AND \"privileges\".\"auth_id\" = \"grantees\".\"id\" " +
-			"AND \"privileges\".\"grantor\" = \"grantors\".\"id\"");
-		if (usePrivilege_codesTable) {
-			query.append(" AND \"privileges\".\"privileges\" = \"privilege_codes\".\"privilege_code_id\"");
-		}
+		query.append("WHERE 1 = 1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -2459,10 +2442,10 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schemaPattern != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
 			if (tableNamePattern != null) {
-				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(tableNamePattern));
+				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
 			}
 		}
 
@@ -2518,24 +2501,19 @@ public class MonetDatabaseMetaData
 	{
 		final StringBuilder query = new StringBuilder(1500);
 		query.append("SELECT cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
-			"\"columns\".\"name\" AS \"COLUMN_NAME\", " +
-			"cast(").append(MonetDriver.getSQLTypeMap("\"columns\".\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
-			"\"columns\".\"type\" AS \"TYPE_NAME\", " +
-			"\"columns\".\"type_digits\" AS \"COLUMN_SIZE\", " +
+			"c.\"name\" AS \"COLUMN_NAME\", " +
+			"cast(").append(MonetDriver.getSQLTypeMap("c.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
+			"c.\"type\" AS \"TYPE_NAME\", " +
+			"c.\"type_digits\" AS \"COLUMN_SIZE\", " +
 			"cast(0 as int) AS \"BUFFER_LENGTH\", " +
-			"cast(\"columns\".\"type_scale\" AS smallint) AS \"DECIMAL_DIGITS\", " +
+			"cast(c.\"type_scale\" AS smallint) AS \"DECIMAL_DIGITS\", " +
 			"cast(").append(DatabaseMetaData.bestRowNotPseudo).append(" AS smallint) AS \"PSEUDO_COLUMN\" " +
-		"FROM \"sys\".\"keys\", " +
-			"\"sys\".\"objects\", " +
-			"\"sys\".\"columns\", " +
-			"\"sys\".\"tables\", " +
-			"\"sys\".\"schemas\" " +
-		"WHERE \"keys\".\"id\" = \"objects\".\"id\" " +
-			"AND \"keys\".\"table_id\" = \"tables\".\"id\" " +
-			"AND \"keys\".\"table_id\" = \"columns\".\"table_id\" " +
-			"AND \"objects\".\"name\" = \"columns\".\"name\" " +
-			"AND \"tables\".\"schema_id\" = \"schemas\".\"id\" " +
-			"AND \"keys\".\"type\" IN (0, 1)");	// only primary keys (type = 0) and unique keys (type = 1), not fkeys (type = 2)
+		"FROM \"sys\".\"keys\" k " +
+		"JOIN \"sys\".\"objects\" o ON k.\"id\" = o.\"id\" " +
+		"JOIN \"sys\".\"columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
+		"JOIN \"sys\".\"tables\" t ON k.\"table_id\" = t.\"id\" " +
+		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
+		"WHERE k.\"type\" IN (0, 1)");	// only primary keys (type = 0) and unique keys (type = 1), not fkeys (type = 2)
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -2548,18 +2526,18 @@ public class MonetDatabaseMetaData
 				query.append(" AND 1 = 0");
 			} else {
 				if (schema != null) {
-					query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schema));
+					query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
 				}
 				if (table != null) {
-					query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(table));
+					query.append(" AND t.\"name\" ").append(composeMatchPart(table));
 				}
 				if (!nullable) {
-					query.append(" AND \"columns\".\"null\" = false");
+					query.append(" AND c.\"null\" = false");
 				}
 			}
 		}
 
-		query.append(" ORDER BY \"keys\".\"type\", \"columns\".\"name\"");
+		query.append(" ORDER BY k.\"type\", c.\"name\"");
 
 		return executeMetaDataQuery(query.toString());
 	}
@@ -2644,19 +2622,16 @@ public class MonetDatabaseMetaData
 	{
 		final StringBuilder query = new StringBuilder(600);
 		query.append("SELECT cast(null AS char(1)) AS \"TABLE_CAT\", " +
-			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
-			"\"tables\".\"name\" AS \"TABLE_NAME\", " +
-			"\"objects\".\"name\" AS \"COLUMN_NAME\", " +
-			"cast(1 + \"objects\".\"nr\" AS smallint) AS \"KEY_SEQ\", " +
-			" \"keys\".\"name\" AS \"PK_NAME\" " +
-		"FROM \"sys\".\"keys\", " +
-			"\"sys\".\"objects\", " +
-			"\"sys\".\"tables\", " +
-			"\"sys\".\"schemas\" " +
-		"WHERE \"keys\".\"id\" = \"objects\".\"id\" " +
-			"AND \"keys\".\"table_id\" = \"tables\".\"id\" " +
-			"AND \"tables\".\"schema_id\" = \"schemas\".\"id\" " +
-			"AND \"keys\".\"type\" = 0");
+			"s.\"name\" AS \"TABLE_SCHEM\", " +
+			"t.\"name\" AS \"TABLE_NAME\", " +
+			"o.\"name\" AS \"COLUMN_NAME\", " +
+			"cast(1 + o.\"nr\" AS smallint) AS \"KEY_SEQ\", " +
+			" k.\"name\" AS \"PK_NAME\" " +
+		"FROM \"sys\".\"keys\" k " +
+		"JOIN \"sys\".\"objects\" o ON k.\"id\" = o.\"id\" " +
+		"JOIN \"sys\".\"tables\" t ON k.\"table_id\" = t.\"id\" " +
+		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
+		"WHERE k.\"type\" = 0");	// only primary keys (type = 0)
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -2664,10 +2639,10 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schema != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schema));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
 			}
 			if (table != null) {
-				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(table));
+				query.append(" AND t.\"name\" ").append(composeMatchPart(table));
 			}
 		}
 
@@ -2679,36 +2654,28 @@ public class MonetDatabaseMetaData
 
 	private static final String keyQuery =
 	"SELECT cast(null AS char(1)) AS \"PKTABLE_CAT\", " +
-		"\"pkschema\".\"name\" AS \"PKTABLE_SCHEM\", " +
-		"\"pktable\".\"name\" AS \"PKTABLE_NAME\", " +
-		"\"pkkeycol\".\"name\" AS \"PKCOLUMN_NAME\", " +
+		"pkschema.\"name\" AS \"PKTABLE_SCHEM\", " +
+		"pktable.\"name\" AS \"PKTABLE_NAME\", " +
+		"pkkeycol.\"name\" AS \"PKCOLUMN_NAME\", " +
 		"cast(null AS char(1)) AS \"FKTABLE_CAT\", " +
-		"\"fkschema\".\"name\" AS \"FKTABLE_SCHEM\", " +
-		"\"fktable\".\"name\" AS \"FKTABLE_NAME\", " +
-		"\"fkkeycol\".\"name\" AS \"FKCOLUMN_NAME\", " +
+		"fkschema.\"name\" AS \"FKTABLE_SCHEM\", " +
+		"fktable.\"name\" AS \"FKTABLE_NAME\", " +
+		"fkkeycol.\"name\" AS \"FKCOLUMN_NAME\", " +
 		"cast(1 + \"pkkeycol\".\"nr\" AS smallint) AS \"KEY_SEQ\", " +
 		DatabaseMetaData.importedKeyNoAction + " AS \"UPDATE_RULE\", " +
 		DatabaseMetaData.importedKeyNoAction + " AS \"DELETE_RULE\", " +
-		"\"fkkey\".\"name\" AS \"FK_NAME\", " +
-		"\"pkkey\".\"name\" AS \"PK_NAME\", " +
+		"fkkey.\"name\" AS \"FK_NAME\", " +
+		"pkkey.\"name\" AS \"PK_NAME\", " +
 		DatabaseMetaData.importedKeyNotDeferrable + " AS \"DEFERRABILITY\" " +
-	"FROM \"sys\".\"keys\" AS \"fkkey\", " +
-		"\"sys\".\"keys\" AS \"pkkey\", " +
-		"\"sys\".\"objects\" AS \"fkkeycol\", " +
-		"\"sys\".\"objects\" AS \"pkkeycol\", " +
-		"\"sys\".\"tables\" AS \"fktable\", " +
-		"\"sys\".\"tables\" AS \"pktable\", " +
-		"\"sys\".\"schemas\" AS \"fkschema\", " +
-		"\"sys\".\"schemas\" AS \"pkschema\" " +
-	"WHERE \"fktable\".\"id\" = \"fkkey\".\"table_id\"" +
-	" AND \"pktable\".\"id\" = \"pkkey\".\"table_id\"" +
-	" AND \"fkkey\".\"id\" = \"fkkeycol\".\"id\"" +
-	" AND \"pkkey\".\"id\" = \"pkkeycol\".\"id\"" +
-	" AND \"fkschema\".\"id\" = \"fktable\".\"schema_id\"" +
-	" AND \"pkschema\".\"id\" = \"pktable\".\"schema_id\"" +
-	" AND \"fkkey\".\"rkey\" > -1" +
-	" AND \"fkkey\".\"rkey\" = \"pkkey\".\"id\"" +
-	" AND \"fkkeycol\".\"nr\" = \"pkkeycol\".\"nr\"";
+	"FROM \"sys\".\"keys\" pkkey " +
+	"JOIN \"sys\".\"objects\" pkkeycol ON pkkey.\"id\" = pkkeycol.\"id\" " +
+	"JOIN \"sys\".\"tables\" pktable ON pktable.\"id\" = pkkey.\"table_id\" " +
+	"JOIN \"sys\".\"schemas\" pkschema ON pkschema.\"id\" = pktable.\"schema_id\" " +
+	"JOIN \"sys\".\"keys\" fkkey ON fkkey.\"rkey\" = pkkey.\"id\" " +
+	"JOIN \"sys\".\"objects\" fkkeycol ON (fkkey.\"id\" = fkkeycol.\"id\" AND fkkeycol.\"nr\" = pkkeycol.\"nr\") " +
+	"JOIN \"sys\".\"tables\" fktable ON fktable.\"id\" = fkkey.\"table_id\" " +
+	"JOIN \"sys\".\"schemas\" fkschema ON fkschema.\"id\" = fktable.\"schema_id\" " +
+	"WHERE fkkey.\"rkey\" > 0";	// exclude invalid key references, such as -1
 
 	/**
 	 * Get a description of the primary key columns that are
@@ -2787,10 +2754,10 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schema != null) {
-				query.append(" AND \"fkschema\".\"name\" ").append(composeMatchPart(schema));
+				query.append(" AND fkschema.\"name\" ").append(composeMatchPart(schema));
 			}
 			if (table != null) {
-				query.append(" AND \"fktable\".\"name\" ").append(composeMatchPart(table));
+				query.append(" AND fktable.\"name\" ").append(composeMatchPart(table));
 			}
 		}
 
@@ -2875,10 +2842,10 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schema != null) {
-				query.append(" AND \"pkschema\".\"name\" ").append(composeMatchPart(schema));
+				query.append(" AND pkschema.\"name\" ").append(composeMatchPart(schema));
 			}
 			if (table != null) {
-				query.append(" AND \"pktable\".\"name\" ").append(composeMatchPart(table));
+				query.append(" AND pktable.\"name\" ").append(composeMatchPart(table));
 			}
 		}
 
@@ -2974,17 +2941,17 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (pschema != null) {
-				query.append(" AND \"pkschema\".\"name\" ").append(composeMatchPart(pschema));
+				query.append(" AND pkschema.\"name\" ").append(composeMatchPart(pschema));
 			}
 			if (ptable != null) {
-				query.append(" AND \"pktable\".\"name\" ").append(composeMatchPart(ptable));
+				query.append(" AND pktable.\"name\" ").append(composeMatchPart(ptable));
 			}
 
 			if (fschema != null) {
-				query.append(" AND \"fkschema\".\"name\" ").append(composeMatchPart(fschema));
+				query.append(" AND fkschema.\"name\" ").append(composeMatchPart(fschema));
 			}
 			if (ftable != null) {
-				query.append(" AND \"fktable\".\"name\" ").append(composeMatchPart(ftable));
+				query.append(" AND fktable.\"name\" ").append(composeMatchPart(ftable));
 			}
 		}
 
@@ -3142,7 +3109,9 @@ public class MonetDatabaseMetaData
 	{
 		String table_row_count = "0";
 
-		if (!approximate && schema != null && table != null && !schema.isEmpty() && !table.isEmpty()) {
+		if (!approximate
+		 && schema != null && !schema.isEmpty() && !schema.contains("%")
+		 && table != null && !table.isEmpty() && !table.contains("%")) {
 			// we need the exact cardinality for one specific fully qualified table
 			ResultSet count = null;
 			try {
@@ -3162,29 +3131,25 @@ public class MonetDatabaseMetaData
 		final StringBuilder query = new StringBuilder(1250);
 		query.append(
 		"SELECT cast(null AS char(1)) AS \"TABLE_CAT\", " +
-			"\"schemas\".\"name\" AS \"TABLE_SCHEM\", " +
-			"\"tables\".\"name\" AS \"TABLE_NAME\", " +
-			"CASE WHEN \"keys\".\"name\" IS NULL THEN true ELSE false END AS \"NON_UNIQUE\", " +
+			"s.\"name\" AS \"TABLE_SCHEM\", " +
+			"t.\"name\" AS \"TABLE_NAME\", " +
+			"CASE WHEN k.\"name\" IS NULL THEN true ELSE false END AS \"NON_UNIQUE\", " +
 			"cast(null AS char(1)) AS \"INDEX_QUALIFIER\", " +
-			"\"idxs\".\"name\" AS \"INDEX_NAME\", " +
-			"CASE \"idxs\".\"type\" WHEN 0 THEN ").append(DatabaseMetaData.tableIndexHashed).append(" ELSE ").append(DatabaseMetaData.tableIndexOther).append(" END AS \"TYPE\", " +
-			"cast(\"objects\".\"nr\" +1 AS smallint) AS \"ORDINAL_POSITION\", "+
-			"\"columns\".\"name\" AS \"COLUMN_NAME\", " +
+			"i.\"name\" AS \"INDEX_NAME\", " +
+			"CASE i.\"type\" WHEN 0 THEN ").append(DatabaseMetaData.tableIndexHashed).append(" ELSE ").append(DatabaseMetaData.tableIndexOther).append(" END AS \"TYPE\", " +
+			"cast(o.\"nr\" +1 AS smallint) AS \"ORDINAL_POSITION\", "+
+			"c.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(null AS char(1)) AS \"ASC_OR_DESC\", " +	// sort sequence currently not supported in keys or indexes in MonetDB
 			"cast(").append(table_row_count).append(" AS int) AS \"CARDINALITY\", " +
 			"cast(0 AS int) AS \"PAGES\", " +
 			"cast(null AS char(1)) AS \"FILTER_CONDITION\" " +
-		"FROM \"sys\".\"idxs\" LEFT JOIN \"sys\".\"keys\" ON \"idxs\".\"name\" = \"keys\".\"name\", " +
-			"\"sys\".\"schemas\", " +
-			"\"sys\".\"objects\", " +
-			"\"sys\".\"columns\", " +
-			"\"sys\".\"tables\" " +
-		"WHERE \"idxs\".\"table_id\" = \"tables\".\"id\" " +
-			"AND \"tables\".\"schema_id\" = \"schemas\".\"id\" " +
-			"AND \"idxs\".\"id\" = \"objects\".\"id\" " +
-			"AND \"tables\".\"id\" = \"columns\".\"table_id\" " +
-			"AND \"objects\".\"name\" = \"columns\".\"name\" " +
-			"AND (\"keys\".\"type\" IS NULL OR \"keys\".\"type\" = 1)");
+		"FROM \"sys\".\"idxs\" i " +
+		"JOIN \"sys\".\"tables\" t ON i.\"table_id\" = t.\"id\" " +
+		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
+		"JOIN \"sys\".\"objects\" o ON i.\"id\" = o.\"id\" " +
+		"JOIN \"sys\".\"columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
+		"LEFT OUTER JOIN \"sys\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) " +	// primary (0) and unique keys (1) only
+		"WHERE 1 = 1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -3192,13 +3157,13 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schema != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schema));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
 			}
 			if (table != null) {
-				query.append(" AND \"tables\".\"name\" ").append(composeMatchPart(table));
+				query.append(" AND t.\"name\" ").append(composeMatchPart(table));
 			}
 			if (unique) {
-				query.append(" AND \"keys\".\"name\" IS NOT NULL");
+				query.append(" AND k.\"name\" IS NOT NULL");
 			}
 		}
 
@@ -3337,22 +3302,23 @@ public class MonetDatabaseMetaData
 			query.append("SELECT * FROM (");
 		}
 		query.append("SELECT cast(null as char(1)) AS \"TYPE_CAT\", " +
-			"\"schemas\".\"name\" AS \"TYPE_SCHEM\", " +
-			"\"types\".\"sqlname\" AS \"TYPE_NAME\", " +
-			"CASE \"types\".\"sqlname\"" +
+			"s.\"name\" AS \"TYPE_SCHEM\", " +
+			"t.\"sqlname\" AS \"TYPE_NAME\", " +
+			"CASE t.\"sqlname\"" +
 				// next 4 UDTs are standard
 				" WHEN 'inet' THEN 'nl.cwi.monetdb.jdbc.types.INET'" +
 				" WHEN 'json' THEN 'java.lang.String'" +
 				" WHEN 'url'  THEN 'nl.cwi.monetdb.jdbc.types.URL'" +
 				" WHEN 'uuid' THEN 'java.lang.String'" +
 				" ELSE 'java.lang.Object' END AS \"CLASS_NAME\", " +
-			"cast(CASE WHEN \"types\".\"sqlname\" IN ('inet', 'json', 'url', 'uuid') THEN ").append(Types.JAVA_OBJECT)
+			"cast(CASE WHEN t.\"sqlname\" IN ('inet', 'json', 'url', 'uuid') THEN ").append(Types.JAVA_OBJECT)
 				.append(" ELSE ").append(Types.STRUCT).append(" END AS int) AS \"DATA_TYPE\", " +
-			"\"types\".\"systemname\" AS \"REMARKS\", " +
+			"t.\"systemname\" AS \"REMARKS\", " +
 			"cast(null as smallint) AS \"BASE_TYPE\" " +
-		"FROM \"sys\".\"types\" JOIN \"sys\".\"schemas\" ON \"types\".\"schema_id\" = \"schemas\".\"id\" " +
+		"FROM \"sys\".\"types\" t " +
+		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 		// exclude the built-in types (I assume they always have id <= 99 and eclass < 15)
-		"WHERE \"types\".\"id\" > 99 AND \"types\".\"eclass\" >= 15");
+		"WHERE t.\"id\" > 99 AND t.\"eclass\" >= 15");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -3360,10 +3326,10 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schemaPattern != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
 			if (typeNamePattern != null) {
-				query.append(" AND \"types\".\"sqlname\" ").append(composeMatchPart(typeNamePattern));
+				query.append(" AND t.\"sqlname\" ").append(composeMatchPart(typeNamePattern));
 			}
 		}
 
@@ -3855,8 +3821,7 @@ public class MonetDatabaseMetaData
 	 *
 	 * The ResultSet is sorted by the NAME column
 	 *
-	 * @return A ResultSet object; each row is a supported client info
-	 *         property, none in case of MonetDB's current JDBC driver
+	 * @return A ResultSet object; each row is a supported client info property
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -3932,10 +3897,10 @@ public class MonetDatabaseMetaData
 		final boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
 		final StringBuilder query = new StringBuilder(800);
 		query.append("SELECT cast(null as char(1)) AS \"FUNCTION_CAT\", " +
-			"\"schemas\".\"name\" AS \"FUNCTION_SCHEM\", " +
-			"\"functions\".\"name\" AS \"FUNCTION_NAME\", ")
-			.append(useCommentsTable ? "COALESCE(\"comments\".\"remark\", cast(\"functions\".\"func\" as varchar(9999)))" : "cast(\"functions\".\"func\" as varchar(9999))").append(" AS \"REMARKS\", " +
-			"CASE \"functions\".\"type\"" +
+			"s.\"name\" AS \"FUNCTION_SCHEM\", " +
+			"f.\"name\" AS \"FUNCTION_NAME\", ")
+			.append(useCommentsTable ? "COALESCE(cm.\"remark\", cast(f.\"func\" as varchar(9999)))" : "cast(f.\"func\" as varchar(9999))").append(" AS \"REMARKS\", " +
+			"CASE f.\"type\"" +
 				" WHEN 1 THEN ").append(DatabaseMetaData.functionNoTable)
 			.append(" WHEN 2 THEN ").append(DatabaseMetaData.functionNoTable)
 			.append(" WHEN 3 THEN ").append(DatabaseMetaData.functionNoTable)
@@ -3945,13 +3910,14 @@ public class MonetDatabaseMetaData
 			.append(" WHEN 7 THEN ").append(DatabaseMetaData.functionReturnsTable)
 			.append(" ELSE ").append(DatabaseMetaData.functionResultUnknown).append(" END AS \"FUNCTION_TYPE\", " +
 			// only the id value uniquely identifies a function. Include it to be able to differentiate between multiple overloaded functions with the same name
-			"cast(\"functions\".\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
-		"FROM \"sys\".\"functions\" JOIN \"sys\".\"schemas\" ON (\"functions\".\"schema_id\" = \"schemas\".\"id\") ");
+			"cast(f.\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
+		"FROM \"sys\".\"functions\" f " +
+		"JOIN \"sys\".\"schemas\" s ON f.\"schema_id\" = s.\"id\" ");
 		if (useCommentsTable) {
-			query.append("LEFT OUTER JOIN \"sys\".\"comments\" ON (\"functions\".\"id\" = \"comments\".\"id\") ");
+			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON (f.\"id\" = cm.\"id\") ");
 		}
 		// only functions, so exclude procedures (type = 2). Those will to be returned via getProcedures()
-		query.append("WHERE \"functions\".\"type\" <> 2");
+		query.append("WHERE f.\"type\" <> 2");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -3959,10 +3925,10 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schemaPattern != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
 			if (functionNamePattern != null) {
-				query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(functionNamePattern));
+				query.append(" AND f.\"name\" ").append(composeMatchPart(functionNamePattern));
 			}
 		}
 
@@ -4040,36 +4006,36 @@ public class MonetDatabaseMetaData
 	{
 		final StringBuilder query = new StringBuilder(2600);
 		query.append("SELECT cast(null as char(1)) AS \"FUNCTION_CAT\", " +
-			"\"schemas\".\"name\" AS \"FUNCTION_SCHEM\", " +
-			"\"functions\".\"name\" AS \"FUNCTION_NAME\", " +
-			"\"args\".\"name\" AS \"COLUMN_NAME\", " +
-			"cast(CASE \"args\".\"inout\"" +
-				" WHEN 0 THEN (CASE \"args\".\"number\" WHEN 0 THEN ")
+			"s.\"name\" AS \"FUNCTION_SCHEM\", " +
+			"f.\"name\" AS \"FUNCTION_NAME\", " +
+			"a.\"name\" AS \"COLUMN_NAME\", " +
+			"cast(CASE a.\"inout\"" +
+				" WHEN 0 THEN (CASE a.\"number\" WHEN 0 THEN ")
 				.append(DatabaseMetaData.functionReturn).append(" ELSE ").append(DatabaseMetaData.functionColumnOut).append(" END)" +
 				" WHEN 1 THEN ").append(DatabaseMetaData.functionColumnIn)
 				.append(" ELSE ").append(DatabaseMetaData.functionColumnUnknown).append(" END AS smallint) AS \"COLUMN_TYPE\", " +
-			"cast(").append(MonetDriver.getSQLTypeMap("\"args\".\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
-			"\"args\".\"type\" AS \"TYPE_NAME\", " +
-			"CASE \"args\".\"type\" WHEN 'tinyint' THEN 3 WHEN 'smallint' THEN 5 WHEN 'int' THEN 10 WHEN 'bigint' THEN 19" +
-				" WHEN 'hugeint' THEN 38 WHEN 'oid' THEN 19 WHEN 'wrd' THEN 19 ELSE \"args\".\"type_digits\" END AS \"PRECISION\", " +
-			"CASE \"args\".\"type\" WHEN 'tinyint' THEN 1 WHEN 'smallint' THEN 2 WHEN 'int' THEN 4 WHEN 'bigint' THEN 8" +
-				" WHEN 'hugeint' THEN 16 WHEN 'oid' THEN 8 WHEN 'wrd' THEN 8 ELSE \"args\".\"type_digits\" END AS \"LENGTH\", " +
-			"cast(CASE WHEN \"args\".\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric'," +
-				"'time','timetz','timestamp','timestamptz','sec_interval') THEN \"args\".\"type_scale\" ELSE NULL END AS smallint) AS \"SCALE\", " +
-			"cast(CASE WHEN \"args\".\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric') THEN 10" +
-				" WHEN \"args\".\"type\" IN ('real','float','double') THEN 2 ELSE NULL END AS smallint) AS \"RADIX\", " +
+			"cast(").append(MonetDriver.getSQLTypeMap("a.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
+			"a.\"type\" AS \"TYPE_NAME\", " +
+			"CASE a.\"type\" WHEN 'tinyint' THEN 3 WHEN 'smallint' THEN 5 WHEN 'int' THEN 10 WHEN 'bigint' THEN 19" +
+				" WHEN 'hugeint' THEN 38 WHEN 'oid' THEN 19 WHEN 'wrd' THEN 19 ELSE a.\"type_digits\" END AS \"PRECISION\", " +
+			"CASE a.\"type\" WHEN 'tinyint' THEN 1 WHEN 'smallint' THEN 2 WHEN 'int' THEN 4 WHEN 'bigint' THEN 8" +
+				" WHEN 'hugeint' THEN 16 WHEN 'oid' THEN 8 WHEN 'wrd' THEN 8 ELSE a.\"type_digits\" END AS \"LENGTH\", " +
+			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric'," +
+				"'time','timetz','timestamp','timestamptz','sec_interval') THEN a.\"type_scale\" ELSE NULL END AS smallint) AS \"SCALE\", " +
+			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric') THEN 10" +
+				" WHEN a.\"type\" IN ('real','float','double') THEN 2 ELSE NULL END AS smallint) AS \"RADIX\", " +
 			"cast(").append(DatabaseMetaData.functionNullableUnknown).append(" AS smallint) AS \"NULLABLE\", " +
 			"cast(null as char(1)) AS \"REMARKS\", " +
-			"cast(CASE WHEN \"args\".\"type\" IN ('char','varchar','clob') THEN \"args\".\"type_digits\" ELSE NULL END as int) AS \"CHAR_OCTET_LENGTH\", " +
-			"cast(\"args\".\"number\" as int) AS \"ORDINAL_POSITION\", " +
+			"cast(CASE WHEN a.\"type\" IN ('char','varchar','clob') THEN a.\"type_digits\" ELSE NULL END as int) AS \"CHAR_OCTET_LENGTH\", " +
+			"cast(a.\"number\" as int) AS \"ORDINAL_POSITION\", " +
 			"cast('' as varchar(3)) AS \"IS_NULLABLE\", " +
 			// the specific name contains the function id, in order to be able to match the args to the correct overloaded function name
-			"cast(\"functions\".\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
-		"FROM \"sys\".\"args\" " +
-		"JOIN \"sys\".\"functions\" ON (\"args\".\"func_id\" = \"functions\".\"id\") " +
-		"JOIN \"sys\".\"schemas\" ON (\"functions\".\"schema_id\" = \"schemas\".\"id\") " +
+			"cast(f.\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
+		"FROM \"sys\".\"args\" a " +
+		"JOIN \"sys\".\"functions\" f ON a.\"func_id\" = f.\"id\" " +
+		"JOIN \"sys\".\"schemas\" s ON f.\"schema_id\" = s.\"id\" " +
 		// only functions, so exclude procedures (type = 2). Those will to be returned via getProcedureColumns()
-		"WHERE \"functions\".\"type\" <> 2");
+		"WHERE f.\"type\" <> 2");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -4077,13 +4043,13 @@ public class MonetDatabaseMetaData
 			query.append(" AND 1 = 0");
 		} else {
 			if (schemaPattern != null) {
-				query.append(" AND \"schemas\".\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
 			if (functionNamePattern != null) {
-				query.append(" AND \"functions\".\"name\" ").append(composeMatchPart(functionNamePattern));
+				query.append(" AND f.\"name\" ").append(composeMatchPart(functionNamePattern));
 			}
 			if (columnNamePattern != null) {
-				query.append(" AND \"args\".\"name\" ").append(composeMatchPart(columnNamePattern));
+				query.append(" AND a.\"name\" ").append(composeMatchPart(columnNamePattern));
 			}
 		}
 
