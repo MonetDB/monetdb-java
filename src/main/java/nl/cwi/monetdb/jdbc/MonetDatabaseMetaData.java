@@ -74,7 +74,6 @@ public class MonetDatabaseMetaData
 // for debug: System.out.println("Read: env_current_user: " + env_current_user + "  env_monet_version: " + env_monet_version + "  env_max_clients: " + env_max_clients);
 	}
 
-
 	/**
 	 * Internal utility method to create a Statement object, execute a query and return the ResulSet object which allows scrolling.
 	 * As the Statement object is created internally (the caller does not see it and thus can not close it),
@@ -225,8 +224,10 @@ public class MonetDatabaseMetaData
 	public String getDatabaseProductVersion() throws SQLException {
 		if (env_monet_version == null)
 			getEnvValues();
+		if (env_monet_version != null)
+			return env_monet_version;
 		// always return a valid String to prevent NPE in getTables() and getTableTypes()
-		return (env_monet_version != null) ? env_monet_version : "";
+		return "";
 	}
 
 	/**
@@ -1877,46 +1878,6 @@ public class MonetDatabaseMetaData
 		return executeMetaDataQuery(query.toString());
 	}
 
-
-	//== this is a helper method which does not belong to the interface
-
-	/**
-	 * Returns a SQL match part string where depending on the input value we
-	 * compose an exact match (use =) or match with wildcards (use LIKE) or IS NULL
-	 *
-	 * @param in the string to match
-	 * @return the SQL match part string
-	 */
-	private static final String composeMatchPart(final String in) {
-		if (in == null)
-			return "IS NULL";
-
-		String sql = "= '";
-		// check if SQL wildcards are used in the input, if so use LIKE
-		if (in.contains("%") || in.contains("_"))
-			sql = "LIKE '";
-
-		// all slashes and single quotes in input are escaped with a slash.
-		final String escaped = in.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'");
-
-		return sql + escaped + "'";
-	}
-
-	/**
-	 * Returns the given string between two double quotes for usage as
-	 * exact column or table name in SQL queries.
-	 *
-	 * @param in the string to quote
-	 * @return the quoted string
-	 */
-//	@SuppressWarnings("unused")
-//	private static final String dq(String in) {
-//		return "\"" + in.replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"";
-//	}
-
-	//== end helper methods
-
-
 	/**
 	 * Retrieves a description of the tables available in the given catalog.
 	 * Only table descriptions matching the catalog, schema, table name and type criteria are returned.
@@ -2104,8 +2065,8 @@ public class MonetDatabaseMetaData
 	}
 
 	/**
-	 * Get the table types available in this database. The results
-	 * are ordered by table type.
+	 * Get the table types available in this database.
+	 * The results are ordered by table type.
 	 *
 	 * <P>The table type is:
 	 *	<OL>
@@ -2114,25 +2075,24 @@ public class MonetDatabaseMetaData
 	 *			"LOCAL TEMPORARY", "ALIAS", "SYNONYM".
 	 *	</OL>
 	 *
-	 * @return ResultSet each row has a single String column that is a
-	 *         table type
+	 * @return ResultSet each row has a single String column that is a table type
 	 * @throws SQLException if a database error occurs
 	 */
 	@Override
 	public ResultSet getTableTypes() throws SQLException {
 		// as of Jul2015 release we have a new table: sys.table_types with more table types
+		String query = "SELECT \"table_type_name\" AS \"TABLE_TYPE\" FROM \"sys\".\"table_types\" ORDER BY 1";
+
 		// For old (pre jul2015) servers fall back to old behavior.
-		final boolean preJul2015 = ("11.19.15".compareTo(getDatabaseProductVersion()) >= 0);
-		final String query = preJul2015
-			? "SELECT 'SESSION TABLE' AS \"TABLE_TYPE\" UNION ALL " +
-			  "SELECT 'SESSION VIEW' UNION ALL " +
-			  "SELECT 'SYSTEM SESSION TABLE' UNION ALL " +
-			  "SELECT 'SYSTEM SESSION VIEW' UNION ALL " +
-			  "SELECT 'SYSTEM TABLE' UNION ALL " +
-			  "SELECT 'SYSTEM VIEW' UNION ALL " +
-			  "SELECT 'TABLE' UNION ALL " +
-			  "SELECT 'VIEW' ORDER BY 1"
-			: "SELECT \"table_type_name\" AS \"TABLE_TYPE\" FROM \"sys\".\"table_types\" ORDER BY 1";
+		if ("11.19.15".compareTo(getDatabaseProductVersion()) >= 0)
+			query = "SELECT 'SESSION TABLE' AS \"TABLE_TYPE\" UNION ALL " +
+				"SELECT 'SESSION VIEW' UNION ALL " +
+				"SELECT 'SYSTEM SESSION TABLE' UNION ALL " +
+				"SELECT 'SYSTEM SESSION VIEW' UNION ALL " +
+				"SELECT 'SYSTEM TABLE' UNION ALL " +
+				"SELECT 'SYSTEM VIEW' UNION ALL " +
+				"SELECT 'TABLE' UNION ALL " +
+				"SELECT 'VIEW' ORDER BY 1";
 
 		return executeMetaDataQuery(query);
 	}
@@ -2651,7 +2611,7 @@ public class MonetDatabaseMetaData
 		return executeMetaDataQuery(query.toString());
 	}
 
-
+	// same SQL query used by getImportedKeys(), getExportedKeys() and getCrossReference()
 	private static final String keyQuery =
 	"SELECT cast(null AS char(1)) AS \"PKTABLE_CAT\", " +
 		"pkschema.\"name\" AS \"PKTABLE_SCHEM\", " +
@@ -3187,7 +3147,6 @@ public class MonetDatabaseMetaData
 		return type != ResultSet.TYPE_SCROLL_SENSITIVE;
 	}
 
-
 	/**
 	 * Does the database support the concurrency type in combination
 	 * with the given result set type?
@@ -3212,7 +3171,6 @@ public class MonetDatabaseMetaData
 		// Everything else we do (well, what's left of it :) )
 		return true;
 	}
-
 
 	/* lots of unsupported stuff... (no updatable ResultSet!) */
 	@Override
@@ -3348,7 +3306,6 @@ public class MonetDatabaseMetaData
 
 		return executeMetaDataQuery(query.toString());
 	}
-
 
 	/**
 	 * Retrieves the connection that produced this metadata object.
@@ -4162,4 +4119,45 @@ public class MonetDatabaseMetaData
 	}
 
 	//== end methods interface DatabaseMetaData
+
+
+	//== this is a helper method which does not belong to the interface
+
+	/**
+	 * Returns a SQL match part string where depending on the input value we
+	 * compose an exact match (use =) or match with wildcards (use LIKE) or IS NULL
+	 *
+	 * @param in the string to match
+	 * @return the SQL match part string
+	 */
+	private static final String composeMatchPart(final String in) {
+		if (in == null)
+			return "IS NULL";
+
+		String cmp = "= '";
+		// check if SQL wildcards are used in the input, if so use LIKE
+		if (in.contains("%") || in.contains("_"))
+			cmp = "LIKE '";
+
+		String val = in;
+		if (in.contains("\\") || in.contains("'"))
+			// all slashes and single quotes in input are escaped with a slash.
+			val = in.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'");
+
+		return cmp + val + "'";
+	}
+
+	/**
+	 * Returns the given string between two double quotes for usage as
+	 * exact column or table name in SQL queries.
+	 *
+	 * @param in the string to quote
+	 * @return the quoted string
+	 */
+//	@SuppressWarnings("unused")
+//	private static final String dq(String in) {
+//		return "\"" + in.replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"";
+//	}
+
+	//== end helper methods
 }
