@@ -82,7 +82,7 @@ public class Bug_PrepStmtSetString_6382 {
 
 			/* also test generic setObject(int, String) */
 			row++;  // row 7
-			pstmt.setObject(1, new Integer(row));
+			pstmt.setObject(1, Integer.valueOf​(row));
 			pstmt.setObject(2, "row " + row);
 			pstmt.setObject(3, "{\"menu\": {\n    \"header\": \"SVG Viewer\",\n    \"items\": [\n        {\"id\": \"Open\"},\n        {\"id\": \"OpenNew\", \"label\": \"Open New\"},\n        null,\n        {\"id\": \"ZoomIn\", \"label\": \"Zoom In\"},\n        {\"id\": \"ZoomOut\", \"label\": \"Zoom Out\"},\n        {\"id\": \"OriginalView\", \"label\": \"Original View\"},\n        null,\n        {\"id\": \"Quality\"},\n        {\"id\": \"Pause\"},\n        {\"id\": \"Mute\"},\n        null,\n        {\"id\": \"Help\"},\n        {\"id\": \"About\", \"label\": \"About Adobe CVG Viewer...\"}\n    ]\n}}");
 			pstmt.setObject(4, "b39dc76e-4faf-4fd9-bc1e-17df48acf764");

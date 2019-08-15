@@ -1080,8 +1080,11 @@ public final class MapiSocket {
 	 * Destructor called by garbage collector before destroying this
 	 * object tries to disconnect the MonetDB connection if it has not
 	 * been disconnected already.
+	 * 
+	 * @deprecated (since="9")
 	 */
 	@Override
+	@Deprecated
 	protected void finalize() throws Throwable {
 		close();
 		super.finalize();

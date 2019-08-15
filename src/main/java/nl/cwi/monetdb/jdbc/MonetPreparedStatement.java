@@ -1820,7 +1820,7 @@ public class MonetPreparedStatement
 				case Types.BIGINT:
 					if (x instanceof BigDecimal) {
 						BigDecimal bd = (BigDecimal)x;
-						setLong(parameterIndex, bd.setScale(scale, BigDecimal.ROUND_HALF_UP).longValue());
+						setLong(parameterIndex, bd.setScale(scale, java.math.RoundingMode.HALF_UP).longValue());
 					} else {
 						setLong(parameterIndex, num.longValue());
 					}
@@ -2561,7 +2561,7 @@ public class MonetPreparedStatement
 	 * Note: This stream object can either be a standard Java stream object or
 	 * your own subclass that implements the standard interface.
 	 *
-	 * @deprecated
+	 * @deprecated Use setCharacterStream
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param x a java.io.InputStream object that contains the Unicode
 	 *          parameter value as two-byte Unicode characters
@@ -2626,8 +2626,11 @@ public class MonetPreparedStatement
 	/**
 	 * Call close to release the server-sided handle for this
 	 * PreparedStatement.
+	 *
+	 * @deprecated (since="9")
 	 */
 	@Override
+	@Deprecated
 	protected void finalize() {
 		close();
 	}
