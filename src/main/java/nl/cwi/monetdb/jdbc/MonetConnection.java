@@ -1332,16 +1332,7 @@ public class MonetConnection
 			}
 			/* ignore stmt errors/exceptions, we are only testing if the connection is still alive and usable */
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (Exception e2) { /* ignore error */ }
-			}
-			if (stmt != null) {
-				try {
-					stmt.close();
-				} catch (Exception e2) { /* ignore error */ }
-			}
+			closeResultsetStatement(rs, stmt);
 		}
 		return isValid;
 	}
@@ -1511,11 +1502,7 @@ public class MonetConnection
 				st.execute("SET SCHEMA \"" + schema + "\"");
 		// do not catch any Exception, just let it propagate
 		} finally {
-			if (st != null) {
-				try {
-					 st.close();
-				} catch (SQLException e) { /* ignore */ }
-			}
+			closeResultsetStatement(null, st);
 		}
 	}
 
@@ -1546,16 +1533,7 @@ public class MonetConnection
 			}
 		// do not catch any Exception, just let it propagate
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException e) { /* ignore */ }
-			}
-			if (st != null) {
-				try {
-					 st.close();
-				} catch (SQLException e) { /* ignore */ }
-			}
+			closeResultsetStatement(rs, st);
 		}
 		if (cur_schema == null)
 			throw new SQLException("Failed to fetch schema name", "02000");
@@ -1728,19 +1706,31 @@ public class MonetConnection
 		} catch (SQLException se) {
 			/* ignore */
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException e) { /* ignore */ }
-			}
-			if (stmt != null) {
-				try {
-					 stmt.close();
-				} catch (SQLException e) { /* ignore */ }
-			}
+			closeResultsetStatement(rs, stmt);
 		}
 // for debug: System.out.println("testTableExists(" + tablename + ") returns: " + exists);
 		return exists;
+	}
+
+	/**
+	 * Closes a ResultSet and/or Statement object without throwing any SQLExceptions
+	 * It can be used in the finally clause after creating a Statement and
+	 * (optionally) executed a query which produced a ResultSet.
+	 *
+	 * @param rs ResultSet object to be closed. It may be null
+	 * @param st Statement object to be closed. It may be null
+	 */
+	static final void closeResultsetStatement(final ResultSet rs, final Statement st) {
+		if (rs != null) {
+			try {
+				rs.close();
+			} catch (SQLException e) { /* ignore */ }
+		}
+		if (st != null) {
+			try {
+				st.close();
+			} catch (SQLException e) { /* ignore */ }
+		}
 	}
 
 	/**

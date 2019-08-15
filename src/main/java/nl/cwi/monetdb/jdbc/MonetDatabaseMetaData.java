@@ -69,16 +69,7 @@ public class MonetDatabaseMetaData
 			}
 		/* do not catch SQLException here, as we want to know it when it fails */
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException e) { /* ignore */ }
-			}
-			if (st != null) {
-				try {
-					 st.close();
-				} catch (SQLException e) { /* ignore */ }
-			}
+			MonetConnection.closeResultsetStatement(rs, st);
 		}
 // for debug: System.out.println("Read: env_current_user: " + env_current_user + "  env_monet_version: " + env_monet_version + "  env_max_clients: " + env_max_clients);
 	}
@@ -465,16 +456,7 @@ public class MonetDatabaseMetaData
 		} catch (SQLException e) {
 			/* ignore */
 		} finally {
-			if (rs != null) {
-				try {
-					rs.close();
-				} catch (SQLException e) { /* ignore */ }
-			}
-			if (st != null) {
-				try {
-					 st.close();
-				} catch (SQLException e) { /* ignore */ }
-			}
+			MonetConnection.closeResultsetStatement(rs, st);
 		}
 		// for debug: System.out.println("SQL query: " + query + "\nResult string: " + sb.toString());
 		return sb.toString();
@@ -3173,11 +3155,7 @@ public class MonetDatabaseMetaData
 			} catch (SQLException e) {
 				// ignore
 			} finally {
-				if (count != null) {
-					try {
-						count.close();
-					} catch (SQLException e) { /* ignore */ }
-				}
+				MonetConnection.closeResultsetStatement(count, null);
 			}
 		}
 
