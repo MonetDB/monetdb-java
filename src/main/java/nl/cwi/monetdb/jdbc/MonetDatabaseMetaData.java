@@ -3108,8 +3108,8 @@ public class MonetDatabaseMetaData
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 		"JOIN \"sys\".\"objects\" o ON i.\"id\" = o.\"id\" " +
 		"JOIN \"sys\".\"columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-		"LEFT OUTER JOIN \"sys\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) " +	// primary (0) and unique keys (1) only
-		"WHERE 1 = 1");
+		"LEFT OUTER JOIN \"sys\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\") " + 
+		"WHERE (k.\"type\" IS NULL OR k.\"type\" IN (1" + (unique ? "" : ",0") +  "))"); // primary keys are 0, unique keys are 1
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
