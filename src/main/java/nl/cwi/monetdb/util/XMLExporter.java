@@ -8,7 +8,6 @@
 
 package nl.cwi.monetdb.util;
 
-import java.io.PrintWriter;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -19,30 +18,31 @@ import java.text.SimpleDateFormat;
 import java.util.HashSet;
 import java.util.Set;
 
-public class XMLExporter extends Exporter {
+public final class XMLExporter extends Exporter {
 	private boolean useNil;
 
 	public final static int TYPE_NIL	= 1;
 	public final static int VALUE_OMIT	= 0;
 	public final static int VALUE_XSI	= 1;
 
-	public XMLExporter(PrintWriter out) {
+	public XMLExporter(final java.io.PrintWriter out) {
 		super(out);
 	}
 
 	public void dumpSchema(
-			DatabaseMetaData dbmd,
-			String type,
-			String catalog,
-			String schema,
-			String name)
+			final DatabaseMetaData dbmd,
+			final String type,
+			final String catalog,
+			final String schema,
+			final String name)
 		throws SQLException
 	{
 		if (type.indexOf("VIEW") != -1) {
-			String[] types = new String[1];
+			final String[] types = new String[1];
 			types[0] = type;
-			ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
-			if (!tbl.next()) throw new SQLException("Whoops no data for " + name);
+			final ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
+			if (!tbl.next())
+				throw new SQLException("Whoops no data for " + name);
 
 			// This will probably only work for MonetDB
 			out.print("<!-- unable to represent: CREATE " + type + " " +
@@ -55,9 +55,9 @@ public class XMLExporter extends Exporter {
 
 		out.println("<xsd:schema>");
 
-		ResultSet cols = dbmd.getColumns(catalog, schema, name, null);
+		final ResultSet cols = dbmd.getColumns(catalog, schema, name, null);
 		String ident;
-		Set<String> types = new HashSet<String>();
+		final Set<String> types = new HashSet<String>();
 		// walk through the ResultSet and create the types
 		// for a bit of a clue on the types, see this url:
 		// http://books.xmlschemata.org/relaxng/relax-CHP-19.html
@@ -65,7 +65,8 @@ public class XMLExporter extends Exporter {
 			switch (cols.getInt("DATA_TYPE")) {
 				case Types.CHAR:
 					ident = "CHAR_" + cols.getString("COLUMN_SIZE");
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -81,7 +82,8 @@ public class XMLExporter extends Exporter {
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
 					ident = "VARCHAR_" + cols.getString("COLUMN_SIZE");
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -96,7 +98,8 @@ public class XMLExporter extends Exporter {
 				break;
 				case Types.CLOB:
 					ident = "CLOB";
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -109,7 +112,8 @@ public class XMLExporter extends Exporter {
 				case Types.NUMERIC:
 					ident = "DECIMAL_" + cols.getString("COLUMN_SIZE") +
 						"_" + cols.getString("DECIMAL_DIGITS");
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -127,7 +131,8 @@ public class XMLExporter extends Exporter {
 				break;
 				case Types.TINYINT:
 					ident = "TINYINT";
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -138,7 +143,8 @@ public class XMLExporter extends Exporter {
 				break;
 				case Types.SMALLINT:
 					ident = "SMALLINT";
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -149,7 +155,8 @@ public class XMLExporter extends Exporter {
 				break;
 				case Types.INTEGER:
 					ident = "INTEGER";
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -160,7 +167,8 @@ public class XMLExporter extends Exporter {
 				break;
 				case Types.BIGINT:
 					ident = "BIGINT";
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -171,7 +179,8 @@ public class XMLExporter extends Exporter {
 				break;
 				case Types.BIT:
 					ident = "BIT";
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -182,7 +191,8 @@ public class XMLExporter extends Exporter {
 				break;
 				case Types.BOOLEAN:
 					ident = "BOOLEAN";
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -193,7 +203,8 @@ public class XMLExporter extends Exporter {
 				break;
 				case Types.DATE:
 					ident = "DATE";
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -208,7 +219,8 @@ public class XMLExporter extends Exporter {
 					} else {
 						ident = "TIME";
 					}
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -223,7 +235,8 @@ public class XMLExporter extends Exporter {
 					} else {
 						ident = "TIMESTAMP";
 					}
-					if (types.contains(ident)) break;
+					if (types.contains(ident))
+						break;
 					types.add(ident);
 
 					out.print("  <xsd:simpleType name=");
@@ -337,9 +350,9 @@ public class XMLExporter extends Exporter {
 	 *
 	 * @param rs the ResultSet
 	 */
-	public void dumpResultSet(ResultSet rs) throws SQLException {
+	public void dumpResultSet(final ResultSet rs) throws SQLException {
 		// write simple XML serialisation
-		ResultSetMetaData rsmd = rs.getMetaData();
+		final ResultSetMetaData rsmd = rs.getMetaData();
 		if (!useSchema)
 			out.println("<" + rsmd.getSchemaName(1) + ">");
 		out.println("<" + rsmd.getTableName(1) + ">");
@@ -387,7 +400,7 @@ public class XMLExporter extends Exporter {
 		if (!useSchema) out.println("</" + rsmd.getSchemaName(1) + ">");
 	}
 
-	public void setProperty(int type, int value) throws Exception {
+	public void setProperty(final int type, final int value) throws Exception {
 		switch (type) {
 			case TYPE_NIL:
 				switch (value) {
@@ -406,7 +419,7 @@ public class XMLExporter extends Exporter {
 		}
 	}
 
-	public int getProperty(int type) throws Exception {
+	public int getProperty(final int type) throws Exception {
 		switch (type) {
 			case TYPE_NIL:
 				return useNil ? VALUE_XSI : VALUE_OMIT;

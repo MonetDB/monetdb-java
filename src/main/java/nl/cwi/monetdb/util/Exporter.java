@@ -12,31 +12,30 @@ import java.io.PrintWriter;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Arrays;
 
 public abstract class Exporter {
 	protected PrintWriter out;
 	protected boolean useSchema;
 
-	protected Exporter(PrintWriter out) {
+	protected Exporter(final PrintWriter out) {
 		this.out = out;
 	}
 
 	public abstract void dumpSchema(
-			DatabaseMetaData dbmd,
-			String type,
-			String catalog,
-			String schema,
-			String name) throws SQLException;
+			final DatabaseMetaData dbmd,
+			final String type,
+			final String catalog,
+			final String schema,
+			final String name) throws SQLException;
 
-	public abstract void dumpResultSet(ResultSet rs) throws SQLException;
+	public abstract void dumpResultSet(final ResultSet rs) throws SQLException;
 
-	public abstract void setProperty(int type, int value) throws Exception;
-	public abstract int getProperty(int type) throws Exception;
+	public abstract void setProperty(final int type, final int value) throws Exception;
+	public abstract int getProperty(final int type) throws Exception;
 
 	//=== shared utilities
 
-	public void useSchemas(boolean use) {
+	public void useSchemas(final boolean use) {
 		useSchema = use;
 	}
 
@@ -47,7 +46,7 @@ public abstract class Exporter {
 	 * @param in the string to quote
 	 * @return the quoted string
 	 */
-	protected static String dq(String in) {
+	protected static String dq(final String in) {
 		return "\"" + in.replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"";
 	}
 
@@ -58,7 +57,7 @@ public abstract class Exporter {
 	 * @param in the string to quote
 	 * @return the quoted string
 	 */
-	protected static String q(String in) {
+	protected static String q(final String in) {
 		return "'" + in.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'";
 	}
 
@@ -70,9 +69,9 @@ public abstract class Exporter {
 	 * @param cnt the number of times to repeat chr
 	 * @return a String holding cnt times chr
 	 */
-	protected static String repeat(char chr, int cnt) {
-		char[] buf = new char[cnt];
-		Arrays.fill(buf, chr);
+	protected static String repeat(final char chr, final int cnt) {
+		final char[] buf = new char[cnt];
+		java.util.Arrays.fill(buf, chr);
 		return new String(buf);
 	}
 }

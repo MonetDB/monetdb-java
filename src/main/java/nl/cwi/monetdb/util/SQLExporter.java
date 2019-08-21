@@ -8,7 +8,6 @@
 
 package nl.cwi.monetdb.util;
 
-import java.io.PrintWriter;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -18,11 +17,9 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.Stack;
-import java.util.TreeMap;
 
-public class SQLExporter extends Exporter {
+public final class SQLExporter extends Exporter {
 	private int outputMode;
 	private Stack<String> lastSchema;
 
@@ -31,7 +28,7 @@ public class SQLExporter extends Exporter {
 	public final static int VALUE_COPY	= 1;
 	public final static int VALUE_TABLE	= 2;
 
-	public SQLExporter(PrintWriter out) {
+	public SQLExporter(final java.io.PrintWriter out) {
 		super(out);
 	}
 
@@ -48,11 +45,11 @@ public class SQLExporter extends Exporter {
 	 * @throws SQLException if a database related error occurs
 	 */
 	public void dumpSchema(
-			DatabaseMetaData dbmd,
-			String type,
-			String catalog,
-			String schema,
-			String name)
+			final DatabaseMetaData dbmd,
+			final String type,
+			final String catalog,
+			final String schema,
+			final String name)
 		throws SQLException
 	{
 		assert dbmd != null;
@@ -60,21 +57,21 @@ public class SQLExporter extends Exporter {
 		assert schema != null;
 		assert name != null;
 
-		String fqname = (!useSchema ? dq(schema) + "." : "") + dq(name);
+		final String fqname = (!useSchema ? dq(schema) + "." : "") + dq(name);
 
 		if (useSchema)
 			changeSchema(schema);
 
 		// handle views directly
 		if (type.indexOf("VIEW") != -1) {
-			String[] types = new String[1];
+			final String[] types = new String[1];
 			types[0] = type;
-			ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
+			final ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
 			if (!tbl.next())
 				throw new SQLException("Whoops no meta data for view " + fqname);
 
 			// This will probably only work for MonetDB
-			String remarks = tbl.getString("REMARKS");	// for MonetDB driver this contains the view definition
+			final String remarks = tbl.getString("REMARKS");	// for MonetDB driver this contains the view definition
 			if (remarks == null) {
 				out.println("-- invalid " + type + " " + fqname + ": no definition found");
 			} else {
@@ -93,15 +90,16 @@ public class SQLExporter extends Exporter {
 		int colNmIndex = cols.findColumn("COLUMN_NAME");
 		int colTypeNmIndex = cols.findColumn("TYPE_NAME");
 
-		ResultSetMetaData rsmd = cols.getMetaData();
-		int colwidth = rsmd.getColumnDisplaySize(colNmIndex);
+		final ResultSetMetaData rsmd = cols.getMetaData();
+		final int colwidth = rsmd.getColumnDisplaySize(colNmIndex);
 		int typewidth = rsmd.getColumnDisplaySize(colTypeNmIndex);
 		if (typewidth < 13)
 			typewidth = 13;	// use minimal 13 characters for the typename (same as used in mclient)
 
-		StringBuilder sb = new StringBuilder(128);
+		final StringBuilder sb = new StringBuilder(128);
 		for (i = 0; cols.next(); i++) {
-			if (i > 0) out.println(",");
+			if (i > 0)
+				out.println(",");
 
 			// print column name (with double quotes)
 			s = dq(cols.getString(colNmIndex));
@@ -185,7 +183,7 @@ public class SQLExporter extends Exporter {
 		// key sequence order.  So we have to sort ourself :(
 		cols = dbmd.getPrimaryKeys(catalog, schema, name);
 		// first make an 'index' of the KEY_SEQ column
-		SortedMap<Integer, Integer> seqIndex = new TreeMap<Integer, Integer>();
+		final java.util.SortedMap<Integer, Integer> seqIndex = new java.util.TreeMap<Integer, Integer>();
 		for (i = 1; cols.next(); i++) {
 			seqIndex.put(Integer.valueOf(cols.getInt("KEY_SEQ")), Integer.valueOf(i));
 		}
@@ -319,7 +317,7 @@ public class SQLExporter extends Exporter {
 	 * @param rs the ResultSet to dump
 	 * @throws SQLException if a database error occurs
 	 */
-	public void dumpResultSet(ResultSet rs) throws SQLException {
+	public void dumpResultSet(final ResultSet rs) throws SQLException {
 		switch (outputMode) {
 			case VALUE_INSERT:
 				resultSetToSQL(rs);
@@ -333,7 +331,7 @@ public class SQLExporter extends Exporter {
 		}
 	}
 
-	public void setProperty(int type, int value) throws Exception {
+	public void setProperty(final int type, final int value) throws Exception {
 		switch (type) {
 			case TYPE_OUTPUT:
 				switch (value) {
@@ -351,7 +349,7 @@ public class SQLExporter extends Exporter {
 		}
 	}
 
-	public int getProperty(int type) throws Exception {
+	public int getProperty(final int type) throws Exception {
 		switch (type) {
 			case TYPE_OUTPUT:
 				return outputMode;
@@ -371,10 +369,10 @@ public class SQLExporter extends Exporter {
 	 * @param absolute if true, dumps table name prepended with schema name
 	 * @throws SQLException if a database related error occurs
 	 */
-	private void resultSetToSQL(ResultSet rs)
+	private void resultSetToSQL(final ResultSet rs)
 		throws SQLException
 	{
-		ResultSetMetaData rsmd = rs.getMetaData();
+		final ResultSetMetaData rsmd = rs.getMetaData();
 		String statement = "INSERT INTO ";
 		if (!useSchema) {
 			String schema = rsmd.getSchemaName(1);
@@ -383,8 +381,8 @@ public class SQLExporter extends Exporter {
 		}
 		statement += dq(rsmd.getTableName(1)) + " VALUES (";
 
-		int cols = rsmd.getColumnCount();
-		short[] types = new short[cols +1];
+		final int cols = rsmd.getColumnCount();
+		final short[] types = new short[cols +1];
 		for (int i = 1; i <= cols; i++) {
 			switch (rsmd.getColumnType(i)) {
 				case Types.CHAR:
@@ -415,7 +413,7 @@ public class SQLExporter extends Exporter {
 			}
 		}
 
-		StringBuilder strbuf = new StringBuilder(1024);
+		final StringBuilder strbuf = new StringBuilder(1024);
 		strbuf.append(statement);
 		while (rs.next()) {
 			for (int i = 1; i <= cols; i++) {
@@ -435,7 +433,7 @@ public class SQLExporter extends Exporter {
 		}
 	}
 
-	public void resultSetToSQLDump(ResultSet rs) {
+	public void resultSetToSQLDump(final ResultSet rs) {
 		// TODO: write copy into statement
 	}
 
@@ -446,12 +444,12 @@ public class SQLExporter extends Exporter {
 	 * @param rs the ResultSet to write out
 	 * @throws SQLException if a database related error occurs
 	 */
-	public void resultSetToTable(ResultSet rs) throws SQLException {
-		ResultSetMetaData md = rs.getMetaData();
-		int cols = md.getColumnCount();
+	public void resultSetToTable(final ResultSet rs) throws SQLException {
+		final ResultSetMetaData md = rs.getMetaData();
+		final int cols = md.getColumnCount();
 		// find the optimal display widths of the columns
-		int[] width = new int[cols + 1];
-		boolean[] isSigned = new boolean[cols + 1];	// used for controlling left or right alignment of data
+		final int[] width = new int[cols + 1];
+		final boolean[] isSigned = new boolean[cols + 1];	// used for controlling left or right alignment of data
 		for (int j = 1; j < width.length; j++) {
 			int coldisplaysize = md.getColumnDisplaySize(j);
 			int collabellength = md.getColumnLabel(j).length();
@@ -462,14 +460,14 @@ public class SQLExporter extends Exporter {
 		}
 
 		// use a buffer to construct the text lines
-		StringBuilder strbuf = new StringBuilder(1024);
+		final StringBuilder strbuf = new StringBuilder(1024);
 
 		// construct the frame lines and header text
 		strbuf.append('+');
 		for (int j = 1; j < width.length; j++)
 			strbuf.append(repeat('-', width[j] + 1) + "-+");
 
-		String outsideLine = strbuf.toString();
+		final String outsideLine = strbuf.toString();
 
 		strbuf.setLength(0);	// clear the buffer
 		strbuf.append('|');
@@ -524,7 +522,7 @@ public class SQLExporter extends Exporter {
 		out.println(count + " row" + (count != 1 ? "s" : ""));
 	}
 
-	private void changeSchema(String schema) {
+	private void changeSchema(final String schema) {
 		if (lastSchema == null) {
 			lastSchema = new Stack<String>();
 			lastSchema.push(null);
