@@ -10,14 +10,12 @@ package nl.cwi.monetdb.client;
 
 import nl.cwi.monetdb.merovingian.Control;
 import nl.cwi.monetdb.merovingian.SabaothDB;
+
 import nl.cwi.monetdb.util.CmdLineOpts;
 import nl.cwi.monetdb.util.OptionsException;
 
-import java.io.BufferedWriter;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
 /**
@@ -28,11 +26,11 @@ import java.util.List;
  * @version 1.0
  */
 
-public class JMonetDB {
+public final class JMonetDB {
 	private static PrintWriter out;
 
 	public final static void main(String[] args) throws Exception {
-		CmdLineOpts copts = new CmdLineOpts();
+		final CmdLineOpts copts = new CmdLineOpts();
 
 		// arguments which take exactly one argument
 		copts.addOption("h", "host", CmdLineOpts.CAR_ONE, "localhost",
@@ -68,27 +66,26 @@ public class JMonetDB {
 
 		if (copts.getOption("help").isPresent()) {
 			System.out.print(
-"Usage java -jar jmonetdb.jar\n" +
-"                  -h host[:port] -p port -P passphrase [-X<opt>] -c cmd ...\n" +
-"or using long option equivalents --host --port --passphrase.\n" +
-"Arguments may be written directly after the option like -p50000.\n" +
-"\n" +
-"If no host and port are given, localhost and 50000 are assumed.\n" +
-"\n" +
-"OPTIONS\n" +
-copts.produceHelpMessage()
-);
+				"Usage java -jar jmonetdb.jar\n" +
+				"                  -h host[:port] -p port -P passphrase [-X<opt>] -c cmd ...\n" +
+				"or using long option equivalents --host --port --passphrase.\n" +
+				"Arguments may be written directly after the option like -p50000.\n" +
+				"\n" +
+				"If no host and port are given, localhost and 50000 are assumed.\n" +
+				"\n" +
+				"OPTIONS\n" + copts.produceHelpMessage()
+				);
 			System.exit(0);
 		}
 
-		out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
+		out = new PrintWriter(new java.io.BufferedWriter(new java.io.OutputStreamWriter(System.out)));
 
 		String pass = copts.getOption("passphrase").getArgument();
 
 		// we need the password from the user, fetch it with a pseudo
 		// password protector
 		if (pass == null) {
-			char[] tmp = System.console().readPassword("passphrase: ");
+			final char[] tmp = System.console().readPassword("passphrase: ");
 			if (tmp == null) {
 				System.err.println("Invalid passphrase!");
 				System.exit(1);
@@ -125,11 +122,11 @@ copts.produceHelpMessage()
 		// FIXME: Control needs to respect Xhash
 
 		if (copts.getOption("Xdebug").isPresent()) {
-			String fname = copts.getOption("Xdebug").getArgument();
+			final String fname = copts.getOption("Xdebug").getArgument();
 			ctl.setDebug(fname);
 		}
 
-		String[] commands = copts.getOption("command").getArguments();
+		final String[] commands = copts.getOption("command").getArguments();
 		if (commands[0].equals("status")) {
 			List<SabaothDB> sdbs;
 			if (commands.length == 1) {
@@ -139,7 +136,7 @@ copts.produceHelpMessage()
 				for (int i = 1; i < commands.length; i++)
 					sdbs.add(ctl.getStatus(commands[i]));
 			}
-			Iterator<SabaothDB> it = sdbs.iterator();
+			final java.util.Iterator<SabaothDB> it = sdbs.iterator();
 			while (it.hasNext()) {
 				SabaothDB sdb = it.next();
 				System.out.println(sdb.getName() + " " + sdb.getURI());

@@ -19,17 +19,11 @@ import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
-import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
 import java.sql.SQLException;
@@ -37,7 +31,6 @@ import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.zip.GZIPInputStream;
 
 /**
  * This program acts like an extended client program for MonetDB. Its
@@ -60,7 +53,7 @@ public final class JdbcClient {
 	private static Exporter exporter;
 
 	public final static void main(String[] args) throws Exception {
-		CmdLineOpts copts = new CmdLineOpts();
+		final CmdLineOpts copts = new CmdLineOpts();
 
 		// arguments which take exactly one argument
 		copts.addOption("h", "host", CmdLineOpts.CAR_ONE, "localhost",
@@ -184,7 +177,9 @@ public final class JdbcClient {
 				copts.produceHelpMessage()
 				);
 			System.exit(0);
-		} else if (copts.getOption("version").isPresent()) {
+		}
+
+		if (copts.getOption("version").isPresent()) {
 			// We cannot use the DatabaseMetaData here, because we
 			// cannot get a Connection.  So instead, we just get the
 			// values we want out of the Driver directly.
@@ -192,18 +187,15 @@ public final class JdbcClient {
 			System.exit(0);
 		}
 
-		in = new BufferedReader(new InputStreamReader(System.in));
-		out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(System.out)));
-
 		// whether the semi-colon at the end of a String terminates the
 		// query or not (default = yes => SQL)
-		boolean scolonterm = true;
-		boolean xmlMode = "xml".equals(copts.getOption("Xoutput").getArgument());
+		final boolean scolonterm = true;
+		final boolean xmlMode = "xml".equals(copts.getOption("Xoutput").getArgument());
 
 		// we need the password from the user, fetch it with a pseudo
 		// password protector
 		if (pass == null) {
-			char[] tmp = System.console().readPassword("password: ");
+			final char[] tmp = System.console().readPassword("password: ");
 			if (tmp == null) {
 				System.err.println("Invalid password!");
 				System.exit(1);
@@ -225,7 +217,7 @@ public final class JdbcClient {
 		// build the extra arguments of the JDBC connect string
 		String attr = "?";
 		CmdLineOpts.OptionContainer oc = copts.getOption("language");
-		String lang = oc.getArgument();
+		final String lang = oc.getArgument();
 		if (oc.isPresent())
 			attr += "language=" + lang + "&";
 
@@ -252,9 +244,9 @@ public final class JdbcClient {
 		// connecting to a proxy-like service, since MonetDB itself
 		// can't access multiple databases.
 		con = null;
-		String database = copts.getOption("database").getArgument();
+		final String database = copts.getOption("database").getArgument();
 		try {
-			con = DriverManager.getConnection(
+			con = java.sql.DriverManager.getConnection(
 					"jdbc:monetdb://" + host + "/" + database + attr,
 					user,
 					pass
@@ -278,16 +270,17 @@ public final class JdbcClient {
 			dbmd = null;
 		}
 
-		stmt = con.createStatement();
+		in = new BufferedReader(new InputStreamReader(System.in));
+		out = new PrintWriter(new BufferedWriter(new java.io.OutputStreamWriter(System.out)));
+
+		stmt = con.createStatement();	// is used by doDump
 
 		// see if we will have to perform a database dump (only in SQL mode)
 		if ("sql".equals(lang) && copts.getOption("dump").isPresent()) {
-			ResultSet tbl;
-
 			// use the given file for writing
 			oc = copts.getOption("file");
 			if (oc.isPresent())
-				out = new PrintWriter(new BufferedWriter(new FileWriter(oc.getArgument())));
+				out = new PrintWriter(new BufferedWriter(new java.io.FileWriter(oc.getArgument())));
 
 			// we only want user tables and views to be dumped, unless a specific
 			// table is requested
@@ -295,9 +288,9 @@ public final class JdbcClient {
 			if (copts.getOption("dump").getArgumentCount() > 0)
 				types = null;
 			// request the tables available in the current schema in the database
-			tbl = dbmd.getTables(null, con.getSchema(), null, types);
-
-			List<Table> tables = new LinkedList<Table>();
+			ResultSet tbl = dbmd.getTables(null, con.getSchema(), null, types);
+			final LinkedList<Table> tables = new LinkedList<Table>();
+			// fetch all tables and store them in a LinkedList
 			while (tbl.next()) {
 				tables.add(new Table(
 					tbl.getString(2),	// 2 = "TABLE_SCHEM"
@@ -324,12 +317,13 @@ public final class JdbcClient {
 
 			// dump specific table(s) or not?
 			if (copts.getOption("dump").getArgumentCount() > 0) { // yes we do
-				String[] dumpers = copts.getOption("dump").getArguments();
+				final String[] dumpers = copts.getOption("dump").getArguments();
 				for (int i = 0; i < tables.size(); i++) {
 					Table ttmp = tables.get(i);
 					for (int j = 0; j < dumpers.length; j++) {
-						if (ttmp.getName().equalsIgnoreCase(dumpers[j].toString()) ||
-							ttmp.getFqname().equalsIgnoreCase(dumpers[j].toString()))
+						String dumptblnm = dumpers[j].toString();
+						if (ttmp.getName().equalsIgnoreCase(dumptblnm) ||
+						    ttmp.getFqname().equalsIgnoreCase(dumptblnm))
 						{
 							// dump the table
 							doDump(out, ttmp);
@@ -408,11 +402,10 @@ public final class JdbcClient {
 
 		try {
 			// use the given file for reading
-			boolean hasFile = copts.getOption("file").isPresent();
-			boolean doEcho = hasFile && copts.getOption("echo").isPresent();
+			final boolean hasFile = copts.getOption("file").isPresent();
+			final boolean doEcho = hasFile && copts.getOption("echo").isPresent();
 			if (hasFile) {
-				String tmp = copts.getOption("file").getArgument();
-				int batchSize = 0;
+				final String tmp = copts.getOption("file").getArgument();
 				try {
 					in = getReader(tmp);
 				} catch (Exception e) {
@@ -421,6 +414,7 @@ public final class JdbcClient {
 				}
 
 				// check for batch mode
+				int batchSize = 0;
 				oc = copts.getOption("Xbatching");
 				if (oc.isPresent()) {
 					if (oc.getArgumentCount() == 1) {
@@ -441,10 +435,10 @@ public final class JdbcClient {
 					// print welcome message
 					out.println("Welcome to the MonetDB interactive JDBC terminal!");
 					if (dbmd != null) {
-						out.println("Database Server: " + dbmd.getDatabaseProductName() +
-							" v" + dbmd.getDatabaseProductVersion());
 						out.println("JDBC Driver: " + dbmd.getDriverName() +
 							" v" + dbmd.getDriverVersion());
+						out.println("Database Server: " + dbmd.getDatabaseProductName() +
+							" v" + dbmd.getDatabaseProductVersion());
 					}
 					out.println("Current Schema: " + con.getSchema());
 					out.println("Type \\q to quit (you can also use: quit or exit), \\? or \\h for a list of available commands");
@@ -482,45 +476,46 @@ public final class JdbcClient {
 	 * @return a BufferedReader for the uri
 	 * @throws Exception if uri cannot be identified as a valid URL or file
 	 */
-	static BufferedReader getReader(String uri) throws Exception {
+	static BufferedReader getReader(final String uri) throws Exception {
 		BufferedReader ret = null;
 		URL u = null;
 
 		// Try and parse as URL first
 		try {
 			u = new URL(uri);
-		} catch (MalformedURLException e) {
+		} catch (java.net.MalformedURLException e) {
 			// no URL, try as file
 			try {
-				ret = new BufferedReader(new FileReader(uri));
-			} catch (FileNotFoundException fnfe) {
+				ret = new BufferedReader(new java.io.FileReader(uri));
+			} catch (java.io.FileNotFoundException fnfe) {
 				// the message is descriptive enough, adds "(No such file
 				// or directory)" itself.
 				throw new Exception(fnfe.getMessage());
 			}
 		}
 
-		if (ret == null) try {
-			HttpURLConnection.setFollowRedirects(true);
-			HttpURLConnection con =
-				(HttpURLConnection)u.openConnection();
-			con.setRequestMethod("GET");
-			String ct = con.getContentType();
-			if ("application/x-gzip".equals(ct)) {
-				// open gzip stream
-				ret = new BufferedReader(new InputStreamReader(
-							new GZIPInputStream(con.getInputStream())));
-			} else {
-				// text/plain otherwise just attempt to read as is
-				ret = new BufferedReader(new InputStreamReader(
+		if (ret == null) {
+			try {
+				HttpURLConnection.setFollowRedirects(true);
+				HttpURLConnection con = (HttpURLConnection)u.openConnection();
+				con.setRequestMethod("GET");
+				String ct = con.getContentType();
+				if ("application/x-gzip".equals(ct)) {
+					// open gzip stream
+					ret = new BufferedReader(new InputStreamReader(
+							new java.util.zip.GZIPInputStream(con.getInputStream())));
+				} else {
+					// text/plain otherwise just attempt to read as is
+					ret = new BufferedReader(new InputStreamReader(
 							con.getInputStream()));
+				}
+			} catch (IOException e) {
+				// failed to open the url
+				throw new Exception("No such host/file: " + e.getMessage());
+			} catch (Exception e) {
+				// this is an exception that comes from deep ...
+				throw new Exception("Invalid URL: " + e.getMessage());
 			}
-		} catch (IOException e) {
-			// failed to open the url
-			throw new Exception("No such host/file: " + e.getMessage());
-		} catch (Exception e) {
-			// this is an exception that comes from deep ...
-			throw new Exception("Invalid URL: " + e.getMessage());
 		}
 
 		return ret;
@@ -540,15 +535,15 @@ public final class JdbcClient {
 	 * @throws SQLException if a database related error occurs
 	 */
 	public static void processInteractive(
-		boolean hasFile,
-		boolean doEcho,
-		boolean scolonterm,
-		String user
+		final boolean hasFile,
+		final boolean doEcho,
+		final boolean scolonterm,
+		final String user
 	)
 		throws IOException, SQLException
 	{
 		// an SQL stack keeps track of ( " and '
-		SQLStack stack = new SQLStack();
+		final SQLStack stack = new SQLStack();
 		// a query part is a line of an SQL query
 		QueryPart qp = null;
 
@@ -665,7 +660,7 @@ public final class JdbcClient {
 									String schema;
 									String obj_nm = object;
 									boolean found = false;
-									int dot = object.indexOf(".");
+									final int dot = object.indexOf(".");
 									if (dot > 0) {
 										// use specified schema
 										schema = object.substring(0, dot);
@@ -712,7 +707,7 @@ public final class JdbcClient {
 							System.err.println("Usage: '" + command.substring(0, 2) + "<uri>' where <uri> is a file or URL");
 						} else {
 							// temporarily redirect input from in
-							BufferedReader console = in;
+							final BufferedReader console = in;
 							try {
 								in = getReader(object);
 								if (command.startsWith("\\l")) {
@@ -761,7 +756,7 @@ public final class JdbcClient {
 			}
 
 			if (!hasFile) {
-				boolean ac = con.getAutoCommit();
+				final boolean ac = con.getAutoCommit();
 				if (ac != lastac) {
 					out.println("auto commit mode: " + (ac ? "on" : "off"));
 					lastac = ac;
@@ -783,10 +778,10 @@ public final class JdbcClient {
 	 * @param showTiming flag to specify if timing information nees to be printed
 	 * @throws SQLException if a database related error occurs
 	 */
-	private static void executeQuery(String query,
-			Statement stmt,
-			PrintWriter out,
-			boolean showTiming)
+	private static void executeQuery(final String query,
+			final Statement stmt,
+			final PrintWriter out,
+			final boolean showTiming)
 		throws SQLException
 	{
 		// warnings generated during querying
@@ -802,7 +797,7 @@ public final class JdbcClient {
 		do {
 			if (nextRslt) {
 				// we have a ResultSet, print it
-				ResultSet rs = stmt.getResultSet();
+				final ResultSet rs = stmt.getResultSet();
 
 				exporter.dumpResultSet(rs);
 				if (showTiming) {
@@ -839,8 +834,8 @@ public final class JdbcClient {
 				} else {
 					// we have an update count
 					// see if a key was generated
-					ResultSet rs = stmt.getGeneratedKeys();
-					boolean hasGeneratedKeyData = rs.next();
+					final ResultSet rs = stmt.getGeneratedKeys();
+					final boolean hasGeneratedKeyData = rs.next();
 					out.println(aff + " affected row" + (aff != 1 ? "s" : "") +
 						(hasGeneratedKeyData ? ", last generated key: " + rs.getString(1) : "") +
 						timingoutput);
@@ -880,8 +875,8 @@ public final class JdbcClient {
 	 *		sending them to the database for execution.
 	 * @throws IOException if an IO exception occurs.
 	 */
-	public static void processBatch(int batchSize) throws IOException {
-		StringBuilder query = new StringBuilder();
+	public static void processBatch(final int batchSize) throws IOException {
+		final StringBuilder query = new StringBuilder();
 		String curLine;
 		int i = 0;
 		try {
@@ -920,8 +915,8 @@ public final class JdbcClient {
 	 * @param table the table to dump
 	 * @throws SQLException if a database related error occurs
 	 */
-	public static void doDump(PrintWriter out, Table table) throws SQLException {
-		String tableType = table.getType();
+	public static void doDump(final PrintWriter out, final Table table) throws SQLException {
+		final String tableType = table.getType();
 
 		// dump CREATE definition of this table/view
 		exporter.dumpSchema(dbmd, tableType, null, table.getSchem(), table.getName());
@@ -929,10 +924,12 @@ public final class JdbcClient {
 
 		// only dump data from real tables, not from views
 		if (tableType.contains("TABLE")) {
-			ResultSet rs = stmt.executeQuery("SELECT * FROM " + table.getFqnameQ());
-			exporter.dumpResultSet(rs);
-			rs.close();
-			out.println();
+			final ResultSet rs = stmt.executeQuery("SELECT * FROM " + table.getFqnameQ());
+			if (rs != null) {
+				exporter.dumpResultSet(rs);
+				rs.close();
+				out.println();
+			}
 		}
 	}
 
@@ -943,7 +940,7 @@ public final class JdbcClient {
 	 * @param compl whether the statement is complete
 	 * @return a prompt which consist of "sql" plus the top of the stack
 	 */
-	private static String getPrompt(SQLStack stack, boolean compl) {
+	private static String getPrompt(final SQLStack stack, final boolean compl) {
 		return (compl ? "sql" : "more") +
 			(stack.empty() ? ">" : "" + stack.peek()) + " ";
 	}
@@ -963,9 +960,9 @@ public final class JdbcClient {
 	 * @return a QueryPart object containing the results of this parse
 	 */
 	private static QueryPart scanQuery(
-			String query,
-			SQLStack stack,
-			boolean scolonterm)
+			final String query,
+			final SQLStack stack,
+			final boolean scolonterm)
 	{
 		// examine string, char for char
 		boolean wasInString = (stack.peek() == '\'');
@@ -1066,7 +1063,7 @@ public final class JdbcClient {
 		}
 	}
 
-	public static String dq(String in) {
+	public static final String dq(final String in) {
 		return "\"" + in.replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"";
 	}
 }
@@ -1076,12 +1073,12 @@ public final class JdbcClient {
  * like the actual SQL query string, whether it has an open quote and the like
  * is stored.
  */
-class QueryPart {
-	private boolean complete;
-	private String query;
-	private boolean open;
+final class QueryPart {
+	private final boolean complete;
+	private final String query;
+	private final boolean open;
 
-	public QueryPart(boolean complete, String query, boolean open) {
+	public QueryPart(final boolean complete, final String query, final boolean open) {
 		this.complete = complete;
 		this.query = query;
 		this.open = open;
@@ -1108,8 +1105,8 @@ class QueryPart {
  * An SQLStack is a simple stack that keeps track of open brackets and
  * (single and double) quotes in an SQL query.
  */
-class SQLStack {
-	StringBuilder stack = new StringBuilder();
+final class SQLStack {
+	final StringBuilder stack = new StringBuilder();
 
 	public char peek() {
 		if (empty()) {
@@ -1120,7 +1117,7 @@ class SQLStack {
 	}
 
 	public char pop() {
-		char tmp = peek();
+		final char tmp = peek();
 		if (tmp != '\0') {
 			stack.setLength(stack.length() - 1);
 		}
@@ -1142,21 +1139,21 @@ class SQLStack {
  * generate a fully qualified name is stored, as well as dependency
  * data.
  */
-class Table {
+final class Table {
 	final String schem;
 	final String name;
 	final String type;
 	final String fqname;
-	List<Table> needs = new ArrayList<Table>();
+	final ArrayList<Table> needs = new ArrayList<Table>();
 
-	Table(String schem, String name, String type) {
+	Table(final String schem, final String name, final String type) {
 		this.schem = schem;
 		this.name = name;
 		this.type = type;
 		this.fqname = schem + "." + name;
 	}
 
-	void addDependency(Table dependsOn) throws Exception {
+	void addDependency(final Table dependsOn) throws Exception {
 		if (this.fqname.equals(dependsOn.fqname))
 			throw new Exception("Cyclic dependency graphs are not supported (foreign key relation references self)");
 
@@ -1167,11 +1164,11 @@ class Table {
 			needs.add(dependsOn);
 	}
 
-	List<Table> requires(List<Table> existingTables) {
+	List<Table> requires(final List<Table> existingTables) {
 		if (existingTables == null || existingTables.isEmpty())
 			return new ArrayList<Table>(needs);
 
-		List<Table> req = new ArrayList<Table>();
+		final ArrayList<Table> req = new ArrayList<Table>();
 		for (Table n : needs) {
 			if (!existingTables.contains(n))
 				req.add(n);
@@ -1180,31 +1177,31 @@ class Table {
 		return req;
 	}
 
-	String getSchem() {
+	final String getSchem() {
 		return schem;
 	}
 
-	String getName() {
+	final String getName() {
 		return name;
 	}
 
-	String getType() {
+	final String getType() {
 		return type;
 	}
 
-	String getFqname() {
+	final String getFqname() {
 		return fqname;
 	}
 
-	String getFqnameQ() {
+	final String getFqnameQ() {
 		return JdbcClient.dq(schem) + "." + JdbcClient.dq(name);
 	}
 
-	public String toString() {
+	public final String toString() {
 		return fqname;
 	}
 
-	static Table findTable(String fqname, List<Table> list) {
+	static final Table findTable(final String fqname, final List<Table> list) {
 		for (Table l : list) {
 			if (l.fqname.equals(fqname))
 				return l;
@@ -1213,7 +1210,7 @@ class Table {
 		return null;
 	}
 
-	static void checkForLoop(Table table, List<Table> parents) throws Exception {
+	static final void checkForLoop(final Table table, final List<Table> parents) throws Exception {
 		parents.add(table);
 		for (int i = 0; i < table.needs.size(); i++) {
 			Table child = table.needs.get(i);
