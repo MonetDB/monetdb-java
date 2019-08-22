@@ -282,12 +282,14 @@ public final class JdbcClient {
 			if (oc.isPresent())
 				out = new PrintWriter(new BufferedWriter(new java.io.FileWriter(oc.getArgument())));
 
-			// we only want user tables and views to be dumped, unless a specific
-			// table is requested
-			final String[] types = {"TABLE", "VIEW"};
-			final boolean usetypes = (copts.getOption("dump").getArgumentCount() == 0);
+			// we only want user tables and views to be dumped, unless a specific table is requested
+			final String[] types = {"TABLE","VIEW","MERGE TABLE","REMOTE TABLE","REPLICA TABLE","STREAM TABLE"};
+			// Future: fetch all type names using dbmd.getTableTypes() and construct String[] with all
+			// table type names excluding the SYSTEM ... ones and ... TEMPORARY TABLE ones.
+
 			// request the list of tables available in the current schema in the database
-			ResultSet tbl = dbmd.getTables(null, con.getSchema(), null, usetypes ? types : null);
+			ResultSet tbl = dbmd.getTables(null, con.getSchema(), null,
+							(copts.getOption("dump").getArgumentCount() == 0) ? types : null);
 			// fetch all tables and store them in a LinkedList of Table objects
 			final LinkedList<Table> tables = new LinkedList<Table>();
 			while (tbl.next()) {
@@ -334,10 +336,10 @@ public final class JdbcClient {
 				tbl = dbmd.getImportedKeys(null, null, null);
 				while (tbl.next()) {
 					// find FK table object  6 = "FKTABLE_SCHEM", 7 = "FKTABLE_NAME"
-					Table fk = Table.findTable(tbl.getString(6) + "." + tbl.getString(7), tables);
+					Table fk = Table.findTable(tbl.getString(6), tbl.getString(7), tables);
 
 					// find PK table object  2 = "PKTABLE_SCHEM", 3 = "PKTABLE_NAME"
-					Table pk = Table.findTable(tbl.getString(2) + "." + tbl.getString(3), tables);
+					Table pk = Table.findTable(tbl.getString(2), tbl.getString(3), tables);
 
 					// this happens when a system table has referential constraints
 					if (fk == null || pk == null)
@@ -878,9 +880,9 @@ public final class JdbcClient {
 	 */
 	public static void processBatch(final int batchSize) throws IOException {
 		final StringBuilder query = new StringBuilder();
-		String curLine;
 		int i = 0;
 		try {
+			String curLine;
 			// the main loop
 			for (i = 1; (curLine = in.readLine()) != null; i++) {
 				query.append(curLine);
@@ -923,8 +925,11 @@ public final class JdbcClient {
 		exporter.dumpSchema(dbmd, tableType, null, table.getSchem(), table.getName());
 		out.println();
 
-		// only dump data from real tables, not from views
-		if (tableType.contains("TABLE")) {
+		// only dump data from real tables, not from views / MERGE / REMOTE / REPLICA tables
+		if (tableType.contains("TABLE")
+		&& !tableType.equals("MERGE TABLE")
+		&& !tableType.equals("REMOTE TABLE")
+		&& !tableType.equals("REPLICA TABLE")) {
 			final ResultSet rs = stmt.executeQuery("SELECT * FROM " + table.getFqnameQ());
 			if (rs != null) {
 				exporter.dumpResultSet(rs);
@@ -942,8 +947,7 @@ public final class JdbcClient {
 	 * @return a prompt which consist of "sql" plus the top of the stack
 	 */
 	private static String getPrompt(final SQLStack stack, final boolean compl) {
-		return (compl ? "sql" : "more") +
-			(stack.empty() ? ">" : "" + stack.peek()) + " ";
+		return (compl ? "sql" : "more") + (stack.empty() ? ">" : stack.peek()) + " ";
 	}
 
 	/**
@@ -1202,10 +1206,10 @@ final class Table {
 		return fqname;
 	}
 
-	static final Table findTable(final String fqname, final List<Table> list) {
-		for (Table l : list) {
-			if (l.fqname.equals(fqname))
-				return l;
+	static final Table findTable(final String schname, final String tblname, final List<Table> list) {
+		for (Table t : list) {
+			if (t.schem.equals(schname) && t.name.equals(tblname))
+				return t;
 		}
 		// not found
 		return null;
