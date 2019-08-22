@@ -10,20 +10,17 @@ package nl.cwi.monetdb.util;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
 import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import nl.cwi.monetdb.mcl.MCLException;
 import nl.cwi.monetdb.mcl.io.BufferedMCLReader;
 import nl.cwi.monetdb.mcl.io.BufferedMCLWriter;
 import nl.cwi.monetdb.mcl.net.MapiSocket;
-import nl.cwi.monetdb.mcl.parser.MCLParseException;
 
 /**
  * Use this class to restore an SQL dump file.
  */
-public class SQLRestore {
+public final class SQLRestore {
 
 	private final String _host;
 	private final int _port;
@@ -31,7 +28,7 @@ public class SQLRestore {
 	private final String _password;
 	private final String _dbName;
 
-	public SQLRestore(String host, int port, String user, String password, String dbName) throws IOException {
+	public SQLRestore(final String host, final int port, final String user, final String password, final String dbName) throws IOException {
 		if (host == null || user == null || password == null || dbName == null)
 			throw new NullPointerException();
 		_host = host;
@@ -41,22 +38,22 @@ public class SQLRestore {
 		_dbName = dbName;
 	}
 
-	private static class ServerResponseReader implements Runnable {
+	private static final class ServerResponseReader implements Runnable {
 		private final BufferedMCLReader _is;
 		private final AtomicBoolean _errorState = new AtomicBoolean(false);
 		private String _errorMessage = null;
 
-		ServerResponseReader(BufferedMCLReader is) {
+		ServerResponseReader(final BufferedMCLReader is) {
 			_is = is;
 		}
 
 		public void run() {
 			try {
 				while (true) {
-					String line = _is.readLine();
+					final String line = _is.readLine();
 					if (line == null)
 						break;
-					int result = _is.getLineType();
+					final int result = _is.getLineType();
 					switch (result) {
 					case BufferedMCLReader.ERROR:
 						_errorMessage = line;
@@ -101,28 +98,28 @@ public class SQLRestore {
 	 * @param source file object
 	 * @throws IOException when IO exception occurred
 	 */
-	public void restore(File source) throws IOException {
-		MapiSocket ms = new MapiSocket();
+	public void restore(final File source) throws IOException {
+		final MapiSocket ms = new MapiSocket();
 		try {
 			ms.setLanguage("sql");
 			ms.setDatabase(_dbName);
 			ms.connect(_host, _port, _user, _password);
 
-			BufferedMCLWriter os = ms.getWriter();
-			BufferedMCLReader reader = ms.getReader();
+			final BufferedMCLWriter os = ms.getWriter();
+			final BufferedMCLReader reader = ms.getReader();
 
-			ServerResponseReader srr = new ServerResponseReader(reader);
+			final ServerResponseReader srr = new ServerResponseReader(reader);
 
-			Thread responseReaderThread = new Thread(srr);
+			final Thread responseReaderThread = new Thread(srr);
 			responseReaderThread.start();
 			try {
 				// FIXME: we assume here that the dump is in system's default encoding
-				BufferedReader sourceData = new BufferedReader(new FileReader(source));
+				final BufferedReader sourceData = new BufferedReader(new java.io.FileReader(source));
 				try {
 					os.write('s'); // signal that a new statement (or series of) is coming
 					while(!srr.inErrorState()) {
-						char[] buf = new char[4096];
-						int result = sourceData.read(buf);
+						final char[] buf = new char[4096];
+						final int result = sourceData.read(buf);
 						if (result < 0)
 							break;
 						os.write(buf, 0, result);
@@ -145,9 +142,9 @@ public class SQLRestore {
 					throw new IOException(srr.getErrorMessage());
 				}
 			}
-		} catch (MCLException e) {
+		} catch (nl.cwi.monetdb.mcl.MCLException e) {
 			throw new IOException(e.getMessage());
-		} catch (MCLParseException e) {
+		} catch (nl.cwi.monetdb.mcl.parser.MCLParseException e) {
 			throw new IOException(e.getMessage());
 		} finally {
 			ms.close();
@@ -167,12 +164,12 @@ public class SQLRestore {
 		}
 
 		// parse arguments
-		String host = args[0];
-		int port = Integer.parseInt(args[1]); // FIXME: catch NumberFormatException
-		String user = args[2];
-		String password = args[3];
-		String dbName = args[4];
-		File dumpFile = new File(args[5]);
+		final String host = args[0];
+		final int port = Integer.parseInt(args[1]); // FIXME: catch NumberFormatException
+		final String user = args[2];
+		final String password = args[3];
+		final String dbName = args[4];
+		final File dumpFile = new File(args[5]);
 
 		// check arguments
 		if (!dumpFile.isFile() || !dumpFile.canRead()) {
@@ -180,7 +177,7 @@ public class SQLRestore {
 			System.exit(1);
 		}
 
-		SQLRestore md = new SQLRestore(host, port, user, password, dbName);
+		final SQLRestore md = new SQLRestore(host, port, user, password, dbName);
 		try {
 			System.out.println("Start restoring " + dumpFile);
 			long duration = -System.currentTimeMillis();

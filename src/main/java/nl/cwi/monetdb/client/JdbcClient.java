@@ -284,13 +284,12 @@ public final class JdbcClient {
 
 			// we only want user tables and views to be dumped, unless a specific
 			// table is requested
-			String[] types = {"TABLE", "VIEW"};
-			if (copts.getOption("dump").getArgumentCount() > 0)
-				types = null;
-			// request the tables available in the current schema in the database
-			ResultSet tbl = dbmd.getTables(null, con.getSchema(), null, types);
+			final String[] types = {"TABLE", "VIEW"};
+			final boolean usetypes = (copts.getOption("dump").getArgumentCount() == 0);
+			// request the list of tables available in the current schema in the database
+			ResultSet tbl = dbmd.getTables(null, con.getSchema(), null, usetypes ? types : null);
+			// fetch all tables and store them in a LinkedList of Table objects
 			final LinkedList<Table> tables = new LinkedList<Table>();
-			// fetch all tables and store them in a LinkedList
 			while (tbl.next()) {
 				tables.add(new Table(
 					tbl.getString(2),	// 2 = "TABLE_SCHEM"
@@ -360,7 +359,7 @@ public final class JdbcClient {
 				// find the graph, at this point we know there are no
 				// cycles, thus a solution exists
 				for (int i = 0; i < tables.size(); i++) {
-					List<Table> needs = tables.get(i).requires(tables.subList(0, i + 1));
+					final List<Table> needs = tables.get(i).requires(tables.subList(0, i + 1));
 					if (needs.size() > 0) {
 						tables.removeAll(needs);
 						tables.addAll(i, needs);
@@ -497,17 +496,16 @@ public final class JdbcClient {
 		if (ret == null) {
 			try {
 				HttpURLConnection.setFollowRedirects(true);
-				HttpURLConnection con = (HttpURLConnection)u.openConnection();
+				final HttpURLConnection con = (HttpURLConnection)u.openConnection();
 				con.setRequestMethod("GET");
-				String ct = con.getContentType();
+				final String ct = con.getContentType();
 				if ("application/x-gzip".equals(ct)) {
 					// open gzip stream
 					ret = new BufferedReader(new InputStreamReader(
 							new java.util.zip.GZIPInputStream(con.getInputStream())));
 				} else {
 					// text/plain otherwise just attempt to read as is
-					ret = new BufferedReader(new InputStreamReader(
-							con.getInputStream()));
+					ret = new BufferedReader(new InputStreamReader(con.getInputStream()));
 				}
 			} catch (IOException e) {
 				// failed to open the url
@@ -538,23 +536,24 @@ public final class JdbcClient {
 		final boolean hasFile,
 		final boolean doEcho,
 		final boolean scolonterm,
-		final String user
-	)
+		final String user)
 		throws IOException, SQLException
 	{
 		// an SQL stack keeps track of ( " and '
 		final SQLStack stack = new SQLStack();
-		// a query part is a line of an SQL query
-		QueryPart qp = null;
+		boolean lastac = false;
 
-		String query = "", curLine;
-		boolean wasComplete = true, doProcess, lastac = false;
 		if (!hasFile) {
 			lastac = con.getAutoCommit();
 			out.println("auto commit mode: " + (lastac ? "on" : "off"));
 			out.print(getPrompt(stack, true));
 			out.flush();
 		}
+
+		String curLine;
+		String query = "";
+		boolean doProcess;
+		boolean wasComplete = true;
 
 		// the main (interactive) process loop
 		for (long i = 1; true; i++) {
@@ -582,7 +581,7 @@ public final class JdbcClient {
 					query = "";
 					wasComplete = true;
 					if (!hasFile) {
-						boolean ac = con.getAutoCommit();
+						final boolean ac = con.getAutoCommit();
 						if (ac != lastac) {
 							out.println("auto commit mode: " + (ac ? "on" : "off"));
 							lastac = ac;
@@ -603,9 +602,11 @@ public final class JdbcClient {
 				out.println(curLine);
 				out.flush();
 			}
-			qp = scanQuery(curLine, stack, scolonterm);
+
+			// a query part is a line of an SQL query
+			QueryPart qp = scanQuery(curLine, stack, scolonterm);
 			if (!qp.isEmpty()) {
-				String command = qp.getQuery();
+				final String command = qp.getQuery();
 				doProcess = true;
 				if (wasComplete) {
 					doProcess = false;
@@ -633,7 +634,7 @@ public final class JdbcClient {
 
 								// give us a list of all non-system tables and views (including temp ones)
 								while (tbl.next()) {
-									String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
+									final String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
 									if (tableType != null && tableType.startsWith("SYSTEM "))
 										out.println(tableType + "\t" +
 											tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
@@ -649,7 +650,7 @@ public final class JdbcClient {
 
 									// give us a list of all non-system tables and views (including temp ones)
 									while (tbl.next()) {
-										String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
+										final String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
 										if (tableType != null && !tableType.startsWith("SYSTEM "))
 											out.println(tableType + "\t" +
 												tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
@@ -671,8 +672,8 @@ public final class JdbcClient {
 									}
 									tbl = dbmd.getTables(null, schema, obj_nm, null);
 									while (tbl.next() && !found) {
-										String tableName = tbl.getString(3);	// 3 = "TABLE_NAME"
-										String schemaName = tbl.getString(2);	// 2 = "TABLE_SCHEM"
+										final String schemaName = tbl.getString(2);	// 2 = "TABLE_SCHEM"
+										final String tableName = tbl.getString(3);	// 3 = "TABLE_NAME"
 										if (obj_nm.equals(tableName) && schema.equals(schemaName)) {
 											// we found it, describe it
 											exporter.dumpSchema(dbmd,

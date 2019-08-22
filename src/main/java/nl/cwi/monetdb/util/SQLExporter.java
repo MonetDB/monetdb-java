@@ -23,10 +23,10 @@ public final class SQLExporter extends Exporter {
 	private int outputMode;
 	private Stack<String> lastSchema;
 
-	public final static int TYPE_OUTPUT	= 1;
-	public final static int VALUE_INSERT	= 0;
-	public final static int VALUE_COPY	= 1;
-	public final static int VALUE_TABLE	= 2;
+	public final static short TYPE_OUTPUT  = 1;
+	public final static short VALUE_INSERT = 0;
+	public final static short VALUE_COPY   = 1;
+	public final static short VALUE_TABLE  = 2;
 
 	public SQLExporter(final java.io.PrintWriter out) {
 		super(out);
@@ -81,14 +81,12 @@ public final class SQLExporter extends Exporter {
 			return;
 		}
 
-		int i;
-		String s;
 		out.println("CREATE " + type + " " + fqname + " (");
 
 		// add all columns with their type, nullability and default definition
 		ResultSet cols = dbmd.getColumns(catalog, schema, name, null);
-		int colNmIndex = cols.findColumn("COLUMN_NAME");
-		int colTypeNmIndex = cols.findColumn("TYPE_NAME");
+		final int colNmIndex = cols.findColumn("COLUMN_NAME");
+		final int colTypeNmIndex = cols.findColumn("TYPE_NAME");
 
 		final ResultSetMetaData rsmd = cols.getMetaData();
 		final int colwidth = rsmd.getColumnDisplaySize(colNmIndex);
@@ -97,12 +95,13 @@ public final class SQLExporter extends Exporter {
 			typewidth = 13;	// use minimal 13 characters for the typename (same as used in mclient)
 
 		final StringBuilder sb = new StringBuilder(128);
+		int i;
 		for (i = 0; cols.next(); i++) {
 			if (i > 0)
 				out.println(",");
 
 			// print column name (with double quotes)
-			s = dq(cols.getString(colNmIndex));
+			String s = dq(cols.getString(colNmIndex));
 			out.print("\t" + s + repeat(' ', (colwidth - s.length() + 3)));
 
 			int ctype = cols.getInt("DATA_TYPE");
@@ -161,7 +160,7 @@ public final class SQLExporter extends Exporter {
 					break;
 			}
 			if (isNotNull || hasDefault) {
-				int spaces = typewidth - sb.length();
+				final int spaces = typewidth - sb.length();
 				if (spaces > 0)
 					sb.append(repeat(' ', spaces));
 				if (isNotNull)
@@ -191,13 +190,11 @@ public final class SQLExporter extends Exporter {
 			// terminate the previous line
 			out.println(",");
 			cols.absolute(1);
-			out.print("\tCONSTRAINT " + dq(cols.getString("PK_NAME")) +
-				" PRIMARY KEY (");
-			i = 0;
-			for (Iterator<Map.Entry<Integer, Integer>> it = seqIndex.entrySet().iterator();
-					it.hasNext(); i++)
-			{
-				Map.Entry<Integer, Integer> e = it.next();
+			out.print("\tCONSTRAINT " + dq(cols.getString("PK_NAME")) + " PRIMARY KEY (");
+
+			final Iterator<Map.Entry<Integer, Integer>> it = seqIndex.entrySet().iterator(); 
+			for (i = 0; it.hasNext(); i++) {
+				final Map.Entry<Integer, Integer> e = it.next();
 				cols.absolute(e.getValue().intValue());
 				if (i > 0)
 					out.print(", ");
@@ -214,7 +211,7 @@ public final class SQLExporter extends Exporter {
 		int colIndexNm = cols.findColumn("INDEX_NAME");
 		int colIndexColNm = cols.findColumn("COLUMN_NAME");
 		while (cols.next()) {
-			String idxname = cols.getString(colIndexNm);
+			final String idxname = cols.getString(colIndexNm);
 			if (idxname != null && !idxname.endsWith("_pkey")) {
 				out.println(",");
 				out.print("\tCONSTRAINT " + dq(idxname) + " UNIQUE (" +
@@ -240,12 +237,12 @@ public final class SQLExporter extends Exporter {
 			out.println(",");
 			out.print("\tCONSTRAINT " + dq(cols.getString("FK_NAME")) + " FOREIGN KEY (");
 
-			boolean next;
-			Set<String> fk = new LinkedHashSet<String>();
+			final Set<String> fk = new LinkedHashSet<String>();
 			fk.add(cols.getString("FKCOLUMN_NAME").intern());
-			Set<String> pk = new LinkedHashSet<String>();
+			final Set<String> pk = new LinkedHashSet<String>();
 			pk.add(cols.getString("PKCOLUMN_NAME").intern());
 
+			boolean next;
 			while ((next = cols.next()) &&
 				cols.getInt("KEY_SEQ") != 1)
 			{
@@ -288,7 +285,7 @@ public final class SQLExporter extends Exporter {
 			if (cols.getBoolean("NON_UNIQUE")) {
 				// We only process non-unique indexes here.
 				// The unique indexes are already covered as UNIQUE constraints in the CREATE TABLE above
-				String idxname = cols.getString(colIndexNm);
+				final String idxname = cols.getString(colIndexNm);
 				if (idxname != null && !idxname.endsWith("_fkey")) {
 					out.print("CREATE INDEX " + dq(idxname) + " ON " +
 						dq(cols.getString("TABLE_NAME")) + " (" +
@@ -358,8 +355,8 @@ public final class SQLExporter extends Exporter {
 		}
 	}
 
-	private final static int AS_IS = 0;
-	private final static int QUOTE = 1;
+	private static final short AS_IS = 0;
+	private static final short QUOTE = 1;
 
 	/**
 	 * Helper method to dump the contents of a table in SQL INSERT INTO
@@ -373,15 +370,8 @@ public final class SQLExporter extends Exporter {
 		throws SQLException
 	{
 		final ResultSetMetaData rsmd = rs.getMetaData();
-		String statement = "INSERT INTO ";
-		if (!useSchema) {
-			String schema = rsmd.getSchemaName(1);
-			if (schema != null && schema.length() > 0)
-				statement += dq(schema) + ".";
-		}
-		statement += dq(rsmd.getTableName(1)) + " VALUES (";
-
 		final int cols = rsmd.getColumnCount();
+		// get for each output column whether it requires quotes around the value based on data type
 		final short[] types = new short[cols +1];
 		for (int i = 1; i <= cols; i++) {
 			switch (rsmd.getColumnType(i)) {
@@ -409,15 +399,24 @@ public final class SQLExporter extends Exporter {
 					types[i] = AS_IS;
 					break;
 				default:
-					types[i] = AS_IS;
+					// treat all other types (such as inet,url,json,objects) as complex types requiring quotes
+					types[i] = QUOTE;
 			}
 		}
 
 		final StringBuilder strbuf = new StringBuilder(1024);
-		strbuf.append(statement);
+		strbuf.append("INSERT INTO ");
+		if (!useSchema) {
+			final String schema = rsmd.getSchemaName(1);
+			if (schema != null && !schema.isEmpty())
+				strbuf.append(dq(schema)).append(".");
+		}
+		strbuf.append(dq(rsmd.getTableName(1))).append(" VALUES (");
+		final int cmdpart = strbuf.length();
+
 		while (rs.next()) {
 			for (int i = 1; i <= cols; i++) {
-				String val = rs.getString(i);
+				final String val = rs.getString(i);
 				if (i > 1)
 					strbuf.append(", ");
 				if (val == null || rs.wasNull()) {
@@ -429,7 +428,7 @@ public final class SQLExporter extends Exporter {
 			strbuf.append(");");
 			out.println(strbuf.toString());
 			// clear the variable part of the buffer contents for next data row
-			strbuf.setLength(statement.length());
+			strbuf.setLength(cmdpart);
 		}
 	}
 
@@ -451,9 +450,9 @@ public final class SQLExporter extends Exporter {
 		final int[] width = new int[cols + 1];
 		final boolean[] isSigned = new boolean[cols + 1];	// used for controlling left or right alignment of data
 		for (int j = 1; j < width.length; j++) {
-			int coldisplaysize = md.getColumnDisplaySize(j);
-			int collabellength = md.getColumnLabel(j).length();
-			int maxwidth = (coldisplaysize > collabellength) ? coldisplaysize : collabellength;
+			final int coldisplaysize = md.getColumnDisplaySize(j);
+			final int collabellength = md.getColumnLabel(j).length();
+			final int maxwidth = (coldisplaysize > collabellength) ? coldisplaysize : collabellength;
 			// the minimum width should be 4 to represent: "NULL"
 			width[j] = (maxwidth > 4) ? maxwidth : 4;
 			isSigned[j] = md.isSigned(j);
@@ -472,7 +471,7 @@ public final class SQLExporter extends Exporter {
 		strbuf.setLength(0);	// clear the buffer
 		strbuf.append('|');
 		for (int j = 1; j < width.length; j++) {
-			String colLabel = md.getColumnLabel(j);
+			final String colLabel = md.getColumnLabel(j);
 			strbuf.append(' ');
 			strbuf.append(colLabel);
 			strbuf.append(repeat(' ', width[j] - colLabel.length()));

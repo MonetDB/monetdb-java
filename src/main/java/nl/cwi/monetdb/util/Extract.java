@@ -39,15 +39,14 @@ public class Extract {
 	public static void extractFile(final String fromFile, final String toFile)
 		throws FileNotFoundException, IOException
 	{
-		java.io.InputStream is = new Extract().getClass().getResourceAsStream(fromFile);
+		final java.io.InputStream is = new Extract().getClass().getResourceAsStream(fromFile);
 		if (is == null) {
 			throw new FileNotFoundException("File " + fromFile +
 					" does not exist in the JAR package.");
 		}
 
-		BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(is));
-		FileWriter writer = new FileWriter(toFile, false);
-
+		final BufferedReader reader = new BufferedReader(new java.io.InputStreamReader(is));
+		final FileWriter writer = new FileWriter(toFile, false);
 		final char[] cbuf = new char[DEFAULT_BUFSIZE];
 		int ret = reader.read(cbuf, 0, DEFAULT_BUFSIZE);
 		while (ret > 0) {

@@ -8,38 +8,36 @@
 
 package nl.cwi.monetdb.util;
 
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
-import java.util.HashSet;
-import java.util.Set;
 
 public final class XMLExporter extends Exporter {
 	private boolean useNil;
 
-	public final static int TYPE_NIL	= 1;
-	public final static int VALUE_OMIT	= 0;
-	public final static int VALUE_XSI	= 1;
+	public static final short TYPE_NIL   = 1;
+	public static final short VALUE_OMIT = 0;
+	public static final short VALUE_XSI  = 1;
 
 	public XMLExporter(final java.io.PrintWriter out) {
 		super(out);
 	}
 
 	public void dumpSchema(
-			final DatabaseMetaData dbmd,
+			final java.sql.DatabaseMetaData dbmd,
 			final String type,
 			final String catalog,
 			final String schema,
 			final String name)
 		throws SQLException
 	{
+		// handle views directly
 		if (type.indexOf("VIEW") != -1) {
 			final String[] types = new String[1];
 			types[0] = type;
+
 			final ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
 			if (!tbl.next())
 				throw new SQLException("Whoops no data for " + name);
@@ -57,7 +55,7 @@ public final class XMLExporter extends Exporter {
 
 		final ResultSet cols = dbmd.getColumns(catalog, schema, name, null);
 		String ident;
-		final Set<String> types = new HashSet<String>();
+		final java.util.HashSet<String> types = new java.util.HashSet<String>();
 		// walk through the ResultSet and create the types
 		// for a bit of a clue on the types, see this url:
 		// http://books.xmlschemata.org/relaxng/relax-CHP-19.html
@@ -352,7 +350,7 @@ public final class XMLExporter extends Exporter {
 	 */
 	public void dumpResultSet(final ResultSet rs) throws SQLException {
 		// write simple XML serialisation
-		final ResultSetMetaData rsmd = rs.getMetaData();
+		final java.sql.ResultSetMetaData rsmd = rs.getMetaData();
 		if (!useSchema)
 			out.println("<" + rsmd.getSchemaName(1) + ">");
 		out.println("<" + rsmd.getTableName(1) + ">");
@@ -362,7 +360,7 @@ public final class XMLExporter extends Exporter {
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
 				switch (rsmd.getColumnType(i)) {
 					case Types.TIMESTAMP:
-						Timestamp ts = rs.getTimestamp(i);
+						final Timestamp ts = rs.getTimestamp(i);
 						if ("timestamptz".equals(rsmd.getColumnTypeName(i))) {
 							data = xsd_tstz.format(ts).toString();
 						} else {
@@ -397,7 +395,8 @@ public final class XMLExporter extends Exporter {
 			out.println("  </row>");
 		}
 		out.println("</" + rsmd.getTableName(1) + ">");
-		if (!useSchema) out.println("</" + rsmd.getSchemaName(1) + ">");
+		if (!useSchema)
+			out.println("</" + rsmd.getSchemaName(1) + ">");
 	}
 
 	public void setProperty(final int type, final int value) throws Exception {

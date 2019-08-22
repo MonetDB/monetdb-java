@@ -8,42 +8,36 @@
 
 package nl.cwi.monetdb.util;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 
-public class CmdLineOpts {
+public final class CmdLineOpts {
 	/** the arguments we handle */
-	private Map<String, OptionContainer> opts = new HashMap<String, OptionContainer>();
+	private HashMap<String, OptionContainer> opts = new HashMap<String, OptionContainer>();
 	/** the options themself */
-	private List<OptionContainer> options = new ArrayList<OptionContainer>();
+	private ArrayList<OptionContainer> options = new ArrayList<OptionContainer>();
 
 	/** no arguments */
-	public static int CAR_ZERO	= 0;
+	public static final int CAR_ZERO	= 0;
 	/** always one argument */
-	public static int CAR_ONE	= 1;
+	public static final int CAR_ONE	= 1;
 	/** zero or one argument */
-	public static int CAR_ZERO_ONE	= 2;
+	public static final int CAR_ZERO_ONE	= 2;
 	/** zero or many arguments */
-	public static int CAR_ZERO_MANY	= 3;
+	public static final int CAR_ZERO_MANY	= 3;
 	/** one or many arguments */
-	public static int CAR_ONE_MANY	= 4;
+	public static final int CAR_ONE_MANY	= 4;
 
 	public CmdLineOpts() {
 	}
 
 	public void addOption(
-			String shorta,
-			String longa,
-			int type,
-			String defaulta,
-			String descriptiona)
+			final String shorta,
+			final String longa,
+			final int type,
+			final String defaulta,
+			final String descriptiona)
 		throws OptionsException {
 		OptionContainer oc =
 			new OptionContainer(
@@ -53,11 +47,13 @@ public class CmdLineOpts {
 				defaulta,
 				descriptiona
 			);
-		if (shorta != null) opts.put(shorta, oc);
-		if (longa != null) opts.put(longa, oc);
+		if (shorta != null)
+			opts.put(shorta, oc);
+		if (longa != null)
+			opts.put(longa, oc);
 	}
 
-	public void removeOption(String name) {
+	public void removeOption(final String name) {
 		OptionContainer oc = opts.get(name);
 		if (oc != null) {
 			opts.remove(oc.shorta);
@@ -65,26 +61,26 @@ public class CmdLineOpts {
 		}
 	}
 
-	public OptionContainer getOption(String key) throws OptionsException {
+	public OptionContainer getOption(final String key) throws OptionsException {
 		OptionContainer ret = opts.get(key);
-		if (ret == null) throw
-			new OptionsException("No such option: " + key);
+		if (ret == null)
+			throw new OptionsException("No such option: " + key);
 
 		return ret;
 	}
 
-	public void processFile(File file) throws OptionsException {
+	public void processFile(final java.io.File file) throws OptionsException {
 		// the file is there, parse it and set its settings
-		Properties prop = new Properties();
+		final Properties prop = new Properties();
 		try {
-			FileInputStream in = new FileInputStream(file);
+			final java.io.FileInputStream in = new java.io.FileInputStream(file);
 			try {
 				prop.load(in);
 			} finally {
 				in.close();
 			}
 
-			for (Enumeration<?> e = prop.propertyNames(); e.hasMoreElements(); ) {
+			for (java.util.Enumeration<?> e = prop.propertyNames(); e.hasMoreElements(); ) {
 				String key = (String) e.nextElement();
 				OptionContainer option = opts.get(key);
 				if (option == null)
@@ -92,12 +88,12 @@ public class CmdLineOpts {
 				option.resetArguments();
 				option.addArgument(prop.getProperty(key));
 			}
-		} catch (IOException e) {
+		} catch (java.io.IOException e) {
 			// well... then forget about it
 		}
 	}
 
-	public void processArgs(String args[]) throws OptionsException {
+	public void processArgs(final String args[]) throws OptionsException {
 		// parse and set the command line arguments
 		OptionContainer option = null;
 		int quant = -1;
@@ -105,19 +101,20 @@ public class CmdLineOpts {
 		boolean moreData = false;
 		for (int i = 0; i < args.length; i++) {
 			if (option == null) {
-				if (args[i].charAt(0) != '-') throw
-					new OptionsException("Unexpected value: " + args[i]);
+				if (args[i].charAt(0) != '-')
+					throw new OptionsException("Unexpected value: " + args[i]);
 
 				// see what kind of argument we have
 				if (args[i].length() == 1)
 					throw new OptionsException("Illegal argument: '-'");
+
 				if (args[i].charAt(1) == '-') {
 					// we have a long argument
 					// since we don't accept inline values we can take
 					// everything left in the string as argument, unless
 					// there is a = in there...
-					String tmp = args[i].substring(2);
-					int pos = tmp.indexOf('=');
+					final String tmp = args[i].substring(2);
+					final int pos = tmp.indexOf('=');
 					if (pos == -1) {
 						option = opts.get(tmp);
 						moreData = false;
@@ -130,8 +127,8 @@ public class CmdLineOpts {
 					}
 				} else if (args[i].charAt(1) == 'X') {
 					// extra argument, same as long argument
-					String tmp = args[i].substring(1);
-					int pos = tmp.indexOf('=');
+					final String tmp = args[i].substring(1);
+					final int pos = tmp.indexOf('=');
 					if (pos == -1) {
 						option = opts.get(tmp);
 						moreData = false;
@@ -152,7 +149,7 @@ public class CmdLineOpts {
 				if (option != null) {
 					// make sure we overwrite previously set arguments
 					option.resetArguments();
-					int card = option.getCardinality();
+					final int card = option.getCardinality();
 					if (card == CAR_ONE) {
 						if (moreData) {
 							option.addArgument(args[i].substring(2));
@@ -204,17 +201,20 @@ public class CmdLineOpts {
 		// first calculate how much space is necessary for the options
 		int maxlen = 0;
 		for (OptionContainer oc : options) {
-			String shorta = oc.getShort();
-			String longa = oc.getLong();
+			final String shorta = oc.getShort();
+			final String longa = oc.getLong();
 			int len = 0;
-			if (shorta != null) len += shorta.length() + 1 + 1;
-			if (longa != null) len += longa.length() + 1 + (longa.charAt(0) == 'X' ? 0 : 1) + 1;
+			if (shorta != null)
+				len += shorta.length() + 1 + 1;
+			if (longa != null)
+				len += longa.length() + 1 + (longa.charAt(0) == 'X' ? 0 : 1) + 1;
 			// yes, we don't care about branch mispredictions here ;)
-			if (maxlen < len) maxlen = len;
+			if (maxlen < len)
+				maxlen = len;
 		}
 
 		// get the individual strings
-		StringBuilder ret = new StringBuilder();
+		final StringBuilder ret = new StringBuilder();
 		for (OptionContainer oc : options) {
 			ret.append(produceHelpMessage(oc, maxlen));
 		}
@@ -232,37 +232,45 @@ public class CmdLineOpts {
 	 * @param indentwidth padding width for the command line flags
 	 * @return the help message for the option
 	 */
-	public String produceHelpMessage(OptionContainer oc, int indentwidth) {
-		String desc = oc.getDescription();
-		if (desc == null) return "";
+	public String produceHelpMessage(final OptionContainer oc, int indentwidth) {
+		final String desc = oc.getDescription();
+		if (desc == null)
+			return "";
 
-		String shorta = oc.getShort();
-		String longa = oc.getLong();
+		final String shorta = oc.getShort();
+		final String longa = oc.getLong();
 		int optwidth = 0;
-		if (shorta != null) optwidth += shorta.length() + 1 + 1;
-		if (longa != null) optwidth += longa.length() + 1 + (longa.charAt(0) == 'X' ? 0 : 1) + 1;
-		int descwidth = 80 - indentwidth;
+		if (shorta != null)
+			optwidth += shorta.length() + 1 + 1;
+		if (longa != null)
+			optwidth += longa.length() + 1 + (longa.charAt(0) == 'X' ? 0 : 1) + 1;
+		final int descwidth = 80 - indentwidth;
 
 		// default to with of command line flags if no width given
-		if (indentwidth <= 0) indentwidth = optwidth;
+		if (indentwidth <= 0)
+			indentwidth = optwidth;
 
-		StringBuilder ret = new StringBuilder();
+		final StringBuilder ret = new StringBuilder();
 
 		// add the command line flags
-		if (shorta != null) ret.append('-').append(shorta).append(' ');
+		if (shorta != null)
+			ret.append('-').append(shorta).append(' ');
 		if (longa != null) {
 			ret.append('-');
-			if (longa.charAt(0) != 'X') ret.append('-');
+			if (longa.charAt(0) != 'X')
+				ret.append('-');
 			ret.append(longa).append(' ');
 		}
 
-		for (int i = optwidth; i < indentwidth; i++) ret.append(' ');
+		for (int i = optwidth; i < indentwidth; i++)
+			ret.append(' ');
 		// add the description, wrap around words
 		int pos = 0, lastpos = 0;
 		while (pos < desc.length()) {
 			pos += descwidth;
 			if (lastpos != 0) {
-				for (int i = 0; i < indentwidth; i++) ret.append(' ');
+				for (int i = 0; i < indentwidth; i++)
+					ret.append(' ');
 			}
 			if (pos >= desc.length()) {
 				ret.append(desc.substring(lastpos)).append('\n');
@@ -277,29 +285,30 @@ public class CmdLineOpts {
 			}
 			pos = space;
 			ret.append(desc.substring(lastpos, pos)).append('\n');
-			while (desc.charAt(pos) == ' ') pos++;
+			while (desc.charAt(pos) == ' ')
+				pos++;
 			lastpos = pos;
 		}
 
 		return ret.toString();
 	}
 
-	public class OptionContainer {
-		int cardinality;
-		String shorta;
-		String longa;
-		List<String> values = new ArrayList<String>();
-		String name;
-		String defaulta;
-		String descriptiona;
-		boolean present;
+	public final class OptionContainer {
+		private final int cardinality;
+		private final String shorta;
+		private final String longa;
+		private final ArrayList<String> values = new ArrayList<String>();
+		private final String name;
+		private final String defaulta;
+		private final String descriptiona;
+		private boolean present;
 
 		public OptionContainer(
-				String shorta,
-				String longa,
-				int cardinality,
-				String defaulta,
-				String descriptiona)
+				final String shorta,
+				final String longa,
+				final int cardinality,
+				final String defaulta,
+				final String descriptiona)
 			throws IllegalArgumentException
 		{
 			this.cardinality = cardinality;
@@ -310,19 +319,19 @@ public class CmdLineOpts {
 			this.present = false;
 
 			if (cardinality != CAR_ZERO &&
-					cardinality != CAR_ONE &&
-					cardinality != CAR_ZERO_ONE &&
-					cardinality != CAR_ZERO_MANY &&
-					cardinality != CAR_ONE_MANY)
+			    cardinality != CAR_ONE &&
+			    cardinality != CAR_ZERO_ONE &&
+			    cardinality != CAR_ZERO_MANY &&
+			    cardinality != CAR_ONE_MANY)
 				throw new IllegalArgumentException("unknown cardinality");
-			if (shorta != null && shorta.length() != 1) throw
-				new IllegalArgumentException("short option should consist of exactly one character");
-			if (shorta == null && longa == null) throw
-				new IllegalArgumentException("either a short or long argument should be given");
+			if (shorta != null && shorta.length() != 1)
+				throw new IllegalArgumentException("short option should consist of exactly one character");
+			if (shorta == null && longa == null)
+				throw new IllegalArgumentException("either a short or long argument should be given");
 			if ((cardinality == CAR_ZERO ||
-					cardinality == CAR_ZERO_ONE ||
-					cardinality == CAR_ZERO_MANY) &&
-					defaulta != null) {
+			     cardinality == CAR_ZERO_ONE ||
+			     cardinality == CAR_ZERO_MANY) &&
+			    defaulta != null) {
 				throw new IllegalArgumentException("cannot specify a default for a (possible) zero argument option");
 			}
 
@@ -330,11 +339,11 @@ public class CmdLineOpts {
 			options.add(this);
 		}
 
-		public void resetArguments() {
+		public final void resetArguments() {
 			values.clear();
 		}
 
-		public void addArgument(String val) throws OptionsException {
+		public void addArgument(final String val) throws OptionsException {
 			if (cardinality == CAR_ZERO) {
 				throw new OptionsException("option " + name + " does not allow arguments");
 			} else if ((cardinality == CAR_ONE ||
@@ -347,47 +356,49 @@ public class CmdLineOpts {
 			setPresent();
 		}
 
-		public void setPresent() {
+		public final void setPresent() {
 			present = true;
 		}
 
-		public boolean isPresent() {
+		public final boolean isPresent() {
 			return present;
 		}
 
-		public int getCardinality() {
+		public final int getCardinality() {
 			return cardinality;
 		}
 
-		public int getArgumentCount() {
+		public final int getArgumentCount() {
 			return values.size();
 		}
 
-		public String getArgument() {
-			String ret = getArgument(1);
-			if (ret == null) ret = defaulta;
+		public final String getArgument() {
+			final String ret = getArgument(1);
+			if (ret == null)
+				return defaulta;
 			return ret;
 		}
 
-		public String getArgument(int index) {
-			String[] args = getArguments();
-			if (index < 1 || index > args.length) return null;
+		public final String getArgument(final int index) {
+			final String[] args = getArguments();
+			if (index < 1 || index > args.length)
+				return null;
 			return args[index - 1];
 		}
 
-		public String[] getArguments() {
+		public final String[] getArguments() {
 			return values.toArray(new String[values.size()]);
 		}
 
-		public String getShort() {
+		public final String getShort() {
 			return shorta;
 		}
 
-		public String getLong() {
+		public final String getLong() {
 			return longa;
 		}
 
-		public String getDescription() {
+		public final String getDescription() {
 			return descriptiona;
 		}
 	}
