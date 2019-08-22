@@ -63,20 +63,27 @@ public final class SQLExporter extends Exporter {
 			changeSchema(schema);
 
 		// handle views directly
-		if (type.indexOf("VIEW") != -1) {
+		if (type.indexOf("VIEW") != -1) {	// for types: VIEW and SYSTEM VIEW
 			final String[] types = new String[1];
 			types[0] = type;
 			final ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
-			if (!tbl.next())
-				throw new SQLException("Whoops no meta data for view " + fqname);
+			if (tbl != null) {
+				if (!tbl.next()) {
+					tbl.close();
+					throw new SQLException("Whoops no meta data for view " + fqname);
+				}
 
-			// This will probably only work for MonetDB
-			final String remarks = tbl.getString("REMARKS");	// for MonetDB driver this contains the view definition
-			if (remarks == null) {
-				out.println("-- invalid " + type + " " + fqname + ": no definition found");
-			} else {
-				out.print("CREATE " + type + " " + fqname + " AS ");
-				out.println(remarks.replaceFirst("create view [^ ]+ as", "").trim());
+				// This will only work for MonetDB JDBC driver
+				final String remarks = tbl.getString("REMARKS");	// for MonetDB driver this contains the view definition (if no comment is set) or else the comment
+				if (remarks == null) {
+					out.println("-- invalid " + type + " " + fqname + ": no definition found");
+				} else {
+					// TODO when it does not contain the  create view ...  command, but a comment, we need to use query:
+					// "select query from sys.tables where name = '" + name + "' and schema_id in (select id from sys.schemas where name = '" + schema + "')"
+					out.print("CREATE " + type + " " + fqname + " AS ");
+					out.println(remarks.replaceFirst("create view [^ ]+ as", "").trim());
+				}
+				tbl.close();
 			}
 			return;
 		}
