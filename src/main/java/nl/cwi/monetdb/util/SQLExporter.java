@@ -57,7 +57,7 @@ public final class SQLExporter extends Exporter {
 		assert schema != null;
 		assert name != null;
 
-		final String fqname = (!useSchema ? dq(schema) + "." : "") + dq(name);
+		final String fqname = (useSchema ? dq(schema) + "." : "") + dq(name);
 
 		if (useSchema)
 			changeSchema(schema);
@@ -295,6 +295,7 @@ public final class SQLExporter extends Exporter {
 				final String idxname = cols.getString(colIndexNm);
 				if (idxname != null && !idxname.endsWith("_fkey")) {
 					out.print("CREATE INDEX " + dq(idxname) + " ON " +
+						dq(cols.getString("TABLE_SCHEM")) + "." +
 						dq(cols.getString("TABLE_NAME")) + " (" +
 						dq(cols.getString(colIndexColNm)));
 
@@ -413,7 +414,7 @@ public final class SQLExporter extends Exporter {
 
 		final StringBuilder strbuf = new StringBuilder(1024);
 		strbuf.append("INSERT INTO ");
-		if (!useSchema) {
+		if (useSchema) {
 			final String schema = rsmd.getSchemaName(1);
 			if (schema != null && !schema.isEmpty())
 				strbuf.append(dq(schema)).append(".");
@@ -536,10 +537,17 @@ public final class SQLExporter extends Exporter {
 
 		if (!schema.equals(lastSchema.peek())) {
 			if (!lastSchema.contains(schema)) {
-				// create schema
-				out.print("CREATE SCHEMA ");
-				out.print(dq(schema));
-				out.println(";\n");
+				// do not generate CREATE SCHEMA cmds for existing system schemas
+				if (!schema.equals("sys")
+				 && !schema.equals("tmp")
+				 && !schema.equals("json")
+				 && !schema.equals("profiler")
+				 && !schema.equals("bam")) {
+					// create schema
+					out.print("CREATE SCHEMA ");
+					out.print(dq(schema));
+					out.println(";\n");
+				}
 				lastSchema.push(schema);
 			}
 		

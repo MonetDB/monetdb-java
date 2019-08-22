@@ -25,6 +25,18 @@ public final class XMLExporter extends Exporter {
 		super(out);
 	}
 
+	/**
+	 * A helper method to generate XML xsd schema code for a given table.
+	 * This method performs all required lookups to find all relations and
+	 * column information.
+	 *
+	 * @param dbmd a DatabaseMetaData object to query on (not null)
+	 * @param type the type of the object, e.g. VIEW, TABLE (not null)
+	 * @param catalog the catalog the object is in
+	 * @param schema the schema the object is in (not null)
+	 * @param name the table to describe (not null)
+	 * @throws SQLException if a database related error occurs
+	 */
 	public void dumpSchema(
 			final java.sql.DatabaseMetaData dbmd,
 			final String type,
@@ -39,7 +51,7 @@ public final class XMLExporter extends Exporter {
 			types[0] = type;
 			final ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
 			if (tbl != null) {
-				final String fqname = (!useSchema ? dq(schema) + "." : "") + dq(name);
+				final String fqname = (useSchema ? dq(schema) + "." : "") + dq(name);
 				if (!tbl.next()) {
 					tbl.close();
 					throw new SQLException("Whoops no meta data for view " + fqname);
@@ -361,7 +373,7 @@ public final class XMLExporter extends Exporter {
 	public void dumpResultSet(final ResultSet rs) throws SQLException {
 		// write simple XML serialisation
 		final java.sql.ResultSetMetaData rsmd = rs.getMetaData();
-		if (!useSchema)
+		if (useSchema)
 			out.println("<" + rsmd.getSchemaName(1) + ">");
 		out.println("<" + rsmd.getTableName(1) + ">");
 		String data;
@@ -405,7 +417,7 @@ public final class XMLExporter extends Exporter {
 			out.println("  </row>");
 		}
 		out.println("</" + rsmd.getTableName(1) + ">");
-		if (!useSchema)
+		if (useSchema)
 			out.println("</" + rsmd.getSchemaName(1) + ">");
 	}
 
