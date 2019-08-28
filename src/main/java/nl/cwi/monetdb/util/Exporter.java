@@ -24,7 +24,6 @@ public abstract class Exporter {
 	public abstract void dumpSchema(
 			final DatabaseMetaData dbmd,
 			final String type,
-			final String catalog,
 			final String schema,
 			final String name) throws SQLException;
 

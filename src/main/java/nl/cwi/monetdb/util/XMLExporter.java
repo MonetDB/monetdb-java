@@ -32,7 +32,6 @@ public final class XMLExporter extends Exporter {
 	 *
 	 * @param dbmd a DatabaseMetaData object to query on (not null)
 	 * @param type the type of the object, e.g. VIEW, TABLE (not null)
-	 * @param catalog the catalog the object is in
 	 * @param schema the schema the object is in (not null)
 	 * @param name the table to describe (not null)
 	 * @throws SQLException if a database related error occurs
@@ -40,7 +39,6 @@ public final class XMLExporter extends Exporter {
 	public void dumpSchema(
 			final java.sql.DatabaseMetaData dbmd,
 			final String type,
-			final String catalog,
 			final String schema,
 			final String name)
 		throws SQLException
@@ -49,7 +47,7 @@ public final class XMLExporter extends Exporter {
 		if (type.indexOf("VIEW") != -1) {	// for types: VIEW and SYSTEM VIEW
 			final String[] types = new String[1];
 			types[0] = type;
-			final ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
+			final ResultSet tbl = dbmd.getTables(null, schema, name, types);
 			if (tbl != null) {
 				final String fqname = dq(schema) + "." + dq(name);
 				if (!tbl.next()) {
@@ -73,7 +71,7 @@ public final class XMLExporter extends Exporter {
 
 		out.println("<xsd:schema>");
 
-		final ResultSet cols = dbmd.getColumns(catalog, schema, name, null);
+		final ResultSet cols = dbmd.getColumns(null, schema, name, null);
 		final int colNmIndex = cols.findColumn("COLUMN_NAME");
 		final int colTypeNmIndex = cols.findColumn("TYPE_NAME");
 		final int datatypeIndex = cols.findColumn("DATA_TYPE");
@@ -275,10 +273,9 @@ public final class XMLExporter extends Exporter {
 		cols.beforeFirst();
 
 		// create the RowType
+		final String tablenm = schema.replaceAll("\\.", "_x002e_") + "." + name.replaceAll("\\.", "_x002e_");
 		out.print("  <xsd:complexType name=");
-		out.print(dq("RowType." + catalog.replaceAll("\\.", "_x002e_") +
-					"." + schema.replaceAll("\\.", "_x002e_") +
-					"." + name.replaceAll("\\.", "_x002e_")));
+		out.print(dq("RowType." + tablenm));
 		out.println(">");
 		out.println("    <xsd:sequence>");
 		while (cols.next()) {
@@ -347,15 +344,11 @@ public final class XMLExporter extends Exporter {
 		out.println("  </xsd:complexType>");
 
 		out.print("  <xsd:complexType name=");
-		out.print(dq("TableType." + catalog.replaceAll("\\.", "_x002e_") +
-					"." + schema.replaceAll("\\.", "_x002e_") +
-					"." + name.replaceAll("\\.", "_x002e_")));
+		out.print(dq("TableType." + tablenm));
 		out.println(">");
 		out.println("    <xsd:sequence>");
 		out.print("      <xsd:element name=\"row\" type=");
-		out.print(dq("RowType." + catalog.replaceAll("\\.", "_x002e_") +
-					"." + schema.replaceAll("\\.", "_x002e_") +
-					"." + name.replaceAll("\\.", "_x002e_")));
+		out.print(dq("RowType." + tablenm));
 		out.println(" minOccurs=\"0\" maxOccurs=\"unbounded\" />");
 		out.println("    </xsd:sequence>");
 		out.println("  </xsd:complexType>");

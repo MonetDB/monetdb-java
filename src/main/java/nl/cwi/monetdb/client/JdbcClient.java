@@ -680,7 +680,6 @@ public final class JdbcClient {
 											// we found it, describe it
 											exporter.dumpSchema(dbmd,
 												tbl.getString(4),	// 4 = "TABLE_TYPE"
-												tbl.getString(1),	// 1 = "TABLE_CAT"
 												schemaName,
 												tableName);
 
@@ -922,7 +921,7 @@ public final class JdbcClient {
 		final String tableType = table.getType();
 
 		// dump CREATE definition of this table/view
-		exporter.dumpSchema(dbmd, tableType, null, table.getSchem(), table.getName());
+		exporter.dumpSchema(dbmd, tableType, table.getSchem(), table.getName());
 		out.println();
 
 		// only dump data from real tables, not from views / MERGE / REMOTE / REPLICA tables
