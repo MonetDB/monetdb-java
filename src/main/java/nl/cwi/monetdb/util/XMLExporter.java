@@ -62,11 +62,9 @@ public final class XMLExporter extends Exporter {
 				if (remarks == null) {
 					out.print("<!-- unable to represent: CREATE " + type + " " + fqname + " AS ? -->");
 				} else {
-					// TODO when it does not contain the  create view ...  command, but a comment, we need to use query:
+					// TODO when remarks does not contain the  create view ...  command, but a comment, we need to use query:
 					// "select query from sys.tables where name = '" + name + "' and schema_id in (select id from sys.schemas where name = '" + schema + "')"
-					out.print("<!-- CREATE " + type + " " + fqname + " AS ");
-					out.print(remarks.replaceFirst("create view [^ ]+ as", "").trim());
-					out.println(" -->");
+					out.println("<!-- CREATE " + type + " " + fqname + " AS " + remarks.replaceFirst("create view [^ ]+ as", "") + " -->");
 				}
 				tbl.close();
 			}
@@ -76,15 +74,21 @@ public final class XMLExporter extends Exporter {
 		out.println("<xsd:schema>");
 
 		final ResultSet cols = dbmd.getColumns(catalog, schema, name, null);
+		final int colNmIndex = cols.findColumn("COLUMN_NAME");
+		final int colTypeNmIndex = cols.findColumn("TYPE_NAME");
+		final int datatypeIndex = cols.findColumn("DATA_TYPE");
+		final int sizeIndex = cols.findColumn("COLUMN_SIZE");
+		final int digitsIndex = cols.findColumn("DECIMAL_DIGITS");
+
 		String ident;
 		final java.util.HashSet<String> types = new java.util.HashSet<String>();
 		// walk through the ResultSet and create the types
 		// for a bit of a clue on the types, see this url:
 		// http://books.xmlschemata.org/relaxng/relax-CHP-19.html
 		while (cols.next()) {
-			switch (cols.getInt("DATA_TYPE")) {
+			switch (cols.getInt(datatypeIndex)) {
 				case Types.CHAR:
-					ident = "CHAR_" + cols.getString("COLUMN_SIZE");
+					ident = "CHAR_" + cols.getString(sizeIndex);
 					if (types.contains(ident))
 						break;
 					types.add(ident);
@@ -94,14 +98,14 @@ public final class XMLExporter extends Exporter {
 					out.println(">");
 					out.println("    <xsd:restriction base=\"xsd:string\">");
 					out.print("      <xsd:length value=");
-					out.print(dq(cols.getString("COLUMN_SIZE")));
+					out.print(dq(cols.getString(sizeIndex)));
 					out.println(" />");
 					out.println("    </xsd:restriction>");
 					out.println("  </xsd:simpleType>");
 				break;
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
-					ident = "VARCHAR_" + cols.getString("COLUMN_SIZE");
+					ident = "VARCHAR_" + cols.getString(sizeIndex);
 					if (types.contains(ident))
 						break;
 					types.add(ident);
@@ -111,7 +115,7 @@ public final class XMLExporter extends Exporter {
 					out.println(">");
 					out.println("    <xsd:restriction base=\"xsd:string\">");
 					out.print("      <xsd:maxLength value=");
-					out.print(dq(cols.getString("COLUMN_SIZE")));
+					out.print(dq(cols.getString(sizeIndex)));
 					out.println(" />");
 					out.println("    </xsd:restriction>");
 					out.println("  </xsd:simpleType>");
@@ -130,8 +134,7 @@ public final class XMLExporter extends Exporter {
 				break;
 				case Types.DECIMAL:
 				case Types.NUMERIC:
-					ident = "DECIMAL_" + cols.getString("COLUMN_SIZE") +
-						"_" + cols.getString("DECIMAL_DIGITS");
+					ident = "DECIMAL_" + cols.getString(sizeIndex) + "_" + cols.getString(digitsIndex);
 					if (types.contains(ident))
 						break;
 					types.add(ident);
@@ -141,10 +144,10 @@ public final class XMLExporter extends Exporter {
 					out.println(">");
 					out.println("    <xsd:restriction base=\"xsd:decimal\">");
 					out.print("      <xsd:totalDigits value=");
-					out.print(dq(cols.getString("COLUMN_SIZE")));
+					out.print(dq(cols.getString(sizeIndex)));
 					out.println(" />");
 					out.print("      <xsd:fractionDigits value=");
-					out.print(dq(cols.getString("DECIMAL_DIGITS")));
+					out.print(dq(cols.getString(digitsIndex)));
 					out.println(" />");
 					out.println("    </xsd:restriction>");
 					out.println("  </xsd:simpleType>");
@@ -234,7 +237,7 @@ public final class XMLExporter extends Exporter {
 					out.println("  </xsd:simpleType>");
 				break;
 				case Types.TIME:
-					if ("timetz".equals(cols.getString("TYPE_NAME"))) {
+					if ("timetz".equals(cols.getString(colTypeNmIndex))) {
 						ident = "TIME_WTZ";
 					} else {
 						ident = "TIME";
@@ -250,7 +253,7 @@ public final class XMLExporter extends Exporter {
 					out.println("  </xsd:simpleType>");
 				break;
 				case Types.TIMESTAMP:
-					if ("timestamptz".equals(cols.getString("TYPE_NAME"))) {
+					if ("timestamptz".equals(cols.getString(colTypeNmIndex))) {
 						ident = "TIMESTAMP_WTZ";
 					} else {
 						ident = "TIMESTAMP";
@@ -280,23 +283,23 @@ public final class XMLExporter extends Exporter {
 		out.println("    <xsd:sequence>");
 		while (cols.next()) {
 			out.print("      <xsd:element name=");
-			out.print(dq(cols.getString("COLUMN_NAME")));
+			out.print(dq(cols.getString(colNmIndex)));
 			out.print(" type=");
-			switch (cols.getInt("DATA_TYPE")) {
+			switch (cols.getInt(datatypeIndex)) {
 				case Types.CHAR:
-					ident = "CHAR_" + cols.getString("COLUMN_SIZE");
+					ident = "CHAR_" + cols.getString(sizeIndex);
 				break;
 				case Types.VARCHAR:
 				case Types.LONGVARCHAR:
-					ident = "VARCHAR_" + cols.getString("COLUMN_SIZE");
+					ident = "VARCHAR_" + cols.getString(sizeIndex);
 				break;
 				case Types.CLOB:
 					ident = "CLOB";
 				break;
 				case Types.DECIMAL:
 				case Types.NUMERIC:
-					ident = "DECIMAL_" + cols.getString("COLUMN_SIZE") +
-						"_" + cols.getString("DECIMAL_DIGITS");
+					ident = "DECIMAL_" + cols.getString(sizeIndex) +
+						"_" + cols.getString(digitsIndex);
 				break;
 				case Types.TINYINT:
 					ident = "TINYINT";
@@ -320,14 +323,14 @@ public final class XMLExporter extends Exporter {
 					ident = "DATE";
 				break;
 				case Types.TIME:
-					if ("timetz".equals(cols.getString("TYPE_NAME"))) {
+					if ("timetz".equals(cols.getString(colTypeNmIndex))) {
 						ident = "TIME_WTZ";
 					} else {
 						ident = "TIME";
 					}
 				break;
 				case Types.TIMESTAMP:
-					if ("timestamptz".equals(cols.getString("TYPE_NAME"))) {
+					if ("timestamptz".equals(cols.getString(colTypeNmIndex))) {
 						ident = "TIMESTAMP_WTZ";
 					} else {
 						ident = "TIMESTAMP";
@@ -360,10 +363,8 @@ public final class XMLExporter extends Exporter {
 		out.println("</xsd:schema>");
 	}
 
-	private final static SimpleDateFormat xsd_ts =
-		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
-	private final static SimpleDateFormat xsd_tstz =
-		new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+	private static SimpleDateFormat xsd_ts;
+	private static SimpleDateFormat xsd_tstz;
 
 	/**
 	 * Generates an XML representation of the given ResultSet.
@@ -385,8 +386,16 @@ public final class XMLExporter extends Exporter {
 					case Types.TIMESTAMP:
 						final Timestamp ts = rs.getTimestamp(i);
 						if ("timestamptz".equals(rsmd.getColumnTypeName(i))) {
+							if (xsd_tstz == null) {
+								// first time it is needed, create it
+								xsd_tstz = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ");
+							}
 							data = xsd_tstz.format(ts).toString();
 						} else {
+							if (xsd_ts == null) {
+								// first time it is needed, create it
+								xsd_ts = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
+							}
 							data = xsd_ts.format(ts).toString();
 						}
 					break;
@@ -397,27 +406,53 @@ public final class XMLExporter extends Exporter {
 				if (data == null) {
 					if (useNil) {
 						// "nil" method: write <tag xsi:nil="true" />
-						out.print("    ");
-						out.print("<" + rsmd.getColumnLabel(i));
-						out.println(" xsi:nil=\"true\" />");
+						out.println("    <" + rsmd.getColumnLabel(i) + " xsi:nil=\"true\" />");
 					} else {
 						// This is the "absent" method (of completely
 						// hiding the tag if null
 					}
 				} else {
-					out.print("    ");
-					out.print("<" + rsmd.getColumnLabel(i));
 					if (data.length() == 0) {
-						out.println(" />");
+						out.println("    <" + rsmd.getColumnLabel(i) + " />");
 					} else {
-						out.print(">" + data.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"));
-						out.println("</" + rsmd.getColumnLabel(i) + ">");
+						final String colLabel = rsmd.getColumnLabel(i);
+						out.println("    <" + colLabel + ">" + escapeSpecialXMLChars(data) + "</" + colLabel + ">");
 					}
 				}
 			}
 			out.println("  </row>");
 		}
 		out.println("</" + fqname + ">");
+	}
+
+	// https://en.wikipedia.org/wiki/XML#Escaping
+	private static final String escapeSpecialXMLChars(final String val) {
+		final int len = val.length();
+		final StringBuilder sb = new StringBuilder(len + 50);
+		// replace each & or < or > or ' or " by special XML escape code
+		for (int i = 0; i < len; i++) {
+			char c = val.charAt(i);
+			switch (c) {
+			case '&':
+				sb.append("&amp;");
+				break;
+			case '<':
+				sb.append("&lt;");
+				break;
+			case '>':
+				sb.append("&gt;");
+				break;
+			case '\'':
+				sb.append("&apos;");
+				break;
+			case '"':
+				sb.append("&quot;");
+				break;
+			default:
+				sb.append(c);
+			}
+		}
+		return (sb.length() > len) ? sb.toString() : val;
 	}
 
 	public void setProperty(final int type, final int value) throws Exception {

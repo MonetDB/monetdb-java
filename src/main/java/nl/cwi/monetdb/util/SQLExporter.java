@@ -78,10 +78,9 @@ public final class SQLExporter extends Exporter {
 				if (remarks == null) {
 					out.println("-- invalid " + type + " " + fqname + ": no definition found");
 				} else {
-					// TODO when it does not contain the  create view ...  command, but a comment, we need to use query:
+					// TODO when remarks does not contain the  create view ...  command, but a user added comment, we need to use query:
 					// "select query from sys.tables where name = '" + name + "' and schema_id in (select id from sys.schemas where name = '" + schema + "')"
-					out.print("CREATE " + type + " " + fqname + " AS ");
-					out.println(remarks.replaceFirst("create view [^ ]+ as", "").trim());
+					out.println("CREATE " + type + " " + fqname + " AS " + remarks.replaceFirst("create view [^ ]+ as", ""));
 				}
 				tbl.close();
 			}
@@ -92,9 +91,13 @@ public final class SQLExporter extends Exporter {
 
 		// add all columns with their type, nullability and default definition
 		ResultSet cols = dbmd.getColumns(catalog, schema, name, null);
-		final int colNmIndex = cols.findColumn("COLUMN_NAME");
+		int colNmIndex = cols.findColumn("COLUMN_NAME");
 		final int colTypeNmIndex = cols.findColumn("TYPE_NAME");
-
+		final int datatypeIndex = cols.findColumn("DATA_TYPE");
+		final int sizeIndex = cols.findColumn("COLUMN_SIZE");
+		final int digitsIndex = cols.findColumn("DECIMAL_DIGITS");
+		final int isNotNullIndex = cols.findColumn("NULLABLE");
+		final int defaultValueIndex = cols.findColumn("COLUMN_DEF");
 		final ResultSetMetaData rsmd = cols.getMetaData();
 		final int colwidth = rsmd.getColumnDisplaySize(colNmIndex);
 		int typewidth = rsmd.getColumnDisplaySize(colTypeNmIndex);
@@ -111,14 +114,8 @@ public final class SQLExporter extends Exporter {
 			String s = dq(cols.getString(colNmIndex));
 			out.print("\t" + s + repeat(' ', (colwidth - s.length() + 3)));
 
-			int ctype = cols.getInt("DATA_TYPE");
-			int size = cols.getInt("COLUMN_SIZE");
-			int digits = cols.getInt("DECIMAL_DIGITS");
-			boolean isNotNull = cols.getInt("NULLABLE") == DatabaseMetaData.columnNoNulls;
-			String defaultValue = cols.getString("COLUMN_DEF");
-			boolean hasDefault = (defaultValue != null && !defaultValue.isEmpty());
-
-			s = cols.getString(colTypeNmIndex).toUpperCase();
+			int digits = cols.getInt(digitsIndex);
+			s = cols.getString(colTypeNmIndex).toUpperCase();	// ANSI SQL uses uppercase data type names
 			// do some data type substitutions to match SQL standard
 			if (s.equals("INT")) {
 				s = "INTEGER";
@@ -137,9 +134,10 @@ public final class SQLExporter extends Exporter {
 				// a timestamp with time zone and at the same time masking the internal types
 				digits = 1;
 			}
-
 			sb.append(s);	// add the data type for this column
 
+			int ctype = cols.getInt(datatypeIndex);
+			int size = cols.getInt(sizeIndex);
 			// do some SQL/MonetDB type length/precision and scale specifics
 			switch (ctype) {
 				case Types.CHAR:
@@ -155,7 +153,7 @@ public final class SQLExporter extends Exporter {
 				case Types.TIMESTAMP:
 					if (size > 1)
 						sb.append('(').append(size -1).append(')');
-					if (digits != 0)
+					if (digits == 1)	// flag is set to include suffix: WITH TIME ZONE
 						sb.append(" WITH TIME ZONE");
 					break;
 				case Types.DECIMAL:
@@ -166,6 +164,10 @@ public final class SQLExporter extends Exporter {
 					sb.append(')');
 					break;
 			}
+
+			boolean isNotNull = cols.getInt(isNotNullIndex) == DatabaseMetaData.columnNoNulls;
+			String defaultValue = cols.getString(defaultValueIndex);
+			boolean hasDefault = (defaultValue != null && !defaultValue.isEmpty());
 			if (isNotNull || hasDefault) {
 				final int spaces = typewidth - sb.length();
 				if (spaces > 0)
@@ -176,10 +178,10 @@ public final class SQLExporter extends Exporter {
 					sb.append(" DEFAULT ").append(defaultValue);
 			}
 
-			// print column type, optional length and scale, optional Not NULL, optional default value
+			// print column data type, optional length and scale, optional NOT NULL, optional DEFAULT value
 			out.print(sb.toString());
 
-			sb.delete(0, sb.length());	// clear the stringbuffer for next column
+			sb.setLength(0);	// clear the buffer for next column
 		}
 		cols.close();
 
@@ -188,24 +190,26 @@ public final class SQLExporter extends Exporter {
 		// returns the primary key columns sorted by column name, not
 		// key sequence order.  So we have to sort ourself :(
 		cols = dbmd.getPrimaryKeys(catalog, schema, name);
-		// first make an 'index' of the KEY_SEQ column
+		int colKeySeq = cols.findColumn("KEY_SEQ");
+		// first make a 'index' of the KEY_SEQ columns
 		final java.util.SortedMap<Integer, Integer> seqIndex = new java.util.TreeMap<Integer, Integer>();
 		for (i = 1; cols.next(); i++) {
-			seqIndex.put(Integer.valueOf(cols.getInt("KEY_SEQ")), Integer.valueOf(i));
+			seqIndex.put(Integer.valueOf(cols.getInt(colKeySeq)), Integer.valueOf(i));
 		}
 		if (seqIndex.size() > 0) {
+			cols.absolute(1);	// reset to first pk column row
 			// terminate the previous line
 			out.println(",");
-			cols.absolute(1);
 			out.print("\tCONSTRAINT " + dq(cols.getString("PK_NAME")) + " PRIMARY KEY (");
 
-			final Iterator<Map.Entry<Integer, Integer>> it = seqIndex.entrySet().iterator(); 
+			colNmIndex = cols.findColumn("COLUMN_NAME");
+			final Iterator<Map.Entry<Integer, Integer>> it = seqIndex.entrySet().iterator();
 			for (i = 0; it.hasNext(); i++) {
 				final Map.Entry<Integer, Integer> e = it.next();
 				cols.absolute(e.getValue().intValue());
 				if (i > 0)
 					out.print(", ");
-				out.print(dq(cols.getString("COLUMN_NAME")));
+				out.print(dq(cols.getString(colNmIndex)));
 			}
 			out.print(")");
 		}
@@ -216,18 +220,16 @@ public final class SQLExporter extends Exporter {
 		// the indexes which are generated by the system for pkey constraints
 		cols = dbmd.getIndexInfo(catalog, schema, name, true, true);
 		int colIndexNm = cols.findColumn("INDEX_NAME");
-		int colIndexColNm = cols.findColumn("COLUMN_NAME");
+		colNmIndex = cols.findColumn("COLUMN_NAME");
 		while (cols.next()) {
 			final String idxname = cols.getString(colIndexNm);
 			if (idxname != null && !idxname.endsWith("_pkey")) {
 				out.println(",");
-				out.print("\tCONSTRAINT " + dq(idxname) + " UNIQUE (" +
-					dq(cols.getString(colIndexColNm)));
+				out.print("\tCONSTRAINT " + dq(idxname) + " UNIQUE (" + dq(cols.getString(colNmIndex)));
 
 				boolean next;
-				while ((next = cols.next()) &&
-						idxname.equals(cols.getString(colIndexNm))) {
-					out.print(", " + dq(cols.getString(colIndexColNm)));
+				while ((next = cols.next()) && idxname.equals(cols.getString(colIndexNm))) {
+					out.print(", " + dq(cols.getString(colNmIndex)));
 				}
 				// go back one, we've gone one too far
 				if (next)
@@ -240,21 +242,25 @@ public final class SQLExporter extends Exporter {
 
 		// add foreign keys definitions
 		cols = dbmd.getImportedKeys(catalog, schema, name);
+		final int colFkNm = cols.findColumn("FK_NAME");
+		final int colFkColNm = cols.findColumn("FKCOLUMN_NAME");
+		final int colPkColNm = cols.findColumn("PKCOLUMN_NAME");
+		colKeySeq = cols.findColumn("KEY_SEQ");
+		final int colPkTblSch = cols.findColumn("PKTABLE_SCHEM");
+		final int colPkTblNm = cols.findColumn("PKTABLE_NAME");
 		while (cols.next()) {
 			out.println(",");
-			out.print("\tCONSTRAINT " + dq(cols.getString("FK_NAME")) + " FOREIGN KEY (");
+			out.print("\tCONSTRAINT " + dq(cols.getString(colFkNm)) + " FOREIGN KEY (");
 
 			final Set<String> fk = new LinkedHashSet<String>();
-			fk.add(cols.getString("FKCOLUMN_NAME").intern());
+			fk.add(cols.getString(colFkColNm).intern());
 			final Set<String> pk = new LinkedHashSet<String>();
-			pk.add(cols.getString("PKCOLUMN_NAME").intern());
+			pk.add(cols.getString(colPkColNm).intern());
 
 			boolean next;
-			while ((next = cols.next()) &&
-				cols.getInt("KEY_SEQ") != 1)
-			{
-				fk.add(cols.getString("FKCOLUMN_NAME").intern());
-				pk.add(cols.getString("PKCOLUMN_NAME").intern());
+			while ((next = cols.next()) && cols.getInt(colKeySeq) != 1) {
+				fk.add(cols.getString(colFkColNm).intern());
+				pk.add(cols.getString(colPkColNm ).intern());
 			}
 			// go back one
 			if (next)
@@ -266,8 +272,7 @@ public final class SQLExporter extends Exporter {
 					out.print(", ");
 				out.print(dq(it.next()));
 			}
-			out.print(") REFERENCES " + dq(cols.getString("PKTABLE_SCHEM")) +
-				"." + dq(cols.getString("PKTABLE_NAME")) + " (");
+			out.print(") REFERENCES " + dq(cols.getString(colPkTblSch)) + "." + dq(cols.getString(colPkTblNm)) + " (");
 			it = pk.iterator();
 			for (i = 0; it.hasNext(); i++) {
 				if (i > 0)
@@ -277,6 +282,7 @@ public final class SQLExporter extends Exporter {
 			out.print(")");
 		}
 		cols.close();
+
 		out.println();
 		// end the create table statement
 		out.println(");");
@@ -287,23 +293,24 @@ public final class SQLExporter extends Exporter {
 		// (and pkey and unique constraints but those are marked as unique and not requested)
 		cols = dbmd.getIndexInfo(catalog, schema, name, false, true);
 		colIndexNm = cols.findColumn("INDEX_NAME");
-		colIndexColNm = cols.findColumn("COLUMN_NAME");
+		colNmIndex = cols.findColumn("COLUMN_NAME");
+		final int tblNmIndex = cols.findColumn("TABLE_NAME");
+		final int tblSchIndex = cols.findColumn("TABLE_SCHEM");
+		final int nonUniqIndex = cols.findColumn("NON_UNIQUE");
 		while (cols.next()) {
-			if (cols.getBoolean("NON_UNIQUE")) {
+			if (cols.getBoolean(nonUniqIndex)) {
 				// We only process non-unique indexes here.
 				// The unique indexes are already covered as UNIQUE constraints in the CREATE TABLE above
 				final String idxname = cols.getString(colIndexNm);
 				if (idxname != null && !idxname.endsWith("_fkey")) {
 					out.print("CREATE INDEX " + dq(idxname) + " ON " +
-						dq(cols.getString("TABLE_SCHEM")) + "." +
-						dq(cols.getString("TABLE_NAME")) + " (" +
-						dq(cols.getString(colIndexColNm)));
+						dq(cols.getString(tblSchIndex)) + "." +
+						dq(cols.getString(tblNmIndex)) + " (" +
+						dq(cols.getString(colNmIndex)));
 
 					boolean next;
-					while ((next = cols.next()) &&
-						idxname.equals(cols.getString(colIndexNm)))
-					{
-						out.print(", " + dq(cols.getString(colIndexColNm)));
+					while ((next = cols.next()) && idxname.equals(cols.getString(colIndexNm))) {
+						out.print(", " + dq(cols.getString(colNmIndex)));
 					}
 					// go back one
 					if (next)
@@ -326,13 +333,13 @@ public final class SQLExporter extends Exporter {
 		switch (outputMode) {
 			case VALUE_INSERT:
 				resultSetToSQL(rs);
-			break;
+				break;
 			case VALUE_COPY:
 				resultSetToSQLDump(rs);
-			break;
+				break;
 			case VALUE_TABLE:
 				resultSetToTable(rs);
-			break;
+				break;
 		}
 	}
 
@@ -344,11 +351,11 @@ public final class SQLExporter extends Exporter {
 					case VALUE_COPY:
 					case VALUE_TABLE:
 						outputMode = value;
-					break;
+						break;
 					default:
 						throw new Exception("Illegal value " + value + " for TYPE_OUTPUT");
 				}
-			break;
+				break;
 			default:
 				throw new Exception("Illegal type " + type);
 		}
@@ -470,7 +477,7 @@ public final class SQLExporter extends Exporter {
 		// construct the frame lines and header text
 		strbuf.append('+');
 		for (int j = 1; j < width.length; j++)
-			strbuf.append(repeat('-', width[j] + 1) + "-+");
+			strbuf.append(repeat('-', width[j] + 1)).append("-+");
 
 		final String outsideLine = strbuf.toString();
 
@@ -478,8 +485,7 @@ public final class SQLExporter extends Exporter {
 		strbuf.append('|');
 		for (int j = 1; j < width.length; j++) {
 			final String colLabel = md.getColumnLabel(j);
-			strbuf.append(' ');
-			strbuf.append(colLabel);
+			strbuf.append(' ').append(colLabel);
 			strbuf.append(repeat(' ', width[j] - colLabel.length()));
 			strbuf.append(" |");
 		}
@@ -524,7 +530,8 @@ public final class SQLExporter extends Exporter {
 
 		// print the footer text
 		out.println(outsideLine);
-		out.println(count + " row" + (count != 1 ? "s" : ""));
+		out.print(count);
+		out.println((count != 1) ? " rows" : " row");
 	}
 
 	private void changeSchema(final String schema) {
@@ -548,7 +555,7 @@ public final class SQLExporter extends Exporter {
 				}
 				lastSchema.push(schema);
 			}
-		
+
 			out.print("SET SCHEMA ");
 			out.print(dq(schema));
 			out.println(";\n");
