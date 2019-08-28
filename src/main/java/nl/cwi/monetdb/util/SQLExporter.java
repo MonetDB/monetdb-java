@@ -57,7 +57,7 @@ public final class SQLExporter extends Exporter {
 		assert schema != null;
 		assert name != null;
 
-		final String fqname = (useSchema ? dq(schema) + "." : "") + dq(name);
+		final String fqname = dq(schema) + "." + dq(name);
 
 		if (useSchema)
 			changeSchema(schema);
@@ -414,11 +414,9 @@ public final class SQLExporter extends Exporter {
 
 		final StringBuilder strbuf = new StringBuilder(1024);
 		strbuf.append("INSERT INTO ");
-		if (useSchema) {
-			final String schema = rsmd.getSchemaName(1);
-			if (schema != null && !schema.isEmpty())
-				strbuf.append(dq(schema)).append(".");
-		}
+		final String schema = rsmd.getSchemaName(1);
+		if (schema != null && !schema.isEmpty())
+			strbuf.append(dq(schema)).append(".");
 		strbuf.append(dq(rsmd.getTableName(1))).append(" VALUES (");
 		final int cmdpart = strbuf.length();
 

@@ -51,7 +51,7 @@ public final class XMLExporter extends Exporter {
 			types[0] = type;
 			final ResultSet tbl = dbmd.getTables(catalog, schema, name, types);
 			if (tbl != null) {
-				final String fqname = (useSchema ? dq(schema) + "." : "") + dq(name);
+				final String fqname = dq(schema) + "." + dq(name);
 				if (!tbl.next()) {
 					tbl.close();
 					throw new SQLException("Whoops no meta data for view " + fqname);
@@ -373,9 +373,10 @@ public final class XMLExporter extends Exporter {
 	public void dumpResultSet(final ResultSet rs) throws SQLException {
 		// write simple XML serialisation
 		final java.sql.ResultSetMetaData rsmd = rs.getMetaData();
-		if (useSchema)
-			out.println("<" + rsmd.getSchemaName(1) + ">");
-		out.println("<" + rsmd.getTableName(1) + ">");
+		final String schema = rsmd.getSchemaName(1);
+		final String fqname = (schema != null && !schema.isEmpty() ? schema + "." : "") + rsmd.getTableName(1);
+		out.println("<" + fqname + ">");
+
 		String data;
 		while (rs.next()) {
 			out.println("  <row>");
@@ -416,9 +417,7 @@ public final class XMLExporter extends Exporter {
 			}
 			out.println("  </row>");
 		}
-		out.println("</" + rsmd.getTableName(1) + ">");
-		if (useSchema)
-			out.println("</" + rsmd.getSchemaName(1) + ">");
+		out.println("</" + fqname + ">");
 	}
 
 	public void setProperty(final int type, final int value) throws Exception {
