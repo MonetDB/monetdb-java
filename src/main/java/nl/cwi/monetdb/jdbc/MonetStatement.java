@@ -228,7 +228,7 @@ public class MonetStatement
 					// send and receive
 					error |= internalBatch(tmpBatch, counts, offset, i + 1, e);
 					offset = i;
-					tmpBatch.delete(0, tmpBatch.length());
+					tmpBatch.setLength(0);	// clear the buffer
 					first = true;
 					continue;
 				}
@@ -236,7 +236,7 @@ public class MonetStatement
 					// send and receive
 					error |= internalBatch(tmpBatch, counts, offset, i + 1, e);
 					offset = i;
-					tmpBatch.delete(0, tmpBatch.length());
+					tmpBatch.setLength(0);	// clear the buffer
 					first = true;
 				}
 				if (first)
@@ -267,16 +267,16 @@ public class MonetStatement
 		throws BatchUpdateException
 	{
 		try {
-			boolean type = internalExecute(batch.toString());
+			boolean hasResultSet = internalExecute(batch.toString());
 			int count = -1;
 
-			if (!type)
+			if (!hasResultSet)
 				count = getUpdateCount();
 
 			do {
 				if (offset >= max)
 					throw new SQLException("Overflow: don't use multi statements when batching (" + max + ")", "M1M16");
-				if (type) {
+				if (hasResultSet) {
 					e.setNextException(
 						new SQLException("Batch query produced a ResultSet! " +
 							"Ignoring and setting update count to " +
@@ -286,7 +286,7 @@ public class MonetStatement
 					counts[offset] = count;
 				}
 				offset++;
-			} while ((type = getMoreResults()) || (count = getUpdateCount()) != -1);
+			} while ((hasResultSet = getMoreResults()) || (count = getUpdateCount()) != -1);
 		} catch (SQLException ex) {
 			e.setNextException(ex);
 			for (; offset < max; offset++) {

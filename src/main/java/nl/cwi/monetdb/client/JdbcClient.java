@@ -878,7 +878,7 @@ public final class JdbcClient {
 	 * @throws IOException if an IO exception occurs.
 	 */
 	public static void processBatch(final int batchSize) throws IOException {
-		final StringBuilder query = new StringBuilder();
+		final StringBuilder query = new StringBuilder(2048);
 		int i = 0;
 		try {
 			String curLine;
@@ -889,7 +889,7 @@ public final class JdbcClient {
 					// lousy check for end of statement, but in batch mode it
 					// is not very important to catch all end of statements...
 					stmt.addBatch(query.toString());
-					query.delete(0, query.length());
+					query.setLength(0);	// clear the buffer
 				} else {
 					query.append('\n');
 				}

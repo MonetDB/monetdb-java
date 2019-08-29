@@ -35,7 +35,7 @@ public final class MonetClob implements Clob {
 	}
 
 	/* internal utility method */
-	final private void checkBufIsNotNull() throws SQLException {
+	private final void checkBufIsNotNull() throws SQLException {
 		if (buf == null)
 			throw new SQLException("This MonetClob has been freed", "M1M20");
 	}
@@ -98,10 +98,11 @@ public final class MonetClob implements Clob {
 	 */
 	@Override
 	public Reader getCharacterStream(final long pos, final long length) throws SQLException {
-		// buf and input argument pos will be checked in method getSubString(long, int)
+		// as length will be casted to int, check it for too big value first
 		if (length < 0 || length > Integer.MAX_VALUE) {
 			throw new SQLException("Invalid length value: " + length, "M1M05");
 		}
+		// buf and input argument pos will be checked in method getSubString(long, int)
 		return new StringReader(getSubString(pos, (int)length));
 	}
 
@@ -164,10 +165,10 @@ public final class MonetClob implements Clob {
 	 */
 	@Override
 	public long position(final Clob searchstr, final long start) throws SQLException {
-		// buf and input argument start will be checked in method position(String, long)
 		if (searchstr == null) {
 			throw new SQLException("Missing searchstr object", "M1M05");
 		}
+		// buf and input argument start will be checked in method position(String, long)
 		return position(searchstr.toString(), start);
 	}
 
@@ -250,11 +251,9 @@ public final class MonetClob implements Clob {
 	 */
 	@Override
 	public int setString(final long pos, final String str) throws SQLException {
-		// buf will be checked in method setString(long, String, int, int)
-		if (str == null) {
-			throw new SQLException("Missing str object", "M1M05");
-		}
-		return setString(pos, str, 0, str.length());
+		// buf and input arguments will be checked in method setString(long, String, int, int)
+		final int len = (str != null) ? str.length() : 0;
+		return setString(pos, str, 0, len);
 	}
 
 	/**
@@ -287,12 +286,11 @@ public final class MonetClob implements Clob {
 		if (len < 1 || (offset + len) > str.length()) {
 			throw new SQLException("Invalid len value: " + len, "M1M05");
 		}
-
-		final int ipos = (int) pos;
-		if ((ipos + len) > buf.capacity()) {
-			buf.ensureCapacity(ipos + len);
+		if (((int) pos + len) > buf.capacity()) {
+			// enlarge the buffer before filling it
+			buf.ensureCapacity((int) pos + len);
 		}
-		buf.replace(ipos - 1, ipos + len, str.substring(offset, (offset + len)));
+		buf.replace((int) pos - 1, (int) pos + len, str.substring(offset, (offset + len)));
 		return len;
 	}
 
@@ -310,8 +308,8 @@ public final class MonetClob implements Clob {
 		if (len < 0 || len > buf.length()) {
 			throw new SQLException("Invalid len value: " + len, "M1M05");
 		}
-		buf.delete((int)len, buf.length());
-		// Attempts to reduce storage used for the character sequence.
+		buf.setLength((int)len);
+		// reduce storage used for the character sequence.
 		buf.trimToSize();
 	}
 
@@ -321,7 +319,9 @@ public final class MonetClob implements Clob {
 	 *
 	 * @return the String this MonetClob wraps or empty string when this MonetClob was freed.
 	 */
-	final public String toString() {
-		return (buf != null) ? buf.toString() : "";
+	public String toString() {
+		if (buf == null)
+			return "";
+		return buf.toString();
 	}
 }

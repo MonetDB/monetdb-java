@@ -34,7 +34,7 @@ public class Test_Clargequery {
 			"select 1;\n";
 
 		int size = 1000;
-		StringBuffer bigq = new StringBuffer(query.length() * size);
+		StringBuilder bigq = new StringBuilder(query.length() * size);
 		for (int i = 0; i < size; i++) {
 			bigq.append(query);
 		}
@@ -61,7 +61,8 @@ public class Test_Clargequery {
 			System.out.println("ABORTING TEST!!!");
 		}
 
-		if (rs != null) rs.close();
+		if (rs != null)
+			rs.close();
 
 		con1.close();
 	}

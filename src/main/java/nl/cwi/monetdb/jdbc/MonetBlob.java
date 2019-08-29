@@ -34,20 +34,20 @@ public final class MonetBlob implements Blob {
 		buf = data;
 	}
 
-	final static MonetBlob create(final String in) {
+	static final MonetBlob create(final String hexString) {
 		// unpack the HEX (BLOB) notation to real bytes
-		final int len = in.length() / 2;
+		final int len = hexString.length() / 2;
 		final byte[] buf = new byte[len];
-		int offset;
 		for (int i = 0; i < len; i++) {
-			offset = 2 * i;
-			buf[i] = (byte)Integer.parseInt(in.substring(offset, offset + 2), 16);
+//	was		buf[i] = (byte)Integer.parseInt(hexString.substring(2 * i, (2 * i) + 2), 16);
+			buf[i] = (byte) ((Character.digit(hexString.charAt(2 * i), 16) << 4)
+					+ Character.digit(hexString.charAt((2 * i) +1), 16));
 		}
 		return new MonetBlob(buf);
 	}
 
 	/* internal utility method */
-	final private void checkBufIsNotNull() throws SQLException {
+	private final void checkBufIsNotNull() throws SQLException {
 		if (buf == null)
 			throw new SQLException("This MonetBlob has been freed", "M1M20");
 	}
@@ -106,7 +106,6 @@ public final class MonetBlob implements Blob {
 		if (length < 0 || pos - 1 + length > buf.length) {
 			throw new SQLException("Invalid length value: " + length, "M1M05");
 		}
-
 		return new ByteArrayInputStream(buf, (int) pos - 1, (int) length);
 	}
 
@@ -196,14 +195,15 @@ public final class MonetBlob implements Blob {
 		}
 		try {
 			final int patternLength = pattern.length;
-			final int bufLength = buf.length;
-			for (int i = (int)(start - 1); i < bufLength - patternLength; i++) {
+			final int maxPos = buf.length - patternLength;
+			for (int i = (int)(start - 1); i < maxPos; i++) {
 				int j;
 				for (j = 0; j < patternLength; j++) {
 					if (buf[i + j] != pattern[j])
 						break;
 				}
 				if (j == patternLength)
+					// found a match
 					return i;
 			}
 		} catch (IndexOutOfBoundsException e) {
@@ -248,11 +248,9 @@ public final class MonetBlob implements Blob {
 	 */
 	@Override
 	public int setBytes(final long pos, final byte[] bytes) throws SQLException {
-		if (bytes == null) {
-			throw new SQLException("Missing bytes[] object", "M1M05");
-		}
-		// buf and input argument pos will be checked in method setBytes(long, byte{}, int, int)
-		return setBytes(pos, bytes, 1, bytes.length);
+		// buf and input arguments will be checked in method setBytes(long, byte{}, int, int)
+		final int len = (bytes != null) ? bytes.length : 0;
+		return setBytes(pos, bytes, 1, len);
 	}
 
 	/**
@@ -272,14 +270,14 @@ public final class MonetBlob implements Blob {
 	 *         BLOB value or if pos is less than 1
 	 */
 	@Override
-	public int setBytes(final long pos, final byte[] bytes, final int offset, final int len)
+	public int setBytes(final long pos, final byte[] bytes, int offset, final int len)
 		throws SQLException
 	{
 		checkBufIsNotNull();
 		if (bytes == null) {
 			throw new SQLException("Missing bytes[] object", "M1M05");
 		}
-		if (pos < 1 || pos > Integer.MAX_VALUE) {
+		if (pos < 1 || pos > buf.length) {
 			throw new SQLException("Invalid pos value: " + pos, "M1M05");
 		}
 		if (len < 0 || pos + len > buf.length) {
@@ -290,9 +288,10 @@ public final class MonetBlob implements Blob {
 		}
 
 		try {
+			offset--;
 			/* transactions? what are you talking about? */
 			for (int i = (int)pos; i < len; i++)
-				buf[i] = bytes[offset - 1 + i];
+				buf[i] = bytes[offset + i];
 		} catch (IndexOutOfBoundsException e) {
 			throw new SQLException(e.getMessage(), "M0M10");
 		}
@@ -314,10 +313,7 @@ public final class MonetBlob implements Blob {
 			throw new SQLException("Invalid len value: " + len, "M1M05");
 		}
 		if (buf.length > len) {
-			final byte[] newbuf = new byte[(int)len];
-			for (int i = 0; i < len; i++)
-				newbuf[i] = buf[i];
-			buf = newbuf;
+			buf = java.util.Arrays.copyOf(buf, (int)len);
 		}
 	}
 }

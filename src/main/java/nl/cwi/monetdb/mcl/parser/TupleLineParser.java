@@ -58,7 +58,9 @@ public final class TupleLineParser extends MCLParser {
 			throw new MCLParseException("Expected a data row starting with [");
 
 		// It is a tuple. Extract separate fields by examining the string data char for char
-		final char[] chrLine = source.toCharArray();	// convert whole string to char[] to avoid overhead of source.charAt(i) calls TODO: measure the overhead
+		// convert whole string to char[] to avoid overhead of source.charAt(i) calls
+		// TODO: measure the source.charAt(i) overhead and whether it is faster to eliminate the source.toCharArray(); copy
+		final char[] chrLine = source.toCharArray();
 		boolean inString = false, escaped = false, fieldHasEscape = false;
 		final StringBuilder uesc = new StringBuilder(128);	// used for building field string value when an escape is present in the field value
 		int column = 0, cursor = 2;
@@ -102,8 +104,8 @@ public final class TupleLineParser extends MCLParser {
 						{
 							if (fieldHasEscape) {
 								// reuse the StringBuilder by cleaning it
-								uesc.delete(0, uesc.length());
-								// prevent capacity increasements
+								uesc.setLength(0);
+								// prevent multiple capacity increments during the append()'s in the inner loop
 								uesc.ensureCapacity(endpos - (cursor + 1));
 								// parse the field value (excluding the double quotes) and convert it to a string without any escape characters
 								for (int pos = cursor + 1; pos < endpos; pos++) {
@@ -141,7 +143,7 @@ public final class TupleLineParser extends MCLParser {
 													if (chr2 >= '0' && chr2 <= '7' && chr3 >= '0' && chr3 <= '7') {
 														// we got an octal number between \000 and \377
 														try {
-															uesc.append((char)(Integer.parseInt("" + chr + chr2 + chr3, 8)));
+															uesc.append((char)(Integer.parseInt(new String(chrLine, pos, 3), 8)));
 															pos += 2;
 														} catch (NumberFormatException e) {
 															// hmmm, this point should never be reached actually...
