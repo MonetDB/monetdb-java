@@ -2,6 +2,9 @@
 # This file is updated with Maddlog
 
 * Wed Sep  4 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- The jar files are now named according to Java version compatibility.
+  For example, the monetdb-jdbc-2.29.jre7.jar file should be used with
+  Java 7 (or higher).
 - Corrected JdbcClient program: the dumping of a view DDL was incorrect when
   the view creation statement was not starting with "create view ", such as
   when it was created using "CREATE VIEW" or "create or replace view". It now
