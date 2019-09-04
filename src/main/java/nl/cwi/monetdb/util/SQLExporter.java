@@ -61,27 +61,12 @@ public final class SQLExporter extends Exporter {
 			changeSchema(schema);
 
 		// handle views directly
-		if (type.indexOf("VIEW") != -1) {	// for types: VIEW and SYSTEM VIEW
-			final String[] types = new String[1];
-			types[0] = type;
-			final ResultSet tbl = dbmd.getTables(null, schema, name, types);
-			if (tbl != null) {
-				if (!tbl.next()) {
-					tbl.close();
-					throw new SQLException("Whoops no meta data for view " + fqname);
-				}
-
-				// This will only work for MonetDB JDBC driver
-				final String remarks = tbl.getString("REMARKS");	// for MonetDB driver this contains the view definition (if no comment is set) or else the comment
-				if (remarks == null) {
-					out.println("-- invalid " + type + " " + fqname + ": no definition found");
-				} else {
-					// TODO when remarks does not contain the  create view ...  command, but a user added comment, we need to use query:
-					// "select query from sys.tables where name = '" + name + "' and schema_id in (select id from sys.schemas where name = '" + schema + "')"
-					out.println("CREATE " + type + " " + fqname + " AS " + remarks.replaceFirst("create view [^ ]+ as", ""));
-				}
-				tbl.close();
-			}
+		if (type.endsWith("VIEW")) {	// for types: VIEW and SYSTEM VIEW
+			final String viewDDL = fetchSysTablesQueryValue(dbmd.getConnection(), schema, name);
+			if (viewDDL != null)
+				out.println(viewDDL);
+			else
+				out.println("-- unknown " + type + " " + fqname + ": no SQL view definition found!");
 			return;
 		}
 
@@ -283,7 +268,11 @@ public final class SQLExporter extends Exporter {
 
 		out.println();
 		// end the create table statement
-		out.println(");");
+		if (type.equals("REMOTE TABLE")) {
+			final String on_clause = fetchSysTablesQueryValue(dbmd.getConnection(), schema, name);
+			out.println(") ON '" + ((on_clause != null) ? on_clause : "!!missing mapi:monetdb:// spec") + "';");
+		} else
+			out.println(");");
 
 		// create the non unique indexes defined for this table
 		// we use getIndexInfo to get non-unique indexes, but need to exclude
