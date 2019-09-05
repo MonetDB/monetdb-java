@@ -49,7 +49,7 @@ public final class XMLExporter extends Exporter {
 			if (viewDDL != null)
 				out.println("<!-- " + viewDDL + " -->");
 			else
-				out.print("<!-- unknown " + type + " " + dq(schema) + "." + dq(name) + ": no SQL view definition found! -->");
+				out.println("<!-- unknown " + type + " " + dq(schema) + "." + dq(name) + ": no SQL view definition found! -->");
 			return;
 		}
 

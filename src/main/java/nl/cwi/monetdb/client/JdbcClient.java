@@ -156,7 +156,7 @@ public final class JdbcClient {
 
 		if (copts.getOption("help").isPresent()) {
 			System.out.print(
-				"Usage java -jar jdbcclient.jar\n" +
+				"Usage java -jar jdbcclient.jre7.jar\n" +
 				"\t\t[-h host[:port]] [-p port] [-f file] [-u user]\n" +
 				"\t\t[-l language] [-d database] [-e] [-D [table]]\n" +
 				"\t\t[-X<opt>]\n" +
@@ -286,7 +286,7 @@ public final class JdbcClient {
 			// we only want user tables and views to be dumped, unless a specific table is requested
 			final String[] types = {"TABLE","VIEW","MERGE TABLE","REMOTE TABLE","REPLICA TABLE","STREAM TABLE"};
 			// Future: fetch all type names using dbmd.getTableTypes() and construct String[] with all
-			// table type names excluding the SYSTEM ... ones and ... TEMPORARY TABLE ones.
+			// table type names excluding the SYSTEM ... ones and LOCAL TEMPORARY TABLE ones.
 
 			// request the list of tables available in the current schema in the database
 			ResultSet tbl = dbmd.getTables(null, con.getSchema(), null,
@@ -638,10 +638,14 @@ public final class JdbcClient {
 								// give us a list of all non-system tables and views (including temp ones)
 								while (tbl.next()) {
 									final String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
-									if (tableType != null && tableType.startsWith("SYSTEM "))
+									if (tableType != null && tableType.startsWith("SYSTEM ")) {
+										String tableNm = tbl.getString(3);	// 3 = "TABLE_NAME"
+										if (tableNm.contains(" ") || tableNm.contains("\t"))
+											tableNm = dq(tableNm);
 										out.println(tableType + "\t" +
 											tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
-											tbl.getString(3));	// 3 = "TABLE_NAME"
+											tableNm);
+									}
 								}
 							} else {
 								String object = command.substring(2).trim();
@@ -654,25 +658,40 @@ public final class JdbcClient {
 									// give us a list of all non-system tables and views (including temp ones)
 									while (tbl.next()) {
 										final String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
-										if (tableType != null && !tableType.startsWith("SYSTEM "))
+										if (tableType != null && !tableType.startsWith("SYSTEM ")) {
+											String tableNm = tbl.getString(3);	// 3 = "TABLE_NAME"
+											if (tableNm.contains(" ") || tableNm.contains("\t"))
+												tableNm = dq(tableNm);
 											out.println(tableType + "\t" +
 												tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
-												tbl.getString(3));	// 3 = "TABLE_NAME"
+												tableNm);
+										}
 									}
 								} else {
 									// describes the given table or view
 									String schema;
 									String obj_nm = object;
+									int len;
 									boolean found = false;
 									final int dot = object.indexOf(".");
 									if (dot > 0) {
 										// use specified schema
 										schema = object.substring(0, dot);
 										obj_nm = object.substring(dot + 1);
+										// remove potential surrounding double quotes around schema name
+										len = schema.length();
+										if (len > 2 && schema.charAt(0) == '"' && schema.charAt(len -1) == '"')
+											schema = schema.substring(1, len -1);
 									} else {
 										// use current schema
 										schema = con.getSchema();
 									}
+									// remove potential surrounding double quotes around table or view name
+									len = obj_nm.length();
+									if (len > 2 && obj_nm.charAt(0) == '"' && obj_nm.charAt(len -1) == '"')
+										obj_nm = obj_nm.substring(1, len -1);
+
+									// System.err.println("calling dbmd.getTables(" + schema + ", " + obj_nm + ")");
 									tbl = dbmd.getTables(null, schema, obj_nm, null);
 									while (tbl.next() && !found) {
 										final String schemaName = tbl.getString(2);	// 2 = "TABLE_SCHEM"
@@ -689,7 +708,7 @@ public final class JdbcClient {
 										}
 									}
 									if (!found)
-										System.err.println("Unknown table or view: " + object);
+										System.err.println("No match found for table or view: " + object);
 								}
 							}
 						} catch (SQLException e) {
@@ -741,12 +760,9 @@ public final class JdbcClient {
 							executeQuery(query, stmt, out, !hasFile);
 						} catch (SQLException e) {
 							out.flush();
+							final String startmsg = (hasFile ? ("Error on line " + i + ": [") : "Error [");
 							do {
-								if (hasFile) {
-									System.err.println("Error on line " + i + ": [" + e.getSQLState() + "] " + e.getMessage());
-								} else {
-									System.err.println("Error [" + e.getSQLState() + "]: " + e.getMessage());
-								}
+								System.err.println(startmsg + e.getSQLState() + "] " + e.getMessage());
 								// print all error messages in the chain (if any)
 							} while ((e = e.getNextException()) != null);
 						}
@@ -861,7 +877,9 @@ public final class JdbcClient {
 
 		warn = con.getWarnings();
 		while (warn != null) {
-			System.err.println("Connection warning: " + warn.getMessage());
+			// suppress warning when issueing a "set schema xyz;" command
+			if ( !(warn.getMessage()).equals("Server enabled auto commit mode while local state already was auto commit.") )
+				System.err.println("Connection warning: " + warn.getMessage());
 			warn = warn.getNextWarning();
 		}
 		con.clearWarnings();

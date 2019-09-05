@@ -7,8 +7,8 @@
   Java 7 (or higher).
 - Corrected JdbcClient program: the dumping of a view DDL was incorrect when
   the view creation statement was not starting with "create view ", such as
-  when it was created using "CREATE VIEW" or "create or replace view". It now
-  uses the same DDL text as when it was created, pulled from sys.tables.query.
+  when it was created using "create or replace view". It now shows the
+  value as stored in sys.tables.query field, similar to mclient program.
 
 * Thu Aug 22 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved JdbcClient program by including the schema prefix when dumping
