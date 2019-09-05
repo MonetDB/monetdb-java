@@ -25,14 +25,17 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2019 MonetDB B.V.
   <property name="srcdir"    value="." />
   <property name="builddir"  value="build" />
   <property name="jardir"    value="../jars" />
+
+  <property name="jvm.version" value="1.7" />
+  <property name="jre.version" value="jre7" />
+  <property name="javac.flags" value="-Xlint:-options" />
+
   <property name="jdbc_jar"
-    value="${jardir}/monetdb-jdbc-${JDBC_MAJOR}.${JDBC_MINOR}.jar" />
+    value="${jardir}/monetdb-jdbc-${JDBC_MAJOR}.${JDBC_MINOR}.${jre.version}.jar" />
   <property name="jdbc_url"
     value="jdbc:monetdb://localhost/?user=monetdb&amp;password=monetdb${debug}" />
   <property name="jdbctests-jar"
     value="${jardir}/jdbctests.jar" />
-  <property name="jvm.version" value="1.7" />
-  <property name="javac.flags" value="-Xlint:-options" />
 
   <!-- Prepares the build directory -->
   <target name="prepare">
