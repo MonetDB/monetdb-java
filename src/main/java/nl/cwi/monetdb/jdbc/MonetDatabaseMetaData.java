@@ -20,7 +20,8 @@ import java.sql.Types;
 /**
  * A DatabaseMetaData object suitable for the MonetDB database.
  *
- * @author Fabian Groffen, Martin van Dinther
+ * @author Fabian Groffen
+ * @author Martin van Dinther
  * @version 0.8
  */
 public class MonetDatabaseMetaData
@@ -1737,10 +1738,10 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schemaPattern != null) {
+			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
-			if (procedureNamePattern != null) {
+			if (procedureNamePattern != null && !procedureNamePattern.equals("%")) {
 				query.append(" AND f.\"name\" ").append(composeMatchPart(procedureNamePattern));
 			}
 		}
@@ -1862,13 +1863,13 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schemaPattern != null) {
+			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
-			if (procedureNamePattern != null) {
+			if (procedureNamePattern != null && !procedureNamePattern.equals("%")) {
 				query.append(" AND f.\"name\" ").append(composeMatchPart(procedureNamePattern));
 			}
-			if (columnNamePattern != null) {
+			if (columnNamePattern != null && !columnNamePattern.equals("%")) {
 				query.append(" AND a.\"name\" ").append(composeMatchPart(columnNamePattern));
 			}
 		}
@@ -1971,10 +1972,10 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schemaPattern != null) {
+			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
-			if (tableNamePattern != null) {
+			if (tableNamePattern != null && !tableNamePattern.equals("%")) {
 				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
 			}
 		}
@@ -2034,7 +2035,7 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" WHERE 1 = 0");
 		} else {
-			if (schemaPattern != null) {
+			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" WHERE \"name\" ").append(composeMatchPart(schemaPattern));
 			}
 		}
@@ -2218,13 +2219,13 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schemaPattern != null) {
+			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
-			if (tableNamePattern != null) {
+			if (tableNamePattern != null && !tableNamePattern.equals("%")) {
 				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
 			}
-			if (columnNamePattern != null) {
+			if (columnNamePattern != null && !columnNamePattern.equals("%")) {
 				query.append(" AND c.\"name\" ").append(composeMatchPart(columnNamePattern));
 			}
 		}
@@ -2312,13 +2313,13 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schemaPattern != null) {
+			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
-			if (tableNamePattern != null) {
+			if (tableNamePattern != null && !tableNamePattern.equals("%")) {
 				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
 			}
-			if (columnNamePattern != null) {
+			if (columnNamePattern != null && !columnNamePattern.equals("%")) {
 				query.append(" AND c.\"name\" ").append(composeMatchPart(columnNamePattern));
 			}
 		}
@@ -2401,10 +2402,10 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schemaPattern != null) {
+			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
-			if (tableNamePattern != null) {
+			if (tableNamePattern != null && !tableNamePattern.equals("%")) {
 				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
 			}
 		}
@@ -2485,10 +2486,10 @@ public class MonetDatabaseMetaData
 			 && scope != DatabaseMetaData.bestRowTemporary) {
 				query.append(" AND 1 = 0");
 			} else {
-				if (schema != null) {
+				if (schema != null && !schema.equals("%")) {
 					query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
 				}
-				if (table != null) {
+				if (table != null && !table.equals("%")) {
 					query.append(" AND t.\"name\" ").append(composeMatchPart(table));
 				}
 				if (!nullable) {
@@ -2598,10 +2599,10 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schema != null) {
+			if (schema != null && !schema.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
 			}
-			if (table != null) {
+			if (table != null && !table.equals("%")) {
 				query.append(" AND t.\"name\" ").append(composeMatchPart(table));
 			}
 		}
@@ -2713,10 +2714,10 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schema != null) {
+			if (schema != null && !schema.equals("%")) {
 				query.append(" AND fkschema.\"name\" ").append(composeMatchPart(schema));
 			}
-			if (table != null) {
+			if (table != null && !table.equals("%")) {
 				query.append(" AND fktable.\"name\" ").append(composeMatchPart(table));
 			}
 		}
@@ -2801,10 +2802,10 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schema != null) {
+			if (schema != null && !schema.equals("%")) {
 				query.append(" AND pkschema.\"name\" ").append(composeMatchPart(schema));
 			}
-			if (table != null) {
+			if (table != null && !table.equals("%")) {
 				query.append(" AND pktable.\"name\" ").append(composeMatchPart(table));
 			}
 		}
@@ -2900,17 +2901,17 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (pschema != null) {
+			if (pschema != null && !pschema.equals("%")) {
 				query.append(" AND pkschema.\"name\" ").append(composeMatchPart(pschema));
 			}
-			if (ptable != null) {
+			if (ptable != null && !ptable.equals("%")) {
 				query.append(" AND pktable.\"name\" ").append(composeMatchPart(ptable));
 			}
 
-			if (fschema != null) {
+			if (fschema != null && !fschema.equals("%")) {
 				query.append(" AND fkschema.\"name\" ").append(composeMatchPart(fschema));
 			}
-			if (ftable != null) {
+			if (ftable != null && !ftable.equals("%")) {
 				query.append(" AND fktable.\"name\" ").append(composeMatchPart(ftable));
 			}
 		}
@@ -3116,10 +3117,10 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schema != null) {
+			if (schema != null && !schema.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
 			}
-			if (table != null) {
+			if (table != null && !table.equals("%")) {
 				query.append(" AND t.\"name\" ").append(composeMatchPart(table));
 			}
 			if (unique) {
@@ -3283,10 +3284,10 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schemaPattern != null) {
+			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
-			if (typeNamePattern != null) {
+			if (typeNamePattern != null && !typeNamePattern.equals("%")) {
 				query.append(" AND t.\"sqlname\" ").append(composeMatchPart(typeNamePattern));
 			}
 		}
@@ -3881,10 +3882,10 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schemaPattern != null) {
+			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
-			if (functionNamePattern != null) {
+			if (functionNamePattern != null && !functionNamePattern.equals("%")) {
 				query.append(" AND f.\"name\" ").append(composeMatchPart(functionNamePattern));
 			}
 		}
@@ -3999,13 +4000,13 @@ public class MonetDatabaseMetaData
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (schemaPattern != null) {
+			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
 			}
-			if (functionNamePattern != null) {
+			if (functionNamePattern != null && !functionNamePattern.equals("%")) {
 				query.append(" AND f.\"name\" ").append(composeMatchPart(functionNamePattern));
 			}
-			if (columnNamePattern != null) {
+			if (columnNamePattern != null && !columnNamePattern.equals("%")) {
 				query.append(" AND a.\"name\" ").append(composeMatchPart(columnNamePattern));
 			}
 		}
