@@ -26,7 +26,7 @@ package nl.cwi.monetdb.mcl.parser;
 public abstract class MCLParser {
 	/** The String values found while parsing.  Public, you may touch it. */
 	public final String values[];
-	protected int colnr;
+	protected int colnr = 0;
 
 	/**
 	 * Creates an MCLParser targetted at a given number of field values.
