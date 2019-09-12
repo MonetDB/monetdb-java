@@ -98,7 +98,7 @@ public class MonetResultSet
 	private SQLWarning warnings;
 	/** whether the last read field (via some getXyz() method) was NULL */
 	private boolean lastReadWasNull = true;
-	/** Just a dummy variable to keep store the fetchsize set. */
+	/** to store the fetchsize set. */
 	private int fetchSize;
 
 	/**
@@ -107,38 +107,39 @@ public class MonetResultSet
 	 * @param statement the statement which created this ResultSet
 	 * @param header a header containing the query, resultset type, etc.
 	 * @throws IllegalArgumentException if called with null or invalid value for one of the arguments
-	 * @throws SQLException is a protocol error occurs
 	 */
 	MonetResultSet(
 		final Statement statement,
 		final MonetConnection.ResultSetResponse header)
-		throws SQLException
+		throws IllegalArgumentException
 	{
 		if (statement == null) {
 			throw new IllegalArgumentException("Statement may not be null!");
 		}
 		if (header == null) {
-			throw new IllegalArgumentException("ResultSetResponse may not be null!");
+			throw new IllegalArgumentException("Header may not be null!");
 		}
 		this.statement = statement;
 		this.header = header;
-		this.type = header.getRSType();
-		this.concurrency = header.getRSConcur();
-		/* if we have a header object, the fetchSize used for this result set
-		   is the header's cacheSize */
-		this.fetchSize = header.getCacheSize();
-		// well there is only one supported concurrency, so we don't have to
-		// bother about that
+		type = header.getRSType();
+		concurrency = header.getRSConcur();
+		/* the fetchSize used for this result set is the header's cacheSize */
+		fetchSize = header.getCacheSize();
 
-		// throws SQLException on getters of Header, so we find out immediately
-		// if an error occurred for this query
 		columns = header.getNames();
 		types = header.getTypes();
+		if (columns == null || types == null) {
+			throw new IllegalArgumentException("Missing Header metadata");
+		}
+		if (columns.length != types.length) {
+			throw new IllegalArgumentException("Inconsistent Header metadata");
+		}
 		tupleCount = header.tuplecount;
 
 		// create result array
 		tlp = new TupleLineParser(columns.length);
 
+		// for efficiency derive the JDBC SQL type codes from the types[] names once
 		JdbcSQLTypes = new int[types.length];
 		populateJdbcSQLtypesArray();
 	}
@@ -152,8 +153,6 @@ public class MonetResultSet
 	 * @param types the column types
 	 * @param results the number of rows in the ResultSet
 	 * @throws IllegalArgumentException if called with null or invalid value for one of the arguments
-	 * @throws IOException if communicating with monet failed
-	 * @throws SQLException is a protocol error occurs
 	 */
 	MonetResultSet(
 		final Statement statement,
@@ -173,15 +172,16 @@ public class MonetResultSet
 		}
 
 		this.statement = statement;
-		this.header = null;
-		this.fetchSize = 0;
+		header = null;
+		fetchSize = 0;
 
 		this.columns = columns;
 		this.types = types;
-		this.tupleCount = results;
+		tupleCount = results;
 
-		this.tlp = new TupleLineParser(columns.length);
+		tlp = new TupleLineParser(columns.length);
 
+		// for efficiency derive the JDBC SQL type codes from the types[] names once
 		JdbcSQLTypes = new int[types.length];
 		populateJdbcSQLtypesArray();
 	}
