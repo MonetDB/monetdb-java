@@ -124,6 +124,10 @@ public final class MonetClob implements Clob {
 	@Override
 	public String getSubString(final long pos, final int length) throws SQLException {
 		checkBufIsNotNull();
+		if (pos == 1L && length == buf.length()) {
+			// the whole string is requested
+			return buf.toString();
+		}
 		if (pos < 1 || pos > buf.length()) {
 			throw new SQLException("Invalid pos value: " + pos, "M1M05");
 		}
