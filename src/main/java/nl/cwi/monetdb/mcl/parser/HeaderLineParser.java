@@ -39,11 +39,7 @@ public final class HeaderLineParser extends MCLParser {
 	/**
 	 * Parses the given String source as header line.  If source cannot
 	 * be parsed, an MCLParseException is thrown.  The columncount argument
-	 * given during construction is used for allocation of the backing
-	 * array.  Parsing a header line with has more fields will therefore
-	 * result in a crash.  While this seems illogical, the caller should
-	 * know this size, since the StartOfHeader contains this
-	 * information.
+	 * given during construction is used for allocation of the backing array.
 	 *
 	 * @param source a String which should be parsed
 	 * @return the type of then parsed header line
@@ -88,25 +84,27 @@ public final class HeaderLineParser extends MCLParser {
 
 		// depending on the name of the header, we continue
 		int type = 0;
-		switch (chrLine[pos]) {
-			case 'n':
-				if (len - pos == 4 && source.regionMatches(pos + 1, "name", 1, 3)) {
+		switch (len - pos) {
+			case 4:
+				// source.regionMatches(pos + 1, "name", 1, 3)
+				if (chrLine[pos] == 'n' && chrLine[pos+1] == 'a' && chrLine[pos+2] == 'm' && chrLine[pos+3] == 'e') {
 					getValues(chrLine, 2, pos - 3);
 					type = NAME;
+				} else
+				// source.regionMatches(pos + 1, "type", 1, 3)
+				if (chrLine[pos] == 't' && chrLine[pos+1] == 'y' && chrLine[pos+2] == 'p' && chrLine[pos+3] == 'e') {
+					getValues(chrLine, 2, pos - 3);
+					type = TYPE;
 				}
 				break;
-			case 'l':
-				if (len - pos == 6 && source.regionMatches(pos + 1, "length", 1, 5)) {
+			case 6:
+				if (source.regionMatches(pos + 1, "length", 1, 5)) {
 					getIntValues(chrLine, 2, pos - 3);
 					type = LENGTH;
 				}
 				break;
-			case 't':
-				if (len - pos == 4 && source.regionMatches(pos + 1, "type", 1, 3)) {
-					getValues(chrLine, 2, pos - 3);
-					type = TYPE;
-				} else
-				if (len - pos == 10 && source.regionMatches(pos + 1, "table_name", 1, 9)) {
+			case 10:
+				if (source.regionMatches(pos + 1, "table_name", 1, 9)) {
 					getValues(chrLine, 2, pos - 3);
 					type = TABLE;
 				}
@@ -116,7 +114,7 @@ public final class HeaderLineParser extends MCLParser {
 		}
 
 		// adjust colno
-		reset();
+		colnr = 0;
 
 		return type;
 	}
@@ -172,6 +170,7 @@ public final class HeaderLineParser extends MCLParser {
 						if (chrLine[start] == '"')
 							start++;  // skip leading double quote
 						if (elem < values.length) {
+							// TODO: also deal with escape characters as done in TupleLineParser.parse()
 							values[elem++] = new String(chrLine, start, i - (chrLine[i - 1] == '"' ? 1 : 0) - start);
 						}
 						i++;
@@ -210,7 +209,9 @@ public final class HeaderLineParser extends MCLParser {
 
 		for (int i = start; i < stop; i++) {
 			if (chrLine[i] == ',' && chrLine[i + 1] == '\t') {
-				intValues[elem++] = tmp;
+				if (elem < intValues.length) {
+					intValues[elem++] = tmp;
+				}
 				tmp = 0;
 				i++;
 			} else {
@@ -225,6 +226,7 @@ public final class HeaderLineParser extends MCLParser {
 			}
 		}
 		// add the left over part (last column)
-		intValues[elem] = tmp;
+		if (elem < intValues.length)
+			intValues[elem] = tmp;
 	}
 }
