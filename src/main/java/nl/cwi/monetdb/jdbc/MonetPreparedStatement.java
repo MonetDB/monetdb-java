@@ -1260,14 +1260,16 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		final StringBuilder hex = new StringBuilder(x.length * 2);
-		byte b;
-		for (int i = 0; i < x.length; i++) {
-			b = x[i];
-			hex.append(HEXES.charAt((b & 0xF0) >> 4))
-				.append(HEXES.charAt((b & 0x0F)));
+		final int len = x.length;
+		final StringBuilder hex = new StringBuilder(8 + (len * 2));
+		hex.append("blob '");	// add a casting prefix
+		// convert the bytes into hex codes
+		for (int i = 0; i < len; i++) {
+			hex.append(HEXES.charAt((x[i] & 0xF0) >> 4))
+			   .append(HEXES.charAt((x[i] & 0x0F)));
 		}
-		setValue(parameterIndex, "blob '" + hex.toString() + "'");
+		hex.append("'");	// end of hex string value
+		setValue(parameterIndex, hex.toString());
 	}
 
 	/**
