@@ -559,7 +559,7 @@ public class MonetResultSet
 				return null;
 			}
 			lastReadWasNull = false;
-			return MonetBlob.create(val);
+			return new MonetBlob(val);
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -901,15 +901,7 @@ public class MonetResultSet
 				case Types.BINARY:
 				case Types.VARBINARY:
 				case Types.LONGVARBINARY:
-					// unpack the HEX (BLOB) notation to real bytes
-					final int len = val.length() / 2;
-					final byte[] buf = new byte[len];
-					int offset;
-					for (int j = 0; j < len; j++) {
-						offset = j * 2;
-						buf[j] = (byte)Integer.parseInt(val.substring(offset, offset + 2), 16);
-					}
-					return buf;
+					return MonetBlob.hexStrToByteArray(val);
 				default:
 					throw new SQLException("Cannot operate on " + types[columnIndex - 1] + " type", "M1M05");
 			}
@@ -1945,7 +1937,7 @@ public class MonetResultSet
 			case Types.CLOB:
 				return new MonetClob(val);
 			case Types.BLOB:
-				return MonetBlob.create(val);
+				return new MonetBlob(val);
 			case Types.DATE:
 				return getDate(columnIndex, null);
 			case Types.TIME:

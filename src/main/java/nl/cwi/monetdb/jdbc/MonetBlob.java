@@ -30,11 +30,18 @@ import java.sql.SQLFeatureNotSupportedException;
 public final class MonetBlob implements Blob {
 	private byte[] buf;
 
+	/* constructors */
 	protected MonetBlob(final byte[] data) {
 		buf = data;
 	}
 
-	static final MonetBlob create(final String hexString) {
+	protected MonetBlob(final String hexString) {
+		buf = hexStrToByteArray(hexString);
+	}
+
+
+	/* class utility methods */
+	static final byte[] hexStrToByteArray(final String hexString) {
 		// unpack the HEX (BLOB) notation to real bytes
 		final int len = hexString.length() / 2;
 		final byte[] buf = new byte[len];
@@ -43,7 +50,7 @@ public final class MonetBlob implements Blob {
 			buf[i] = (byte) ((Character.digit(hexString.charAt(2 * i), 16) << 4)
 					+ Character.digit(hexString.charAt((2 * i) +1), 16));
 		}
-		return new MonetBlob(buf);
+		return buf;
 	}
 
 	/* internal utility method */
