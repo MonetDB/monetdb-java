@@ -1859,7 +1859,9 @@ public class MonetConnection
 		 * @throws SQLException if the contents of the Response is not
 		 *         consistent or sufficient.
 		 */
+		/* MvD: disabled not used/needed code
 		public abstract void complete() throws SQLException;
+		*/
 
 		/**
 		 * Instructs the Response implementation to close and do the
@@ -2093,6 +2095,7 @@ public class MonetConnection
 		 * @throws SQLException if the data currently in this Response is not
 		 *         sufficient to be consistant
 		 */
+		/* MvD: disabled not used/needed code
 		@Override
 		public void complete() throws SQLException {
 			final StringBuilder err = new StringBuilder(99);
@@ -2103,6 +2106,7 @@ public class MonetConnection
 			if (err.length() > 0)
 				throw new SQLException(err.toString(), "M0M10");
 		}
+		*/
 
 		/**
 		 * Returns the names of the columns
@@ -2371,6 +2375,7 @@ public class MonetConnection
 		 *
 		 * @throws SQLException if not all rows are filled
 		 */
+		/* MvD: disabled not used/needed code
 		@Override
 		public void complete() throws SQLException {
 			if ((pos + 1) != data.length)
@@ -2378,6 +2383,7 @@ public class MonetConnection
 					+ data.length + ", block usage: " + (pos + 1)
 					+ ". Did MonetDB send what it promised to?", "M0M10");
 		}
+		*/
 
 		/**
 		 * Instructs the Response implementation to close and do the
@@ -2439,10 +2445,12 @@ public class MonetConnection
 			return false;
 		}
 
+		/* MvD: disabled not used/needed code
 		@Override
 		public void complete() {
 			// empty, because there is nothing to check
 		}
+		*/
 
 		@Override
 		public void close() {
@@ -2474,10 +2482,12 @@ public class MonetConnection
 			return false;
 		}
 
+		/* MvD: disabled not used/needed code
 		@Override
 		public void complete() {
 			// empty, because there is nothing to check
 		}
+		*/
 
 		@Override
 		public void close() {
