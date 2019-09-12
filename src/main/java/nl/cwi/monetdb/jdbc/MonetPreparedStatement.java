@@ -1289,24 +1289,10 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setCharacterStream(
-		final int parameterIndex,
-		final Reader reader,
-		final int length)
+	public void setCharacterStream(final int parameterIndex, final Reader reader, final int length)
 		throws SQLException
 	{
-		if (reader == null) {
-			setNull(parameterIndex, -1);
-			return;
-		}
-
-		final CharBuffer tmp = CharBuffer.allocate(length);
-		try {
-			reader.read(tmp);
-		} catch (IOException e) {
-			throw new SQLException(e.getMessage(), "M1M25");
-		}
-		setString(parameterIndex, tmp.toString());
+		setClob(parameterIndex, reader, (long)length);
 	}
 
 	/**
@@ -1328,7 +1314,7 @@ public class MonetPreparedStatement
 	public void setCharacterStream(final int parameterIndex, final Reader reader)
 		throws SQLException
 	{
-		setCharacterStream(parameterIndex, reader, 0);
+		setClob(parameterIndex, reader);
 	}
 
 	/**
@@ -1348,14 +1334,10 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setCharacterStream(
-		final int parameterIndex,
-		final Reader reader,
-		final long length)
+	public void setCharacterStream(final int parameterIndex, final Reader reader, final long length)
 		throws SQLException
 	{
-		// given the implementation of the int-version, downcast is ok
-		setCharacterStream(parameterIndex, reader, (int)length);
+		setClob(parameterIndex, reader, length);
 	}
 
 	/**
@@ -1373,7 +1355,7 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		// simply serialise the CLOB into a variable for now... far from
+		// simply serialise the CLOB into a String for now... far from
 		// efficient, but might work for a few cases...
 		// be on your marks: we have to cast the length down!
 		setString(parameterIndex, x.getSubString(1L, (int)(x.length())));
@@ -1384,8 +1366,7 @@ public class MonetPreparedStatement
 	 * converts this to an SQL CLOB value when it sends it to the database.
 	 *
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
-	 * @param reader an object that contains the data to set the parameter
-	 *          value to
+	 * @param reader an object that contains the data to set the parameter value to
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -1394,17 +1375,19 @@ public class MonetPreparedStatement
 			setNull(parameterIndex, -1);
 			return;
 		}
+
 		// Some buffer. Size of 8192 is default for BufferedReader, so...
-		final char[] arr = new char[8192];
-		final StringBuilder buf = new StringBuilder(8192 * 8);
-		int numChars;
+		final int size = 8192;
+		final char[] arr = new char[size];
+		final StringBuilder buf = new StringBuilder(size * 32);
 		try {
-			while ((numChars = reader.read(arr, 0, arr.length)) > 0) {
+			int numChars;
+			while ((numChars = reader.read(arr, 0, size)) > 0) {
 				buf.append(arr, 0, numChars);
 			}
 			setString(parameterIndex, buf.toString());
 		} catch (IOException e) {
-			throw new SQLException(e);
+			throw new SQLException("failed to read from stream: " + e.getMessage(), "M1M25");
 		}
 	}
 
@@ -1420,29 +1403,30 @@ public class MonetPreparedStatement
 	 * to the server as a LONGVARCHAR or a CLOB.
 	 *
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
-	 * @param reader An object that contains the data to set the
-	 *        parameter value to.
+	 * @param reader An object that contains the data to set the parameter value to.
 	 * @param length the number of characters in the parameter data.
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public void setClob(final int parameterIndex, final Reader reader, final long length) throws SQLException {
-		if (reader == null || length < 0) {
+		if (reader == null) {
 			setNull(parameterIndex, -1);
 			return;
 		}
-		// simply serialise the CLOB into a variable for now... far from
-		// efficient, but might work for a few cases...
-		final CharBuffer buf = CharBuffer.allocate((int)length); // have to down cast :(
+		if (length < 0 || length > Integer.MAX_VALUE) {
+			throw new SQLException("Invalid length value: " + length, "M1M05");
+		}
+
+		// simply serialise the Reader data into a large buffer
+		final CharBuffer buf = CharBuffer.allocate((int)length); // have to down cast
 		try {
 			reader.read(buf);
+			// We have to rewind the buffer, because otherwise toString() returns "".
+			buf.rewind();
+			setString(parameterIndex, buf.toString());
 		} catch (IOException e) {
-			throw new SQLException("failed to read from stream: " +
-					e.getMessage(), "M1M25");
+			throw new SQLException("failed to read from stream: " + e.getMessage(), "M1M25");
 		}
-		// We have to rewind the buffer, because otherwise toString() returns "".
-		buf.rewind();
-		setString(parameterIndex, buf.toString());
 	}
 
 	/**
@@ -1560,7 +1544,7 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void setNCharacterStream(final int parameterIndex, final Reader value) throws SQLException {
-		setCharacterStream(parameterIndex, value, 0);
+		setCharacterStream(parameterIndex, value);
 	}
 
 	/**
@@ -1785,11 +1769,7 @@ public class MonetPreparedStatement
 	 * @see Types
 	 */
 	@Override
-	public void setObject(
-		final int parameterIndex,
-		final Object x,
-		final int targetSqlType,
-		final int scale)
+	public void setObject(final int parameterIndex, final Object x, final int targetSqlType, final int scale)
 		throws SQLException
 	{
 		if (x == null) {
@@ -1839,8 +1819,7 @@ public class MonetPreparedStatement
 					if (x instanceof BigDecimal) {
 						setBigDecimal(parameterIndex, (BigDecimal)x);
 					} else {
-						setBigDecimal(parameterIndex,
-							new BigDecimal(num.doubleValue()));
+						setBigDecimal(parameterIndex, new BigDecimal(num.doubleValue()));
 					}
 				break;
 				case Types.BIT:
@@ -2035,8 +2014,7 @@ public class MonetPreparedStatement
 					// representation is given, but we need to prefix it
 					// with the actual sqltype the server expects, or we
 					// will get an error back
-					setValue(
-						paramnr,
+					setValue(paramnr,
 						sqltype + " '" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'"
 					);
 				}
@@ -2103,7 +2081,7 @@ public class MonetPreparedStatement
 
 				@Override
 				public void writeCharacterStream(Reader x) throws SQLException {
-					setCharacterStream(paramnr, x, 0);
+					setCharacterStream(paramnr, x);
 				}
 
 				@Override
@@ -2596,8 +2574,7 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		final String val = x.toString();
-		setValue(parameterIndex, "url '" + val.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
+		setValue(parameterIndex, "url '" + x.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
 	}
 
 	/**
