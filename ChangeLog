@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Sep 18 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected method DatabaseMetaData.getBestRowIdentifier(). It used to
+  return columns of both primary key and unique constraints. Now it only
+  returns the columns of the primary key if it has one, else columns of
+  a unique constraint.
+
 * Wed Sep 11 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Optimized parse() method of TupleLineParser by creating less helper objects
   and replacing method calls by direct operations on variables.

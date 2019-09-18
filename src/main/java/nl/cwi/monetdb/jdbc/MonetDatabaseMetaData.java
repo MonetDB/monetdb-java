@@ -460,7 +460,7 @@ public class MonetDatabaseMetaData
 		} finally {
 			MonetConnection.closeResultsetStatement(rs, st);
 		}
-		// for debug: System.out.println("SQL query: " + query + "\nResult string: " + sb.toString());
+		// for debug: System.out.println("SQL (len " + query.length() + "): " + query + "\nResult string: " + sb.toString());
 		return sb.toString();
 	}
 
@@ -1926,7 +1926,7 @@ public class MonetDatabaseMetaData
 		// as of Jul2015 release we also have a new table: sys.table_types with names for the new table types
 		// for correct behavior we need to know if the server is using the old (pre Jul2015) or new sys.tables.type values
 		final boolean preJul2015 = ("11.19.15".compareTo(getDatabaseProductVersion()) >= 0);
-		/* for debug: System.out.println("getDatabaseProductVersion() is " + getDatabaseProductVersion() + "  preJul2015 is " + preJul2015); */
+		// for debug: System.out.println("getDatabaseProductVersion() is " + getDatabaseProductVersion() + "  preJul2015 is " + preJul2015);
 
 		final boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
 		final StringBuilder query = new StringBuilder(1600);
@@ -2186,7 +2186,7 @@ public class MonetDatabaseMetaData
 			"cast(").append(MonetDriver.getSQLTypeMap("c.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"c.\"type\" AS \"TYPE_NAME\", " +
 			"c.\"type_digits\" AS \"COLUMN_SIZE\", " +
-			"0 AS \"BUFFER_LENGTH\", " +
+			"cast(0 as int) AS \"BUFFER_LENGTH\", " +
 			"c.\"type_scale\" AS \"DECIMAL_DIGITS\", " +
 			"cast(CASE WHEN c.\"type\" IN ('decimal', 'numeric', 'sec_interval') THEN 10 " +
 				"WHEN c.\"type\" IN ('int', 'smallint', 'tinyint', 'bigint', 'hugeint', 'float', 'real', 'double', 'oid', 'wrd') THEN 2 " +
@@ -2460,8 +2460,23 @@ public class MonetDatabaseMetaData
 		final boolean nullable
 	) throws SQLException
 	{
+		// first find out if the table has a Primary Key, If it does, we should return only those columns
+		boolean hasPK = false;
+		ResultSet pkey = null;
+		try {
+			pkey = getPrimaryKeys(catalog, schema, table);
+			if (pkey != null && pkey.next()) {
+				hasPK = true;
+			}
+		} catch (SQLException e) {
+			// ignore
+		} finally {
+			MonetConnection.closeResultsetStatement(pkey, null);
+		}
+
 		final StringBuilder query = new StringBuilder(1500);
-		query.append("SELECT cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
+		// Note: DISTINCT is needed to filter out possible duplicate column names from multiple unique constraints
+		query.append("SELECT DISTINCT cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
 			"c.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("c.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"c.\"type\" AS \"TYPE_NAME\", " +
@@ -2474,18 +2489,17 @@ public class MonetDatabaseMetaData
 		"JOIN \"sys\".\"columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
 		"JOIN \"sys\".\"tables\" t ON k.\"table_id\" = t.\"id\" " +
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
-		"WHERE k.\"type\" IN (0, 1)");	// only primary keys (type = 0) and unique keys (type = 1), not fkeys (type = 2)
+		"WHERE k.\"type\" = ").append(hasPK ? "0" : "1");	// the primary key (type = 0) or else any unique key (type = 1)
+		// TODO: when there is no PK and there are multiple unique constraints, pick only the unique constraint which has a) the least number of columns and b) the smallest total(size in bytes)
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
 			query.append(" AND 1 = 0");
 		} else {
-			if (scope != DatabaseMetaData.bestRowSession
-			 && scope != DatabaseMetaData.bestRowTransaction
-			 && scope != DatabaseMetaData.bestRowTemporary) {
-				query.append(" AND 1 = 0");
-			} else {
+			if (scope == DatabaseMetaData.bestRowSession
+			 || scope == DatabaseMetaData.bestRowTransaction
+			 || scope == DatabaseMetaData.bestRowTemporary) {
 				if (schema != null && !schema.equals("%")) {
 					query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
 				}
@@ -2495,10 +2509,12 @@ public class MonetDatabaseMetaData
 				if (!nullable) {
 					query.append(" AND c.\"null\" = false");
 				}
+			} else {
+				query.append(" AND 1 = 0");
 			}
 		}
 
-		query.append(" ORDER BY k.\"type\", c.\"name\"");
+		query.append(" ORDER BY \"SCOPE\", o.\"nr\", \"COLUMN_NAME\"");
 
 		return executeMetaDataQuery(query.toString());
 	}
@@ -3267,7 +3283,7 @@ public class MonetDatabaseMetaData
 				// next 4 UDTs are standard
 				" WHEN 'inet' THEN 'nl.cwi.monetdb.jdbc.types.INET'" +
 				" WHEN 'json' THEN 'java.lang.String'" +
-				" WHEN 'url'  THEN 'nl.cwi.monetdb.jdbc.types.URL'" +
+				" WHEN 'url' THEN 'nl.cwi.monetdb.jdbc.types.URL'" +
 				" WHEN 'uuid' THEN 'java.lang.String'" +
 				" ELSE 'java.lang.Object' END AS \"CLASS_NAME\", " +
 			"cast(CASE WHEN t.\"sqlname\" IN ('inet', 'json', 'url', 'uuid') THEN ").append(Types.JAVA_OBJECT)
