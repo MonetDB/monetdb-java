@@ -22,79 +22,16 @@ import java.sql.Types;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 0.8
+ * @version 0.9
  */
 public class MonetDatabaseMetaData
 	extends MonetWrapper
 	implements DatabaseMetaData
 {
-	private final Connection con;
+	private final MonetConnection con;
 
-	// Internal cache for 3 server environment values
-	private String env_current_user;
-	private String env_monet_version;
-	private String env_max_clients;
-
-	public MonetDatabaseMetaData(final Connection parent) {
+	public MonetDatabaseMetaData(final MonetConnection parent) {
 		con = parent;
-	}
-
-	/**
-	 * Utility method to fetch some server environment values combined in one query for efficiency.
-	 * We currently fetch the env values of: current_user, monet_version and max_clients.
-	 * We cache them locally such that we do not need to query the server again and again.
-	 */
-	private synchronized void getEnvValues() throws SQLException {
-		Statement st = null;
-		ResultSet rs = null;
-		try {
-			st = con.createStatement();
-			rs = st.executeQuery(
-				"SELECT \"name\", \"value\" FROM \"sys\".\"env\"()" +
-				" WHERE \"name\" IN ('monet_version', 'max_clients')" +
-				" UNION SELECT 'current_user' as \"name\", current_user as \"value\"");
-			if (rs != null) {
-				while (rs.next()) {
-					String prop = rs.getString("name");
-					String value = rs.getString("value");
-					if ("current_user".equals(prop)) {
-						env_current_user = value;
-					} else
-					if ("monet_version".equals(prop)) {
-						env_monet_version = value;
-					} else
-					if ("max_clients".equals(prop)) {
-						env_max_clients = value;
-					}
-				}
-			}
-		/* do not catch SQLException here, as we want to know it when it fails */
-		} finally {
-			MonetConnection.closeResultsetStatement(rs, st);
-		}
-// for debug: System.out.println("Read: env_current_user: " + env_current_user + "  env_monet_version: " + env_monet_version + "  env_max_clients: " + env_max_clients);
-	}
-
-	/**
-	 * Internal utility method to create a Statement object, execute a query and return the ResulSet object which allows scrolling.
-	 * As the Statement object is created internally (the caller does not see it and thus can not close it),
-	 * we set it to close (and free server resources) when the ResultSet object is closed by the caller.
-	 */
-	private ResultSet executeMetaDataQuery(final String query) throws SQLException {
-		final Statement stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
-		ResultSet rs = null;
-		if (stmt != null) {
-// for debug: System.out.println("SQL (len " + query.length() + "): " + query);
-			rs = stmt.executeQuery(query);
-			if (rs != null) {
-				/* we want the statement object to be closed also when the resultset is closed by the caller */
-				stmt.closeOnCompletion();
-			} else {
-				/* failed to produce a resultset, so release resources for created statement object now */
-				stmt.close();
-			}
-		}
-		return rs;
 	}
 
 	/**
@@ -129,7 +66,7 @@ public class MonetDatabaseMetaData
 	 */
 	@Override
 	public String getURL() throws SQLException {
-		return ((MonetConnection)con).getJDBCURL();
+		return con.getJDBCURL();
 	}
 
 	/**
@@ -140,9 +77,7 @@ public class MonetDatabaseMetaData
 	 */
 	@Override
 	public String getUserName() throws SQLException {
-		if (env_current_user == null)
-			getEnvValues();
-		return env_current_user;
+		return con.getUserName();
 	}
 
 	/**
@@ -223,12 +158,7 @@ public class MonetDatabaseMetaData
 	 */
 	@Override
 	public String getDatabaseProductVersion() throws SQLException {
-		if (env_monet_version == null)
-			getEnvValues();
-		if (env_monet_version != null)
-			return env_monet_version;
-		// always return a valid String to prevent NPE in getTables() and getTableTypes()
-		return "";
+		return con.getDatabaseProductVersion();
 	}
 
 	/**
@@ -1418,28 +1348,13 @@ public class MonetDatabaseMetaData
 	}
 
 	/**
-	 * How many active connections can we have at a time to this
-	 * database?  Well, since it depends on Mserver, which just listens
-	 * for new connections and creates a new thread for each connection,
-	 * this number can be very high, and theoretically till the system
-	 * runs out of resources. However, knowing MonetDB is knowing that you
-	 * should handle it a little bit with care, so I give a very minimalistic
-	 * number here.
+	 * Retrieves the maximum number of concurrent connections to this database that are possible.
 	 *
-	 * @return the maximum number of connections
+	 * @return the maximum number of active connections possible at one time; a result of zero means that there is no limit or the limit is not known
 	 */
 	@Override
 	public int getMaxConnections() throws SQLException {
-		if (env_max_clients == null)
-			getEnvValues();
-
-		int max_clients = 16;
-		if (env_max_clients != null) {
-			try {
-				max_clients = Integer.parseInt(env_max_clients);
-			} catch (NumberFormatException nfe) { /* ignore */ }
-		}
-		return max_clients;
+		return con.getMaxConnections();
 	}
 
 	/**
@@ -1713,7 +1628,7 @@ public class MonetDatabaseMetaData
 		final String procedureNamePattern
 	) throws SQLException
 	{
-		final boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
+		final boolean useCommentsTable = con.commentsTableExists();
 		final StringBuilder query = new StringBuilder(980);
 		query.append("SELECT cast(null as char(1)) AS \"PROCEDURE_CAT\", " +
 			"s.\"name\" AS \"PROCEDURE_SCHEM\", " +
@@ -1928,7 +1843,7 @@ public class MonetDatabaseMetaData
 		final boolean preJul2015 = ("11.19.15".compareTo(getDatabaseProductVersion()) >= 0);
 		// for debug: System.out.println("getDatabaseProductVersion() is " + getDatabaseProductVersion() + "  preJul2015 is " + preJul2015);
 
-		final boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
+		final boolean useCommentsTable = con.commentsTableExists();
 		final StringBuilder query = new StringBuilder(1600);
 		if (preJul2015 && types != null && types.length > 0) {
 			// we need to filter on the constructed "TABLE_TYPE" expression, this is only possible when we use a subquery in the FROM
@@ -2177,7 +2092,7 @@ public class MonetDatabaseMetaData
 		final String columnNamePattern
 	) throws SQLException
 	{
-		final boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
+		final boolean useCommentsTable = con.commentsTableExists();
 		final StringBuilder query = new StringBuilder(2450);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"s.\"name\" AS \"TABLE_SCHEM\", " +
@@ -2274,7 +2189,7 @@ public class MonetDatabaseMetaData
 		final String columnNamePattern
 	) throws SQLException
 	{
-		final boolean usePrivilege_codesTable = ((MonetConnection)con).privilege_codesTableExists();
+		final boolean usePrivilege_codesTable = con.privilege_codesTableExists();
 		final StringBuilder query = new StringBuilder(1100);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"s.\"name\" AS \"TABLE_SCHEM\", " +
@@ -2365,7 +2280,7 @@ public class MonetDatabaseMetaData
 		final String tableNamePattern
 	) throws SQLException
 	{
-		final boolean usePrivilege_codesTable = ((MonetConnection)con).privilege_codesTableExists();
+		final boolean usePrivilege_codesTable = con.privilege_codesTableExists();
 		final StringBuilder query = new StringBuilder(1000);
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"s.\"name\" AS \"TABLE_SCHEM\", " +
@@ -3619,18 +3534,7 @@ public class MonetDatabaseMetaData
 	 */
 	@Override
 	public int getDatabaseMajorVersion() throws SQLException {
-		if (env_monet_version == null)
-			getEnvValues();
-		int major = 0;
-		if (env_monet_version != null) {
-			try {
-				int start = env_monet_version.indexOf('.');
-				major = Integer.parseInt((start >= 0) ? env_monet_version.substring(0, start) : env_monet_version);
-			} catch (NumberFormatException e) {
-				// ignore
-			}
-		}
-		return major;
+		return con.getDatabaseMajorVersion();
 	}
 
 	/**
@@ -3641,22 +3545,7 @@ public class MonetDatabaseMetaData
 	 */
 	@Override
 	public int getDatabaseMinorVersion() throws SQLException {
-		if (env_monet_version == null)
-			getEnvValues();
-		int minor = 0;
-		if (env_monet_version != null) {
-			try {
-				int start = env_monet_version.indexOf('.');
-				if (start >= 0) {
-					start++;
-					int end = env_monet_version.indexOf('.', start);
-					minor = Integer.parseInt((end > 0) ? env_monet_version.substring(start, end) : env_monet_version.substring(start));
-				}
-			} catch (NumberFormatException e) {
-				// ignore
-			}
-		}
-		return minor;
+		return con.getDatabaseMinorVersion();
 	}
 
 	/**
@@ -3868,7 +3757,7 @@ public class MonetDatabaseMetaData
 		final String functionNamePattern
 	) throws SQLException
 	{
-		final boolean useCommentsTable = ((MonetConnection)con).commentsTableExists();
+		final boolean useCommentsTable = con.commentsTableExists();
 		final StringBuilder query = new StringBuilder(800);
 		query.append("SELECT cast(null as char(1)) AS \"FUNCTION_CAT\", " +
 			"s.\"name\" AS \"FUNCTION_SCHEM\", " +
@@ -4138,7 +4027,29 @@ public class MonetDatabaseMetaData
 	//== end methods interface DatabaseMetaData
 
 
-	//== this is a helper method which does not belong to the interface
+	//== internal helper methods which do not belong to the JDBC interface
+
+	/**
+	 * Internal utility method to create a Statement object, execute a query and return the ResulSet object which allows scrolling.
+	 * As the Statement object is created internally (the caller does not see it and thus can not close it),
+	 * we set it to close (and free server resources) when the ResultSet object is closed by the caller.
+	 */
+	private ResultSet executeMetaDataQuery(final String query) throws SQLException {
+		final Statement stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+		ResultSet rs = null;
+		if (stmt != null) {
+// for debug: System.out.println("SQL (len " + query.length() + "): " + query);
+			rs = stmt.executeQuery(query);
+			if (rs != null) {
+				/* we want the statement object to be closed also when the resultset is closed by the caller */
+				stmt.closeOnCompletion();
+			} else {
+				/* failed to produce a resultset, so release resources for created statement object now */
+				stmt.close();
+			}
+		}
+		return rs;
+	}
 
 	/**
 	 * Returns a SQL match part string where depending on the input value we

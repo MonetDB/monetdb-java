@@ -64,7 +64,7 @@ import nl.cwi.monetdb.mcl.parser.StartOfHeaderParser;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 1.4
+ * @version 1.5
  */
 public class MonetConnection
 	extends MonetWrapper
@@ -121,7 +121,8 @@ public class MonetConnection
 	private int curReplySize = -1;	// the server by default uses -1 (all)
 
 	/** A template to apply to each query (like pre and post fixes), filled in constructor */
-	public final String[] queryTempl = new String[3]; // pre, post, sep
+	// note: it is made public to the package as it is used from MonetStatement
+	final String[] queryTempl = new String[3]; // pre, post, sep
 
 	/** A template to apply to each command (like pre and post fixes), filled in constructor */
 	private final String[] commandTempl = new String[3]; // pre, post, sep
@@ -139,14 +140,6 @@ public class MonetConnection
 	private boolean treatBlobAsVarBinary = false;
 	/** Whether or not CLOB is mapped to Types.VARCHAR instead of Types.CLOB within this connection */
 	private boolean treatClobAsVarChar = false;
-
-	// Internal cache for determining if system table sys.privilege_codes (new as of Jul2017 release) exists on server
-	private boolean queriedPrivilege_codesTable = false;
-	private boolean hasPrivilege_codesTable = false;
-
-	// Internal cache for determining if system table sys.comments (new as of Mar2018 release) exists on server
-	private boolean queriedCommentsTable = false;
-	private boolean hasCommentsTable = false;
 
 	/** The last set query timeout on the server as used by Statement, PreparedStatement and CallableStatement */
 	protected int lastSetQueryTimeout = 0;	// 0 means no timeout, which is the default on the server
@@ -326,18 +319,18 @@ public class MonetConnection
 			queryTempl[2] = "\n;\n";	// separator
 
 			commandTempl[0] = "X";		// pre
-			commandTempl[1] = null;		// post
+			commandTempl[1] = "";		// post
 			commandTempl[2] = "\nX";	// separator
 		} else if ("mal".equals(language)) {
 			lang = LANG_MAL;
 
-			queryTempl[0] = null;
-			queryTempl[1] = ";\n";
-			queryTempl[2] = ";\n";
+			queryTempl[0] = "";		// pre
+			queryTempl[1] = ";\n";		// post
+			queryTempl[2] = ";\n";		// separator
 
-			commandTempl[0] = null;		// pre
-			commandTempl[1] = null;		// post
-			commandTempl[2] = null;		// separator
+			commandTempl[0] = "";		// pre
+			commandTempl[1] = "";		// post
+			commandTempl[2] = "";		// separator
 		} else {
 			lang = LANG_UNKNOWN;
 		}
@@ -1628,22 +1621,14 @@ public class MonetConnection
 		}
 	}
 
-
 	//== end methods of interface java.sql.Connection
 
-
-	/**
-	 * @return the MonetDB JDBC Connection URL (without user name and password).
-	 * Defined as public because it is called from: MonetDatabaseMetaData.java getURL()
-	 */
-	String getJDBCURL() {
-		return MonetDriver.MONETURL + hostname + ":" + port + "/" + database + (lang == LANG_MAL ? "?language=mal" : "");
-	}
 
 	/**
 	 * @return whether the JDBC BLOB type should be mapped to VARBINARY type.
 	 * This allows generic JDBC programs to fetch Blob data via getBytes()
 	 * instead of getBlob() and Blob.getBinaryStream() to reduce overhead.
+	 * It is called from: MonetResultSet and MonetPreparedStatement
 	 */
 	boolean mapBlobAsVarBinary() {
 		return treatBlobAsVarBinary;
@@ -1653,27 +1638,158 @@ public class MonetConnection
 	 * @return whether the JDBC CLOB type should be mapped to VARCHAR type.
 	 * This allows generic JDBC programs to fetch Clob data via getString()
 	 * instead of getClob() and Clob.getCharacterStream() to reduce overhead.
+	 * It is called from: MonetResultSet and MonetPreparedStatement
 	 */
 	boolean mapClobAsVarChar() {
 		return treatClobAsVarChar;
 	}
 
 	/**
-	 * Internal utility method to query the server to find out if it has
-	 * the system table sys.comments (which is new as of Mar2018 release).
-	 * The result is cached and reused, so that we only test the query once per connection.
-	 * This method is used by methods from MonetDatabaseMetaData.
+	 * @return the MonetDB JDBC Connection URL (without user name and password).
+	 * It is called from: getURL()in MonetDatabaseMetaData
 	 */
-	boolean commentsTableExists() {
-		if (!queriedCommentsTable) {
-			hasCommentsTable = existsSysTable("comments");
-			queriedCommentsTable = true;	// set flag, so the querying is done only at first invocation.
+	String getJDBCURL() {
+		final StringBuilder sb = new StringBuilder(128);
+		sb.append(MonetDriver.MONETURL).append(hostname)
+			.append(':').append(port)
+			.append('/').append(database);
+		if (lang == LANG_MAL)
+			sb.append("?language=mal");
+		return sb.toString();
+	}
+
+	// Internal cache for 3 static mserver environment values, so they aren't queried from mserver again and again
+	private String env_current_user = null;
+	private String env_monet_version = null;
+	private String env_max_clients = null;
+
+	/**
+	 * Utility method to fetch 3 mserver environment values combined in one query for efficiency.
+	 * We currently fetch the env values of: current_user, monet_version and max_clients.
+	 * We cache them such that we do not need to query the server again and again.
+	 */
+	private synchronized void getEnvValues() throws SQLException {
+		Statement st = null;
+		ResultSet rs = null;
+		try {
+			st = createStatement();
+			if (st != null) {
+				rs = st.executeQuery(
+					"SELECT \"name\", \"value\" FROM \"sys\".\"env\"()" +
+					" WHERE \"name\" IN ('monet_version', 'max_clients')" +
+					" UNION SELECT 'current_user' as \"name\", current_user as \"value\"");
+				if (rs != null) {
+					while (rs.next()) {
+						final String prop = rs.getString(1);
+						final String value = rs.getString(2);
+						if ("current_user".equals(prop)) {
+							env_current_user = value;
+						} else
+						if ("monet_version".equals(prop)) {
+							env_monet_version = value;
+						} else
+						if ("max_clients".equals(prop)) {
+							env_max_clients = value;
+						}
+					}
+				}
+			}
+		/* do not catch SQLException here, as we need to know it when it fails */
+		} finally {
+			closeResultsetStatement(rs, st);
 		}
-		return hasCommentsTable;
+		// for debug: System.out.println("Read: env_current_user: " + env_current_user + "  env_monet_version: " + env_monet_version + "  env_max_clients: " + env_max_clients);
 	}
 
 	/**
-	 * Internal utility method to query the server to find out if it has
+	 * @return the current User Name.
+	 * It is called from: MonetDatabaseMetaData
+	 */
+	String getUserName() throws SQLException {
+		if (env_current_user == null)
+			getEnvValues();
+		return env_current_user;
+	}
+
+	/**
+	 * @return the MonetDB Database Server version string.
+	 * It is called from: MonetDatabaseMetaData
+	 */
+	String getDatabaseProductVersion() throws SQLException {
+		if (env_monet_version == null)
+			getEnvValues();
+		// always return a valid String to prevent NPE in getTables() and getTableTypes()
+		if (env_monet_version != null)
+			return env_monet_version;
+		return "";
+	}
+
+	/**
+	 * @return the MonetDB Database Server major version number.
+	 * It is called from: MonetDatabaseMetaData
+	 */
+	int getDatabaseMajorVersion() throws SQLException {
+		if (env_monet_version == null)
+			getEnvValues();
+		if (env_monet_version != null) {
+			try {
+				// from version string such as 11.33.9 extract number: 11
+				final int start = env_monet_version.indexOf('.');
+				return Integer.parseInt((start >= 0) ? env_monet_version.substring(0, start) : env_monet_version);
+			} catch (NumberFormatException nfe) {
+				// ignore
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * @return the MonetDB Database Server minor version number.
+	 * It is called from: MonetDatabaseMetaData
+	 */
+	int getDatabaseMinorVersion() throws SQLException {
+		if (env_monet_version == null)
+			getEnvValues();
+		if (env_monet_version != null) {
+			try {
+				// from version string such as 11.33.9 extract number: 33
+				int start = env_monet_version.indexOf('.');
+				if (start >= 0) {
+					start++;
+					final int end = env_monet_version.indexOf('.', start);
+					return Integer.parseInt((end > 0) ? env_monet_version.substring(start, end) : env_monet_version.substring(start));
+				}
+			} catch (NumberFormatException nfe) {
+				// ignore
+			}
+		}
+		return 0;
+	}
+
+	/**
+	 * @return the maximum number of active connections possible at one time;
+	 * a result of zero means that there is no limit or the limit is not known
+	 * It is called from: MonetDatabaseMetaData
+	 */
+	int getMaxConnections() throws SQLException {
+		if (env_max_clients == null)
+			getEnvValues();
+		if (env_max_clients != null) {
+			try {
+				return Integer.parseInt(env_max_clients);
+			} catch (NumberFormatException nfe) {
+				/* ignore */
+			}
+		}
+		return 0;
+	}
+
+
+	// Internal cache for determining if system table sys.privilege_codes (new as of Jul2017 release) exists on connected server
+	private boolean queriedPrivilege_codesTable = false;
+	private boolean hasPrivilege_codesTable = false;
+	/**
+	 * Utility method to query the server to find out if it has
 	 * the system table sys.privilege_codes (which is new as of Jul2017 release).
 	 * The result is cached and reused, so that we only test the query once per connection.
 	 * This method is used by methods from MonetDatabaseMetaData.
@@ -1686,8 +1802,26 @@ public class MonetConnection
 		return hasPrivilege_codesTable;
 	}
 
+	// Internal cache for determining if system table sys.comments (new as of Mar2018 release) exists on connected server
+	private boolean queriedCommentsTable = false;
+	private boolean hasCommentsTable = false;
 	/**
-	 * Internal utility method to query the server to find out if it has the system table sys.<tablename>.
+	 * Utility method to query the server to find out if it has
+	 * the system table sys.comments (which is new as of Mar2018 release).
+	 * The result is cached and reused, so that we only test the query once per connection.
+	 * This method is used by methods from MonetDatabaseMetaData.
+	 */
+	boolean commentsTableExists() {
+		if (!queriedCommentsTable) {
+			hasCommentsTable = existsSysTable("comments");
+			queriedCommentsTable = true;	// set flag, so the querying is done only at first invocation.
+		}
+		return hasCommentsTable;
+	}
+
+
+	/**
+	 * Internal utility method to query the server to find out if it has a specific system table sys.<tablename>.
 	 */
 	private boolean existsSysTable(final String tablename) {
 		boolean exists = false;
@@ -1708,7 +1842,7 @@ public class MonetConnection
 		} finally {
 			closeResultsetStatement(rs, stmt);
 		}
-// for debug: System.out.println("testTableExists(" + tablename + ") returns: " + exists);
+		// for debug: System.out.println("testTableExists(" + tablename + ") returns: " + exists);
 		return exists;
 	}
 
@@ -1780,20 +1914,17 @@ public class MonetConnection
 	/**
 	 * Sends the given string to MonetDB as command/query using commandTempl or queryTempl
 	 * Making sure there is a prompt after the command is sent.  All possible
-	 * returned information is discarded.  Encountered errors are reported.
+	 * returned information is discarded. Encountered errors are reported.
 	 *
 	 * @param command the exact string to send to MonetDB
-	 * @param usequeryTempl send the command using a queryTempl? else it is send using commandTempl
+	 * @param usequeryTempl send the command using queryTempl or else using commandTempl
 	 * @throws SQLException if an IO exception or a database error occurs
 	 */
 	private void sendCommand(final String command, final boolean usequeryTempl) throws SQLException {
-		final String cmd = usequeryTempl
-			? (queryTempl[0] == null ? "" : queryTempl[0]) + command + (queryTempl[1] == null ? "" : queryTempl[1])
-			: (commandTempl[0] == null ? "" : commandTempl[0]) + command + (commandTempl[1] == null ? "" : commandTempl[1]);
-
 		synchronized (server) {
 			try {
-				out.writeLine(cmd);
+				out.writeLine(usequeryTempl ? (queryTempl[0] + command + queryTempl[1])
+							: (commandTempl[0] + command + commandTempl[1]) );
 				final String error = in.waitForPrompt();
 				if (error != null)
 					throw new SQLException(error.substring(6), error.substring(0, 5));
