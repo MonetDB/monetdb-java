@@ -1,6 +1,15 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Sep 26 2019 Sjoerd Mullender <sjoerd@acm.org>
+- Compiled and released new jar files: monetdb-jdbc-2.29.jre7.jar,
+  monetdb-mcl-1.18.jre7.jar and jdbcclient.jre7.jar
+
+* Wed Sep 25 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- The jar files are now named according to Java version compatibility.
+  For example, the monetdb-jdbc-2.29.jre7.jar file should be used with
+  Java 7 or higher.
+
 * Wed Sep 18 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected method DatabaseMetaData.getBestRowIdentifier(). It used to
   return columns of both primary key and unique constraints. Now it only
@@ -12,9 +21,6 @@
   and replacing method calls by direct operations on variables.
 
 * Wed Sep  4 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- The jar files are now named according to Java version compatibility.
-  For example, the monetdb-jdbc-2.29.jre7.jar file should be used with
-  Java 7 (or higher).
 - Corrected JdbcClient program: the dumping of a view DDL was incorrect when
   the view creation statement was not starting with "create view ", such as
   when it was created using "create or replace view". It now shows the
