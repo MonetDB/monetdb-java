@@ -35,7 +35,7 @@
 
 * Wed Aug 14 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved MonetDatabaseMetaData methods:
-  - getNumericFunctions(): it now includes functions: code, space and sys.alpha
+  - getNumericFunctions(): it now includes function: sys.alpha
   - getNumericFunctions(): it no longer lists functions: not_uniques and rotate_xor_hash
   - getStringFunctions(): it now includes functions: json.isarray, json.isobject,
       json.isvalid, sys.reverse which accept a string value as argument

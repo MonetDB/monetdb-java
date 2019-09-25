@@ -405,9 +405,9 @@ public class MonetDatabaseMetaData
 	public String getNumericFunctions() {
 		final String match =
 			"('tinyint','smallint','int','bigint','hugeint','decimal','double','real'))" +
-			" AND \"type\" = 1" +	// only scalar functions, note that code(int) and space(int) will also be listed as string functions
-			// exclude functions which do not work
-			" AND f.\"name\" NOT IN ('not_uniques','rotate_xor_hash'))" +
+			" AND \"type\" = 1" +	// only scalar functions
+			// exclude functions which do not work or belong to string functions (code(int) and space(int))
+			" AND f.\"name\" NOT IN ('code','not_uniques','rotate_xor_hash','space'))" +
 			// include specific functions which have no 1st arg (pi()) or it is not numeric
 			" OR f.\"name\" IN ('alpha','degrees','fuse','ms_round','ms_str','ms_trunc','pi','radians')";
 		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + FunctionsOrderBy1);
