@@ -121,11 +121,11 @@ public class MonetConnection
 	private int curReplySize = -1;	// the server by default uses -1 (all)
 
 	/** A template to apply to each query (like pre and post fixes), filled in constructor */
-	// note: it is made public to the package as queryTempl[2] is used from MonetStatement
+	// note: it is made public to the package as it is used from MonetStatement
 	final String[] queryTempl = new String[3]; // pre, post, sep
 
 	/** A template to apply to each command (like pre and post fixes), filled in constructor */
-	private final String[] commandTempl = new String[2]; // pre, post
+	private final String[] commandTempl = new String[3]; // pre, post, sep
 
 	/** the SQL language */
 	private static final int LANG_SQL = 0;
@@ -320,7 +320,7 @@ public class MonetConnection
 
 			commandTempl[0] = "X";		// pre
 			commandTempl[1] = "";		// post
-			//commandTempl[2] = "\nX";	// separator
+			commandTempl[2] = "\nX";	// separator
 		} else if ("mal".equals(language)) {
 			lang = LANG_MAL;
 
@@ -330,7 +330,7 @@ public class MonetConnection
 
 			commandTempl[0] = "";		// pre
 			commandTempl[1] = "";		// post
-			//commandTempl[2] = "";		// separator
+			commandTempl[2] = "";		// separator
 		} else {
 			lang = LANG_UNKNOWN;
 		}
