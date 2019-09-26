@@ -2,9 +2,24 @@
 # This file contains all past monetdb-java ChangeLog entries
 # For every new release the ChangeLog is prepended to this file.
 
-* Thu Sep 26 2019 Sjoerd Mullender <sjoerd@acm.org>
+* Thu Sep 26 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Compiled and released new jar files: monetdb-jdbc-2.29.jre7.jar,
   monetdb-mcl-1.18.jre7.jar and jdbcclient.jre7.jar
+- Following issues are resolved with this new MonetDB JDBC driver release:
+  - JDBC: Support for Connection.prepareCall()
+    See https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402
+    We implemented the java.sql.CallableStatement interface.
+  - Jdbc connection hangs
+    See https://www.monetdb.org/bugzilla/show_bug.cgi?id=6571
+  - Mix of long and short queries make JDBC-driver hang
+    See https://www.monetdb.org/bugzilla/show_bug.cgi?id=6693
+  - Example SQLcopyinto.java does not work
+    See https://www.monetdb.org/bugzilla/show_bug.cgi?id=6646
+  Also improvements are made in:
+  - reducing the number of objects created (and thereby heap memory size)
+  - reducing number of methods called
+  - robustness, more checks on invalid parameter values
+  - performance
 
 * Wed Sep 25 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - The jar files are now named according to Java version compatibility.
