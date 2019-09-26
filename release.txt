@@ -1,6 +1,6 @@
 RELEASE NOTES
-MonetDB JDBC driver version 2.28 (Liberica/MCL-1.17)
-Release date: 2018-05-24
+MonetDB JDBC driver version 2.29 (Liberica/MCL-1.18)
+Release date: 2019-09-26
 
 This JDBC driver is designed for use with MonetDB, a main-memory column-store RDBMS.
 For more information see https://www.monetdb.org/
