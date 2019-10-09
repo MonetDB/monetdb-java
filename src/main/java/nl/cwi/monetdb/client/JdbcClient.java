@@ -53,6 +53,64 @@ public final class JdbcClient {
 	private static PrintWriter out;
 	private static Exporter exporter;
 
+	/**
+	 * JdbcClient is a command line query tool for MonetDB, similar to mclient.
+	 * It uses the JDBC API and the MonetDB JDBC driver to communicate with a
+	 * MonetDB server. The MonetDB JDBC driver is included in the jdbcclient.jre7.jar
+	 * for ease of use, so only 1 jar file is needed to use it.
+	 *
+	 * <pre>Usage java -jar jdbcclient.jre7.jar
+	 *		[-h host[:port]] [-p port] [-f file] [-u user]
+	 *		[-l language] [-d database] [-e] [-D [table]]
+	 *		[-X&lt;opt&gt;]
+	 * or using long option equivalents --host --port --file --user --language
+	 * --dump --echo --database.
+	 * Arguments may be written directly after the option like -p50000.
+	 *
+	 * If no host and port are given, localhost and 50000 are assumed.
+	 * An .monetdb file may exist in the user's home directory.  This file can contain
+	 * preferences to use each time JdbcClient is started.  Options given on the
+	 * command line override the preferences file.  The .monetdb file syntax is
+	 * &lt;option&gt;=&lt;value&gt; where option is one of the options host, port, file, mode
+	 * debug, or password.  Note that the last one is perilous and therefore not
+	 * available as command line option.
+	 * If no input file is given using the -f flag, an interactive session is
+	 * started on the terminal.
+	 *
+	 * OPTIONS
+	 * -h --host     The hostname of the host that runs the MonetDB database.  A port
+	 *               number can be supplied by use of a colon, i.e. -h somehost:12345.
+	 * -p --port     The port number to connect to.
+	 * -f --file     A file name to use either for reading or writing.  The file will
+	 *               be used for writing when dump mode is used (-D --dump).  In read
+	 *               mode, the file can also be an URL pointing to a plain text file
+	 *               that is optionally gzip compressed.
+	 * -u --user     The username to use when connecting to the database.
+	 * -d --database Try to connect to the given database (only makes sense if
+	 *               connecting to monetdbd).
+	 * -l --language Use the given language, defaults to 'sql'.
+	 * --help        This help screen.
+	 * --version     Display driver version and exit.
+	 * -e --echo     Also outputs the contents of the input file, if any.
+	 * -q --quiet    Suppress printing the welcome header.
+	 * -D --dump     Dumps the given table(s), or the complete database if none given.
+	 * -Xoutput      The output mode when dumping.  Default is sql, xml may be used for
+	 *               an experimental XML output.
+	 * -Xhash        Use the given hash algorithm during challenge response.  Supported
+	 *               algorithm names: SHA1, MD5, plain.
+	 * -Xdebug       Writes a transmission log to disk for debugging purposes.  If a
+	 *               file name is given, it is used, otherwise a file called
+	 *               monet&lt;timestamp&gt;.log is created.  A given file never be
+	 *               overwritten; instead a unique variation of the file is used.
+	 * -Xbatching    Indicates that a batch should be used instead of direct
+	 *               communication with the server for each statement.  If a number is
+	 *               given, it is used as batch size.  i.e. 8000 would execute the
+	 *               contents on the batch after each 8000 statements read.  Batching
+	 *               can greatly speedup the process of restoring a database dump.</pre>
+	 *
+	 * @param args optional list of startup arguments
+	 * @throws Exception if uncaught exception is thrown
+	 */
 	public final static void main(String[] args) throws Exception {
 		final CmdLineOpts copts = new CmdLineOpts();
 
@@ -277,7 +335,7 @@ public final class JdbcClient {
 		stmt = con.createStatement();	// is used by doDump
 
 		// see if we will have to perform a database dump (only in SQL mode)
-		if ("sql".equals(lang) && copts.getOption("dump").isPresent()) {
+		if ("sql".equals(lang) && copts.getOption("dump").isPresent() && dbmd != null) {
 			// use the given file for writing
 			oc = copts.getOption("file");
 			if (oc.isPresent())
@@ -535,7 +593,7 @@ public final class JdbcClient {
 	 * @throws IOException if an IO exception occurs
 	 * @throws SQLException if a database related error occurs
 	 */
-	public static void processInteractive(
+	private static void processInteractive(
 		final boolean hasFile,
 		final boolean doEcho,
 		final boolean scolonterm,
@@ -896,7 +954,7 @@ public final class JdbcClient {
 	 *		sending them to the database for execution.
 	 * @throws IOException if an IO exception occurs.
 	 */
-	public static void processBatch(final int batchSize) throws IOException {
+	private static void processBatch(final int batchSize) throws IOException {
 		final StringBuilder query = new StringBuilder(2048);
 		int i = 0;
 		try {
@@ -936,7 +994,7 @@ public final class JdbcClient {
 	 * @param table the table to dump
 	 * @throws SQLException if a database related error occurs
 	 */
-	public static void doDump(final PrintWriter out, final Table table) throws SQLException {
+	private static void doDump(final PrintWriter out, final Table table) throws SQLException {
 		final String tableType = table.getType();
 
 		// dump CREATE definition of this table/view
@@ -1086,7 +1144,7 @@ public final class JdbcClient {
 		}
 	}
 
-	public static final String dq(final String in) {
+	static final String dq(final String in) {
 		return "\"" + in.replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"";
 	}
 }
@@ -1101,25 +1159,25 @@ final class QueryPart {
 	private final String query;
 	private final boolean open;
 
-	public QueryPart(final boolean complete, final String query, final boolean open) {
+	QueryPart(final boolean complete, final String query, final boolean open) {
 		this.complete = complete;
 		this.query = query;
 		this.open = open;
 	}
 
-	public boolean isEmpty() {
+	boolean isEmpty() {
 		return query == null;
 	}
 
-	public boolean isComplete() {
+	boolean isComplete() {
 		return complete;
 	}
 
-	public String getQuery() {
+	String getQuery() {
 		return query;
 	}
 
-	public boolean hasOpenQuote() {
+	boolean hasOpenQuote() {
 		return open;
 	}
 }
@@ -1131,7 +1189,7 @@ final class QueryPart {
 final class SQLStack {
 	final StringBuilder stack = new StringBuilder();
 
-	public char peek() {
+	char peek() {
 		if (empty()) {
 			return '\0';
 		} else {
@@ -1139,7 +1197,7 @@ final class SQLStack {
 		}
 	}
 
-	public char pop() {
+	char pop() {
 		final char tmp = peek();
 		if (tmp != '\0') {
 			stack.setLength(stack.length() - 1);
@@ -1147,12 +1205,12 @@ final class SQLStack {
 		return tmp;
 	}
 
-	public char push(char item) {
+	char push(char item) {
 		stack.append(item);
 		return item;
 	}
 
-	public boolean empty() {
+	boolean empty() {
 		return stack.length() == 0;
 	}
 }
