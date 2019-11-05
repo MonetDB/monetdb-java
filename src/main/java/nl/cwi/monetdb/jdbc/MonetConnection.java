@@ -1297,10 +1297,11 @@ public class MonetConnection
 		Statement stmt = null;
 		ResultSet rs = null;
 		boolean isValid = false;
+		int original_timeout = 0;
 		try {
 			stmt = createStatement();
 			if (stmt != null) {
-				final int original_timeout = stmt.getQueryTimeout();
+				original_timeout = stmt.getQueryTimeout();
 				if (timeout > 0 && original_timeout != timeout) {
 					// we need to change the requested timeout for this test query
 					stmt.setQueryTimeout(timeout);
@@ -1308,10 +1309,6 @@ public class MonetConnection
 				rs = stmt.executeQuery("SELECT 1");
 				if (rs != null && rs.next()) {
 					isValid = true;
-				}
-				if (timeout > 0 && original_timeout != timeout) {
-					// restore the original server timeout value
-					stmt.setQueryTimeout(original_timeout);
 				}
 			}
 		} catch (SQLException se) {
@@ -1325,6 +1322,24 @@ public class MonetConnection
 			}
 			/* ignore stmt errors/exceptions, we are only testing if the connection is still alive and usable */
 		} finally {
+			/* restore the original server timeout value, whenever an Exception has occurred or not */
+			if (timeout > 0 && original_timeout != timeout) {
+				Statement stmt2 = null;
+				this.lastSetQueryTimeout = original_timeout;
+				try {
+					/* we have to set in the server explicitly, because the test 'queryTimeout != connection.lastSetQueryTimeout' 
+					   on 'internalExecute' won't pass and the server won't be set back */
+					stmt2 = this.createStatement();
+					stmt2.execute("CALL \"sys\".\"settimeout\"(" + this.lastSetQueryTimeout + ")");
+				} catch (SQLException se) {
+					String msg = se.getMessage();
+					if (msg != null && msg.equalsIgnoreCase("Current transaction is aborted (please ROLLBACK)")) {
+						isValid = true;
+					}
+				} finally {
+					closeResultsetStatement(null, stmt2);
+				}
+			}
 			closeResultsetStatement(rs, stmt);
 		}
 		return isValid;
