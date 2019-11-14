@@ -2,7 +2,7 @@ RELEASE NOTES
 MonetDB JDBC driver version 2.29 (Liberica/MCL-1.18)
 Release date: 2019-09-26
 
-This JDBC driver is designed for use with MonetDB, a main-memory column-store RDBMS.
+This JDBC driver is designed for use with MonetDB, an Open-Source column-store RDBMS.
 For more information see https://www.monetdb.org/
 
 The MonetDB JDBC connection URL format to use is:
@@ -15,23 +15,24 @@ Note: For a successful connection the database name part must be provided
 Supported connection properties are:
 	user=<login name>
 	password=<secret value>
-	so_timeout=<time in milliseconds>
-	hash=<SHA512, SHA384, SHA256, SHA1 and MD5>
-	language=<sql or mal>		default is: sql
-	treat_blob_as_binary=true	default is: false
-	treat_clob_as_varchar=true	default is: false
-	debug=true			default is: false
+	so_timeout=<time in milliseconds>  default is: 0 (no timeout)
+	treat_blob_as_binary=true	   default is: false
+	treat_clob_as_varchar=true	   default is: false
+	language=<sql or mal>		   default is: sql
+	debug=true			   default is: false
 	logfile=<name of logfile>
+	hash=<SHA512, SHA384, SHA256, SHA1 and MD5>
+
+We recommend to set following connection properties:
+	so_timeout=20000
+	treat_clob_as_varchar=true
+	treat_blob_as_binary=true
 
 Multiple connection properties are separated by the & character.
 For example:
-  jdbc:monetdb://localhost:41000/mydb?user=monetdb&password=monetdb&so_timeout=7000&treat_clob_as_varchar=true
+  jdbc:monetdb://localhost:41000/mydb?user=monetdb&password=onlyiknow&so_timeout=18000&treat_clob_as_varchar=true&treat_blob_as_binary=true
 
 See also: https://www.monetdb.org/Documentation/Manuals/SQLreference/Programming/JDBC
-
-Note: as of Jul2015 release (monetdb-jdbc-2.17.jar) we compile all
- the java sources to target: Java 1.7 so you need a JRE/JDK JVM
- of version 1.7 or higher to use it.
 
 
 JDBC COMPLIANCE
@@ -50,7 +51,6 @@ If you feel some features are missing or have encountered an issue/bug,
 please let us know at our bugtracker:
   https://www.monetdb.org/bugzilla/
 
-
 Currently implemented JDBC 4.1 interfaces include:
   * java.sql.Driver
 
@@ -67,7 +67,7 @@ Currently implemented JDBC 4.1 interfaces include:
   * java.sql.DatabaseMetaData
 
   * java.sql.Statement
-    The next features/methods are NOT useable/supported:
+    The next methods/options are NOT useable/supported:
     - cancel (query execution cannot be terminated, once started)
        see also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6222
     - execute with column indices or names
@@ -77,7 +77,7 @@ Currently implemented JDBC 4.1 interfaces include:
     - setEscapeProcessing on
 
   * java.sql.PreparedStatement
-    The next features/methods are NOT useable/supported:
+    The next methods are NOT useable/supported:
     - setArray
     - setAsciiStream, setBinaryStream, setUnicodeStream
     - setBlob
@@ -96,7 +96,7 @@ Currently implemented JDBC 4.1 interfaces include:
       not supported by MonetDB
 
   * java.sql.ResultSet
-    The next features/methods are NOT useable/supported:
+    The next methods are NOT useable/supported:
     - getArray
     - getAsciiStream, getUnicodeStream
     - getNClob
@@ -110,13 +110,13 @@ Currently implemented JDBC 4.1 interfaces include:
   * java.sql.Wrapper
 
   * java.sql.Blob
-    A simple implementation using a byte[] to store the whole BLOB
-    The next features/methods are NOT useable/supported:
+    A simple implementation using a byte[] to store the whole BLOB.
+    The next method is NOT useable/supported:
     - setBinaryStream
 
   * java.sql.Clob
-    A simple implementation using a StringBuilder to store the whole CLOB
-    The next features/methods are NOT useable/supported:
+    A simple implementation using a StringBuilder to store the whole CLOB.
+    The next methods are NOT useable/supported:
     - setAsciiStream
     - setCharacterStream
 
@@ -127,7 +127,7 @@ Currently implemented JDBC 4.1 interfaces include:
   * javax.sql.DataSource (not tested)
 
 
-The next java.sql.* interfaces are NOT implemented:
+The following java.sql.* interfaces are NOT implemented:
   * java.sql.Array
   * java.sql.NClob
   * java.sql.Ref
@@ -136,4 +136,80 @@ The next java.sql.* interfaces are NOT implemented:
   * java.sql.SQLOutput
   * java.sql.SQLXML
   * java.sql.Struct
+
+
+Notes and Tips for Java Programmers using MonetDB JDBC driver:
+- Close JDBC ResultSet, Statement, PreparedStatement, CallableStatement and
+  Connection objects immediately (via close()) when they are no longer needed,
+  in order to release resources and memory on the server and client side.
+  Especially ResultSets can occupy large amounts of memory on the server and
+  client side.
+
+- When you need to execute many SQL queries sequentially reuse the Statement
+  object instead of creating a new Statement for each single SQL query.
+  Alternatively you can execute the SQL queries as one script (each SQL query
+  must be separated by a ; character) string via stmt.execute(script),
+  stmt.getResultSet() and stmt.getMoreResults().
+  Or you can use the batch execution functionality, see stmt.addBatch() and
+  stmt.executeBatch() methods.
+
+- The fastest way to retrieve data from a MonetDB ResultSet is via the
+  getString(int columnIndex) method, because internally all data
+  values (of all types) are stored as Strings, so no conversions are needed.
+
+- Try to avoid calling "rs.get...(String columnLabel)" methods inside the
+   while(rs.next()) {...} loop. Instead resolve the columnLabels to column
+  numbers before the loop via method "int findColumn(String columnLabel)"
+  and use the int variables with the rs.get...(int columnIndex) methods.
+  This eliminates the call to findColumn(String columnLabel) for
+  each value of every column for every row in the ResultSet.
+  See also the sample Java JDBC program on:
+  https://www.monetdb.org/Documentation/Manuals/SQLreference/Programming/JDBC
+
+- Avoid using rs.getObject() as it will need to construct a new Object for
+  each value, even for primitive types such as int, long, boolean.
+
+- Avoid using rs.getClob(). Instead use getString() for all CLOB
+  columns, which is much faster and uses much (3 times) less memory.
+Tip: For generic applications (such as SQuirreL) use connection property
+   treat_clob_as_varchar=true  in the JDBC connection string. This will
+  let "ResultSetMetaData.getColumnType(int)" to return Types.VARCHAR instead
+  of Types.CLOB for clob ResultSet columns.
+  The generic application will than use rs.getString() instead of rs.getClob()
+  for those clob column data, resulting in (much) faster response.
+
+- Avoid using rs.getBlob(). Instead use getBytes() to get a byte array
+  or use getString() to get a string containing hex pairs, for all BLOB
+  columns. These methods are much faster and use much less memory.
+  The getString() is the fastest way as no conversions are done at all.
+  The getBytes() will need to convert the hex char string into a new bytes[].
+Tip: For generic applications (such as SQuirreL) use connection property
+   treat_blob_as_binary=true  in the JDBC connection string. This will
+  let "ResultSetMetaData.getColumnType(int)" to return Types.VARBINARY instead
+  of Types.BLOB for blob resultset columns.
+  The generic application will than use rs.getBytes() instead of rs.getBlob()
+  for those blob column data, resulting in (much) faster response.
+
+- By default the ResultSets created by methods in DatabaseMetaData
+  which return a ResultSet (such as dbmd.getColumns(...)) are
+  TYPE_SCROLL_INSENSITIVE, so they cache their ResultSet data to
+  allow absolute, relative and random access to data rows and fields.
+  To free heap memory and server resoucres, close those ResultSets
+  immediately when no longer needed.
+
+- By default the ResultSets created by stmt.executeQuery(...) or
+  stmt.execute(...) are TYPE_FORWARD_ONLY, to reduce the potentially large
+  amount of client memory needed to cache the whole ResultSet data.
+
+Warning:
+ The current implementation of the MonetDB JDBC driver is *not*
+ multi-thread safe. If your program uses multiple threads concurrently on
+ the same Connection (so one MapiSocket), this may lead to incorrect behavior
+ and results (due to race conditions).
+ You will need to serialize the processing of the threads in your Java program.
+ Alternatively you could use a separate JDBC Connection for each thread.
+
+Note: as of Jul2015 release (monetdb-jdbc-2.17.jar) we compile all
+ the java sources to target: Java 1.7 so you need a JRE/JDK JVM
+ of version 1.7 or higher to use it.
 
