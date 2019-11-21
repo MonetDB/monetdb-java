@@ -238,7 +238,8 @@ public class MonetConnection
 		if (hostname == null || hostname.isEmpty())
 			throw new IllegalArgumentException("Missing or empty host name");
 		if (port <= 0 || port > 65535)
-			throw new IllegalArgumentException("Invalid port number: " + port + ". It should not be " + (port < 0 ? "negative" : (port > 65535 ? "larger than 65535" : "0")));
+			throw new IllegalArgumentException("Invalid port number: " + port
+					+ ". It should not be " + (port < 0 ? "negative" : (port > 65535 ? "larger than 65535" : "0")));
 		if (username == null || username.isEmpty())
 			throw new IllegalArgumentException("Missing or empty user name");
 		if (password == null || password.isEmpty())
@@ -584,9 +585,7 @@ public class MonetConnection
 	 */
 	@Override
 	public SQLWarning getWarnings() throws SQLException {
-		if (closed)
-			throw new SQLException("Cannot call on closed Connection", "M1M20");
-
+		checkNotClosed();
 		// if there are no warnings, this will be null, which fits with the
 		// specification.
 		return warnings;
@@ -700,6 +699,7 @@ public class MonetConnection
 	public CallableStatement prepareCall(final String sql, final int resultSetType, final int resultSetConcurrency, final int resultSetHoldability)
 		throws SQLException
 	{
+		checkNotClosed();
 		try {
 			final CallableStatement ret = new MonetCallableStatement(
 				this,
@@ -804,6 +804,7 @@ public class MonetConnection
 	public PreparedStatement prepareStatement(final String sql, final int resultSetType, final int resultSetConcurrency, final int resultSetHoldability)
 		throws SQLException
 	{
+		checkNotClosed();
 		try {
 			final PreparedStatement ret = new MonetPreparedStatement(
 				this,
@@ -934,6 +935,7 @@ public class MonetConnection
 	 */
 	@Override
 	public void releaseSavepoint(final Savepoint savepoint) throws SQLException {
+		checkNotClosed();
 		if (!(savepoint instanceof MonetSavepoint))
 			throw new SQLException("This driver can only handle savepoints it created itself", "M0M06");
 
@@ -955,6 +957,7 @@ public class MonetConnection
 	 */
 	@Override
 	public void rollback() throws SQLException {
+		checkNotClosed();
 		// note: can't use sendIndependentCommand here because we need
 		// to process the auto_commit state the server gives
 		sendTransactionCommand("ROLLBACK");
@@ -972,6 +975,7 @@ public class MonetConnection
 	 */
 	@Override
 	public void rollback(final Savepoint savepoint) throws SQLException {
+		checkNotClosed();
 		if (!(savepoint instanceof MonetSavepoint))
 			throw new SQLException("This driver can only handle savepoints it created itself", "M0M06");
 
@@ -1008,6 +1012,7 @@ public class MonetConnection
 	 */
 	@Override
 	public void setAutoCommit(final boolean autoCommit) throws SQLException {
+		checkNotClosed();
 		if (this.autoCommit != autoCommit) {
 			sendControlCommand("auto_commit " + (autoCommit ? "1" : "0"));
 			this.autoCommit = autoCommit;
@@ -1069,6 +1074,7 @@ public class MonetConnection
 	 */
 	@Override
 	public Savepoint setSavepoint() throws SQLException {
+		checkNotClosed();
 		// create a new Savepoint object
 		final MonetSavepoint sp = new MonetSavepoint();
 
@@ -1089,6 +1095,7 @@ public class MonetConnection
 	 */
 	@Override
 	public Savepoint setSavepoint(final String name) throws SQLException {
+		checkNotClosed();
 		// create a new Savepoint object
 		final MonetSavepoint sp;
 		try {
@@ -1361,6 +1368,7 @@ public class MonetConnection
 	public String getClientInfo(final String name) throws SQLException {
 		if (name == null || name.isEmpty())
 			return null;
+		checkNotClosed();
 		return conn_props.getProperty(name);
 	}
 
@@ -1378,6 +1386,7 @@ public class MonetConnection
 	 */
 	@Override
 	public Properties getClientInfo() throws SQLException {
+		checkNotClosed();
 		// return a clone of the connection properties object
 		return new Properties(conn_props);
 	}
@@ -1494,8 +1503,7 @@ public class MonetConnection
 	 */
 	@Override
 	public void setSchema(final String schema) throws SQLException {
-		if (closed)
-			throw new SQLException("Cannot call on closed Connection", "M1M20");
+		checkNotClosed();
 		if (schema == null || schema.isEmpty())
 			throw new SQLException("Missing schema name", "M1M05");
 
@@ -1520,8 +1528,7 @@ public class MonetConnection
 	 */
 	@Override
 	public String getSchema() throws SQLException {
-		if (closed)
-			throw new SQLException("Cannot call on closed Connection", "M1M20");
+		checkNotClosed();
 
 		String cur_schema = null;
 		Statement st = null;
@@ -1595,10 +1602,10 @@ public class MonetConnection
 	 */
 	@Override
 	public void setNetworkTimeout(final Executor executor, final int millis) throws SQLException {
-		if (closed)
-			throw new SQLException("Cannot call on closed Connection", "M1M20");
-		if (executor == null)
-			throw new SQLException("executor is null", "M1M05");
+		checkNotClosed();
+//		executor object is not used yet, so no need to test it.
+//		if (executor == null)
+//			throw new SQLException("executor is null", "M1M05");
 		if (millis < 0)
 			throw new SQLException("milliseconds is less than zero", "M1M05");
 
@@ -1622,9 +1629,7 @@ public class MonetConnection
 	 */
 	@Override
 	public int getNetworkTimeout() throws SQLException {
-		if (closed)
-			throw new SQLException("Cannot call on closed Connection", "M1M20");
-
+		checkNotClosed();
 		try {
 			return server.getSoTimeout();
 		} catch (SocketException e) {
@@ -1653,6 +1658,15 @@ public class MonetConnection
 	 */
 	boolean mapClobAsVarChar() {
 		return treatClobAsVarChar;
+	}
+
+	/**
+	 * Local helper method to test whether the Connection object is closed
+	 * When closed it throws an SQLException
+	 */
+	private void checkNotClosed() throws SQLException {
+		if (closed)
+			throw new SQLException("Connection is closed", "M1M20");
 	}
 
 	/**
