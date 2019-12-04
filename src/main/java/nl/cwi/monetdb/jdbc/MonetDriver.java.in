@@ -349,6 +349,7 @@ final public class MonetDriver implements Driver {
 		typeMap.put("real", Integer.valueOf(Types.REAL));
 		typeMap.put("sec_interval", Integer.valueOf(Types.DECIMAL));
 		typeMap.put("smallint", Integer.valueOf(Types.SMALLINT));
+		typeMap.put("str", Integer.valueOf(Types.VARCHAR));	// MonetDB prepare <stmt> uses type 'str' (instead of varchar) for the schema, table and column metadata output
 		// typeMap.put("table", Integer.valueOf(Types.???));
 		typeMap.put("time", Integer.valueOf(Types.TIME));
 		typeMap.put("timestamp", Integer.valueOf(Types.TIMESTAMP));
