@@ -1641,9 +1641,9 @@ public class MonetDatabaseMetaData
 			"cast(").append(DatabaseMetaData.procedureNoResult).append(" AS smallint) AS \"PROCEDURE_TYPE\", " +
 			// only the id value uniquely identifies a procedure. Include it to be able to differentiate between multiple overloaded procedures with the same name
 			"cast(f.\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
-		"FROM \"sys\".\"functions\" f JOIN \"sys\".\"schemas\" s ON (f.\"schema_id\" = s.\"id\") ");
+		"FROM \"sys\".\"functions\" f JOIN \"sys\".\"schemas\" s ON f.\"schema_id\" = s.\"id\" ");
 		if (useCommentsTable) {
-			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON (f.\"id\" = cm.\"id\") ");
+			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON f.\"id\" = cm.\"id\" ");
 		}
 		// include procedures only (type = 2). Others will be returned via getFunctions()
 		query.append("WHERE f.\"type\" = 2");
@@ -1651,7 +1651,7 @@ public class MonetDatabaseMetaData
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
@@ -1768,15 +1768,15 @@ public class MonetDatabaseMetaData
 			// the specific name contains the function id, in order to be able to match the args to the correct overloaded procedure name
 			"cast(f.\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
 		"FROM \"sys\".\"args\" a " +
-		"JOIN \"sys\".\"functions\" f ON (a.\"func_id\" = f.\"id\") " +
-		"JOIN \"sys\".\"schemas\" s ON (f.\"schema_id\" = s.\"id\") " +
+		"JOIN \"sys\".\"functions\" f ON a.\"func_id\" = f.\"id\" " +
+		"JOIN \"sys\".\"schemas\" s ON f.\"schema_id\" = s.\"id\" " +
 		// include procedures only (type = 2). Others will be returned via getFunctionColumns()
 		"WHERE f.\"type\" = 2");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
@@ -1880,12 +1880,12 @@ public class MonetDatabaseMetaData
 		if (useCommentsTable) {
 			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON t.\"id\" = cm.\"id\" ");
 		}
-		query.append("WHERE 1 = 1");
+		query.append("WHERE 1=1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
@@ -1948,7 +1948,7 @@ public class MonetDatabaseMetaData
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" WHERE 1 = 0");
+			query.append(" WHERE 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" WHERE \"name\" ").append(composeMatchPart(schemaPattern));
@@ -1977,7 +1977,7 @@ public class MonetDatabaseMetaData
 	public ResultSet getCatalogs() throws SQLException {
 		// MonetDB does NOT support catalogs.
 		// Return a resultset with no rows
-		return executeMetaDataQuery("SELECT cast(null as char(1)) AS \"TABLE_CAT\" WHERE 1 = 0");
+		return executeMetaDataQuery("SELECT cast(null as char(1)) AS \"TABLE_CAT\" WHERE 1=0");
 	}
 
 	/**
@@ -2127,12 +2127,12 @@ public class MonetDatabaseMetaData
 		if (useCommentsTable) {
 			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON c.\"id\" = cm.\"id\" ");
 		}
-		query.append("WHERE 1 = 1");
+		query.append("WHERE 1=1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
@@ -2221,12 +2221,12 @@ public class MonetDatabaseMetaData
 		if (usePrivilege_codesTable) {
 			query.append("JOIN \"sys\".\"privilege_codes\" pc ON p.\"privileges\" = pc.\"privilege_code_id\" ");
 		}
-		query.append("WHERE 1 = 1");
+		query.append("WHERE 1=1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
@@ -2310,12 +2310,12 @@ public class MonetDatabaseMetaData
 		if (usePrivilege_codesTable) {
 			query.append("JOIN \"sys\".\"privilege_codes\" pc ON p.\"privileges\" = pc.\"privilege_code_id\" ");
 		}
-		query.append("WHERE 1 = 1");
+		query.append("WHERE 1=1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
@@ -2410,7 +2410,7 @@ public class MonetDatabaseMetaData
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (scope == DatabaseMetaData.bestRowSession
 			 || scope == DatabaseMetaData.bestRowTransaction
@@ -2425,7 +2425,7 @@ public class MonetDatabaseMetaData
 					query.append(" AND c.\"null\" = false");
 				}
 			} else {
-				query.append(" AND 1 = 0");
+				query.append(" AND 1=0");
 			}
 		}
 
@@ -2479,7 +2479,7 @@ public class MonetDatabaseMetaData
 			"cast(0 as int) AS \"BUFFER_LENGTH\", " +
 			"cast(0 as smallint) AS \"DECIMAL_DIGITS\", " +
 			"cast(0 as smallint) AS \"PSEUDO_COLUMN\" " +
-		"WHERE 1 = 0";
+		"WHERE 1=0";
 
 		return executeMetaDataQuery(query);
 	}
@@ -2528,7 +2528,7 @@ public class MonetDatabaseMetaData
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schema != null && !schema.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
@@ -2643,7 +2643,7 @@ public class MonetDatabaseMetaData
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schema != null && !schema.equals("%")) {
 				query.append(" AND fkschema.\"name\" ").append(composeMatchPart(schema));
@@ -2731,7 +2731,7 @@ public class MonetDatabaseMetaData
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schema != null && !schema.equals("%")) {
 				query.append(" AND pkschema.\"name\" ").append(composeMatchPart(schema));
@@ -2830,7 +2830,7 @@ public class MonetDatabaseMetaData
 		 || (fcatalog != null && !fcatalog.isEmpty())) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (pschema != null && !pschema.equals("%")) {
 				query.append(" AND pkschema.\"name\" ").append(composeMatchPart(pschema));
@@ -3041,12 +3041,12 @@ public class MonetDatabaseMetaData
 		"JOIN \"sys\".\"objects\" o ON i.\"id\" = o.\"id\" " +
 		"JOIN \"sys\".\"columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
 		"LEFT OUTER JOIN \"sys\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) " +	// primary (0) and unique keys (1) only
-		"WHERE 1 = 1");
+		"WHERE 1=1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schema != null && !schema.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
@@ -3213,7 +3213,7 @@ public class MonetDatabaseMetaData
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
@@ -3356,7 +3356,7 @@ public class MonetDatabaseMetaData
 		final String query =
 		"SELECT cast(null as char(1)) AS \"TYPE_CAT\", '' AS \"TYPE_SCHEM\", '' AS \"TYPE_NAME\", " +
 			"cast(null as char(1)) AS \"SUPERTYPE_CAT\", '' AS \"SUPERTYPE_SCHEM\", '' AS \"SUPERTYPE_NAME\" " +
-		"WHERE 1 = 0";
+		"WHERE 1=0";
 
 		return executeMetaDataQuery(query);
 	}
@@ -3401,7 +3401,7 @@ public class MonetDatabaseMetaData
 		final String query =
 		"SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"'' AS \"TABLE_SCHEM\", '' AS \"TABLE_NAME\", '' AS \"SUPERTABLE_NAME\" " +
-		"WHERE 1 = 0";
+		"WHERE 1=0";
 
 		return executeMetaDataQuery(query);
 	}
@@ -3492,7 +3492,7 @@ public class MonetDatabaseMetaData
 			"cast(0 as int) AS \"ORDINAL_POSITION\", 'YES' AS \"IS_NULLABLE\", " +
 			"'' AS \"SCOPE_CATALOG\", '' AS \"SCOPE_SCHEMA\", '' AS \"SCOPE_TABLE\", " +
 			"cast(0 as smallint) AS \"SOURCE_DATA_TYPE\" " +
-		"WHERE 1 = 0";
+		"WHERE 1=0";
 
 		return executeMetaDataQuery(query);
 	}
@@ -3785,7 +3785,7 @@ public class MonetDatabaseMetaData
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
@@ -3903,7 +3903,7 @@ public class MonetDatabaseMetaData
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1 = 0");
+			query.append(" AND 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
 				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
@@ -3982,7 +3982,7 @@ public class MonetDatabaseMetaData
 			"'' AS \"REMARKS\", " +
 			"cast(0 as int) AS \"CHAR_OCTET_LENGTH\", " +
 			"'' AS \"IS_NULLABLE\" " +
-		"WHERE 1 = 0";
+		"WHERE 1=0";
 
 		return executeMetaDataQuery(query);
 	}
