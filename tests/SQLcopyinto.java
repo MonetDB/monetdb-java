@@ -80,7 +80,6 @@ public class SQLcopyinto {
 		MapiSocket server = new MapiSocket();
 		try {
 			server.setLanguage("sql");
-			server.setSoTimeout(60);
 
 			// extract from MonetConnection object the used connection properties
 			String host = mcon.getClientInfo("host");
