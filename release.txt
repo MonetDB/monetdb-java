@@ -1,6 +1,6 @@
 RELEASE NOTES
 MonetDB JDBC driver version 2.29 (Liberica/MCL-1.18)
-Release date: 2019-09-26
+Release date: 2020-02-12
 
 This JDBC driver is designed for use with MonetDB, an Open-Source column-store RDBMS.
 For more information see https://www.monetdb.org/
@@ -209,7 +209,7 @@ Warning:
  You will need to serialize the processing of the threads in your Java program.
  Alternatively you could use a separate JDBC Connection for each thread.
 
-Note: as of Jul2015 release (monetdb-jdbc-2.17.jar) we compile all
- the java sources to target: Java 1.7 so you need a JRE/JDK JVM
- of version 1.7 or higher to use it.
+Note: as of Feb2020 release (monetdb-jdbc-2.29.jre8.jar) we compile all
+ the java sources to target: Java SE 8 (profile compact2), so
+ you need a JRE/JDK JVM of version 8 or higher to use it.
 

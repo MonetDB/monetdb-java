@@ -41,7 +41,7 @@ import java.util.List;
  * of JDBC only.
  *
  * @author Fabian Groffen, Martin van Dinther
- * @version 1.3
+ * @version 1.4
  */
 
 public final class JdbcClient {
@@ -56,13 +56,13 @@ public final class JdbcClient {
 	/**
 	 * JdbcClient is a command line query tool for MonetDB, similar to mclient.
 	 * It uses the JDBC API and the MonetDB JDBC driver to communicate with a
-	 * MonetDB server. The MonetDB JDBC driver is included in the jdbcclient.jre7.jar
+	 * MonetDB server. The MonetDB JDBC driver is included in the jdbcclient.jre8.jar
 	 * for ease of use, so only 1 jar file is needed to use it.
 	 *
-	 * <pre>Usage java -jar jdbcclient.jre7.jar
+	 * <pre>Usage java -jar jdbcclient.jre8.jar
 	 *		[-h host[:port]] [-p port] [-f file] [-u user]
-	 *		[-l language] [-d database] [-e] [-D [table]]
-	 *		[-X&lt;opt&gt;]
+	 *		[-l language] [-d database] [-e] [-D [table]] [-X&lt;opt&gt;]
+	 *		| [--help] | [--version]
 	 * or using long option equivalents --host --port --file --user --language
 	 * --dump --echo --database.
 	 * Arguments may be written directly after the option like -p50000.
@@ -214,10 +214,10 @@ public final class JdbcClient {
 
 		if (copts.getOption("help").isPresent()) {
 			System.out.print(
-				"Usage java -jar jdbcclient.jre7.jar\n" +
+				"Usage java -jar jdbcclient.jre8.jar\n" +
 				"\t\t[-h host[:port]] [-p port] [-f file] [-u user]\n" +
-				"\t\t[-l language] [-d database] [-e] [-D [table]]\n" +
-				"\t\t[-X<opt>]\n" +
+				"\t\t[-l language] [-d database] [-e] [-D [table]] [-X<opt>]\n" +
+				"\t\t| [--help] | [--version]\n" +
 				"or using long option equivalents --host --port --file --user --language\n" +
 				"--dump --echo --database.\n" +
 				"Arguments may be written directly after the option like -p50000.\n" +
@@ -679,7 +679,7 @@ public final class JdbcClient {
 						out.println("Available commands:");
 						out.println("\\q       quits this program (you can also use: quit or exit)");
 						if (dbmd != null) {
-							out.println("\\d       list available tables and views in current schema");
+							out.println("\\d       list available user tables and views in current schema");
 							out.println("\\dS      list available system tables and views in sys schema");
 							out.println("\\d <obj> describes the given table or view");
 						}
@@ -936,7 +936,7 @@ public final class JdbcClient {
 		warn = con.getWarnings();
 		while (warn != null) {
 			// suppress warning when issueing a "set schema xyz;" command
-			if ( !(warn.getMessage()).equals("Server enabled auto commit mode while local state already was auto commit.") )
+//			if ( !(warn.getMessage()).equals("Server enabled auto commit mode while local state already was auto commit.") )
 				System.err.println("Connection warning: " + warn.getMessage());
 			warn = warn.getNextWarning();
 		}

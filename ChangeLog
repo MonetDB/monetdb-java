@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Feb 12 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- As Java 7 is no longer supported we now compile for Java 8 as the
+  minimum required JVM version (profile compact2).
+
 * Thu Sep 26 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Compiled and released new jar files: monetdb-jdbc-2.29.jre7.jar,
   monetdb-mcl-1.18.jre7.jar and jdbcclient.jre7.jar

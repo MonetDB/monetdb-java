@@ -44,10 +44,14 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
   since EOL.
   2015-07-16, sjoerd@acm.org
 
+  Update: cross-compile for JVM 8 (=1.8), profile compact2
+  2020-02-12, martin.van.dinther@monetdbsolutions.com
+
   -->
-  <property name="jvm.version"  value="1.7" />
-  <property name="jre.version"  value="jre7" />
-  <property name="javac.flags"  value="-Xlint:-options" />
+  <property name="jvm.version" value="8" />
+  <property name="jre.version" value="jre8" />
+  <property name="javac.flags" value="-profile compact2" />
+  <property name="javac.flags" value="-Xlint" />
 
   <property name="jdbc-jar"
     value="${jardir}/monetdb-jdbc-${JDBC_MAJOR}.${JDBC_MINOR}.${jre.version}.jar" />
