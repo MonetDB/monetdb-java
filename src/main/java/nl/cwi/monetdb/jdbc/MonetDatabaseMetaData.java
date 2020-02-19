@@ -953,14 +953,21 @@ public class MonetDatabaseMetaData
 
 	/**
 	 * What is the database vendor's preferred term for "catalog"?
-	 * MonetDB doesn't really have them (from driver accessible) but
-	 * from the monetdb.conf file the term "database" sounds best
+	 *
+	 * MonetDB doesn't support the SQL catalog naming concept.
+	 * Only SQL schemas are supported.
+	 * We also do not allow the name of a database to be included in
+	 * a fully qualified name, so we shouldn't return "database" here.
+	 * A database is a different concept than an SQL catalog.
 	 *
 	 * @return the vendor term
 	 */
 	@Override
 	public String getCatalogTerm() {
-		return "database";
+		// MonetDB does NOT support catalogs, so also no catalog term
+		// Some generic SQL clients (e.g. DbVisualiser) use this string in their GUI
+		// To avoid NPE, just return an abrev string: "cat" (we like cats)
+		return "cat";
 	}
 
 	/**

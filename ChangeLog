@@ -1,6 +1,9 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Feb 19 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected the return value of getCatalogTerm() to "cat".
+
 * Wed Feb 12 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - As Java 7 is no longer supported we now compile for Java 8 as the
   minimum required JVM version (profile compact2).
