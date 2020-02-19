@@ -2,8 +2,14 @@ RELEASE NOTES
 MonetDB JDBC driver version 2.29 (Liberica/MCL-1.18)
 Release date: 2020-02-12
 
-This JDBC driver is designed for use with MonetDB, an Open-Source column-store RDBMS.
+The Java Database Connectivity (JDBC) API provides universal data access from
+the Java programming language.
+
+The MonetDB JDBC driver is designed for use with MonetDB, an Open-Source column-store RDBMS.
 For more information see https://www.monetdb.org/
+
+The latest MonetDB JDBC driver can be downloaded from
+https://www.monetdb.org/downloads/Java/
 
 The MonetDB JDBC connection URL format to use is:
   jdbc:monetdb://<hostname>[:<portnr>]/<databasename>[?<property>=<value>[&<property>=<value>]]
@@ -30,14 +36,17 @@ We recommend to set following connection properties:
 
 Multiple connection properties are separated by the & character.
 For example:
-  jdbc:monetdb://localhost:41000/mydb?user=monetdb&password=onlyiknow&so_timeout=18000&treat_clob_as_varchar=true&treat_blob_as_binary=true
+  jdbc:monetdb://localhost:41000/mydb?user=monetdb&password=onlyiknow&so_timeout=20000&treat_clob_as_varchar=true&treat_blob_as_binary=true
 
 See also: https://www.monetdb.org/Documentation/Manuals/SQLreference/Programming/JDBC
 
 
 JDBC COMPLIANCE
-The MonetDB JDBC driver complies to JDBC 4.1 definition, see
+The MonetDB JDBC driver is a type 4 driver (100% pure Java) and
+complies to JDBC 4.1 definition, see
  http://docs.oracle.com/javase/7/docs/technotes/guides/jdbc/index.html
+and
+ https://en.wikipedia.org/wiki/Java_Database_Connectivity
 
 Within the current implementation not all functionalities of the JDBC
 interface are available.  It is believed, however, that this
@@ -163,7 +172,7 @@ Notes and Tips for Java Programmers using MonetDB JDBC driver:
   and use the int variables with the rs.get...(int columnIndex) methods.
   This eliminates the call to findColumn(String columnLabel) for
   each value of every column for every row in the ResultSet.
-  See also the sample Java JDBC program on:
+  See also the example Java JDBC program on:
   https://www.monetdb.org/Documentation/Manuals/SQLreference/Programming/JDBC
 
 - Avoid using rs.getObject() as it will need to construct a new Object for
@@ -209,7 +218,7 @@ Warning:
  You will need to serialize the processing of the threads in your Java program.
  Alternatively you could use a separate JDBC Connection for each thread.
 
-Note: as of Feb2020 release (monetdb-jdbc-2.29.jre8.jar) we compile all
+Note: as of Febr 2020 (monetdb-jdbc-2.29.jre8.jar) we compile all
  the java sources to target: Java SE 8 (profile compact2), so
  you need a JRE/JDK JVM of version 8 or higher to use it.
 
