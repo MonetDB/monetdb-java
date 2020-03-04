@@ -27,27 +27,25 @@ public final class StartOfHeaderParser {
 	private int len;
 	private int pos;
 
-	/* Query types (copied from sql_query.mx) */
-
+	/* Query types (copied from sql/include/sql_querytype.h) */
 	/** A parse response (not handled) */
-	public final static int Q_PARSE    = '0';
+	public final static int Q_PARSE   = '0';
 	/** A tabular response (typical ResultSet) */
-	public final static int Q_TABLE    = '1';
+	public final static int Q_TABLE   = '1';
 	/** A response to an update statement, contains number of affected
 	 * rows and generated key-id */
-	public final static int Q_UPDATE   = '2';
+	public final static int Q_UPDATE  = '2';
 	/** A response to a schema update */
-	public final static int Q_SCHEMA   = '3';
+	public final static int Q_SCHEMA  = '3';
 	/** A response to a transation statement (start, rollback, abort,
 	 * commit) */
-	public final static int Q_TRANS    = '4';
+	public final static int Q_TRANS   = '4';
 	/** A tabular response in response to a PREPARE statement containing
 	 * information about the wildcard values that need to be supplied */
-	public final static int Q_PREPARE  = '5';
+	public final static int Q_PREPARE = '5';
 	/** A tabular continuation response (for a ResultSet) */
-	public final static int Q_BLOCK    = '6';
-	/** An unknown and unsupported response */
-	public final static int Q_UNKNOWN  =  0 ;
+	public final static int Q_BLOCK   = '6';
+
 
 	public final int parse(final String in) throws MCLParseException {
 		soh = CharBuffer.wrap(in);
@@ -82,9 +80,11 @@ public final class StartOfHeaderParser {
 		return type;
 	}
 
+/* MvD: disabled hasNext() method as it is never called.
 	public final boolean hasNext() {
 		return pos < len;
 	}
+*/
 
 	/**
 	 * Returns the next token in the CharBuffer as integer. The value is
