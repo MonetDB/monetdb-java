@@ -109,7 +109,7 @@ public class SQLcopyinto {
 			// the leading 's' is essential, since it is a protocol marker
 			// that should not be omitted, likewise the trailing semicolon
 			mclOut.write('s');
-			mclOut.write("COPY INTO " + tablenm + " FROM STDIN USING DELIMITERS ',','\\n';");
+			mclOut.write("COPY INTO " + tablenm + " FROM STDIN USING DELIMITERS ',',E'\\n';");
 			mclOut.newLine();
 			// now write the row data values as csv data lines to the STDIN stream
 			for (int i = 0; i < 40; i++) {
