@@ -1871,7 +1871,7 @@ public abstract class MonetConnection
 		 * Internal executor of queries.
 		 *
 		 * @param templ the template to fill in
-		 * @param the query to execute
+		 * @param query query to execute
 		 * @throws SQLException if a database error occurs
 		 */
 		@SuppressWarnings("fallthrough")

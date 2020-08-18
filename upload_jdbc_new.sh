@@ -14,8 +14,8 @@ fi
 # Prepare the directory to upload to our website
 mkdir synchronizing
 # Move the monetdb-jdbc-new jar
-mv jars/monetdb-jdbc-new-2.37-SNAPSHOT.jar synchronizing/monetdb-jdbc-new-2.37-SNAPSHOT.jar
+mv jars/monetdb-jdbc-new-2.37.jar synchronizing/monetdb-jdbc-new-2.37.jar
 # Rsync the library files to the monet.org machine
-rsync -aqz --ignore-times synchronizing/* ferreira@monetdb.org:/var/www/html/downloads/Java-Experimental/
+rsync -qz --ignore-times synchronizing/* ferreira@monetdb.org:/var/www/html/downloads/Java-Experimental/
 # Remove it in the end
 rm -rf synchronizing
