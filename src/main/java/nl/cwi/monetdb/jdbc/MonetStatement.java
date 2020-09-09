@@ -254,6 +254,7 @@ public class MonetStatement
 			// otherwise just return the counts
 			return counts;
 		} finally {
+			batch.clear();
 			batchLock.unlock();
 		}
 	}

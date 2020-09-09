@@ -33,20 +33,23 @@ public class Test_Sbatching {
 					int[] cnts = stmt.executeBatch();
 					System.out.println("passed :)");
 					System.out.print("3. checking number of update counts...");
-					if (cnts.length != 400) throw new SQLException("Invalid size: " + cnts.length);
+					if (cnts.length != 400)
+						throw new SQLException("Invalid size: " + cnts.length);
 					System.out.println(cnts.length + " passed :)");
 					System.out.print("4. checking update counts (should all be 1)...");
 					for (int j = 0; j < cnts.length; j++) {
-						if (cnts[j] != 1) throw new SQLException("Unexpected value: " + cnts[j]);
+						if (cnts[j] != 1)
+							throw new SQLException("Unexpected value: " + cnts[j]);
 					}
-					System.out.println("passed :)");
-					System.out.print("5. clearing the batch...");
-					stmt.clearBatch();
 					System.out.println("passed :)");
 				}
 			}
-			System.out.print("6. executing batch...");
+			System.out.print("5. executing batch...");
 			stmt.executeBatch();
+			System.out.println("passed :)");
+
+			System.out.print("6. clearing the batch...");
+			stmt.clearBatch();
 			System.out.println("passed :)");
 
 			System.out.print("7. checking table count...");
