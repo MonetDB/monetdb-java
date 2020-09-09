@@ -38,6 +38,7 @@ public class Test_PSlargebatchval {
 			pstmt.setDouble(3, 1.0);
 			pstmt.addBatch();
 			pstmt.executeBatch();
+			System.out.println("1. inserted 1 large string");
 
 			/* test issue reported at https://www.monetdb.org/bugzilla/show_bug.cgi?id=3470 */
 			pstmt.setLong(1, -2L);
@@ -45,6 +46,7 @@ public class Test_PSlargebatchval {
 			pstmt.setDouble(3, -2.0);
 			pstmt.addBatch();
 			pstmt.executeBatch();
+			System.out.println("2. inserted 1 large clob via StringReader() object");
 
 			Clob myClob = con.createClob();
 			myClob.setString(1L, largeStr);
@@ -54,8 +56,14 @@ public class Test_PSlargebatchval {
 			pstmt.setDouble(3, 12345678901.98765);
 			pstmt.addBatch();
 			pstmt.executeBatch();
+			System.out.println("3. inserted 1 large clob via createClob() object");
 
 			pstmt.close();
+
+			ResultSet rs = stmt.executeQuery("SELECT COUNT(*) FROM x");
+			if (rs.next())
+				System.out.println(rs.getInt(1) + " rows inserted.");
+			rs.close();
 
 			stmt.execute("DROP TABLE x");
 			stmt.close();
