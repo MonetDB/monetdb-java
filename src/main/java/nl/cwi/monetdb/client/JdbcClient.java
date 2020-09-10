@@ -97,7 +97,7 @@ public final class JdbcClient {
 	 * -Xoutput      The output mode when dumping.  Default is sql, xml may be used for
 	 *               an experimental XML output.
 	 * -Xhash        Use the given hash algorithm during challenge response.  Supported
-	 *               algorithm names: SHA1, MD5, plain.
+	 *               algorithm names: SHA512, SHA384, SHA256 and SHA1.
 	 * -Xdebug       Writes a transmission log to disk for debugging purposes.  If a
 	 *               file name is given, it is used, otherwise a file called
 	 *               monet&lt;timestamp&gt;.log is created.  A given file never be
@@ -160,7 +160,7 @@ public final class JdbcClient {
 				"be used for an experimental XML output.");
 		copts.addOption(null, "Xhash", CmdLineOpts.CAR_ONE, null,
 				"Use the given hash algorithm during challenge response.  " +
-				"Supported algorithm names: SHA1, MD5, plain.");
+				"Supported algorithm names: SHA512, SHA384, SHA256 and SHA1.");
 		// arguments which can have zero or one argument(s)
 		copts.addOption(null, "Xdebug", CmdLineOpts.CAR_ZERO_ONE, null,
 				"Writes a transmission log to disk for debugging purposes.  " +

@@ -27,7 +27,7 @@ Supported connection properties are:
 	language=<sql or mal>		   default is: sql
 	debug=true			   default is: false
 	logfile=<name of logfile>
-	hash=<SHA512, SHA384, SHA256, SHA1 and MD5>
+	hash=<SHA512, SHA384, SHA256 or SHA1>
 
 We recommend to set following connection properties:
 	so_timeout=20000

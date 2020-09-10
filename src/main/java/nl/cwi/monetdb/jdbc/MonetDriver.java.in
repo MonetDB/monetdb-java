@@ -224,8 +224,8 @@ final public class MonetDriver implements Driver {
 
 		prop = new DriverPropertyInfo("hash", null);
 		prop.required = false;
-		prop.description = "Force the use of the given hash algorithm during challenge response (one of SHA1, MD5, plain)";
-		prop.choices = new String[] { "SHA512", "SHA384", "SHA256", "SHA1", "MD5" };
+		prop.description = "Force the use of the given hash algorithm (SHA512 or SHA384 or SHA256 or SHA1) during challenge response";
+		prop.choices = new String[] { "SHA512", "SHA384", "SHA256", "SHA1" };
 		dpi[5] = prop;
 
 		prop = new DriverPropertyInfo("treat_blob_as_binary", "false");

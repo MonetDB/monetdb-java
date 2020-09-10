@@ -1,6 +1,15 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Sep 10 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Removed support for deprecated MD5 encryption algorithm in MapiSocket.
+
+* Wed Sep 9 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected Statement.executeBatch() method. It now implicitly clears the
+  batch buffer, ready to accept new addBatch() calls without the need for
+  an explicit clearBatch() call.
+  See also https://www.monetdb.org/bugzilla/show_bug.cgi?id=6953
+
 * Wed Feb 19 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected the return value of getCatalogTerm() to "cat".
 

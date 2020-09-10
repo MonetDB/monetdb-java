@@ -422,8 +422,8 @@ public class MonetDatabaseMetaData
 			" AND \"mod\" <> 'sql')" +
 			// include specific functions code(int) and space(int) which belong to the 'str' module
 			" OR \"mod\" = 'str'" +
-			// include 3 specific json functions and udf reverse which accept a string arg
-			" OR f.\"name\" IN ('isarray','isobject','isvalid','reverse')";
+			// include 3 specific json functions, md5() and udf reverse() which all accept a string arg
+			" OR f.\"name\" IN ('isarray','isobject','isvalid','md5','reverse')";
 		final String unionPart =
 			// add functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'position'";
@@ -435,7 +435,7 @@ public class MonetDatabaseMetaData
 		final String wherePart =
 			"f.\"name\" IN ('columnsize','debug','get_value_for','hash','hashsize','heapsize'" +
 			",'ifthenelse','imprintsize','isaurl','isauuid','isnull','masterclock','mastertick'" +
-			",'md5','newurl','next_value_for','password_hash','replicaclock','replicatick','uuid')" +
+			",'newurl','next_value_for','password_hash','replicaclock','replicatick','uuid')" +
 			// add functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION ALL SELECT * FROM (VALUES('cast'),('coalesce'),('convert'),('nullif')) as sf";
 		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + FunctionsOrderBy1);
@@ -3706,7 +3706,7 @@ public class MonetDatabaseMetaData
 		"SELECT 'database', 1024, 'demo', 'name of database. It matches the dbfarm subdirectory name' UNION ALL " +
 		"SELECT 'debug', 5, 'false', 'boolean flag true or false' UNION ALL " +
 		"SELECT 'logfile', 1024, 'monet_######.log', 'name of logfile used when debug is enabled' UNION ALL " +
-		"SELECT 'hash', 128, '', 'hash methods list to use in server connection. Supported are SHA512, SHA384, SHA256, SHA1 and MD5' UNION ALL " +
+		"SELECT 'hash', 128, '', 'hash methods list to use in server connection. Supported are SHA512, SHA384, SHA256 and SHA1' UNION ALL " +
 		"SELECT 'treat_blob_as_binary', 5, 'false', 'should blob columns be mapped to Types.VARBINARY instead of default Types.BLOB in ResultSets and PreparedStatements' UNION ALL " +
 		"SELECT 'treat_clob_as_varchar', 5, 'false', 'should clob columns be mapped to Types.VARCHAR instead of default Types.CLOB in ResultSets and PreparedStatements' UNION ALL " +
 		"SELECT 'so_timeout', 10, '0', 'timeout (in milliseconds) of communication socket. 0 means no timeout is set' " +

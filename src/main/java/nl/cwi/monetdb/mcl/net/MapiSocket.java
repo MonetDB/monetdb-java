@@ -414,7 +414,7 @@ public final class MapiSocket {
 	 * string is null, a challengeless response is returned.
 	 *
 	 * @param chalstr the challenge string
-	 *	for example: H8sRMhtevGd:mserver:9:PROT10,RIPEMD160,SHA256,SHA1,MD5,COMPRESSION_SNAPPY,COMPRESSION_LZ4:LIT:SHA512:
+	 *	for example: H8sRMhtevGd:mserver:9:PROT10,RIPEMD160,SHA256,SHA1,COMPRESSION_SNAPPY,COMPRESSION_LZ4:LIT:SHA512:
 	 * @param username the username to use
 	 * @param password the password to use
 	 * @param language the language to use
@@ -456,12 +456,11 @@ public final class MapiSocket {
 					algo = "SHA-384";
 				} else if (pwhash.equals("SHA256")) {
 					algo = "SHA-256";
-				/* NOTE: Java doesn't support SHA-224 */
+				/* NOTE: Java 7 doesn't support SHA-224. Java 8 does but we have not tested it. It is also not requested yet. */
 				} else if (pwhash.equals("SHA1")) {
 					algo = "SHA-1";
-				} else if (pwhash.equals("MD5")) {
-					algo = "MD5";
 				} else {
+					/* Note: MD5 has been deprecated by security experts and support is removed from Oct 2020 release */
 					throw new MCLException("Unsupported password hash: " + pwhash);
 				}
 				try {
@@ -508,10 +507,8 @@ public final class MapiSocket {
 				} else if (hashesSet.contains("SHA1")) {
 					algo = "SHA-1";
 					pwhash = "{SHA1}";
-				} else if (hashesSet.contains("MD5")) {
-					algo = "MD5";
-					pwhash = "{MD5}";
 				} else {
+					/* Note: MD5 has been deprecated by security experts and support is removed from Oct 2020 release */
 					throw new MCLException("no supported hash algorithms found in " + hashes);
 				}
 				try {

@@ -51,7 +51,7 @@ public final class JMonetDB {
 		// extended options
 		copts.addOption(null, "Xhash", CmdLineOpts.CAR_ONE, null,
 				"Use the given hash algorithm during challenge response.  " +
-				"Supported algorithm names: SHA256, SHA1, MD5.");
+				"Supported algorithm names: SHA512, SHA384, SHA256 and SHA1.");
 		// arguments which can have zero or one argument(s)
 		copts.addOption(null, "Xdebug", CmdLineOpts.CAR_ONE, null,
 				"Writes a transmission log to disk for debugging purposes.  " +
