@@ -38,7 +38,7 @@ Multiple connection properties are separated by the & character.
 For example:
   jdbc:monetdb://localhost:41000/mydb?user=monetdb&password=onlyiknow&so_timeout=20000&treat_clob_as_varchar=true&treat_blob_as_binary=true
 
-See also: https://www.monetdb.org/Documentation/Manuals/SQLreference/Programming/JDBC
+See also: https://www.monetdb.org/Documentation/SQLreference/Programming/JDBC
 
 
 JDBC COMPLIANCE
@@ -173,7 +173,7 @@ Notes and Tips for Java Programmers using MonetDB JDBC driver:
   This eliminates the call to findColumn(String columnLabel) for
   each value of every column for every row in the ResultSet.
   See also the example Java JDBC program on:
-  https://www.monetdb.org/Documentation/Manuals/SQLreference/Programming/JDBC
+  https://www.monetdb.org/Documentation/SQLreference/Programming/JDBC
 
 - Avoid using rs.getObject() as it will need to construct a new Object for
   each value, even for primitive types such as int, long, boolean.
