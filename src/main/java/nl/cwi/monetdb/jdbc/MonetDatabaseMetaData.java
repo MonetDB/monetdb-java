@@ -408,7 +408,7 @@ public class MonetDatabaseMetaData
 			" AND \"type\" = 1" +	// only scalar functions
 			// exclude functions which do not work or belong to string functions (code(int) and space(int))
 			" AND f.\"name\" NOT IN ('code','not_uniques','rotate_xor_hash','space'))" +
-			// include specific functions which have no 1st arg (pi()) or it is not numeric
+			// include specific functions which have no arguments (pi()) or are numeric. Actually ms_str is a conversion function from float to str.
 			" OR f.\"name\" IN ('alpha','degrees','fuse','ms_round','ms_str','ms_trunc','pi','radians')";
 		return getConcatenatedStringFromQuery(FunctionsSelect + FunctionsWhere + match + OrFunctionsMaxMin + FunctionsOrderBy1);
 	}
@@ -422,8 +422,8 @@ public class MonetDatabaseMetaData
 			" AND \"mod\" <> 'sql')" +
 			// include specific functions code(int) and space(int) which belong to the 'str' module
 			" OR \"mod\" = 'str'" +
-			// include 3 specific json functions, md5() and udf reverse() which all accept a string arg
-			" OR f.\"name\" IN ('isarray','isobject','isvalid','md5','reverse')";
+			// include 3 specific json functions, md5(), ms_stuff() and udf reverse() which all accept a string arg
+			" OR f.\"name\" IN ('isarray','isobject','isvalid','md5','ms_stuff','reverse')";
 		final String unionPart =
 			// add functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'position'";
