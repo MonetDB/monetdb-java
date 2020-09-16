@@ -3770,14 +3770,8 @@ public class MonetDatabaseMetaData
 			"s.\"name\" AS \"FUNCTION_SCHEM\", " +
 			"f.\"name\" AS \"FUNCTION_NAME\", ")
 			.append(useCommentsTable ? "COALESCE(cm.\"remark\", cast(f.\"func\" as varchar(9999)))" : "cast(f.\"func\" as varchar(9999))").append(" AS \"REMARKS\", " +
-			"CASE f.\"type\"" +
-				" WHEN 1 THEN ").append(DatabaseMetaData.functionNoTable)
-			.append(" WHEN 2 THEN ").append(DatabaseMetaData.functionNoTable)
-			.append(" WHEN 3 THEN ").append(DatabaseMetaData.functionNoTable)
-			.append(" WHEN 4 THEN ").append(DatabaseMetaData.functionNoTable)
-			.append(" WHEN 5 THEN ").append(DatabaseMetaData.functionReturnsTable)
-			.append(" WHEN 6 THEN ").append(DatabaseMetaData.functionNoTable)
-			.append(" WHEN 7 THEN ").append(DatabaseMetaData.functionReturnsTable)
+			"CASE WHEN f.\"type\" IN (1,2,3,4,6) THEN ").append(DatabaseMetaData.functionNoTable)
+			.append(" WHEN f.\"type\" IN (5,7) THEN ").append(DatabaseMetaData.functionReturnsTable)
 			.append(" ELSE ").append(DatabaseMetaData.functionResultUnknown).append(" END AS \"FUNCTION_TYPE\", " +
 			// only the id value uniquely identifies a function. Include it to be able to differentiate between multiple overloaded functions with the same name
 			"cast(f.\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
