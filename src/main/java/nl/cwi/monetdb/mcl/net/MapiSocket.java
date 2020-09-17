@@ -450,6 +450,7 @@ public final class MapiSocket {
 				String algo;
 				String pwhash = chaltok[5];
 				/* NOTE: Java doesn't support RIPEMD160 :( */
+				/* see: https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#MessageDigest */
 				if (pwhash.equals("SHA512")) {
 					algo = "SHA-512";
 				} else if (pwhash.equals("SHA384")) {
@@ -1077,7 +1078,7 @@ public final class MapiSocket {
 	 * Destructor called by garbage collector before destroying this
 	 * object tries to disconnect the MonetDB connection if it has not
 	 * been disconnected already.
-	 * 
+	 *
 	 * @deprecated (since="9")
 	 */
 	@Override
