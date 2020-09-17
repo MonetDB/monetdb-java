@@ -2014,9 +2014,7 @@ public class MonetPreparedStatement
 					// representation is given, but we need to prefix it
 					// with the actual sqltype the server expects, or we
 					// will get an error back
-					setValue(paramnr,
-						sqltype + " '" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'"
-					);
+					setValue(paramnr, sqltype + " '" + connection.escapeSpecialChars(x) + "'");
 				}
 
 				@Override
@@ -2245,7 +2243,7 @@ public class MonetPreparedStatement
 						} catch (SQLException se) {
 							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + se.getMessage(), "22M29");
 						}
-						castprefix = "inet ";
+						castprefix = "inet";
 						break;
 					case "json":
 						// There is no support for JSON in standard java class libraries.
@@ -2266,7 +2264,7 @@ public class MonetPreparedStatement
 
 						// TODO check completely if x represents a valid json string
 
-						castprefix = "json ";
+						castprefix = "json";
 						break;
 					case "url":
 						try {
@@ -2276,7 +2274,7 @@ public class MonetPreparedStatement
 						} catch (java.net.MalformedURLException mue) {
 							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + mue.getMessage(), "22M30");
 						}
-						castprefix = "url ";
+						castprefix = "url";
 						break;
 					case "uuid":
 						try {
@@ -2286,11 +2284,12 @@ public class MonetPreparedStatement
 						} catch (IllegalArgumentException iae) {
 							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + iae.getMessage(), "22M31");
 						}
-						castprefix = "uuid ";
+						castprefix = "uuid";
 						break;
 				}
 				/* in specific cases prefix the string with: inet or json or url or uuid */
-				setValue(parameterIndex, castprefix + "'" + x.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
+				setValue(parameterIndex, castprefix + " '" + connection.escapeSpecialChars(x) + "'");
+
 				break;
 			}
 			case Types.TINYINT:
@@ -2574,7 +2573,7 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		setValue(parameterIndex, "url '" + x.toString().replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'");
+		setValue(parameterIndex, "url '" + connection.escapeSpecialChars(x.toString()) + "'");
 	}
 
 	/**

@@ -1640,6 +1640,8 @@ public class MonetConnection
 	//== end methods of interface java.sql.Connection
 
 
+	//== internal helper methods which do not belong to the JDBC interface
+
 	/**
 	 * @return whether the JDBC BLOB type should be mapped to VARBINARY type.
 	 * This allows generic JDBC programs to fetch Blob data via getBytes()
@@ -1682,6 +1684,23 @@ public class MonetConnection
 			sb.append("?language=mal");
 		return sb.toString();
 	}
+
+	/**
+	 * Utility method to escape all ocurrences of special characters
+	 * (double slashes and single quotes) in a string literal
+	 * It is called from: MonetDatabaseMetaData and MonetPreparedStatement
+	 */
+	final String escapeSpecialChars(final String in) {
+		String ret = in;
+		if (ret.contains("\\\\"))
+			// all double slashes in input need to be escaped.
+			ret = ret.replaceAll("\\\\", "\\\\\\\\");
+		if (ret.contains("'"))
+			// all single quotes in input need to be escaped.
+			ret = ret.replaceAll("'", "\\\\'");
+		return ret;
+	}
+
 
 	// Internal cache for 3 static mserver environment values, so they aren't queried from mserver again and again
 	private String env_current_user = null;

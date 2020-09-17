@@ -4035,7 +4035,7 @@ public class MonetDatabaseMetaData
 	 * As the Statement object is created internally (the caller does not see it and thus can not close it),
 	 * we set it to close (and free server resources) when the ResultSet object is closed by the caller.
 	 */
-	private ResultSet executeMetaDataQuery(final String query) throws SQLException {
+	private final ResultSet executeMetaDataQuery(final String query) throws SQLException {
 		final Statement stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
 		ResultSet rs = null;
 		if (stmt != null) {
@@ -4059,7 +4059,7 @@ public class MonetDatabaseMetaData
 	 * @param in the string to match
 	 * @return the SQL match part string
 	 */
-	private static final String composeMatchPart(final String in) {
+	private final String composeMatchPart(final String in) {
 		if (in == null)
 			return "IS NULL";
 
@@ -4068,12 +4068,7 @@ public class MonetDatabaseMetaData
 		if (in.contains("%") || in.contains("_"))
 			cmp = "LIKE '";
 
-		String val = in;
-		if (in.contains("\\") || in.contains("'"))
-			// all slashes and single quotes in input are escaped with a slash.
-			val = in.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'");
-
-		return cmp + val + "'";
+		return cmp + con.escapeSpecialChars(in) + "'";
 	}
 
 	/**
