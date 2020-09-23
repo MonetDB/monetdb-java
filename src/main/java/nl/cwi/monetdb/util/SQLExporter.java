@@ -534,6 +534,9 @@ public final class SQLExporter extends Exporter {
 				 && !schema.equals("tmp")
 				 && !schema.equals("json")
 				 && !schema.equals("profiler")
+				 && !schema.equals("wlc")	// added in Nov2019
+				 && !schema.equals("wlr")	// added in Nov2019
+				 && !schema.equals("logging")	// added in Jun2020
 				 && !schema.equals("bam")) {
 					// create schema
 					out.print("CREATE SCHEMA ");
