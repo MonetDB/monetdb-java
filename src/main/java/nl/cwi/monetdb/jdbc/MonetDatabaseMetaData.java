@@ -1887,18 +1887,22 @@ public class MonetDatabaseMetaData
 		if (useCommentsTable) {
 			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON t.\"id\" = cm.\"id\" ");
 		}
-		query.append("WHERE 1=1");
 
+		boolean needWhere = true;
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1=0");
+			query.append("WHERE 1=0");
+			needWhere = false;
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
-				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append("WHERE s.\"name\" ").append(composeMatchPart(schemaPattern));
+				needWhere = false;
 			}
 			if (tableNamePattern != null && !tableNamePattern.equals("%")) {
-				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
+				query.append(needWhere ? "WHERE" : " AND")
+				.append(" t.\"name\" ").append(composeMatchPart(tableNamePattern));
+				needWhere = false;
 			}
 		}
 
@@ -1906,7 +1910,8 @@ public class MonetDatabaseMetaData
 			if (preJul2015) {
 				query.append(") AS \"getTables\" WHERE \"TABLE_TYPE\" IN (");
 			} else {
-				query.append(" AND tt.\"table_type_name\" IN (");
+				query.append(needWhere ? "WHERE" : " AND")
+				.append(" tt.\"table_type_name\" IN (");
 			}
 			for (int i = 0; i < types.length; i++) {
 				if (i > 0) {
@@ -1950,15 +1955,15 @@ public class MonetDatabaseMetaData
 		final StringBuilder query = new StringBuilder(170);
 		query.append("SELECT \"name\" AS \"TABLE_SCHEM\", " +
 				"cast(null as char(1)) AS \"TABLE_CATALOG\" " +
-			"FROM \"sys\".\"schemas\"");
+			"FROM \"sys\".\"schemas\" ");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" WHERE 1=0");
+			query.append("WHERE 1=0");
 		} else {
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
-				query.append(" WHERE \"name\" ").append(composeMatchPart(schemaPattern));
+				query.append("WHERE \"name\" ").append(composeMatchPart(schemaPattern));
 			}
 		}
 		query.append(" ORDER BY \"TABLE_SCHEM\"");
@@ -2134,21 +2139,25 @@ public class MonetDatabaseMetaData
 		if (useCommentsTable) {
 			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON c.\"id\" = cm.\"id\" ");
 		}
-		query.append("WHERE 1=1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1=0");
+			query.append("WHERE 1=0");
 		} else {
+			boolean needWhere = true;
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
-				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append("WHERE s.\"name\" ").append(composeMatchPart(schemaPattern));
+				needWhere = false;
 			}
 			if (tableNamePattern != null && !tableNamePattern.equals("%")) {
-				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
+				query.append(needWhere ? "WHERE" : " AND")
+				.append(" t.\"name\" ").append(composeMatchPart(tableNamePattern));
+				needWhere = false;
 			}
 			if (columnNamePattern != null && !columnNamePattern.equals("%")) {
-				query.append(" AND c.\"name\" ").append(composeMatchPart(columnNamePattern));
+				query.append(needWhere ? "WHERE" : " AND")
+				.append(" c.\"name\" ").append(composeMatchPart(columnNamePattern));
 			}
 		}
 
@@ -2228,21 +2237,25 @@ public class MonetDatabaseMetaData
 		if (usePrivilege_codesTable) {
 			query.append("JOIN \"sys\".\"privilege_codes\" pc ON p.\"privileges\" = pc.\"privilege_code_id\" ");
 		}
-		query.append("WHERE 1=1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1=0");
+			query.append("WHERE 1=0");
 		} else {
+			boolean needWhere = true;
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
-				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append("WHERE s.\"name\" ").append(composeMatchPart(schemaPattern));
+				needWhere = false;
 			}
 			if (tableNamePattern != null && !tableNamePattern.equals("%")) {
-				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
+				query.append(needWhere ? "WHERE" : " AND")
+				.append(" t.\"name\" ").append(composeMatchPart(tableNamePattern));
+				needWhere = false;
 			}
 			if (columnNamePattern != null && !columnNamePattern.equals("%")) {
-				query.append(" AND c.\"name\" ").append(composeMatchPart(columnNamePattern));
+				query.append(needWhere ? "WHERE" : " AND")
+				.append(" c.\"name\" ").append(composeMatchPart(columnNamePattern));
 			}
 		}
 
@@ -2317,18 +2330,20 @@ public class MonetDatabaseMetaData
 		if (usePrivilege_codesTable) {
 			query.append("JOIN \"sys\".\"privilege_codes\" pc ON p.\"privileges\" = pc.\"privilege_code_id\" ");
 		}
-		query.append("WHERE 1=1");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1=0");
+			query.append("WHERE 1=0");
 		} else {
+			boolean needWhere = true;
 			if (schemaPattern != null && !schemaPattern.equals("%")) {
-				query.append(" AND s.\"name\" ").append(composeMatchPart(schemaPattern));
+				query.append("WHERE s.\"name\" ").append(composeMatchPart(schemaPattern));
+				needWhere = false;
 			}
 			if (tableNamePattern != null && !tableNamePattern.equals("%")) {
-				query.append(" AND t.\"name\" ").append(composeMatchPart(tableNamePattern));
+				query.append(needWhere ? "WHERE" : " AND")
+				.append(" t.\"name\" ").append(composeMatchPart(tableNamePattern));
 			}
 		}
 
@@ -3047,22 +3062,26 @@ public class MonetDatabaseMetaData
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 		"JOIN \"sys\".\"objects\" o ON i.\"id\" = o.\"id\" " +
 		"JOIN \"sys\".\"columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-		"LEFT OUTER JOIN \"sys\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) " +	// primary (0) and unique keys (1) only
-		"WHERE 1=1");
+		"LEFT OUTER JOIN \"sys\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) ");	// primary (0) and unique keys (1) only
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1=0");
+			query.append("WHERE 1=0");
 		} else {
+			boolean needWhere = true;
 			if (schema != null && !schema.equals("%")) {
-				query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
+				query.append("WHERE s.\"name\" ").append(composeMatchPart(schema));
+				needWhere = false;
 			}
 			if (table != null && !table.equals("%")) {
-				query.append(" AND t.\"name\" ").append(composeMatchPart(table));
+				query.append(needWhere ? "WHERE" : " AND")
+				.append(" t.\"name\" ").append(composeMatchPart(table));
+				needWhere = false;
 			}
 			if (unique) {
-				query.append(" AND k.\"name\" IS NOT NULL");
+				query.append(needWhere ? "WHERE" : " AND")
+				.append(" k.\"name\" IS NOT NULL");
 			}
 		}
 
@@ -3923,7 +3942,7 @@ public class MonetDatabaseMetaData
 	}
 
 	//== 1.7 methods (JDBC 4.1)
-	
+
 	/**
 	 * Retrieves a description of the pseudo or hidden columns available
 	 * in a given table within the specified catalog and schema.  Pseudo
