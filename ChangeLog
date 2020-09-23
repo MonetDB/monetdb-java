@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Sep 23 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected MonetDatabaseMetaData.getTypeInfo()
+  - The LITERAL_PREFIX column now includes the required casting name for types: clob, inet, json, url, uuid and blob.
+  - The SEARCHABLE column now returns typePredBasic instead of typeSearchable for type: blob.
+  - The AUTO_INCREMENT column now returns false for types: hugeint, decimal, oid and wrd.
+
 * Thu Sep 10 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Removed support for deprecated MD5 encryption algorithm in MapiSocket.
 

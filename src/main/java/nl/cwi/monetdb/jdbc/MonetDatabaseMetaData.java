@@ -2931,8 +2931,9 @@ public class MonetDatabaseMetaData
 		query.append("SELECT \"sqlname\" AS \"TYPE_NAME\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("\"sqlname\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"\"digits\" AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
-			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','blob','sqlblob') THEN ''''" +
-				" ELSE NULL END AS varchar(2)) AS \"LITERAL_PREFIX\", " +
+			"cast(CASE WHEN \"sqlname\" IN ('char','varchar') THEN ''''" +
+				" WHEN \"sqlname\" IN ('clob','inet','json','url','uuid','blob','sqlblob') THEN \"sqlname\"||' '''" +
+				" ELSE NULL END AS varchar(9)) AS \"LITERAL_PREFIX\", " +
 			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','blob','sqlblob') THEN ''''" +
 				" ELSE NULL END AS varchar(2)) AS \"LITERAL_SUFFIX\", " +
 			"CASE WHEN \"sqlname\" IN ('char', 'varchar') THEN 'max length'" +
@@ -2942,11 +2943,11 @@ public class MonetDatabaseMetaData
 			"cast(CASE WHEN \"systemname\" = 'oid' THEN ").append(DatabaseMetaData.typeNoNulls)
 				.append(" ELSE ").append(DatabaseMetaData.typeNullable).append(" END AS smallint) AS \"NULLABLE\", " +
 			"CASE WHEN \"systemname\" IN ('str','json','url') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
-			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','blob','sqlblob') THEN ").append(DatabaseMetaData.typeSearchable)
+			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid') THEN ").append(DatabaseMetaData.typeSearchable)
 				.append(" ELSE ").append(DatabaseMetaData.typePredBasic).append(" END AS smallint) AS \"SEARCHABLE\", " +
 			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','real','double','sec_interval','month_interval') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
 			"CASE \"sqlname\" WHEN 'decimal' THEN true ELSE false END AS \"FIXED_PREC_SCALE\", " +
-			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','oid','wrd') THEN true ELSE false END AS \"AUTO_INCREMENT\", " +
+			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint') THEN true ELSE false END AS \"AUTO_INCREMENT\", " +
 			"\"systemname\" AS \"LOCAL_TYPE_NAME\", " +
 			"cast(0 AS smallint) AS \"MINIMUM_SCALE\", " +
 			"cast(CASE WHEN \"sqlname\" = 'decimal' THEN (CASE \"systemname\" WHEN 'lng' THEN 18 WHEN 'hge' THEN 38 WHEN 'int' THEN 9 WHEN 'sht' THEN 4 WHEN 'bte' THEN 2 ELSE 0 END)" +
