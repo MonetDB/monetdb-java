@@ -23,6 +23,7 @@ import java.sql.Ref;
 import java.sql.RowId;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.sql.SQLType;	// new as of Java 1.8
 import java.sql.SQLXML;
 import java.sql.Time;
 import java.sql.Timestamp;
@@ -63,7 +64,7 @@ import java.util.Map;
  * because output parameters in stored procedures are not supported by MonetDB.
  *
  * @author Martin van Dinther
- * @version 1.0
+ * @version 1.1
  */
 
 public class MonetCallableStatement
@@ -629,6 +630,45 @@ public class MonetCallableStatement
 		// wasNull() method is NOT supported
 		// because output parameters in stored procedures are not supported by MonetDB
 		throw newSQLFeatureNotSupportedException("wasNull");
+	}
+
+	//== Java 1.8 methods (JDBC 4.2)
+
+	@Override
+	public void setObject(String parameterName, Object x, SQLType targetSqlType, int scaleOrLength) throws SQLException {
+		// setObject(nameToIndex(parameterName), x, convertSQLType(targetSqlType), scaleOrLength);	// TODO implement convertSQLType(targetSqlType)
+		throw newSQLFeatureNotSupportedException("setObject");
+	}
+
+	@Override
+	public void setObject(String parameterName, Object x, SQLType targetSqlType) throws SQLException {
+		// setObject(nameToIndex(parameterName), x, convertSQLType(targetSqlType));	// TODO implement convertSQLType(targetSqlType)
+		throw newSQLFeatureNotSupportedException("setObject");
+	}
+
+	@Override
+	public void registerOutParameter(int parameterIndex, SQLType sqlType) throws SQLException {
+		throw newSQLFeatureNotSupportedException("registerOutParameter");
+	}
+	@Override
+	public void registerOutParameter(int parameterIndex, SQLType sqlType, int scale) throws SQLException {
+		throw newSQLFeatureNotSupportedException("registerOutParameter");
+	}
+	@Override
+	public void registerOutParameter(int parameterIndex, SQLType sqlType, String typeName) throws SQLException {
+		throw newSQLFeatureNotSupportedException("registerOutParameter");
+	}
+	@Override
+	public void registerOutParameter(String parameterName, SQLType sqlType) throws SQLException {
+		throw newSQLFeatureNotSupportedException("registerOutParameter");
+	}
+	@Override
+	public void registerOutParameter(String parameterName, SQLType sqlType, int scale) throws SQLException {
+		throw newSQLFeatureNotSupportedException("registerOutParameter");
+	}
+	@Override
+	public void registerOutParameter(String parameterName, SQLType sqlType, String typeName) throws SQLException {
+		throw newSQLFeatureNotSupportedException("registerOutParameter");
 	}
 
 	// end methods interface CallableStatement

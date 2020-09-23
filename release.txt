@@ -43,8 +43,8 @@ See also: https://www.monetdb.org/Documentation/SQLreference/Programming/JDBC
 
 JDBC COMPLIANCE
 The MonetDB JDBC driver is a type 4 driver (100% pure Java) and
-complies to JDBC 4.1 definition, see
- http://docs.oracle.com/javase/7/docs/technotes/guides/jdbc/index.html
+complies to JDBC 4.2 definition, see
+ http://docs.oracle.com/javase/8/docs/technotes/guides/jdbc/index.html
 and
  https://en.wikipedia.org/wiki/Java_Database_Connectivity
 
@@ -60,7 +60,7 @@ If you feel some features are missing or have encountered an issue/bug,
 please let us know at our bugtracker:
   https://www.monetdb.org/bugzilla/
 
-Currently implemented JDBC 4.1 interfaces include:
+Currently implemented JDBC 4.2 interfaces include:
   * java.sql.Driver
 
   * java.sql.Connection
@@ -138,11 +138,13 @@ Currently implemented JDBC 4.1 interfaces include:
 
 The following java.sql.* interfaces are NOT implemented:
   * java.sql.Array
+  * java.sql.DriverAction
   * java.sql.NClob
   * java.sql.Ref
   * java.sql.Rowid
   * java.sql.SQLInput
   * java.sql.SQLOutput
+  * java.sql.SQLType
   * java.sql.SQLXML
   * java.sql.Struct
 

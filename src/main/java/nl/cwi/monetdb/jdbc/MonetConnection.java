@@ -2697,7 +2697,7 @@ public class MonetConnection
 		/** The cache size (number of rows in a DataBlockResponse object) */
 		private final int cachesize;
 		/** The maximum number of results for this query */
-		private final int maxrows;
+		private final long maxrows;
 		/** The ResultSet type to produce */
 		private final int rstype;
 		/** The ResultSet concurrency to produce */
@@ -2726,7 +2726,7 @@ public class MonetConnection
 		 */
 		ResponseList(
 			final int cachesize,
-			final int maxrows,
+			final long maxrows,
 			final int rstype,
 			final int rsconcur
 		) throws SQLException {
@@ -2858,7 +2858,7 @@ public class MonetConnection
 					 */
 					int size = (cachesize == 0 ? DEF_FETCHSIZE : cachesize);
 					if (maxrows > 0 && maxrows < size)
-						size = maxrows;
+						size = (int)maxrows;
 					// don't do work if it's not needed
 					if (lang == LANG_SQL && size != curReplySize && templ != commandTempl) {
 						sendControlCommand("reply_size " + size);
@@ -2887,12 +2887,12 @@ public class MonetConnection
 								case StartOfHeaderParser.Q_TABLE:
 								case StartOfHeaderParser.Q_PREPARE: {
 									final int id = sohp.getNextAsInt();
-									int tuplecount = sohp.getNextAsInt();
+									int tuplecount = sohp.getNextAsInt();	// TODO implement StartOfHeaderParser.getNextAsLong() and change tuplecount to long
 									final int columncount = sohp.getNextAsInt();
 									final int rowcount = sohp.getNextAsInt();
 									// enforce the maxrows setting
 									if (maxrows != 0 && tuplecount > maxrows)
-										tuplecount = maxrows;
+										tuplecount = (int)maxrows;
 									res = new ResultSetResponse(id, tuplecount, columncount, rowcount, this, seqnr);
 									// only add this resultset to the hashmap if it can possibly have an additional datablock
 									if (rowcount < tuplecount) {

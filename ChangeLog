@@ -2,10 +2,20 @@
 # This file is updated with Maddlog
 
 * Wed Sep 23 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Updated JDBC driver to comply with JDBC 4.2 interface now we compile
+  for Java 8. This includes:
+  - adding 8 methods to MonetCallableStatement
+  - adding 2 methods to MonetDatabaseMetaData
+  - adding 3 methods to MonetPreparedStatement
+  - adding 4 methods to MonetResultSet
+  - adding 8 methods to MonetStatement
 - Corrected MonetDatabaseMetaData.getTypeInfo()
-  - The LITERAL_PREFIX column now includes the required casting name for types: clob, inet, json, url, uuid and blob.
-  - The SEARCHABLE column now returns typePredBasic instead of typeSearchable for type: blob.
-  - The AUTO_INCREMENT column now returns false for types: hugeint, decimal, oid and wrd.
+  - The LITERAL_PREFIX column now includes the required casting name for
+    types: clob, inet, json, url, uuid and blob.
+  - The SEARCHABLE column now returns typePredBasic instead of typeSearchable
+    for type: blob.
+  - The AUTO_INCREMENT column now returns false for types: hugeint, decimal,
+    oid and wrd.
 
 * Thu Sep 10 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Removed support for deprecated MD5 encryption algorithm in MapiSocket.

@@ -22,7 +22,7 @@ import java.sql.Types;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 0.9
+ * @version 1.0
  */
 public class MonetDatabaseMetaData
 	extends MonetWrapper
@@ -4023,12 +4023,12 @@ public class MonetDatabaseMetaData
 		return true;
 	}
 
-	//== 1.8 methods (JDBC 4.2)
+	//== Java 1.8 methods (JDBC 4.2)
 
 	/**
 	 * Retrieves the maximum number of bytes this database allows for the logical size for a LOB.
 	 * The default implementation will return 0
-	 * @return the maximum number of bytes
+	 * @return the maximum number of bytes allowed; a result of zero means that there is no limit or the limit is not known
 	 */
 	@Override
 	public long getMaxLogicalLobSize() {
@@ -4038,7 +4038,7 @@ public class MonetDatabaseMetaData
 	/**
 	 * Retrieves whether this database supports REF CURSOR.
 	 * The default implementation will return false
-	 * @return true if so, false otherwise
+	 * @return true if this database supports REF CURSOR; false otherwise
 	 */
 	@Override
 	public boolean supportsRefCursors() {

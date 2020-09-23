@@ -30,6 +30,7 @@ import java.sql.SQLDataException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLOutput;
+import java.sql.SQLType;	// new as of Java 1.8
 import java.sql.SQLXML;
 import java.sql.Struct;
 import java.sql.Time;
@@ -61,7 +62,7 @@ import java.util.Map;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 0.5
+ * @version 0.6
  */
 public class MonetPreparedStatement
 	extends MonetStatement
@@ -2613,7 +2614,45 @@ public class MonetPreparedStatement
 		close();
 	}
 
+	//== Java 1.8 methods (JDBC 4.2)
+
+	@Override
+	public void setObject(final int parameterIndex, final Object x, final SQLType targetSqlType, final int scaleOrLength) throws SQLException {
+		// setObject(parameterIndex, x, convertSQLType(targetSqlType), scaleOrLength);	// TODO implement convertSQLType(targetSqlType)
+		throw newSQLFeatureNotSupportedException("setObject");
+	}
+
+	@Override
+	public void setObject(final int parameterIndex, final Object x, final SQLType targetSqlType) throws SQLException {
+		// setObject(parameterIndex, x, convertSQLType(targetSqlType));	// TODO implement convertSQLType(targetSqlType)
+		throw newSQLFeatureNotSupportedException("setObject");
+	}
+
+	/**
+	 * Executes the SQL statement in this PreparedStatement object, which must be
+	 * an SQL Data Manipulation Language (DML) statement, such as INSERT, UPDATE or DELETE statement;
+	 * or an SQL statement that returns nothing, such as a DDL statement.
+	 *
+	 * This method should be used when the returned row count may exceed Integer.MAX_VALUE.
+	 * The default implementation will throw UnsupportedOperationException
+	 *
+	 * @return either (1) the row count for SQL Data Manipulation Language (DML) statements
+	 *         or (2) 0 for SQL statements that return nothing
+	 * @throws SQLException if a database access error occurs; this method is called on a closed PreparedStatement
+	 *		or the SQL statement returns a ResultSet object
+	 */
+	@Override
+	public long executeLargeUpdate() throws SQLException {
+		if (execute() != false)
+			throw new SQLException("Query produced a result set", "M1M17");
+
+		return getLargeUpdateCount();
+	}
+
 	//== end methods interface PreparedStatement
+
+
+	//== internal helper methods which do not belong to the JDBC interface
 
 	/**
 	 * Sets the given index with the supplied value. If the given index is

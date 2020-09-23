@@ -29,6 +29,7 @@ import java.sql.SQLDataException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLInput;
+import java.sql.SQLType;	// new as of Java 1.8
 import java.sql.SQLWarning;
 import java.sql.SQLXML;
 import java.sql.Statement;
@@ -58,8 +59,9 @@ import java.util.TimeZone;
  * for FORWARD_ONLY result sets the memory usage will be likely lower for large
  * result sets.
  *
- * @author Fabian Groffen, Martin van Dinther
- * @version 0.8
+ * @author Fabian Groffen
+ * @author Martin van Dinther
+ * @version 0.9
  */
 public class MonetResultSet
 	extends MonetWrapper
@@ -2213,63 +2215,6 @@ public class MonetResultSet
 	}
 
 	/**
-	 * Retrieves the value of the designated column in the current row
-	 * of this ResultSet object and will convert from the SQL type of
-	 * the column to the requested Java data type, if the conversion is
-	 * supported.  If the conversion is not supported or null is
-	 * specified for the type, a SQLException is thrown.
-	 *
-	 * At a minimum, an implementation must support the conversions defined
-	 * in Appendix B, Table B-3 and conversion of appropriate user defined
-	 * SQL types to a Java type which implements SQLData, or Struct.
-	 * Additional conversions may be supported and are vendor defined.
-	 *
-	 * @param columnIndex the first column is 1, the second is 2, ...
-	 * @param type Class representing the Java data type to convert the
-	 *        designated column to
-	 * @return an instance of type holding the column value
-	 * @throws SQLException if conversion is not supported, type is
-	 *         null or another error occurs. The getCause() method of
-	 *         the exception may provide a more detailed exception, for
-	 *         example, if a conversion error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
-	 */
-	@Override
-	public <T> T getObject(final int columnIndex, final Class<T> type) throws SQLException {
-		checkNotClosed();
-		if (type == null)
-			throw new SQLException("type is null", "M1M05");
-
-		throw newSQLFeatureNotSupportedException("getObject(column, Class<T> type)");
-	}
-
-	/**
-	 * Retrieves the value of the designated column in the current row
-	 * of this ResultSet object and will convert from the SQL type of
-	 * the column to the requested Java data type, if the conversion is
-	 * supported.  If the conversion is not supported or null is
-	 * specified for the type, a SQLException is thrown.
-	 *
-	 * @param columnLabel the label for the column specified with the
-	 *        SQL AS clause. If the SQL AS clause was not specified,
-	 *        then the label is the name of the column
-	 * @param type Class representing the Java data type to convert the
-	 *        designated column to
-	 * @return an instance of type holding the column value
-	 * @throws SQLException if conversion is not supported, type is
-	 *         null or another error occurs. The getCause() method of
-	 *         the exception may provide a more detailed exception, for
-	 *         example, if a conversion error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
-	 */
-	@Override
-	public <T> T getObject(final String columnLabel, final Class<T> type) throws SQLException {
-		return getObject(findColumn(columnLabel), type);
-	}
-
-	/**
 	 * Helper method to support the getObject and
 	 * ResultsetMetaData.getColumnClassName JDBC methods.
 	 *
@@ -3785,7 +3730,91 @@ public class MonetResultSet
 		return lastReadWasNull;
 	}
 
+	//== Java 1.7 methods (JDBC 4.1)
+
+	/**
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object and will convert from the SQL type of
+	 * the column to the requested Java data type, if the conversion is
+	 * supported.  If the conversion is not supported or null is
+	 * specified for the type, a SQLException is thrown.
+	 *
+	 * At a minimum, an implementation must support the conversions defined
+	 * in Appendix B, Table B-3 and conversion of appropriate user defined
+	 * SQL types to a Java type which implements SQLData, or Struct.
+	 * Additional conversions may be supported and are vendor defined.
+	 *
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @param type Class representing the Java data type to convert the
+	 *        designated column to
+	 * @return an instance of type holding the column value
+	 * @throws SQLException if conversion is not supported, type is
+	 *         null or another error occurs. The getCause() method of
+	 *         the exception may provide a more detailed exception, for
+	 *         example, if a conversion error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
+	 */
+	@Override
+	public <T> T getObject(final int columnIndex, final Class<T> type) throws SQLException {
+		checkNotClosed();
+		if (type == null)
+			throw new SQLException("type is null", "M1M05");
+
+		throw newSQLFeatureNotSupportedException("getObject(column, Class<T> type)");
+	}
+
+	/**
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object and will convert from the SQL type of
+	 * the column to the requested Java data type, if the conversion is
+	 * supported.  If the conversion is not supported or null is
+	 * specified for the type, a SQLException is thrown.
+	 *
+	 * @param columnLabel the label for the column specified with the
+	 *        SQL AS clause. If the SQL AS clause was not specified,
+	 *        then the label is the name of the column
+	 * @param type Class representing the Java data type to convert the
+	 *        designated column to
+	 * @return an instance of type holding the column value
+	 * @throws SQLException if conversion is not supported, type is
+	 *         null or another error occurs. The getCause() method of
+	 *         the exception may provide a more detailed exception, for
+	 *         example, if a conversion error occurs
+	 * @throws SQLFeatureNotSupportedException the JDBC driver does
+	 *         not support this method
+	 */
+	@Override
+	public <T> T getObject(final String columnLabel, final Class<T> type) throws SQLException {
+		return getObject(findColumn(columnLabel), type);
+	}
+
+	//== Java 1.8 methods (JDBC 4.2)
+
+	@Override
+	public void updateObject(int columnIndex, Object x, SQLType targetSqlType, int scaleOrLength) throws SQLException {
+		throw newSQLFeatureNotSupportedException("updateObject");
+	}
+
+	@Override
+	public void updateObject(String columnLabel, Object x, SQLType targetSqlType, int scaleOrLength) throws SQLException {
+		throw newSQLFeatureNotSupportedException("updateObject");
+	}
+
+	@Override
+	public void updateObject(int columnIndex, Object x, SQLType targetSqlType) throws SQLException {
+		throw newSQLFeatureNotSupportedException("updateObject");
+	}
+
+	@Override
+	public void updateObject(String columnLabel, Object x, SQLType targetSqlType) throws SQLException {
+		throw newSQLFeatureNotSupportedException("updateObject");
+	}
+
 	//== end methods of interface ResultSet
+
+
+	//== internal helper methods which do not belong to the JDBC interface
 
 	/**
 	 * Adds a warning to the pile of warnings this ResultSet object has. If
@@ -3837,4 +3866,3 @@ public class MonetResultSet
 		return new SQLDataException("Could not convert value to a number. " + error.getMessage(), "22003");
 	}
 }
-
