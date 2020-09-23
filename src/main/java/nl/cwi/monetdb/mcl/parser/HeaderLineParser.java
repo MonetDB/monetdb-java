@@ -52,9 +52,10 @@ public final class HeaderLineParser extends MCLParser {
 		int pos = 0;
 		boolean foundChar = false;
 		boolean nameFound = false;
+		int i;
 
 		// find header name searching from the end of the line
-		for (int i = len - 1; i >= 0; i--) {
+		for (i = len - 1; i >= 0; i--) {
 			switch (chrLine[i]) {
 				case ' ':
 				case '\n':
@@ -84,27 +85,32 @@ public final class HeaderLineParser extends MCLParser {
 
 		// depending on the name of the header, we continue
 		int type = 0;
+		i = pos;
 		switch (len - pos) {
 			case 4:
-				// source.regionMatches(pos + 1, "name", 1, 3)
-				if (chrLine[pos] == 'n' && chrLine[pos+1] == 'a' && chrLine[pos+2] == 'm' && chrLine[pos+3] == 'e') {
+				// source.regionMatches(pos + 1, "name", 0, 4)
+				if (chrLine[i] == 'n' && chrLine[++i] == 'a' && chrLine[++i] == 'm' && chrLine[++i] == 'e') {
 					getValues(chrLine, 2, pos - 3);
 					type = NAME;
 				} else
-				// source.regionMatches(pos + 1, "type", 1, 3)
-				if (chrLine[pos] == 't' && chrLine[pos+1] == 'y' && chrLine[pos+2] == 'p' && chrLine[pos+3] == 'e') {
+				// source.regionMatches(pos + 1, "type", 0, 4)
+				if (chrLine[i] == 't' && chrLine[++i] == 'y' && chrLine[++i] == 'p' && chrLine[++i] == 'e') {
 					getValues(chrLine, 2, pos - 3);
 					type = TYPE;
 				}
 				break;
 			case 6:
-				if (source.regionMatches(pos + 1, "length", 1, 5)) {
+				// source.regionMatches(pos + 1, "length", 0, 6)
+				if (chrLine[ i ] == 'l' && chrLine[++i] == 'e' && chrLine[++i] == 'n' && chrLine[++i] == 'g'
+				 && chrLine[++i] == 't' && chrLine[++i] == 'h') {
 					getIntValues(chrLine, 2, pos - 3);
 					type = LENGTH;
 				}
 				break;
 			case 10:
-				if (source.regionMatches(pos + 1, "table_name", 1, 9)) {
+				// source.regionMatches(pos + 1, "table_name", 0, 10)
+				if (chrLine[ i ] == 't' && chrLine[++i] == 'a' && chrLine[++i] == 'b' && chrLine[++i] == 'l' && chrLine[++i] == 'e'
+				 && chrLine[++i] == '_' && chrLine[++i] == 'n' && chrLine[++i] == 'a' && chrLine[++i] == 'm' && chrLine[++i] == 'e') {
 					getValues(chrLine, 2, pos - 3);
 					type = TABLE;
 				}
