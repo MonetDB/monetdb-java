@@ -89,13 +89,24 @@ public final class StartOfHeaderParser {
 	/**
 	 * Returns the next token in the CharBuffer as integer. The value is
 	 * considered to end at the end of the CharBuffer or at a space.  If
-	 * a non-numeric character is encountered an MCLParseException is
-	 * thrown.
+	 * a non-numeric character is encountered an MCLParseException is thrown.
 	 *
 	 * @return The next token in the CharBuffer as integer
 	 * @throws MCLParseException if no numeric value could be read
 	 */
 	public final int getNextAsInt() throws MCLParseException {
+		return (int) getNextAsLong();
+	}
+
+	/**
+	 * Returns the next token in the CharBuffer as long integer. The value
+	 * is considered to end at the end of the CharBuffer or at a space.
+	 * If a non-numeric character is encountered an MCLParseException is thrown.
+	 *
+	 * @return The next token in the CharBuffer as long integer
+	 * @throws MCLParseException if no numeric value could be read
+	 */
+	public final long getNextAsLong() throws MCLParseException {
 		pos++;
 		if (!soh.hasRemaining())
 			throw new MCLParseException("unexpected end of string", soh.position() - 1);
@@ -111,7 +122,7 @@ public final class StartOfHeaderParser {
 			chr = soh.get();
 		}
 
-		int tmp = 0;
+		long tmp = 0;
 		if (chr >= '0' && chr <= '9') {
 			tmp = (int)chr - (int)'0';
 		} else {

@@ -88,7 +88,7 @@ public class MonetResultSet
 	/** The current line of the buffer split in columns */
 	protected final TupleLineParser tlp;
 	/** The number of rows in this ResultSet */
-	protected final int tupleCount;
+	protected final long tupleCount;
 	/** The current position of the cursor for this ResultSet object */
 	protected int curRow = 0;
 
@@ -252,13 +252,13 @@ public class MonetResultSet
 		// first calculate what the JDBC row is
 		if (row < 0) {
 			// calculate the negatives...
-			row = tupleCount + row + 1;
+			row = (int) tupleCount + row + 1;
 		}
 		// now place the row not farther than just before or after the result
 		if (row < 0)
 			row = 0;	// before first
 		else if (row > tupleCount + 1)
-			row = tupleCount + 1;	// after last
+			row = (int) tupleCount + 1;	// after last
 
 		// store it
 		curRow = row;
@@ -285,7 +285,7 @@ public class MonetResultSet
 	 */
 	@Override
 	public void afterLast() throws SQLException {
-		absolute(tupleCount + 1);
+		absolute((int)tupleCount + 1);
 	}
 
 	/**

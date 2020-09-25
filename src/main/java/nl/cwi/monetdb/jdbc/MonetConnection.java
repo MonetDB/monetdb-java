@@ -2063,7 +2063,7 @@ public class MonetConnection
 		/** The number of columns in this result */
 		public final int columncount;
 		/** The total number of rows this result set has */
-		public final int tuplecount;
+		public final long tuplecount;
 		/** The numbers of rows to retrieve per DataBlockResponse */
 		private int cacheSize;
 		/** The table ID of this result */
@@ -2119,7 +2119,7 @@ public class MonetConnection
 		 */
 		ResultSetResponse(
 				final int id,
-				final int tuplecount,
+				final long tuplecount,
 				final int columncount,
 				final int rowcount,
 				final MonetConnection.ResponseList parent,
@@ -2156,7 +2156,7 @@ public class MonetConnection
 			this.id = id;
 			this.tuplecount = tuplecount;
 			this.columncount = columncount;
-			this.resultBlocks = new DataBlockResponse[(tuplecount / cacheSize) + 1];
+			this.resultBlocks = new DataBlockResponse[(int)(tuplecount / cacheSize) + 1];
 
 			hlp = new HeaderLineParser(columncount);
 
@@ -2887,12 +2887,12 @@ public class MonetConnection
 								case StartOfHeaderParser.Q_TABLE:
 								case StartOfHeaderParser.Q_PREPARE: {
 									final int id = sohp.getNextAsInt();
-									int tuplecount = sohp.getNextAsInt();	// TODO implement StartOfHeaderParser.getNextAsLong() and change tuplecount to long
+									long tuplecount = sohp.getNextAsLong();
 									final int columncount = sohp.getNextAsInt();
 									final int rowcount = sohp.getNextAsInt();
 									// enforce the maxrows setting
 									if (maxrows != 0 && tuplecount > maxrows)
-										tuplecount = (int)maxrows;
+										tuplecount = maxrows;
 									res = new ResultSetResponse(id, tuplecount, columncount, rowcount, this, seqnr);
 									// only add this resultset to the hashmap if it can possibly have an additional datablock
 									if (rowcount < tuplecount) {

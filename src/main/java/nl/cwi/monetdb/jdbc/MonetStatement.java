@@ -1544,13 +1544,13 @@ final class MonetVirtualResultSet extends MonetResultSet {
 		// first calculate what the JDBC row is
 		if (row < 0) {
 			// calculate the negatives...
-			row = tupleCount + row + 1;
+			row = (int) tupleCount + row + 1;
 		}
 		// now place the row not farther than just before or after the result
 		if (row < 0)
 			row = 0;	// before first
 		else if (row > tupleCount + 1)
-			row = tupleCount + 1;	// after last
+			row = (int) tupleCount + 1;	// after last
 
 		// store it
 		curRow = row;

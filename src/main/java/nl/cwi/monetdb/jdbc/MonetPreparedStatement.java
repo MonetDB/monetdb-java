@@ -126,7 +126,7 @@ public class MonetPreparedStatement
 
 		// cheat a bit to get the ID and the number of columns
 		id = ((MonetConnection.ResultSetResponse)header).id;
-		size = ((MonetConnection.ResultSetResponse)header).tuplecount;
+		size = (int)((MonetConnection.ResultSetResponse)header).tuplecount;
 		rscolcnt = ((MonetConnection.ResultSetResponse)header).columncount;
 
 		// initialise blank finals
