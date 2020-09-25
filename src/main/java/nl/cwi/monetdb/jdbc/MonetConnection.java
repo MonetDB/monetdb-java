@@ -2601,10 +2601,10 @@ public class MonetConnection
 	 */
 	// {{{ UpdateResponse class implementation
 	final static class UpdateResponse implements Response {
-		public final int count;
+		public final long count;
 		public final String lastid;
 
-		public UpdateResponse(final int cnt, final String id) {
+		public UpdateResponse(final long cnt, final String id) {
 			// fill the blank finals
 			this.count = cnt;
 			this.lastid = id;
@@ -2902,7 +2902,7 @@ public class MonetConnection
 									}
 								} break;
 								case StartOfHeaderParser.Q_UPDATE:
-									res = new UpdateResponse(sohp.getNextAsInt(),   // count
+									res = new UpdateResponse(sohp.getNextAsLong(),   // count
 												 sohp.getNextAsString() // key-id
 												);
 									break;

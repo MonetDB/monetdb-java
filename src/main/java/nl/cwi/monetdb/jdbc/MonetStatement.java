@@ -929,16 +929,10 @@ public class MonetStatement
 	 */
 	@Override
 	public int getUpdateCount() throws SQLException {
-		int ret = -1;
-		if (header != null) {
-			if (header instanceof MonetConnection.UpdateResponse) {
-				ret = ((MonetConnection.UpdateResponse)header).count;
-			} else if (header instanceof MonetConnection.SchemaResponse) {
-				ret = ((MonetConnection.SchemaResponse)header).state;
-			}
-		}
-
-		return ret;
+		long ret = getLargeUpdateCount();
+		if (ret >= Integer.MAX_VALUE)
+			return Integer.MAX_VALUE;
+		return (int)ret;
 	}
 
 	/**
@@ -1218,7 +1212,16 @@ public class MonetStatement
 	 *	method is called on a closed Statement
 	 */
 	public long getLargeUpdateCount() throws SQLException {
-		return getUpdateCount();
+		long ret = -1;
+		if (header != null) {
+			if (header instanceof MonetConnection.UpdateResponse) {
+				ret = ((MonetConnection.UpdateResponse)header).count;
+			} else if (header instanceof MonetConnection.SchemaResponse) {
+				ret = ((MonetConnection.SchemaResponse)header).state;
+			}
+		}
+
+		return ret;
 	}
 
 	/**
