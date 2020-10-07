@@ -505,11 +505,13 @@ public class MonetPreparedStatement
 								return false;
 						}
 						return true;
-					case Types.BIT: // we don't use type BIT, it's here for completeness
-					case Types.BOOLEAN:
-					case Types.DATE:
-					case Types.TIME:
-					case Types.TIMESTAMP:
+				//	All other types should return false
+				//	case Types.BOOLEAN:
+				//	case Types.DATE:
+				//	case Types.TIME:
+				//	case Types.TIME_WITH_TIMEZONE:
+				//	case Types.TIMESTAMP:
+				//	case Types.TIMESTAMP_WITH_TIMEZONE:
 					default:
 						return false;
 				}
@@ -841,11 +843,13 @@ public class MonetPreparedStatement
 								return false;
 						}
 						return true;
-					case Types.BIT: // we don't use type BIT, it's here for completeness
-					case Types.BOOLEAN:
-					case Types.DATE:
-					case Types.TIME:
-					case Types.TIMESTAMP:
+				//	All other types should return false
+				//	case Types.BOOLEAN:
+				//	case Types.DATE:
+				//	case Types.TIME:
+				//	case Types.TIME_WITH_TIMEZONE:
+				//	case Types.TIMESTAMP:
+				//	case Types.TIMESTAMP_WITH_TIMEZONE:
 					default:
 						return false;
 				}
@@ -1945,6 +1949,7 @@ public class MonetPreparedStatement
 					}
 				break;
 				case Types.TIME:
+				case Types.TIME_WITH_TIMEZONE:
 					if (x instanceof Time) {
 						setTime(parameterIndex, (Time)x);
 					} else if (x instanceof Timestamp) {
@@ -1960,6 +1965,7 @@ public class MonetPreparedStatement
 					}
 				break;
 				case Types.TIMESTAMP:
+				case Types.TIMESTAMP_WITH_TIMEZONE:
 					if (x instanceof Timestamp) {
 						setTimestamp(parameterIndex, (Timestamp)x);
 					} else if (x instanceof java.sql.Date) {
@@ -2332,17 +2338,19 @@ public class MonetPreparedStatement
 				break;
 			case Types.DATE:
 			case Types.TIME:
+			case Types.TIME_WITH_TIMEZONE:
 			case Types.TIMESTAMP:
+			case Types.TIMESTAMP_WITH_TIMEZONE:
 				try {
 					// check if the string represents a valid calendar date or time or timestamp to prevent
 					// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
 					if (paramJdbcType == Types.DATE) {
 						java.sql.Date datum = java.sql.Date.valueOf(x);
 					} else
-					if (paramJdbcType == Types.TIME) {
+					if (paramJdbcType == Types.TIME || paramJdbcType == Types.TIME_WITH_TIMEZONE) {
 						Time tijdstip = Time.valueOf(x);
 					} else
-					if (paramJdbcType == Types.TIMESTAMP) {
+					if (paramJdbcType == Types.TIMESTAMP || paramJdbcType == Types.TIMESTAMP_WITH_TIMEZONE) {
 						Timestamp tijdstip = Timestamp.valueOf(x);
 					}
 				} catch (IllegalArgumentException iae) {

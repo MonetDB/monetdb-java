@@ -638,7 +638,9 @@ public class MonetDatabaseMetaData
 			case Types.BLOB:
 			case Types.DATE:
 			case Types.TIME:
+			case Types.TIME_WITH_TIMEZONE:
 			case Types.TIMESTAMP:
+			case Types.TIMESTAMP_WITH_TIMEZONE:
 				return true;
 			}
 			// conversion to all other types is not supported
@@ -651,22 +653,26 @@ public class MonetDatabaseMetaData
 			case Types.CLOB:
 			case Types.DATE:
 			case Types.TIMESTAMP:
+			case Types.TIMESTAMP_WITH_TIMEZONE:
 				return true;
 			}
 			// conversion to all other types is not supported
 			return false;
 		case Types.TIME:
+		case Types.TIME_WITH_TIMEZONE:
 			switch (toType) {
 			case Types.CHAR:
 			case Types.VARCHAR:
 		/*	case Types.LONGVARCHAR: is not supported by MonetDB and will fail */
 			case Types.CLOB:
 			case Types.TIME:
+			case Types.TIME_WITH_TIMEZONE:
 				return true;
 			}
 			// conversion to all other types is not supported
 			return false;
 		case Types.TIMESTAMP:
+		case Types.TIMESTAMP_WITH_TIMEZONE:
 			switch (toType) {
 			case Types.CHAR:
 			case Types.VARCHAR:
@@ -674,7 +680,9 @@ public class MonetDatabaseMetaData
 			case Types.CLOB:
 			case Types.DATE:
 			case Types.TIME:
+			case Types.TIME_WITH_TIMEZONE:
 			case Types.TIMESTAMP:
+			case Types.TIMESTAMP_WITH_TIMEZONE:
 				return true;
 			}
 			// conversion to all other types is not supported

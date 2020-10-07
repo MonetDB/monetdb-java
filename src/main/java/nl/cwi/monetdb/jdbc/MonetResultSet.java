@@ -1433,11 +1433,13 @@ public class MonetResultSet
 								return false;
 						}
 						return true;
-					case Types.BIT: // we don't use type BIT, it's here for completeness
-					case Types.BOOLEAN:
-					case Types.DATE:
-					case Types.TIME:
-					case Types.TIMESTAMP:
+				//	All other types should return false
+				//	case Types.BOOLEAN:
+				//	case Types.DATE:
+				//	case Types.TIME:
+				//	case Types.TIME_WITH_TIMEZONE:
+				//	case Types.TIMESTAMP:
+				//	case Types.TIMESTAMP_WITH_TIMEZONE:
 					default:
 						return false;
 				}
@@ -1573,9 +1575,11 @@ public class MonetResultSet
 								_precision[column] = 10;
 								break;
 							case Types.TIME:
+							case Types.TIME_WITH_TIMEZONE:
 								_precision[column] = 8;
 								break;
 							case Types.TIMESTAMP:
+							case Types.TIMESTAMP_WITH_TIMEZONE:
 								_precision[column] = 19;
 								break;
 							default:
@@ -1943,8 +1947,10 @@ public class MonetResultSet
 			case Types.DATE:
 				return getDate(columnIndex, null);
 			case Types.TIME:
+			case Types.TIME_WITH_TIMEZONE:
 				return getTime(columnIndex, null);
 			case Types.TIMESTAMP:
+			case Types.TIMESTAMP_WITH_TIMEZONE:
 				return getTimestamp(columnIndex, null);
 			case Types.BINARY:
 			case Types.VARBINARY:
@@ -2257,8 +2263,10 @@ public class MonetResultSet
 			case Types.DATE:
 				return java.sql.Date.class;
 			case Types.TIME:
+			case Types.TIME_WITH_TIMEZONE:
 				return Time.class;
 			case Types.TIMESTAMP:
+			case Types.TIMESTAMP_WITH_TIMEZONE:
 				return Timestamp.class;
 			case Types.CLOB:
 				return Clob.class;
@@ -2572,7 +2580,8 @@ public class MonetResultSet
 				JdbcType = type;
 			}
 
-			if ((JdbcType == Types.DATE || JdbcType == Types.TIMESTAMP) && monetDateStr.startsWith("-")) {
+			if ((JdbcType == Types.DATE || JdbcType == Types.TIMESTAMP || JdbcType == Types.TIMESTAMP_WITH_TIMEZONE)
+			 && monetDateStr.startsWith("-")) {
 				// the SimpleDateFormat parsers do not support to parse negative year numbers, deal with it separately
 				negativeYear = true;
 				monetDate = monetDateStr.substring(1);
@@ -2608,6 +2617,7 @@ public class MonetResultSet
 				pdate = dateFormat.parse(monetDate, ppos);
 				break;
 			case Types.TIME:
+			case Types.TIME_WITH_TIMEZONE:
 				if (timeFormat == null) {
 					// first time usage, create and keep the timeFormat object for next usage
 					timeFormat = new SimpleDateFormat("HH:mm:ss");
@@ -2616,6 +2626,7 @@ public class MonetResultSet
 				pdate = timeFormat.parse(monetDate, ppos);
 				break;
 			case Types.TIMESTAMP:
+			case Types.TIMESTAMP_WITH_TIMEZONE:
 				if (timestampFormat == null) {
 					// first time usage, create and keep the timestampFormat object for next usage
 					timestampFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
@@ -2660,7 +2671,10 @@ public class MonetResultSet
 			// System.out.println("Corrected cal: " + cal.toString());
 		}
 
-		if (JdbcType == Types.TIME || JdbcType == Types.TIMESTAMP) {
+		if (JdbcType == Types.TIME
+		 || JdbcType == Types.TIME_WITH_TIMEZONE
+		 || JdbcType == Types.TIMESTAMP
+		 || JdbcType == Types.TIMESTAMP_WITH_TIMEZONE) {
 			// parse additional nanos (if any)
 			int nanos = 0;
 			int pos = ppos.getIndex();

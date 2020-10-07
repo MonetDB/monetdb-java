@@ -323,7 +323,7 @@ final public class MonetDriver implements Driver {
 
 	/** A static Map containing the mapping between MonetDB types and Java SQL types */
 	/* use SELECT sqlname, * FROM sys.types order by 1, id; to view all MonetDB types */
-	/* see http://docs.oracle.com/javase/7/docs/api/java/sql/Types.html to view all supported java SQL types */
+	/* see http://docs.oracle.com/javase/8/docs/api/java/sql/Types.html to view all supported java SQL types */
 	private static final java.util.Map<String, Integer> typeMap = new java.util.HashMap<String, Integer>();
 	static {
 		// fill the typeMap once
@@ -354,10 +354,8 @@ final public class MonetDriver implements Driver {
 		// typeMap.put("table", Integer.valueOf(Types.???));
 		typeMap.put("time", Integer.valueOf(Types.TIME));
 		typeMap.put("timestamp", Integer.valueOf(Types.TIMESTAMP));
-		typeMap.put("timestamptz", Integer.valueOf(Types.TIMESTAMP));
-// new in Java 8: Types.TIMESTAMP_WITH_TIMEZONE (value 2014). Can't use it yet as we compile for java 7
-		typeMap.put("timetz", Integer.valueOf(Types.TIME));
-// new in Java 8: Types.TIME_WITH_TIMEZONE (value 2013). Can't use it yet as we compile for java 7
+		typeMap.put("timestamptz", Integer.valueOf(Types.TIMESTAMP_WITH_TIMEZONE));	// new in Java 8: Types.TIMESTAMP_WITH_TIMEZONE (value 2014)
+		typeMap.put("timetz", Integer.valueOf(Types.TIME_WITH_TIMEZONE));	// new in Java 8: Types.TIME_WITH_TIMEZONE (value 2013)
 		typeMap.put("tinyint", Integer.valueOf(Types.TINYINT));
 		typeMap.put("url", Integer.valueOf(Types.VARCHAR));
 		typeMap.put("uuid", Integer.valueOf(Types.VARCHAR));

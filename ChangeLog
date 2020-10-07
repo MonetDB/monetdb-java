@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Oct  7 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Added support for new Java 8 java.sql.Types: Types.TIME_WITH_TIMEZONE and
+  Types.TIMESTAMP_WITH_TIMEZONE.
+
 * Wed Sep 23 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Updated JDBC driver to comply with JDBC 4.2 interface now we compile
   for Java 8. This includes:
