@@ -1324,21 +1324,35 @@ public class MonetResultSet
 			/**
 			 * Indicates whether the designated column is automatically numbered.
 			 *
+			 * This method is currently very expensive for BIGINT,
+			 * INTEGER, SMALLINT and TINYINT result column types
+			 * as it needs to retrieve the information from the
+			 * database using an SQL meta data query.
+			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return true if so; false otherwise
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public boolean isAutoIncrement(final int column) throws SQLException {
-				checkColumnIndexValidity(column);
-				try {
-					if (_is_fetched[column] != true) {
-						fetchColumnInfo(column);
-					}
-					return _isAutoincrement[column];
-				} catch (IndexOutOfBoundsException e) {
-					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+				// only few integer types can be auto incrementable in MonetDB
+				// see: https://www.monetdb.org/Documentation/SQLReference/DataTypes/SerialDatatypes
+				switch (getColumnType(column)) {
+					case Types.BIGINT:
+					case Types.INTEGER:
+					case Types.SMALLINT:
+					case Types.TINYINT:
+						try {
+							if (_is_fetched[column] != true) {
+								fetchColumnInfo(column);
+							}
+							return _isAutoincrement[column];
+						} catch (IndexOutOfBoundsException e) {
+							throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+						}
 				}
+
+				return false;
 			}
 
 			/**
@@ -1414,14 +1428,14 @@ public class MonetResultSet
 			public boolean isSigned(final int column) throws SQLException {
 				// we can hardcode this, based on the colum type
 				switch (getColumnType(column)) {
-					case Types.NUMERIC:
-					case Types.DECIMAL:
 					case Types.TINYINT:
 					case Types.SMALLINT:
 					case Types.INTEGER:
 					case Types.REAL:
 					case Types.FLOAT:
 					case Types.DOUBLE:
+					case Types.DECIMAL:
+					case Types.NUMERIC:
 						return true;
 					case Types.BIGINT:
 						final String monettype = getColumnTypeName(column);
@@ -1434,10 +1448,10 @@ public class MonetResultSet
 						return true;
 				//	All other types should return false
 				//	case Types.BOOLEAN:
-				//	case Types.DATE:
-				//	case Types.TIME:
+				//	case Types.DATE:	// can year be negative?
+				//	case Types.TIME:	// can time be negative?
 				//	case Types.TIME_WITH_TIMEZONE:
-				//	case Types.TIMESTAMP:
+				//	case Types.TIMESTAMP:	// can year be negative?
 				//	case Types.TIMESTAMP_WITH_TIMEZONE:
 					default:
 						return false;
@@ -1516,10 +1530,20 @@ public class MonetResultSet
 			}
 
 			/**
-			 * Get the designated column's number of decimal digits.
-			 * This method is currently very expensive as it needs to
-			 * retrieve the information from the database using an SQL
-			 * query.
+			 * Get the designated column's specified column size.
+			 * For numeric data, this is the maximum precision.
+			 * For character data, this is the length in characters.
+			 * For datetime datatypes, this is the length in characters
+			 * of the String representation (assuming the maximum
+			 * allowed precision of the fractional seconds component).
+			 * For binary data, this is the length in bytes.
+			 * For the ROWID datatype, this is the length in bytes.
+			 * 0 is returned for data types where the column size is not applicable.
+			 *
+			 * This method is currently very expensive for DECIMAL, NUMERIC
+			 * CHAR, VARCHAR, CLOB, BLOB, VARBINARY and BINARY result
+			 * column types as it needs to retrieve the information
+			 * from the database using an SQL meta data query.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return precision
@@ -1527,73 +1551,76 @@ public class MonetResultSet
 			 */
 			@Override
 			public int getPrecision(final int column) throws SQLException {
-				checkColumnIndexValidity(column);
-				try {
-					if (_is_fetched[column] != true) {
-						fetchColumnInfo(column);
-					}
-					if (_precision[column] == 0) {
-						// apparently no precision could be fetched
-						// use columnDisplaySize() value for variable length data types
-						switch (getColumnType(column)) {
-							case Types.CHAR:
-							case Types.VARCHAR:
-							case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
-							case Types.CLOB:
-							case Types.BLOB:
-							case Types.NUMERIC:
-							case Types.DECIMAL:
+				final int tpe = getColumnType(column);
+				switch (tpe) {
+					case Types.BIGINT:
+						return 19;
+					case Types.INTEGER:
+						return 10;
+					case Types.SMALLINT:
+						return 5;
+					case Types.TINYINT:
+						return 3;
+					case Types.REAL:
+						return 7;
+					case Types.FLOAT:
+					case Types.DOUBLE:
+						return 15;
+
+					case Types.DECIMAL:
+					case Types.NUMERIC:
+						// these data types do not have a fixed precision, max precision however is 38
+						// we need to fetch the defined precision with an SQL query !
+					case Types.CHAR:
+					case Types.VARCHAR:
+					case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+					case Types.CLOB:
+					case Types.BINARY:
+					case Types.VARBINARY:
+					case Types.BLOB:
+						// these data types also do not have a fixed length
+						try {
+							if (_is_fetched[column] != true) {
+								fetchColumnInfo(column);
+							}
+							if (_precision[column] == 0) {
+								// apparently no precision or max length could be fetched
+								// use columnDisplaySize() value as alternative
 								_precision[column] = getColumnDisplaySize(column);
-								break;
-							case Types.TINYINT:
-								_precision[column] = 3;
-								break;
-							case Types.SMALLINT:
-								_precision[column] = 5;
-								break;
-							case Types.INTEGER:
-								_precision[column] = 10;
-								break;
-							case Types.BIGINT:
-								_precision[column] = 19;
-								break;
-							case Types.REAL:
-								_precision[column] = 7;
-								break;
-							case Types.FLOAT:
-							case Types.DOUBLE:
-								_precision[column] = 15;
-								break;
-							case Types.BOOLEAN:
-								_precision[column] = 5;
-								break;
-							case Types.DATE:
-								_precision[column] = 10;
-								break;
-							case Types.TIME:
-							case Types.TIME_WITH_TIMEZONE:
-								_precision[column] = 8;
-								break;
-							case Types.TIMESTAMP:
-							case Types.TIMESTAMP_WITH_TIMEZONE:
-								_precision[column] = 19;
-								break;
-							default:
-								_precision[column] = 30;
-								break;
+								if (tpe == Types.BLOB || tpe == Types.VARBINARY || tpe == Types.BINARY)
+									// These expect number of bytes, not number of hex chars
+									_precision[column] = (_precision[column] / 2) +1;
+							}
+							return _precision[column];
+						} catch (IndexOutOfBoundsException e) {
+							throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 						}
-					}
-					return _precision[column];
-				} catch (IndexOutOfBoundsException e) {
-					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+					case Types.DATE:
+						return 10;	// 2020-10-08
+					case Types.TIME:
+						return 15;	// 21:51:34.399753
+					case Types.TIME_WITH_TIMEZONE:
+						return 21;	// 21:51:34.399753+02:00
+					case Types.TIMESTAMP:
+						return 26;	// 2020-10-08 21:51:34.399753
+					case Types.TIMESTAMP_WITH_TIMEZONE:
+						return 32;	// 2020-10-08 21:51:34.399753+02:00
+					case Types.BOOLEAN:
+						return 1;
+					default:
+						// All other types should return 0
+						return 0;
 				}
 			}
 
 			/**
 			 * Gets the designated column's number of digits to right of
-			 * the decimal point.  This method is currently very
-			 * expensive as it needs to retrieve the information from
-			 * the database using an SQL query.
+			 * the decimal point.
+			 * 0 is returned for data types where the scale is not applicable.
+			 *
+			 * This method is currently very expensive for DECIMAL and NUMERIC
+			 * result column types as it needs to retrieve the information
+			 * from the database using an SQL meta data query.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return scale
@@ -1601,25 +1628,56 @@ public class MonetResultSet
 			 */
 			@Override
 			public int getScale(final int column) throws SQLException {
-				checkColumnIndexValidity(column);
-				try {
-					if (_is_fetched[column] != true) {
-						fetchColumnInfo(column);
-					}
-					return _scale[column];
-				} catch (IndexOutOfBoundsException e) {
-					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+				switch (getColumnType(column)) {
+					case Types.DECIMAL:
+					case Types.NUMERIC:
+						// these data types may have a scale, max scale is 38
+						try {
+							if (_is_fetched[column] != true) {
+								fetchColumnInfo(column);
+							}
+							return _scale[column];
+						} catch (IndexOutOfBoundsException e) {
+							throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+						}
+					case Types.TIME:
+					case Types.TIME_WITH_TIMEZONE:
+					case Types.TIMESTAMP:
+					case Types.TIMESTAMP_WITH_TIMEZONE:
+						// support microseconds, so scale 6
+						return 6;	// 21:51:34.399753
+					// All other types should return 0
+				//	case Types.BIGINT:
+				//	case Types.INTEGER:
+				//	case Types.SMALLINT:
+				//	case Types.TINYINT:
+				//	case Types.REAL:
+				//	case Types.FLOAT:
+				//	case Types.DOUBLE:
+				//	case Types.CHAR:
+				//	case Types.VARCHAR:
+				//	case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+				//	case Types.CLOB:
+				//	case Types.BINARY:
+				//	case Types.VARBINARY:
+				//	case Types.BLOB:
+				//	case Types.DATE:
+				//	case Types.BOOLEAN:
+					default:
+						return 0;
 				}
 			}
 
 			/**
-			 * Indicates the nullability of values in the designated
-			 * column.  This method is currently very expensive as it
-			 * needs to retrieve the information from the database using
-			 * an SQL query.
+			 * Indicates the nullability of values in the designated column.
+			 *
+			 * This method is currently very expensive as it needs to
+			 * retrieve the information from the database using an SQL
+			 * meta data query (for each column).
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return the nullability status of the given column; one of columnNoNulls, columnNullable or columnNullableUnknown
+			 * @return the nullability status of the given column; one of
+			 *	columnNoNulls, columnNullable or columnNullableUnknown
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override

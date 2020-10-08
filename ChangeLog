@@ -2,6 +2,9 @@
 # This file is updated with Maddlog
 
 * Thu Oct  8 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved performance of ResultSetMetaData methods isAutoIncrement(),
+  getPrecision() and getScale() significant for columns of specific data
+  types as in some cases no costly meta data query is executed anymore.
 - The connection properties  treat_clob_as_varchar  and  treat_blob_as_binary
   are now set to true by default within the JDBC driver.  This is done
   as it results by default in less memory usage, (much) faster response
