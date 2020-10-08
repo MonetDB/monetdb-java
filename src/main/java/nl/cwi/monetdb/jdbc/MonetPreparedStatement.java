@@ -1827,7 +1827,6 @@ public class MonetPreparedStatement
 						setBigDecimal(parameterIndex, new BigDecimal(num.doubleValue()));
 					}
 				break;
-				case Types.BIT:
 				case Types.BOOLEAN:
 					if (num.doubleValue() != 0.0) {
 						setBoolean(parameterIndex, true);
@@ -1877,7 +1876,6 @@ public class MonetPreparedStatement
 					}
 					setBigDecimal(parameterIndex, dec);
 				} break;
-				case Types.BIT:
 				case Types.BOOLEAN:
 					setBoolean(parameterIndex, val);
 				break;
@@ -2328,7 +2326,6 @@ public class MonetPreparedStatement
 				}
 				setValue(parameterIndex, x);
 				break;
-			case Types.BIT:
 			case Types.BOOLEAN:
 				if  (x.equalsIgnoreCase("false") || x.equalsIgnoreCase("true") || x.equals("0") || x.equals("1")) {
 					setValue(parameterIndex, x);

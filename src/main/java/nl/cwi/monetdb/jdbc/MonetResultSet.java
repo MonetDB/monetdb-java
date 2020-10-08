@@ -787,7 +787,6 @@ public class MonetResultSet
 				case Types.CLOB:
 					// check if string value equals "true" (case insensitive) or not
 					return Boolean.parseBoolean(val);
-				case Types.BIT: // MonetDB doesn't use type BinaryDigit, it's here for completeness
 				case Types.TINYINT:
 				case Types.SMALLINT:
 				case Types.INTEGER:
@@ -1565,9 +1564,6 @@ public class MonetResultSet
 							case Types.DOUBLE:
 								_precision[column] = 15;
 								break;
-							case Types.BIT: // MonetDB doesn't use type BIT, it's here for completeness
-								_precision[column] = 1;
-								break;
 							case Types.BOOLEAN:
 								_precision[column] = 5;
 								break;
@@ -1845,7 +1841,6 @@ public class MonetResultSet
 		}
 
 		switch(JdbcType) {
-			case Types.BIT: // MonetDB doesn't use type BInary digiT, it's here for completeness
 			case Types.TINYINT:
 			case Types.SMALLINT:
 				try {
@@ -2243,7 +2238,6 @@ public class MonetResultSet
 				return BigDecimal.class;
 			case Types.BOOLEAN:
 				return Boolean.class;
-			case Types.BIT: // MonetDB doesn't support type BIT, it's here for completeness
 			case Types.TINYINT:
 			case Types.SMALLINT:
 				return Short.class;
