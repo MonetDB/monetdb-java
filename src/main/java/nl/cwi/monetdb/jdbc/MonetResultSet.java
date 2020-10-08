@@ -1256,7 +1256,7 @@ public class MonetResultSet
 			private final int[] _isNullable	= new int[array_size];
 			private final boolean[] _isAutoincrement = new boolean[array_size];
 			private final Connection conn = getStatement().getConnection();
-			private final DatabaseMetaData dbmd = conn.getMetaData();
+			private DatabaseMetaData dbmd = null;	// it will be assigned at first need and reused for other columns
 
 			/**
 			 * A private utility method to check validity of column index number
@@ -1283,6 +1283,13 @@ public class MonetResultSet
 				_isNullable[column] = columnNullableUnknown;
 				_isAutoincrement[column] = false;
 
+				if (dbmd == null) {
+					// first time usage
+					dbmd = conn.getMetaData();
+					if (dbmd == null)
+						return;
+				}
+
 				// we will only call dbmd.getColumns() when we have a specific schema name and table name and column name
 				final String schName = getSchemaName(column);
 				if (schName != null && !schName.isEmpty()) {
@@ -1290,21 +1297,19 @@ public class MonetResultSet
 					if (tblName != null && !tblName.isEmpty()) {
 						final String colName = getColumnName(column);
 						if (colName != null && !colName.isEmpty()) {
-							if (dbmd != null) {
-								// for precision, scale, isNullable and isAutoincrement we query the information from data dictionary
-								final ResultSet colInfo = dbmd.getColumns(null, schName, tblName, colName);
-								if (colInfo != null) {
-									// we expect exactly one row in the resultset
-									if (colInfo.next()) {
-										_precision[column] = colInfo.getInt(7);  // col 7 is "COLUMN_SIZE"
-										_scale[column] = colInfo.getInt(9);  // col 9 is "DECIMAL_DIGITS"
-										_isNullable[column] = colInfo.getInt(11);  // col 11 is "NULLABLE"
-										final String strVal = colInfo.getString(23);  // col 23 is "IS_AUTOINCREMENT"
-										if (strVal != null && "YES".equals(strVal))
-											_isAutoincrement[column] = true;
-									}
-									colInfo.close();  // close the resultset to release resources
+							// for precision, scale, isNullable and isAutoincrement we query the information from data dictionary
+							final ResultSet colInfo = dbmd.getColumns(null, schName, tblName, colName);
+							if (colInfo != null) {
+								// we expect exactly one row in the resultset
+								if (colInfo.next()) {
+									_precision[column] = colInfo.getInt(7);  // col 7 is "COLUMN_SIZE"
+									_scale[column] = colInfo.getInt(9);  // col 9 is "DECIMAL_DIGITS"
+									_isNullable[column] = colInfo.getInt(11);  // col 11 is "NULLABLE"
+									final String strVal = colInfo.getString(23);  // col 23 is "IS_AUTOINCREMENT"
+									if (strVal != null && "YES".equals(strVal))
+										_isAutoincrement[column] = true;
 								}
+								colInfo.close();  // close the resultset to release resources
 							}
 						}
 					}
