@@ -11,7 +11,7 @@ import java.sql.*;
 public class Test_Rmetadata {
 	public static void main(String[] args) throws Exception {
 		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
-		Connection con = DriverManager.getConnection(args[0]);
+		Connection con = DriverManager.getConnection(args[0] + "&treat_clob_as_varchar=false");
 		Statement stmt = con.createStatement();
 		ResultSet rs = null;
 		ResultSetMetaData rsmd = null;

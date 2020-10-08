@@ -1,6 +1,15 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Oct  8 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- The connection properties  treat_clob_as_varchar  and  treat_blob_as_binary
+  are now set to true by default within the JDBC driver.  This is done
+  as it results by default in less memory usage, (much) faster response
+  and better user experience for many generic JDBC applications (like
+  SQuirreL SQL, DBeaver, etc) when fetching data from CLOB or BLOB result
+  columns.  See release.txt for more information and how you can turn
+  it off to get the old JDBC driver behavior if you require it.
+
 * Wed Oct  7 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Added support for new Java 8 java.sql.Types: Types.TIME_WITH_TIMEZONE and
   Types.TIMESTAMP_WITH_TIMEZONE.

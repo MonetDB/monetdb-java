@@ -10,7 +10,7 @@ import java.sql.*;
 
 public class Test_CallableStmt {
 	public static void main(String[] args) throws Exception {
-		Connection con = DriverManager.getConnection(args[0]);
+		Connection con = DriverManager.getConnection(args[0] + "&treat_clob_as_varchar=false");
 		Statement stmt = null;
 		CallableStatement cstmt = null;
 		try {

@@ -228,15 +228,15 @@ final public class MonetDriver implements Driver {
 		prop.choices = new String[] { "SHA512", "SHA384", "SHA256", "SHA1" };
 		dpi[5] = prop;
 
-		prop = new DriverPropertyInfo("treat_blob_as_binary", "false");
+		prop = new DriverPropertyInfo("treat_blob_as_binary", "true");
 		prop.required = false;
-		prop.description = "Should blob columns be mapped to Types.VARBINARY instead of default Types.BLOB in ResultSets and PreparedStatements";
+		prop.description = "Should blob columns be mapped to Types.VARBINARY instead of Types.BLOB in ResultSets and PreparedStatements"; // recommend for increased performance due to less overhead
 		prop.choices = boolean_choices;
 		dpi[6] = prop;
 
-		prop = new DriverPropertyInfo("treat_clob_as_varchar", "false");
+		prop = new DriverPropertyInfo("treat_clob_as_varchar", "true");
 		prop.required = false;
-		prop.description = "Should clob columns be mapped to Types.VARCHAR instead of default Types.CLOB in ResultSets and PreparedStatements"; // recommend for increased performance due to less overhead
+		prop.description = "Should clob columns be mapped to Types.VARCHAR instead of Types.CLOB in ResultSets and PreparedStatements"; // recommend for increased performance due to less overhead
 		prop.choices = boolean_choices;
 		dpi[7] = prop;
 

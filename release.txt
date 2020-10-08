@@ -22,21 +22,37 @@ Supported connection properties are:
 	user=<login name>
 	password=<secret value>
 	so_timeout=<time in milliseconds>  default is: 0 (no timeout)
-	treat_blob_as_binary=true	   default is: false
-	treat_clob_as_varchar=true	   default is: false
-	language=<sql or mal>		   default is: sql
-	debug=true			   default is: false
+	treat_clob_as_varchar=false        default is: true
+	treat_blob_as_binary=false         default is: true
+	language=<sql or mal>              default is: sql
+	debug=true                         default is: false
 	logfile=<name of logfile>
 	hash=<SHA512, SHA384, SHA256 or SHA1>
 
+The treat_clob_as_varchar property (when set to true) will let the method
+ResultSetMetaData.getColumnType(int) to return Types.VARCHAR instead of Types.CLOB
+for CLOB ResultSet columns. Generic JDBC applications such as SQuirreL SQL and DBeaver
+will than use rs.getString() instead of rs.getClob() to fetch any CLOB column data.
+Using rs.getString() avoids creating new objects and multiple copies of the clob
+string data resulting in (much) faster response and better user experience.
+This property is turned on by default as of release monetdb-jdbc-2.30.jre8.jar.
+You can turn it off if you prefer the old behavior.
+
+The treat_blob_as_binary property (when set to true) will let the method
+ResultSetMetaData.getColumnType(int) to return Types.VARBINARY instead of Types.BLOB
+for BLOB ResultSet columns. Generic JDBC applications such as SQuirreL SQL and DBeaver
+will than use rs.getBytes() instead of rs.getBlob() to fetch any BLOB column data.
+Using rs.getBytes() avoids creating new objects and multiple copies of the blob
+string data resulting in (much) faster response and better user experience.
+This property is turned on by default as of release monetdb-jdbc-2.30.jre8.jar.
+You can turn it off if you prefer the old behavior.
+
 We recommend to set following connection properties:
 	so_timeout=20000
-	treat_clob_as_varchar=true
-	treat_blob_as_binary=true
 
 Multiple connection properties are separated by the & character.
 For example:
-  jdbc:monetdb://localhost:41000/mydb?user=monetdb&password=onlyiknow&so_timeout=20000&treat_clob_as_varchar=true&treat_blob_as_binary=true
+  jdbc:monetdb://localhost:41000/mydb?user=monetdb&password=onlyiknow&so_timeout=20000
 
 See also: https://www.monetdb.org/Documentation/SQLreference/Programming/JDBC
 
@@ -168,6 +184,18 @@ Notes and Tips for Java Programmers using MonetDB JDBC driver:
   getString(int columnIndex) method, because internally all data
   values (of all types) are stored as Strings, so no conversions are needed.
 
+- Avoid using rs.getObject() as it will need to construct a new Object for
+  each value, even for primitive types such as int, long, boolean.
+
+- Avoid using rs.getClob(). Instead use getString() for all CLOB
+  columns, which is much faster and uses much (3 times) less memory.
+
+- Avoid using rs.getBlob(). Instead use getBytes() to get a byte array
+  or use getString() to get a string containing hex pairs, for all BLOB
+  columns. These methods are much faster and use much less memory.
+  The getString() is the fastest way as no conversions are done at all.
+  The getBytes() will need to convert the hex char string into a new bytes[].
+
 - Try to avoid calling "rs.get...(String columnLabel)" methods inside the
    while(rs.next()) {...} loop. Instead resolve the columnLabels to column
   numbers before the loop via method "int findColumn(String columnLabel)"
@@ -176,30 +204,6 @@ Notes and Tips for Java Programmers using MonetDB JDBC driver:
   each value of every column for every row in the ResultSet.
   See also the example Java JDBC program on:
   https://www.monetdb.org/Documentation/SQLreference/Programming/JDBC
-
-- Avoid using rs.getObject() as it will need to construct a new Object for
-  each value, even for primitive types such as int, long, boolean.
-
-- Avoid using rs.getClob(). Instead use getString() for all CLOB
-  columns, which is much faster and uses much (3 times) less memory.
-Tip: For generic applications (such as SQuirreL) use connection property
-   treat_clob_as_varchar=true  in the JDBC connection string. This will
-  let "ResultSetMetaData.getColumnType(int)" to return Types.VARCHAR instead
-  of Types.CLOB for clob ResultSet columns.
-  The generic application will than use rs.getString() instead of rs.getClob()
-  for those clob column data, resulting in (much) faster response.
-
-- Avoid using rs.getBlob(). Instead use getBytes() to get a byte array
-  or use getString() to get a string containing hex pairs, for all BLOB
-  columns. These methods are much faster and use much less memory.
-  The getString() is the fastest way as no conversions are done at all.
-  The getBytes() will need to convert the hex char string into a new bytes[].
-Tip: For generic applications (such as SQuirreL) use connection property
-   treat_blob_as_binary=true  in the JDBC connection string. This will
-  let "ResultSetMetaData.getColumnType(int)" to return Types.VARBINARY instead
-  of Types.BLOB for blob resultset columns.
-  The generic application will than use rs.getBytes() instead of rs.getBlob()
-  for those blob column data, resulting in (much) faster response.
 
 - By default the ResultSets created by methods in DatabaseMetaData
   which return a ResultSet (such as dbmd.getColumns(...)) are
@@ -218,7 +222,7 @@ Warning:
  the same Connection (so one MapiSocket), this may lead to incorrect behavior
  and results (due to race conditions).
  You will need to serialize the processing of the threads in your Java program.
- Alternatively you could use a separate JDBC Connection for each thread.
+ Alternatively you can use a separate JDBC Connection for each thread.
 
 Note: as of Febr 2020 (monetdb-jdbc-2.29.jre8.jar) we compile all
  the java sources to target: Java SE 8 (profile compact2), so
