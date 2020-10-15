@@ -14,7 +14,7 @@ import java.sql.SQLException;
 
 public class Bug_LargeQueries_6571_6693 {
 	final static String tbl_nm = "tbl6693";
-	final static String largedata = createLargedata(98765);
+	final static String largedata = createLargedata(9216);
 
 	private static String createLargedata(int num) {
 		String repeatValue = "*";
@@ -107,7 +107,7 @@ public class Bug_LargeQueries_6571_6693 {
 		System.out.println("Completed second test");
 
 		// next try to make the execution hang by sending very many queries combined in 1 large script
-		final int queries = 8765;
+		final int queries = 100;
 		StringBuilder sb = new StringBuilder(queries * 13);
 		for (int i = 1; i <= queries; i++)
 			sb.append(" SELECT ").append(i).append(';');

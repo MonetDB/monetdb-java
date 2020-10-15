@@ -24,11 +24,11 @@ public class Test_PSsomeamount {
 
 		try {
 			System.out.println("1. Preparing and executing a unique statement");
-			for (int i = 0; i < 10000; i++) {
+			for (int i = 0; i < 100; i++) {
 				pstmt = con.prepareStatement("select " + i + ", " + i + " = ?");
 				pstmt.setInt(1, i);
 				ResultSet rs = pstmt.executeQuery();
-				if (rs.next() && i % 1000 == 0) {
+				if (rs.next() && i % 20 == 0) {
 					System.out.println(rs.getInt(1) + ", " + rs.getBoolean(2));
 				}
 				/* this call should cause resources on the server to be
