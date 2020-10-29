@@ -25,6 +25,7 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.DriverManager;	// import is required as it will load the nl.cwi.monetdb.jdbc.MonetDriver class
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
@@ -308,7 +309,7 @@ public final class JdbcClient {
 		con = null;
 		final String database = copts.getOption("database").getArgument();
 		try {
-			con = java.sql.DriverManager.getConnection(
+			con = DriverManager.getConnection(
 					"jdbc:monetdb://" + host + "/" + database + attr,
 					user,
 					pass
