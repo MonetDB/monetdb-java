@@ -3594,7 +3594,7 @@ public class MonetDatabaseMetaData
 	 */
 	@Override
 	public int getJDBCMajorVersion() {
-		return 4; // This class implements JDBC 4.1 (at least we try to)
+		return 4; // This class implements JDBC 4.2 (at least we try to)
 	}
 
 	/**
@@ -3604,7 +3604,7 @@ public class MonetDatabaseMetaData
 	 */
 	@Override
 	public int getJDBCMinorVersion() {
-		return 1; // This class implements JDBC 4.1 (at least we try to)
+		return 2; // This class implements JDBC 4.2 (at least we try to)
 	}
 
 	/**
