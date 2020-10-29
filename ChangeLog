@@ -1,6 +1,28 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Oct 29 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Extended JdbcClient program with 3 new commands to quickly validate
+  data integrity:
+  \vsci          validate sql system catalog integrity
+  \vsi <schema>  validate integrity of data in the given schema
+  \vdbi          validate integrity of data in all user schemas in the database
+  The current validations include:
+  - Primary Key uniqueness
+  - Primary Key column(s) being NOT NULL (currently only for \vsci)
+  - Unique constraint uniqueness
+  - Foreign Key referential integrity (currently only for \vsci)
+  - Column NOT NULL constraint
+  - Varchar(n) max length constraint
+  - Idem for char(n), clob(n), blob(n), json(n) and url(n).
+  It can be usefull to run \vsci before and after an upgrade.
+  Use \vsi my_schema  to validate data in all tables of a specific schema.
+  Use \vdbi  to validate integrity of data in all user schemas in
+  the database. Note this can take a while, depending on your number
+  of user schemas and tables sizes.  Despite being tested on several
+  internal dbs the functionality is still beta, so you can get false
+  errors reported. If you encounter these let us know asap.
+
 * Thu Oct  8 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved performance of ResultSetMetaData methods isAutoIncrement(),
   getPrecision() and getScale() significant for columns of specific data
