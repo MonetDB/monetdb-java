@@ -998,7 +998,6 @@ public final class MDBvalidator {
 		{"queue WHERE tag > cast(0 as oid) AND ", "tag", "tag", "queue", null},
 		{"queue WHERE tag > cast(0 as oid) AND ", "tag", "cast(tag as oid)", "queue", null},
 		{"queue", "tag", "cast(tag as oid)", "queue", null},
-		{"queue", "\"username\"", "name", "users", null},
 		{"sessions", "\"username\"", "name", "users", null},
 		{"statistics", "column_id", "id", "(SELECT id FROM sys._columns UNION ALL SELECT id FROM tmp._columns) as c", null},
 		{"statistics", "type", "sqlname", "types", null},
