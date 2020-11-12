@@ -1,6 +1,22 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Nov 12 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Moved Java classes from packages starting with nl.cwi.monetdb.*
+  to package org.monetdb.* This naming complies to the Java Package
+  Naming convention as MonetDB's main website is www.monetdb.org.
+  To prevent problems with existing Java programs and JDBC driver
+  configurations we still support usage of the following classes:
+   nl.cwi.monetdb.jdbc.MonetDriver
+   nl.cwi.monetdb.jdbc.types.INET
+   nl.cwi.monetdb.jdbc.types.URL
+   nl.cwi.monetdb.mcl.net.MapiSocket
+   nl.cwi.monetdb.client.JdbcClient
+  They are implemented as simple wrappers of their org.monetdb.* equivalents.
+  Note: These nl.cwi.monetdb.* classes are now marked as deprecated and may be
+  removed in a future release. If you still use them in your Java code,
+  update them to use the new package names.
+
 * Thu Oct 29 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Extended JdbcClient program with 3 new commands to quickly validate
   data integrity:

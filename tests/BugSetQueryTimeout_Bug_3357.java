@@ -10,7 +10,6 @@ import java.sql.*;
 
 public class BugSetQueryTimeout_Bug_3357 {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement st = con.createStatement();
 		try {

@@ -10,7 +10,6 @@ import java.sql.*;
 
 public class Test_PSgeneratedkeys {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		con.setAutoCommit(false);
 		// >> false: auto commit was just switched off

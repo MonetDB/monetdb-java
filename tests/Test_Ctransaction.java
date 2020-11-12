@@ -10,10 +10,8 @@ import java.sql.*;
 
 public class Test_Ctransaction {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con1 = DriverManager.getConnection(args[0]);
 		Statement stmt1 = con1.createStatement();
-		//DatabaseMetaData dbmd = con.getMetaData();
 
 		// >> true: auto commit should be on by default
 		System.out.println("0. true\t" + con1.getAutoCommit());

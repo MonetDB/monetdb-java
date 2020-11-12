@@ -18,12 +18,10 @@ public class Test_PStimezone {
 		// savings corrections
 		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		PreparedStatement pstmt;
 		ResultSet rs = null;
-		//DatabaseMetaData dbmd = con.getMetaData();
 
 		con.setAutoCommit(false);
 		// >> false: auto commit was just switched off
@@ -31,6 +29,7 @@ public class Test_PStimezone {
 
 		try {
 			stmt.executeUpdate("CREATE TABLE table_Test_PStimezone (ts timestamp, tsz timestamp with time zone, t time, tz time with time zone)");
+			stmt.close();
 		} catch (SQLException e) {
 			System.out.println(e);
 			System.out.println("Creation of test table failed! :(");

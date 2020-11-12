@@ -11,7 +11,6 @@ import java.util.*;
 
 public class Test_Cmanycon {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		List<Connection> cons = new ArrayList<Connection>(100);	// Connections go in here
 
 		try {

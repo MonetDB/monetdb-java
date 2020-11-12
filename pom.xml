@@ -46,8 +46,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jdbc.sources>nl/cwi/monetdb/jdbc/**/*.java</jdbc.sources>
-    <mcl.sources>nl/cwi/monetdb/mcl/**/*.java</mcl.sources>
+    <jdbc.sources>org/monetdb/jdbc/**/*.java</jdbc.sources>
+    <mcl.sources>org/monetdb/mcl/**/*.java</mcl.sources>
   </properties>
 
   <build>

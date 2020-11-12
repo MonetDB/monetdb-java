@@ -10,13 +10,12 @@ import java.sql.*;
 
 public class Test_Wrapper {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		final Connection con = DriverManager.getConnection(args[0]);
 		System.out.println("Connected. Auto commit is: " + con.getAutoCommit());
 
 		try {
 			final String jdbc_pkg = "java.sql.";
-			final String monetdb_jdbc_pkg = "nl.cwi.monetdb.jdbc.";
+			final String monetdb_jdbc_pkg = "org.monetdb.jdbc.";
 
 			checkIsWrapperFor("Connection", con, jdbc_pkg, "Connection");
 			checkIsWrapperFor("Connection", con, monetdb_jdbc_pkg, "MonetConnection");

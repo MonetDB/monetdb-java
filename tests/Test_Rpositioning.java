@@ -10,7 +10,6 @@ import java.sql.*;
 
 public class Test_Rpositioning {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		DatabaseMetaData dbmd = con.getMetaData();

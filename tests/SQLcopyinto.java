@@ -9,7 +9,9 @@
 import java.sql.*;
 import java.io.*;
 import java.util.*;
-import nl.cwi.monetdb.mcl.net.MapiSocket;
+import org.monetdb.mcl.net.MapiSocket;
+import org.monetdb.mcl.io.BufferedMCLReader;
+import org.monetdb.mcl.io.BufferedMCLWriter;
 
 /**
  * This program demonstrates how the MonetDB JDBC driver can facilitate
@@ -97,8 +99,8 @@ public class SQLcopyinto {
 			}
 			System.out.println("Connected to MonetDB server via MapiSocket");
 
-			nl.cwi.monetdb.mcl.io.BufferedMCLReader mclIn = server.getReader();
-			nl.cwi.monetdb.mcl.io.BufferedMCLWriter mclOut = server.getWriter();
+			BufferedMCLReader mclIn = server.getReader();
+			BufferedMCLWriter mclOut = server.getWriter();
 
 			String error = mclIn.waitForPrompt();
 			if (error != null)

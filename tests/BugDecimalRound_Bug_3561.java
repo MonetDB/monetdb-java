@@ -11,7 +11,6 @@ import java.math.BigDecimal;
 
 public class BugDecimalRound_Bug_3561 {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 
 		Statement stmt1 = con.createStatement();

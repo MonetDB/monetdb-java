@@ -10,7 +10,6 @@ import java.sql.*;
 
 public class Bug_PrepStmt_With_Errors_Jira292 {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = null;
 		Statement stmt = null;
 		PreparedStatement pstmt = null;

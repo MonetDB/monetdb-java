@@ -7,12 +7,11 @@
  */
 
 import java.sql.*;
-import nl.cwi.monetdb.jdbc.types.INET;
-import nl.cwi.monetdb.jdbc.types.URL;
+import org.monetdb.jdbc.types.INET;
+import org.monetdb.jdbc.types.URL;
 
 public class Bug_PrepStmtSetString_6382 {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = null;
 		Statement stmt = null;
 		PreparedStatement pstmt = null;

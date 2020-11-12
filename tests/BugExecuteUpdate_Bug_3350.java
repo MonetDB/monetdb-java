@@ -10,7 +10,6 @@ import java.sql.*;
 
 public class BugExecuteUpdate_Bug_3350 {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		final Connection con = DriverManager.getConnection(args[0]);
 		con.setAutoCommit(false);	// disable auto commit, so we can roll back the transaction
 

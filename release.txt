@@ -146,8 +146,8 @@ Currently implemented JDBC 4.2 interfaces include:
     - setCharacterStream
 
   * java.sql.SQLData
-    implemented by class: nl.cwi.monetdb.jdbc.types.INET
-            and by class: nl.cwi.monetdb.jdbc.types.URL
+    implemented by class: org.monetdb.jdbc.types.INET
+            and by class: org.monetdb.jdbc.types.URL
 
   * javax.sql.DataSource (not tested)
 

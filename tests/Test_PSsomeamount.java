@@ -7,14 +7,12 @@
  */
 
 import java.sql.*;
-import java.util.*;
 
 /* Create a lot of PreparedStatements, to emulate webloads such as those
  * from Hibernate. */
 
 public class Test_PSsomeamount {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		PreparedStatement pstmt;
@@ -40,6 +38,7 @@ public class Test_PSsomeamount {
 			System.out.println("ABORTING TEST!!!");
 		}
 
+		stmt.close();
 		con.close();
 	}
 }

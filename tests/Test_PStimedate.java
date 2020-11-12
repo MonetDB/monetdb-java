@@ -10,12 +10,10 @@ import java.sql.*;
 
 public class Test_PStimedate {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		PreparedStatement pstmt;
 		ResultSet rs = null;
-		//DatabaseMetaData dbmd = con.getMetaData();
 
 		con.setAutoCommit(false);
 		// >> false: auto commit was just switched off
@@ -23,6 +21,7 @@ public class Test_PStimedate {
 
 		try {
 			stmt.executeUpdate("CREATE TABLE table_Test_PStimedate (t time, ts timestamp, d date)");
+			stmt.close();
 		} catch (SQLException e) {
 			System.out.println(e);
 			System.out.println("Creation of test table failed! :(");

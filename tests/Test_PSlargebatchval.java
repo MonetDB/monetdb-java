@@ -8,12 +8,10 @@
 
 import java.sql.*;
 import java.io.StringReader;
-import java.util.*;
 import java.nio.charset.Charset;
 
 public class Test_PSlargebatchval {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		Statement stmt = con.createStatement();
 		PreparedStatement pstmt;

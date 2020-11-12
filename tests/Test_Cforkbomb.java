@@ -47,7 +47,6 @@ public class Test_Cforkbomb {
 
 	public static void main(String[] args) throws Exception {
 		Test_Cforkbomb.args = args;
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 
 		// just DoS the server full throttle :)
 		int i;

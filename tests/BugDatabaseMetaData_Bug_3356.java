@@ -10,7 +10,6 @@ import java.sql.*;
 
 public class BugDatabaseMetaData_Bug_3356 {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con = DriverManager.getConnection(args[0]);
 		DatabaseMetaData dbmd = con.getMetaData();
 		ResultSet rs = dbmd.getColumns("", "sys", "_tables", "id");

@@ -14,7 +14,6 @@ public class Bug_Connect_as_voc_getMetaData_Failure_Bug_6388 {
 		Connection con1 = null;
 		Statement stmt1 = null;
 
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		con1 = DriverManager.getConnection(args[0]);
 		stmt1 = con1.createStatement();
 

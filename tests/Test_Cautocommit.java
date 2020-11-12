@@ -10,7 +10,6 @@ import java.sql.*;
 
 public class Test_Cautocommit {
 	public static void main(String[] args) throws Exception {
-		// Class.forName("nl.cwi.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 		Connection con1 = DriverManager.getConnection(args[0]);
 		Connection con2 = DriverManager.getConnection(args[0]);
 		Statement stmt1 = con1.createStatement();

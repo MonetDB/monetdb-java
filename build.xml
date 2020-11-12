@@ -19,16 +19,21 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
 
 
   <!-- set global properties for this build -->
-  <property name="srcdir"               value="src/main/java" />
-  <property name="libdir"               value="lib" />
-  <property name="jardir"               value="jars" />
-  <property name="builddir"             value="build" />
-  <property name="docdir"               value="doc" />
-  <property name="jdbc-package"         value="nl/cwi/monetdb/jdbc" />
-  <property name="mcl-package"          value="nl/cwi/monetdb/mcl" />
-  <property name="client-package"       value="nl/cwi/monetdb/client" />
-  <property name="util-package"         value="nl/cwi/monetdb/util" />
-  <property name="mero-control-package" value="nl/cwi/monetdb/merovingian" />
+  <property name="srcdir"                value="src/main/java" />
+  <property name="libdir"                value="lib" />
+  <property name="jardir"                value="jars" />
+  <property name="builddir"              value="build" />
+  <property name="docdir"                value="doc" />
+  <property name="jdbc-package"          value="org/monetdb/jdbc" />
+  <property name="mcl-package"           value="org/monetdb/mcl" />
+  <property name="client-package"        value="org/monetdb/client" />
+  <property name="util-package"          value="org/monetdb/util" />
+  <property name="mero-control-package"  value="org/monetdb/merovingian" />
+
+  <!-- old nl/cwi/monetdb packages for some deprecated classes as of nov2020 -->
+  <property name="nl-cwi-jdbc-package"   value="nl/cwi/monetdb/jdbc" />
+  <property name="nl-cwi-mcl-package"    value="nl/cwi/monetdb/mcl" />
+  <property name="nl-cwi-client-package" value="nl/cwi/monetdb/client" />
 
   <property file="build.local.properties" />
   <property file="build.properties" />
@@ -94,12 +99,15 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
   <!-- jar targets -->
   <target name="jar_jdbc" depends="compile_mcl,compile_jdbc"
     unless="uptodate.jdbc-jar">
-    <echo file="${builddir}/META-INF/services/java.sql.Driver" append="false">nl.cwi.monetdb.jdbc.MonetDriver</echo>
+    <echo file="${builddir}/META-INF/services/java.sql.Driver" append="false">org.monetdb.jdbc.MonetDriver</echo>
     <jar jarfile="${jdbc-jar}">
       <fileset dir="${builddir}">
-        <include name="${jdbc-package}/**/*.class" />
-        <include name="${mcl-package}/**/*.class" />
         <include name="META-INF/services/java.sql.Driver" />
+        <include name="${jdbc-package}/**/*.class" />
+        <include name="${nl-cwi-jdbc-package}/MonetDriver.class" />
+        <include name="${nl-cwi-jdbc-package}/types/*.class" />
+        <include name="${mcl-package}/**/*.class" />
+        <include name="${nl-cwi-mcl-package}/net/MapiSocket.class" />
       </fileset>
     </jar>
   </target>
@@ -108,6 +116,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
     <jar jarfile="${mcl-jar}">
       <fileset dir="${builddir}">
         <include name="${mcl-package}/**/*.class" />
+        <include name="${nl-cwi-mcl-package}/net/MapiSocket.class" />
       </fileset>
     </jar>
   </target>
@@ -116,6 +125,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
     <jar jarfile="${jardir}/monetdb-clients.jar">
       <fileset dir="${builddir}">
         <include name="${client-package}/**/*.class" />
+        <include name="${nl-cwi-client-package}/JdbcClient.class" />
         <include name="${util-package}/**/*.class" />
       </fileset>
     </jar>
@@ -128,15 +138,19 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
     <echo message="Building jdbcclient + JDBC driver convenience jar" />
     <jar jarfile="${jdbcclient-jar}">
       <fileset dir="${builddir}">
-        <include name="${jdbc-package}/**/*.class" />
-        <include name="${mcl-package}/**/*.class" />
         <include name="${client-package}/**/*.class" />
+        <include name="${nl-cwi-client-package}/JdbcClient.class" />
         <include name="${util-package}/**/*.class" />
         <include name="META-INF/services/java.sql.Driver" />
+        <include name="${jdbc-package}/**/*.class" />
+        <include name="${nl-cwi-jdbc-package}/MonetDriver.class" />
+        <include name="${nl-cwi-jdbc-package}/types/*.class" />
+        <include name="${mcl-package}/**/*.class" />
+        <include name="${nl-cwi-mcl-package}/net/MapiSocket.class" />
       </fileset>
       <manifest>
         <attribute name="Built-By" value="${user.name}" />
-        <attribute name="Main-Class" value="nl.cwi.monetdb.client.JdbcClient" />
+        <attribute name="Main-Class" value="org.monetdb.client.JdbcClient" />
       </manifest>
     </jar>
   </target>
@@ -150,12 +164,12 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
       <fileset dir="${builddir}">
         <include name="${mero-control-package}/**/*.class" />
         <include name="${mcl-package}/**/*.class" />
-        <include name="${client-package}/**/JMonetDB.class" />
+        <include name="${client-package}/JMonetDB.class" />
         <include name="${util-package}/**/*.class" />
       </fileset>
       <manifest>
         <attribute name="Built-By" value="${user.name}" />
-        <attribute name="Main-Class" value="nl.cwi.monetdb.client.JMonetDB" />
+        <attribute name="Main-Class" value="org.monetdb.client.JMonetDB" />
       </manifest>
     </jar>
   </target>
@@ -186,6 +200,9 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
       >
       <src path="${srcdir}" />
       <include name="${jdbc-package}/**/*.java" />
+      <include name="${nl-cwi-jdbc-package}/MonetDriver.java" />
+      <include name="${nl-cwi-jdbc-package}/types/*.java" />
+      <include name="${nl-cwi-mcl-package}/net/MapiSocket.java" />
       <compilerarg line="${javac.flags}" />
     </javac>
   </target>
@@ -203,6 +220,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
       target="${jvm.version}"
       >
       <include name="${mcl-package}/**/*.java" />
+      <include name="${nl-cwi-mcl-package}/net/MapiSocket.java" />
       <compilerarg line="${javac.flags}" />
     </javac>
   </target>
@@ -220,6 +238,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
       target="${jvm.version}"
       >
       <include name="${client-package}/**/*.java" />
+      <include name="${nl-cwi-client-package}/JdbcClient.java" />
       <compilerarg line="${javac.flags}" />
     </javac>
   </target>
@@ -312,14 +331,21 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
     <uptodate targetfile="${jdbc-jar}" property="uptodate.jdbc-jar">
       <srcfiles dir="${srcdir}">
         <include name="${jdbc-package}/**/*.java" />
+        <include name="${nl-cwi-jdbc-package}/MonetDriver.java" />
+        <include name="${nl-cwi-jdbc-package}/types/*.java" />
         <include name="${mcl-package}/**/*.java" />
+        <include name="${nl-cwi-mcl-package}/net/MapiSocket.java" />
       </srcfiles>
     </uptodate>
     <uptodate targetfile="${jdbcclient-jar}" property="uptodate.jdbcclient-jar">
       <srcfiles dir="${srcdir}">
         <include name="${client-package}/**/*.java" />
+        <include name="${nl-cwi-client-package}/JdbcClient.java" />
         <include name="${jdbc-package}/**/*.java" />
+        <include name="${nl-cwi-jdbc-package}/MonetDriver.java" />
+        <include name="${nl-cwi-jdbc-package}/types/*.java" />
         <include name="${mcl-package}/**/*.java" />
+        <include name="${nl-cwi-mcl-package}/net/MapiSocket.java" />
       </srcfiles>
     </uptodate>
     <uptodate targetfile="${jmonetdb-jar}" property="uptodate.jmonetdb-jar">
