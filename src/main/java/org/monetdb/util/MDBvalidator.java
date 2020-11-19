@@ -17,7 +17,7 @@ import java.sql.SQLException;
 import java.sql.Types;
 
 /**
- * MonetDB Data Integrity Validator class (MDBvalidator) can
+ * <pre>MonetDB Data Integrity Validator class (MDBvalidator) can
  * a) validate system tables data integrity in system schemas: sys and tmp
  *    this includes violations of:
  *		primary key uniqueness
@@ -25,17 +25,17 @@ import java.sql.Types;
  *		unique constraint uniqueness
  *		foreign key referential integrity
  *		column not null
- *		column maximum length for char/varchar/clob/blob/json/url columns which have max length > 0
- * b) validate user schema tables & columns data integrity based on available meta data from system tables & system views
+ *		column maximum length for char/varchar/clob/blob/json/url columns which have max length &gt; 0
+ * b) validate user schema tables &amp; columns data integrity based on available meta data from system tables &amp; system views
  *		primary key uniqueness
  *	TODO primary key column(s) not null
  *		unique constraint uniqueness
  *	TODO foreign key referential integrity
  *		column not null
- *		column maximum length for char/varchar/clob/blob/json/url columns which have max length > 0
+ *		column maximum length for char/varchar/clob/blob/json/url columns which have max length &gt; 0
  *
  * More possible validations for future
- *		col char/varchar/clob/blob/json/url minimum length (some columns may not be empty, so length >= 1)
+ *		col char/varchar/clob/blob/json/url minimum length (some columns may not be empty, so length &gt;= 1)
  *		col with sequence (serial/bigserial/autoincrement) in range (0/1/min_value .. max_value)
  *		col value is valid in domain (date/time/timestamp/json/inet/url/uuid/...)
  *		col in list checks (some columns may have only certain values which are not stored in a table or view (eg as fk))
@@ -44,7 +44,7 @@ import java.sql.Types;
 		-- i.e.: either column_id or expression in sys.table_partitions must be populated
 		SELECT "column_id", "expression", 'Missing either column_id or expression' AS violation, * FROM "sys"."table_partitions" WHERE "column_id" IS NULL AND "expression" IS NULL;
 		SELECT "column_id", "expression", 'column_id and expression may not both be populated. One of them must be NULL' AS violation, * FROM "sys"."table_partitions" WHERE "column_id" IS NOT NULL AND "expression" IS NOT NULL;
- *
+ *</pre>
  * @author Martin van Dinther
  * @version 0.1
  */
