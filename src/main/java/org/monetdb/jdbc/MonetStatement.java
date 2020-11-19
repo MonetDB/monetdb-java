@@ -164,17 +164,22 @@ public class MonetStatement
 	 * <li>A number greater than or equal to zero -- indicates that the
 	 * command was processed successfully and is an update count giving
 	 * the number of rows in the database that were affected by the
-	 * command's execution</li>
+	 * command's execution
 	 * <li>A value of SUCCESS_NO_INFO -- indicates that the command was
-	 * processed successfully but that the number of rows affected is
-	 * unknown</li>
+	 * processed successfully but that the number of rows affected is unknown
+	 * <p>If one of the commands in a batch update fails to execute properly,
+	 * this method throws a BatchUpdateException, and a JDBC driver may or
+	 * may not continue to process the remaining commands in the batch.
+	 * However, the driver's behavior must be consistent with a particular DBMS,
+	 * either always continuing to process commands or never continuing to process
+	 * commands. If the driver continues processing after a failure, the array
+	 * returned by the method BatchUpdateException.getUpdateCounts will
+	 * contain as many elements as there are commands in the batch, and at
+	 * least one of the elements will be the following:</p>
+	 * <li>A value of EXECUTE_FAILED -- indicates that the command failed to
+	 * execute successfully and occurs only if a driver continues to process
+	 * commands after a command fails
 	 * </ol>
-	 * If one of the commands in a batch update fails to execute
-	 * properly, this method throws a BatchUpdateException, and a JDBC
-	 * driver may or may not continue to process the remaining commands
-	 * in the batch.  However, the driver's behavior must be consistent
-	 * with a particular DBMS, either always continuing to process
-	 * commands or never continuing to process commands.
 	 *
 	 * MonetDB does continues after an error has occurred in the batch.
 	 * If one of the commands attempts to return a result set, an
@@ -184,11 +189,10 @@ public class MonetStatement
 	 *
 	 * @return an array of update counts containing one element for each
 	 *         command in the batch.  The elements of the array are ordered
-	 *         according to the order in which commands were added to the
-	 *         batch.
-	 * @throws SQLException if a database access error occurs.  Throws
-	 *         BatchUpdateException (a subclass of SQLException) if one of the
-	 *         commands sent to the database fails to execute properly
+	 *         according to the order in which commands were added to the batch.
+	 * @throws SQLException if a database access error occurs.
+	 * @throws BatchUpdateException (a subclass of SQLException) if one of the
+	 *         commands sent to the database fails to execute properly.
 	 */
 	@Override
 	public int[] executeBatch() throws SQLException {
@@ -196,103 +200,13 @@ public class MonetStatement
 			return new int[0];
 		}
 
-		// this method is synchronized/locked to make sure no one gets in between the
-		// operations we execute below
-		if (batchLock == null) {
-			// create a ReentrantLock at first time use
-			batchLock = new ReentrantLock();
+		final long[] ret = executeLargeBatch();
+		// copy contents of long[] into new int[]
+		final int[] counts = new int[ret.length];
+		for (int i = 0; i < ret.length; i++) {
+			counts[i] = (ret[i] >= Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int)ret[i];
 		}
-		batchLock.lock();
-		try {
-			final int[] counts = new int[batch.size()];
-			final String sep = connection.queryTempl[2];
-			final int sepLen = sep.length();
-			final BatchUpdateException e = new BatchUpdateException("Error(s) occurred while executing the batch, see next SQLExceptions for details", "22000", counts);
-			final StringBuilder tmpBatch = new StringBuilder(MapiSocket.BLOCK);
-			int offset = 0;
-			boolean first = true;
-			boolean error = false;
-
-			for (int i = 0; i < batch.size(); i++) {
-				String tmp = batch.get(i);
-				if (sepLen + tmp.length() > MapiSocket.BLOCK) {
-					// The thing is too big.  Way too big.  Since it won't
-					// be optimal anyway, just add it to whatever we have
-					// and continue.
-					if (!first)
-						tmpBatch.append(sep);
-					tmpBatch.append(tmp);
-					// send and receive
-					error |= internalBatch(tmpBatch, counts, offset, i + 1, e);
-					offset = i;
-					tmpBatch.setLength(0);	// clear the buffer
-					first = true;
-					continue;
-				}
-				if (tmpBatch.length() + sepLen + tmp.length() >= MapiSocket.BLOCK) {
-					// send and receive
-					error |= internalBatch(tmpBatch, counts, offset, i + 1, e);
-					offset = i;
-					tmpBatch.setLength(0);	// clear the buffer
-					first = true;
-				}
-				if (first)
-					first = false;
-				else
-					tmpBatch.append(sep);
-				tmpBatch.append(tmp);
-			}
-			// send and receive
-			error |= internalBatch(tmpBatch, counts, offset, counts.length, e);
-
-			// throw BatchUpdateException if it contains something
-			if (error)
-				throw e;
-			// otherwise just return the counts
-			return counts;
-		} finally {
-			batch.clear();
-			batchLock.unlock();
-		}
-	}
-
-	private boolean internalBatch(
-			final StringBuilder batch,
-			final int[] counts,
-			int offset,
-			final int max,
-			final BatchUpdateException e)
-		throws BatchUpdateException
-	{
-		try {
-			boolean hasResultSet = internalExecute(batch.toString());
-			int count = -1;
-
-			if (!hasResultSet)
-				count = getUpdateCount();
-
-			do {
-				if (offset >= max)
-					throw new SQLException("Overflow: don't use multi statements when batching (" + max + ")", "M1M16");
-				if (hasResultSet) {
-					e.setNextException(
-						new SQLException("Batch query produced a ResultSet! " +
-							"Ignoring and setting update count to " +
-							"value " + EXECUTE_FAILED, "M1M17"));
-					counts[offset] = EXECUTE_FAILED;
-				} else if (count >= 0) {
-					counts[offset] = count;
-				}
-				offset++;
-			} while ((hasResultSet = getMoreResults()) || (count = getUpdateCount()) != -1);
-		} catch (SQLException ex) {
-			e.setNextException(ex);
-			for (; offset < max; offset++) {
-				counts[offset] = EXECUTE_FAILED;
-			}
-			return true;
-		}
-		return false;
+		return counts;
 	}
 
 	/**
@@ -1273,10 +1187,10 @@ public class MonetStatement
 	 * <ol>
 	 * <li>A number greater than or equal to zero -- indicates that the command
 	 * was processed successfully and is an update count giving the number of
-	 * rows in the database that were affected by the command's execution</li>
+	 * rows in the database that were affected by the command's execution
 	 * <li>A value of SUCCESS_NO_INFO -- indicates that the command was
-	 * processed successfully but that the number of rows affected is unknown</li>
-	 * If one of the commands in a batch update fails to execute properly,
+	 * processed successfully but that the number of rows affected is unknown
+	 * <p>If one of the commands in a batch update fails to execute properly,
 	 * this method throws a BatchUpdateException, and a JDBC driver may or
 	 * may not continue to process the remaining commands in the batch.
 	 * However, the driver's behavior must be consistent with a particular DBMS,
@@ -1284,10 +1198,10 @@ public class MonetStatement
 	 * commands. If the driver continues processing after a failure, the array
 	 * returned by the method BatchUpdateException.getLargeUpdateCounts will
 	 * contain as many elements as there are commands in the batch, and at
-	 * least one of the elements will be the following:
+	 * least one of the elements will be the following:</p>
 	 * <li>A value of EXECUTE_FAILED -- indicates that the command failed to
 	 * execute successfully and occurs only if a driver continues to process
-	 * commands after a command fails</li>
+	 * commands after a command fails
 	 * </ol>
 	 *
 	 * This method should be used when the returned row count may exceed Integer.MAX_VALUE.
@@ -1304,8 +1218,9 @@ public class MonetStatement
 	 *	according to the order in which commands were added to the batch.
 	 * @throws SQLException if a database access error occurs, this method is called
 	 *	on a closed Statement or the driver does not support batch statements.
-	 *	Throws BatchUpdateException (a subclass of SQLException) if one of the
-	 *	commands sent to the database fails to execute properly or attempts to return a result set.
+	 * @throws BatchUpdateException (a subclass of SQLException) if one of the
+	 *	commands sent to the database fails to execute properly or
+	 *	attempts to return a result set.
 	 */
 	@Override
 	public long[] executeLargeBatch() throws SQLException {
@@ -1313,14 +1228,107 @@ public class MonetStatement
 			return new long[0];
 		}
 
-		final int[] ret = executeBatch();
-		// copy contents of int[] into new long[]
-		final long[] counts = new long[ret.length];
-		for (int i = 0; i < ret.length; i++) {
-			counts[i] = ret[i];
+		// this method is synchronized/locked to make sure no one gets in between the
+		// operations we execute below
+		if (batchLock == null) {
+			// create a ReentrantLock at first time use
+			batchLock = new ReentrantLock();
 		}
-		return counts;
+		batchLock.lock();
+		try {
+			final long[] counts = new long[batch.size()];
+			final String sep = connection.queryTempl[2];
+			final int sepLen = sep.length();
+			final BatchUpdateException e = new BatchUpdateException(
+					"Error(s) occurred while executing the batch, " +
+					"see chained SQLExceptions for details", "22000", 22000, counts, null);
+			final StringBuilder tmpBatch = new StringBuilder(MapiSocket.BLOCK);
+			int offset = 0;
+			boolean first = true;
+			boolean error = false;
+
+			for (int i = 0; i < batch.size(); i++) {
+				String tmp = batch.get(i);
+				if (sepLen + tmp.length() > MapiSocket.BLOCK) {
+					// The thing is too big.  Way too big.  Since it won't
+					// be optimal anyway, just add it to whatever we have
+					// and continue.
+					if (!first)
+						tmpBatch.append(sep);
+					tmpBatch.append(tmp);
+					// send and receive
+					error |= internalBatch(tmpBatch, counts, offset, i + 1, e);
+					offset = i;
+					tmpBatch.setLength(0);	// clear the buffer
+					first = true;
+					continue;
+				}
+				if (tmpBatch.length() + sepLen + tmp.length() >= MapiSocket.BLOCK) {
+					// send and receive
+					error |= internalBatch(tmpBatch, counts, offset, i + 1, e);
+					offset = i;
+					tmpBatch.setLength(0);	// clear the buffer
+					first = true;
+				}
+				if (first)
+					first = false;
+				else
+					tmpBatch.append(sep);
+				tmpBatch.append(tmp);
+			}
+			// send and receive
+			error |= internalBatch(tmpBatch, counts, offset, counts.length, e);
+
+			// throw BatchUpdateException if it contains something
+			if (error)
+				throw e;
+
+			// otherwise just return the counts
+			return counts;
+		} finally {
+			batch.clear();
+			batchLock.unlock();
+		}
 	}
+
+	private boolean internalBatch(
+			final StringBuilder batch,
+			final long[] counts,
+			int offset,
+			final int max,
+			final BatchUpdateException e)
+		throws BatchUpdateException
+	{
+		try {
+			long count = -1;
+			boolean hasResultSet = internalExecute(batch.toString());
+
+			if (!hasResultSet)
+				count = getLargeUpdateCount();
+
+			do {
+				if (offset >= max)
+					throw new SQLException("Overflow: don't use multi statements when batching (" + max + ")", "M1M16");
+				if (hasResultSet) {
+					e.setNextException(
+						new SQLException("Batch query produced a ResultSet! " +
+							"Ignoring and setting update count to value " + EXECUTE_FAILED, "M1M17"));
+					counts[offset] = EXECUTE_FAILED;
+				} else if (count >= 0) {
+					counts[offset] = count;
+				}
+				offset++;
+			} while ((hasResultSet = getMoreResults()) || (count = getLargeUpdateCount()) != -1);
+		} catch (SQLException ex) {
+			e.setNextException(ex);
+			for (; offset < max; offset++) {
+				counts[offset] = EXECUTE_FAILED;
+			}
+			return true;
+		}
+		return false;
+	}
+
 
 	/**
 	 * Executes the given SQL statement, which may be an INSERT, UPDATE, or
