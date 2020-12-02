@@ -68,15 +68,13 @@ final class OldMapiTupleLineParser {
 		}
 
 		// extract separate fields by examining string, char for char
-		boolean inString = false, escaped = false;
+		boolean inString = false, escaped = false, fieldHasEscape = false;
 		int cursor = 2, column = 0, i = 2;
 		for (; i < len; i++) {
 			switch(array[i]) {
-				default:
-					escaped = false;
-					break;
 				case '\\':
 					escaped = !escaped;
+					fieldHasEscape = true;
 					break;
 				case '"':
 					/**
@@ -98,86 +96,89 @@ final class OldMapiTupleLineParser {
 					break;
 				case '\t':
 					if (!inString && (i > 0 && array[i - 1] == ',') || (i + 1 == len - 1 && array[++i] == ']')) { // dirty
-						// split!
-						if (array[cursor] == '"' && array[i - 2] == '"') {
-							// reuse the tupleLineBuffer by cleaning it and ensure the capacity
-							tupleLineBuffer.clear();
-							tupleLineBuffer = BufferReallocator.ensureCapacity(tupleLineBuffer, (i - 2) - (cursor + 1));
-
-							for (int pos = cursor + 1; pos < i - 2; pos++) {
-								if (array[cursor] == '\\' && pos + 1 < i - 2) {
-									pos++;
-									// strToStr and strFromStr in gdk_atoms.mx only support \t \n \\ \" and \377
-									switch (array[pos]) {
-										case '\\':
-											tupleLineBuffer.put('\\');
-											break;
-										case 'n':
-											tupleLineBuffer.put('\n');
-											break;
-										case 't':
-											tupleLineBuffer.put('\t');
-											break;
-										case '"':
-											tupleLineBuffer.put('"');
-											break;
-										case '0': case '1': case '2': case '3':
-											// this could be an octal number, let's check it out
-											if (pos + 2 < i - 2 && array[pos + 1] >= '0' && array[pos + 1] <= '7' &&
-													array[pos + 2] >= '0' && array[pos + 2] <= '7') {
-												// we got the number!
-												try {
-													tupleLineBuffer.put((char)(Integer.parseInt("" + array[pos] + array[pos + 1] + array[pos + 2], 8)));
-													pos += 2;
-												} catch (NumberFormatException e) {
-													// hmmm, this point should never be reached actually...
-													throw new AssertionError("Flow error, should never try to parse non-number");
+						// extract the field value as a string, without the potential escape codes
+						final int endpos = i - 2;	// minus the tab and the comma or ]
+						if (array[cursor] == '"' && array[endpos] == '"') {
+							cursor++;
+							final int fieldlen = endpos - cursor;
+							if (fieldHasEscape) {
+								// reuse the tupleLineBuffer by cleaning it and ensure the capacity
+								tupleLineBuffer.clear();
+								tupleLineBuffer = BufferReallocator.ensureCapacity(tupleLineBuffer, (i - 2) - (cursor + 1));
+								// parse the field value (excluding the double quotes) and convert it to a string without any escape characters
+								for (int pos = cursor; pos < endpos; pos++) {
+									char chr = array[pos];
+									if (chr == '\\' && pos + 1 < endpos) {
+										// we detected an escape
+										// escapedStr and GDKstrFromStr in gdk_atoms.c only
+										// support \\ \f \n \r \t \" and \377
+										pos++;
+										chr = array[pos];
+										switch (chr) {
+											case 'f':
+												tupleLineBuffer.put('\f');
+												break;
+											case 'n':
+												tupleLineBuffer.put('\n');
+												break;
+											case 'r':
+												tupleLineBuffer.put('\r');
+												break;
+											case 't':
+												tupleLineBuffer.put('\t');
+												break;
+											case '0': case '1': case '2': case '3':
+												// this could be an octal number, let's check it out
+												if (pos + 2 < endpos) {
+													if (pos + 2 < i - 2 && array[pos + 1] >= '0' && array[pos + 1] <= '7' && array[pos + 2] >= '0' && array[pos + 2] <= '7') {
+														// we got an octal number between \000 and \377
+														try {
+															tupleLineBuffer.put((char)(Integer.parseInt("" + array[pos] + array[pos + 1] + array[pos + 2], 8)));
+															pos += 2;
+														} catch (NumberFormatException e) {
+															// hmmm, this point should never be reached actually...
+															throw new AssertionError("Flow error, should never try to parse non-number");
+														}
+													} else {
+														// do default action if number seems not to be an octal number
+														tupleLineBuffer.put(array[pos]);
+													}
+												} else {
+													// do default action if number seems not to be an octal number
+													tupleLineBuffer.put(array[pos]);
 												}
-											} else {
-												// do default action if number seems not to be correct
+												break;
+											default:
+												// this is wrong usage of escape (except for '\\' and '"'), just ignore the \-escape and print the char
 												tupleLineBuffer.put(array[pos]);
-											}
-											break;
-										default:
-											// this is wrong, just ignore the escape, and print the char
-											tupleLineBuffer.put(array[pos]);
-											break;
+												break;
+										}
+									} else {
+										tupleLineBuffer.put(array[pos]);
 									}
-								} else if(array[pos] == '\\') {
-									pos++;
-									switch (array[pos]) {
-										case '\\':
-											tupleLineBuffer.put('\\');
-											break;
-										case 'n':
-											tupleLineBuffer.put('\n');
-											break;
-										case 't':
-											tupleLineBuffer.put('\t');
-											break;
-										case '"':
-											tupleLineBuffer.put('"');
-											break;
-									}
-								} else {
-									tupleLineBuffer.put(array[pos]);
 								}
+								// put the unescaped string in the right place
+								((Buffer)tupleLineBuffer).flip();
+								oldMapiStringToJavaDataConversion(protocol, tupleLineBuffer.array(), 0, tupleLineBuffer.limit(), lineNumber, values[column], typesMap[column]);
+							} else {
+								oldMapiStringToJavaDataConversion(protocol, array, cursor, fieldlen, lineNumber, values[column], typesMap[column]);
 							}
-							// put the unescaped string in the right place
-							((Buffer)tupleLineBuffer).flip();
-							oldMapiStringToJavaDataConversion(protocol, tupleLineBuffer.array(), 0,
-									tupleLineBuffer.limit(), lineNumber, values[column], typesMap[column]);
-						} else if ((i - 1) - cursor == 4 && OldMapiTupleLineParserHelper.charIndexOf(array,
-								0,array.length, NULL_STRING, 0,4, cursor) == cursor) {
-							setNullValue(lineNumber, values[column], typesMap[column]);
 						} else {
-							oldMapiStringToJavaDataConversion(protocol, array, cursor, i - 1 - cursor, lineNumber,
-									values[column], typesMap[column]);
+							final int vlen = i - 1 - cursor;
+							if (vlen == 4 && OldMapiTupleLineParserHelper.charIndexOf(array, 0, array.length, NULL_STRING, 0, 4, cursor) == cursor) {
+								setNullValue(lineNumber, values[column], typesMap[column]);
+							} else {
+								oldMapiStringToJavaDataConversion(protocol, array, cursor, vlen, lineNumber, values[column], typesMap[column]);
+							}
 						}
-						column++;
 						cursor = i + 1;
+						fieldHasEscape = false;		// reset for next field scan
+						column++;
 					}
 					// reset escaped flag
+					escaped = false;
+					break;
+				default:
 					escaped = false;
 					break;
 			}
