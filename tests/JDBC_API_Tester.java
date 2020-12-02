@@ -11,6 +11,9 @@ import java.util.*;
 import java.io.StringReader;
 import java.nio.charset.Charset;
 
+import org.monetdb.jdbc.types.INET;
+import org.monetdb.jdbc.types.URL;
+
 /**
  * class to test JDBC Driver API methods and behavior of MonetDB server.
  *
@@ -28,13 +31,14 @@ import java.nio.charset.Charset;
  */
 final public class JDBC_API_Tester {
 	StringBuilder sb;	// buffer to collect the test output
+	static int sbInitLen = 3266;
 	Connection con;	// main connection shared by all tests
 
 	public static void main(String[] args) throws Exception {
 		String con_URL = args[0];
 
 		JDBC_API_Tester jt = new JDBC_API_Tester();
-		jt.sb = new StringBuilder(4200);
+		jt.sb = new StringBuilder(sbInitLen);
 		jt.con = DriverManager.getConnection(con_URL);
 		// we are now connected
 
@@ -1157,44 +1161,382 @@ final public class JDBC_API_Tester {
 
 		Statement stmt = null;
 		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit was just switched off
+			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+			int updates = 0;
+			updates = stmt.executeUpdate("CREATE TABLE table_Test_PSmetadata ( myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob )");
+			if (updates != -2)
+				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+
+			// all NULLs
+			updates = stmt.executeUpdate("INSERT INTO table_Test_PSmetadata VALUES (NULL, NULL,            NULL,           NULL,                  NULL)");
+			if (updates != 1)
+				sb.append("2a. Expected 1 got ").append(updates).append(" instead\n");
+
+			// all filled in
+			updates = stmt.executeUpdate("INSERT INTO table_Test_PSmetadata VALUES (2   , 3.0,             true,           'A string',            'bla bla bla')");
+			if (updates != 1)
+				sb.append("2b. Expected 1 got ").append(updates).append(" instead\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
-
 		closeStmtResSet(stmt, null);
 
-		compareExpectedOutput("Test_PSmetadata", "");
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = con.prepareStatement("SELECT CASE WHEN myint IS NULL THEN 0 ELSE 1 END AS intnull, * FROM table_Test_PSmetadata WHERE myint = ?");
+
+			// testing and showing result set meta data
+			ResultSetMetaData rsmd = pstmt.getMetaData();
+			sb.append("rsmd. ").append(rsmd.getColumnCount()).append(" columns:\n");
+			for (int col = 1; col <= rsmd.getColumnCount(); col++) {
+				sb.append("RCol ").append(col).append("\n");
+				sb.append("  classname     ").append(rsmd.getColumnClassName(col)).append("\n");
+				sb.append("  displaysize   ").append(rsmd.getColumnDisplaySize(col)).append("\n");
+				sb.append("  label         ").append(rsmd.getColumnLabel(col)).append("\n");
+				sb.append("  name          ").append(rsmd.getColumnName(col)).append("\n");
+				sb.append("  type          ").append(rsmd.getColumnType(col)).append("\n");
+				sb.append("  typename      ").append(rsmd.getColumnTypeName(col)).append("\n");
+				sb.append("  precision     ").append(rsmd.getPrecision(col)).append("\n");
+				sb.append("  scale         ").append(rsmd.getScale(col)).append("\n");
+				sb.append("  catalogname   ").append(rsmd.getCatalogName(col)).append("\n");
+				sb.append("  schemaname    ").append(rsmd.getSchemaName(col)).append("\n");
+				sb.append("  tablename     ").append(rsmd.getTableName(col)).append("\n");
+				sb.append("  autoincrement ").append(rsmd.isAutoIncrement(col)).append("\n");
+				sb.append("  casesensitive ").append(rsmd.isCaseSensitive(col)).append("\n");
+				sb.append("  currency      ").append(rsmd.isCurrency(col)).append("\n");
+				sb.append("  defwritable   ").append(rsmd.isDefinitelyWritable(col)).append("\n");
+				sb.append("  nullable      ").append(rsmd.isNullable(col)).append("\n");
+				sb.append("  readonly      ").append(rsmd.isReadOnly(col)).append("\n");
+				sb.append("  searchable    ").append(rsmd.isSearchable(col)).append("\n");
+				sb.append("  signed        ").append(rsmd.isSigned(col)).append("\n");
+				sb.append("  writable      ").append(rsmd.isWritable(col)).append("\n");
+			}
+
+			// testing and showing parameter meta data
+			ParameterMetaData pmd = pstmt.getParameterMetaData();
+			sb.append("pmd. ").append(pmd.getParameterCount()).append(" parameters:\n");
+			for (int parm = 1; parm <= pmd.getParameterCount(); parm++) {
+				sb.append("Param ").append(parm).append("\n");
+				int nullable = pmd.isNullable(parm);
+				sb.append("  nullable  ").append(nullable).append(" (");
+				switch (nullable) {
+					case ParameterMetaData.parameterNoNulls:	sb.append("NO"); break;
+					case ParameterMetaData.parameterNullable:	sb.append("YA"); break;
+					case ParameterMetaData.parameterNullableUnknown:	sb.append("UNKNOWN"); break;
+					// default:	sb.append("INVALID " + nullable); break;
+				}
+				sb.append(")\n");
+				sb.append("  signed    ").append(pmd.isSigned(parm)).append("\n");
+				sb.append("  precision ").append(pmd.getPrecision(parm)).append("\n");
+				sb.append("  scale     ").append(pmd.getScale(parm)).append("\n");
+				sb.append("  type      ").append(pmd.getParameterType(parm)).append("\n");
+				sb.append("  typename  ").append(pmd.getParameterTypeName(parm)).append("\n");
+				sb.append("  classname ").append(pmd.getParameterClassName(parm)).append("\n");
+				int mode = pmd.getParameterMode(parm);
+				sb.append("  mode      ").append(mode).append(" (");
+				switch (mode) {
+					case ParameterMetaData.parameterModeIn:	sb.append("IN"); break;
+					case ParameterMetaData.parameterModeInOut:	sb.append("INOUT"); break;
+					case ParameterMetaData.parameterModeOut:	sb.append("OUT"); break;
+					case ParameterMetaData.parameterModeUnknown:	sb.append("UNKNOWN"); break;
+					// default:	sb.append("INVALID " + mode); break;
+				}
+				sb.append(")\n");
+			}
+
+			con.rollback();
+			con.setAutoCommit(true);
+			// >> true: auto commit was just switched on
+			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(pstmt, null);
+
+		compareExpectedOutput("Test_PSmetadata",
+			"0. false\tfalse\n" +
+			"rsmd. 6 columns:\n" +
+			"RCol 1\n" +
+			"  classname     java.lang.Short\n" +
+			"  displaysize   8\n" +
+			"  label         intnull\n" +
+			"  name          intnull\n" +
+			"  type          -6\n" +
+			"  typename      tinyint\n" +
+			"  precision     8\n" +
+			"  scale         0\n" +
+			"  catalogname   null\n" +
+			"  schemaname    \n" +
+			"  tablename     \n" +
+			"  autoincrement false\n" +
+			"  casesensitive false\n" +
+			"  currency      false\n" +
+			"  defwritable   false\n" +
+			"  nullable      2\n" +
+			"  readonly      true\n" +
+			"  searchable    true\n" +
+			"  signed        true\n" +
+			"  writable      false\n" +
+			"RCol 2\n" +
+			"  classname     java.lang.Integer\n" +
+			"  displaysize   32\n" +
+			"  label         myint\n" +
+			"  name          myint\n" +
+			"  type          4\n" +
+			"  typename      int\n" +
+			"  precision     32\n" +
+			"  scale         0\n" +
+			"  catalogname   null\n" +
+			"  schemaname    \n" +
+			"  tablename     table_test_psmetadata\n" +
+			"  autoincrement false\n" +
+			"  casesensitive false\n" +
+			"  currency      false\n" +
+			"  defwritable   false\n" +
+			"  nullable      2\n" +
+			"  readonly      true\n" +
+			"  searchable    true\n" +
+			"  signed        true\n" +
+			"  writable      false\n" +
+			"RCol 3\n" +
+			"  classname     java.lang.Double\n" +
+			"  displaysize   53\n" +
+			"  label         mydouble\n" +
+			"  name          mydouble\n" +
+			"  type          8\n" +
+			"  typename      double\n" +
+			"  precision     53\n" +
+			"  scale         0\n" +
+			"  catalogname   null\n" +
+			"  schemaname    \n" +
+			"  tablename     table_test_psmetadata\n" +
+			"  autoincrement false\n" +
+			"  casesensitive false\n" +
+			"  currency      false\n" +
+			"  defwritable   false\n" +
+			"  nullable      2\n" +
+			"  readonly      true\n" +
+			"  searchable    true\n" +
+			"  signed        true\n" +
+			"  writable      false\n" +
+			"RCol 4\n" +
+			"  classname     java.lang.Boolean\n" +
+			"  displaysize   1\n" +
+			"  label         mybool\n" +
+			"  name          mybool\n" +
+			"  type          16\n" +
+			"  typename      boolean\n" +
+			"  precision     1\n" +
+			"  scale         0\n" +
+			"  catalogname   null\n" +
+			"  schemaname    \n" +
+			"  tablename     table_test_psmetadata\n" +
+			"  autoincrement false\n" +
+			"  casesensitive false\n" +
+			"  currency      false\n" +
+			"  defwritable   false\n" +
+			"  nullable      2\n" +
+			"  readonly      true\n" +
+			"  searchable    true\n" +
+			"  signed        false\n" +
+			"  writable      false\n" +
+			"RCol 5\n" +
+			"  classname     java.lang.String\n" +
+			"  displaysize   15\n" +
+			"  label         myvarchar\n" +
+			"  name          myvarchar\n" +
+			"  type          12\n" +
+			"  typename      varchar\n" +
+			"  precision     15\n" +
+			"  scale         0\n" +
+			"  catalogname   null\n" +
+			"  schemaname    \n" +
+			"  tablename     table_test_psmetadata\n" +
+			"  autoincrement false\n" +
+			"  casesensitive true\n" +
+			"  currency      false\n" +
+			"  defwritable   false\n" +
+			"  nullable      2\n" +
+			"  readonly      true\n" +
+			"  searchable    true\n" +
+			"  signed        false\n" +
+			"  writable      false\n" +
+			"RCol 6\n" +
+			"  classname     java.lang.String\n" +
+			"  displaysize   0\n" +
+			"  label         myclob\n" +
+			"  name          myclob\n" +
+			"  type          12\n" +
+			"  typename      clob\n" +
+			"  precision     0\n" +
+			"  scale         0\n" +
+			"  catalogname   null\n" +
+			"  schemaname    \n" +
+			"  tablename     table_test_psmetadata\n" +
+			"  autoincrement false\n" +
+			"  casesensitive true\n" +
+			"  currency      false\n" +
+			"  defwritable   false\n" +
+			"  nullable      2\n" +
+			"  readonly      true\n" +
+			"  searchable    true\n" +
+			"  signed        false\n" +
+			"  writable      false\n" +
+			"pmd. 1 parameters:\n" +
+			"Param 1\n" +
+			"  nullable  2 (UNKNOWN)\n" +
+			"  signed    true\n" +
+			"  precision 32\n" +
+			"  scale     0\n" +
+			"  type      4\n" +
+			"  typename  int\n" +
+			"  classname java.lang.Integer\n" +
+			"  mode      1 (IN)\n" +
+			"0. true\ttrue\n");
 	}
 
 	private void Test_PSsomeamount() {
 		sb.setLength(0);	// clear the output log buffer
 
-		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
 		try {
-			stmt = con.createStatement();
+			// >> true: auto commit should be on
+			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+
+			sb.append("1. Preparing and executing a unique statement").append("\n");
+			for (int i = 0; i < 120; i++) {
+				pstmt = con.prepareStatement("select " + i + ", " + i + " = ?");
+				pstmt.setInt(1, i);
+				rs = pstmt.executeQuery();
+				if (rs.next() && i % 20 == 0) {
+					sb.append(rs.getInt(1)).append(", ").append(rs.getBoolean(2)).append("\n");
+				}
+				/* next call should cause resources on the server to be freed */
+				pstmt.close();
+			}
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
-		closeStmtResSet(stmt, null);
+		closeStmtResSet(pstmt, rs);
 
-		compareExpectedOutput("Test_PSsomeamount", "");
+		compareExpectedOutput("Test_PSsomeamount",
+			"0. true	true\n" +
+			"1. Preparing and executing a unique statement\n" +
+			"0, true\n" +
+			"20, true\n" +
+			"40, true\n" +
+			"60, true\n" +
+			"80, true\n" +
+			"100, true\n");
 	}
 
 	private void Test_PSsqldata() {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
 		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit should be off now
+			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+			int updates = stmt.executeUpdate("CREATE TABLE table_Test_PSsqldata ( myinet inet, myurl url )");
+			if (updates != -2)
+				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+
+			pstmt = con.prepareStatement("INSERT INTO table_Test_PSsqldata VALUES (?, ?)");
+			ParameterMetaData pmd = pstmt.getParameterMetaData();
+			sb.append(pmd.getParameterCount()).append(" parameters:\n");
+			for (int parm = 1; parm <= pmd.getParameterCount(); parm++) {
+				sb.append("Parm ").append(parm).append("\n");
+				sb.append("  type      ").append(pmd.getParameterType(parm)).append("\n");
+				sb.append("  typename  ").append(pmd.getParameterTypeName(parm)).append("\n");
+				sb.append("  classname ").append(pmd.getParameterClassName(parm)).append("\n");
+			}
+
+			INET tinet = new INET();
+			tinet.fromString("172.5.5.5/24");
+
+			URL turl = new URL();
+			try {
+				turl.fromString("http://www.monetdb.org/");
+			} catch (Exception e) {
+				sb.append("conversion failed: ").append(e.getMessage()).append("\n");
+			}
+			pstmt.setObject(1, tinet);
+			pstmt.setObject(2, turl);
+			// insert first record
+			pstmt.execute();
+
+			try {
+				tinet.setNetmaskBits(16);
+			} catch (Exception e) {
+				sb.append("setNetmaskBits failed: ").append(e.getMessage()).append("\n");
+			}
+			// insert second record
+			pstmt.execute();
+
+			rs = stmt.executeQuery("SELECT * FROM table_Test_PSsqldata");
+			ResultSetMetaData rsmd = rs.getMetaData();
+			for (int i = 1; rs.next(); i++) {
+				for (int col = 1; col <= rsmd.getColumnCount(); col++) {
+					Object x = rs.getObject(col);
+					if (x == null || rs.wasNull()) {
+						sb.append(i).append(".\t<null>").append("\n");
+					} else {
+						sb.append(i).append(".\t").append(x.toString()).append("\n");
+						if (x instanceof INET) {
+							INET inet = (INET)x;
+							sb.append("  ").append(inet.getAddress()).append("/").append(inet.getNetmaskBits()).append("\n");
+							sb.append("  ").append(inet.getInetAddress().toString()).append("\n");
+						} else if (x instanceof URL) {
+							URL url = (URL)x;
+							sb.append("  ").append(url.getURL().toString()).append("\n");
+						}
+					}
+				}
+			}
+			con.rollback();
+			con.setAutoCommit(true);
+			// >> true: auto commit was just switched on
+			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
-		closeStmtResSet(stmt, null);
+		closeStmtResSet(stmt, rs);
+		closeStmtResSet(pstmt, null);
 
-		compareExpectedOutput("Test_PSsqldata", "");
+		compareExpectedOutput("Test_PSsqldata",
+			"0. false	false\n" +
+			"2 parameters:\n" +
+			"Parm 1\n" +
+			"  type      12\n" +
+			"  typename  inet\n" +
+			"  classname org.monetdb.jdbc.types.INET\n" +
+			"Parm 2\n" +
+			"  type      12\n" +
+			"  typename  url\n" +
+			"  classname org.monetdb.jdbc.types.URL\n" +
+			"1.	172.5.5.5/24\n" +
+			"  172.5.5.5/24\n" +
+			"  /172.5.5.5\n" +
+			"1.	http://www.monetdb.org/\n" +
+			"  http://www.monetdb.org/\n" +
+			"2.	172.5.5.5/24\n" +
+			"  172.5.5.5/24\n" +
+			"  /172.5.5.5\n" +
+			"2.	http://www.monetdb.org/\n" +
+			"  http://www.monetdb.org/\n" +
+			"0. true	true\n");
 	}
 
 	private void Test_PStimedate() {
@@ -1520,15 +1862,22 @@ final public class JDBC_API_Tester {
 	}
 
 	private void compareExpectedOutput(String testname, String expected) {
-		if (expected == null || sb == null) {
-			System.out.println("Cannot compare for " + testname + ": expected == null || sb == null");
-		} else
 		if (!expected.equals(sb.toString())) {
-			System.out.println("Test '" + testname + "()' produced different output! Expected:");
+			System.out.print("Test '");
+			System.out.print(testname);
+			if (!testname.endsWith(")"))
+				System.out.print("()");
+			System.out.println("' produced different output!");
+			System.out.println("Expected:");
 			System.out.println(expected);
 			System.out.println("Gotten:");
 			System.out.println(sb);
 			System.out.println();
+		}
+		if (sb.length() > sbInitLen) {
+			System.out.println("Test '" + testname
+				+ "' produced output > " + sbInitLen
+				+ " chars! Enlarge sbInitLen to: " + sb.length());
 		}
 	}
 
