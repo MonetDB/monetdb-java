@@ -130,7 +130,9 @@ final class OldMapiTupleLineParser {
 											case '0': case '1': case '2': case '3':
 												// this could be an octal number, let's check it out
 												if (pos + 2 < endpos) {
-													if (pos + 2 < i - 2 && array[pos + 1] >= '0' && array[pos + 1] <= '7' && array[pos + 2] >= '0' && array[pos + 2] <= '7') {
+													char chr2 = array[pos + 1];
+													char chr3 = array[pos + 2];
+													if (chr2 >= '0' && chr2 <= '7' && chr3 >= '0' && chr3 <= '7') {
 														// we got an octal number between \000 and \377
 														try {
 															tupleLineBuffer.put((char)(Integer.parseInt("" + array[pos] + array[pos + 1] + array[pos + 2], 8)));
