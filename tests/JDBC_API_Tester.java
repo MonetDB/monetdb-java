@@ -8,6 +8,8 @@
 
 import java.sql.*;
 import java.util.*;
+import java.io.StringReader;
+import java.nio.charset.Charset;
 
 /**
  * class to test JDBC Driver API methods and behavior of MonetDB server.
@@ -49,8 +51,8 @@ final public class JDBC_API_Tester {
 		jt.Test_PSgeneratedkeys();
 		jt.Test_PSgetObject();
 		jt.Test_PSlargebatchval();
-		jt.Test_PSlargeresponse();
-		jt.Test_PSmanycon();
+		jt.Test_PSlargeresponse(con_URL);
+		jt.Test_PSmanycon(con_URL);
 		jt.Test_PSmetadata();
 		jt.Test_PSsomeamount();
 		jt.Test_PSsqldata();
@@ -643,74 +645,74 @@ final public class JDBC_API_Tester {
 			// inspect the catalog by use of dbmd functions
 			compareResultSet(dbmd.getCatalogs(), "getCatalogs()",
 			"Resultset with 1 columns\n" +
-			"TABLE_CAT	\n");
+			"TABLE_CAT\n");
 
 			compareResultSet(dbmd.getSchemas(null, "sys"), "getSchemas(null, sys)",
 			"Resultset with 2 columns\n" +
-			"TABLE_SCHEM	TABLE_CATALOG	\n" +
-			"sys	null	\n");
+			"TABLE_SCHEM	TABLE_CATALOG\n" +
+			"sys	null\n");
 
 			compareResultSet(dbmd.getTables(null, "tmp", null, null), "getTables(null, tmp, null, null)",	// schema tmp has 6 tables
 			"Resultset with 10 columns\n" +
-			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION	\n" +
-			"null	tmp	_columns	SYSTEM TABLE	null	null	null	null	null	null	\n" +
-			"null	tmp	_tables	SYSTEM TABLE	null	null	null	null	null	null	\n" +
-			"null	tmp	idxs	SYSTEM TABLE	null	null	null	null	null	null	\n" +
-			"null	tmp	keys	SYSTEM TABLE	null	null	null	null	null	null	\n" +
-			"null	tmp	objects	SYSTEM TABLE	null	null	null	null	null	null	\n" +
-			"null	tmp	triggers	SYSTEM TABLE	null	null	null	null	null	null	\n");
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"null	tmp	_columns	SYSTEM TABLE	null	null	null	null	null	null\n" +
+			"null	tmp	_tables	SYSTEM TABLE	null	null	null	null	null	null\n" +
+			"null	tmp	idxs	SYSTEM TABLE	null	null	null	null	null	null\n" +
+			"null	tmp	keys	SYSTEM TABLE	null	null	null	null	null	null\n" +
+			"null	tmp	objects	SYSTEM TABLE	null	null	null	null	null	null\n" +
+			"null	tmp	triggers	SYSTEM TABLE	null	null	null	null	null	null\n");
 
 			compareResultSet(dbmd.getTables(null, "sys", "schemas", null), "getTables(null, sys, schemas, null)",
 			"Resultset with 10 columns\n" +
-			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION	\n" +
-			"null	sys	schemas	SYSTEM TABLE	null	null	null	null	null	null	\n");
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"null	sys	schemas	SYSTEM TABLE	null	null	null	null	null	null\n");
 
 			compareResultSet(dbmd.getColumns(null, "sys", "table_types", null), "getColumns(null, sys, table_types, null)",
 			"Resultset with 24 columns\n" +
-			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN	\n" +
-			"null	sys	table_types	table_type_id	5	smallint	16	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO	\n" +
-			"null	sys	table_types	table_type_name	12	varchar	25	0	0	0	0	null	null	0	0	25	2	NO	null	null	null	null	NO	NO	\n");
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
+			"null	sys	table_types	table_type_id	5	smallint	16	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
+			"null	sys	table_types	table_type_name	12	varchar	25	0	0	0	0	null	null	0	0	25	2	NO	null	null	null	null	NO	NO\n");
 
 			compareResultSet(dbmd.getPrimaryKeys(null, "sys", "table_types"), "getPrimaryKeys(null, sys, table_types)",
 			"Resultset with 6 columns\n" +
-			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME	\n" +
-			"null	sys	table_types	table_type_id	1	table_types_table_type_id_pkey	\n");
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME\n" +
+			"null	sys	table_types	table_type_id	1	table_types_table_type_id_pkey\n");
 
 			compareResultSet(dbmd.getCrossReference(null, "sys", "tables", null, "sys", "table_types"), "getCrossReference(null, sys, tables, null, sys, table_types)",
 			"Resultset with 14 columns\n" +
-			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY	\n");
+			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n");
 
 			compareResultSet(dbmd.getImportedKeys(null, "sys", "table_types"), "getImportedKeys(null, sys, table_types)",
 			"Resultset with 14 columns\n" +
-			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY	\n");
+			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n");
 
-			compareResultSet(dbmd.getIndexInfo(null, "sys", "table_types", false, false), "getIndexInfo(null, sys, table_types, false, false)",
+			compareResultSet(dbmd.getIndexInfo(null, "sys", "key_types", false, false), "getIndexInfo(null, sys, key_types, false, false)",
 			"Resultset with 13 columns\n" +
-			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION	\n" +
-			"null	sys	table_types	false	null	table_types_table_type_id_pkey	2	1	table_type_id	null	10	0	null	\n" +
-			"null	sys	table_types	false	null	table_types_table_type_name_unique	2	1	table_type_name	null	10	0	null	\n");
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
+			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	3	0	null\n" +
+			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	3	0	null\n");
 
 			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table_types"), "getTablePrivileges(null, sys, table_types)",
 			"Resultset with 7 columns\n" +
-			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE	\n" +
-			"null	sys	table_types	monetdb	public	SELECT	NO	\n");
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
+			"null	sys	table_types	monetdb	public	SELECT	NO\n");
 
 			compareResultSet(dbmd.getColumnPrivileges(null, "sys", "table_types", null), "getColumnPrivileges(null, sys, table_types, null)",
 			"Resultset with 8 columns\n" +
-			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE	\n");
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n");
 
 			compareResultSet(dbmd.getUDTs(null, "sys", null, null), "getUDTs(null, sys, null, null)",
 			"Resultset with 7 columns\n" +
-			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE	\n" +
-			"null	sys	inet	org.monetdb.jdbc.types.INET	2000	inet	null	\n" +
-			"null	sys	json	java.lang.String	2000	json	null	\n" +
-			"null	sys	url	org.monetdb.jdbc.types.URL	2000	url	null	\n" +
-			"null	sys	uuid	java.lang.String	2000	uuid	null	\n");
+			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE\n" +
+			"null	sys	inet	org.monetdb.jdbc.types.INET	2000	inet	null\n" +
+			"null	sys	json	java.lang.String	2000	json	null\n" +
+			"null	sys	url	org.monetdb.jdbc.types.URL	2000	url	null\n" +
+			"null	sys	uuid	java.lang.String	2000	uuid	null\n");
 
 			int[] UDTtypes = { Types.STRUCT, Types.DISTINCT };
 			compareResultSet(dbmd.getUDTs(null, "sys", null, UDTtypes), "getUDTs(null, sys, null, UDTtypes",
 			"Resultset with 7 columns\n" +
-			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE	\n");
+			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE\n");
 
 			sb.setLength(0);	// clear the output log buffer
 		} catch (SQLException e) {
@@ -727,12 +729,16 @@ final public class JDBC_API_Tester {
 		int columnCount = rsmd.getColumnCount();
 		sb.append("Resultset with ").append(columnCount).append(" columns").append("\n");
 		for (int col = 1; col <= columnCount; col++) {
-			sb.append(rsmd.getColumnName(col) + "\t");
+			if (col > 1)
+				sb.append("\t");
+			sb.append(rsmd.getColumnName(col));
 		}
 		sb.append("\n");
 		while (rs.next()) {
 			for (int col = 1; col <= columnCount; col++) {
-				sb.append(rs.getString(col) + "\t");
+				if (col > 1)
+					sb.append("\t");
+				sb.append(rs.getString(col));
 			}
 			sb.append("\n");
 		}
@@ -753,6 +759,7 @@ final public class JDBC_API_Tester {
 			sb.append("Statement fetch size before set: " + stmt.getFetchSize()).append("\n");
 			sb.append("ResultSet fetch size before set: " + rs.getFetchSize()).append("\n");
 
+			stmt.setFetchSize(40);
 			rs.setFetchSize(16384);
 
 			sb.append("Statement fetch size after set: " + stmt.getFetchSize()).append("\n");
@@ -767,7 +774,7 @@ final public class JDBC_API_Tester {
 		compareExpectedOutput("Test_FetchSize",
 			"Statement fetch size before set: 0\n" +
 			"ResultSet fetch size before set: 250\n" +
-			"Statement fetch size after set: 0\n" +
+			"Statement fetch size after set: 40\n" +
 			"ResultSet fetch size after set: 16384\n");
 	}
 
@@ -924,7 +931,10 @@ final public class JDBC_API_Tester {
 		closeStmtResSet(pstmt, rs);
 
 		try {
+			sb.append("4. Rollback changes...");
 			con.rollback();
+			sb.append(" passed").append("\n");
+
 			// restore default setting
 			con.setAutoCommit(true);
 		} catch (SQLException e) {
@@ -941,52 +951,205 @@ final public class JDBC_API_Tester {
 			"  Retrieved row data: ti=1 si=1 i=1 bi=1\n" +
 			"  Retrieved row data: ti=127 si=12700 i=1270000 bi=127000000\n" +
 			"3b. closing ResultSet... passed\n" +
-			"3c. closing PreparedStatement... passed\n");
+			"3c. closing PreparedStatement... passed\n" +
+			"4. Rollback changes... passed\n");
 	}
 
 	private void Test_PSlargebatchval() {
 		sb.setLength(0);	// clear the output log buffer
 
+		byte[] errorBytes = new byte[] { (byte) 0xe2, (byte) 0x80, (byte) 0xa7 };
+		String errorStr = new String(errorBytes, Charset.forName("UTF-8"));
+		StringBuilder repeatedErrorStr = new StringBuilder();
+		for (int i = 0; i < 8170;i++) {
+			repeatedErrorStr.append(errorStr);
+		}
+		String largeStr = repeatedErrorStr.toString();
+
 		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
 		try {
+			// >> true: auto commit should be on
+			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+			sb.append("1. creating test table...");
+			stmt.execute("CREATE TABLE Test_PSlargebatchval (c INT, a CLOB, b DOUBLE)");
+			sb.append("success").append("\n");
+
+			sb.append("2. prepare insert...");
+			pstmt = con.prepareStatement("INSERT INTO Test_PSlargebatchval VALUES (?,?,?)");
+			sb.append("success").append("\n");
+
+			pstmt.setLong(1, 1L);
+			pstmt.setString(2, largeStr);
+			pstmt.setDouble(3, 1.0);
+			pstmt.addBatch();
+			pstmt.executeBatch();
+			sb.append("3. inserted 1 large string").append("\n");
+
+			/* test issue reported at https://www.monetdb.org/bugzilla/show_bug.cgi?id=3470 */
+			pstmt.setLong(1, -2L);
+			pstmt.setClob(2, new StringReader(largeStr));
+			pstmt.setDouble(3, -2.0);
+			pstmt.addBatch();
+			pstmt.executeBatch();
+			sb.append("4. inserted 1 large clob via StringReader() object").append("\n");
+
+			Clob myClob = con.createClob();
+			myClob.setString(1L, largeStr);
+
+			pstmt.setLong(1, 123456789L);
+			pstmt.setClob(2, myClob);
+			pstmt.setDouble(3, 12345678901.98765);
+			pstmt.addBatch();
+			pstmt.executeBatch();
+			sb.append("5. inserted 1 large clob via createClob() object").append("\n");
+
+			pstmt.close();
+
+			sb.append("6. select count(*)... ");
+			rs = stmt.executeQuery("SELECT COUNT(*) FROM Test_PSlargebatchval");
+			if (rs.next())
+				sb.append(rs.getInt(1) + " rows inserted.").append("\n");
+			rs.close();
+
+			sb.append("7. drop table...");
+			stmt.execute("DROP TABLE Test_PSlargebatchval");
+			sb.append("success").append("\n");
+			stmt.close();
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+			while ((e = e.getNextException()) != null)
+				sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
+		closeStmtResSet(stmt, rs);
+		closeStmtResSet(pstmt, null);
 
-		closeStmtResSet(stmt, null);
-
-		compareExpectedOutput("Test_PSlargebatchval", "");
+		compareExpectedOutput("Test_PSlargebatchval",
+			"0. true	true\n" +
+			"1. creating test table...success\n" +
+			"2. prepare insert...success\n" +
+			"3. inserted 1 large string\n" +
+			"4. inserted 1 large clob via StringReader() object\n" +
+			"5. inserted 1 large clob via createClob() object\n" +
+			"6. select count(*)... 3 rows inserted.\n" +
+			"7. drop table...success\n");
 	}
 
-	private void Test_PSlargeresponse() {
+	private void Test_PSlargeresponse(String conURL) {
 		sb.setLength(0);	// clear the output log buffer
 
-		Statement stmt = null;
+		PreparedStatement pstmt = null;
 		try {
-			stmt = con.createStatement();
+			sb.append("1. DatabaseMetadata environment retrieval... ");
+
+			// retrieve this to simulate a bug report
+			DatabaseMetaData dbmd = con.getMetaData();
+			if (conURL.startsWith(dbmd.getURL()))
+				sb.append("oke");
+			else
+				sb.append("not oke " + dbmd.getURL());
+			sb.append("\n");
+
+			pstmt = con.prepareStatement("select * from columns");
+			sb.append("2. empty call...");
+			// should succeed (no arguments given)
+			pstmt.execute();
+			sb.append(" passed").append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
+		closeStmtResSet(pstmt, null);
 
-		closeStmtResSet(stmt, null);
-
-		compareExpectedOutput("Test_PSlargeresponse", "");
+		compareExpectedOutput("Test_PSlargeresponse",
+			"1. DatabaseMetadata environment retrieval... oke\n" +
+			"2. empty call... passed\n");
 	}
 
-	private void Test_PSmanycon() {
+	private void Test_PSmanycon(String arg0) {
 		sb.setLength(0);	// clear the output log buffer
 
-		Statement stmt = null;
+		final int maxCons = 60;	// default max_clients is 64, 2 connections are already open from this program
+		List<PreparedStatement> pss = new ArrayList<PreparedStatement>(maxCons);	// PreparedStatements go in here
+
 		try {
-			stmt = con.createStatement();
+			// spawn a lot of Connections with 1 PreparedStatement, just for fun...
+			int i = 1;
+			sb.append("Establishing Connection ");
+			for (; i <= maxCons; i++) {
+				sb.append(i);
+				Connection conx = DriverManager.getConnection(arg0);
+				sb.append(",");
+
+				// do something with the connection to test if it works
+				PreparedStatement pstmt = conx.prepareStatement("select " + i);
+				sb.append(" ");
+
+				pss.add(pstmt);
+			}
+			sb.append("\n");
+
+			// now try to nicely execute them
+			i = 1;
+			sb.append("Executing PreparedStatement\n");
+			for (Iterator<PreparedStatement> it = pss.iterator(); it.hasNext(); i++) {
+				PreparedStatement pstmt = it.next();
+
+				// see if the connection still works
+				sb.append(i).append("...");
+				if (!pstmt.execute())
+					sb.append("should have seen a ResultSet!");
+
+				ResultSet rs = pstmt.getResultSet();
+				if (!rs.next())
+					sb.append("ResultSet is empty");
+				sb.append(" result: " + rs.getString(1));
+
+				// close the connection and associated resources
+				pstmt.getConnection().close();
+				sb.append(", closed. ");
+
+				if (i % 5 == 0) {
+					// inject a failed transaction
+					Connection conZZ = DriverManager.getConnection(arg0);
+					Statement stmt = con.createStatement();
+					try {
+						int affrows = stmt.executeUpdate("update foo where bar is wrong");
+						sb.append("oops, faulty statement just got through");
+					} catch (SQLException e) {
+						sb.append("Forced transaction failure");
+					}
+					sb.append("\n");
+					closeStmtResSet(stmt, null);
+					conZZ.close();
+				}
+			}
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
-		closeStmtResSet(stmt, null);
-
-		compareExpectedOutput("Test_PSmanycon", "");
+		compareExpectedOutput("Test_PSmanycon",
+			"Establishing Connection 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, " +
+			"11, 12, 13, 14, 15, 16, 17, 18, 19, 20, " +
+			"21, 22, 23, 24, 25, 26, 27, 28, 29, 30, " +
+			"31, 32, 33, 34, 35, 36, 37, 38, 39, 40, " +
+			"41, 42, 43, 44, 45, 46, 47, 48, 49, 50, " +
+			"51, 52, 53, 54, 55, 56, 57, 58, 59, 60, \n" +
+			"Executing PreparedStatement\n" +
+			"1... result: 1, closed. 2... result: 2, closed. 3... result: 3, closed. 4... result: 4, closed. 5... result: 5, closed. Forced transaction failure\n" +
+			"6... result: 6, closed. 7... result: 7, closed. 8... result: 8, closed. 9... result: 9, closed. 10... result: 10, closed. Forced transaction failure\n" +
+			"11... result: 11, closed. 12... result: 12, closed. 13... result: 13, closed. 14... result: 14, closed. 15... result: 15, closed. Forced transaction failure\n" +
+			"16... result: 16, closed. 17... result: 17, closed. 18... result: 18, closed. 19... result: 19, closed. 20... result: 20, closed. Forced transaction failure\n" +
+			"21... result: 21, closed. 22... result: 22, closed. 23... result: 23, closed. 24... result: 24, closed. 25... result: 25, closed. Forced transaction failure\n" +
+			"26... result: 26, closed. 27... result: 27, closed. 28... result: 28, closed. 29... result: 29, closed. 30... result: 30, closed. Forced transaction failure\n" +
+			"31... result: 31, closed. 32... result: 32, closed. 33... result: 33, closed. 34... result: 34, closed. 35... result: 35, closed. Forced transaction failure\n" +
+			"36... result: 36, closed. 37... result: 37, closed. 38... result: 38, closed. 39... result: 39, closed. 40... result: 40, closed. Forced transaction failure\n" +
+			"41... result: 41, closed. 42... result: 42, closed. 43... result: 43, closed. 44... result: 44, closed. 45... result: 45, closed. Forced transaction failure\n" +
+			"46... result: 46, closed. 47... result: 47, closed. 48... result: 48, closed. 49... result: 49, closed. 50... result: 50, closed. Forced transaction failure\n" +
+			"51... result: 51, closed. 52... result: 52, closed. 53... result: 53, closed. 54... result: 54, closed. 55... result: 55, closed. Forced transaction failure\n" +
+			"56... result: 56, closed. 57... result: 57, closed. 58... result: 58, closed. 59... result: 59, closed. 60... result: 60, closed. Forced transaction failure\n");
 	}
 
 	private void Test_PSmetadata() {
