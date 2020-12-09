@@ -7,9 +7,15 @@
  */
 
 import java.sql.*;
-import java.util.*;
+
 import java.io.StringReader;
 import java.nio.charset.Charset;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Iterator;
+import java.util.List;
+import java.util.TimeZone;
 
 import org.monetdb.jdbc.types.INET;
 import org.monetdb.jdbc.types.URL;
@@ -453,7 +459,7 @@ final public class JDBC_API_Tester {
 			int items = 0;
 			sb.append("4. table " + items + " items");
 			while (rs.next()) {
-				System.out.print(", " + rs.getString("id"));
+				sb.append(", ").append(rs.getString("id"));
 				i++;
 			}
 			if (i != items) {
@@ -1216,37 +1222,7 @@ final public class JDBC_API_Tester {
 				sb.append("  writable      ").append(rsmd.isWritable(col)).append("\n");
 			}
 
-			// testing and showing parameter meta data
-			ParameterMetaData pmd = pstmt.getParameterMetaData();
-			sb.append("pmd. ").append(pmd.getParameterCount()).append(" parameters:\n");
-			for (int parm = 1; parm <= pmd.getParameterCount(); parm++) {
-				sb.append("Param ").append(parm).append("\n");
-				int nullable = pmd.isNullable(parm);
-				sb.append("  nullable  ").append(nullable).append(" (");
-				switch (nullable) {
-					case ParameterMetaData.parameterNoNulls:	sb.append("NO"); break;
-					case ParameterMetaData.parameterNullable:	sb.append("YA"); break;
-					case ParameterMetaData.parameterNullableUnknown:	sb.append("UNKNOWN"); break;
-					// default:	sb.append("INVALID " + nullable); break;
-				}
-				sb.append(")\n");
-				sb.append("  signed    ").append(pmd.isSigned(parm)).append("\n");
-				sb.append("  precision ").append(pmd.getPrecision(parm)).append("\n");
-				sb.append("  scale     ").append(pmd.getScale(parm)).append("\n");
-				sb.append("  type      ").append(pmd.getParameterType(parm)).append("\n");
-				sb.append("  typename  ").append(pmd.getParameterTypeName(parm)).append("\n");
-				sb.append("  classname ").append(pmd.getParameterClassName(parm)).append("\n");
-				int mode = pmd.getParameterMode(parm);
-				sb.append("  mode      ").append(mode).append(" (");
-				switch (mode) {
-					case ParameterMetaData.parameterModeIn:	sb.append("IN"); break;
-					case ParameterMetaData.parameterModeInOut:	sb.append("INOUT"); break;
-					case ParameterMetaData.parameterModeOut:	sb.append("OUT"); break;
-					case ParameterMetaData.parameterModeUnknown:	sb.append("UNKNOWN"); break;
-					// default:	sb.append("INVALID " + mode); break;
-				}
-				sb.append(")\n");
-			}
+			showParams(pstmt);
 
 			con.rollback();
 			con.setAutoCommit(true);
@@ -1543,75 +1519,615 @@ final public class JDBC_API_Tester {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
 		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit should be off now
+			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+			int updates = stmt.executeUpdate("CREATE TABLE Test_PStimedate (t time, ts timestamp, d date)");
+			if (updates != -2)
+				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+
+			pstmt = con.prepareStatement("INSERT INTO Test_PStimedate VALUES (?, ?, ?)");
+			sb.append("1. empty call...");
+			try {
+				// should fail (as no parameters set)
+				pstmt.execute();
+				sb.append(" UNexpected PASS!\n");
+			} catch (SQLException e) {
+				sb.append(" expected exception\n");
+			}
+
+			sb.append("2. inserting a record...");
+			java.util.Date d = new java.util.Date();
+			pstmt.setTime(1, new java.sql.Time(d.getTime()));
+			pstmt.setTimestamp(2, new java.sql.Timestamp(d.getTime()));
+			pstmt.setDate(3, new java.sql.Date(d.getTime()));
+
+			pstmt.executeUpdate();
+			sb.append(" passed\n");
+
+			sb.append("3. closing PreparedStatement...");
+			pstmt.close();
+			sb.append(" passed\n");
+
+			sb.append("4. selecting record...");
+			pstmt = con.prepareStatement("SELECT * FROM Test_PStimedate");
+			rs = pstmt.executeQuery();
+			sb.append(" passed\n");
+
+			while (rs.next()) {
+				for (int j = 1; j <= 3; j++) {
+					sb.append((j + 4) + ". retrieving...");
+					java.util.Date x = (java.util.Date)(rs.getObject(j));
+					boolean matches = false;
+					if (x instanceof Time) {
+						sb.append(" (Time)");
+						matches = (new Time(d.getTime())).toString().equals(x.toString());
+					} else if (x instanceof Date) {
+						sb.append(" (Date)");
+						matches = (new Date(d.getTime())).toString().equals(x.toString());
+					} else if (x instanceof Timestamp) {
+						sb.append(" (Timestamp)");
+						matches = (new Timestamp(d.getTime())).toString().equals(x.toString());
+					}
+					if (matches) {
+						sb.append(" passed\n");
+					} else {
+						sb.append(" FAILED (" + x + " is not " + d + ")\n");
+					}
+				}
+			}
+
+			con.rollback();
+			con.setAutoCommit(true);
+			// >> true: auto commit was just switched on
+			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
 		closeStmtResSet(stmt, null);
+		closeStmtResSet(pstmt, rs);
 
-		compareExpectedOutput("Test_PStimedate", "");
+		compareExpectedOutput("Test_PStimedate",
+			"0. false	false\n" +
+			"1. empty call... expected exception\n" +
+			"2. inserting a record... passed\n" +
+			"3. closing PreparedStatement... passed\n" +
+			"4. selecting record... passed\n" +
+			"5. retrieving... (Time) passed\n" +
+			"6. retrieving... (Timestamp) passed\n" +
+			"7. retrieving... (Date) passed\n" +
+			"0. true	true\n");
 	}
 
 	private void Test_PStimezone() {
 		sb.setLength(0);	// clear the output log buffer
 
+		// make sure this test is reproducable regardless timezone
+		// setting, by overriding the VM's default
+		// we have to make sure that one doesn't have daylight
+		// savings corrections
+		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
+
 		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
 		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit should be off now
+			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+			int updates = stmt.executeUpdate("CREATE TABLE Test_PStimezone (ts timestamp, tsz timestamp with time zone, t time, tz time with time zone)");
+			if (updates != -2)
+				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+
+			pstmt = con.prepareStatement("INSERT INTO Test_PStimezone VALUES (?, ?, ?, ?)");
+			sb.append("1. empty call...");
+			try {
+				// should fail (as no parameters set)
+				pstmt.execute();
+				sb.append(" UNexpected PASS!\n");
+			} catch (SQLException e) {
+				sb.append(" expected exception\n");
+			}
+
+			sb.append("2. inserting records...\n");
+			java.sql.Timestamp ts = new java.sql.Timestamp(0L);
+			java.sql.Time t = new java.sql.Time(0L);
+			Calendar c = Calendar.getInstance();
+			SimpleDateFormat tsz = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSSZ");
+			SimpleDateFormat tz = new SimpleDateFormat("HH:mm:ss.SSSZ");
+
+			tsz.setTimeZone(c.getTimeZone());
+			tz.setTimeZone(tsz.getTimeZone());
+			sb.append("inserting (").append(c.getTimeZone().getID()).append(") ").append(tsz.format(ts)).append(", ").append(tz.format(t)).append("\n");
+
+			pstmt.setTimestamp(1, ts);
+			pstmt.setTimestamp(2, ts);
+			pstmt.setTime(3, t);
+			pstmt.setTime(4, t);
+			pstmt.executeUpdate();
+
+			c.setTimeZone(TimeZone.getTimeZone("UTC"));
+			sb.append("inserting with calendar timezone ").append(c.getTimeZone().getID()).append("\n");
+			pstmt.setTimestamp(1, ts, c);
+			pstmt.setTimestamp(2, ts, c);
+			pstmt.setTime(3, t, c);
+			pstmt.setTime(4, t, c);
+			pstmt.executeUpdate();
+
+			c.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
+			sb.append("inserting with calendar timezone " + c.getTimeZone().getID()).append("\n");
+			pstmt.setTimestamp(1, ts, c);
+			pstmt.setTimestamp(2, ts);
+			pstmt.setTime(3, t, c);
+			pstmt.setTime(4, t);
+			pstmt.executeUpdate();
+
+			c.setTimeZone(TimeZone.getTimeZone("GMT+04:15"));
+			sb.append("inserting with calendar timezone " + c.getTimeZone().getID()).append("\n");
+			pstmt.setTimestamp(1, ts);
+			pstmt.setTimestamp(2, ts, c);
+			pstmt.setTime(3, t);
+			pstmt.setTime(4, t, c);
+			pstmt.executeUpdate();
+			sb.append(" done\n");
+
+			sb.append("3. closing PreparedStatement...");
+			pstmt.close();
+			sb.append(" passed\n");
+
+			sb.append("4. selecting records...");
+			pstmt = con.prepareStatement("SELECT * FROM Test_PStimezone");
+			rs = pstmt.executeQuery();
+			sb.append(" passed\n");
+
+			// The tz fields should basically always be the same
+			// (exactly 1st Jan 1970) since whatever timezone is used,
+			// the server retains it, and Java restores it.
+			// The zoneless fields will show differences since the time
+			// is inserted translated to the given timezones, and
+			// retrieved as in they were given in those timezones.
+			//  When the insert zone matches the retrieve zone, Java should
+			// eventually see 1st Jan 1970.
+			while (rs.next()) {
+				sb.append("retrieved row (String):\n").append(
+						rs.getString("ts")).append(" | ").append(
+						rs.getString("tsz")).append(" | ").append(
+						rs.getString("t")).append(" | ").append(
+						rs.getString("tz")).append("\n");
+
+				tsz.setTimeZone(TimeZone.getDefault());
+				tz.setTimeZone(tsz.getTimeZone());
+				sb.append("default (").append(tsz.getTimeZone().getID()).append("):\n").append(
+						tsz.format(rs.getTimestamp("ts"))).append(" | ").append(
+						tsz.format(rs.getTimestamp("tsz"))).append(" | ").append(
+						tz.format(rs.getTime("t"))).append(" | ").append(
+						tz.format(rs.getTime("tz"))).append("\n");
+
+				c.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
+				sb.append(c.getTimeZone().getID()).append(":\n").append(
+						rs.getTimestamp("ts", c)).append(" | ").append(
+						rs.getTimestamp("tsz", c)).append(" | ").append(
+						rs.getTime("t", c)).append(" | ").append(
+						rs.getTime("tz", c)).append("\n");
+
+				c.setTimeZone(TimeZone.getTimeZone("Africa/Windhoek"));
+				sb.append(c.getTimeZone().getID()).append(":\n").append(
+						rs.getTimestamp("ts", c)).append(" | ").append(
+						rs.getTimestamp("tsz", c)).append(" | ").append(
+						rs.getTime("t", c)).append(" | ").append(
+						rs.getTime("tz", c)).append("\n");
+
+				SQLWarning w = rs.getWarnings();
+				while (w != null) {
+					sb.append(w.getMessage()).append("\n");
+					w = w.getNextWarning();
+				}
+			}
+
+			con.rollback();
+			con.setAutoCommit(true);
+			// >> true: auto commit was just switched on
+			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
 		closeStmtResSet(stmt, null);
+		closeStmtResSet(pstmt, rs);
 
-		compareExpectedOutput("Test_PStimezone", "");
+		compareExpectedOutput("Test_PStimezone",
+			"0. false	false\n" +
+			"1. empty call... expected exception\n" +
+			"2. inserting records...\n" +
+			"inserting (UTC) 1970-01-01 00:00:00.000+0000, 00:00:00.000+0000\n" +
+			"inserting with calendar timezone UTC\n" +
+			"inserting with calendar timezone America/Los_Angeles\n" +
+			"inserting with calendar timezone GMT+04:15\n" +
+			" done\n" +
+			"3. closing PreparedStatement... passed\n" +
+			"4. selecting records... passed\n" +
+			"retrieved row (String):\n" +
+			"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
+			"default (UTC):\n" +
+			"1970-01-01 00:00:00.000+0000 | 1970-01-01 00:00:00.000+0000 | 00:00:00.000+0000 | 00:00:00.000+0000\n" +
+			"America/Los_Angeles:\n" +
+			"1970-01-01 08:00:00.0 | 1970-01-01 00:00:00.0 | 08:00:00 | 00:00:00\n" +
+			"Africa/Windhoek:\n" +
+			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
+			"retrieved row (String):\n" +
+			"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
+			"default (UTC):\n" +
+			"1970-01-01 00:00:00.000+0000 | 1970-01-01 00:00:00.000+0000 | 00:00:00.000+0000 | 00:00:00.000+0000\n" +
+			"America/Los_Angeles:\n" +
+			"1970-01-01 08:00:00.0 | 1970-01-01 00:00:00.0 | 08:00:00 | 00:00:00\n" +
+			"Africa/Windhoek:\n" +
+			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
+			"retrieved row (String):\n" +
+			"1969-12-31 16:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 16:00:00 | 01:00:00+01:00\n" +
+			"default (UTC):\n" +
+			"1969-12-31 16:00:00.000+0000 | 1970-01-01 00:00:00.000+0000 | 16:00:00.000+0000 | 00:00:00.000+0000\n" +
+			"America/Los_Angeles:\n" +
+			"1970-01-01 00:00:00.0 | 1970-01-01 00:00:00.0 | 00:00:00 | 00:00:00\n" +
+			"Africa/Windhoek:\n" +
+			"1969-12-31 14:00:00.0 | 1970-01-01 00:00:00.0 | 14:00:00 | 00:00:00\n" +
+			"retrieved row (String):\n" +
+			"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
+			"default (UTC):\n" +
+			"1970-01-01 00:00:00.000+0000 | 1970-01-01 00:00:00.000+0000 | 00:00:00.000+0000 | 00:00:00.000+0000\n" +
+			"America/Los_Angeles:\n" +
+			"1970-01-01 08:00:00.0 | 1970-01-01 00:00:00.0 | 08:00:00 | 00:00:00\n" +
+			"Africa/Windhoek:\n" +
+			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
+			"0. true	true\n");
 	}
 
 	private void Test_PStypes() {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
+		PreparedStatement pstmt = null;
 		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit should be off now
+			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+			int updates = stmt.executeUpdate(
+				"CREATE TABLE htmtest (" +
+				"       htmid    bigint       NOT NULL," +
+				"       ra       double ," +
+				"       decl     double ," +
+				"       dra      double ," +
+				"       ddecl    double ," +
+				"       flux     double ," +
+				"       dflux    double ," +
+				"       freq     double ," +
+				"       bw       double ," +
+				"       type     decimal(1,0)," +
+				"       imageurl varchar(100)," +
+				"       comment  varchar(100)," +
+				"       CONSTRAINT htmtest_htmid_pkey PRIMARY KEY (htmid)" +
+				")" );
+			if (updates != -2)
+				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+
+			// index is not used, but the original bug had it too
+			stmt.executeUpdate("CREATE INDEX htmid ON htmtest (htmid)");
+			if (updates != -2)
+				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+
+			stmt.close();
+
+			pstmt = con.prepareStatement("INSERT INTO HTMTEST (HTMID,RA,DECL,FLUX,COMMENT) VALUES (?,?,?,?,?)");
+			sb.append("1. inserting a record...");
+			pstmt.setLong(1, 1L);
+			pstmt.setFloat(2, (float)1.2);
+			pstmt.setDouble(3, 2.4);
+			pstmt.setDouble(4, 3.2);
+			pstmt.setString(5, "vlavbla");
+			pstmt.executeUpdate();
+			sb.append("success\n");
+
+			// try an update like bug #1757923
+			pstmt = con.prepareStatement("UPDATE HTMTEST set COMMENT=?, TYPE=? WHERE HTMID=?");
+			sb.append("2. updating record...");
+			pstmt.setString(1, "some update");
+			pstmt.setObject(2, (float)3.2);
+			pstmt.setLong(3, 1L);
+			pstmt.executeUpdate();
+			sb.append("success\n");
+
+			pstmt.close();
+
+			con.rollback();
+			con.setAutoCommit(true);
+			// >> true: auto commit was just switched on
+			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
 		closeStmtResSet(stmt, null);
+		closeStmtResSet(pstmt, null);
 
-		compareExpectedOutput("Test_PStypes", "");
+		compareExpectedOutput("Test_PStypes",
+			"0. false	false\n" +
+			"1. inserting a record...success\n" +
+			"2. updating record...success\n" +
+			"0. true	true\n");
 	}
 
 	private void Test_CallableStmt() {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
+		CallableStatement cstmt = null;
 		try {
+			String tbl_nm = "tbl6402";
+			String proc_nm = "proc6402";
+
 			stmt = con.createStatement();
+
+			// create a test table.
+			stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " + tbl_nm + " (tint int, tdouble double, tbool boolean, tvarchar varchar(15), tclob clob, turl url, tclen int);");
+			sb.append("Created table: " + tbl_nm).append("\n");
+
+			// create a procedure with multiple different IN parameters which inserts a row into a table of which one column is computed.
+			stmt.executeUpdate("CREATE PROCEDURE " + proc_nm + " (myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob, myurl url) BEGIN" +
+				" INSERT INTO " + tbl_nm + " (tint, tdouble, tbool, tvarchar, tclob, turl, tclen) VALUES (myint, mydouble, mybool, myvarchar, myclob, myurl, LENGTH(myvarchar) + LENGTH(myclob)); " +
+				"END;");
+			sb.append("Created procedure: " + proc_nm).append("\n");
+
+			// make sure we can call the procedure the old way (as string)
+			stmt.executeUpdate("call " + proc_nm + "(1, 1.1, true,'one','ONE', 'www.monetdb.org');");
+			sb.append("Called procedure (1): " + proc_nm).append("\n");
+			showTblContents(tbl_nm);
+
+			// now use a CallableStament object
+			cstmt = con.prepareCall(" { call " + proc_nm + " (?,?, ?, ? , ?,?) } ;");
+			sb.append("Prepared Callable procedure: " + proc_nm).append("\n");
+
+			// specify first set of params
+			cstmt.setInt(1, 2);
+			cstmt.setDouble(2, 2.02);
+			cstmt.setBoolean(3, true);
+			cstmt.setString(4, "Two");
+			Clob myclob = con.createClob();
+			myclob.setString(1, "TWOs");
+			cstmt.setClob(5, myclob);
+			cstmt.setString(6, "http://www.monetdb.org/");
+			cstmt.execute();
+			sb.append("Called Prepared procedure (1): " + proc_nm).append("\n");
+			showParams(cstmt);
+			showTblContents(tbl_nm);
+
+			myclob.setString(1, "TREEs");
+			// specify second set of params (some (1 and 3 and 5) are left the same)
+			cstmt.setDouble(2, 3.02);
+			cstmt.setString(4, "Tree");
+			try {
+				cstmt.setURL(6, new java.net.URL("https://www.monetdb.org/"));
+			} catch (java.net.MalformedURLException mfue) {
+				sb.append("Invalid URL: ").append(mfue.getMessage()).append("\n");
+			}
+			cstmt.execute();
+			sb.append("Called Prepared procedure (2): " + proc_nm).append("\n");
+			// showParams(cstmt);
+			showTblContents(tbl_nm);
+
+			// specify third set of params (some (1 and 2) are left the same)
+			cstmt.setInt(1, 4);
+			cstmt.setBoolean(3, false);
+			cstmt.setString(4, "Four");
+			cstmt.executeUpdate();
+			sb.append("Called Prepared procedure (3): " + proc_nm).append("\n");
+			showTblContents(tbl_nm);
+
+			// test setNull() also
+			cstmt.setNull(3, Types.BOOLEAN);
+			cstmt.setNull(5, Types.CLOB);
+			cstmt.setNull(2, Types.DOUBLE);
+			cstmt.setNull(4, Types.VARCHAR);
+			cstmt.setNull(1, Types.INTEGER);
+			cstmt.executeUpdate();
+			sb.append("Called Prepared procedure (with NULLs): " + proc_nm).append("\n");
+			showTblContents(tbl_nm);
+
+			sb.append("Test completed. Cleanup procedure and table.").append("\n");
+			stmt.execute("DROP PROCEDURE IF EXISTS " + proc_nm + ";");
+			stmt.execute("DROP TABLE     IF EXISTS " + tbl_nm + ";");
+
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
 		closeStmtResSet(stmt, null);
+		closeStmtResSet(cstmt, null);
 
-		compareExpectedOutput("Test_CallableStmt", "");
+		compareExpectedOutput("Test_CallableStmt",
+			"Created table: tbl6402\n" +
+			"Created procedure: proc6402\n" +
+			"Called procedure (1): proc6402\n" +
+			"Table tbl6402 has 7 columns:\n" +
+			"	tint	tdouble	tbool	tvarchar	tclob	turl	tclen\n" +
+			"	1	1.1	true	one	ONE	www.monetdb.org	6\n" +
+			"Prepared Callable procedure: proc6402\n" +
+			"Called Prepared procedure (1): proc6402\n" +
+			"pmd. 6 parameters:\n" +
+			"Param 1\n" +
+			"  nullable  2 (UNKNOWN)\n" +
+			"  signed    true\n" +
+			"  precision 32\n" +
+			"  scale     0\n" +
+			"  type      4\n" +
+			"  typename  int\n" +
+			"  classname java.lang.Integer\n" +
+			"  mode      1 (IN)\n" +
+			"Param 2\n" +
+			"  nullable  2 (UNKNOWN)\n" +
+			"  signed    true\n" +
+			"  precision 53\n" +
+			"  scale     0\n" +
+			"  type      8\n" +
+			"  typename  double\n" +
+			"  classname java.lang.Double\n" +
+			"  mode      1 (IN)\n" +
+			"Param 3\n" +
+			"  nullable  2 (UNKNOWN)\n" +
+			"  signed    false\n" +
+			"  precision 1\n" +
+			"  scale     0\n" +
+			"  type      16\n" +
+			"  typename  boolean\n" +
+			"  classname java.lang.Boolean\n" +
+			"  mode      1 (IN)\n" +
+			"Param 4\n" +
+			"  nullable  2 (UNKNOWN)\n" +
+			"  signed    false\n" +
+			"  precision 15\n" +
+			"  scale     0\n" +
+			"  type      12\n" +
+			"  typename  varchar\n" +
+			"  classname java.lang.String\n" +
+			"  mode      1 (IN)\n" +
+			"Param 5\n" +
+			"  nullable  2 (UNKNOWN)\n" +
+			"  signed    false\n" +
+			"  precision 0\n" +
+			"  scale     0\n" +
+			"  type      12\n" +
+			"  typename  clob\n" +
+			"  classname java.lang.String\n" +
+			"  mode      1 (IN)\n" +
+			"Param 6\n" +
+			"  nullable  2 (UNKNOWN)\n" +
+			"  signed    false\n" +
+			"  precision 0\n" +
+			"  scale     0\n" +
+			"  type      12\n" +
+			"  typename  url\n" +
+			"  classname org.monetdb.jdbc.types.URL\n" +
+			"  mode      1 (IN)\n" +
+			"Table tbl6402 has 7 columns:\n" +
+			"	tint	tdouble	tbool	tvarchar	tclob	turl	tclen\n" +
+			"	1	1.1	true	one	ONE	www.monetdb.org	6\n" +
+			"	2	2.02	true	Two	TWOs	http://www.monetdb.org/	7\n" +
+			"Called Prepared procedure (2): proc6402\n" +
+			"Table tbl6402 has 7 columns:\n" +
+			"	tint	tdouble	tbool	tvarchar	tclob	turl	tclen\n" +
+			"	1	1.1	true	one	ONE	www.monetdb.org	6\n" +
+			"	2	2.02	true	Two	TWOs	http://www.monetdb.org/	7\n" +
+			"	2	3.02	true	Tree	TWOs	https://www.monetdb.org/	8\n" +
+			"Called Prepared procedure (3): proc6402\n" +
+			"Table tbl6402 has 7 columns:\n" +
+			"	tint	tdouble	tbool	tvarchar	tclob	turl	tclen\n" +
+			"	1	1.1	true	one	ONE	www.monetdb.org	6\n" +
+			"	2	2.02	true	Two	TWOs	http://www.monetdb.org/	7\n" +
+			"	2	3.02	true	Tree	TWOs	https://www.monetdb.org/	8\n" +
+			"	4	3.02	false	Four	TWOs	https://www.monetdb.org/	8\n" +
+			"Called Prepared procedure (with NULLs): proc6402\n" +
+			"Table tbl6402 has 7 columns:\n" +
+			"	tint	tdouble	tbool	tvarchar	tclob	turl	tclen\n" +
+			"	1	1.1	true	one	ONE	www.monetdb.org	6\n" +
+			"	2	2.02	true	Two	TWOs	http://www.monetdb.org/	7\n" +
+			"	2	3.02	true	Tree	TWOs	https://www.monetdb.org/	8\n" +
+			"	4	3.02	false	Four	TWOs	https://www.monetdb.org/	8\n" +
+			"	null	null	null	null	null	https://www.monetdb.org/	null\n" +
+			"Test completed. Cleanup procedure and table.\n");
 	}
 
 	private void Test_Rbooleans() {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
+		ResultSet rs = null;
 		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit should be off now
+			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+			int updates = stmt.executeUpdate(
+				"CREATE TABLE Test_Rbooleans (" +
+				" id int, tiny_int tinyint, small_int smallint, medium_int mediumint, \"integer\" int, big_int bigint," +
+				" a_real real, a_float float, a_double double, a_decimal decimal(8,2), a_numeric numeric(8)," +
+				" bool boolean, a_char char(4), b_char char(5), a_varchar varchar(20), PRIMARY KEY (id) )");
+			if (updates != -2)
+				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+
+			// all falses
+			stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (1,0,0,0,0,0,0.0,0.0,0.0,0.0,0,false,'fals','false','false')");
+			// all trues
+			stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (2,1,1,1,1,1,1.0,1.0,1.0,1.0,1,true,'true','true ','true')");
+			// sneakier
+			stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (3,2,3,4,5,6,7.1,8.2,9.3,10.4,11,true,'TrUe','fAlSe','true/false')");
+			stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (4,2,3,4,5,6,7.1,8.2,9.3,10.4,11,true,'t   ','f    ','TRUE      ')");
+
+			rs = stmt.executeQuery("SELECT * FROM Test_Rbooleans ORDER BY id ASC");
+
+			// all should give false
+			rs.next();
+			sb.append("1. ").append(rs.getInt("id")).append(", ").append(rs.getBoolean("tiny_int"))
+			.append(", ").append(rs.getBoolean("small_int")).append(", ").append(rs.getBoolean("medium_int"))
+			.append(", ").append(rs.getBoolean("integer")).append(", ").append(rs.getBoolean("big_int"))
+			.append(", ").append(rs.getBoolean("a_real")).append(", ").append(rs.getBoolean("a_double"))
+			.append(", ").append(rs.getBoolean("a_decimal")).append(", ").append(rs.getBoolean("a_numeric"))
+			.append(", ").append(rs.getBoolean("bool")).append(", ").append(rs.getBoolean("a_char"))
+			.append(", ").append(rs.getBoolean("b_char")).append(", ").append(rs.getBoolean("a_varchar")).append("\n");
+			// all should give true except the one before last
+			rs.next();
+			sb.append("2. ").append(rs.getInt("id")).append(", ").append(rs.getBoolean("tiny_int"))
+			.append(", ").append(rs.getBoolean("small_int")).append(", ").append(rs.getBoolean("medium_int"))
+			.append(", ").append(rs.getBoolean("integer")).append(", ").append(rs.getBoolean("big_int"))
+			.append(", ").append(rs.getBoolean("a_real")).append(", ").append(rs.getBoolean("a_double"))
+			.append(", ").append(rs.getBoolean("a_decimal")).append(", ").append(rs.getBoolean("a_numeric"))
+			.append(", ").append(rs.getBoolean("bool")).append(", ").append(rs.getBoolean("a_char"))
+			.append(", ").append(rs.getBoolean("b_char")).append(", ").append(rs.getBoolean("a_varchar")).append("\n");
+			// should give true for all but the last two
+			rs.next();
+			sb.append("3. ").append(rs.getInt("id")).append(", ").append(rs.getBoolean("tiny_int"))
+			.append(", ").append(rs.getBoolean("small_int")).append(", ").append(rs.getBoolean("medium_int"))
+			.append(", ").append(rs.getBoolean("integer")).append(", ").append(rs.getBoolean("big_int"))
+			.append(", ").append(rs.getBoolean("a_real")).append(", ").append(rs.getBoolean("a_double"))
+			.append(", ").append(rs.getBoolean("a_decimal")).append(", ").append(rs.getBoolean("a_numeric"))
+			.append(", ").append(rs.getBoolean("bool")).append(", ").append(rs.getBoolean("a_char"))
+			.append(", ").append(rs.getBoolean("b_char")).append(", ").append(rs.getBoolean("a_varchar")).append("\n");
+			// should give true for all but the last three
+			rs.next();
+			sb.append("4. ").append(rs.getInt("id")).append(", ").append(rs.getBoolean("tiny_int"))
+			.append(", ").append(rs.getBoolean("small_int")).append(", ").append(rs.getBoolean("medium_int"))
+			.append(", ").append(rs.getBoolean("integer")).append(", ").append(rs.getBoolean("big_int"))
+			.append(", ").append(rs.getBoolean("a_real")).append(", ").append(rs.getBoolean("a_double"))
+			.append(", ").append(rs.getBoolean("a_decimal")).append(", ").append(rs.getBoolean("a_numeric"))
+			.append(", ").append(rs.getBoolean("bool")).append(", ").append(rs.getBoolean("a_char"))
+			.append(", ").append(rs.getBoolean("b_char")).append(", ").append(rs.getBoolean("a_varchar")).append("\n");
+			rs.next();
+
+			con.rollback();
+			con.setAutoCommit(true);
+			// >> true: auto commit was just switched on
+			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
-		closeStmtResSet(stmt, null);
+		closeStmtResSet(stmt, rs);
 
-		compareExpectedOutput("Test_Rbooleans", "");
+		compareExpectedOutput("Test_Rbooleans",
+			"0. false	false\n" +
+			"1. 1, false, false, false, false, false, false, false, false, false, false, false, false, false\n" +
+			"2. 2, true, true, true, true, true, true, true, true, true, true, true, false, true\n" +
+			"3. 3, true, true, true, true, true, true, true, true, true, true, true, false, false\n" +
+			"4. 4, true, true, true, true, true, true, true, true, true, true, false, false, false\n" +
+			"0. true	true\n");
 	}
 
 	private void Test_Rmetadata() {
@@ -1696,6 +2212,7 @@ final public class JDBC_API_Tester {
 		try {
 			// >> true: auto commit should be on by default
 			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			con.setAutoCommit(true);
 
 			stmt = con.createStatement();
 			sb.append("1. more results?...");
@@ -1740,6 +2257,7 @@ final public class JDBC_API_Tester {
 			final String monetdb_jdbc_pkg = "org.monetdb.jdbc.";
 
 			sb.append("Auto commit is: " + con.getAutoCommit()).append("\n");
+			con.setAutoCommit(true);
 
 			checkIsWrapperFor("Connection", con, jdbc_pkg, "Connection");
 			checkIsWrapperFor("Connection", con, monetdb_jdbc_pkg, "MonetConnection");
@@ -1858,6 +2376,72 @@ final public class JDBC_API_Tester {
 			sb.append(cnfe.toString());
 		} catch (SQLException se) {
 			sb.append(se.getMessage());
+		}
+	}
+
+	// some private utility methods for showing table content and params meta data
+	private void showTblContents(String tblnm) {
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = con.createStatement();
+			rs = stmt.executeQuery("SELECT * FROM " + tblnm);
+			if (rs != null) {
+				ResultSetMetaData rsmd = rs.getMetaData();
+				sb.append("Table ").append(tblnm).append(" has ").append(rsmd.getColumnCount()).append(" columns:").append("\n");
+				for (int col = 1; col <= rsmd.getColumnCount(); col++) {
+					sb.append("\t").append(rsmd.getColumnLabel(col));
+				}
+				sb.append("\n");
+				while (rs.next()) {
+					for (int col = 1; col <= rsmd.getColumnCount(); col++) {
+						sb.append("\t").append(rs.getString(col));
+					}
+					sb.append("\n");
+				}
+			} else
+				sb.append("failed to execute query: SELECT * FROM ").append(tblnm).append("\n");
+		} catch (SQLException e) {
+			sb.append("showContents failed: " + e.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, rs);
+	}
+
+	private void showParams(PreparedStatement pstmt) {
+		try {
+			// testing and showing parameter meta data
+			ParameterMetaData pmd = pstmt.getParameterMetaData();
+			sb.append("pmd. ").append(pmd.getParameterCount()).append(" parameters:\n");
+			for (int parm = 1; parm <= pmd.getParameterCount(); parm++) {
+				sb.append("Param ").append(parm).append("\n");
+				int nullable = pmd.isNullable(parm);
+				sb.append("  nullable  ").append(nullable).append(" (");
+				switch (nullable) {
+					case ParameterMetaData.parameterNoNulls:	sb.append("NO"); break;
+					case ParameterMetaData.parameterNullable:	sb.append("YA"); break;
+					case ParameterMetaData.parameterNullableUnknown:	sb.append("UNKNOWN"); break;
+					default:	sb.append("INVALID " + nullable); break;
+				}
+				sb.append(")\n");
+				sb.append("  signed    ").append(pmd.isSigned(parm)).append("\n");
+				sb.append("  precision ").append(pmd.getPrecision(parm)).append("\n");
+				sb.append("  scale     ").append(pmd.getScale(parm)).append("\n");
+				sb.append("  type      ").append(pmd.getParameterType(parm)).append("\n");
+				sb.append("  typename  ").append(pmd.getParameterTypeName(parm)).append("\n");
+				sb.append("  classname ").append(pmd.getParameterClassName(parm)).append("\n");
+				int mode = pmd.getParameterMode(parm);
+				sb.append("  mode      ").append(mode).append(" (");
+				switch (mode) {
+					case ParameterMetaData.parameterModeIn:	sb.append("IN"); break;
+					case ParameterMetaData.parameterModeInOut:	sb.append("INOUT"); break;
+					case ParameterMetaData.parameterModeOut:	sb.append("OUT"); break;
+					case ParameterMetaData.parameterModeUnknown:	sb.append("UNKNOWN"); break;
+					default:	sb.append("INVALID " + mode); break;
+				}
+				sb.append(")\n");
+			}
+		} catch (SQLException e) {
+			sb.append("showParams() FAILED: ").append(e.getMessage()).append("\n");
 		}
 	}
 
