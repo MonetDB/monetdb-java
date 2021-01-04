@@ -210,7 +210,7 @@ public class OldMapiSocket extends AbstractSocket {
 		}
 
 		public int read(ByteBuffer b, int off, int len) throws IOException {
-			b.clear();
+			((Buffer)b).clear();
 			int t;
 			int size = 0;
 			while (size < len) {
@@ -241,7 +241,7 @@ public class OldMapiSocket extends AbstractSocket {
 				throw new IOException("Read from " + connection.getHostname() + ":" +
 						connection.getPort() + ": Incomplete block read from stream");
 			}
-			b.position(size);
+			((Buffer)b).position(size);
 			((Buffer)b).flip();
 			return size;
 		}
@@ -350,7 +350,7 @@ public class OldMapiSocket extends AbstractSocket {
 					break;
 				}
 			}
-			b.clear();
+			((Buffer)b).clear();
 			return written;
 		}
 

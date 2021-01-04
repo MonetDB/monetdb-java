@@ -11,6 +11,8 @@ package nl.cwi.monetdb.mcl.protocol.oldmapi;
 import nl.cwi.monetdb.mcl.protocol.ProtocolException;
 import nl.cwi.monetdb.mcl.protocol.StarterHeaders;
 
+import java.nio.Buffer;
+
 /**
  * The OldMapiStartOfHeaderParser is responsible to retrieve the server's headers on a SOHEADER response. Depending on
  * the type of the header, the next tokens should be retrieved as integers or Strings.
@@ -96,7 +98,7 @@ final class OldMapiStartOfHeaderParser {
 				throw new ProtocolException("expected a digit", currentPointer - 1);
 			}
 		}
-		protocol.lineBuffer.position(currentPointer);
+		((Buffer)protocol.lineBuffer).position(currentPointer);
 		return positive ? tmp : -tmp;
 	}
 
@@ -127,7 +129,7 @@ final class OldMapiStartOfHeaderParser {
 			cnt++;
 		}
 
-		protocol.lineBuffer.position(mark);
+		((Buffer)protocol.lineBuffer).position(mark);
 		return new String(array, 0, cnt);
 	}
 }

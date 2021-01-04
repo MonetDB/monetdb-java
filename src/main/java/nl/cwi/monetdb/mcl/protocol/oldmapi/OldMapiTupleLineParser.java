@@ -103,7 +103,7 @@ final class OldMapiTupleLineParser {
 							final int fieldlen = endpos - cursor;
 							if (fieldHasEscape) {
 								// reuse the tupleLineBuffer by cleaning it and ensure the capacity
-								tupleLineBuffer.clear();
+								((Buffer)tupleLineBuffer).clear();
 								tupleLineBuffer = BufferReallocator.ensureCapacity(tupleLineBuffer, (i - 2) - (cursor + 1));
 								// parse the field value (excluding the double quotes) and convert it to a string without any escape characters
 								for (int pos = cursor; pos < endpos; pos++) {

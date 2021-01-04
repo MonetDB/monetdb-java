@@ -98,9 +98,9 @@ public class OldMapiProtocol extends AbstractProtocol {
 				throw new IOException("Connection to server lost!");
 			}
 			this.currentServerResponseHeader = OldMapiServerResponseParser.parseOldMapiServerResponse(this);
-			this.lineBuffer.position(0);
+			((Buffer)this.lineBuffer).position(0);
 			if (this.currentServerResponseHeader == ServerResponses.ERROR) {
-				this.lineBuffer.position(1);
+				((Buffer)this.lineBuffer).position(1);
 			}
 		}
 	}
@@ -130,7 +130,7 @@ public class OldMapiProtocol extends AbstractProtocol {
 			((Buffer)newbuffer).flip();
 			this.lineBuffer = newbuffer;
 		}
-		this.lineBuffer.position(1);
+		((Buffer)this.lineBuffer).position(1);
 	}
 
 	/**

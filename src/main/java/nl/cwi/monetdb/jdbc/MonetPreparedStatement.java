@@ -19,6 +19,7 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
 import java.net.URL;
+import java.nio.Buffer;
 import java.nio.CharBuffer;
 import java.sql.*;
 import java.text.SimpleDateFormat;
@@ -1454,7 +1455,7 @@ public class MonetPreparedStatement
 					e.getMessage(), "M1M25");
 		}
 		// We have to rewind the buffer, because otherwise toString() returns "".
-		buf.rewind();
+		((Buffer)buf).rewind();
 		setString(parameterIndex, buf.toString());
 	}
 
