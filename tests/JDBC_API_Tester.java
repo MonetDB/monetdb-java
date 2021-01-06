@@ -37,7 +37,7 @@ import org.monetdb.jdbc.types.URL;
  */
 final public class JDBC_API_Tester {
 	StringBuilder sb;	// buffer to collect the test output
-	static int sbInitLen = 3266;
+	final static int sbInitLen = 3416;
 	Connection con;	// main connection shared by all tests
 
 	public static void main(String[] args) throws Exception {
@@ -182,14 +182,14 @@ final public class JDBC_API_Tester {
 			stmt.executeQuery("SELECT COUNT(*) FROM doesnotexist;"); // let's trigger an error
 		} catch (SQLException e) {
 			// e.printStackTrace();
-			sb.append("Expected error: " + e).append("\n");
+			sb.append("Expected error: ").append(e).append("\n");
 			try {
 				// test calling conn.isValid()
-				sb.append("Validating connection: con.isValid? " + con.isValid(30));
+				sb.append("Validating connection: con.isValid? ").append(con.isValid(30));
 				// Can we rollback on this connection without causing an error?
 				con.rollback();
 			} catch (SQLException e2) {
-				sb.append("UnExpected error: " + e2);
+				sb.append("UnExpected error: ").append(e2);
 			}
 		}
 
@@ -232,7 +232,7 @@ final public class JDBC_API_Tester {
 		Statement stmt = null;
 		try {
 			// >> true: auto commit should be on by default
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 			stmt = con.createStatement();
 
 			// sending big script with many simple queries
@@ -247,7 +247,7 @@ final public class JDBC_API_Tester {
 				sb.append("Error: found an update count for a SELECT query").append("\n");
 			}
 			if (i != size) {
-				sb.append("Error: expecting " + size + " tuples, only got " + i).append("\n");
+				sb.append("Error: expecting ").append(size).append(" tuples, only got ").append(i).append("\n");
 			}
 			sb.append("2. queries processed").append("\n");
 		} catch (SQLException e) {
@@ -323,7 +323,7 @@ final public class JDBC_API_Tester {
 		try {
 			con.setAutoCommit(false);
 			// >> true: auto commit should be off by now
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 
 			stmt1 = con.createStatement();
 			// test commit by checking if a change is visible in another connection
@@ -349,7 +349,7 @@ final public class JDBC_API_Tester {
 			if (i == 21) {
 				sb.append("passed");
 			} else {
-				sb.append("got " + i + " records!!!");
+				sb.append("got ").append(i).append(" records!!!");
 			}
 			sb.append("\n");
 
@@ -370,7 +370,7 @@ final public class JDBC_API_Tester {
 			if (i == 10) {
 				sb.append("passed");
 			} else {
-				sb.append("got " + i + " records!!!");
+				sb.append("got ").append(i).append(" records!!!");
 			}
 			sb.append("\n");
 
@@ -387,7 +387,7 @@ final public class JDBC_API_Tester {
 			if (i == 10) {
 				sb.append("passed");
 			} else {
-				sb.append("got " + i + " records!!!");
+				sb.append("got ").append(i).append(" records!!!");
 			}
 			sb.append("\n");
 
@@ -426,7 +426,7 @@ final public class JDBC_API_Tester {
 		ResultSet rs = null;
 		try {
 			// >> true: auto commit should be on by default
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 
 			// savepoints require a non-autocommit connection
 			try {
@@ -434,13 +434,13 @@ final public class JDBC_API_Tester {
 				con.setSavepoint();
 				sb.append("passed !!");
 			} catch (SQLException e) {
-				sb.append("expected msg: " + e.getMessage());
+				sb.append("expected msg: ").append(e.getMessage());
 			}
 			sb.append("\n");
 
 			con.setAutoCommit(false);
 			// >> true: auto commit should be on by default
-			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
 
 			sb.append("2. savepoint...");
 			/* make a savepoint, and discard it */
@@ -457,13 +457,13 @@ final public class JDBC_API_Tester {
 			rs = stmt.executeQuery("SELECT id FROM table_Test_Csavepoints");
 			int i = 0;
 			int items = 0;
-			sb.append("4. table " + items + " items");
+			sb.append("4. table ").append(items).append(" items");
 			while (rs.next()) {
 				sb.append(", ").append(rs.getString("id"));
 				i++;
 			}
 			if (i != items) {
-				sb.append(" FAILED (" + i + ")");
+				sb.append(" FAILED (").append(i).append(")");
 			}
 			sb.append(" passed").append("\n");
 
@@ -478,13 +478,13 @@ final public class JDBC_API_Tester {
 			rs = stmt.executeQuery("SELECT id FROM table_Test_Csavepoints");
 			i = 0;
 			items = 3;
-			sb.append("6. table " + items + " items");
+			sb.append("6. table ").append(items).append(" items");
 			while (rs.next()) {
-				sb.append(", " + rs.getString("id"));
+				sb.append(", ").append(rs.getString("id"));
 				i++;
 			}
 			if (i != items) {
-				sb.append(" FAILED (" + i + ")");
+				sb.append(" FAILED (").append(i).append(")");
 			}
 			sb.append(" passed").append("\n");
 
@@ -495,13 +495,13 @@ final public class JDBC_API_Tester {
 			rs = stmt.executeQuery("SELECT id FROM table_Test_Csavepoints");
 			i = 0;
 			items = 3;
-			sb.append("8. table " + items + " items");
+			sb.append("8. table ").append(items).append(" items");
 			while (rs.next()) {
-				sb.append(", " + rs.getString("id"));
+				sb.append(", ").append(rs.getString("id"));
 				i++;
 			}
 			if (i != items) {
-				sb.append(" FAILED (" + i + ") :(");
+				sb.append(" FAILED (").append(i).append(") :(");
 			}
 			sb.append(" passed").append("\n");
 
@@ -512,13 +512,13 @@ final public class JDBC_API_Tester {
 			rs = stmt.executeQuery("SELECT id FROM table_Test_Csavepoints");
 			i = 0;
 			items = 0;
-			sb.append("10. table " + items + " items");
+			sb.append("10. table ").append(items).append(" items");
 			while (rs.next()) {
-				sb.append(", " + rs.getString("id"));
+				sb.append(", ").append(rs.getString("id"));
 				i++;
 			}
 			if (i != items) {
-				sb.append(" FAILED (" + i + ") :(");
+				sb.append(" FAILED (").append(i).append(") :(");
 			}
 			sb.append(" passed");
 
@@ -557,7 +557,7 @@ final public class JDBC_API_Tester {
 			sb.append("passed");
 		} catch (SQLException e) {
 			// this means we get what we expect
-			sb.append("failed as expected: " + e.getMessage());
+			sb.append("failed as expected: ").append(e.getMessage());
 		}
 		sb.append("\n");
 
@@ -565,7 +565,7 @@ final public class JDBC_API_Tester {
 			// turn off auto commit
 			con.setAutoCommit(false);
 			// >> false: we just disabled it
-			sb.append("2. false\t" + con.getAutoCommit()).append("\n");
+			sb.append("2. false\t").append(con.getAutoCommit()).append("\n");
 
 			// a change would not be visible now
 			sb.append("3. commit...");
@@ -589,7 +589,7 @@ final public class JDBC_API_Tester {
 			// turn off auto commit
 			con.setAutoCommit(true);
 			// >> false: we just disabled it
-			sb.append("6. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("6. true\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			sb.append("7. start transaction...");
@@ -600,7 +600,7 @@ final public class JDBC_API_Tester {
 			con.commit();
 			sb.append("passed").append("\n");
 
-			sb.append("9. true\t" + con.getAutoCommit());
+			sb.append("9. true\t").append(con.getAutoCommit());
 			sb.append("\n");
 
 			sb.append("10. start transaction...");
@@ -611,7 +611,7 @@ final public class JDBC_API_Tester {
 			con.rollback();
 			sb.append("passed").append("\n");
 
-			sb.append("12. true\t" + con.getAutoCommit());
+			sb.append("12. true\t").append(con.getAutoCommit());
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage());
 		}
@@ -624,7 +624,7 @@ final public class JDBC_API_Tester {
 			sb.append("passed");
 		} catch (SQLException e) {
 			// this means we get what we expect
-			sb.append("failed as expected: " + e.getMessage());
+			sb.append("failed as expected: ").append(e.getMessage());
 		}
 		sb.append("\n");
 
@@ -726,6 +726,7 @@ final public class JDBC_API_Tester {
 
 			sb.setLength(0);	// clear the output log buffer
 		} catch (SQLException e) {
+			sb.setLength(0);	// clear the output log buffer
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
@@ -766,14 +767,14 @@ final public class JDBC_API_Tester {
 			stmt = con.createStatement();
 			rs = stmt.executeQuery("SELECT * FROM _tables");
 
-			sb.append("Statement fetch size before set: " + stmt.getFetchSize()).append("\n");
-			sb.append("ResultSet fetch size before set: " + rs.getFetchSize()).append("\n");
+			sb.append("Statement fetch size before set: ").append(stmt.getFetchSize()).append("\n");
+			sb.append("ResultSet fetch size before set: ").append(rs.getFetchSize()).append("\n");
 
 			stmt.setFetchSize(40);
 			rs.setFetchSize(16384);
 
-			sb.append("Statement fetch size after set: " + stmt.getFetchSize()).append("\n");
-			sb.append("ResultSet fetch size after set: " + rs.getFetchSize()).append("\n");
+			sb.append("Statement fetch size after set: ").append(stmt.getFetchSize()).append("\n");
+			sb.append("ResultSet fetch size after set: ").append(rs.getFetchSize()).append("\n");
 
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
@@ -795,7 +796,7 @@ final public class JDBC_API_Tester {
 		try {
 			con.setAutoCommit(false);
 			// >> false: auto commit was just switched off
-			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			stmt.executeUpdate(
@@ -829,7 +830,7 @@ final public class JDBC_API_Tester {
 				sb.append("there are no keys!").append("\n");
 			} else {
 				while (keys.next()) {
-					sb.append("generated key index: " + keys.getInt(1)).append("\n");
+					sb.append("generated key index: ").append(keys.getInt(1)).append("\n");
 				}
 				if (keys.getStatement() == null) {
 					sb.append("ResultSet.getStatement() should never return null!").append("\n");
@@ -863,7 +864,7 @@ final public class JDBC_API_Tester {
 		try {
 			con.setAutoCommit(false);
 			// >> false: auto commit was just switched off
-			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			sb.append("1. creating test table...");
@@ -923,7 +924,7 @@ final public class JDBC_API_Tester {
 				Integer i = (Integer) rs.getObject(3);
 				Long bi = (Long) rs.getObject(4);
 
-				sb.append("  Retrieved row data: ti=" + ti + " si=" + si + " i=" + i + " bi=" + bi).append("\n");
+				sb.append("  Retrieved row data: ti=").append(ti).append(" si=").append(si).append(" i=").append(i).append(" bi=").append(bi).append("\n");
 			}
 
 			sb.append("3b. closing ResultSet...");
@@ -981,7 +982,7 @@ final public class JDBC_API_Tester {
 		ResultSet rs = null;
 		try {
 			// >> true: auto commit should be on
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			sb.append("1. creating test table...");
@@ -1022,7 +1023,7 @@ final public class JDBC_API_Tester {
 			sb.append("6. select count(*)... ");
 			rs = stmt.executeQuery("SELECT COUNT(*) FROM Test_PSlargebatchval");
 			if (rs.next())
-				sb.append(rs.getInt(1) + " rows inserted.").append("\n");
+				sb.append(rs.getInt(1)).append(" rows inserted.").append("\n");
 			rs.close();
 
 			sb.append("7. drop table...");
@@ -1060,7 +1061,7 @@ final public class JDBC_API_Tester {
 			if (conURL.startsWith(dbmd.getURL()))
 				sb.append("oke");
 			else
-				sb.append("not oke " + dbmd.getURL());
+				sb.append("not oke ").append(dbmd.getURL());
 			sb.append("\n");
 
 			pstmt = con.prepareStatement("select * from columns");
@@ -1115,7 +1116,7 @@ final public class JDBC_API_Tester {
 				ResultSet rs = pstmt.getResultSet();
 				if (!rs.next())
 					sb.append("ResultSet is empty");
-				sb.append(" result: " + rs.getString(1));
+				sb.append(" result: ").append(rs.getString(1));
 
 				// close the connection and associated resources
 				pstmt.getConnection().close();
@@ -1169,12 +1170,12 @@ final public class JDBC_API_Tester {
 		try {
 			con.setAutoCommit(false);
 			// >> false: auto commit was just switched off
-			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			int updates = 0;
 			updates = stmt.executeUpdate("CREATE TABLE table_Test_PSmetadata ( myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob )");
-			if (updates != -2)
+			if (updates != Statement.SUCCESS_NO_INFO)
 				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
 
 			// all NULLs
@@ -1227,7 +1228,7 @@ final public class JDBC_API_Tester {
 			con.rollback();
 			con.setAutoCommit(true);
 			// >> true: auto commit was just switched on
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -1382,7 +1383,7 @@ final public class JDBC_API_Tester {
 		ResultSet rs = null;
 		try {
 			// >> true: auto commit should be on
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 
 			sb.append("1. Preparing and executing a unique statement").append("\n");
 			for (int i = 0; i < 120; i++) {
@@ -1421,11 +1422,11 @@ final public class JDBC_API_Tester {
 		try {
 			con.setAutoCommit(false);
 			// >> false: auto commit should be off now
-			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			int updates = stmt.executeUpdate("CREATE TABLE table_Test_PSsqldata ( myinet inet, myurl url )");
-			if (updates != -2)
+			if (updates != Statement.SUCCESS_NO_INFO)
 				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
 
 			pstmt = con.prepareStatement("INSERT INTO table_Test_PSsqldata VALUES (?, ?)");
@@ -1483,7 +1484,7 @@ final public class JDBC_API_Tester {
 			con.rollback();
 			con.setAutoCommit(true);
 			// >> true: auto commit was just switched on
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -1524,11 +1525,11 @@ final public class JDBC_API_Tester {
 		try {
 			con.setAutoCommit(false);
 			// >> false: auto commit should be off now
-			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			int updates = stmt.executeUpdate("CREATE TABLE Test_PStimedate (t time, ts timestamp, d date)");
-			if (updates != -2)
+			if (updates != Statement.SUCCESS_NO_INFO)
 				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
 
 			pstmt = con.prepareStatement("INSERT INTO Test_PStimedate VALUES (?, ?, ?)");
@@ -1561,7 +1562,7 @@ final public class JDBC_API_Tester {
 
 			while (rs.next()) {
 				for (int j = 1; j <= 3; j++) {
-					sb.append((j + 4) + ". retrieving...");
+					sb.append((j+4)).append(". retrieving...");
 					java.util.Date x = (java.util.Date)(rs.getObject(j));
 					boolean matches = false;
 					if (x instanceof Time) {
@@ -1577,7 +1578,7 @@ final public class JDBC_API_Tester {
 					if (matches) {
 						sb.append(" passed\n");
 					} else {
-						sb.append(" FAILED (" + x + " is not " + d + ")\n");
+						sb.append(" FAILED (").append(x).append(" is not ").append(d).append(")\n");
 					}
 				}
 			}
@@ -1585,7 +1586,7 @@ final public class JDBC_API_Tester {
 			con.rollback();
 			con.setAutoCommit(true);
 			// >> true: auto commit was just switched on
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -1620,11 +1621,11 @@ final public class JDBC_API_Tester {
 		try {
 			con.setAutoCommit(false);
 			// >> false: auto commit should be off now
-			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			int updates = stmt.executeUpdate("CREATE TABLE Test_PStimezone (ts timestamp, tsz timestamp with time zone, t time, tz time with time zone)");
-			if (updates != -2)
+			if (updates != Statement.SUCCESS_NO_INFO)
 				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
 
 			pstmt = con.prepareStatement("INSERT INTO Test_PStimezone VALUES (?, ?, ?, ?)");
@@ -1663,7 +1664,7 @@ final public class JDBC_API_Tester {
 			pstmt.executeUpdate();
 
 			c.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
-			sb.append("inserting with calendar timezone " + c.getTimeZone().getID()).append("\n");
+			sb.append("inserting with calendar timezone ").append(c.getTimeZone().getID()).append("\n");
 			pstmt.setTimestamp(1, ts, c);
 			pstmt.setTimestamp(2, ts);
 			pstmt.setTime(3, t, c);
@@ -1671,7 +1672,7 @@ final public class JDBC_API_Tester {
 			pstmt.executeUpdate();
 
 			c.setTimeZone(TimeZone.getTimeZone("GMT+04:15"));
-			sb.append("inserting with calendar timezone " + c.getTimeZone().getID()).append("\n");
+			sb.append("inserting with calendar timezone ").append(c.getTimeZone().getID()).append("\n");
 			pstmt.setTimestamp(1, ts);
 			pstmt.setTimestamp(2, ts, c);
 			pstmt.setTime(3, t);
@@ -1735,7 +1736,7 @@ final public class JDBC_API_Tester {
 			con.rollback();
 			con.setAutoCommit(true);
 			// >> true: auto commit was just switched on
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -1797,7 +1798,7 @@ final public class JDBC_API_Tester {
 		try {
 			con.setAutoCommit(false);
 			// >> false: auto commit should be off now
-			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			int updates = stmt.executeUpdate(
@@ -1816,12 +1817,12 @@ final public class JDBC_API_Tester {
 				"       comment  varchar(100)," +
 				"       CONSTRAINT htmtest_htmid_pkey PRIMARY KEY (htmid)" +
 				")" );
-			if (updates != -2)
+			if (updates != Statement.SUCCESS_NO_INFO)
 				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
 
 			// index is not used, but the original bug had it too
-			stmt.executeUpdate("CREATE INDEX htmid ON htmtest (htmid)");
-			if (updates != -2)
+			updates = stmt.executeUpdate("CREATE INDEX htmid ON htmtest (htmid)");
+			if (updates != Statement.SUCCESS_NO_INFO)
 				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
 
 			stmt.close();
@@ -1850,7 +1851,7 @@ final public class JDBC_API_Tester {
 			con.rollback();
 			con.setAutoCommit(true);
 			// >> true: auto commit was just switched on
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -1878,22 +1879,22 @@ final public class JDBC_API_Tester {
 
 			// create a test table.
 			stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " + tbl_nm + " (tint int, tdouble double, tbool boolean, tvarchar varchar(15), tclob clob, turl url, tclen int);");
-			sb.append("Created table: " + tbl_nm).append("\n");
+			sb.append("Created table: ").append(tbl_nm).append("\n");
 
 			// create a procedure with multiple different IN parameters which inserts a row into a table of which one column is computed.
 			stmt.executeUpdate("CREATE PROCEDURE " + proc_nm + " (myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob, myurl url) BEGIN" +
 				" INSERT INTO " + tbl_nm + " (tint, tdouble, tbool, tvarchar, tclob, turl, tclen) VALUES (myint, mydouble, mybool, myvarchar, myclob, myurl, LENGTH(myvarchar) + LENGTH(myclob)); " +
 				"END;");
-			sb.append("Created procedure: " + proc_nm).append("\n");
+			sb.append("Created procedure: ").append(proc_nm).append("\n");
 
 			// make sure we can call the procedure the old way (as string)
 			stmt.executeUpdate("call " + proc_nm + "(1, 1.1, true,'one','ONE', 'www.monetdb.org');");
-			sb.append("Called procedure (1): " + proc_nm).append("\n");
+			sb.append("Called procedure (1): ").append(proc_nm).append("\n");
 			showTblContents(tbl_nm);
 
 			// now use a CallableStament object
 			cstmt = con.prepareCall(" { call " + proc_nm + " (?,?, ?, ? , ?,?) } ;");
-			sb.append("Prepared Callable procedure: " + proc_nm).append("\n");
+			sb.append("Prepared Callable procedure: ").append(proc_nm).append("\n");
 
 			// specify first set of params
 			cstmt.setInt(1, 2);
@@ -1905,7 +1906,7 @@ final public class JDBC_API_Tester {
 			cstmt.setClob(5, myclob);
 			cstmt.setString(6, "http://www.monetdb.org/");
 			cstmt.execute();
-			sb.append("Called Prepared procedure (1): " + proc_nm).append("\n");
+			sb.append("Called Prepared procedure (1): ").append(proc_nm).append("\n");
 			showParams(cstmt);
 			showTblContents(tbl_nm);
 
@@ -1919,7 +1920,7 @@ final public class JDBC_API_Tester {
 				sb.append("Invalid URL: ").append(mfue.getMessage()).append("\n");
 			}
 			cstmt.execute();
-			sb.append("Called Prepared procedure (2): " + proc_nm).append("\n");
+			sb.append("Called Prepared procedure (2): ").append(proc_nm).append("\n");
 			// showParams(cstmt);
 			showTblContents(tbl_nm);
 
@@ -1928,7 +1929,7 @@ final public class JDBC_API_Tester {
 			cstmt.setBoolean(3, false);
 			cstmt.setString(4, "Four");
 			cstmt.executeUpdate();
-			sb.append("Called Prepared procedure (3): " + proc_nm).append("\n");
+			sb.append("Called Prepared procedure (3): ").append(proc_nm).append("\n");
 			showTblContents(tbl_nm);
 
 			// test setNull() also
@@ -1938,7 +1939,7 @@ final public class JDBC_API_Tester {
 			cstmt.setNull(4, Types.VARCHAR);
 			cstmt.setNull(1, Types.INTEGER);
 			cstmt.executeUpdate();
-			sb.append("Called Prepared procedure (with NULLs): " + proc_nm).append("\n");
+			sb.append("Called Prepared procedure (with NULLs): ").append(proc_nm).append("\n");
 			showTblContents(tbl_nm);
 
 			sb.append("Test completed. Cleanup procedure and table.").append("\n");
@@ -2052,7 +2053,7 @@ final public class JDBC_API_Tester {
 		try {
 			con.setAutoCommit(false);
 			// >> false: auto commit should be off now
-			sb.append("0. false\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			int updates = stmt.executeUpdate(
@@ -2060,16 +2061,18 @@ final public class JDBC_API_Tester {
 				" id int, tiny_int tinyint, small_int smallint, medium_int mediumint, \"integer\" int, big_int bigint," +
 				" a_real real, a_float float, a_double double, a_decimal decimal(8,2), a_numeric numeric(8)," +
 				" bool boolean, a_char char(4), b_char char(5), a_varchar varchar(20), PRIMARY KEY (id) )");
-			if (updates != -2)
-				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+			if (updates != Statement.SUCCESS_NO_INFO)
+				sb.append("1a. Expected -2 got ").append(updates).append(" instead\n");
 
 			// all falses
-			stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (1,0,0,0,0,0,0.0,0.0,0.0,0.0,0,false,'fals','false','false')");
+			updates = stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (1,0,0,0,0,0,0.0,0.0,0.0,0.0,0,false,'fals','false','false')");
 			// all trues
-			stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (2,1,1,1,1,1,1.0,1.0,1.0,1.0,1,true,'true','true ','true')");
+			updates += stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (2,1,1,1,1,1,1.0,1.0,1.0,1.0,1,true,'true','true ','true')");
 			// sneakier
-			stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (3,2,3,4,5,6,7.1,8.2,9.3,10.4,11,true,'TrUe','fAlSe','true/false')");
-			stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (4,2,3,4,5,6,7.1,8.2,9.3,10.4,11,true,'t   ','f    ','TRUE      ')");
+			updates += stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (3,2,3,4,5,6,7.1,8.2,9.3,10.4,11,true,'TrUe','fAlSe','true/false')");
+			updates += stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (4,2,3,4,5,6,7.1,8.2,9.3,10.4,11,true,'t   ','f    ','TRUE      ')");
+			if (updates != 4)
+				sb.append("1b. Expected 4 got ").append(updates).append(" instead\n");
 
 			rs = stmt.executeQuery("SELECT * FROM Test_Rbooleans ORDER BY id ASC");
 
@@ -2082,6 +2085,7 @@ final public class JDBC_API_Tester {
 			.append(", ").append(rs.getBoolean("a_decimal")).append(", ").append(rs.getBoolean("a_numeric"))
 			.append(", ").append(rs.getBoolean("bool")).append(", ").append(rs.getBoolean("a_char"))
 			.append(", ").append(rs.getBoolean("b_char")).append(", ").append(rs.getBoolean("a_varchar")).append("\n");
+
 			// all should give true except the one before last
 			rs.next();
 			sb.append("2. ").append(rs.getInt("id")).append(", ").append(rs.getBoolean("tiny_int"))
@@ -2091,6 +2095,7 @@ final public class JDBC_API_Tester {
 			.append(", ").append(rs.getBoolean("a_decimal")).append(", ").append(rs.getBoolean("a_numeric"))
 			.append(", ").append(rs.getBoolean("bool")).append(", ").append(rs.getBoolean("a_char"))
 			.append(", ").append(rs.getBoolean("b_char")).append(", ").append(rs.getBoolean("a_varchar")).append("\n");
+
 			// should give true for all but the last two
 			rs.next();
 			sb.append("3. ").append(rs.getInt("id")).append(", ").append(rs.getBoolean("tiny_int"))
@@ -2100,6 +2105,7 @@ final public class JDBC_API_Tester {
 			.append(", ").append(rs.getBoolean("a_decimal")).append(", ").append(rs.getBoolean("a_numeric"))
 			.append(", ").append(rs.getBoolean("bool")).append(", ").append(rs.getBoolean("a_char"))
 			.append(", ").append(rs.getBoolean("b_char")).append(", ").append(rs.getBoolean("a_varchar")).append("\n");
+
 			// should give true for all but the last three
 			rs.next();
 			sb.append("4. ").append(rs.getInt("id")).append(", ").append(rs.getBoolean("tiny_int"))
@@ -2114,7 +2120,7 @@ final public class JDBC_API_Tester {
 			con.rollback();
 			con.setAutoCommit(true);
 			// >> true: auto commit was just switched on
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -2134,75 +2140,717 @@ final public class JDBC_API_Tester {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
+		ResultSet rs = null;
 		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit should be off now
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+			stmt.executeUpdate("CREATE TABLE Test_Rmetadata ( myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob )");
+
+			// all NULLs
+			stmt.executeUpdate("INSERT INTO Test_Rmetadata VALUES (NULL, NULL, NULL, NULL, NULL)");
+			// all filled in
+			stmt.executeUpdate("INSERT INTO Test_Rmetadata VALUES (2 , 3.0, true, 'A string', 'bla bla bla')");
+
+			rs = stmt.executeQuery("SELECT * FROM Test_Rmetadata");
+
+			ResultSetMetaData rsmd = rs.getMetaData();
+			sb.append("0. ").append(rsmd.getColumnCount()).append(" columns:\n");
+			for (int col = 1; col <= rsmd.getColumnCount(); col++) {
+				sb.append("Colnr ").append(col).append(".\n");
+				sb.append("\tclassname     ").append(rsmd.getColumnClassName(col)).append("\n");
+				sb.append("\tdisplaysize   ").append(rsmd.getColumnDisplaySize(col)).append("\n");
+				sb.append("\tlabel         ").append(rsmd.getColumnLabel(col)).append("\n");
+				sb.append("\tname          ").append(rsmd.getColumnName(col)).append("\n");
+				sb.append("\ttype          ").append(rsmd.getColumnType(col)).append("\n");
+				sb.append("\ttypename      ").append(rsmd.getColumnTypeName(col)).append("\n");
+				sb.append("\tprecision     ").append(rsmd.getPrecision(col)).append("\n");
+				sb.append("\tscale         ").append(rsmd.getScale(col)).append("\n");
+				sb.append("\tcatalogname   ").append(rsmd.getCatalogName(col)).append("\n");
+				sb.append("\tschemaname    ").append(rsmd.getSchemaName(col)).append("\n");
+				sb.append("\ttablename     ").append(rsmd.getTableName(col)).append("\n");
+				sb.append("\tautoincrement ").append(rsmd.isAutoIncrement(col)).append("\n");
+				sb.append("\tcasesensitive ").append(rsmd.isCaseSensitive(col)).append("\n");
+				sb.append("\tcurrency      ").append(rsmd.isCurrency(col)).append("\n");
+				sb.append("\tdefwritable   ").append(rsmd.isDefinitelyWritable(col)).append("\n");
+				sb.append("\tnullable      ").append(rsmd.isNullable(col)).append("\n");
+				sb.append("\treadonly      ").append(rsmd.isReadOnly(col)).append("\n");
+				sb.append("\tsearchable    ").append(rsmd.isSearchable(col)).append("\n");
+				sb.append("\tsigned        ").append(rsmd.isSigned(col)).append("\n");
+				sb.append("\twritable      ").append(rsmd.isWritable(col)).append("\n");
+			}
+
+			for (int i = 6; rs.next(); i++) {
+				for (int col = 1; col <= rsmd.getColumnCount(); col++) {
+					Object obj = rs.getObject(col);
+					String type = rsmd.getColumnClassName(col);
+					String isInstance = "(null)";
+					if (obj != null && type != null) {
+						try {
+							Class<?> c = Class.forName(type);
+							if (c.isInstance(obj)) {
+								isInstance = (obj.getClass().getName() + " is an instance of " + type);
+							} else {
+								isInstance = (obj.getClass().getName() + " is NOT an instance of " + type);
+							}
+						} catch (ClassNotFoundException e) {
+							isInstance = "No such class: " + type;
+						}
+					}
+					sb.append(i).append(".\t").append(isInstance).append("\n");
+				}
+			}
+			rs.close();
+
+			con.rollback();
+			con.setAutoCommit(true);
+			// >> true: auto commit was just switched on
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
-		closeStmtResSet(stmt, null);
+		closeStmtResSet(stmt, rs);
 
-		compareExpectedOutput("Test_Rmetadata", "");
+		compareExpectedOutput("Test_Rmetadata",
+			"0. false	false\n" +
+			"0. 5 columns:\n" +
+			"Colnr 1.\n" +
+			"	classname     java.lang.Integer\n" +
+			"	displaysize   1\n" +
+			"	label         myint\n" +
+			"	name          myint\n" +
+			"	type          4\n" +
+			"	typename      int\n" +
+			"	precision     10\n" +
+			"	scale         0\n" +
+			"	catalogname   null\n" +
+			"	schemaname    sys\n" +
+			"	tablename     test_rmetadata\n" +
+			"	autoincrement false\n" +
+			"	casesensitive false\n" +
+			"	currency      false\n" +
+			"	defwritable   false\n" +
+			"	nullable      1\n" +
+			"	readonly      true\n" +
+			"	searchable    true\n" +
+			"	signed        true\n" +
+			"	writable      false\n" +
+			"Colnr 2.\n" +
+			"	classname     java.lang.Double\n" +
+			"	displaysize   24\n" +
+			"	label         mydouble\n" +
+			"	name          mydouble\n" +
+			"	type          8\n" +
+			"	typename      double\n" +
+			"	precision     15\n" +
+			"	scale         0\n" +
+			"	catalogname   null\n" +
+			"	schemaname    sys\n" +
+			"	tablename     test_rmetadata\n" +
+			"	autoincrement false\n" +
+			"	casesensitive false\n" +
+			"	currency      false\n" +
+			"	defwritable   false\n" +
+			"	nullable      1\n" +
+			"	readonly      true\n" +
+			"	searchable    true\n" +
+			"	signed        true\n" +
+			"	writable      false\n" +
+			"Colnr 3.\n" +
+			"	classname     java.lang.Boolean\n" +
+			"	displaysize   5\n" +
+			"	label         mybool\n" +
+			"	name          mybool\n" +
+			"	type          16\n" +
+			"	typename      boolean\n" +
+			"	precision     1\n" +
+			"	scale         0\n" +
+			"	catalogname   null\n" +
+			"	schemaname    sys\n" +
+			"	tablename     test_rmetadata\n" +
+			"	autoincrement false\n" +
+			"	casesensitive false\n" +
+			"	currency      false\n" +
+			"	defwritable   false\n" +
+			"	nullable      1\n" +
+			"	readonly      true\n" +
+			"	searchable    true\n" +
+			"	signed        false\n" +
+			"	writable      false\n" +
+			"Colnr 4.\n" +
+			"	classname     java.lang.String\n" +
+			"	displaysize   8\n" +
+			"	label         myvarchar\n" +
+			"	name          myvarchar\n" +
+			"	type          12\n" +
+			"	typename      varchar\n" +
+			"	precision     15\n" +
+			"	scale         0\n" +
+			"	catalogname   null\n" +
+			"	schemaname    sys\n" +
+			"	tablename     test_rmetadata\n" +
+			"	autoincrement false\n" +
+			"	casesensitive true\n" +
+			"	currency      false\n" +
+			"	defwritable   false\n" +
+			"	nullable      1\n" +
+			"	readonly      true\n" +
+			"	searchable    true\n" +
+			"	signed        false\n" +
+			"	writable      false\n" +
+			"Colnr 5.\n" +
+			"	classname     java.lang.String\n" +
+			"	displaysize   11\n" +
+			"	label         myclob\n" +
+			"	name          myclob\n" +
+			"	type          12\n" +
+			"	typename      clob\n" +
+			"	precision     11\n" +
+			"	scale         0\n" +
+			"	catalogname   null\n" +
+			"	schemaname    sys\n" +
+			"	tablename     test_rmetadata\n" +
+			"	autoincrement false\n" +
+			"	casesensitive true\n" +
+			"	currency      false\n" +
+			"	defwritable   false\n" +
+			"	nullable      1\n" +
+			"	readonly      true\n" +
+			"	searchable    true\n" +
+			"	signed        false\n" +
+			"	writable      false\n" +
+			"6.	(null)\n" +
+			"6.	(null)\n" +
+			"6.	(null)\n" +
+			"6.	(null)\n" +
+			"6.	(null)\n" +
+			"7.	java.lang.Integer is an instance of java.lang.Integer\n" +
+			"7.	java.lang.Double is an instance of java.lang.Double\n" +
+			"7.	java.lang.Boolean is an instance of java.lang.Boolean\n" +
+			"7.	java.lang.String is an instance of java.lang.String\n" +
+			"7.	java.lang.String is an instance of java.lang.String\n" +
+			"0. true	true\n");
 	}
 
 	private void Test_Rpositioning() {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
+		ResultSet rs = null;
 		try {
 			stmt = con.createStatement();
+			// get a one rowed resultset
+			rs = stmt.executeQuery("SELECT 1");
+
+			// >> true: we should be before the first result now
+			sb.append("1. true\t").append(rs.isBeforeFirst()).append("\n");
+			// >> false: we're not at the first result
+			sb.append("2. false\t").append(rs.isFirst()).append("\n");
+			// >> true: there is one result, so we can call next once
+			sb.append("3. true\t").append(rs.next()).append("\n");
+			// >> false: we're not before the first row anymore
+			sb.append("4. false\t").append(rs.isBeforeFirst()).append("\n");
+			// >> true: we're at the first result
+			sb.append("5. true\t").append(rs.isFirst()).append("\n");
+			// >> false: we're on the last row
+			sb.append("6. false\t").append(rs.isAfterLast()).append("\n");
+			// >> true: see above
+			sb.append("7. true\t").append(rs.isLast()).append("\n");
+			// >> false: there is one result, so this is it
+			sb.append("8. false\t").append(rs.next()).append("\n");
+			// >> true: yes, we're at the end
+			sb.append("9. true\t").append(rs.isAfterLast()).append("\n");
+			// >> false: no we're one over it
+			sb.append("10. false\t").append(rs.isLast()).append("\n");
+			// >> false: another try to move on should still fail
+			sb.append("11. false\t").append(rs.next()).append("\n");
+			// >> true: and we should stay positioned after the last
+			sb.append("12.true\t").append(rs.isAfterLast()).append("\n");
+
+			rs.close();
+
+			// try the same with a scrollable result set
+			DatabaseMetaData dbmd = con.getMetaData();
+			rs = dbmd.getTableTypes();
+
+			// >> true: we should be before the first result now
+			sb.append("1. true\t").append(rs.isBeforeFirst()).append("\n");
+			// >> false: we're not at the first result
+			sb.append("2. false\t").append(rs.isFirst()).append("\n");
+			// >> true: there is one result, so we can call next once
+			sb.append("3. true\t").append(rs.next()).append("\n");
+			// >> false: we're not before the first row anymore
+			sb.append("4. false\t").append(rs.isBeforeFirst()).append("\n");
+			// >> true: we're at the first result
+			sb.append("5. true\t").append(rs.isFirst()).append("\n");
+			// move to last row
+			rs.last();
+			// >> false: we're on the last row
+			sb.append("6. false\t").append(rs.isAfterLast()).append("\n");
+			// >> true: see above
+			sb.append("7. true\t").append(rs.isLast()).append("\n");
+			// >> false: there is one result, so this is it
+			sb.append("8. false\t").append(rs.next()).append("\n");
+			// >> true: yes, we're at the end
+			sb.append("9. true\t").append(rs.isAfterLast()).append("\n");
+			// >> false: no we're one over it
+			sb.append("10. false\t").append(rs.isLast()).append("\n");
+			// >> false: another try to move on should still fail
+			sb.append("11. false\t").append(rs.next()).append("\n");
+			// >> true: and we should stay positioned after the last
+			sb.append("12. true\t").append(rs.isAfterLast()).append("\n");
+
+			rs.close();
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
-		closeStmtResSet(stmt, null);
+		closeStmtResSet(stmt, rs);
 
-		compareExpectedOutput("Test_Rpositioning", "");
+		compareExpectedOutput("Test_Rpositioning",
+			"1. true	true\n" +
+			"2. false	false\n" +
+			"3. true	true\n" +
+			"4. false	false\n" +
+			"5. true	true\n" +
+			"6. false	false\n" +
+			"7. true	true\n" +
+			"8. false	false\n" +
+			"9. true	true\n" +
+			"10. false	false\n" +
+			"11. false	false\n" +
+			"12.true	true\n" +
+			"1. true	true\n" +
+			"2. false	false\n" +
+			"3. true	true\n" +
+			"4. false	false\n" +
+			"5. true	true\n" +
+			"6. false	false\n" +
+			"7. true	true\n" +
+			"8. false	false\n" +
+			"9. true	true\n" +
+			"10. false	false\n" +
+			"11. false	false\n" +
+			"12. true	true\n");
 	}
 
 	private void Test_Rsqldata() {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
+		ResultSet rs = null;
+		ResultSetMetaData rsmd = null;
+
 		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit should be off now
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+			stmt.executeUpdate("CREATE TABLE Test_Rsqldata ( myinet inet, myurl url )");
+
+			String InsertInto = "INSERT INTO Test_Rsqldata VALUES ";
+			// all NULLs
+			stmt.executeUpdate(InsertInto + "(NULL, NULL)");
+			// all filled in
+			stmt.executeUpdate(InsertInto + "('172.5.5.5' , 'http://www.monetdb.org/')");
+			stmt.executeUpdate(InsertInto + "('172.5.5.5/32' , 'http://www.monetdb.org/Home')");
+			stmt.executeUpdate(InsertInto + "('172.5.5.5/16' , 'http://www.monetdb.org/Home#someanchor')");
+			stmt.executeUpdate(InsertInto + "('172.5.5.5/26' , 'http://www.monetdb.org/?query=bla')");
+
+			rs = stmt.executeQuery("SELECT * FROM Test_Rsqldata");
+			rsmd = rs.getMetaData();
+
+			sb.append("0. ").append(rsmd.getColumnCount()).append(" columns:\n");
+			for (int col = 1; col <= rsmd.getColumnCount(); col++) {
+				sb.append(col).append("\n");
+				sb.append("\tclassname   ").append(rsmd.getColumnClassName(col)).append("\n");
+				sb.append("\tcatalogname ").append(rsmd.getCatalogName(col)).append("\n");
+				sb.append("\tschemaname  ").append(rsmd.getSchemaName(col)).append("\n");
+				sb.append("\ttablename   ").append(rsmd.getTableName(col)).append("\n");
+				sb.append("\tcolumnname  ").append(rsmd.getColumnName(col)).append("\n");
+			}
+
+			for (int i = 1; rs.next(); i++) {
+				for (int col = 1; col <= rsmd.getColumnCount(); col++) {
+					sb.append(i).append(".\t");
+					Object x = rs.getObject(col);
+					if (x == null) {
+						sb.append("<null>").append("\n");
+					} else {
+						sb.append(x.toString()).append("\n");
+						if (x instanceof INET) {
+							INET inet = (INET)x;
+							sb.append("\t").append(inet.getAddress()).append("/").append(inet.getNetmaskBits()).append("\n");
+							sb.append("\t").append(inet.getInetAddress().toString()).append("\n");
+						} else if (x instanceof URL) {
+							URL url = (URL)x;
+							sb.append("\t").append(url.getURL().toString()).append("\n");
+						}
+					}
+				}
+			}
+
+			rs.close();
+
+			con.rollback();
+			con.setAutoCommit(true);
+			// >> true: auto commit was just switched on
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
-		closeStmtResSet(stmt, null);
+		closeStmtResSet(stmt, rs);
 
-		compareExpectedOutput("Test_Rsqldata", "");
+		compareExpectedOutput("Test_Rsqldata",
+			"0. false	false\n" +
+			"0. 2 columns:\n" +
+			"1\n" +
+			"	classname   org.monetdb.jdbc.types.INET\n" +
+			"	catalogname null\n" +
+			"	schemaname  sys\n" +
+			"	tablename   test_rsqldata\n" +
+			"	columnname  myinet\n" +
+			"2\n" +
+			"	classname   org.monetdb.jdbc.types.URL\n" +
+			"	catalogname null\n" +
+			"	schemaname  sys\n" +
+			"	tablename   test_rsqldata\n" +
+			"	columnname  myurl\n" +
+			"1.	<null>\n" +
+			"1.	<null>\n" +
+			"2.	172.5.5.5\n" +
+			"	172.5.5.5/32\n" +
+			"	/172.5.5.5\n" +
+			"2.	http://www.monetdb.org/\n" +
+			"	http://www.monetdb.org/\n" +
+			"3.	172.5.5.5\n" +
+			"	172.5.5.5/32\n" +
+			"	/172.5.5.5\n" +
+			"3.	http://www.monetdb.org/Home\n" +
+			"	http://www.monetdb.org/Home\n" +
+			"4.	172.5.5.5/16\n" +
+			"	172.5.5.5/16\n" +
+			"	/172.5.5.5\n" +
+			"4.	http://www.monetdb.org/Home#someanchor\n" +
+			"	http://www.monetdb.org/Home#someanchor\n" +
+			"5.	172.5.5.5/26\n" +
+			"	172.5.5.5/26\n" +
+			"	/172.5.5.5\n" +
+			"5.	http://www.monetdb.org/?query=bla\n" +
+			"	http://www.monetdb.org/?query=bla\n" +
+			"0. true	true\n");
 	}
 
 	private void Test_Rtimedate() {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
+		ResultSet rs = null;
 		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit should be off now
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+			stmt.executeUpdate("CREATE TABLE table_Test_Rtimedate ( id int PRIMARY KEY, ts timestamp, t time, d date, vc varchar(30) )");
+
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, ts) VALUES (1, timestamp '2004-04-24 11:43:53.123')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, t) VALUES (2, time '11:43:53.123')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, d) VALUES (3, date '2004-04-24')");
+			// same values but now as strings to test string to timestamp / time / date object conversions
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, vc) VALUES (4, '2004-04-24 11:43:53.654321')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, vc) VALUES (5, '11:43:53')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, vc) VALUES (6, '2004-04-24')");
+
+			// test also with small years (< 1000) (see bug 6468)
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, ts) VALUES (11, timestamp '904-04-24 11:43:53.567')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, ts) VALUES (12, timestamp '74-04-24 11:43:53.567')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, ts) VALUES (13, timestamp '4-04-24 11:43:53.567')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, d) VALUES (14, date '904-04-24')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, d) VALUES (15, date '74-04-24')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, d) VALUES (16, date '4-04-24')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, vc) VALUES (17, '904-04-24 11:43:53.567')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, vc) VALUES (18, '74-04-24 11:43:53.567')");
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, vc) VALUES (19, '4-04-24 11:43:53.567')");
+
+			// test also with negative years (see bug 6468)
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, ts) VALUES (21, timestamp '-4-04-24 11:43:53.567')");	// negative year
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, ts) VALUES (22, timestamp '-2004-04-24 11:43:53.567')"); // negative year
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, d) VALUES (23, date '-4-04-24')");	// negative year
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, d) VALUES (24, date '-3004-04-24')");	// negative year
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, vc) VALUES (25, '-2004-04-24 11:43:53.654321')");	// negative year
+			stmt.executeUpdate("INSERT INTO table_Test_Rtimedate(id, vc) VALUES (26, '-3004-04-24')");	// negative year
+
+			rs = stmt.executeQuery("SELECT * FROM table_Test_Rtimedate");
+
+			readNextRow(rs, 1, "ts");
+			readNextRow(rs, 2, "t");
+			readNextRow(rs, 3, "d");
+
+			readNextRow(rs, 4, "vc");
+			readNextRow(rs, 5, "vc");
+			readNextRow(rs, 6, "vc");
+
+			readNextRow(rs, 11, "ts");
+			readNextRow(rs, 12, "ts");
+			readNextRow(rs, 13, "ts");
+			readNextRow(rs, 14, "d");
+			readNextRow(rs, 15, "d");
+			readNextRow(rs, 16, "d");
+			readNextRow(rs, 17, "vc");
+			readNextRow(rs, 18, "vc");
+			readNextRow(rs, 19, "vc");
+
+			readNextRow(rs, 21, "ts");
+			readNextRow(rs, 22, "ts");
+			readNextRow(rs, 23, "d");
+			readNextRow(rs, 24, "d");
+			readNextRow(rs, 25, "vc");
+			readNextRow(rs, 26, "vc");
+
+			readWarnings(stmt.getWarnings());
+			readWarnings(con.getWarnings());
+
+			con.rollback();
+			con.setAutoCommit(true);
+			// >> true: auto commit should be on by default
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
-		closeStmtResSet(stmt, null);
+		closeStmtResSet(stmt, rs);
 
-		compareExpectedOutput("Test_Rtimedate", "");
+		compareExpectedOutput("Test_Rtimedate",
+			"0. false	false\n" +
+			"1. ts 2004-04-24 11:43:53.123000 to ts: 2004-04-24 11:43:53.123\n" +
+			"1. ts 2004-04-24 11:43:53.123000 to tm: 11:43:53\n" +
+			"1. ts 2004-04-24 11:43:53.123000 to dt: 2004-04-24\n" +
+			"2. t 11:43:53 to ts: 1970-01-01 11:43:53.0\n" +
+			"2. t 11:43:53 to tm: 11:43:53\n" +
+			"2. t 11:43:53 to dt: 1970-01-01\n" +
+			"3. d 2004-04-24 to ts: 2004-04-24 00:00:00.0\n" +
+			"3. d 2004-04-24 to tm: 00:00:00\n" +
+			"3. d 2004-04-24 to dt: 2004-04-24\n" +
+			"4. vc 2004-04-24 11:43:53.654321 to ts: 2004-04-24 11:43:53.654321\n" +
+			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"2004-04-24 11:43:53.654321\" at pos: 5\n" +
+			"4. vc 2004-04-24 11:43:53.654321 to dt: 2004-04-24\n" +
+			"rs.getTimestamp(colnm) failed with error: parsing failed, found: ':' in: \"11:43:53\" at pos: 3\n" +
+			"5. vc 11:43:53 to tm: 11:43:53\n" +
+			"rs.getDate(colnm) failed with error: parsing failed, found: ':' in: \"11:43:53\" at pos: 3\n" +
+			"6. vc 2004-04-24 to ts: 2004-04-24 00:00:00.0\n" +
+			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"2004-04-24\" at pos: 5\n" +
+			"6. vc 2004-04-24 to dt: 2004-04-24\n" +
+			"11. ts 904-04-24 11:43:53.567000 to ts: 0904-04-24 11:43:53.567\n" +
+			"11. ts 904-04-24 11:43:53.567000 to tm: 11:43:53\n" +
+			"11. ts 904-04-24 11:43:53.567000 to dt: 0904-04-24\n" +
+			"12. ts 74-04-24 11:43:53.567000 to ts: 0074-04-24 11:43:53.567\n" +
+			"12. ts 74-04-24 11:43:53.567000 to tm: 11:43:53\n" +
+			"12. ts 74-04-24 11:43:53.567000 to dt: 0074-04-24\n" +
+			"13. ts 4-04-24 11:43:53.567000 to ts: 0004-04-24 11:43:53.567\n" +
+			"13. ts 4-04-24 11:43:53.567000 to tm: 11:43:53\n" +
+			"13. ts 4-04-24 11:43:53.567000 to dt: 0004-04-24\n" +
+			"14. d 904-04-24 to ts: 0904-04-24 00:00:00.0\n" +
+			"14. d 904-04-24 to tm: 00:00:00\n" +
+			"14. d 904-04-24 to dt: 0904-04-24\n" +
+			"15. d 74-04-24 to ts: 0074-04-24 00:00:00.0\n" +
+			"15. d 74-04-24 to tm: 00:00:00\n" +
+			"15. d 74-04-24 to dt: 0074-04-24\n" +
+			"16. d 4-04-24 to ts: 0004-04-24 00:00:00.0\n" +
+			"16. d 4-04-24 to tm: 00:00:00\n" +
+			"16. d 4-04-24 to dt: 0004-04-24\n" +
+			"17. vc 904-04-24 11:43:53.567 to ts: 0904-04-24 11:43:53.567\n" +
+			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"904-04-24 11:43:53.567\" at pos: 4\n" +
+			"17. vc 904-04-24 11:43:53.567 to dt: 0904-04-24\n" +
+			"18. vc 74-04-24 11:43:53.567 to ts: 0074-04-24 11:43:53.567\n" +
+			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"74-04-24 11:43:53.567\" at pos: 3\n" +
+			"18. vc 74-04-24 11:43:53.567 to dt: 0074-04-24\n" +
+			"19. vc 4-04-24 11:43:53.567 to ts: 0004-04-24 11:43:53.567\n" +
+			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"4-04-24 11:43:53.567\" at pos: 2\n" +
+			"19. vc 4-04-24 11:43:53.567 to dt: 0004-04-24\n" +
+			"21. ts -4-04-24 11:43:53.567000 to ts: 0004-04-24 11:43:53.567\n" +
+			"21. ts -4-04-24 11:43:53.567000 to tm: 11:43:53\n" +
+			"21. ts -4-04-24 11:43:53.567000 to dt: 0004-04-24\n" +
+			"22. ts -2004-04-24 11:43:53.567000 to ts: 2004-04-24 11:43:53.567\n" +
+			"22. ts -2004-04-24 11:43:53.567000 to tm: 11:43:53\n" +
+			"22. ts -2004-04-24 11:43:53.567000 to dt: 2004-04-24\n" +
+			"23. d -4-04-24 to ts: 0004-04-24 00:00:00.0\n" +
+			"23. d -4-04-24 to tm: 00:00:00\n" +
+			"23. d -4-04-24 to dt: 0004-04-24\n" +
+			"24. d -3004-04-24 to ts: 3004-04-24 00:00:00.0\n" +
+			"24. d -3004-04-24 to tm: 00:00:00\n" +
+			"24. d -3004-04-24 to dt: 3004-04-24\n" +
+			"25. vc -2004-04-24 11:43:53.654321 to ts: 2004-04-24 11:43:53.654321\n" +
+			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"-2004-04-24 11:43:53.654321\" at pos: 6\n" +
+			"25. vc -2004-04-24 11:43:53.654321 to dt: 2004-04-24\n" +
+			"26. vc -3004-04-24 to ts: 3004-04-24 00:00:00.0\n" +
+			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"-3004-04-24\" at pos: 6\n" +
+			"26. vc -3004-04-24 to dt: 3004-04-24\n" +
+			"0. true	true\n");
+	}
+
+	private void readNextRow(ResultSet rs, int rowseq, String colnm) throws SQLException {
+		rs.next();
+		readWarnings(rs.getWarnings());
+		rs.clearWarnings();
+
+		// fetch the column value using multiple methods: getString(), getTimestamp(), getTime() and getDate()
+		// to test proper conversion and error reporting
+		String data = rs.getString("id") + ". " + colnm + " " + rs.getString(colnm) + " to ";
+
+		// getTimestamp() may raise a conversion warning when the value is of type Time or a String which doesn't match format yyyy-mm-dd hh:mm:ss
+		try {
+			sb.append(data + "ts: " + rs.getTimestamp(colnm)).append("\n");
+		} catch (SQLException e) {
+			sb.append("rs.getTimestamp(colnm) failed with error: ").append(e.getMessage()).append("\n");
+		}
+		readWarnings(rs.getWarnings());
+		rs.clearWarnings();
+
+		// getTime() may raise a conversion warning when the value is of type Date or a String which doesn't match format hh:mm:ss
+		try {
+			sb.append(data + "tm: " + rs.getTime(colnm)).append("\n");
+		} catch (SQLException e) {
+			sb.append("rs.getTime(colnm) failed with error: ").append(e.getMessage()).append("\n");
+		}
+		readWarnings(rs.getWarnings());
+		rs.clearWarnings();
+
+		// getDate() may raise a conversion warning when the value is of type Time or a String which doesn't match format yyyy-mm-dd
+		try {
+			sb.append(data + "dt: " + rs.getDate(colnm)).append("\n");
+		} catch (SQLException e) {
+			sb.append("rs.getDate(colnm) failed with error: ").append(e.getMessage()).append("\n");
+		}
+		readWarnings(rs.getWarnings());
+		rs.clearWarnings();
 	}
 
 	private void Test_Sbatching() {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
 		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit should be off now
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
+
 			stmt = con.createStatement();
+
+			sb.append("1. create...");
+			if (stmt.executeUpdate("CREATE TABLE Test_Sbatching ( id int )") != Statement.SUCCESS_NO_INFO)
+				sb.append("Wrong return status\n");
+			else
+				sb.append("passed\n");
+
+			// start batching a large amount of inserts
+			for (int i = 1; i <= 3432; i++) {
+				stmt.addBatch("INSERT INTO Test_Sbatching VALUES (" + i + ")");
+				if (i % 1500 == 0) {
+					sb.append("2. executing batch (1500 inserts)...");
+					int[] cnts = stmt.executeBatch();
+					sb.append("passed\n");
+					sb.append("3. checking number of update counts...");
+					if (cnts.length != 1500)
+						sb.append("Invalid size: ").append(cnts.length);
+					sb.append(cnts.length).append(" passed\n");
+					sb.append("4. checking update counts (should all be 1)...");
+					for (int j = 0; j < cnts.length; j++) {
+						if (cnts[j] != 1)
+							sb.append("Unexpected value: ").append(cnts[j]);
+					}
+					sb.append("passed\n");
+					con.commit();
+				}
+			}
+			sb.append("5. executing final batch...");
+			stmt.executeBatch();
+			con.commit();
+			sb.append("passed\n");
+
+			pstmt = con.prepareStatement("INSERT INTO Test_Sbatching VALUES (?)");
+			// start batching a large amount of prepared inserts using JDBC 4.2 executeLargeBatch()
+			for (int i = 1; i <= 3568; i++) {
+				pstmt.setInt(1, i);
+				pstmt.addBatch();
+				if (i % 3000 == 0) {
+					sb.append("2. executing batch (3000 inserts)...");
+					long[] cnts = pstmt.executeLargeBatch();
+					sb.append("passed\n");
+					sb.append("3. checking number of update counts...");
+					if (cnts.length != 3000)
+						sb.append("Invalid size: ").append(cnts.length);
+					sb.append(cnts.length).append(" passed\n");
+					sb.append("4. checking update counts (should all be 1)...");
+					for (int j = 0; j < cnts.length; j++) {
+						if (cnts[j] != 1)
+							sb.append("Unexpected value: ").append(cnts[j]);
+					}
+					sb.append("passed\n");
+					con.commit();
+				}
+			}
+			sb.append("5. executing final Largebatch...");
+			pstmt.executeLargeBatch();
+			con.commit();
+			sb.append("passed\n");
+
+			sb.append("6. clearing the batch...");
+			stmt.clearBatch();
+			pstmt.clearBatch();
+			sb.append("passed\n");
+
+			sb.append("7. checking table count...");
+			rs = stmt.executeQuery("SELECT COUNT(*) FROM Test_Sbatching");
+			rs.next();
+			sb.append(rs.getInt(1)).append(" passed\n");
+
+			sb.append("8. drop table...");
+			if (stmt.executeUpdate("DROP TABLE Test_Sbatching") != Statement.SUCCESS_NO_INFO)
+				sb.append("Wrong return status\n");
+			else
+				sb.append("passed\n");
+
+			// rs.close();
+			stmt.close();
+			pstmt.close();
+
+			con.commit();
+			con.setAutoCommit(true);
+			// >> true: auto commit should be on by default
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
-		closeStmtResSet(stmt, null);
+		closeStmtResSet(stmt, rs);
+		closeStmtResSet(pstmt, null);
 
-		compareExpectedOutput("Test_Sbatching", "");
+		compareExpectedOutput("Test_Sbatching",
+			"0. false	false\n" +
+			"1. create...passed\n" +
+			"2. executing batch (1500 inserts)...passed\n" +
+			"3. checking number of update counts...1500 passed\n" +
+			"4. checking update counts (should all be 1)...passed\n" +
+			"2. executing batch (1500 inserts)...passed\n" +
+			"3. checking number of update counts...1500 passed\n" +
+			"4. checking update counts (should all be 1)...passed\n" +
+			"5. executing final batch...passed\n" +
+			"2. executing batch (3000 inserts)...passed\n" +
+			"3. checking number of update counts...3000 passed\n" +
+			"4. checking update counts (should all be 1)...passed\n" +
+			"5. executing final Largebatch...passed\n" +
+			"6. clearing the batch...passed\n" +
+			"7. checking table count...7000 passed\n" +
+			"8. drop table...passed\n" +
+			"0. true	true\n");
 	}
 
 	private void Test_Smoreresults() {
@@ -2211,8 +2859,7 @@ final public class JDBC_API_Tester {
 		Statement stmt = null;
 		try {
 			// >> true: auto commit should be on by default
-			sb.append("0. true\t" + con.getAutoCommit()).append("\n");
-			con.setAutoCommit(true);
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
 			sb.append("1. more results?...");
@@ -2256,8 +2903,7 @@ final public class JDBC_API_Tester {
 			final String jdbc_pkg = "java.sql.";
 			final String monetdb_jdbc_pkg = "org.monetdb.jdbc.";
 
-			sb.append("Auto commit is: " + con.getAutoCommit()).append("\n");
-			con.setAutoCommit(true);
+			sb.append("Auto commit is: ").append(con.getAutoCommit()).append("\n");
 
 			checkIsWrapperFor("Connection", con, jdbc_pkg, "Connection");
 			checkIsWrapperFor("Connection", con, monetdb_jdbc_pkg, "MonetConnection");
@@ -2366,10 +3012,10 @@ final public class JDBC_API_Tester {
 		try {
 			Class<?> clazz = Class.forName(pkgnm + classnm);
 			boolean isWrapper = obj.isWrapperFor(clazz);
-			sb.append(objnm + ". isWrapperFor(" + classnm + ") returns: " + isWrapper);
+			sb.append(objnm).append(". isWrapperFor(").append(classnm).append(") returns: ").append(isWrapper);
 			if (isWrapper) {
 				Object wobj = obj.unwrap(clazz);
-				sb.append("\tCalled unwrap(). Returned object is " + (wobj != null ? "not null, so oke" : "null !!"));
+				sb.append("\tCalled unwrap(). Returned object is ").append((wobj != null ? "not null, so oke" : "null !!"));
 			}
 			sb.append("\n");
 		} catch (ClassNotFoundException cnfe) {
@@ -2402,7 +3048,7 @@ final public class JDBC_API_Tester {
 			} else
 				sb.append("failed to execute query: SELECT * FROM ").append(tblnm).append("\n");
 		} catch (SQLException e) {
-			sb.append("showContents failed: " + e.getMessage()).append("\n");
+			sb.append("showContents failed: ").append(e.getMessage()).append("\n");
 		}
 		closeStmtResSet(stmt, rs);
 	}
@@ -2420,7 +3066,7 @@ final public class JDBC_API_Tester {
 					case ParameterMetaData.parameterNoNulls:	sb.append("NO"); break;
 					case ParameterMetaData.parameterNullable:	sb.append("YA"); break;
 					case ParameterMetaData.parameterNullableUnknown:	sb.append("UNKNOWN"); break;
-					default:	sb.append("INVALID " + nullable); break;
+					default: sb.append("INVALID ").append(nullable); break;
 				}
 				sb.append(")\n");
 				sb.append("  signed    ").append(pmd.isSigned(parm)).append("\n");
@@ -2436,12 +3082,26 @@ final public class JDBC_API_Tester {
 					case ParameterMetaData.parameterModeInOut:	sb.append("INOUT"); break;
 					case ParameterMetaData.parameterModeOut:	sb.append("OUT"); break;
 					case ParameterMetaData.parameterModeUnknown:	sb.append("UNKNOWN"); break;
-					default:	sb.append("INVALID " + mode); break;
+					default: sb.append("INVALID ").append(mode); break;
 				}
 				sb.append(")\n");
 			}
 		} catch (SQLException e) {
 			sb.append("showParams() FAILED: ").append(e.getMessage()).append("\n");
+		}
+	}
+
+	private void readExceptions(SQLException e) {
+		while (e != null) {
+			sb.append("Exception: ").append(e.toString()).append("\n");
+			e = e.getNextException();
+		}
+	}
+
+	private void readWarnings(SQLWarning w) {
+		while (w != null) {
+			sb.append("Warning: ").append(w.toString()).append("\n");
+			w = w.getNextWarning();
 		}
 	}
 
