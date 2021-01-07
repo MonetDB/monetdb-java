@@ -142,7 +142,7 @@ public class MonetConnection
 	private boolean treatClobAsVarChar = true;
 
 	/** The last set query timeout on the server as used by Statement, PreparedStatement and CallableStatement */
-	protected int lastSetQueryTimeout = 0;	// 0 means no timeout, which is the default on the server
+	protected int lastSetQueryTimeout;	// 0 means no timeout, which is the default on the server
 
 
 	/**
@@ -1311,7 +1311,7 @@ public class MonetConnection
 				}
 			}
 		} catch (SQLException se) {
-			String msg = se.getMessage();
+			final String msg = se.getMessage();
 			// System.out.println(se.getSQLState() + " Con.isValid(): " + msg);
 			if (msg != null && msg.equalsIgnoreCase("Current transaction is aborted (please ROLLBACK)")) {
 				// Must use equalsIgnoreCase() here because up to Jul2017 release 'Current' was 'current' so with lowercase c.
@@ -1321,22 +1321,18 @@ public class MonetConnection
 			}
 			/* ignore stmt errors/exceptions, we are only testing if the connection is still alive and usable */
 		} finally {
+			closeResultsetStatement(rs, stmt);
 			/* when changed, reset the original server timeout value on the server */
 			if (timeout > 0 && original_timeout != this.lastSetQueryTimeout) {
 				this.lastSetQueryTimeout = original_timeout;
-				Statement stmt2 = null;
 				try {
 					/* we have to set in the server explicitly, because the test 'queryTimeout != connection.lastSetQueryTimeout' 
 					   on MonetStatement.internalExecute(sql) won't pass and the server won't be set back */
-					stmt2 = this.createStatement();
-					stmt2.execute("CALL \"sys\".\"settimeout\"(" + this.lastSetQueryTimeout + ")");
+					setQueryTimeout(original_timeout);
 				} catch (SQLException se) {
 					/* ignore stmt errors/exceptions, we are only testing if the connection is still alive and usable */
-				} finally {
-					closeResultsetStatement(null, stmt2);
 				}
 			}
-			closeResultsetStatement(rs, stmt);
 		}
 		return isValid;
 	}
@@ -1636,6 +1632,43 @@ public class MonetConnection
 	//== internal helper methods which do not belong to the JDBC interface
 
 	/**
+	 * Local helper method to test whether the Connection object is closed
+	 * When closed it throws an SQLException
+	 */
+	private void checkNotClosed() throws SQLException {
+		if (closed)
+			throw new SQLException("Connection is closed", "M1M20");
+	}
+
+	/**
+	 * Utility method to call sys.setquerytimeout(int); procedure on the connected server.
+	 * It is called from: MonetConnection.isValid() and MonetStatement.internalExecute()
+	 */
+	void setQueryTimeout(final int millis) throws SQLException {
+		if (millis < 0)
+			throw new SQLException("query timeout milliseconds is less than zero", "M1M05");
+
+		checkNotClosed();
+		Statement st = null;
+		try {
+			// as of release Jun2020 (11.37.7) the function sys.settimeout(bigint) is deprecated and replaced by new sys.setquerytimeout(int)
+			final boolean postJun2020 = (getDatabaseMajorVersion() >=11) && (getDatabaseMinorVersion() >= 37);
+			final String callstmt = postJun2020 ? "CALL sys.\"setquerytimeout\"(" + millis + ")"
+							    : "CALL sys.\"settimeout\"(" + millis + ")";
+			// for debug: System.out.println("Before: " + callstmt);
+			st = createStatement();
+			st.execute(callstmt);
+			// for debug: System.out.println("After : " + callstmt);
+
+			this.lastSetQueryTimeout = millis;
+		}
+		/* do not catch SQLException here, as we want to know it when it fails */
+		finally {
+			closeResultsetStatement(null, st);
+		}
+	}
+
+	/**
 	 * @return whether the JDBC BLOB type should be mapped to VARBINARY type.
 	 * This allows generic JDBC programs to fetch Blob data via getBytes()
 	 * instead of getBlob() and Blob.getBinaryStream() to reduce overhead.
@@ -1653,15 +1686,6 @@ public class MonetConnection
 	 */
 	boolean mapClobAsVarChar() {
 		return treatClobAsVarChar;
-	}
-
-	/**
-	 * Local helper method to test whether the Connection object is closed
-	 * When closed it throws an SQLException
-	 */
-	private void checkNotClosed() throws SQLException {
-		if (closed)
-			throw new SQLException("Connection is closed", "M1M20");
 	}
 
 	/**
@@ -1699,8 +1723,6 @@ public class MonetConnection
 	private String env_current_user;
 	private String env_monet_version;
 	private int maxConnections;
-	private int databaseMajorVersion;
-	private int databaseMinorVersion;
 
 	/**
 	 * Utility method to fetch 3 mserver environment values combined in one query for efficiency.
@@ -1757,6 +1779,17 @@ public class MonetConnection
 	}
 
 	/**
+	 * @return the maximum number of active connections possible at one time;
+	 * a result of zero means that there is no limit or the limit is not known
+	 * It is called from: MonetDatabaseMetaData
+	 */
+	int getMaxConnections() throws SQLException {
+		if (maxConnections == 0)
+			getEnvValues();
+		return maxConnections;
+	}
+
+	/**
 	 * @return the MonetDB Database Server version string.
 	 * It is called from: MonetDatabaseMetaData
 	 */
@@ -1769,9 +1802,11 @@ public class MonetConnection
 		return "";
 	}
 
+	private int databaseMajorVersion;
 	/**
 	 * @return the MonetDB Database Server major version number.
-	 * It is called from: MonetDatabaseMetaData
+	 * The number is extracted from the env_monet_version the first time and cached for next calls.
+	 * It is called from: MonetDatabaseMetaData and MonetConnection
 	 */
 	int getDatabaseMajorVersion() throws SQLException {
 		if (databaseMajorVersion == 0) {
@@ -1790,9 +1825,11 @@ public class MonetConnection
 		return databaseMajorVersion;
 	}
 
+	private int databaseMinorVersion;
 	/**
 	 * @return the MonetDB Database Server minor version number.
-	 * It is called from: MonetDatabaseMetaData
+	 * The number is extracted from the env_monet_version the first time and cached for next calls.
+	 * It is called from: MonetDatabaseMetaData and MonetConnection
 	 */
 	int getDatabaseMinorVersion() throws SQLException {
 		if (databaseMinorVersion == 0) {
@@ -1813,17 +1850,6 @@ public class MonetConnection
 			}
 		}
 		return databaseMinorVersion;
-	}
-
-	/**
-	 * @return the maximum number of active connections possible at one time;
-	 * a result of zero means that there is no limit or the limit is not known
-	 * It is called from: MonetDatabaseMetaData
-	 */
-	int getMaxConnections() throws SQLException {
-		if (maxConnections == 0)
-			getEnvValues();
-		return maxConnections;
 	}
 
 
@@ -2090,17 +2116,17 @@ public class MonetConnection
 		 *  if we close this Response */
 		private boolean destroyOnClose;
 		/** the offset to be used on Xexport queries */
-		private int blockOffset = 0;
+		private int blockOffset;
 
 		/** A parser for header lines */
 		private final HeaderLineParser hlp;
 
 		/** A boolean array telling whether the headers are set or not */
 		private final boolean[] isSet;
-		private static final int NAMES	= 0;
-		private static final int TYPES	= 1;
-		private static final int TABLES	= 2;
-		private static final int LENS	= 3;
+		private static final int NAMES  = 0;
+		private static final int TYPES  = 1;
+		private static final int TABLES = 2;
+		private static final int LENS   = 3;
 
 
 		/**

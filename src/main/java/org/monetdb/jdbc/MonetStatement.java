@@ -62,11 +62,11 @@ public class MonetStatement
 	/** Whether this Statement should be closed if the last ResultSet closes */
 	private boolean closeOnCompletion = false;
 	/** The timeout (in sec) for the query to return, 0 means no timeout */
-	private int queryTimeout = 0;
+	private int queryTimeout;
 	/** The size of the blocks of results to ask for at the server */
-	private int fetchSize = 0;
+	private int fetchSize;
 	/** The maximum number of rows to return in a ResultSet, 0 indicates unlimited */
-	private long maxRows = 0;
+	private long maxRows;
 	/** The type of ResultSet to produce; i.e. forward only, random access */
 	private int resultSetType = MonetResultSet.DEF_RESULTSETTYPE;
 	/** The suggested direction of fetching data (implemented but not used) */
@@ -75,8 +75,8 @@ public class MonetStatement
 	private int resultSetConcurrency = MonetResultSet.DEF_CONCURRENCY;
 
 	/** A List to hold all queries of a batch */
-	private ArrayList<String> batch = null;
-	private ReentrantLock batchLock = null;
+	private ArrayList<String> batch;
+	private ReentrantLock batchLock;
 
 
 	/**
@@ -431,23 +431,7 @@ public class MonetStatement
 
 		if (queryTimeout != connection.lastSetQueryTimeout) {
 			// set requested/changed queryTimeout on the server side first
-			Statement st = null;
-			try {
-				st = connection.createStatement();
-				final String callstmt = "CALL \"sys\".\"settimeout\"(" + queryTimeout + ")";
-				// for debug: System.out.println("Before: " + callstmt);
-				st.execute(callstmt);
-				// for debug: System.out.println("After : " + callstmt);
-				connection.lastSetQueryTimeout = queryTimeout;
-			}
-			/* do not catch SQLException here, as we want to know it when it fails */
-			finally {
-				if (st != null) {
-					try {
-						 st.close();
-					} catch (SQLException e) { /* ignore */ }
-				}
-			}
+			connection.setQueryTimeout(queryTimeout);
 		}
 
 		// create a container for the result
