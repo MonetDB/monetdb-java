@@ -76,7 +76,7 @@ public class MonetConnection
 	/** The hostname to connect to */
 	private final String hostname;
 	/** The port to connect on the host to */
-	private int port = 0;
+	private int port;
 	/** The database to use (currently not used) */
 	private final String database;
 	/** The username to use when authenticating */
@@ -101,7 +101,7 @@ public class MonetConnection
 	private boolean autoCommit = true;
 
 	/** The stack of warnings for this Connection object */
-	private SQLWarning warnings = null;
+	private SQLWarning warnings;
 
 	/** The Connection specific mapping of user defined types to Java types */
 	private Map<String,Class<?>> typeMap = new HashMap<String,Class<?>>() {
@@ -1014,7 +1014,7 @@ public class MonetConnection
 	public void setAutoCommit(final boolean autoCommit) throws SQLException {
 		checkNotClosed();
 		if (this.autoCommit != autoCommit) {
-			sendControlCommand("auto_commit " + (autoCommit ? "1" : "0"));
+			sendControlCommand(autoCommit ? "auto_commit 1" : "auto_commit 0");
 			this.autoCommit = autoCommit;
 		}
 	}
@@ -1074,14 +1074,7 @@ public class MonetConnection
 	 */
 	@Override
 	public Savepoint setSavepoint() throws SQLException {
-		checkNotClosed();
-		// create a new Savepoint object
-		final MonetSavepoint sp = new MonetSavepoint();
-
-		// note: can't use sendIndependentCommand here because we need
-		// to process the auto_commit state the server gives
-		sendTransactionCommand("SAVEPOINT " + sp.getName());
-		return sp;
+		return setSavepoint(null);
 	}
 
 	/**
@@ -1099,7 +1092,7 @@ public class MonetConnection
 		// create a new Savepoint object
 		final MonetSavepoint sp;
 		try {
-			sp = new MonetSavepoint(name);
+			sp = (name != null) ? new MonetSavepoint(name) : new MonetSavepoint();
 		} catch (IllegalArgumentException e) {
 			throw new SQLException(e.getMessage(), "M0M03");
 		}
@@ -1702,10 +1695,12 @@ public class MonetConnection
 	}
 
 
-	// Internal cache for 3 static mserver environment values, so they aren't queried from mserver again and again
-	private String env_current_user = null;
-	private String env_monet_version = null;
-	private String env_max_clients = null;
+	// Internal caches for 3 static mserver environment values, so they aren't queried from mserver again and again
+	private String env_current_user;
+	private String env_monet_version;
+	private int maxConnections;
+	private int databaseMajorVersion;
+	private int databaseMinorVersion;
 
 	/**
 	 * Utility method to fetch 3 mserver environment values combined in one query for efficiency.
@@ -1732,8 +1727,14 @@ public class MonetConnection
 						if ("monet_version".equals(prop)) {
 							env_monet_version = value;
 						} else
-						if ("max_clients".equals(prop)) {
-							env_max_clients = value;
+						if ("max_clients".equals(prop) && value != null) {
+							try {
+								maxConnections = Integer.parseInt(value);
+							} catch (NumberFormatException nfe) {
+								/* ignore */
+							}
+							if (maxConnections <= 0)
+								maxConnections = 1;
 						}
 					}
 				}
@@ -1742,7 +1743,7 @@ public class MonetConnection
 		} finally {
 			closeResultsetStatement(rs, st);
 		}
-		// for debug: System.out.println("Read: env_current_user: " + env_current_user + "  env_monet_version: " + env_monet_version + "  env_max_clients: " + env_max_clients);
+		// for debug: System.out.println("Read: env_current_user: " + env_current_user + "  env_monet_version: " + env_monet_version + "  env_max_clients: " + maxConnections);
 	}
 
 	/**
@@ -1773,18 +1774,20 @@ public class MonetConnection
 	 * It is called from: MonetDatabaseMetaData
 	 */
 	int getDatabaseMajorVersion() throws SQLException {
-		if (env_monet_version == null)
-			getEnvValues();
-		if (env_monet_version != null) {
-			try {
-				// from version string such as 11.33.9 extract number: 11
-				final int start = env_monet_version.indexOf('.');
-				return Integer.parseInt((start >= 0) ? env_monet_version.substring(0, start) : env_monet_version);
-			} catch (NumberFormatException nfe) {
-				// ignore
+		if (databaseMajorVersion == 0) {
+			if (env_monet_version == null)
+				getEnvValues();
+			if (env_monet_version != null) {
+				try {
+					// from version string such as 11.33.9 extract number: 11
+					final int start = env_monet_version.indexOf('.');
+					databaseMajorVersion = Integer.parseInt((start >= 0) ? env_monet_version.substring(0, start) : env_monet_version);
+				} catch (NumberFormatException nfe) {
+					// ignore
+				}
 			}
 		}
-		return 0;
+		return databaseMajorVersion;
 	}
 
 	/**
@@ -1792,22 +1795,24 @@ public class MonetConnection
 	 * It is called from: MonetDatabaseMetaData
 	 */
 	int getDatabaseMinorVersion() throws SQLException {
-		if (env_monet_version == null)
-			getEnvValues();
-		if (env_monet_version != null) {
-			try {
-				// from version string such as 11.33.9 extract number: 33
-				int start = env_monet_version.indexOf('.');
-				if (start >= 0) {
-					start++;
-					final int end = env_monet_version.indexOf('.', start);
-					return Integer.parseInt((end > 0) ? env_monet_version.substring(start, end) : env_monet_version.substring(start));
+		if (databaseMinorVersion == 0) {
+			if (env_monet_version == null)
+				getEnvValues();
+			if (env_monet_version != null) {
+				try {
+					// from version string such as 11.33.9 extract number: 33
+					int start = env_monet_version.indexOf('.');
+					if (start >= 0) {
+						start++;
+						final int end = env_monet_version.indexOf('.', start);
+						databaseMinorVersion = Integer.parseInt((end > 0) ? env_monet_version.substring(start, end) : env_monet_version.substring(start));
+					}
+				} catch (NumberFormatException nfe) {
+					// ignore
 				}
-			} catch (NumberFormatException nfe) {
-				// ignore
 			}
 		}
-		return 0;
+		return databaseMinorVersion;
 	}
 
 	/**
@@ -1816,16 +1821,9 @@ public class MonetConnection
 	 * It is called from: MonetDatabaseMetaData
 	 */
 	int getMaxConnections() throws SQLException {
-		if (env_max_clients == null)
+		if (maxConnections == 0)
 			getEnvValues();
-		if (env_max_clients != null) {
-			try {
-				return Integer.parseInt(env_max_clients);
-			} catch (NumberFormatException nfe) {
-				/* ignore */
-			}
-		}
-		return 0;
+		return maxConnections;
 	}
 
 
