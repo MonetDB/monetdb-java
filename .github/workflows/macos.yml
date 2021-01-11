@@ -17,8 +17,5 @@ jobs:
       with:
         java-version: 1.8
 
-    - name: Install Ant
-      run: brew install ant
-
     - name: Build
       run: make all

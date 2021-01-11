@@ -17,8 +17,5 @@ jobs:
       with:
         java-version: 1.8
 
-    - name: Install Ant
-      run: sudo apt install -y ant
-
     - name: Build
       run: make all
