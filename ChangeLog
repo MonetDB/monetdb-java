@@ -1,6 +1,17 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Jan  6 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected output of resultset columns UPDATE_RULE and DELETE_RULE
+  when calling DatabaseMetaData API methods getImportedKeys() or
+  getExportedKeys() or getCrossReference(). These columns used to
+  always return DatabaseMetaData.importedKeyNoAction but now they
+  can also report the other values when set:
+     DatabaseMetaData.importedKeyCascade
+  or DatabaseMetaData.importedKeyRestrict
+  or DatabaseMetaData.importedKeySetNull
+  or DatabaseMetaData.importedKeySetDefault.
+
 * Thu Nov 12 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Moved Java classes from packages starting with nl.cwi.monetdb.*
   to package org.monetdb.* This naming complies to the Java Package
@@ -41,7 +52,7 @@
 
 * Thu Oct  8 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved performance of ResultSetMetaData methods isAutoIncrement(),
-  getPrecision() and getScale() significant for columns of specific data
+  getPrecision() and getScale() significantly for columns of specific data
   types as in some cases no costly meta data query is executed anymore.
 - The connection properties  treat_clob_as_varchar  and  treat_blob_as_binary
   are now set to true by default within the JDBC driver.  This is done

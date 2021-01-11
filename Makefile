@@ -11,3 +11,11 @@ doc:
 clean:
 	rm -f src/main/java/org/monetdb/jdbc/MonetDriver.java
 	rm -rf build tests/build jars doc
+
+cleandoc:
+	rm -rf doc
+
+cleantests:
+	rm -rf tests/build
+	rm -f  jars/jdbctests.jar
+

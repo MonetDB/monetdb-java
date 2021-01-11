@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2020 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2021 MonetDB B.V.
  */
 
 package org.monetdb.jdbc;
@@ -2588,11 +2588,25 @@ public class MonetDatabaseMetaData
 		"fktable.\"name\" AS \"FKTABLE_NAME\", " +
 		"fkkeycol.\"name\" AS \"FKCOLUMN_NAME\", " +
 		"cast(1 + \"pkkeycol\".\"nr\" AS smallint) AS \"KEY_SEQ\", " +
-		DatabaseMetaData.importedKeyNoAction + " AS \"UPDATE_RULE\", " +
-		DatabaseMetaData.importedKeyNoAction + " AS \"DELETE_RULE\", " +
+		"cast(CASE ((fkkey.\"action\" >> 8) & 255)" +	// logic pulled from clients/mapiclient/dump.c dump_foreign_keys()
+			" WHEN 0 THEN " + DatabaseMetaData.importedKeyNoAction +
+			" WHEN 1 THEN " + DatabaseMetaData.importedKeyCascade +
+			" WHEN 2 THEN " + DatabaseMetaData.importedKeyRestrict +
+			" WHEN 3 THEN " + DatabaseMetaData.importedKeySetNull +
+			" WHEN 4 THEN " + DatabaseMetaData.importedKeySetDefault +
+			" ELSE " + DatabaseMetaData.importedKeyNoAction +
+			" END AS smallint) AS \"UPDATE_RULE\", " +
+		"cast(CASE (fkkey.\"action\" & 255)" +	// logic pulled from clients/mapiclient/dump.c dump_foreign_keys()
+			" WHEN 0 THEN " + DatabaseMetaData.importedKeyNoAction +
+			" WHEN 1 THEN " + DatabaseMetaData.importedKeyCascade +
+			" WHEN 2 THEN " + DatabaseMetaData.importedKeyRestrict +
+			" WHEN 3 THEN " + DatabaseMetaData.importedKeySetNull +
+			" WHEN 4 THEN " + DatabaseMetaData.importedKeySetDefault +
+			" ELSE " + DatabaseMetaData.importedKeyNoAction +
+			" END AS smallint) AS \"DELETE_RULE\", " +
 		"fkkey.\"name\" AS \"FK_NAME\", " +
 		"pkkey.\"name\" AS \"PK_NAME\", " +
-		DatabaseMetaData.importedKeyNotDeferrable + " AS \"DEFERRABILITY\" " +
+		"cast(" + DatabaseMetaData.importedKeyNotDeferrable + " AS smallint) AS \"DEFERRABILITY\" " +
 	"FROM \"sys\".\"keys\" pkkey " +
 	"JOIN \"sys\".\"objects\" pkkeycol ON pkkey.\"id\" = pkkeycol.\"id\" " +
 	"JOIN \"sys\".\"tables\" pktable ON pktable.\"id\" = pkkey.\"table_id\" " +
@@ -2625,26 +2639,21 @@ public class MonetDatabaseMetaData
 	 *	<LI><B>FKCOLUMN_NAME</B> String =&gt; foreign key column name
 	 *	<LI><B>KEY_SEQ</B> short =&gt; sequence number within foreign key
 	 *		(a value of 1 represents the first column of the foreign key, a value of 2 would represent the second column within the foreign key).
-	 *	<LI><B>UPDATE_RULE</B> short =&gt; What happens to
-	 *		 foreign key when primary is updated:
+	 *	<LI><B>UPDATE_RULE</B> short =&gt; What happens to foreign key when primary is updated:
 	 *		<UL>
 	 *		<LI> importedKeyNoAction - do not allow update of primary key if it has been imported
-	 *		<LI> importedKeyCascade - change imported key to agree
-	 *				 with primary key update
-	 *		<LI> importedKeyRestrict - do not allow update of primary
-	 *				 key if it has been imported
-	 *		<LI> importedKeySetNull - change imported key to NULL if
-	 *				 its primary key has been updated
+	 *		<LI> importedKeyCascade - change imported key to agree with primary key update
+	 *		<LI> importedKeyRestrict - same as importedKeyNoAction (for ODBC 2.x compatibility)
+	 *		<LI> importedKeySetNull - change imported key to NULL if its primary key has been updated
+	 *		<LI> importedKeySetDefault - change imported key to the default values if its primary key has been updated
 	 *		</UL>
-	 *	<LI><B>DELETE_RULE</B> short =&gt; What happens to
-	 *		the foreign key when primary is deleted.
+	 *	<LI><B>DELETE_RULE</B> short =&gt; What happens to the foreign key when primary is deleted.
 	 *		<UL>
 	 *		<LI> importedKeyNoAction - do not allow delete of primary key if it has been imported
 	 *		<LI> importedKeyCascade - delete rows that import a deleted key
-	 *		<LI> importedKeyRestrict - do not allow delete of primary
-	 *				 key if it has been imported
-	 *		<LI> importedKeySetNull - change imported key to NULL if
-	 *				 its primary key has been deleted
+	 *		<LI> importedKeyRestrict - same as importedKeyNoAction (for ODBC 2.x compatibility)
+	 *		<LI> importedKeySetNull - change imported key to NULL if its primary key has been deleted
+	 *		<LI> importedKeySetDefault - change imported key to the default values if its primary key has been deleted
 	 *		</UL>
 	 *	<LI><B>FK_NAME</B> String =&gt; foreign key name (may be null)
 	 *	<LI><B>PK_NAME</B> String =&gt; primary key name (may be null)
@@ -2713,26 +2722,21 @@ public class MonetDatabaseMetaData
 	 *		being exported
 	 *	<LI><B>KEY_SEQ</B> short =&gt; sequence number within foreign key
 	 *		(a value of 1 represents the first column of the foreign key, a value of 2 would represent the second column within the foreign key).
-	 *	<LI><B>UPDATE_RULE</B> short =&gt; What happens to
-	 *		 foreign key when primary is updated:
+	 *	<LI><B>UPDATE_RULE</B> short =&gt; What happens to foreign key when primary is updated:
 	 *		<UL>
 	 *		<LI> importedKeyNoAction - do not allow update of primary key if it has been imported
-	 *		<LI> importedKeyCascade - change imported key to agree
-	 *				 with primary key update
-	 *		<LI> importedKeyRestrict - do not allow update of primary
-	 *				 key if it has been imported
-	 *		<LI> importedKeySetNull - change imported key to NULL if
-	 *				 its primary key has been updated
+	 *		<LI> importedKeyCascade - change imported key to agree with primary key update
+	 *		<LI> importedKeyRestrict - same as importedKeyNoAction (for ODBC 2.x compatibility)
+	 *		<LI> importedKeySetNull - change imported key to NULL if its primary key has been updated
+	 *		<LI> importedKeySetDefault - change imported key to the default values if its primary key has been updated
 	 *		</UL>
-	 *	<LI><B>DELETE_RULE</B> short =&gt; What happens to
-	 *		the foreign key when primary is deleted.
+	 *	<LI><B>DELETE_RULE</B> short =&gt; What happens to the foreign key when primary is deleted.
 	 *		<UL>
 	 *		<LI> importedKeyNoAction - do not allow delete of primary key if it has been imported
 	 *		<LI> importedKeyCascade - delete rows that import a deleted key
-	 *		<LI> importedKeyRestrict - do not allow delete of primary
-	 *				 key if it has been imported
-	 *		<LI> importedKeySetNull - change imported key to NULL if
-	 *				 its primary key has been deleted
+	 *		<LI> importedKeyRestrict - same as importedKeyNoAction (for ODBC 2.x compatibility)
+	 *		<LI> importedKeySetNull - change imported key to NULL if its primary key has been deleted
+	 *		<LI> importedKeySetDefault - change imported key to the default values if its primary key has been deleted
 	 *		</UL>
 	 *	<LI><B>FK_NAME</B> String =&gt; foreign key identifier (may be null)
 	 *	<LI><B>PK_NAME</B> String =&gt; primary key identifier (may be null)
@@ -2804,26 +2808,21 @@ public class MonetDatabaseMetaData
 	 *		being exported
 	 *	<LI><B>KEY_SEQ</B> short =&gt; sequence number within foreign key
 	 *		(a value of 1 represents the first column of the foreign key, a value of 2 would represent the second column within the foreign key).
-	 *	<LI><B>UPDATE_RULE</B> short =&gt; What happens to
-	 *		 foreign key when primary is updated:
+	 *	<LI><B>UPDATE_RULE</B> short =&gt; What happens to foreign key when primary is updated:
 	 *		<UL>
 	 *		<LI> importedKeyNoAction - do not allow update of primary key if it has been imported
-	 *		<LI> importedKeyCascade - change imported key to agree
-	 *				 with primary key update
-	 *		<LI> importedKeyRestrict - do not allow update of primary
-	 *				 key if it has been imported
-	 *		<LI> importedKeySetNull - change imported key to NULL if
-	 *				 its primary key has been updated
+	 *		<LI> importedKeyCascade - change imported key to agree with primary key update
+	 *		<LI> importedKeyRestrict - same as importedKeyNoAction (for ODBC 2.x compatibility)
+	 *		<LI> importedKeySetNull - change imported key to NULL if its primary key has been updated
+	 *		<LI> importedKeySetDefault - change imported key to the default values if its primary key has been updated
 	 *		</UL>
-	 *	<LI><B>DELETE_RULE</B> short =&gt; What happens to
-	 *		the foreign key when primary is deleted.
+	 *	<LI><B>DELETE_RULE</B> short =&gt; What happens to the foreign key when primary is deleted.
 	 *		<UL>
 	 *		<LI> importedKeyNoAction - do not allow delete of primary key if it has been imported
 	 *		<LI> importedKeyCascade - delete rows that import a deleted key
-	 *		<LI> importedKeyRestrict - do not allow delete of primary
-	 *				 key if it has been imported
-	 *		<LI> importedKeySetNull - change imported key to NULL if
-	 *				 its primary key has been deleted
+	 *		<LI> importedKeyRestrict - same as importedKeyNoAction (for ODBC 2.x compatibility)
+	 *		<LI> importedKeySetNull - change imported key to NULL if its primary key has been deleted
+	 *		<LI> importedKeySetDefault - change imported key to the default values if its primary key has been deleted
 	 *		</UL>
 	 *	<LI><B>FK_NAME</B> String =&gt; foreign key identifier (may be null)
 	 *	<LI><B>PK_NAME</B> String =&gt; primary key identifier (may be null)
