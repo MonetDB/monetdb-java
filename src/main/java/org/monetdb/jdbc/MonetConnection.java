@@ -92,7 +92,7 @@ public class MonetConnection
 	private final BufferedMCLWriter out;
 
 	/** A StartOfHeaderParser declared for reuse. */
-	private StartOfHeaderParser sohp = new StartOfHeaderParser();
+	private final StartOfHeaderParser sohp = new StartOfHeaderParser();
 
 	/** Whether this Connection is closed (and cannot be used anymore) */
 	private boolean closed;
@@ -115,7 +115,7 @@ public class MonetConnection
 	// See javadoc for documentation about WeakHashMap if you don't know what
 	// it does !!!NOW!!! (only when you deal with it of course)
 	/** A Map containing all (active) Statements created from this Connection */
-	private WeakHashMap<Statement,?> statements = new WeakHashMap<Statement, Object>();
+	private final WeakHashMap<Statement,?> statements = new WeakHashMap<Statement, Object>();
 
 	/** The number of results we receive from the server at once */
 	private int curReplySize = -1;	// the server by default uses -1 (all)
@@ -137,9 +137,9 @@ public class MonetConnection
 	private final int lang;
 
 	/** Whether or not BLOB is mapped to Types.VARBINARY instead of Types.BLOB within this connection */
-	private boolean treatBlobAsVarBinary = true;
+	private boolean treatBlobAsVarBinary = true;	// turned on by default for optimal performance (from JDBC Driver release 2.30 onwards)
 	/** Whether or not CLOB is mapped to Types.VARCHAR instead of Types.CLOB within this connection */
-	private boolean treatClobAsVarChar = true;
+	private boolean treatClobAsVarChar = true;	// turned on by default for optimal performance (from JDBC Driver release 2.30 onwards)
 
 	/** The last set query timeout on the server as used by Statement, PreparedStatement and CallableStatement */
 	protected int lastSetQueryTimeout;	// 0 means no timeout, which is the default on the server
@@ -885,7 +885,7 @@ public class MonetConnection
 	 * @param sql - an SQL statement that may contain one or more '?' IN parameter placeholders
 	 * @param columnIndexes - an array of column indexes indicating the columns that should be returned from the inserted row or rows
 	 * @return a new PreparedStatement object, containing the pre-compiled statement, that is capable of
-	 * 	returning the auto-generated keys designated by the given array of column indexes
+	 *	returning the auto-generated keys designated by the given array of column indexes
 	 * @throws SQLException - if a database access error occurs or this method is called on a closed connection
 	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
@@ -914,7 +914,7 @@ public class MonetConnection
 	 * @param sql - an SQL statement that may contain one or more '?' IN parameter placeholders
 	 * @param columnNames - an array of column names indicating the columns that should be returned from the inserted row or rows
 	 * @return a new PreparedStatement object, containing the pre-compiled statement, that is capable of
-	 * 	returning the auto-generated keys designated by the given array of column names
+	 *	returning the auto-generated keys designated by the given array of column names
 	 * @throws SQLException - if a database access error occurs or this method is called on a closed connection
 	 * @throws SQLFeatureNotSupportedException - if the JDBC driver does not support this method
 	 */
@@ -1326,7 +1326,7 @@ public class MonetConnection
 			if (timeout > 0 && original_timeout != this.lastSetQueryTimeout) {
 				this.lastSetQueryTimeout = original_timeout;
 				try {
-					/* we have to set in the server explicitly, because the test 'queryTimeout != connection.lastSetQueryTimeout' 
+					/* we have to set in the server explicitly, because the test 'queryTimeout != connection.lastSetQueryTimeout'
 					   on MonetStatement.internalExecute(sql) won't pass and the server won't be set back */
 					setQueryTimeout(original_timeout);
 				} catch (SQLException se) {

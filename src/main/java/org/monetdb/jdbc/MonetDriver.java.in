@@ -392,7 +392,7 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 	 *               in the SQL CASE statement
 	 * @return a SQL CASE statement
 	 */
-	private static String TypeMapppingSQL = null;	// cache to optimise getSQLTypeMap()
+	private static String TypeMapppingSQL;	// cache to optimise getSQLTypeMap()
 	static final String getSQLTypeMap(final String column) {
 		if (TypeMapppingSQL == null) {
 			// first time, compose TypeMappping SQL string

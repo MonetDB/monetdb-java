@@ -34,7 +34,7 @@ public final class MonetDataSource
 	implements DataSource
 {
 	private String description;
-	private int loginTimeout = 0;
+	private int loginTimeout;
 	private String user;
 	// insecure, but how to do it better?
 	private String password;

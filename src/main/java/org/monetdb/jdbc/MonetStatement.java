@@ -1506,7 +1506,7 @@ public class MonetStatement
  * TODO: try to eliminate the need for this class completely.
  */
 final class MonetVirtualResultSet extends MonetResultSet {
-	private String results[][];
+	private final String results[][];
 	private boolean closed;
 
 	MonetVirtualResultSet(
@@ -1570,7 +1570,6 @@ final class MonetVirtualResultSet extends MonetResultSet {
 	public void close() {
 		if (!closed) {
 			closed = true;
-			results = null;
 			// types and columns are MonetResultSets private parts
 		}
 	}

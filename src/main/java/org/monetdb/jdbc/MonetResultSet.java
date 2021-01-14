@@ -90,7 +90,7 @@ public class MonetResultSet
 	/** The number of rows in this ResultSet */
 	protected final long tupleCount;
 	/** The current position of the cursor for this ResultSet object */
-	protected int curRow = 0;
+	protected int curRow;
 
 	/** The type of this ResultSet (forward or scrollable) */
 	private int type = DEF_RESULTSETTYPE;
