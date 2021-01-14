@@ -8,6 +8,7 @@
 
 package org.monetdb.client;
 
+import org.monetdb.jdbc.MonetDriver;
 import org.monetdb.util.CmdLineOpts;
 import org.monetdb.util.Exporter;
 import org.monetdb.util.MDBvalidator;
@@ -246,7 +247,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 			// We cannot use the DatabaseMetaData here, because we
 			// cannot get a Connection.  So instead, we just get the
 			// values we want out of the Driver directly.
-			System.out.println("JDBC Driver: v" + org.monetdb.jdbc.MonetDriver.getDriverVersion());
+			System.out.println("JDBC Driver: v" + MonetDriver.getDriverVersion());
 			System.exit(0);
 		}
 
@@ -273,9 +274,6 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 		if (host.indexOf(":") == -1) {
 			host = host + ":" + copts.getOption("port").getArgument();
 		}
-
-		// make sure the driver is loaded
-		// Class.forName("org.monetdb.jdbc.MonetDriver");	// not needed anymore for self registering JDBC drivers
 
 		// build the extra arguments of the JDBC connect string
 		String attr = "?";
