@@ -334,7 +334,7 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 		typeMap.put("char", Integer.valueOf(Types.CHAR));
 		typeMap.put("clob", Integer.valueOf(Types.CLOB));
 		typeMap.put("date", Integer.valueOf(Types.DATE));
-		typeMap.put("day_interval", Integer.valueOf(Types.BIGINT));	// New as of Oct2020 release
+		typeMap.put("day_interval", Integer.valueOf(Types.NUMERIC));	// New as of Oct2020 release
 		typeMap.put("decimal", Integer.valueOf(Types.DECIMAL));
 		typeMap.put("double", Integer.valueOf(Types.DOUBLE));
 		// typeMap.put("geometry", Integer.valueOf(Types.???));

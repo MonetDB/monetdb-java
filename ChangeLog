@@ -1,6 +1,11 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Jan 14 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved DatabaseMetaData.getTypeInfo() output for temporal data
+  types: sec_interval, day_interval, month_interval, date, time, timetz,
+  timestamp and timestamptz.
+
 * Wed Jan  6 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected output of resultset columns UPDATE_RULE and DELETE_RULE
   when calling DatabaseMetaData API methods getImportedKeys() or
@@ -24,9 +29,9 @@
    nl.cwi.monetdb.mcl.net.MapiSocket
    nl.cwi.monetdb.client.JdbcClient
   They are implemented as simple wrappers of their org.monetdb.* equivalents.
-  Note: These nl.cwi.monetdb.* classes are now marked as deprecated and may be
-  removed in a future release. If you still use them in your Java code,
-  update them to use the new package names.
+  Note: These nl.cwi.monetdb.* classes are now marked as deprecated and may
+  be removed in a future release. If you still use them in your Java code or
+  configuration files, update them to use the new package names.
 
 * Thu Oct 29 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Extended JdbcClient program with 3 new commands to quickly validate
@@ -42,11 +47,11 @@
   - Column NOT NULL constraint
   - Varchar(n) max length constraint
   - Idem for char(n), clob(n), blob(n), json(n) and url(n).
-  It can be usefull to run \vsci before and after an upgrade.
+  It can be usefull to run \vsci before and after an upgrade of MonetDB server.
   Use \vsi my_schema  to validate data in all tables of a specific schema.
   Use \vdbi  to validate integrity of data in all user schemas in
-  the database. Note this can take a while, depending on your number
-  of user schemas and tables sizes.  Despite being tested on several
+  the database. Note: this can take a while, depending on your number
+  of user schemas, tables and tables sizes.  Despite being tested on several
   internal dbs the functionality is still beta, so you can get false
   errors reported. If you encounter these let us know asap.
 
@@ -54,6 +59,8 @@
 - Improved performance of ResultSetMetaData methods isAutoIncrement(),
   getPrecision() and getScale() significantly for columns of specific data
   types as in some cases no costly meta data query is executed anymore.
+
+* Thu Oct  8 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - The connection properties  treat_clob_as_varchar  and  treat_blob_as_binary
   are now set to true by default within the JDBC driver.  This is done
   as it results by default in less memory usage, (much) faster response
@@ -74,6 +81,8 @@
   - adding 3 methods to MonetPreparedStatement
   - adding 4 methods to MonetResultSet
   - adding 8 methods to MonetStatement
+
+* Wed Sep 23 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected MonetDatabaseMetaData.getTypeInfo()
   - The LITERAL_PREFIX column now includes the required casting name for
     types: clob, inet, json, url, uuid and blob.

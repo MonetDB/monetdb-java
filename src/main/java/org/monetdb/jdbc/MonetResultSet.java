@@ -1636,7 +1636,16 @@ public class MonetResultSet
 				switch (getColumnType(column)) {
 					case Types.DECIMAL:
 					case Types.NUMERIC:
-						// these data types may have a scale, max scale is 38
+					{
+						// special handling for: day_interval and sec_interval as these are mapped to these result types (see MonetDriver typemap)
+						// they appear to have a fixed scale (tested against Oct2020)
+						final String monettype = getColumnTypeName(column);
+						if ("day_interval".equals(monettype))
+							return 0;
+						if ("sec_interval".equals(monettype))
+							return 3;
+
+						// these data types may have a variable scale, max scale is 38
 						try {
 							if (_is_fetched[column] != true) {
 								fetchColumnInfo(column);
@@ -1645,6 +1654,7 @@ public class MonetResultSet
 						} catch (IndexOutOfBoundsException e) {
 							throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 						}
+					}
 					case Types.TIME:
 					case Types.TIME_WITH_TIMEZONE:
 					case Types.TIMESTAMP:

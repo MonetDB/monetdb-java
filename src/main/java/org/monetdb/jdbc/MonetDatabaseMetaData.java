@@ -1773,7 +1773,7 @@ public class MonetDatabaseMetaData
 				" WHEN 'hugeint' THEN 16 WHEN 'oid' THEN 8 WHEN 'wrd' THEN 8 ELSE a.\"type_digits\" END AS \"LENGTH\", " +
 			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric'," +
 				"'time','timetz','timestamp','timestamptz','day_interval','month_interval','sec_interval') THEN a.\"type_scale\" ELSE NULL END AS smallint) AS \"SCALE\", " +
-			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric') THEN 10" +
+			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric','day_interval','month_interval','sec_interval') THEN 10" +
 				" WHEN a.\"type\" IN ('real','float','double') THEN 2 ELSE NULL END AS smallint) AS \"RADIX\", " +
 			"cast(").append(DatabaseMetaData.procedureNullableUnknown).append(" AS smallint) AS \"NULLABLE\", " +
 			"cast(null as char(1)) AS \"REMARKS\", " +
@@ -2940,12 +2940,14 @@ public class MonetDatabaseMetaData
 	public ResultSet getTypeInfo() throws SQLException {
 		final StringBuilder query = new StringBuilder(2300);
 		query.append("SELECT \"sqlname\" AS \"TYPE_NAME\", " +
+			// TODO map 'day_interval' to 'interval day' (or 'interval day to second'), 'month_interval' to 'interval month' (or 'interval year to month'), 'sec_interval' to 'interval second'
 			"cast(").append(MonetDriver.getSQLTypeMap("\"sqlname\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"\"digits\" AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
-			"cast(CASE WHEN \"sqlname\" IN ('char','varchar') THEN ''''" +
-				" WHEN \"sqlname\" IN ('clob','inet','json','url','uuid','blob','sqlblob') THEN \"sqlname\"||' '''" +
-				" ELSE NULL END AS varchar(9)) AS \"LITERAL_PREFIX\", " +
-			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','blob','sqlblob') THEN ''''" +
+			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','sec_interval','day_interval','month_interval') THEN ''''" +
+				" WHEN \"sqlname\" IN ('clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob') THEN \"sqlname\"||' '''" +
+				" ELSE NULL END AS varchar(16)) AS \"LITERAL_PREFIX\", " +
+			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','sec_interval','day_interval','month_interval'" +
+						",'clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob') THEN ''''" +
 				" ELSE NULL END AS varchar(2)) AS \"LITERAL_SUFFIX\", " +
 			"CASE WHEN \"sqlname\" IN ('char','varchar') THEN 'max length'" +
 				" WHEN \"sqlname\" = 'decimal' THEN 'precision, scale'" +
@@ -2956,7 +2958,8 @@ public class MonetDatabaseMetaData
 			"CASE WHEN \"systemname\" IN ('str','json','url') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
 			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid') THEN ").append(DatabaseMetaData.typeSearchable)
 				.append(" ELSE ").append(DatabaseMetaData.typePredBasic).append(" END AS smallint) AS \"SEARCHABLE\", " +
-			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','real','double','day_interval','month_interval','sec_interval') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
+			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','real','double'" +
+				",'day_interval','month_interval','sec_interval') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
 			"CASE \"sqlname\" WHEN 'decimal' THEN true ELSE false END AS \"FIXED_PREC_SCALE\", " +
 			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint') THEN true ELSE false END AS \"AUTO_INCREMENT\", " +
 			"\"systemname\" AS \"LOCAL_TYPE_NAME\", " +
@@ -2965,7 +2968,7 @@ public class MonetDatabaseMetaData
 				" WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz','sec_interval') THEN 6 ELSE 0 END AS smallint) AS \"MAXIMUM_SCALE\", " +
 			"cast(0 AS int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 AS int) AS \"SQL_DATETIME_SUB\", " +
-			"cast(\"radix\" as int) AS \"NUM_PREC_RADIX\" " +
+			"cast(CASE WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz','sec_interval') THEN 10 ELSE \"radix\" END AS int) AS \"NUM_PREC_RADIX\" " +
 		"FROM \"sys\".\"types\" " +
 		"ORDER BY \"DATA_TYPE\", \"sqlname\", \"id\"");
 
@@ -3709,17 +3712,13 @@ public class MonetDatabaseMetaData
 
 	/**
 	 * Retrieves a list of the client info properties that the driver
-	 * supports. The result set contains the following columns
-	 *
+	 * supports. The result set contains the following columns:
 	 *    1. NAME String =&gt; The name of the client info property
-	 *    2. MAX_LEN int =&gt; The maximum length of the value for the
-	 *       property
-	 *    3. DEFAULT_VALUE String =&gt; The default value of the
-	 *       property
-	 *    4. DESCRIPTION String =&gt; A description of the
-	 *       property. This will typically contain information as
-	 *       to where this property is stored in the database.
-	 *
+	 *    2. MAX_LEN int =&gt; The maximum length of the value for the property
+	 *    3. DEFAULT_VALUE String =&gt; The default value of the property
+	 *    4. DESCRIPTION String =&gt; A description of the property.
+	 *       This will typically contain information as to
+	 *       where this property is stored in the database.
 	 * The ResultSet is sorted by the NAME column
 	 *
 	 * @return A ResultSet object; each row is a supported client info property
@@ -3738,8 +3737,8 @@ public class MonetDatabaseMetaData
 		"SELECT 'debug', 5, 'false', 'boolean flag true or false' UNION ALL " +
 		"SELECT 'logfile', 1024, 'monet_######.log', 'name of logfile used when debug is enabled' UNION ALL " +
 		"SELECT 'hash', 128, '', 'hash methods list to use in server connection. Supported are SHA512, SHA384, SHA256 and SHA1' UNION ALL " +
-		"SELECT 'treat_blob_as_binary', 5, 'false', 'should blob columns be mapped to Types.VARBINARY instead of default Types.BLOB in ResultSets and PreparedStatements' UNION ALL " +
-		"SELECT 'treat_clob_as_varchar', 5, 'false', 'should clob columns be mapped to Types.VARCHAR instead of default Types.CLOB in ResultSets and PreparedStatements' UNION ALL " +
+		"SELECT 'treat_blob_as_binary', 5, 'true', 'should blob columns be mapped to Types.VARBINARY instead of default Types.BLOB in ResultSets and PreparedStatements' UNION ALL " +
+		"SELECT 'treat_clob_as_varchar', 5, 'true', 'should clob columns be mapped to Types.VARCHAR instead of default Types.CLOB in ResultSets and PreparedStatements' UNION ALL " +
 		"SELECT 'so_timeout', 10, '0', 'timeout (in milliseconds) of communication socket. 0 means no timeout is set' " +
 		"ORDER BY \"NAME\"";
 
@@ -3917,7 +3916,7 @@ public class MonetDatabaseMetaData
 				" WHEN 'hugeint' THEN 16 WHEN 'oid' THEN 8 WHEN 'wrd' THEN 8 ELSE a.\"type_digits\" END AS \"LENGTH\", " +
 			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric'," +
 				"'time','timetz','timestamp','timestamptz','day_interval','month_interval','sec_interval') THEN a.\"type_scale\" ELSE NULL END AS smallint) AS \"SCALE\", " +
-			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric') THEN 10" +
+			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric','day_interval','month_interval','sec_interval') THEN 10" +
 				" WHEN a.\"type\" IN ('real','float','double') THEN 2 ELSE NULL END AS smallint) AS \"RADIX\", " +
 			"cast(").append(DatabaseMetaData.functionNullableUnknown).append(" AS smallint) AS \"NULLABLE\", " +
 			"cast(null as char(1)) AS \"REMARKS\", " +
