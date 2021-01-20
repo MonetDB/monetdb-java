@@ -61,7 +61,7 @@ import java.util.TimeZone;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 0.9
+ * @version 1.0
  */
 public class MonetResultSet
 	extends MonetWrapper
@@ -127,7 +127,6 @@ public class MonetResultSet
 		concurrency = header.getRSConcur();
 		/* the fetchSize used for this result set is the header's cacheSize */
 		fetchSize = header.getCacheSize();
-
 		columns = header.getNames();
 		types = header.getTypes();
 		if (columns == null || types == null) {
@@ -1247,16 +1246,17 @@ public class MonetResultSet
 	public ResultSetMetaData getMetaData() throws SQLException {
 		// return inner class which implements the ResultSetMetaData interface
 		return new rsmdw() {
+			private final String[] schemas = (header != null) ? header.getSchemaNames() : null;
+			private final String[] tables = (header != null) ? header.getTableNames() : null;
+			private final MonetConnection conn = (MonetConnection)getStatement().getConnection();
 			// for the more expensive methods (getPrecision(), getScale(), isNullable(), isAutoIncrement()), we
-			// use caches to store precision, scale and isNullable values from getColumns() combined per fully qualified column.
+			// use caches to store precision, scale and isNullable values from getColumnInfo() combined per fully qualified column.
 			private final int array_size = columns.length + 1;  // add 1 as in JDBC columns start from 1 (array from 0).
 			private final boolean[] _is_fetched = new boolean[array_size];
 			private final int[] _precision	= new int[array_size];
 			private final int[] _scale	= new int[array_size];
 			private final int[] _isNullable	= new int[array_size];
 			private final boolean[] _isAutoincrement = new boolean[array_size];
-			private final Connection conn = getStatement().getConnection();
-			private DatabaseMetaData dbmd = null;	// it will be assigned at first need and reused for other columns
 
 			/**
 			 * A private utility method to check validity of column index number
@@ -1269,9 +1269,9 @@ public class MonetResultSet
 
 			/**
 			 * A private method to fetch the precision, scale, isNullable and isAutoincrement value for a fully qualified column.
-			 * As md.getColumns() is an expensive method we call it only once per column and store
+			 * As getColumnInfo() is an expensive method we call it only once per column and store
 			 * the precision, scale, isNullable and isAutoincrement values in the above array caches.
-			 * Also we only call md.getColumns() when we have a non empty schema name and table name and column name.
+			 * Also we only call getColumnInfo() when we have a non empty schema name and table name and column name.
 			 */
 			private final void fetchColumnInfo(final int column) throws SQLException
 			{
@@ -1283,14 +1283,7 @@ public class MonetResultSet
 				_isNullable[column] = columnNullableUnknown;
 				_isAutoincrement[column] = false;
 
-				if (dbmd == null) {
-					// first time usage
-					dbmd = conn.getMetaData();
-					if (dbmd == null)
-						return;
-				}
-
-				// we will only call dbmd.getColumns() when we have a specific schema name and table name and column name
+				// we will only call getColumnInfo() when we have a specific schema name, table name and column name
 				final String schName = getSchemaName(column);
 				if (schName != null && !schName.isEmpty()) {
 					final String tblName = getTableName(column);
@@ -1298,22 +1291,58 @@ public class MonetResultSet
 						final String colName = getColumnName(column);
 						if (colName != null && !colName.isEmpty()) {
 							// for precision, scale, isNullable and isAutoincrement we query the information from data dictionary
-							final ResultSet colInfo = dbmd.getColumns(null, schName, tblName, colName);
+							final ResultSet colInfo = getColumnInfo(schName, tblName, colName);
 							if (colInfo != null) {
 								// we expect exactly one row in the resultset
 								if (colInfo.next()) {
-									_precision[column] = colInfo.getInt(7);  // col 7 is "COLUMN_SIZE"
-									_scale[column] = colInfo.getInt(9);  // col 9 is "DECIMAL_DIGITS"
-									_isNullable[column] = colInfo.getInt(11);  // col 11 is "NULLABLE"
-									final String strVal = colInfo.getString(23);  // col 23 is "IS_AUTOINCREMENT"
-									if (strVal != null && "YES".equals(strVal))
-										_isAutoincrement[column] = true;
+									_precision[column] = colInfo.getInt(1);  // col 1 (was 7) is "COLUMN_SIZE"
+									_scale[column] = colInfo.getInt(2);  // col 2 (was 9) is "DECIMAL_DIGITS"
+									_isNullable[column] = colInfo.getInt(3);  // col 3 (was 11) is "NULLABLE"
+									_isAutoincrement[column] = colInfo.getBoolean(4);  // col 4 (was 23) is "IS_AUTOINCREMENT"
 								}
 								colInfo.close();  // close the resultset to release resources
 							}
 						}
 					}
 				}
+			}
+
+			/* private simplified copy of MonetDatabaseMetaData.getColumns() method to fetch only 4 needed attributes of a specific column */
+			private final ResultSet getColumnInfo(final String schemaName, final String tableName, final String columnName) throws SQLException
+			{
+				final StringBuilder query = new StringBuilder(700);
+				query.append("SELECT " +
+					"c.\"type_digits\" AS \"COLUMN_SIZE\", " +
+					"c.\"type_scale\" AS \"DECIMAL_DIGITS\", " +
+					"cast(CASE c.\"null\" WHEN true THEN ").append(ResultSetMetaData.columnNullable)
+						.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls)
+						.append(" ELSE ").append(columnNullableUnknown)
+						.append(" END AS int) AS \"NULLABLE\", ").append(
+					"cast(CASE WHEN c.\"default\" IS NOT NULL AND c.\"default\" LIKE 'next value for %' THEN true ELSE false END AS boolean) AS \"IS_AUTOINCREMENT\" " +
+					// ", s.\"name\" AS \"TABLE_SCHEM\", t.\"name\" AS \"TABLE_NAME\", c.\"name\" AS \"COLUMN_NAME\" " +
+				"FROM \"sys\".\"columns\" c " +
+				"JOIN \"sys\".\"tables\" t ON c.\"table_id\" = t.\"id\" " +
+				"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" ");
+
+				query.append("WHERE s.\"name\" = '").append(conn.escapeSpecialChars(schemaName)).append("'");
+				query.append(" AND t.\"name\" = '").append(conn.escapeSpecialChars(tableName)).append("'");
+				query.append(" AND c.\"name\" = '").append(conn.escapeSpecialChars(columnName)).append("'");
+				// query.append(" ORDER BY \"TABLE_SCHEM\", \"TABLE_NAME\"");
+
+				ResultSet rs = null;
+				final Statement stmt = conn.createStatement();
+				if (stmt != null) {
+					// for debug: System.out.println("SQL (len " + query.length() + "): " + query.toString());
+					rs = stmt.executeQuery(query.toString());
+					if (rs != null) {
+						/* we want the statement object to be closed also when the resultset is closed by the caller */
+						stmt.closeOnCompletion();
+					} else {
+						/* failed to produce a resultset, so release resources for created statement object now */
+						stmt.close();
+					}
+				}
+				return rs;
 			}
 
 			/**
@@ -1495,14 +1524,9 @@ public class MonetResultSet
 			@Override
 			public String getSchemaName(final int column) throws SQLException {
 				checkColumnIndexValidity(column);
-				if (header != null) {
-					// figure the name out
+				if (schemas != null) {
 					try {
-						final String schema = header.getTableNames()[column - 1];
-						if (schema != null) {
-							final int dot = schema.indexOf('.');
-							return (dot >= 0) ? schema.substring(0, dot) : "";
-						}
+						return schemas[column - 1];
 					} catch (IndexOutOfBoundsException e) {
 						throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 					}
@@ -1519,14 +1543,9 @@ public class MonetResultSet
 			@Override
 			public String getTableName(final int column) throws SQLException {
 				checkColumnIndexValidity(column);
-				if (header != null) {
-					// figure the name out
+				if (tables != null) {
 					try {
-						final String table = header.getTableNames()[column - 1];
-						if (table != null) {
-							final int dot = table.indexOf('.');
-							return (dot >= 0) ? table.substring(dot + 1) : table;
-						}
+						return tables[column - 1];
 					} catch (IndexOutOfBoundsException e) {
 						throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 					}

@@ -64,7 +64,7 @@ import org.monetdb.mcl.parser.StartOfHeaderParser;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 1.5
+ * @version 1.6
  */
 public class MonetConnection
 	extends MonetWrapper
@@ -2100,6 +2100,8 @@ public class MonetConnection
 		private int[] columnLengths;
 		/** The table for each column in this result */
 		private String[] tableNames;
+		/** The schema for each column in this result */
+		private String[] schemaNames;
 		/** The query sequence number */
 		private final int seqnr;
 		/** A List of result blocks (chunks of size fetchSize/cacheSize) */
@@ -2222,8 +2224,28 @@ public class MonetConnection
 						isSet[TYPES] = true;
 					break;
 					case HeaderLineParser.TABLE:
+					{
 						tableNames = hlp.values.clone();
+						final int array_size = tableNames.length;
+						schemaNames = new String[array_size];
+						// split the schema and table names from the cloned values array
+						for (int i = 0; i < array_size; i++) {
+							String qtable = tableNames[i];
+							if (qtable != null) {
+								int dot = qtable.indexOf('.');
+								if (dot >= 0) {
+									schemaNames[i] = qtable.substring(0, dot);
+									tableNames[i] = qtable.substring(dot +1);
+								} else {
+									schemaNames[i] = "";
+								}
+							} else {
+								schemaNames[i] = "";
+								tableNames[i] = "";
+							}
+						}
 						isSet[TABLES] = true;
+					}
 					break;
 				}
 			} catch (MCLParseException e) {
@@ -2332,6 +2354,15 @@ public class MonetConnection
 		 */
 		String[] getTableNames() {
 			return tableNames;
+		}
+
+		/**
+		 * Returns the schemas of the columns
+		 *
+		 * @return the schemas of the columns
+		 */
+		String[] getSchemaNames() {
+			return schemaNames;
 		}
 
 		/**
