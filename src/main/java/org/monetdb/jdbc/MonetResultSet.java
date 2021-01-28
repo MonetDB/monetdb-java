@@ -245,8 +245,7 @@ public class MonetResultSet
 	public boolean absolute(int row) throws SQLException {
 		checkNotClosed();
 		if (row != curRow + 1 && type == TYPE_FORWARD_ONLY)
-			throw new SQLException("(Absolute) positioning not allowed on forward " +
-				" only result sets!", "M1M05");
+			throw new SQLException("(Absolute) positioning not allowed on forward only result sets!", "M1M05");
 
 		// first calculate what the JDBC row is
 		if (row < 0) {
