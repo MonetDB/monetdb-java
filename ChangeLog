@@ -43,7 +43,7 @@
   - Primary Key uniqueness
   - Primary Key column(s) being NOT NULL (currently only for \vsci)
   - Unique constraint uniqueness
-  - Foreign Key referential integrity (currently only for \vsci)
+  - Foreign Key referential integrity
   - Column NOT NULL constraint
   - Varchar(n) max length constraint
   - Idem for char(n), clob(n), blob(n), json(n) and url(n).

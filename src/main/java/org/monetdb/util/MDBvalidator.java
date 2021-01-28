@@ -16,6 +16,10 @@ import java.sql.Statement;
 import java.sql.SQLException;
 import java.sql.Types;
 
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 /**
  * <pre>MonetDB Data Integrity Validator class (MDBvalidator) can
  * a) validate system tables data integrity in system schemas: sys and tmp
@@ -30,7 +34,7 @@ import java.sql.Types;
  *		primary key uniqueness
  *	TODO primary key column(s) not null
  *		unique constraint uniqueness
- *	TODO foreign key referential integrity
+ *		foreign key referential integrity
  *		column not null
  *		column maximum length for char/varchar/clob/blob/json/url columns which have max length &gt; 0
  *
@@ -104,7 +108,7 @@ public final class MDBvalidator {
 */
 
 	public static void validateSqlCatalogIntegrity(final Connection conn) {
-		MDBvalidator mdbv = new MDBvalidator(conn);
+		final MDBvalidator mdbv = new MDBvalidator(conn);
 		if (mdbv.checkMonetDBVersion()) {
 			mdbv.validateSchema("sys", null, sys_pkeys, sys_akeys, sys_fkeys, sys_notnull, true);
 			mdbv.validateSchema("tmp", null, tmp_pkeys, tmp_akeys, tmp_fkeys, tmp_notnull, true);
@@ -112,7 +116,7 @@ public final class MDBvalidator {
 	}
 
 	public static void validateSqlNetcdfTablesIntegrity(final Connection conn) {
-		MDBvalidator mdbv = new MDBvalidator(conn);
+		final MDBvalidator mdbv = new MDBvalidator(conn);
 		if (mdbv.checkMonetDBVersion()) {
 			// determine if the 5 netcdf tables exist in the sys schema
 			if (mdbv.checkTableExists("sys", "netcdf_files")
@@ -125,7 +129,7 @@ public final class MDBvalidator {
 	}
 
 	public static void validateSqlGeomTablesIntegrity(final Connection conn) {
-		MDBvalidator mdbv = new MDBvalidator(conn);
+		final MDBvalidator mdbv = new MDBvalidator(conn);
 		if (mdbv.checkMonetDBVersion()) {
 			if (mdbv.checkTableExists("sys", "spatial_ref_sys"))	// No need to also test if view sys.geometry_columns exists
 				mdbv.validateSchema("sys", "geom", geom_pkeys, geom_akeys, geom_fkeys, geom_notnull, false);
@@ -133,7 +137,7 @@ public final class MDBvalidator {
 	}
 
 	public static void validateSchemaIntegrity(final Connection conn, final String schema) {
-		MDBvalidator mdbv = new MDBvalidator(conn);
+		final MDBvalidator mdbv = new MDBvalidator(conn);
 		if (mdbv.checkSchemaExists(schema))
 			mdbv.validateSchema(schema, null, null, null, null, null, true);
 		else
@@ -141,8 +145,8 @@ public final class MDBvalidator {
 	}
 
 	public static void validateDBIntegrity(final Connection conn) {
-		MDBvalidator mdbv = new MDBvalidator(conn);
-		Statement stmt = mdbv.createStatement("validateDBIntegrity()");
+		final MDBvalidator mdbv = new MDBvalidator(conn);
+		final Statement stmt = mdbv.createStatement("validateDBIntegrity()");
 		if (stmt == null)
 			return;
 
@@ -179,7 +183,7 @@ public final class MDBvalidator {
 		final String[][] colnotnull,
 		final boolean checkMaxStr)
 	{
-		boolean is_system_schema = ("sys".equals(schema) || "tmp".equals(schema));
+		final boolean is_system_schema = ("sys".equals(schema) || "tmp".equals(schema));
 
 		if (pkeys != null) {
 			validateUniqueness(schema, group, pkeys, "Primary Key uniqueness");
@@ -220,7 +224,7 @@ public final class MDBvalidator {
 		final int len = data.length;
 		System.out.println("Checking " + minimumWidth(len,6) + (group != null ? " " + group : "") + " tables/keys  in schema " + schema + " for " + checkType + " violations.");
 
-		StringBuilder sb = new StringBuilder(256);	// reusable buffer to compose SQL validation queries
+		final StringBuilder sb = new StringBuilder(256);	// reusable buffer to compose SQL validation queries
 		sb.append("SELECT COUNT(*) AS duplicates, ");
 		final int qry_len = sb.length();
 		String tbl;
@@ -249,12 +253,12 @@ public final class MDBvalidator {
 		final boolean pkey,
 		final String checkType)
 	{
-		Statement stmt = createStatement("validateUniqueness()");
+		final Statement stmt = createStatement("validateUniqueness()");
 		if (stmt == null)
 			return;
 
 		// fetch the primary or unique key info from the MonetDB system tables
-		StringBuilder sb = new StringBuilder(400);
+		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" FROM sys.keys k JOIN sys.tables t ON k.table_id = t.id JOIN sys.schemas s ON t.schema_id = s.id"
 				+ " WHERE k.type = ").append(pkey ? 0 : 1)	// 0 = primary keys, 1 = unique keys
 			.append(" and s.name = '").append(schema).append("'");
@@ -299,7 +303,7 @@ public final class MDBvalidator {
 						// reuse the StringBuilder by cleaning it partial
 						sb.setLength(qry_len);
 						sb.append(keycols)
-						.append(" FROM \"").append(sch).append("\".\"").append(prv_tbl).append("\"")
+						.append(" FROM \"").append(sch).append("\".\"").append(prv_tbl).append('"')
 						.append(" GROUP BY ").append(keycols)
 						.append(" HAVING COUNT(*) > 1;");
 						validateQuery(sb.toString(), sch, prv_tbl, keycols, checkType);
@@ -313,7 +317,7 @@ public final class MDBvalidator {
 					// reuse the StringBuilder by cleaning it partial
 					sb.setLength(qry_len);
 					sb.append(keycols)
-					.append(" FROM \"").append(sch).append("\".\"").append(prv_tbl).append("\"")
+					.append(" FROM \"").append(sch).append("\".\"").append(prv_tbl).append('"')
 					.append(" GROUP BY ").append(keycols)
 					.append(" HAVING COUNT(*) > 1;");
 					validateQuery(sb.toString(), sch, prv_tbl, keycols, checkType);
@@ -336,7 +340,7 @@ public final class MDBvalidator {
 		final int len = data.length;
 		System.out.println("Checking " + minimumWidth(len,6) + (group != null ? " " + group : "") + " foreign keys in schema " + schema + " for " + checkType + " violations.");
 
-		StringBuilder sb = new StringBuilder(400);	// reusable buffer to compose SQL validation queries
+		final StringBuilder sb = new StringBuilder(400);	// reusable buffer to compose SQL validation queries
 		sb.append("SELECT ");
 		final int qry_len = sb.length();
 		String tbl;
@@ -368,12 +372,19 @@ public final class MDBvalidator {
 		final String schema,
 		final String checkType)
 	{
-		Statement stmt = createStatement("validateFKs()");
+		Statement stmt = null;
+		try {
+			// the resultset needs to be scrollable (see rs.previous())
+			stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);
+		} catch (SQLException e) {
+			System.err.print("Failed to create Statement in validateFKs()");
+			printExceptions(e);
+		}
 		if (stmt == null)
 			return;
 
 		// fetch the foreign key info from the MonetDB system tables
-		StringBuilder sb = new StringBuilder(400);
+		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" FROM sys.keys k JOIN sys.tables t ON k.table_id = t.id JOIN sys.schemas s ON t.schema_id = s.id"
 				+ " WHERE k.type = 2")	// 2 = foreign keys
 			.append(" and s.name = '").append(schema).append("'");
@@ -382,8 +393,102 @@ public final class MDBvalidator {
 		System.out.println("Checking " + minimumWidth(count,6) + " foreign keys in schema " + schema + " for " + checkType + " violations.");
 
 		ResultSet rs = null;
-		// TODO: finish FK validation implementation
+		try {
+			sb.setLength(0);	// empty previous usage of sb
+			// fetch the foreign key columns info from the MonetDB system tables
+			sb.append("SELECT " +
+				"fs.name as fsch, ft.name as ftbl, fo.name as fcol, fo.nr as fnr," +
+				"ps.name as psch, pt.name as ptbl, po.name as pcol" +
+				// ",  fk.name as fkey, pk.name as pkey" +
+				" FROM sys.keys fk" +
+				" JOIN sys.objects fo ON fk.id = fo.id" +
+				" JOIN sys.tables ft ON fk.table_id = ft.id" +
+				" JOIN sys.schemas fs ON ft.schema_id = fs.id" +
+				" JOIN sys.keys pk ON fk.rkey = pk.id" +
+				" JOIN sys.objects po ON pk.id = po.id" +
+				" JOIN sys.tables pt ON pk.table_id = pt.id" +
+				" JOIN sys.schemas ps ON pt.schema_id = ps.id" +
+				" WHERE fk.type = 2" +	// 2 = foreign keys
+				" AND fo.nr = po.nr")	// important: matching fk-pk column ordering
+			.append(" AND fs.name = '").append(schema).append("'")
+			.append(" ORDER BY ft.name, fk.name, fo.nr;");
+			qry = sb.toString();
+			rs = stmt.executeQuery(qry);
+			if (rs != null) {
+				String fsch = null, ftbl = null, fcol = null;
+				String psch = null, ptbl = null, pcol = null;
+				// String fkey = null, pkey = null, 
+				int fnr = -1;
+				final Set<String> fk = new LinkedHashSet<String>(6);
+				final Set<String> pk = new LinkedHashSet<String>(6);
+				int i;
+				while (rs.next()) {
+					// retrieve meta data
+					fsch = rs.getString(1);
+					ftbl = rs.getString(2);
+					fcol = rs.getString(3);
+					fnr = rs.getInt(4);
+					psch = rs.getString(5);
+					ptbl = rs.getString(6);
+					pcol = rs.getString(7);
+					// fkey = rs.getString(8);
+					// pkey = rs.getString(9);
 
+					fk.clear();
+					fk.add(fcol);
+					pk.clear();
+					pk.add(pcol);
+
+					boolean next;
+					while ((next = rs.next()) && rs.getInt(4) > 0) {
+						// collect the fk and pk column names for multicolumn fks
+						fk.add(rs.getString(3));
+						pk.add(rs.getString(7));
+					}
+					// go back one
+					if (next)
+						rs.previous();
+
+					// compose fk validation query for this specific fk
+					// select a1, b1, * from tst.s2fk where a1 IS NOT NULL AND b1 IS NOT NULL and (a1, b1) NOT IN (select a, b from tst.s2);
+					sb.setLength(0);	// empty previous usage of sb
+					sb.append("SELECT ");
+					Iterator<String> it = fk.iterator();
+					for (i = 0; it.hasNext(); i++) {
+						if (i > 0)
+							sb.append(", ");
+						sb.append('"').append(it.next()).append('"');
+					}
+					sb.append(", * FROM \"").append(fsch).append("\".\"").append(ftbl).append('"');
+					sb.append(" WHERE ");
+					it = fk.iterator();
+					for (i = 0; it.hasNext(); i++) {
+						if (i > 0)
+							sb.append(" AND ");
+						sb.append('"').append(it.next()).append("\" IS NOT NULL");
+					}
+					sb.append(" AND (");
+					it = fk.iterator();
+					for (i = 0; it.hasNext(); i++) {
+						if (i > 0)
+							sb.append(", ");
+						sb.append('"').append(it.next()).append('"');
+					}
+					sb.append(") NOT IN (SELECT ");
+					it = pk.iterator();
+					for (i = 0; it.hasNext(); i++) {
+						if (i > 0)
+							sb.append(", ");
+						sb.append('"').append(it.next()).append('"');
+					}
+					sb.append(" FROM \"").append(psch).append("\".\"").append(ptbl).append("\");");
+					validateQuery(sb.toString(), fsch, ftbl, fcol, checkType);
+				}
+			}
+		} catch (SQLException e) {
+			System.err.println("Failed to execute query: " + qry);
+			printExceptions(e);
+		}
 		freeStmtRs(stmt, rs);
 	}
 
@@ -397,7 +502,7 @@ public final class MDBvalidator {
 		final int len = data.length;
 		System.out.println("Checking " + minimumWidth(len,6) + (group != null ? " " + group : "") + " columns      in schema " + schema + " for " + checkType + " violations.");
 
-		StringBuilder sb = new StringBuilder(256);	// reusable buffer to compose SQL validation queries
+		final StringBuilder sb = new StringBuilder(256);	// reusable buffer to compose SQL validation queries
 		sb.append("SELECT ");
 		final int qry_len = sb.length();
 		String tbl;
@@ -437,12 +542,12 @@ public final class MDBvalidator {
 		final boolean system,
 		final String checkType)
 	{
-		Statement stmt = createStatement("validateNotNull()");
+		final Statement stmt = createStatement("validateNotNull()");
 		if (stmt == null)
 			return;
 
 		// fetch the NOT NULL info from the MonetDB system tables as those are leading for user tables (but not system tables)
-		StringBuilder sb = new StringBuilder(400);
+		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" from sys.columns c join sys.tables t on c.table_id = t.id join sys.schemas s on t.schema_id = s.id"
 				+ " where t.type in (0, 10, 1, 11) and c.\"null\" = false"	// t.type 0 = TABLE, 10 = SYSTEM TABLE, 1 = VIEW, 11 = SYSTEM VIEW
 				+ " and t.system = ").append(system)
@@ -468,7 +573,7 @@ public final class MDBvalidator {
 					// compose validation query for this specific column
 					sb.setLength(0);	// empty previous usage of sb
 					sb.append("SELECT '").append(sch).append('.').append(tbl).append('.').append(col).append("' as full_col_nm, *")
-					.append(" FROM \"").append(sch).append("\".\"").append(tbl).append("\"")
+					.append(" FROM \"").append(sch).append("\".\"").append(tbl).append('"')
 					.append(" WHERE \"").append(col).append("\" IS NULL;");
 					validateQuery(sb.toString(), sch, tbl, col, checkType);
 				}
@@ -486,12 +591,12 @@ public final class MDBvalidator {
 		final boolean system,
 		final String checkType)
 	{
-		Statement stmt = createStatement("validateMaxCharStrLength()");
+		final Statement stmt = createStatement("validateMaxCharStrLength()");
 		if (stmt == null)
 			return;
 
 		// fetch the max char str len info from the MonetDB system tables as those are leading
-		StringBuilder sb = new StringBuilder(400);
+		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" from sys.columns c join sys.tables t on c.table_id = t.id join sys.schemas s on t.schema_id = s.id"
 				+ " where t.type in (0, 10, 1, 11)"	// t.type 0 = TABLE, 10 = SYSTEM TABLE, 1 = VIEW, 11 = SYSTEM VIEW
 				+ " and c.type_digits >= 1"		// only when a positive max length is specified
@@ -523,8 +628,8 @@ public final class MDBvalidator {
 					sb.append("SELECT '").append(sch).append('.').append(tbl).append('.').append(col).append("' as full_col_nm, ")
 					.append(max_len).append(" as max_allowed_length, ")
 					.append("length(\"").append(col).append("\") as data_length, ")
-					.append("\"").append(col).append("\" as data_value")
-					.append(" FROM \"").append(sch).append("\".\"").append(tbl).append("\"")
+					.append('"').append(col).append("\" as data_value")
+					.append(" FROM \"").append(sch).append("\".\"").append(tbl).append('"')
 					.append(" WHERE \"").append(col).append("\" IS NOT NULL AND length(\"").append(col).append("\") > ").append(max_len);
 					validateQuery(sb.toString(), sch, tbl, col, checkType);
 				}
@@ -550,7 +655,7 @@ public final class MDBvalidator {
 		final String cols,
 		final String checkType)
 	{
-		Statement stmt = createStatement("validateQuery()");
+		final Statement stmt = createStatement("validateQuery()");
 		if (stmt == null)
 			return;
 
@@ -588,7 +693,10 @@ public final class MDBvalidator {
 								sb.append("null");
 							} else {
 								tp = rsmd.getColumnType(i);	// this method is very fast, so no need to cache it outside the loop
-								if (tp == Types.VARCHAR || tp == Types.CHAR || tp == Types.CLOB || tp == Types.BLOB) {
+								if (tp == Types.VARCHAR || tp == Types.CHAR || tp == Types.CLOB
+								 || tp == Types.VARBINARY || tp == Types.BLOB
+								 || tp == Types.DATE || tp == Types.TIME || tp == Types.TIMESTAMP
+								 || tp == Types.TIME_WITH_TIMEZONE || tp == Types.TIMESTAMP_WITH_TIMEZONE) {
 									sb.append('"').append(val).append('"');
 								} else {
 									sb.append(val);
@@ -614,7 +722,7 @@ public final class MDBvalidator {
 	}
 
 	private int runCountQuery(final String from_qry) {
-		Statement stmt = createStatement("runCountQuery()");
+		final Statement stmt = createStatement("runCountQuery()");
 		if (stmt == null)
 			return 0;
 
@@ -651,7 +759,7 @@ public final class MDBvalidator {
 			// we haven't fetched them before.
 			try {
 				// retrieve server version numbers (major and minor). These are needed to filter out version specific validations
-				DatabaseMetaData dbmd = con.getMetaData();
+				final DatabaseMetaData dbmd = con.getMetaData();
 				if (dbmd != null) {
 					// System.out.println("MonetDB server version " + dbmd.getDatabaseProductVersion());
 					majorversion = dbmd.getDatabaseMajorVersion();
@@ -674,7 +782,7 @@ public final class MDBvalidator {
 			return true;	// when no version string is supplied it is valid by default
 
 		try {
-			int v = Integer.parseInt(version);
+			final int v = Integer.parseInt(version);
 			return minorversion >= v;
 		} catch (NumberFormatException e) {
 			System.out.println("Failed to parse version string '" + version + "' as an integer number.");
@@ -683,11 +791,11 @@ public final class MDBvalidator {
 	}
 
 	private boolean checkSchemaExists(final String schema) {
-		Statement stmt = createStatement("checkSchemaExists()");
+		final Statement stmt = createStatement("checkSchemaExists()");
 		if (stmt == null)
 			return false;
 
-		String sql = "SELECT name FROM sys.schemas WHERE name = '" + schema + "';";
+		final String sql = "SELECT name FROM sys.schemas WHERE name = '" + schema + "';";
 		ResultSet rs = null;
 		boolean ret = false;
 		try {
@@ -707,11 +815,11 @@ public final class MDBvalidator {
 	}
 
 	private boolean checkTableExists(final String schema, final String table) {
-		Statement stmt = createStatement("checkTableExists()");
+		final Statement stmt = createStatement("checkTableExists()");
 		if (stmt == null)
 			return false;
 
-		String sql = "SELECT s.name, t.name FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.id WHERE t.name = '" + table + "' AND s.name = '" + schema + "';";
+		final String sql = "SELECT s.name, t.name FROM sys.tables t JOIN sys.schemas s ON t.schema_id = s.id WHERE t.name = '" + table + "' AND s.name = '" + schema + "';";
 		ResultSet rs = null;
 		boolean ret = false;
 		try {
@@ -739,7 +847,7 @@ public final class MDBvalidator {
 		final String query,
 		final String violations)
 	{
-		StringBuilder sb = new StringBuilder(2048);
+		final StringBuilder sb = new StringBuilder(2048);
 		sb.append(checkType).append(" violation(s) found in \"")
 		  .append(schema).append("\".\"").append(table).append("\".\"").append(columns).append("\":\n")
 		  .append(violations)
@@ -765,7 +873,7 @@ public final class MDBvalidator {
 	}
 
 	private static String minimumWidth(int val, int minWidth) {
-		String valstr = Integer.toString(val);
+		final String valstr = Integer.toString(val);
 		int spacesneeded = minWidth - valstr.length();
 		switch (spacesneeded) {
 			case 1: return " " + valstr;
