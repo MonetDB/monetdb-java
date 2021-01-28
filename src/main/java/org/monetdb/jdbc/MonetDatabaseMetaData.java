@@ -2696,7 +2696,9 @@ public class MonetDatabaseMetaData
 			}
 		}
 
-		query.append(" ORDER BY \"PKTABLE_SCHEM\", \"PKTABLE_NAME\", \"PK_NAME\", \"KEY_SEQ\"");
+		// Note: the extra \"FKTABLE_SCHEM\", \"FKTABLE_NAME\", \"FK_NAME\" in the ordering is important
+		// else we do not get the correct column order when multiple fks exist to the same pk in 1 table or query multiple tables.
+		query.append(" ORDER BY \"PKTABLE_SCHEM\", \"PKTABLE_NAME\", \"PK_NAME\", \"FKTABLE_SCHEM\", \"FKTABLE_NAME\", \"FK_NAME\", \"KEY_SEQ\"");
 
 		return executeMetaDataQuery(query.toString());
 	}
@@ -2779,7 +2781,9 @@ public class MonetDatabaseMetaData
 			}
 		}
 
-		query.append(" ORDER BY \"FKTABLE_SCHEM\", \"FKTABLE_NAME\", \"FK_NAME\", \"KEY_SEQ\"");
+		// Note: the extra \"PKTABLE_SCHEM\", \"PKTABLE_NAME\", \"PK_NAME\" in the ordering is important
+		// else we do not get the correct column order when multiple fks exist to the same pk in 1 table or query multiple tables.
+		query.append(" ORDER BY \"FKTABLE_SCHEM\", \"FKTABLE_NAME\", \"FK_NAME\", \"PKTABLE_SCHEM\", \"PKTABLE_NAME\", \"PK_NAME\", \"KEY_SEQ\"");
 
 		return executeMetaDataQuery(query.toString());
 	}
@@ -2880,7 +2884,9 @@ public class MonetDatabaseMetaData
 			}
 		}
 
-		query.append(" ORDER BY \"FKTABLE_SCHEM\", \"FKTABLE_NAME\", \"FK_NAME\", \"KEY_SEQ\"");
+		// Note: the extra \"PKTABLE_SCHEM\", \"PKTABLE_NAME\", \"PK_NAME\" in the ordering is important
+		// else we do not get the correct column order when multiple fks exist to the same pk in 1 table or query multiple tables.
+		query.append(" ORDER BY \"FKTABLE_SCHEM\", \"FKTABLE_NAME\", \"FK_NAME\", \"PKTABLE_SCHEM\", \"PKTABLE_NAME\", \"PK_NAME\", \"KEY_SEQ\"");
 
 		return executeMetaDataQuery(query.toString());
 	}

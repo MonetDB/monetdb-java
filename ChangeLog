@@ -2,6 +2,13 @@
 # This file is updated with Maddlog
 
 * Thu Jan 28 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected the ordering of the output of DatabaseMetaData methods
+  getImportedKeys(), getExportedKeys() and getCrossReference(). In cases
+  where a table would have multiple fks to the same external table,
+  the output was not as expected. This has been corrected, so the columns
+  now appear in the order as defined in the creation of the fks.
+
+* Thu Jan 28 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - The dumping of table definitions from JdbcClient program has been
   improved. It now includes the ON UPDATE and ON DELETE rules for foreign
   key constraints. Also it no longer generates CREATE INDEX statements
