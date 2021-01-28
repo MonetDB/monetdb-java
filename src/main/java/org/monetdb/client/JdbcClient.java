@@ -28,11 +28,9 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;	// this import is required as it will trigger loading the org.monetdb.jdbc.MonetDriver class
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.sql.SQLException;
 import java.sql.SQLWarning;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -307,6 +305,9 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 		con = null;
 		final String database = copts.getOption("database").getArgument();
 		try {
+			// make sure the driver class is loaded (and thus register itself with the DriverManager)
+			Class.forName("org.monetdb.jdbc.MonetDriver");
+
 			con = DriverManager.getConnection(
 					"jdbc:monetdb://" + host + "/" + database + attr,
 					user,
