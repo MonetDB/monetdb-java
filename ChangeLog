@@ -1,6 +1,13 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Jan 28 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- The dumping of table definitions from JdbcClient program has been
+  improved. It now includes the ON UPDATE and ON DELETE rules for foreign
+  key constraints. Also it no longer generates CREATE INDEX statements
+  for foreign key constraints whose name is not system generated but
+  user specified.
+
 * Thu Jan 14 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved DatabaseMetaData.getTypeInfo() output for temporal data
   types: sec_interval, day_interval, month_interval, date, time, timetz,

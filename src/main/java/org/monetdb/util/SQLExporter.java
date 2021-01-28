@@ -104,6 +104,8 @@ public final class SQLExporter extends Exporter {
 				s = "INTEGER";
 			} else if (s.equals("SEC_INTERVAL")) {
 				s = "INTERVAL SECOND";
+			} else if (s.equals("DAY_INTERVAL")) {
+				s = "INTERVAL DAY";
 			} else if (s.equals("MONTH_INTERVAL")) {
 				s = "INTERVAL MONTH";
 			} else if (s.equals("TIMETZ")) {
@@ -231,19 +233,29 @@ public final class SQLExporter extends Exporter {
 		colKeySeq = cols.findColumn("KEY_SEQ");
 		final int colPkTblSch = cols.findColumn("PKTABLE_SCHEM");
 		final int colPkTblNm = cols.findColumn("PKTABLE_NAME");
+		final int colUpdRule = cols.findColumn("UPDATE_RULE");
+		final int colDelRule = cols.findColumn("DELETE_RULE");
+		final String onUpdate = " ON UPDATE ";
+		final String onDelete = " ON DELETE ";
+		final Set<String> fknames = new LinkedHashSet<String>(8);
+		final Set<String> fk = new LinkedHashSet<String>(6);
+		final Set<String> pk = new LinkedHashSet<String>(6);
 		while (cols.next()) {
 			out.println(",");
 			out.print("\tCONSTRAINT " + dq(cols.getString(colFkNm)) + " FOREIGN KEY (");
+			fknames.add(cols.getString(colFkNm));	// needed later on for exclusion of generating CREATE INDEX for them
 
-			final Set<String> fk = new LinkedHashSet<String>();
-			fk.add(cols.getString(colFkColNm).intern());
-			final Set<String> pk = new LinkedHashSet<String>();
-			pk.add(cols.getString(colPkColNm).intern());
+			fk.clear();
+			fk.add(cols.getString(colFkColNm));
+			pk.clear();
+			pk.add(cols.getString(colPkColNm));
+			final short fkUpdRule = cols.getShort(colUpdRule);
+			final short fkDelRule = cols.getShort(colDelRule);
 
 			boolean next;
 			while ((next = cols.next()) && cols.getInt(colKeySeq) != 1) {
-				fk.add(cols.getString(colFkColNm).intern());
-				pk.add(cols.getString(colPkColNm ).intern());
+				fk.add(cols.getString(colFkColNm));
+				pk.add(cols.getString(colPkColNm));
 			}
 			// go back one
 			if (next)
@@ -263,6 +275,53 @@ public final class SQLExporter extends Exporter {
 				out.print(dq(it.next()));
 			}
 			out.print(")");
+
+			// ON UPDATE { NO ACTION | CASCADE | RESTRICT | SET NULL | SET DEFAULT }
+			switch (fkUpdRule) {
+				 case DatabaseMetaData.importedKeyCascade:
+					out.print(onUpdate);
+					out.print("CASCADE");
+					break;
+				 case DatabaseMetaData.importedKeyNoAction:
+					out.print(onUpdate);
+					out.print("NO ACTION");
+					break;
+				 case DatabaseMetaData.importedKeyRestrict:
+					out.print(onUpdate);
+					out.print("RESTRICT");
+					break;
+				 case DatabaseMetaData.importedKeySetNull:
+					out.print(onUpdate);
+					out.print("SET NULL");
+					break;
+				 case DatabaseMetaData.importedKeySetDefault:
+					out.print(onUpdate);
+					out.print("SET DEFAULT");
+					break;
+			}
+			// ON DELETE { NO ACTION | CASCADE | RESTRICT | SET NULL | SET DEFAULT }
+			switch (fkDelRule) {
+				 case DatabaseMetaData.importedKeyCascade:
+					out.print(onDelete);
+					out.print("CASCADE");
+					break;
+				 case DatabaseMetaData.importedKeyNoAction:
+					out.print(onDelete);
+					out.print("NO ACTION");
+					break;
+				 case DatabaseMetaData.importedKeyRestrict:
+					out.print(onDelete);
+					out.print("RESTRICT");
+					break;
+				 case DatabaseMetaData.importedKeySetNull:
+					out.print(onDelete);
+					out.print("SET NULL");
+					break;
+				 case DatabaseMetaData.importedKeySetDefault:
+					out.print(onDelete);
+					out.print("SET DEFAULT");
+					break;
+			}
 		}
 		cols.close();
 
@@ -289,7 +348,8 @@ public final class SQLExporter extends Exporter {
 				// We only process non-unique indexes here.
 				// The unique indexes are already covered as UNIQUE constraints in the CREATE TABLE above
 				final String idxname = cols.getString(colIndexNm);
-				if (idxname != null && !idxname.endsWith("_fkey")) {
+				// check idxname is not in the list of fknames for this table
+				if (idxname != null && !fknames.contains(idxname)) {
 					out.print("CREATE INDEX " + dq(idxname) + " ON " +
 						dq(cols.getString(tblSchIndex)) + "." +
 						dq(cols.getString(tblNmIndex)) + " (" +
