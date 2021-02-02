@@ -35,6 +35,7 @@ import java.util.concurrent.Executor;
 
 import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
+import org.monetdb.mcl.net.HandshakeOptions;
 import org.monetdb.mcl.net.MapiSocket;
 import org.monetdb.mcl.parser.HeaderLineParser;
 import org.monetdb.mcl.parser.MCLParseException;
@@ -257,6 +258,14 @@ public class MonetConnection
 			server.setDatabase(database);
 		server.setLanguage(language);
 
+		HandshakeOptions handshakeOptions = new HandshakeOptions();
+		final Calendar cal = Calendar.getInstance();
+		int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
+		int offsetSeconds = offsetMillis / 1000;
+		handshakeOptions.setTimeZone(offsetSeconds);
+		handshakeOptions.setReplySize(DEF_FETCHSIZE);
+		server.setHandshakeOptions(handshakeOptions);
+
 		// we're debugging here... uhm, should be off in real life
 		if (debug) {
 			try {
@@ -336,20 +345,27 @@ public class MonetConnection
 			lang = LANG_UNKNOWN;
 		}
 
+		if (!handshakeOptions.mustSendReplySize()) {
+			// Initially, it had to be sent. If it no more needs to be sent now,
+			// it must have been sent during the auth challenge/response.
+			// Record the value it was set to.
+			this.curReplySize = handshakeOptions.getReplySize();
+		}
+
 		// the following initialisers are only valid when the language is SQL...
 		if (lang == LANG_SQL) {
 			// enable auto commit
 			setAutoCommit(true);
 
-			// set our time zone on the server
-			final Calendar cal = Calendar.getInstance();
-			int offset = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
-			offset /= (60 * 1000); // milliseconds to minutes
-			String tz = offset < 0 ? "-" : "+";
-			tz += (Math.abs(offset) / 60 < 10 ? "0" : "") + (Math.abs(offset) / 60) + ":";
-			offset -= (offset / 60) * 60;
-			tz += (offset < 10 ? "0" : "") + offset;
-			sendIndependentCommand("SET TIME ZONE INTERVAL '" + tz + "' HOUR TO MINUTE");
+			// set our time zone on the server, if we haven't already
+			if (handshakeOptions.mustSendTimeZone()) {
+				int offsetMinutes = handshakeOptions.getTimeZone() / 60;
+				String tz = offsetMinutes < 0 ? "-" : "+";
+				tz += (Math.abs(offsetMinutes) / 60 < 10 ? "0" : "") + (Math.abs(offsetMinutes) / 60) + ":";
+				offsetMinutes -= (offsetMinutes / 60) * 60;
+				tz += (offsetMinutes < 10 ? "0" : "") + offsetMinutes;
+				sendIndependentCommand("SET TIME ZONE INTERVAL '" + tz + "' HOUR TO MINUTE");
+			}
 		}
 
 		// we're absolutely not closed, since we're brand new

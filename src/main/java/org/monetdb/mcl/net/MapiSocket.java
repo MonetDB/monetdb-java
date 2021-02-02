@@ -122,6 +122,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	/** A short in two bytes for holding the block size in bytes */
 	private final byte[] blklen = new byte[2];
 
+	/** Options that can be sent during the auth handshake if the server supports it */
+	private HandshakeOptions handshakeOptions;
+
 	/**
 	 * Constructs a new MapiSocket.
 	 */
@@ -533,11 +536,33 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				}
 
 				// compose and return response
-				return "BIG:"	// JVM byte-order is big-endian
-					+ username + ":"
-					+ pwhash + ":"
-					+ language + ":"
-					+ (database == null ? "" : database) + ":";
+				String response = "BIG:"    // JVM byte-order is big-endian
+						+ username + ":"
+						+ pwhash + ":"
+						+ language + ":"
+						+ (database == null ? "" : database) + ":";
+				if (chaltok.length > 6) {
+					// this ':' delimits the FILETRANS field, currently empty because we don't support it.
+					response += ":";
+
+					// if supported, send handshake options
+					for (String part : chaltok[6].split(",")) {
+						if (part.startsWith("sql=") && handshakeOptions != null) {
+							int level;
+							try {
+								level = Integer.parseInt(chaltok[6].substring(4));
+							} catch (NumberFormatException e) {
+								throw new MCLParseException("Invalid handshake level: " + chaltok[6]);
+							}
+							response += handshakeOptions.formatResponse(level);
+							break;
+						}
+					}
+					// this ':' delimits the handshake options field.
+					response += ":";
+
+				}
+				return response;
 			default:
 				throw new MCLException("Unsupported protocol version: " + version);
 		}
@@ -685,6 +710,14 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		log.write(type + System.currentTimeMillis() + ": " + message + "\n");
 		if (flush)
 			log.flush();
+	}
+
+	public void setHandshakeOptions(HandshakeOptions handshakeOptions) {
+		this.handshakeOptions = handshakeOptions;
+	}
+
+	public HandshakeOptions getHandshakeOptions() {
+		return handshakeOptions;
 	}
 
 	/**
