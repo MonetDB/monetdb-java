@@ -204,6 +204,17 @@ public class MonetConnection
 		if (hash != null)
 			conn_props.setProperty("hash", hash);
 
+		final String fetchsize_prop = props.getProperty("fetchsize");
+		if (fetchsize_prop != null) {
+			int fetchsize = Integer.parseInt(fetchsize_prop);
+			if (fetchsize > 0) {
+				this.defaultFetchSize = fetchsize;
+				conn_props.setProperty("fetchsize", fetchsize_prop);
+			} else {
+				addWarning("Fetch size must be positive. Value ignored", "M1M05");
+			}
+		}
+
 		final String treatBlobAsVarBinary_prop = props.getProperty("treat_blob_as_binary");
 		if (treatBlobAsVarBinary_prop != null) {
 			treatBlobAsVarBinary = Boolean.parseBoolean(treatBlobAsVarBinary_prop);
@@ -263,7 +274,7 @@ public class MonetConnection
 		int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
 		int offsetSeconds = offsetMillis / 1000;
 		handshakeOptions.setTimeZone(offsetSeconds);
-		handshakeOptions.setReplySize(DEF_FETCHSIZE);
+		handshakeOptions.setReplySize(defaultFetchSize);
 		server.setHandshakeOptions(handshakeOptions);
 
 		// we're debugging here... uhm, should be off in real life
@@ -2040,6 +2051,9 @@ public class MonetConnection
 
 	/** the default number of rows that are (attempted to) read at once */
 	private static final int DEF_FETCHSIZE = 250;
+
+	/** the default number of rows to read at once from this connection */
+	private int defaultFetchSize = DEF_FETCHSIZE;
 	/** The sequence counter */
 	private static int seqCounter = 0;
 
@@ -2927,7 +2941,7 @@ public class MonetConnection
 					 * then ignore this call.  If it is set to 0 we get a
 					 * prompt after the server sent it's header.
 					 */
-					int size = (cachesize == 0 ? DEF_FETCHSIZE : cachesize);
+					int size = (cachesize == 0 ? defaultFetchSize : cachesize);
 					if (maxrows > 0 && maxrows < size)
 						size = (int)maxrows;
 					// don't do work if it's not needed
