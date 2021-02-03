@@ -486,7 +486,7 @@ public final class SQLExporter extends Exporter {
 				if (val == null || rs.wasNull()) {
 					strbuf.append("NULL");
 				} else {
-					strbuf.append((types[i] == QUOTE) ? q(val) : val);
+					strbuf.append((types[i] == QUOTE) ? sq(val) : val);
 				}
 			}
 			strbuf.append(");");

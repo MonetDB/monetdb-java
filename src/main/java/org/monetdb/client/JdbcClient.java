@@ -707,7 +707,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 									if (tableType != null && tableType.startsWith("SYSTEM ")) {
 										String tableNm = tbl.getString(3);	// 3 = "TABLE_NAME"
 										if (tableNm.contains(" ") || tableNm.contains("\t"))
-											tableNm = dq(tableNm);
+											tableNm = Exporter.dq(tableNm);
 										out.println(tableType + "\t" +
 											tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
 											tableNm);
@@ -727,7 +727,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 										if (tableType != null && !tableType.startsWith("SYSTEM ")) {
 											String tableNm = tbl.getString(3);	// 3 = "TABLE_NAME"
 											if (tableNm.contains(" ") || tableNm.contains("\t"))
-												tableNm = dq(tableNm);
+												tableNm = Exporter.dq(tableNm);
 											out.println(tableType + "\t" +
 												tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
 												tableNm);
@@ -1162,10 +1162,6 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 			}
 		}
 	}
-
-	static final String dq(final String in) {
-		return "\"" + in.replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"";
-	}
 }
 
 /**
@@ -1294,7 +1290,7 @@ final class Table {
 	}
 
 	final String getFqnameQ() {
-		return JdbcClient.dq(schem) + "." + JdbcClient.dq(name);
+		return Exporter.dq(schem) + "." + Exporter.dq(name);
 	}
 
 	public final String toString() {

@@ -1729,22 +1729,6 @@ public class MonetConnection
 		return sb.toString();
 	}
 
-	/**
-	 * Utility method to escape all ocurrences of special characters
-	 * (double slashes and single quotes) in a string literal
-	 * It is called from: MonetDatabaseMetaData and MonetPreparedStatement
-	 */
-	final String escapeSpecialChars(final String in) {
-		String ret = in;
-		if (ret.contains("\\\\"))
-			// all double slashes in input need to be escaped.
-			ret = ret.replaceAll("\\\\", "\\\\\\\\");
-		if (ret.contains("'"))
-			// all single quotes in input need to be escaped.
-			ret = ret.replaceAll("'", "\\\\'");
-		return ret;
-	}
-
 
 	// Internal caches for 3 static mserver environment values, so they aren't queried from mserver again and again
 	private String env_current_user;

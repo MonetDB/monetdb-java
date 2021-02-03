@@ -23,7 +23,7 @@ import java.sql.SQLFeatureNotSupportedException;
  * represented by their proxy, to permit direct access to the resource delegates.
  *
  * @author Fabian Groffen, Martin van Dinther
- * @version 1.1
+ * @version 1.2
  */
 public class MonetWrapper implements java.sql.Wrapper {
 	/**
@@ -77,6 +77,7 @@ public class MonetWrapper implements java.sql.Wrapper {
 		throw new SQLException("Cannot unwrap to interface: " + (iface != null ? iface.getName() : ""), "0A000");
 	}
 
+
 	/**
 	 * Small helper method that formats the "Method ... not implemented" message
 	 * and creates a new SQLFeatureNotSupportedException object
@@ -87,5 +88,46 @@ public class MonetWrapper implements java.sql.Wrapper {
 	 */
 	static final SQLFeatureNotSupportedException newSQLFeatureNotSupportedException(final String name) {
 		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
+	}
+
+	/**
+	 * General utility function to add double quotes around an SQL Indentifier
+	 * such as column or table or schema name in SQL queries.
+	 * It also adds escapes for special characters: double quotes and the escape character
+	 *
+	 * FYI: it is made public as it is also called from util/Exporter.java
+	 *
+	 * @param in the string to quote
+	 * @return the double quoted string
+	 */
+	public static final String dq(final String in) {
+		String ret = in;
+		if (ret.contains("\\\\"))
+			// all double slashes in input need to be escaped.
+			ret = ret.replaceAll("\\\\", "\\\\\\\\");
+		if (ret.contains("\""))
+			// all double quotes in input need to be escaped.
+			ret = ret.replaceAll("\"", "\\\\\"");
+		return "\"" + ret + "\"";
+	}
+
+	/**
+	 * General utility function to add single quotes around string literals as used in SQL queries.
+	 * It also adds escapes for special characters: single quotes and the escape character
+	 *
+	 * FYI: it is made public as it is also called from util/Exporter.java
+	 *
+	 * @param in the string to quote
+	 * @return the single quoted string
+	 */
+	public static final String sq(final String in) {
+		String ret = in;
+		if (ret.contains("\\\\"))
+			// all double slashes in input need to be escaped.
+			ret = ret.replaceAll("\\\\", "\\\\\\\\");
+		if (ret.contains("'"))
+			// all single quotes in input need to be escaped.
+			ret = ret.replaceAll("'", "\\\\'");
+		return "'" + ret + "'";
 	}
 }

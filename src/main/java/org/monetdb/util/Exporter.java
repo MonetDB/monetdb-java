@@ -8,6 +8,8 @@
 
 package org.monetdb.util;
 
+import org.monetdb.jdbc.MonetWrapper;	// for dq() and sq()
+
 import java.io.PrintWriter;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -39,25 +41,30 @@ public abstract class Exporter {
 	}
 
 	/**
-	 * returns the given string between two double quotes for usage as
-	 * identifier such as column or table or schema name in SQL queries.
+	 * Convenience function to call the general utility function MonetWrapper.dq()
+	 * to add double quotes around an SQL Indentifier such as column or
+	 * table or schema name in SQL queries.
+	 * It also adds escapes for special characters: double quotes and the escape character
+	 *
+	 * FYI: it is made public as it is also called from client/JdbcClient.java
 	 *
 	 * @param in the string to quote
 	 * @return the quoted string
 	 */
-	protected static final String dq(final String in) {
-		return "\"" + in.replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"";
+	public static final String dq(final String in) {
+		return MonetWrapper.dq(in);
 	}
 
 	/**
-	 * returns the given string between two single quotes for usage as
-	 * string literal in SQL queries.
+	 * Convenience function to call the general utility function MonetWrapper.sq()
+	 * to add single quotes around string literals in SQL queries.
+	 * It also adds escapes for special characters: single quotes and the escape character
 	 *
 	 * @param in the string to quote
 	 * @return the quoted string
 	 */
-	protected static final String q(final String in) {
-		return "'" + in.replaceAll("\\\\", "\\\\\\\\").replaceAll("'", "\\\\'") + "'";
+	protected static final String sq(final String in) {
+		return MonetWrapper.sq(in);
 	}
 
 	/**
@@ -92,8 +99,8 @@ public abstract class Exporter {
 		String val = null;
 		try {
 			stmt = con.createStatement();
-			final String cmd = "SELECT query FROM sys.tables WHERE name = '" + name
-				+ "' and schema_id IN (SELECT id FROM sys.schemas WHERE name = '" + schema + "')";
+			final String cmd = "SELECT query FROM sys.tables WHERE name = " + sq(name)
+				+ " and schema_id IN (SELECT id FROM sys.schemas WHERE name = " + sq(schema) + ")";
 			rs = stmt.executeQuery(cmd);
 			if (rs != null) {
 				if (rs.next()) {

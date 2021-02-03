@@ -4099,25 +4099,13 @@ public class MonetDatabaseMetaData
 		if (in == null)
 			return "IS NULL";
 
-		String cmp = "= '";
+		String cmp = "= ";
 		// check if SQL wildcards are used in the input, if so use LIKE
 		if (in.contains("%") || in.contains("_"))
-			cmp = "LIKE '";
+			cmp = "LIKE ";
 
-		return cmp + con.escapeSpecialChars(in) + "'";
+		return cmp + MonetWrapper.sq(in);
 	}
-
-	/**
-	 * Returns the given string between two double quotes for usage as
-	 * exact column or table name in SQL queries.
-	 *
-	 * @param in the string to quote
-	 * @return the quoted string
-	 */
-//	@SuppressWarnings("unused")
-//	private static final String dq(String in) {
-//		return "\"" + in.replaceAll("\\\\", "\\\\\\\\").replaceAll("\"", "\\\\\"") + "\"";
-//	}
 
 	//== end helper methods
 }

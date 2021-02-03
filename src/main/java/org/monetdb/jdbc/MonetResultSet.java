@@ -1323,9 +1323,9 @@ public class MonetResultSet
 				"JOIN \"sys\".\"tables\" t ON c.\"table_id\" = t.\"id\" " +
 				"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" ");
 
-				query.append("WHERE s.\"name\" = '").append(conn.escapeSpecialChars(schemaName)).append("'");
-				query.append(" AND t.\"name\" = '").append(conn.escapeSpecialChars(tableName)).append("'");
-				query.append(" AND c.\"name\" = '").append(conn.escapeSpecialChars(columnName)).append("'");
+				query.append("WHERE s.\"name\" = ").append(MonetWrapper.sq(schemaName));
+				query.append(" AND t.\"name\" = ").append(MonetWrapper.sq(tableName));
+				query.append(" AND c.\"name\" = ").append(MonetWrapper.sq(columnName));
 				// query.append(" ORDER BY \"TABLE_SCHEM\", \"TABLE_NAME\"");
 
 				ResultSet rs = null;

@@ -2019,7 +2019,7 @@ public class MonetPreparedStatement
 					// representation is given, but we need to prefix it
 					// with the actual sqltype the server expects, or we
 					// will get an error back
-					setValue(paramnr, sqltype + " '" + connection.escapeSpecialChars(x) + "'");
+					setValue(paramnr, sqltype + " " + MonetWrapper.sq(x));
 				}
 
 				@Override
@@ -2293,7 +2293,7 @@ public class MonetPreparedStatement
 						break;
 				}
 				/* in specific cases prefix the string with: inet or json or url or uuid */
-				setValue(parameterIndex, castprefix + " '" + connection.escapeSpecialChars(x) + "'");
+				setValue(parameterIndex, castprefix + " " + MonetWrapper.sq(x));
 
 				break;
 			}
@@ -2579,7 +2579,7 @@ public class MonetPreparedStatement
 			return;
 		}
 
-		setValue(parameterIndex, "url '" + connection.escapeSpecialChars(x.toString()) + "'");
+		setValue(parameterIndex, "url " + MonetWrapper.sq(x.toString()));
 	}
 
 	/**
