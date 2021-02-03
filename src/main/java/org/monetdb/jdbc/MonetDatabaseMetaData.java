@@ -4089,8 +4089,13 @@ public class MonetDatabaseMetaData
 	}
 
 	/**
-	 * Returns a SQL match part string where depending on the input value we
-	 * compose an exact match (use =) or match with wildcards (use LIKE) or IS NULL
+	 * Returns a SQL match part string where depending on the input value we compose
+	 * - an exact string match (using = comparator) or
+	 * - a match with wildcards (using LIKE comparator) or
+	 * - when input is missing (using IS NULL comparator)
+	 *
+	 * Note that wildcard characters can be escaped by prefix \ (a backslash)
+	 * When ALL wildcard characters are escaped then we remove the \'s and compose an = comparator string match.
 	 *
 	 * @param in the string to match
 	 * @return the SQL match part string
@@ -4099,12 +4104,67 @@ public class MonetDatabaseMetaData
 		if (in == null)
 			return "IS NULL";
 
-		String cmp = "= ";
-		// check if SQL wildcards are used in the input, if so use LIKE
-		if (in.contains("%") || in.contains("_"))
-			cmp = "LIKE ";
+		// Scan input string for SQL wildcard characters: % and _
+		// When they are all prefixed by a backslash then the backslash is removed (to allow usage of = comparator)
+		// else it needs to be interpreted as a wildcard and we need to use LIKE instead of = comparator.
+		// A backslash can be escaped by using two backslashes.
+		final int len = in.length();
+		final StringBuilder sb = new StringBuilder(len);
+		boolean removed_bs = false;
+		boolean use_like = false;
+		boolean escaped = false;
+		try {
+			// parse all characters in input to find if the wildcards are escaped by a \.
+			// note: the escape character \ can also be escaped, so \\.
+			for (int i = 0; i < len; i++) {
+				char c = in.charAt(i);
+				switch(c) {
+				case '\\':
+					if (escaped) {
+						// copy the 2 backslash characters as in the original string
+	 					sb.append(c).append(c);
+	 					escaped = false;
+	 				} else {
+	 					escaped = true;
+	 				}
+	 				break;
+				case '%':
+				case '_':
+					if (escaped) {
+						removed_bs = true;
+	 					escaped = false;
+	 				} else {
+						use_like = true;
+						i = len; /* no need to scan further */
+					}
+	 				sb.append(c);
+	 				break;
+				default:
+	 				if (escaped) {
+	 					sb.append('\\');	// also copy the preceding escape found before this character
+	 					escaped = false;
+	 				}
+	 				sb.append(c);
+	 				break;
+	 			}
+			}
+		} catch (IndexOutOfBoundsException iob) {
+			/* ignore */
+		}
 
-		return cmp + MonetWrapper.sq(in);
+		if (use_like) {
+		// for debug: System.out.println("input: " + in + " changed into: " + "LIKE " + MonetWrapper.sq(in));
+			// we found a non-escaped wildcard character, use like and the original input
+			return "LIKE " + MonetWrapper.sq(in);
+		}
+		if (removed_bs) {
+		// for debug: System.out.println("input: " + in + " changed into: " + "= " + MonetWrapper.sq(sb.toString()));
+			// we found only escaped wildcard character(s),
+			// use the edited string without the ecapes before the wildcard character(s) so an equals match can be done (its is faster than LIKE)
+			return "= " + MonetWrapper.sq(sb.toString());
+		}
+		// for debug: System.out.println("input: " + in + " changed into: " + "= " + MonetWrapper.sq(in));
+		return "= " + MonetWrapper.sq(in);
 	}
 
 	//== end helper methods

@@ -677,22 +677,26 @@ final public class JDBC_API_Tester {
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
 			"null	sys	schemas	SYSTEM TABLE	null	null	null	null	null	null\n");
 
-			compareResultSet(dbmd.getColumns(null, "sys", "table_types", null), "getColumns(null, sys, table_types, null)",
+			compareResultSet(dbmd.getColumns(null, "sys", "table\\_types", null), "getColumns(null, sys, table\\_types, null)",
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
 			"null	sys	table_types	table_type_id	5	smallint	16	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
 			"null	sys	table_types	table_type_name	12	varchar	25	0	0	0	0	null	null	0	0	25	2	NO	null	null	null	null	NO	NO\n");
 
-			compareResultSet(dbmd.getPrimaryKeys(null, "sys", "table_types"), "getPrimaryKeys(null, sys, table_types)",
+			compareResultSet(dbmd.getPrimaryKeys(null, "sys", "table\\_types"), "getPrimaryKeys(null, sys, table\\_types)",
 			"Resultset with 6 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME\n" +
 			"null	sys	table_types	table_type_id	1	table_types_table_type_id_pkey\n");
 
-			compareResultSet(dbmd.getCrossReference(null, "sys", "tables", null, "sys", "table_types"), "getCrossReference(null, sys, tables, null, sys, table_types)",
+			compareResultSet(dbmd.getExportedKeys(null, "sys", "table\\_types"), "getExportedKeys(null, sys, table\\_types)",
 			"Resultset with 14 columns\n" +
 			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n");
 
-			compareResultSet(dbmd.getImportedKeys(null, "sys", "table_types"), "getImportedKeys(null, sys, table_types)",
+			compareResultSet(dbmd.getCrossReference(null, "sys", "tables", null, "sys", "table\\_types"), "getCrossReference(null, sys, tables, null, sys, table\\_types)",
+			"Resultset with 14 columns\n" +
+			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n");
+
+			compareResultSet(dbmd.getImportedKeys(null, "sys", "table\\_types"), "getImportedKeys(null, sys, table\\_types)",
 			"Resultset with 14 columns\n" +
 			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n");
 
@@ -702,12 +706,12 @@ final public class JDBC_API_Tester {
 			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	3	0	null\n" +
 			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	3	0	null\n");
 
-			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table_types"), "getTablePrivileges(null, sys, table_types)",
+			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table\\_types"), "getTablePrivileges(null, sys, table\\_types)",
 			"Resultset with 7 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
 			"null	sys	table_types	monetdb	public	SELECT	NO\n");
 
-			compareResultSet(dbmd.getColumnPrivileges(null, "sys", "table_types", null), "getColumnPrivileges(null, sys, table_types, null)",
+			compareResultSet(dbmd.getColumnPrivileges(null, "sys", "table\\_types", null), "getColumnPrivileges(null, sys, table\\_types, null)",
 			"Resultset with 8 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n");
 

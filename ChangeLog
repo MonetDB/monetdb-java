@@ -1,6 +1,16 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Feb  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Added support for escaped wildcards (\% en \_) in String arguments of
+  DatabaseMetaData methods which return a ResultSet, such as getTables(),
+  getColumns(), etc.  When you do not want the characters % or _ to be
+  interpreted as wildcards but as normal characters you can prefix them
+  with a backslash (so \% and \_). Note: be sure all wildcards characters
+  in the String argument are escaped else the search must still use a
+  LIKE operator instead of an = comparison operator.
+  This fixes: https://github.com/MonetDB/monetdb-java/issues/3
+
 * Thu Jan 28 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected the ordering of the output of DatabaseMetaData methods
   getImportedKeys(), getExportedKeys() and getCrossReference(). In cases
