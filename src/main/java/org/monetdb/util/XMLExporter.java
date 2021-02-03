@@ -219,6 +219,7 @@ public final class XMLExporter extends Exporter {
 					out.println("  </xsd:simpleType>");
 				break;
 				case Types.TIME:
+				case Types.TIME_WITH_TIMEZONE:
 					if ("timetz".equals(cols.getString(colTypeNmIndex))) {
 						ident = "TIME_WTZ";
 					} else {
@@ -235,6 +236,7 @@ public final class XMLExporter extends Exporter {
 					out.println("  </xsd:simpleType>");
 				break;
 				case Types.TIMESTAMP:
+				case Types.TIMESTAMP_WITH_TIMEZONE:
 					if ("timestamptz".equals(cols.getString(colTypeNmIndex))) {
 						ident = "TIMESTAMP_WTZ";
 					} else {
@@ -304,6 +306,7 @@ public final class XMLExporter extends Exporter {
 					ident = "DATE";
 				break;
 				case Types.TIME:
+				case Types.TIME_WITH_TIMEZONE:
 					if ("timetz".equals(cols.getString(colTypeNmIndex))) {
 						ident = "TIME_WTZ";
 					} else {
@@ -311,6 +314,7 @@ public final class XMLExporter extends Exporter {
 					}
 				break;
 				case Types.TIMESTAMP:
+				case Types.TIMESTAMP_WITH_TIMEZONE:
 					if ("timestamptz".equals(cols.getString(colTypeNmIndex))) {
 						ident = "TIMESTAMP_WTZ";
 					} else {
@@ -361,6 +365,7 @@ public final class XMLExporter extends Exporter {
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
 				switch (rsmd.getColumnType(i)) {
 					case Types.TIMESTAMP:
+					case Types.TIMESTAMP_WITH_TIMEZONE:
 						final Timestamp ts = rs.getTimestamp(i);
 						if ("timestamptz".equals(rsmd.getColumnTypeName(i))) {
 							if (xsd_tstz == null) {

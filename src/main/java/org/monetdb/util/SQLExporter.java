@@ -135,7 +135,9 @@ public final class SQLExporter extends Exporter {
 						sb.append('(').append(size).append(')');
 					break;
 				case Types.TIME:
+				case Types.TIME_WITH_TIMEZONE:
 				case Types.TIMESTAMP:
+				case Types.TIMESTAMP_WITH_TIMEZONE:
 					if (size > 1)
 						sb.append('(').append(size -1).append(')');
 					if (digits == 1)	// flag is set to include suffix: WITH TIME ZONE
@@ -444,7 +446,9 @@ public final class SQLExporter extends Exporter {
 				case Types.BLOB:
 				case Types.DATE:
 				case Types.TIME:
+				case Types.TIME_WITH_TIMEZONE:
 				case Types.TIMESTAMP:
+				case Types.TIMESTAMP_WITH_TIMEZONE:
 					types[i] = QUOTE;
 					break;
 				case Types.NUMERIC:
