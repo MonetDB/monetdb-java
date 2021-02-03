@@ -2236,7 +2236,7 @@ public class MonetPreparedStatement
 			case Types.NVARCHAR:
 			case Types.LONGNVARCHAR:
 			{
-				String castprefix = "";
+				String castprefix = null;
 				switch (paramMonetdbType) {
 					// some MonetDB specific data types require a cast prefix
 					case "inet":
@@ -2248,7 +2248,7 @@ public class MonetPreparedStatement
 						} catch (SQLException se) {
 							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + se.getMessage(), "22M29");
 						}
-						castprefix = "inet";
+						castprefix = "inet ";
 						break;
 					case "json":
 						// There is no support for JSON in standard java class libraries.
@@ -2269,7 +2269,7 @@ public class MonetPreparedStatement
 
 						// TODO check completely if x represents a valid json string
 
-						castprefix = "json";
+						castprefix = "json ";
 						break;
 					case "url":
 						try {
@@ -2279,7 +2279,7 @@ public class MonetPreparedStatement
 						} catch (java.net.MalformedURLException mue) {
 							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + mue.getMessage(), "22M30");
 						}
-						castprefix = "url";
+						castprefix = "url ";
 						break;
 					case "uuid":
 						try {
@@ -2289,12 +2289,15 @@ public class MonetPreparedStatement
 						} catch (IllegalArgumentException iae) {
 							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + iae.getMessage(), "22M31");
 						}
-						castprefix = "uuid";
+						castprefix = "uuid ";
 						break;
 				}
-				/* in specific cases prefix the string with: inet or json or url or uuid */
-				setValue(parameterIndex, castprefix + " " + MonetWrapper.sq(x));
-
+				if (castprefix != null) {
+					/* in specific cases prefix the string with: inet or json or url or uuid casting */
+					setValue(parameterIndex, castprefix + MonetWrapper.sq(x));
+				} else {
+					setValue(parameterIndex, MonetWrapper.sq(x));
+				}
 				break;
 			}
 			case Types.TINYINT:
