@@ -3746,7 +3746,8 @@ public class MonetDatabaseMetaData
 			"	('hash', 128, '', 'hash methods list to use in server connection. Supported are SHA512, SHA384, SHA256 and SHA1'),\n" +
 			"	('treat_blob_as_binary', 5, 'true', 'should blob columns be mapped to Types.VARBINARY instead of default Types.BLOB in ResultSets and PreparedStatements'),\n" +
 			"	('treat_clob_as_varchar', 5, 'true', 'should clob columns be mapped to Types.VARCHAR instead of default Types.CLOB in ResultSets and PreparedStatements'),\n" +
-			"	('so_timeout', 10, '0', 'timeout (in milliseconds) of communication socket. 0 means no timeout is set')\n" +
+			"	('so_timeout', 10, '0', 'timeout (in milliseconds) of communication socket. 0 means no timeout is set'),\n" +
+			"	('fetchsize', 11, '250', 'number of result rows to fetch per round trip')\n" +
 			") AS t(\"NAME\", \"MAX_LEN\", \"DEFAULT_VALUE\", \"DESCRIPTION\")\n" +
 			"ORDER BY \"NAME\"";
 
