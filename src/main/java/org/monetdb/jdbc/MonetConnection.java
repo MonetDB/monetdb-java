@@ -266,6 +266,11 @@ public class MonetConnection
 			addWarning("No language specified, defaulting to 'sql'", "M1M05");
 		}
 
+		// warn about unrecognized settings
+		for (Entry<Object,Object> e: props.entrySet()) {
+			checkValidProperty(e.getKey().toString(), "MonetConnection");
+		}
+
 		server = new MapiSocket();
 		if (hash != null)
 			server.setHash(hash);
@@ -1459,22 +1464,10 @@ public class MonetConnection
 				conn_props.remove(name);
 			return;
 		}
-		// only set value for supported property names
-		if (name.equals("host") ||
-		    name.equals("port") ||
-		    name.equals("user") ||
-		    name.equals("password") ||
-		    name.equals("database") ||
-		    name.equals("language") ||
-		    name.equals("so_timeout") ||
-		    name.equals("debug") ||
-		    name.equals("hash") ||
-		    name.equals("treat_blob_as_binary") ||
-		    name.equals("treat_clob_as_varchar"))
+		// only set value for supported property names, warn about the others
+		if (checkValidProperty(name, "setClientInfo"))
 		{
 			conn_props.setProperty(name, value);
-		} else {
-			addWarning("setClientInfo: " + name + "is not a recognised property", "01M07");
 		}
 	}
 
@@ -1510,6 +1503,30 @@ public class MonetConnection
 		}
 	}
 
+	private boolean checkValidProperty(String name, String context) {
+		boolean valid = checkValidProperty(name);
+		if (!valid) {
+			addWarning(java.lang.String.format("%s: '%s' is not a recognised property", context, name), "01M07");
+		}
+		return valid;
+	}
+
+	private boolean checkValidProperty(String name) {
+		return name.equals("host") ||
+				name.equals("port") ||
+				name.equals("user") ||
+				name.equals("password") ||
+				name.equals("database") ||
+				name.equals("language") ||
+				name.equals("so_timeout") ||
+				name.equals("debug") ||
+				name.equals("hash") ||
+				name.equals("treat_blob_as_binary") ||
+				name.equals("treat_clob_as_varchar") ||
+				name.equals("fetchsize") ||
+				name.equals("logfile")
+				;
+	}
 
 	//== Java 1.7 methods (JDBC 4.1)
 
