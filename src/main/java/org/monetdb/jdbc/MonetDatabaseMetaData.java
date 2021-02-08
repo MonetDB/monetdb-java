@@ -3734,19 +3734,22 @@ public class MonetDatabaseMetaData
 	public ResultSet getClientInfoProperties() throws SQLException {
 		// for a list of connection properties see also MonetConnection.java constructor MonetConnection(Properties props)
 		final String query =
-		"SELECT 'host' AS \"NAME\", cast(1024 as int) AS \"MAX_LEN\", 'localhost' AS \"DEFAULT_VALUE\", 'DSN or IP-address of machine running MonetDB' AS \"DESCRIPTION\" UNION ALL " +
-		"SELECT 'port', 5, '50000', 'communication port number of MonetDB server process' UNION ALL " +
-		"SELECT 'user', 1024, '', 'user name to login to MonetDB server' UNION ALL " +
-		"SELECT 'password', 128, '', 'password for user name to login to MonetDB server' UNION ALL " +
-		"SELECT 'language', 16, 'sql', 'language (sql or mal) used to parse commands in MonetDB server' UNION ALL " +
-		"SELECT 'database', 1024, 'demo', 'name of database. It matches the dbfarm subdirectory name' UNION ALL " +
-		"SELECT 'debug', 5, 'false', 'boolean flag true or false' UNION ALL " +
-		"SELECT 'logfile', 1024, 'monet_######.log', 'name of logfile used when debug is enabled' UNION ALL " +
-		"SELECT 'hash', 128, '', 'hash methods list to use in server connection. Supported are SHA512, SHA384, SHA256 and SHA1' UNION ALL " +
-		"SELECT 'treat_blob_as_binary', 5, 'true', 'should blob columns be mapped to Types.VARBINARY instead of default Types.BLOB in ResultSets and PreparedStatements' UNION ALL " +
-		"SELECT 'treat_clob_as_varchar', 5, 'true', 'should clob columns be mapped to Types.VARCHAR instead of default Types.CLOB in ResultSets and PreparedStatements' UNION ALL " +
-		"SELECT 'so_timeout', 10, '0', 'timeout (in milliseconds) of communication socket. 0 means no timeout is set' " +
-		"ORDER BY \"NAME\"";
+			"SELECT * FROM (VALUES\n" +
+			"	('host', cast(1024 as int), 'localhost', 'DSN or IP-address of machine running MonetDB'),\n" +
+			"	('port', 5, '50000', 'communication port number of MonetDB server process'),\n" +
+			"	('user', 1024, '', 'user name to login to MonetDB server'),\n" +
+			"	('password', 128, '', 'password for user name to login to MonetDB server'),\n" +
+			"	('language', 16, 'sql', 'language (sql or mal) used to parse commands in MonetDB server'),\n" +
+			"	('database', 1024, 'demo', 'name of database. It matches the dbfarm subdirectory name'),\n" +
+			"	('debug', 5, 'false', 'boolean flag true or false'),\n" +
+			"	('logfile', 1024, 'monet_######.log', 'name of logfile used when debug is enabled'),\n" +
+			"	('hash', 128, '', 'hash methods list to use in server connection. Supported are SHA512, SHA384, SHA256 and SHA1'),\n" +
+			"	('treat_blob_as_binary', 5, 'true', 'should blob columns be mapped to Types.VARBINARY instead of default Types.BLOB in ResultSets and PreparedStatements'),\n" +
+			"	('treat_clob_as_varchar', 5, 'true', 'should clob columns be mapped to Types.VARCHAR instead of default Types.CLOB in ResultSets and PreparedStatements'),\n" +
+			"	('so_timeout', 10, '0', 'timeout (in milliseconds) of communication socket. 0 means no timeout is set')\n" +
+			") AS t(\"NAME\", \"MAX_LEN\", \"DEFAULT_VALUE\", \"DESCRIPTION\")\n" +
+			"ORDER BY \"NAME\"";
+
 
 		return executeMetaDataQuery(query);
 	}
