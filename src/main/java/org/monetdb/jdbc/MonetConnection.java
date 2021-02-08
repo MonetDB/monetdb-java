@@ -206,12 +206,16 @@ public class MonetConnection
 
 		final String fetchsize_prop = props.getProperty("fetchsize");
 		if (fetchsize_prop != null) {
-			int fetchsize = Integer.parseInt(fetchsize_prop);
-			if (fetchsize > 0) {
-				this.defaultFetchSize = fetchsize;
-				conn_props.setProperty("fetchsize", fetchsize_prop);
-			} else {
-				addWarning("Fetch size must be positive. Value ignored", "M1M05");
+			try {
+				int fetchsize = Integer.parseInt(fetchsize_prop);
+				if (fetchsize > 0) {
+					this.defaultFetchSize = fetchsize;
+					conn_props.setProperty("fetchsize", fetchsize_prop);
+				} else {
+					addWarning("Fetch size must be positive. Value ignored", "M1M05");
+				}
+			} catch (java.lang.NumberFormatException e) {
+				addWarning("Invalid fetch size.  Value ignored", "M1M05");
 			}
 		}
 
