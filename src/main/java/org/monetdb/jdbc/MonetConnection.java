@@ -1504,14 +1504,14 @@ public class MonetConnection
 	}
 
 	private boolean checkValidProperty(String name, String context) {
-		boolean valid = checkValidProperty(name);
+		boolean valid = isValidProperty(name);
 		if (!valid) {
 			addWarning(java.lang.String.format("%s: '%s' is not a recognised property", context, name), "01M07");
 		}
 		return valid;
 	}
 
-	private boolean checkValidProperty(String name) {
+	private boolean isValidProperty(String name) {
 		return name.equals("host") ||
 				name.equals("port") ||
 				name.equals("user") ||
