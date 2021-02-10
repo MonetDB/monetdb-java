@@ -119,7 +119,7 @@ public class MonetConnection
 	private final WeakHashMap<Statement,?> statements = new WeakHashMap<Statement, Object>();
 
 	/** The number of results we receive from the server at once */
-	private int curReplySize = -1;	// the server by default uses -1 (all)
+	private int curReplySize = 100;	// server default
 
 	/** A template to apply to each query (like pre and post fixes), filled in constructor */
 	// note: it is made public to the package as queryTempl[2] is used from MonetStatement
