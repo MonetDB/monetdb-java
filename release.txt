@@ -25,7 +25,7 @@ Supported connection properties are:
 	treat_clob_as_varchar=false        default is: true
 	treat_blob_as_binary=false         default is: true
 	language=<sql or mal>              default is: sql
-  fetchsize=<nr of rows>             default is: 250
+  fetchsize=<nr of rows>             default is: 250; -1 means fetch everything at once
 	debug=true                         default is: false
 	logfile=<name of logfile>
 	hash=<SHA512, SHA384, SHA256 or SHA1>

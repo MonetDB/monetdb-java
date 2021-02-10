@@ -208,14 +208,14 @@ public class MonetConnection
 		if (fetchsize_prop != null) {
 			try {
 				int fetchsize = Integer.parseInt(fetchsize_prop);
-				if (fetchsize > 0) {
+				if (fetchsize > 0 || fetchsize == -1) {
 					this.defaultFetchSize = fetchsize;
 					conn_props.setProperty("fetchsize", fetchsize_prop);
 				} else {
-					addWarning("Fetch size must be positive. Value ignored", "M1M05");
+					addWarning("Fetch size must either be positive or -1. Value " + fetchsize + " ignored", "M1M05");
 				}
 			} catch (java.lang.NumberFormatException e) {
-				addWarning("Invalid fetch size.  Value ignored", "M1M05");
+				addWarning("Invalid fetch size.  Value '" + fetchsize_prop + "' ignored", "M1M05");
 			}
 		}
 
