@@ -1,19 +1,26 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2021 MonetDB B.V.
+ */
+
 package org.monetdb.mcl.net;
 
 /** Keep track of MAPI handshake options.
  *
- * Recent server versions allow you to send configuration information during
+ * Recent server versions (from 2021) allow you to send configuration information during
  * the authentication handshake so no additional round trips are necessary
  * when that has completed.
  *
  * This class keeps track of the options to send, and whether they have already
  * been sent.
  */
-public class HandshakeOptions {
+final public class HandshakeOptions {
 
 	// public Boolean autoCommit;
 	int replySize;
-	// public Integer replySize;
 	// public Integer ColumnarProtocol;
 	int timeZone;
 
