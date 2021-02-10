@@ -214,8 +214,8 @@ public class MonetConnection
 				} else {
 					addWarning("Fetch size must either be positive or -1. Value " + fetchsize + " ignored", "M1M05");
 				}
-			} catch (java.lang.NumberFormatException e) {
-				addWarning("Invalid fetch size.  Value '" + fetchsize_prop + "' ignored", "M1M05");
+			} catch (NumberFormatException e) {
+				addWarning("Unable to parse fetch size number from: " + fetchsize_prop, "M1M05");
 			}
 		}
 
@@ -278,10 +278,10 @@ public class MonetConnection
 			server.setDatabase(database);
 		server.setLanguage(language);
 
-		HandshakeOptions handshakeOptions = new HandshakeOptions();
 		final Calendar cal = Calendar.getInstance();
 		int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
 		int offsetSeconds = offsetMillis / 1000;
+		final HandshakeOptions handshakeOptions = new HandshakeOptions();
 		handshakeOptions.setTimeZone(offsetSeconds);
 		handshakeOptions.setReplySize(defaultFetchSize);
 		server.setHandshakeOptions(handshakeOptions);
@@ -379,12 +379,24 @@ public class MonetConnection
 
 			// set our time zone on the server, if we haven't already
 			if (handshakeOptions.mustSendTimeZone()) {
+				final StringBuilder tz = new StringBuilder(64);
+				tz.append("SET TIME ZONE INTERVAL '");
 				int offsetMinutes = handshakeOptions.getTimeZone() / 60;
-				String tz = offsetMinutes < 0 ? "-" : "+";
-				tz += (Math.abs(offsetMinutes) / 60 < 10 ? "0" : "") + (Math.abs(offsetMinutes) / 60) + ":";
-				offsetMinutes -= (offsetMinutes / 60) * 60;
-				tz += (offsetMinutes < 10 ? "0" : "") + offsetMinutes;
-				sendIndependentCommand("SET TIME ZONE INTERVAL '" + tz + "' HOUR TO MINUTE");
+				if (offsetMinutes < 0) {
+					tz.append('-');
+					offsetMinutes = -offsetMinutes; // make it positive
+				} else {
+					tz.append('+');
+				}
+				int offsetHours = offsetMinutes / 60;
+				if (offsetHours < 10)
+					tz.append('0');
+				tz.append(offsetHours).append(':');
+				offsetMinutes -= offsetHours * 60;
+				if (offsetMinutes < 10)
+					tz.append('0');
+				tz.append(offsetMinutes).append("' HOUR TO MINUTE");
+				sendIndependentCommand(tz.toString());
 			}
 		}
 
@@ -1465,8 +1477,7 @@ public class MonetConnection
 			return;
 		}
 		// only set value for supported property names, warn about the others
-		if (checkValidProperty(name, "setClientInfo"))
-		{
+		if (checkValidProperty(name, "setClientInfo")) {
 			conn_props.setProperty(name, value);
 		}
 	}
@@ -1501,31 +1512,6 @@ public class MonetConnection
 				setClientInfo(entry.getKey().toString(), entry.getValue().toString());
 			}
 		}
-	}
-
-	private boolean checkValidProperty(String name, String context) {
-		boolean valid = isValidProperty(name);
-		if (!valid) {
-			addWarning(java.lang.String.format("%s: '%s' is not a recognised property", context, name), "01M07");
-		}
-		return valid;
-	}
-
-	private boolean isValidProperty(String name) {
-		return name.equals("host") ||
-				name.equals("port") ||
-				name.equals("user") ||
-				name.equals("password") ||
-				name.equals("database") ||
-				name.equals("language") ||
-				name.equals("so_timeout") ||
-				name.equals("debug") ||
-				name.equals("hash") ||
-				name.equals("treat_blob_as_binary") ||
-				name.equals("treat_clob_as_varchar") ||
-				name.equals("fetchsize") ||
-				name.equals("logfile")
-				;
 	}
 
 	//== Java 1.7 methods (JDBC 4.1)
@@ -1748,6 +1734,31 @@ public class MonetConnection
 		if (lang == LANG_MAL)
 			sb.append("?language=mal");
 		return sb.toString();
+	}
+
+	private boolean checkValidProperty(String name, String context) {
+		if (isValidProperty(name))
+			return true;
+		addWarning(context + ": '" + name + "' is not a recognised property", "01M07");
+		return false;
+	}
+
+	// supported MonetDB connection properties.
+	// See also MonetDatabaseMetaData.getClientInfoProperties()
+	private boolean isValidProperty(String name) {
+		return  name.equals("host") ||
+			name.equals("port") ||
+			name.equals("user") ||
+			name.equals("password") ||
+			name.equals("language") ||
+			name.equals("database") ||
+			name.equals("debug") ||
+			name.equals("logfile") ||
+			name.equals("hash") ||
+			name.equals("treat_blob_as_binary") ||
+			name.equals("treat_clob_as_varchar") ||
+			name.equals("so_timeout") ||
+			name.equals("fetchsize");	// only supported by servers from version 11.41.1 onwards
 	}
 
 
