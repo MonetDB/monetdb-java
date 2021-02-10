@@ -3164,7 +3164,7 @@ final public class JDBC_API_Tester {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
-		closeStmtResSet(stmt, rs;
+		closeStmtResSet(stmt, rs);
 		closeStmtResSet(pstmt, null);
 
 		compareExpectedOutput("Bug_PrepStmtSetString_6382",
