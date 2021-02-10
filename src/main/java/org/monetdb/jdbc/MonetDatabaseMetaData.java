@@ -4125,31 +4125,31 @@ public class MonetDatabaseMetaData
 				case '\\':
 					if (escaped) {
 						// copy the 2 backslash characters as in the original string
-	 					sb.append(c).append(c);
-	 					escaped = false;
-	 				} else {
-	 					escaped = true;
-	 				}
-	 				break;
+						sb.append(c).append(c);
+						escaped = false;
+					} else {
+						escaped = true;
+					}
+					break;
 				case '%':
 				case '_':
 					if (escaped) {
 						removed_bs = true;
-	 					escaped = false;
-	 				} else {
+						escaped = false;
+					} else {
 						use_like = true;
 						i = len; /* no need to scan further */
 					}
-	 				sb.append(c);
-	 				break;
+					sb.append(c);
+					break;
 				default:
-	 				if (escaped) {
-	 					sb.append('\\');	// also copy the preceding escape found before this character
-	 					escaped = false;
-	 				}
-	 				sb.append(c);
-	 				break;
-	 			}
+					if (escaped) {
+						sb.append('\\');	// also copy the preceding escape found before this character
+						escaped = false;
+					}
+					sb.append(c);
+					break;
+				}
 			}
 		} catch (IndexOutOfBoundsException iob) {
 			/* ignore */
