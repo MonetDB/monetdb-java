@@ -2251,26 +2251,120 @@ public class MonetPreparedStatement
 						castprefix = "inet ";
 						break;
 					case "json":
-						// There is no support for JSON in standard java class libraries.
-						// Possibly we could use org.json.simple.JSONObject or other/faster libs
-						// javax.json.Json is not released yet (see https://json-processing-spec.java.net/)
-						// see also https://github.com/fabienrenaud/java-json-benchmark
-						// Note that it would make our JDBC driver dependent of an external jar
-						// and we don't want that.
+					{
+						// do a quick JSON string validity check to prevent failing exec #(..., ...) calls
+						// which destroy the prepared statement(s), see bug 6351 and 6832
+						String conversionIssue = null;
+						if (x.isEmpty()) {
+							conversionIssue = "It may not be empty";
+						} else {
+							// scan for first and last non-whitespace character
+							int start = 0;
+							int end = x.length() -1;
+							// find first non white space character
+							char firstc = x.charAt(start);
+							while ((firstc == ' ' || firstc == '\t' || firstc == '\n' || firstc == '\r')
+							    && (start < end)) {
+								start++;
+								firstc = x.charAt(start);
+							}
+							// find last non white space character
+							char lastc = x.charAt(end);
+							while ((lastc == ' ' || lastc == '\t' || lastc == '\n' || lastc == '\r')
+							    && (start < end)) {
+								end--;
+								lastc = x.charAt(end);
+							}
 
-						// do simplistic check if x represents a valid json string to prevent
-						// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
-						if (x.isEmpty() ||
-							(x.startsWith("{") && !x.endsWith("}")) ||
-							(x.startsWith("[") && !x.endsWith("]"))
-							// TODO check completely if x represents a valid json string
-						   )
-							throw new SQLDataException("Invalid json string. It does not start with { or [ and end with } or ]", "22M32");
-
-						// TODO check completely if x represents a valid json string
+							if (end - start <= 0) {
+								conversionIssue = "It may not be empty";
+							} else {
+								switch (firstc) {
+								case '{':	// start of an object
+									if (lastc != '}')
+										conversionIssue = "It does not end with }";
+									break;
+								case '[':	// start of an array
+									if (lastc != ']')
+										conversionIssue = "It does not end with ]";
+									break;
+								case '"':	// start of a string
+									if (lastc != '"')
+										conversionIssue = "It does not end with \"";
+									break;
+								case 'n':	// start of literal: null
+									if (lastc !=  'l' || (end - start != 3) || !"null".equals(x.trim()))
+										conversionIssue = "It does not match: null";
+									break;
+								case 'f':	// start of literal: false
+									if (lastc !=  'e' || (end - start != 4) || !"false".equals(x.trim()))
+										conversionIssue = "It does not match: false";
+									break;
+								case 't':	// start of literal: true
+									if (lastc !=  'e' || (end - start != 3) || !"true".equals(x.trim()))
+										conversionIssue = "It does not match: true";
+									break;
+								case '-':	// start of a number with a negative sign
+								case '+':	// start of a number with a positive sign
+								case '0':
+								case '1':
+								case '2':
+								case '3':
+								case '4':
+								case '5':
+								case '6':
+								case '7':
+								case '8':
+								case '9':
+									// start of a number in format: [ - | + ] int [ frac ] [ exp ]
+									// check if it continues with more digits
+									if (start < end)
+										start++;
+									firstc = x.charAt(start);
+									while (firstc >= '0' && firstc <= '9' && start < end) {
+										start++;
+										firstc = x.charAt(start);
+									}
+									// check if it continues with optional fractions
+									if (firstc == '.' && start < end) {
+										// yes, consume the digits of the fraction
+										start++;
+										firstc = x.charAt(start);
+										while (firstc >= '0' && firstc <= '9' && start < end) {
+											start++;
+											firstc = x.charAt(start);
+										}
+									}
+									// check if it continues with optional exponent
+									if ((firstc == 'E' || firstc == 'e') && start < end) {
+										// yes, consume the optional sign
+										start++;
+										firstc = x.charAt(start);
+										if ((firstc == '+' || firstc == '-') && start < end) {
+											start++;
+											firstc = x.charAt(start);
+										}
+										// yes, consume the digits of the exponnent
+										while ((firstc >= '0' && firstc <= '9') && start < end) {
+											start++;
+											firstc = x.charAt(start);
+										}
+									}
+									if (start != end)
+										conversionIssue = "It does not represent a valid number";
+									break;
+								default:
+									conversionIssue = "Invalid first character: " + firstc;
+									break;
+								}
+							}
+						}
+						if (conversionIssue != null)
+							throw new SQLDataException("Invalid json string. " + conversionIssue, "22M32");
 
 						castprefix = "json ";
 						break;
+					}
 					case "url":
 						try {
 							// also check if x represents a valid url string to prevent

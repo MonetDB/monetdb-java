@@ -78,6 +78,7 @@ final public class JDBC_API_Tester {
 		jt.Test_Sbatching();
 		jt.Test_Smoreresults();
 		jt.Test_Wrapper();
+		jt.Bug_PrepStmtSetString_6382();
 
 		jt.closeConx(jt.con);
 	}
@@ -3028,6 +3029,211 @@ final public class JDBC_API_Tester {
 			sb.append(se.getMessage());
 		}
 	}
+
+	private void Bug_PrepStmtSetString_6382() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		final String tableName = "PrepStmtSetString_6382";
+		try {
+			// >> true: auto commit should be on by default
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
+
+			stmt = con.createStatement();
+			sb.append("1. Creating table " + tableName);
+			if (stmt.executeUpdate("CREATE TABLE " + tableName + " (myint INT, myvarchar VARCHAR(15), myjson JSON, myuuid UUID, myurl URL, myinet INET)") != Statement.SUCCESS_NO_INFO)
+				sb.append("Wrong return status\n");
+
+			sb.append("\n2. Insert row 1, ");
+			stmt.executeUpdate("INSERT INTO " + tableName + " VALUES (1, 'row 1', '{}', uuid '34c8deb5-e608-406b-beda-6a951f73d455', 'https://www.monetdb.org/', '128.0.0.1')");
+			sb.append("2, ");
+			stmt.executeUpdate("INSERT INTO " + tableName + " VALUES (2, 'row 2', '[]', NULL, NULL, NULL)");
+			sb.append("3, ");
+			stmt.executeUpdate("INSERT INTO " + tableName + " VALUES (3, 'row 3', '\"abc\"', NULL, NULL, NULL)");
+			sb.append("4, ");
+			stmt.executeUpdate("INSERT INTO " + tableName + " VALUES (4, 'row 4', 'true', NULL, NULL, NULL)");
+			sb.append("5\n");
+			stmt.executeUpdate("INSERT INTO " + tableName + " VALUES (5, 'row 5', '-0.123', NULL, NULL, NULL)");
+
+			sb.append("Creating a prepared statement with 6 parameters and inserting rows using setInt(), setString(), setNull(), setNString(), setURL(), setObject().\n");
+			pstmt = con.prepareStatement("INSERT INTO " + tableName + " VALUES (?,?, ? ,?,? , ?)");
+			ParameterMetaData pmd = pstmt.getParameterMetaData();
+			int pcount = pmd.getParameterCount();
+			sb.append("Prepared Statement has " + pcount + " parameters:" + (pcount != 6 ? " ERROR: Expected 6 parameters!" : "")).append("\n");
+			for (int p = 1; p <= pcount; p++) {
+				sb.append(" Parameter " + p + " type is: " + pmd.getParameterTypeName(p) + ". JDBC SQL type: " + pmd.getParameterType(p)).append("\n");
+			}
+
+			int row = 6;
+			pstmt.setInt(1, row);
+			pstmt.setString(2, "row " + row);
+			pstmt.setString(3, "{\"menu\": {\n  \"id\": \"file\",\n  \"value\": \"File\",\n  \"popup\": {\n    \"menuitem\": [\n      {\"value\": \"New\", \"onclick\": \"CreateNewDoc()\"},\n      {\"value\": \"Open\", \"onclick\": \"OpenDoc()\"},\n      {\"value\": \"Close\", \"onclick\": \"CloseDoc()\"}\n    ]\n  }\n}}");
+			pstmt.setNull(4, 0);
+			pstmt.setNull(5, 0);
+			pstmt.setNull(6, 0);
+			sb.append("Inserting row " + row).append("\n");
+			int inserted = pstmt.executeUpdate();
+			sb.append("Inserted " + inserted + " row").append("\n");
+
+			row++;  // row 7
+			pstmt.setShort(1, (short)row);
+			pstmt.setNString(2, "row " + row);
+			pstmt.setNull(3, 0);
+			pstmt.setString(4, "4a148b7d-8d47-4e1e-a21e-09a71abf2215");
+			sb.append("Inserting row " + row).append("\n");
+			inserted = pstmt.executeUpdate();
+			sb.append("Inserted " + inserted + " row").append("\n");
+
+			row++;  // row 8
+			pstmt.setLong(1, (long)row);
+			pstmt.setString(2, "row " + row);
+			pstmt.setObject(3, "+3.1415E-06");
+			pstmt.setNull(4, 0);
+			try {
+				pstmt.setURL(5, new java.net.URL("https://www.cwi.nl/"));
+			} catch (java.net.MalformedURLException mfe) {
+				sb.append(mfe).append("\n");
+			}
+			sb.append("Inserting row " + row).append("\n");
+			inserted = pstmt.executeUpdate();
+			sb.append("Inserted " + inserted + " row").append("\n");
+
+			row++;  // row 9
+			pstmt.setBigDecimal(1, new java.math.BigDecimal(row));
+			pstmt.setNString(2, "row " + row);
+			pstmt.setNull(5, 0);
+			pstmt.setString(6, "127.255.255.255");
+			sb.append("Inserting row " + row).append("\n");
+			inserted = pstmt.executeUpdate();
+			sb.append("Inserted " + inserted + " row").append("\n");
+
+			/* also test generic setObject(int, String) */
+			row++;  // row 10
+			pstmt.setObject(1, Integer.valueOf(row));
+			pstmt.setObject(2, "row " + row);
+			pstmt.setObject(3, "[{\"menu\": {\n    \"header\": \"SVG Viewer\",\n    \"items\": [\n        {\"id\": \"Open\"},\n        {\"id\": \"OpenNew\", \"label\": \"Open New\"},\n        null,\n        {\"id\": \"ZoomIn\", \"label\": \"Zoom In\"},\n        {\"id\": \"ZoomOut\", \"label\": \"Zoom Out\"},\n        {\"id\": \"OriginalView\", \"label\": \"Original View\"},\n        null,\n        {\"id\": \"Quality\"},\n        {\"id\": \"Pause\"},\n        {\"id\": \"Mute\"},\n        null,\n        {\"id\": \"Help\"},\n        {\"id\": \"About\", \"label\": \"About Adobe CVG Viewer...\"}\n    ]\n}}]");
+			pstmt.setObject(4, "b39dc76e-4faf-4fd9-bc1e-17df48acf764");
+			pstmt.setObject(5, "https://en.wikipedia.org/wiki/IP_address");
+			pstmt.setObject(6, "223.255.255.255");
+			sb.append("Inserting row " + row).append("\n");
+			inserted = pstmt.executeUpdate();
+			sb.append("Inserted " + inserted + " row").append("\n");
+
+			row++;  // row 11
+			pstmt.setObject(1, new java.math.BigDecimal(row));
+			pstmt.setObject(2, "row " + row);
+			pstmt.setObject(3, "null");
+			pstmt.setObject(4, java.util.UUID.fromString("ff125769-b63c-4c3c-859f-5b84a9349e24"));
+			URL myURL = new URL();
+			try {
+				myURL.fromString("https://en.wikipedia.org/wiki/IP_address");
+				pstmt.setObject(5, myURL);
+			} catch (Exception mfe) {
+				sb.append(mfe).append("\n");
+			}
+			INET myINET = new INET();
+			myINET.fromString("223.234.245.255");
+			pstmt.setObject(6, myINET);
+			sb.append("Inserting row " + row).append("\n");
+			inserted = pstmt.executeUpdate();
+			sb.append("Inserted " + inserted + " row").append("\n");
+
+			sb.append("List contents of TABLE " + tableName + " after " + row + " rows inserted").append("\n");
+			rs = stmt.executeQuery("SELECT * FROM " + tableName + " ORDER BY 1");
+			ResultSetMetaData rsmd = rs.getMetaData();
+			int colcount = rsmd.getColumnCount();
+			sb.append("Query has " + colcount + " output columns." + (colcount != 6 ? " ERROR: Expected 6 columns!" : "")).append("\n");
+			row = 0;
+			while (rs.next()) {
+				sb.append("row " + ++row);
+				for (int c = 1; c <= colcount; c++) {
+					sb.append("\t" + rs.getString(c));
+				}
+				sb.append("\n");
+			}
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		try {
+			sb.append("Cleanup TABLE " + tableName).append("\n");
+			stmt.executeUpdate("DROP TABLE " + tableName);
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(stmt, rs;
+		closeStmtResSet(pstmt, null);
+
+		compareExpectedOutput("Bug_PrepStmtSetString_6382",
+				"0. true	true\n" +
+				"1. Creating table PrepStmtSetString_6382\n" +
+				"2. Insert row 1, 2, 3, 4, 5\n" +
+				"Creating a prepared statement with 6 parameters and inserting rows using setInt(), setString(), setNull(), setNString(), setURL(), setObject().\n" +
+				"Prepared Statement has 6 parameters:\n" +
+				" Parameter 1 type is: int. JDBC SQL type: 4\n" +
+				" Parameter 2 type is: varchar. JDBC SQL type: 12\n" +
+				" Parameter 3 type is: json. JDBC SQL type: 12\n" +
+				" Parameter 4 type is: uuid. JDBC SQL type: 12\n" +
+				" Parameter 5 type is: url. JDBC SQL type: 12\n" +
+				" Parameter 6 type is: inet. JDBC SQL type: 12\n" +
+				"Inserting row 6\n" +
+				"Inserted 1 row\n" +
+				"Inserting row 7\n" +
+				"Inserted 1 row\n" +
+				"Inserting row 8\n" +
+				"Inserted 1 row\n" +
+				"Inserting row 9\n" +
+				"Inserted 1 row\n" +
+				"Inserting row 10\n" +
+				"Inserted 1 row\n" +
+				"Inserting row 11\n" +
+				"Inserted 1 row\n" +
+				"List contents of TABLE PrepStmtSetString_6382 after 11 rows inserted\n" +
+				"Query has 6 output columns.\n" +
+				"row 1	1	row 1	{}	34c8deb5-e608-406b-beda-6a951f73d455	https://www.monetdb.org/	128.0.0.1\n" +
+				"row 2	2	row 2	[]	null	null	null\n" +
+				"row 3	3	row 3	\"abc\"	null	null	null\n" +
+				"row 4	4	row 4	true	null	null	null\n" +
+				"row 5	5	row 5	-0.123	null	null	null\n" +
+				"row 6	6	row 6	{\"menu\": {\n" +
+				"  \"id\": \"file\",\n" +
+				"  \"value\": \"File\",\n" +
+				"  \"popup\": {\n" +
+				"    \"menuitem\": [\n" +
+				"      {\"value\": \"New\", \"onclick\": \"CreateNewDoc()\"},\n" +
+				"      {\"value\": \"Open\", \"onclick\": \"OpenDoc()\"},\n" +
+				"      {\"value\": \"Close\", \"onclick\": \"CloseDoc()\"}\n" +
+				"    ]\n" +
+				"  }\n" +
+				"}}	null	null	null\n" +
+				"row 7	7	row 7	null	4a148b7d-8d47-4e1e-a21e-09a71abf2215	null	null\n" +
+				"row 8	8	row 8	+3.1415E-06	null	https://www.cwi.nl/	null\n" +
+				"row 9	9	row 9	+3.1415E-06	null	null	127.255.255.255\n" +
+				"row 10	10	row 10	[{\"menu\": {\n" +
+				"    \"header\": \"SVG Viewer\",\n" +
+				"    \"items\": [\n" +
+				"        {\"id\": \"Open\"},\n" +
+				"        {\"id\": \"OpenNew\", \"label\": \"Open New\"},\n" +
+				"        null,\n" +
+				"        {\"id\": \"ZoomIn\", \"label\": \"Zoom In\"},\n" +
+				"        {\"id\": \"ZoomOut\", \"label\": \"Zoom Out\"},\n" +
+				"        {\"id\": \"OriginalView\", \"label\": \"Original View\"},\n" +
+				"        null,\n" +
+				"        {\"id\": \"Quality\"},\n" +
+				"        {\"id\": \"Pause\"},\n" +
+				"        {\"id\": \"Mute\"},\n" +
+				"        null,\n" +
+				"        {\"id\": \"Help\"},\n" +
+				"        {\"id\": \"About\", \"label\": \"About Adobe CVG Viewer...\"}\n" +
+				"    ]\n" +
+				"}}]	b39dc76e-4faf-4fd9-bc1e-17df48acf764	https://en.wikipedia.org/wiki/IP_address	223.255.255.255\n" +
+				"row 11	11	row 11	null	ff125769-b63c-4c3c-859f-5b84a9349e24	https://en.wikipedia.org/wiki/IP_address	223.234.245.255\n" +
+				"Cleanup TABLE PrepStmtSetString_6382\n");
+	}
+
 
 	// some private utility methods for showing table content and params meta data
 	private void showTblContents(String tblnm) {
