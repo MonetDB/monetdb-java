@@ -1,6 +1,32 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Feb 17 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Compiled and released new jar files: monetdb-jdbc-3.0.jre8.jar,
+  monetdb-mcl-1.19.jre8.jar and jdbcclient.jre8.jar
+
+  monetdb-jdbc-3.0.jre8.jar is a new major release of the MonetDB JDBC driver.
+  The MonetDB JDBC Driver is now compliant with the Java™ Database
+  Connectivity (JDBC) 4.2 specification as defined in Java 8 and requires
+  Java 8 runtime (profile compact2) as minimum version.
+
+  Important: the MonetDB JDBC driver class name has also been changed in
+  this release to: org.monetdb.jdbc.MonetDriver.  The old driver class
+  (nl.cwi.monetdb.jdbc.MonetDriver) is also included in the jar file, but
+  only to ease the transition for existing deployments. It will be removed
+  in a future release of this JDBC driver. Please use the new driver
+  class name if this is used in your configuration files or Java code.
+
+  The JdbcClient program (jdbcclient.jre8.jar) has been extended with
+  functionality to validate the integrity of the system tables (\vsci) or
+  to validate the integrity of data in tables of a specific schema (\vsi xyz)
+  based on defined declarative constraints (pkey, fkey, not null, etc.).
+  This will be usefull to find and report inconsistencies in your database.
+  This functionality is a beta release. Please let us know if you
+  encounter any issues running it. See below for more information.
+
+  Besides a few bug fixes also performance has been improved in multiple areas.
+
 * Wed Feb  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Added support for escaped wildcards (\% en \_) in String arguments of
   DatabaseMetaData methods which return a ResultSet, such as getTables(),
@@ -75,9 +101,9 @@
   Use \vsi my_schema  to validate data in all tables of a specific schema.
   Use \vdbi  to validate integrity of data in all user schemas in
   the database. Note: this can take a while, depending on your number
-  of user schemas, tables and tables sizes.  Despite being tested on several
+  of user schemas, tables, columns and rows. Despite being tested on several
   internal dbs the functionality is still beta, so you can get false
-  errors reported. If you encounter these let us know asap.
+  errors reported. If you encounter any let us know asap.
 
 * Thu Oct  8 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved performance of ResultSetMetaData methods isAutoIncrement(),

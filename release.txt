@@ -1,6 +1,6 @@
 RELEASE NOTES
-MonetDB JDBC driver version 2.29 (Liberica/MCL-1.18)
-Release date: 2020-02-12
+MonetDB JDBC driver version 3.0 (Liberica/MCL-1.19)
+Release date: 2021-02-17
 
 The Java Database Connectivity (JDBC) API provides universal data access from
 the Java programming language.
@@ -36,7 +36,7 @@ for CLOB ResultSet columns. Generic JDBC applications such as SQuirreL SQL and D
 will than use rs.getString() instead of rs.getClob() to fetch any CLOB column data.
 Using rs.getString() avoids creating new objects and multiple copies of the clob
 string data resulting in (much) faster response and better user experience.
-This property is turned on by default as of release monetdb-jdbc-2.30.jre8.jar.
+This property is turned on by default as of release monetdb-jdbc-3.0.jre8.jar.
 You can turn it off if you prefer the old behavior.
 
 The treat_blob_as_binary property (when set to true) will let the method
@@ -45,7 +45,7 @@ for BLOB ResultSet columns. Generic JDBC applications such as SQuirreL SQL and D
 will than use rs.getBytes() instead of rs.getBlob() to fetch any BLOB column data.
 Using rs.getBytes() avoids creating new objects and multiple copies of the blob
 string data resulting in (much) faster response and better user experience.
-This property is turned on by default as of release monetdb-jdbc-2.30.jre8.jar.
+This property is turned on by default as of release monetdb-jdbc-3.0.jre8.jar.
 You can turn it off if you prefer the old behavior.
 
 We recommend to set following connection properties:
@@ -75,7 +75,7 @@ Please read this list if you intend to use this JDBC driver.
 
 If you feel some features are missing or have encountered an issue/bug,
 please let us know at our bugtracker:
-  https://www.monetdb.org/bugzilla/
+  https://github.com/MonetDB/monetdb-java/issues
 
 Currently implemented JDBC 4.2 interfaces include:
   * java.sql.Driver
@@ -173,6 +173,17 @@ Notes and Tips for Java Programmers using MonetDB JDBC driver:
   Especially ResultSets can occupy large amounts of memory on the server and
   client side.
 
+- By default the ResultSets created by methods in DatabaseMetaData
+  which return a ResultSet (such as dbmd.getColumns(...)) are
+  TYPE_SCROLL_INSENSITIVE, so they cache their ResultSet data to
+  allow absolute, relative and random access to data rows and fields.
+  To free heap memory and server resoucres, close those ResultSets
+  immediately when no longer needed.
+
+- By default the ResultSets created by stmt.executeQuery(...) or
+  stmt.execute(...) are TYPE_FORWARD_ONLY, to reduce the potentially large
+  amount of client memory needed to cache the whole ResultSet data.
+
 - When you need to execute many SQL queries sequentially reuse the Statement
   object instead of creating a new Statement for each single SQL query.
   Alternatively you can execute the SQL queries as one script (each SQL query
@@ -206,17 +217,6 @@ Notes and Tips for Java Programmers using MonetDB JDBC driver:
   See also the example Java JDBC program on:
   https://www.monetdb.org/Documentation/SQLreference/Programming/JDBC
 
-- By default the ResultSets created by methods in DatabaseMetaData
-  which return a ResultSet (such as dbmd.getColumns(...)) are
-  TYPE_SCROLL_INSENSITIVE, so they cache their ResultSet data to
-  allow absolute, relative and random access to data rows and fields.
-  To free heap memory and server resoucres, close those ResultSets
-  immediately when no longer needed.
-
-- By default the ResultSets created by stmt.executeQuery(...) or
-  stmt.execute(...) are TYPE_FORWARD_ONLY, to reduce the potentially large
-  amount of client memory needed to cache the whole ResultSet data.
-
 Warning:
  The current implementation of the MonetDB JDBC driver is *not*
  multi-thread safe. If your program uses multiple threads concurrently on
@@ -225,7 +225,7 @@ Warning:
  You will need to serialize the processing of the threads in your Java program.
  Alternatively you can use a separate JDBC Connection for each thread.
 
-Note: as of Febr 2020 (monetdb-jdbc-2.29.jre8.jar) we compile all
+Note: as of Febr 2021 (monetdb-jdbc-3.0.jre8.jar) we compile all
  the java sources to target: Java SE 8 (profile compact2), so
  you need a JRE/JDK JVM of version 8 or higher to use it.
 
