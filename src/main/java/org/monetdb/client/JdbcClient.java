@@ -698,8 +698,11 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 						ResultSet tbl = null;
 						try {
 							if (command.equals("\\dS")) {
-								// list available system tables and views in sys schema
-								tbl = dbmd.getTables(null, "sys", null, null);
+								String curSchema = con.getSchema();
+								if (!("sys".equals(curSchema) || "tmp".equals(curSchema) || "logging".equals(curSchema)))
+									curSchema = "sys";
+								// list available system tables and views in sys/tmp/logging schema
+								tbl = dbmd.getTables(null, curSchema, null, null);
 
 								// give us a list of all non-system tables and views (including temp ones)
 								while (tbl.next()) {
