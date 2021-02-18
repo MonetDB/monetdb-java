@@ -9,6 +9,7 @@
 import java.sql.*;
 
 import java.io.StringReader;
+import java.math.BigDecimal;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -23,21 +24,21 @@ import org.monetdb.jdbc.types.URL;
 /**
  * class to test JDBC Driver API methods and behavior of MonetDB server.
  *
- * It combines 30+ tests which were previous individual test programs
+ * It combines 40+ tests which were previous individual test programs
  * into one large test program, reusing the connection.
  * This speeds up testing considerably as the overhead of starting a JVM and
  * loading the java test program class and MonetDB JDBC driver is now reduced
- * to only one time instead of 30+ times.
+ * to only one time instead of 40+ times.
  * Also all output is no longer send to system out/err but collected in a StringBuilder.
  * The contents of it is compared with the expected output at the end of each test.
  * Only when it deviates the output is sent to system out, see compareExpectedOutput().
  *
  * @author Martin van Dinther
- * @version 0.1
+ * @version 0.2
  */
 final public class JDBC_API_Tester {
 	StringBuilder sb;	// buffer to collect the test output
-	final static int sbInitLen = 3416;
+	final static int sbInitLen = 3712;
 	Connection con;	// main connection shared by all tests
 
 	public static void main(String[] args) throws Exception {
@@ -58,6 +59,7 @@ final public class JDBC_API_Tester {
 		jt.Test_Ctransaction();
 		jt.Test_Dobjects();
 		jt.Test_FetchSize();
+	//	jt.Test_Int128();
 		jt.Test_PSgeneratedkeys();
 		jt.Test_PSgetObject();
 		jt.Test_PSlargebatchval();
@@ -78,7 +80,19 @@ final public class JDBC_API_Tester {
 		jt.Test_Sbatching();
 		jt.Test_Smoreresults();
 		jt.Test_Wrapper();
+		jt.BugConcurrent_clients_SF_1504657(con_URL);
+		jt.BugConcurrent_sequences(con_URL);
+		jt.Bug_Connect_as_voc_getMetaData_Failure_Bug_6388(con_URL);
+		jt.BugDatabaseMetaData_Bug_3356();
+		jt.BugDecimalRound_Bug_3561();
+		jt.BugExecuteUpdate_Bug_3350();
+		jt.Bug_IsValid_Timeout_Bug_6782(con_URL);
+		jt.Bug_LargeQueries_6571_6693(con_URL);
+		jt.Bug_PrepStmtSetObject_CLOB_6349();
 		jt.Bug_PrepStmtSetString_6382();
+		jt.Bug_PrepStmt_With_Errors_Jira292();
+		jt.BugResultSetMetaData_Bug_6183();
+		jt.BugSetQueryTimeout_Bug_3357();
 
 		jt.closeConx(jt.con);
 	}
@@ -2643,13 +2657,13 @@ final public class JDBC_API_Tester {
 			"3. d 2004-04-24 to tm: 00:00:00\n" +
 			"3. d 2004-04-24 to dt: 2004-04-24\n" +
 			"4. vc 2004-04-24 11:43:53.654321 to ts: 2004-04-24 11:43:53.654321\n" +
-			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"2004-04-24 11:43:53.654321\" at pos: 5\n" +
+			"4. vc 2004-04-24 11:43:53.654321 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"2004-04-24 11:43:53.654321\" at pos: 5\n" +
 			"4. vc 2004-04-24 11:43:53.654321 to dt: 2004-04-24\n" +
-			"rs.getTimestamp(colnm) failed with error: parsing failed, found: ':' in: \"11:43:53\" at pos: 3\n" +
+			"5. vc 11:43:53 to ts: rs.getTimestamp(colnm) failed with error: parsing failed, found: ':' in: \"11:43:53\" at pos: 3\n" +
 			"5. vc 11:43:53 to tm: 11:43:53\n" +
-			"rs.getDate(colnm) failed with error: parsing failed, found: ':' in: \"11:43:53\" at pos: 3\n" +
+			"5. vc 11:43:53 to dt: rs.getDate(colnm) failed with error: parsing failed, found: ':' in: \"11:43:53\" at pos: 3\n" +
 			"6. vc 2004-04-24 to ts: 2004-04-24 00:00:00.0\n" +
-			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"2004-04-24\" at pos: 5\n" +
+			"6. vc 2004-04-24 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"2004-04-24\" at pos: 5\n" +
 			"6. vc 2004-04-24 to dt: 2004-04-24\n" +
 			"11. ts 904-04-24 11:43:53.567000 to ts: 0904-04-24 11:43:53.567\n" +
 			"11. ts 904-04-24 11:43:53.567000 to tm: 11:43:53\n" +
@@ -2670,13 +2684,13 @@ final public class JDBC_API_Tester {
 			"16. d 4-04-24 to tm: 00:00:00\n" +
 			"16. d 4-04-24 to dt: 0004-04-24\n" +
 			"17. vc 904-04-24 11:43:53.567 to ts: 0904-04-24 11:43:53.567\n" +
-			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"904-04-24 11:43:53.567\" at pos: 4\n" +
+			"17. vc 904-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"904-04-24 11:43:53.567\" at pos: 4\n" +
 			"17. vc 904-04-24 11:43:53.567 to dt: 0904-04-24\n" +
 			"18. vc 74-04-24 11:43:53.567 to ts: 0074-04-24 11:43:53.567\n" +
-			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"74-04-24 11:43:53.567\" at pos: 3\n" +
+			"18. vc 74-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"74-04-24 11:43:53.567\" at pos: 3\n" +
 			"18. vc 74-04-24 11:43:53.567 to dt: 0074-04-24\n" +
 			"19. vc 4-04-24 11:43:53.567 to ts: 0004-04-24 11:43:53.567\n" +
-			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"4-04-24 11:43:53.567\" at pos: 2\n" +
+			"19. vc 4-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"4-04-24 11:43:53.567\" at pos: 2\n" +
 			"19. vc 4-04-24 11:43:53.567 to dt: 0004-04-24\n" +
 			"21. ts -4-04-24 11:43:53.567000 to ts: 0004-04-24 11:43:53.567\n" +
 			"21. ts -4-04-24 11:43:53.567000 to tm: 11:43:53\n" +
@@ -2691,10 +2705,10 @@ final public class JDBC_API_Tester {
 			"24. d -3004-04-24 to tm: 00:00:00\n" +
 			"24. d -3004-04-24 to dt: 3004-04-24\n" +
 			"25. vc -2004-04-24 11:43:53.654321 to ts: 2004-04-24 11:43:53.654321\n" +
-			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"-2004-04-24 11:43:53.654321\" at pos: 6\n" +
+			"25. vc -2004-04-24 11:43:53.654321 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"-2004-04-24 11:43:53.654321\" at pos: 6\n" +
 			"25. vc -2004-04-24 11:43:53.654321 to dt: 2004-04-24\n" +
 			"26. vc -3004-04-24 to ts: 3004-04-24 00:00:00.0\n" +
-			"rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"-3004-04-24\" at pos: 6\n" +
+			"26. vc -3004-04-24 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"-3004-04-24\" at pos: 6\n" +
 			"26. vc -3004-04-24 to dt: 3004-04-24\n" +
 			"0. true	true\n");
 	}
@@ -2710,7 +2724,7 @@ final public class JDBC_API_Tester {
 
 		// getTimestamp() may raise a conversion warning when the value is of type Time or a String which doesn't match format yyyy-mm-dd hh:mm:ss
 		try {
-			sb.append(data + "ts: " + rs.getTimestamp(colnm)).append("\n");
+			sb.append(data).append("ts: ").append(rs.getTimestamp(colnm)).append("\n");
 		} catch (SQLException e) {
 			sb.append("rs.getTimestamp(colnm) failed with error: ").append(e.getMessage()).append("\n");
 		}
@@ -2719,7 +2733,7 @@ final public class JDBC_API_Tester {
 
 		// getTime() may raise a conversion warning when the value is of type Date or a String which doesn't match format hh:mm:ss
 		try {
-			sb.append(data + "tm: " + rs.getTime(colnm)).append("\n");
+			sb.append(data).append("tm: ").append(rs.getTime(colnm)).append("\n");
 		} catch (SQLException e) {
 			sb.append("rs.getTime(colnm) failed with error: ").append(e.getMessage()).append("\n");
 		}
@@ -2728,7 +2742,7 @@ final public class JDBC_API_Tester {
 
 		// getDate() may raise a conversion warning when the value is of type Time or a String which doesn't match format yyyy-mm-dd
 		try {
-			sb.append(data + "dt: " + rs.getDate(colnm)).append("\n");
+			sb.append(data).append("dt: ").append(rs.getDate(colnm)).append("\n");
 		} catch (SQLException e) {
 			sb.append("rs.getDate(colnm) failed with error: ").append(e.getMessage()).append("\n");
 		}
@@ -3030,6 +3044,932 @@ final public class JDBC_API_Tester {
 		}
 	}
 
+	private void BugConcurrent_clients_SF_1504657(String arg0) {
+		sb.setLength(0);	// clear the output log buffer
+
+		Connection con1 = null, con2 = null, con3 = null;
+		Statement stmt1 = null, stmt2 = null, stmt3 = null;
+		ResultSet rs1 = null, rs2= null, rs3 = null;
+		try {
+			con1 = DriverManager.getConnection(arg0);
+			con2 = DriverManager.getConnection(arg0);
+			con3 = DriverManager.getConnection(arg0);
+			stmt1 = con1.createStatement();
+			stmt2 = con2.createStatement();
+			stmt3 = con3.createStatement();
+
+			// >> true: auto commit should be on by default
+			sb.append("0. true\t").append(con1.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con2.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con3.getAutoCommit()).append("\n");
+
+			// test the creation of a table with concurrent clients
+			sb.append("1.1. create table t1 using client 1...").append("\n");
+			stmt1.executeUpdate("CREATE TABLE t1 ( id int, name varchar(1024) )");
+			sb.append("passed :)").append("\n");
+
+			sb.append("1.2. check table existence in client 2...").append("\n");
+			rs2 = stmt2.executeQuery("SELECT name FROM tables where name LIKE 't1'");
+			while (rs2.next())
+				sb.append(rs2.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			sb.append("1.3. check table existence in client 3...").append("\n");
+			rs3 = stmt3.executeQuery("SELECT name FROM tables where name LIKE 't1'");
+			while (rs3.next())
+				sb.append(rs3.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			// test the insertion of values with concurrent clients
+			sb.append("2 insert into t1 using client 1...").append("\n");
+			stmt1.executeUpdate("INSERT INTO t1 values( 1, 'monetdb' )");
+			sb.append("passed :)").append("\n");
+			stmt1.executeUpdate("INSERT INTO t1 values( 2, 'monet' )");
+			sb.append("passed :)").append("\n");
+			stmt1.executeUpdate("INSERT INTO t1 values( 3, 'mon' )");
+			sb.append("passed :)").append("\n");
+
+			sb.append("2.1. check table status with client 1...").append("\n");
+			rs1 = stmt1.executeQuery("SELECT * FROM t1");
+			while (rs1.next())
+				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			sb.append("2.2. check table status with client 2...").append("\n");
+			rs2 = stmt2.executeQuery("SELECT * FROM t1");
+			while (rs2.next())
+				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			sb.append("2.3. check table status with client 3...").append("\n");
+			rs3 = stmt3.executeQuery("SELECT * FROM t1");
+			while (rs3.next())
+				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			// test the insertion of values with concurrent clients
+			sb.append("3 insert into t1 using client 2...").append("\n");
+			stmt2.executeUpdate("INSERT INTO t1 values( 4, 'monetdb' )");
+			sb.append("passed :)").append("\n");
+			stmt2.executeUpdate("INSERT INTO t1 values( 5, 'monet' )");
+			sb.append("passed :)").append("\n");
+			stmt2.executeUpdate("INSERT INTO t1 values( 6, 'mon' )");
+			sb.append("passed :)").append("\n");
+
+			sb.append("3.1. check table status with client 1...").append("\n");
+			rs1 = stmt1.executeQuery("SELECT * FROM t1");
+			while (rs1.next())
+				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			sb.append("3.2. check table status with client 2...").append("\n");
+			rs2 = stmt2.executeQuery("SELECT * FROM t1");
+			while (rs2.next())
+				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			sb.append("3.3. check table status with client 3...").append("\n");
+			rs3 = stmt3.executeQuery("SELECT * FROM t1");
+			while (rs3.next())
+				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			// test the insertion of values with concurrent clients
+			sb.append("4 insert into t1 using client 3...").append("\n");
+			stmt3.executeUpdate("INSERT INTO t1 values( 7, 'monetdb' )");
+			sb.append("passed :)").append("\n");
+			stmt3.executeUpdate("INSERT INTO t1 values( 8, 'monet' )");
+			sb.append("passed :)").append("\n");
+			stmt3.executeUpdate("INSERT INTO t1 values( 9, 'mon' )");
+			sb.append("passed :)").append("\n");
+
+			sb.append("4.1. check table status with client 1...").append("\n");
+			rs1 = stmt1.executeQuery("SELECT * FROM t1");
+			while (rs1.next())
+				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			sb.append("4.2. check table status with client 2...").append("\n");
+			rs2 = stmt2.executeQuery("SELECT * FROM t1");
+			while (rs2.next())
+				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			sb.append("4.3. check table status with client 3...").append("\n");
+			rs3 = stmt3.executeQuery("SELECT * FROM t1");
+			while (rs3.next())
+				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
+			sb.append("passed :)").append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		// cleanup
+		try {
+			sb.append("Cleanup TABLE t1").append("\n");
+			stmt3.executeUpdate("DROP TABLE t1");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(stmt3, rs3);
+		closeStmtResSet(stmt1, rs1);
+		closeStmtResSet(stmt2, rs2);
+
+		closeConx(con2);
+		closeConx(con1);
+		closeConx(con3);
+
+		compareExpectedOutput("BugConcurrent_clients_SF_1504657",
+				"0. true	true\n" +
+				"0. true	true\n" +
+				"0. true	true\n" +
+				"1.1. create table t1 using client 1...\n" +
+				"passed :)\n" +
+				"1.2. check table existence in client 2...\n" +
+				"t1\n" +
+				"passed :)\n" +
+				"1.3. check table existence in client 3...\n" +
+				"t1\n" +
+				"passed :)\n" +
+				"2 insert into t1 using client 1...\n" +
+				"passed :)\n" +
+				"passed :)\n" +
+				"passed :)\n" +
+				"2.1. check table status with client 1...\n" +
+				"1, monetdb\n" +
+				"2, monet\n" +
+				"3, mon\n" +
+				"passed :)\n" +
+				"2.2. check table status with client 2...\n" +
+				"1, monetdb\n" +
+				"2, monet\n" +
+				"3, mon\n" +
+				"passed :)\n" +
+				"2.3. check table status with client 3...\n" +
+				"1, monetdb\n" +
+				"2, monet\n" +
+				"3, mon\n" +
+				"passed :)\n" +
+				"3 insert into t1 using client 2...\n" +
+				"passed :)\n" +
+				"passed :)\n" +
+				"passed :)\n" +
+				"3.1. check table status with client 1...\n" +
+				"1, monetdb\n" +
+				"2, monet\n" +
+				"3, mon\n" +
+				"4, monetdb\n" +
+				"5, monet\n" +
+				"6, mon\n" +
+				"passed :)\n" +
+				"3.2. check table status with client 2...\n" +
+				"1, monetdb\n" +
+				"2, monet\n" +
+				"3, mon\n" +
+				"4, monetdb\n" +
+				"5, monet\n" +
+				"6, mon\n" +
+				"passed :)\n" +
+				"3.3. check table status with client 3...\n" +
+				"1, monetdb\n" +
+				"2, monet\n" +
+				"3, mon\n" +
+				"4, monetdb\n" +
+				"5, monet\n" +
+				"6, mon\n" +
+				"passed :)\n" +
+				"4 insert into t1 using client 3...\n" +
+				"passed :)\n" +
+				"passed :)\n" +
+				"passed :)\n" +
+				"4.1. check table status with client 1...\n" +
+				"1, monetdb\n" +
+				"2, monet\n" +
+				"3, mon\n" +
+				"4, monetdb\n" +
+				"5, monet\n" +
+				"6, mon\n" +
+				"7, monetdb\n" +
+				"8, monet\n" +
+				"9, mon\n" +
+				"passed :)\n" +
+				"4.2. check table status with client 2...\n" +
+				"1, monetdb\n" +
+				"2, monet\n" +
+				"3, mon\n" +
+				"4, monetdb\n" +
+				"5, monet\n" +
+				"6, mon\n" +
+				"7, monetdb\n" +
+				"8, monet\n" +
+				"9, mon\n" +
+				"passed :)\n" +
+				"4.3. check table status with client 3...\n" +
+				"1, monetdb\n" +
+				"2, monet\n" +
+				"3, mon\n" +
+				"4, monetdb\n" +
+				"5, monet\n" +
+				"6, mon\n" +
+				"7, monetdb\n" +
+				"8, monet\n" +
+				"9, mon\n" +
+				"passed :)\n" +
+				"Cleanup TABLE t1\n");
+	}
+
+	private void BugConcurrent_sequences(String arg0) {
+		sb.setLength(0);	// clear the output log buffer
+
+		Connection con1 = null, con2 = null;
+		Statement stmt1 = null, stmt2 = null;
+		ResultSet rs1 = null, rs2 = null;
+		try {
+			con1 = DriverManager.getConnection(arg0);
+			con2 = DriverManager.getConnection(arg0);
+			stmt1 = con1.createStatement();
+			stmt2 = con2.createStatement();
+
+			// >> true: auto commit should be on by default
+			sb.append("0. true\t").append(con1.getAutoCommit()).append("\n");
+			sb.append("0. true\t").append(con2.getAutoCommit()).append("\n");
+
+			// create a table
+			sb.append("1. create table t1 using client 1... ");
+			stmt1.executeUpdate("CREATE TABLE t1 ( id serial, who varchar(12) )");
+			sb.append("passed :)").append("\n");
+
+			// test the insertion of values with concurrent clients
+			sb.append("2. insert into t1 using client 1 and 2... ");
+			stmt1.executeUpdate("INSERT INTO t1(who) VALUES('client1')");
+			sb.append("client 1 passed :)").append("\n");
+			con2.setAutoCommit(false);
+			stmt2.executeUpdate("INSERT INTO t1(who) VALUES('client2')");
+			sb.append("transaction on client 2 :)").append("\n");
+			stmt1.executeUpdate("INSERT INTO t1(who) VALUES('client1')");
+			sb.append("client 1 passed :)").append("\n");
+			try {
+				con2.commit();
+				sb.append("transaction client 2 PASSED :(").append("\n");
+			} catch (SQLException e) {
+				sb.append("transaction client 2 failed :)").append("\n");
+			}
+			con2.setAutoCommit(true);
+			stmt2.executeUpdate("INSERT INTO t1(who) VALUES('client2')");
+			sb.append("passed :)").append("\n");
+
+			sb.append("2.1. check table status with client 1...").append("\n");
+			rs1 = stmt1.executeQuery("SELECT * FROM t1");
+			while (rs1.next())
+				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("who")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			sb.append("2.2. check table status with client 2...").append("\n");
+			rs2 = stmt2.executeQuery("SELECT * FROM t1");
+			while (rs2.next())
+				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("who")).append("\n");
+			sb.append("passed :)").append("\n");
+
+			// drop the table (not dropping the sequence) from client 1
+			sb.append("3.1. drop table t1 using client 1... ");
+			stmt1.executeUpdate("DROP TABLE t1");
+			sb.append("passed :)").append("\n");
+
+			sb.append("3.1. recreate t1 using client 1... ");
+			stmt1.executeUpdate("CREATE TABLE t1 ( id serial, who varchar(12) )");
+			sb.append("passed :)").append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		try {
+			// re-establish connection
+			sb.append("x. Reconnecting client 1 and 2... ");
+			con1.close();
+			con2.close();
+			con1 = DriverManager.getConnection(arg0);
+			con2 = DriverManager.getConnection(arg0);
+			stmt1 = con1.createStatement();
+			stmt2 = con2.createStatement();
+			sb.append("passed :)").append("\n");
+
+			// insert and print, should get 1,2
+			sb.append("4. insert into t1 using client 1 and 2...").append("\n");
+			stmt1.executeUpdate("INSERT INTO t1(who) VALUES('client1')");
+			sb.append("passed :)").append("\n");
+			con2.setAutoCommit(false);
+			stmt2.executeUpdate("INSERT INTO t1(who) VALUES('client2')");
+			con2.commit();
+			con2.setAutoCommit(true);
+			sb.append("passed :)").append("\n");
+
+			sb.append("4.1. check table status with client 1...").append("\n");
+			rs1 = stmt1.executeQuery("SELECT * FROM t1 ORDER BY who");
+			for (int cntr = 1; rs1.next(); cntr++) {
+				int id = rs1.getInt("id");
+				sb.append(id).append(", ").append(rs1.getString("who")).append("\n");
+				if (id != cntr)
+					sb.append("!! expected ").append(cntr).append(", got ").append(id);
+			}
+			sb.append("passed :)").append("\n");
+
+			sb.append("4.2. check table status with client 2...").append("\n");
+			rs2 = stmt2.executeQuery("SELECT * FROM t1 ORDER BY who");
+			for (int cntr = 1; rs2.next(); cntr++) {
+				int id = rs2.getInt("id");
+				sb.append(id).append(", ").append(rs2.getString("who")).append("\n");
+				if (id != cntr)
+					sb.append("!! expected ").append(cntr).append(", got ").append(id);
+			}
+			sb.append("passed :)").append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		// cleanup
+		try {
+			sb.append("Cleanup TABLE t1").append("\n");
+			stmt2.executeUpdate("DROP TABLE t1");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(stmt1, rs1);
+		closeStmtResSet(stmt2, rs2);
+
+		closeConx(con2);
+		closeConx(con1);
+
+		compareExpectedOutput("BugConcurrent_sequences",
+				"0. true	true\n" +
+				"0. true	true\n" +
+				"1. create table t1 using client 1... passed :)\n" +
+				"2. insert into t1 using client 1 and 2... client 1 passed :)\n" +
+				"transaction on client 2 :)\n" +
+				"client 1 passed :)\n" +
+				"transaction client 2 failed :)\n" +
+				"passed :)\n" +
+				"2.1. check table status with client 1...\n" +
+				"1, client1\n" +
+				"3, client1\n" +
+				"4, client2\n" +
+				"passed :)\n" +
+				"2.2. check table status with client 2...\n" +
+				"1, client1\n" +
+				"3, client1\n" +
+				"4, client2\n" +
+				"passed :)\n" +
+				"3.1. drop table t1 using client 1... passed :)\n" +
+				"3.1. recreate t1 using client 1... passed :)\n" +
+				"x. Reconnecting client 1 and 2... passed :)\n" +
+				"4. insert into t1 using client 1 and 2...\n" +
+				"passed :)\n" +
+				"passed :)\n" +
+				"4.1. check table status with client 1...\n" +
+				"1, client1\n" +
+				"2, client2\n" +
+				"passed :)\n" +
+				"4.2. check table status with client 2...\n" +
+				"1, client1\n" +
+				"2, client2\n" +
+				"passed :)\n" +
+				"Cleanup TABLE t1\n");
+	}
+
+	private void Bug_Connect_as_voc_getMetaData_Failure_Bug_6388(String arg0) {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt1 = null;
+		// create user, schema and alter schema default schema
+		try {
+			sb.append("1. CREATE USER voc").append("\n");
+			stmt1 = con.createStatement();
+			stmt1.executeUpdate("CREATE USER \"voc\" WITH PASSWORD 'voc' NAME 'VOC Explorer' SCHEMA \"sys\"");
+			sb.append("2. CREATE SCHEMA voc").append("\n");
+			stmt1.executeUpdate("CREATE SCHEMA \"voc\" AUTHORIZATION \"voc\"");
+			sb.append("3. ALTER USER voc").append("\n");
+			stmt1.executeUpdate("ALTER USER \"voc\" SET SCHEMA \"voc\"");
+			sb.append("creation succeeded :)").append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED creating user and schema voc. ").append(e.getMessage()).append("\n");
+		}
+
+		Connection con2 = null;
+		ResultSet rs2 = null;
+		try {
+			sb.append("4.1. connect as user: voc").append("\n");
+			con2 = DriverManager.getConnection(arg0.replace("=monetdb", "=voc"));
+			sb.append("connected :)").append("\n");
+
+			DatabaseMetaData dbmd = con2.getMetaData();
+
+			sb.append("4.2. getUserName()").append("\n");
+			sb.append("UserName = ").append(dbmd.getUserName()).append("\n");
+
+			sb.append("4.3. getMaxConnections()").append("\n");
+			sb.append("MaxConnections = ").append(dbmd.getMaxConnections()).append("\n");
+
+			sb.append("4.4. getDatabaseProductVersion()").append("\n");
+			String dbmsVersion = dbmd.getDatabaseProductVersion();	// should be 11.35.1 or higher
+			boolean postNov2019 = ("11.35.1".compareTo(dbmsVersion) <= 0);
+			sb.append("DatabaseProductVersion = ").append((postNov2019 ? "11.35.+" : dbmsVersion)).append("\n");
+
+			sb.append("4.5. getDatabaseMajorVersion()").append("\n");
+			sb.append("DatabaseMajorVersion = ").append(dbmd.getDatabaseMajorVersion()).append("\n");	// should be 11
+
+			sb.append("4.6. getDatabaseMinorVersion()").append("\n");
+			int dbmsMinorVersion = dbmd.getDatabaseMinorVersion();	// should be 35 or higher
+			sb.append("DatabaseMinorVersion = ").append((dbmsMinorVersion >= 35 ? "35+" : dbmsMinorVersion)).append("\n");
+
+			sb.append("4.7. getTables(null, 'tmp', null, null)").append("\n");
+			rs2 = dbmd.getTables(null, "tmp", null, null);
+			if (rs2 != null) {
+				sb.append("List Tables in schema tmp:").append("\n");
+				while (rs2.next()) {
+					sb.append(rs2.getString(3)).append("\n");
+				}
+				rs2.close();
+			}
+			sb.append("completed listing Tables in schema tmp").append("\n");
+
+			sb.append("4.8. getTableTypes()").append("\n");
+			rs2 = dbmd.getTableTypes();
+			if (rs2 != null) {
+				sb.append("List TableTypes:").append("\n");
+				while (rs2.next()) {
+					// post Oct2020 releases the STREAM TABLE type is removed, so filter it out for a stable output
+					if (!"STREAM TABLE".equals(rs2.getString(1)))
+						sb.append(rs2.getString(1)).append("\n");
+				}
+				rs2.close();
+			}
+			sb.append("completed listing TableTypes").append("\n");
+
+			sb.append("voc meta data Test completed successfully").append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED fetching MonetDatabaseMetaData. ").append(e.getMessage()).append("\n");
+		} finally {
+			try {
+				con2.close();
+			} catch (SQLException e) {
+				sb.append("FAILED to close voc connection. ").append(e.getMessage()).append("\n");
+			}
+		}
+
+		// cleanup: drop user, schema and alter schema default schema in reverse order
+		try {
+			sb.append("Cleanup created objects").append("\n");
+			sb.append("5. ALTER USER voc").append("\n");
+			stmt1.executeUpdate("ALTER USER \"voc\" SET SCHEMA \"sys\"");
+			sb.append("6. DROP SCHEMA voc").append("\n");
+			stmt1.executeUpdate("DROP SCHEMA \"voc\"");
+			sb.append("7. DROP USER voc").append("\n");
+			stmt1.executeUpdate("DROP USER \"voc\"");
+			sb.append("cleanup succeeded :)").append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED dropping user and schema voc. ").append(e.getMessage()).append("\n");
+		}
+
+		closeConx(con2);
+		closeStmtResSet(stmt1, null);
+
+		compareExpectedOutput("Bug_Connect_as_voc_getMetaData_Failure_Bug_6388",
+				"1. CREATE USER voc\n" +
+				"2. CREATE SCHEMA voc\n" +
+				"3. ALTER USER voc\n" +
+				"creation succeeded :)\n" +
+				"4.1. connect as user: voc\n" +
+				"connected :)\n" +
+				"4.2. getUserName()\n" +
+				"UserName = voc\n" +
+				"4.3. getMaxConnections()\n" +
+				"MaxConnections = 64\n" +
+				"4.4. getDatabaseProductVersion()\n" +
+				"DatabaseProductVersion = 11.35.+\n" +
+				"4.5. getDatabaseMajorVersion()\n" +
+				"DatabaseMajorVersion = 11\n" +
+				"4.6. getDatabaseMinorVersion()\n" +
+				"DatabaseMinorVersion = 35+\n" +
+				"4.7. getTables(null, 'tmp', null, null)\n" +
+				"List Tables in schema tmp:\n" +
+				"_columns\n" +
+				"_tables\n" +
+				"idxs\n" +
+				"keys\n" +
+				"objects\n" +
+				"triggers\n" +
+				"completed listing Tables in schema tmp\n" +
+				"4.8. getTableTypes()\n" +
+				"List TableTypes:\n" +
+				"GLOBAL TEMPORARY TABLE\n" +
+				"LOCAL TEMPORARY TABLE\n" +
+				"MERGE TABLE\n" +
+				"REMOTE TABLE\n" +
+				"REPLICA TABLE\n" +
+				"SYSTEM TABLE\n" +
+				"SYSTEM VIEW\n" +
+				"TABLE\n" +
+				"VIEW\n" +
+				"completed listing TableTypes\n" +
+				"voc meta data Test completed successfully\n" +
+				"Cleanup created objects\n" +
+				"5. ALTER USER voc\n" +
+				"6. DROP SCHEMA voc\n" +
+				"7. DROP USER voc\n" +
+				"cleanup succeeded :)\n");
+	}
+
+	private void BugDatabaseMetaData_Bug_3356() {
+		sb.setLength(0);	// clear the output log buffer
+
+		ResultSet rs = null;
+		try {
+			DatabaseMetaData dbmd = con.getMetaData();
+			rs = dbmd.getColumns("", "sys", "_tables", "id");
+			rs.next();
+			String tableName1 = rs.getString("TABLE_NAME");
+			String tableName2 = rs.getString(3);
+			String isNullable1 = rs.getString("IS_NULLABLE");
+			String isNullable2 = rs.getString(18);
+			sb.append(tableName1).append("\n");
+			sb.append(tableName2).append("\n");
+			sb.append(isNullable1).append("\n");
+			sb.append(isNullable2).append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(null, rs);
+
+		compareExpectedOutput("BugDatabaseMetaData_Bug_3356",
+				"_tables\n" +
+				"_tables\n" +
+				"YES\n" +
+				"YES\n");
+	}
+
+	private void BugDecimalRound_Bug_3561() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt1 = null;
+		PreparedStatement pst = null;
+		Statement stmt2 = null;
+		ResultSet rs = null;
+		try {
+			stmt1 = con.createStatement();
+			stmt1.executeUpdate("CREATE TABLE bug3561 (d decimal(14,4))");
+
+			pst = con.prepareStatement("INSERT INTO bug3561 VALUES (?)");
+			pst.setBigDecimal(1, new BigDecimal("112.125"));
+			pst.executeUpdate();
+			pst.setBigDecimal(1, new BigDecimal("212.12345"));
+			pst.executeUpdate();
+			pst.setBigDecimal(1, new BigDecimal("0.012345"));
+			pst.executeUpdate();
+			pst.close();
+
+			stmt2 = con.createStatement();
+			rs = stmt2.executeQuery("SELECT d FROM bug3561");
+			while (rs.next())
+				sb.append(rs.getString(1)).append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt2, rs);
+		closeStmtResSet(pst, null);
+
+		// cleanup
+		try {
+			stmt1.executeUpdate("DROP TABLE bug3561");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt1, null);
+
+		compareExpectedOutput("BugDecimalRound_Bug_3561",
+				"112.1250\n" +
+				"212.1235\n" +
+				"0.0123\n");
+	}
+
+	private void BugExecuteUpdate_Bug_3350() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		try {
+			con.setAutoCommit(false);	// disable auto commit, so we can roll back the transaction
+			stmt = con.createStatement();
+			stmt.execute("CREATE TABLE t3350 (keyword VARCHAR(30) PRIMARY KEY)");
+			con.commit();
+
+			executeDML(stmt, "INSERT INTO t3350 VALUES ('Bug_3350')"); // should insert 1 row
+			executeDML(stmt, "INSERT INTO t3350 VALUES ('Bug_3350')"); // this will result in an SQLException due to PK uniqueness violation
+			con.rollback();
+
+			executeDML(stmt, "INSERT INTO t3350 VALUES ('Bug_3350')"); // should insert 1 row
+			executeDML(stmt, "INSERT INTO t3350 VALUES ('1'), ('x'), ('3'), ('y')"); // should insert 4 rows
+			executeDML(stmt, "DELETE FROM t3350 WHERE \"keyword\" = 'Bug_3350'"); // should delete 1 row
+			executeDML(stmt, "DELETE FROM t3350 WHERE \"keyword\" = 'Bug_3350'"); // should delete 0 rows
+			executeDML(stmt, "UPDATE t3350 set \"keyword\" = keyword||'_ext'"); // should update 4 rows
+			executeDML(stmt, "DELETE FROM t3350"); // should delete 4 rows
+			con.commit();
+
+			stmt.execute("DROP TABLE t3350");
+			con.commit();
+		} catch (SQLException se) {
+			sb.append(se.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, null);
+
+		// cleanup
+		try {
+			con.setAutoCommit(true);	// enable auto commit
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		compareExpectedOutput("BugExecuteUpdate_Bug_3350",
+				"executeUpdate(INSERT ...) returned: 1\n" +
+				"getUpdateCount() returned: 1\n" +
+				"INSERT INTO: PRIMARY KEY constraint 't3350.t3350_keyword_pkey' violated\n" +
+				"getUpdateCount() returned: 1\n" +
+				"executeUpdate(INSERT ...) returned: 1\n" +
+				"getUpdateCount() returned: 1\n" +
+				"executeUpdate(INSERT ...) returned: 4\n" +
+				"getUpdateCount() returned: 4\n" +
+				"executeUpdate(DELETE ...) returned: 1\n" +
+				"getUpdateCount() returned: 1\n" +
+				"executeUpdate(DELETE ...) returned: 0\n" +
+				"getUpdateCount() returned: 0\n" +
+				"executeUpdate(UPDATE ...) returned: 4\n" +
+				"getUpdateCount() returned: 4\n" +
+				"executeUpdate(DELETE ...) returned: 4\n" +
+				"getUpdateCount() returned: 4\n");
+	}
+
+	private void executeDML(Statement st, String sql) {
+		try {
+			int upd_count = st.executeUpdate(sql);
+			sb.append("executeUpdate(").append(sql.substring(0, 6)).append(" ...) returned: ").append(upd_count).append("\n");
+		} catch (SQLException se) {
+			sb.append(se.getMessage()).append("\n");
+		}
+
+		try {
+			sb.append("getUpdateCount() returned: ").append(st.getUpdateCount()).append("\n");
+		} catch (SQLException se) {
+			sb.append(se.getMessage()).append("\n");
+		}
+	}
+
+	private void Bug_IsValid_Timeout_Bug_6782(String arg0) {
+		sb.setLength(0);	// clear the output log buffer
+
+		Connection con2 = null;
+		Statement st = null;
+		try {
+			con2 = DriverManager.getConnection(arg0);
+			sb.append("connected :)").append("\n");
+
+			st = con2.createStatement();
+			st.setQueryTimeout(5);
+			sb.append("getQueryTimeout must give 5: ").append(st.getQueryTimeout()).append("\n");
+			st.close();
+
+			con.isValid(6);
+
+			st = con.createStatement();
+			sb.append("getQueryTimeout must give 0: ").append(st.getQueryTimeout()).append("\n");
+
+			con.isValid(4);
+			sb.append("getQueryTimeout must give 0: ").append(st.getQueryTimeout()).append("\n");
+			st.close();
+
+			st.setQueryTimeout(5);
+			con.isValid(3);
+			sb.append("getQueryTimeout must give 5: ").append(st.getQueryTimeout()).append("\n");
+			st.close();
+		} catch (SQLException se) {
+			sb.append(se.getMessage()).append("\n");
+		}
+		closeStmtResSet(st, null);
+		closeConx(con2);
+
+		compareExpectedOutput("Bug_IsValid_Timeout_Bug_6782",
+				"connected :)\n" +
+				"getQueryTimeout must give 5: 5\n" +
+				"getQueryTimeout must give 0: 0\n" +
+				"getQueryTimeout must give 0: 0\n" +
+				"getQueryTimeout must give 5: 5\n");
+	}
+
+	private void Bug_LargeQueries_6571_6693(String arg0) {
+		sb.setLength(0);	// clear the output log buffer
+
+		// construct a largedata string value. It must larger than the block size of MapiSocket
+		final int num = 9216;
+		final String repeatValue = "$-)";
+		final StringBuilder ldsb = new StringBuilder(num * repeatValue.length());
+		for (int i = 0; i < num; i++)
+			ldsb.append(repeatValue);
+		final String largedata = ldsb.toString();
+		if (largedata.length() <= 8192)
+			sb.append("Length (").append(largedata.length()).append(") of largedata value is too small! Should be larger than 8192!");
+
+		final String tbl_nm = "tbl6693";
+		Statement stmt = null;
+		try {
+			stmt = con.createStatement();
+			// create a test table.
+			stmt.executeUpdate("CREATE TABLE IF NOT EXISTS " + tbl_nm + " (attribute CLOB, value CLOB);");
+			sb.append("Created table: ").append(tbl_nm).append("\n");
+			sb.append("Inserting rows. ");
+			String insertCmd = "INSERT INTO " + tbl_nm + " VALUES ('activeset_default_fiets', '" + largedata + "');";
+			int ins = stmt.executeUpdate(insertCmd);
+			ins += stmt.executeUpdate(insertCmd);
+			ins += stmt.executeUpdate(insertCmd);
+			sb.append(ins).append(" rows inserted").append("\n");
+		} catch (SQLException se) {
+			sb.append(se.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, null);
+
+		final int script_iterations = 10;
+		try {
+			run_tests(arg0, tbl_nm, script_iterations, largedata);
+		} catch (SQLException se) {
+			sb.append(se.getMessage()).append("\n");
+		}
+
+		try (Statement stmt2 = con.createStatement()) {
+			stmt2.executeUpdate("DROP TABLE IF EXISTS " + tbl_nm);
+			sb.append("Cleaned up TABLE ").append(tbl_nm).append("\n");
+		} catch (SQLException se) {
+			sb.append(se.getMessage()).append("\n");
+		}
+
+		sb.append("Test completed without hanging").append("\n");
+
+		compareExpectedOutput("Bug_LargeQueries_6571_6693",
+				"Created table: tbl6693\n" +
+				"Inserting rows. 3 rows inserted\n" +
+				"Script size is 83256\n" +
+				"First test repeat 10 times. Iteration: 1 2 3 4 5 6 7 8 9 10 \n" +
+				"Completed first test\n" +
+				"Second test repeat 10 times. Iteration: 1 2 3 4 5 6 7 8 9 10 \n" + 
+				"Completed second test\n" +
+				"Script size is 3012\n" +
+				"Third test repeat 9 times.\n" +
+				"Iteration: 1 2 3 4 5 6 7 8 9 \n" +
+				"Completed third test\n" +
+				"Cleaned up TABLE tbl6693\n" +
+				"Test completed without hanging\n");
+	}
+
+	private void run_tests(String conURL, String tbl_nm, int iterations, String largedata) throws SQLException {
+		String script =
+			  "delete from " + tbl_nm + " where attribute='activeset_default_fiets';\n"
+			+ "insert into " + tbl_nm + " values ('activeset_default_fiets', '" + largedata + "');\n"
+			+ "insert into " + tbl_nm + " values ('activeset_default_fiets', '" + largedata + "');\n"
+			+ "insert into " + tbl_nm + " values ('activeset_default_fiets', '" + largedata + "');\n"
+			+ "select value from " + tbl_nm + " where attribute='activeset_default_fiets';\n";
+		sb.append("Script size is " + script.length()).append("\n");
+
+		// first try to make the execution hang after many iterations of sending large data queries within one connection
+		sb.append("First test repeat " + iterations + " times. ");
+		try (Connection con = DriverManager.getConnection(conURL)) {
+			sb.append("Iteration: ");
+			for (int i = 1; i <= iterations; i++) {
+				sb.append(i).append(" ");
+				try (Statement stmt = con.createStatement()) {
+					process_script(stmt, script, 1, 3, 6);
+				}
+			}
+			sb.append("\n");
+		}
+		sb.append("Completed first test").append("\n");
+
+		// also try to make the execution hang after many iterations of making connections (each their own socket) and sending large scripts
+		sb.append("Second test repeat " + iterations + " times. ");
+		sb.append("Iteration: ");
+		for (int i = 1; i <= iterations; i++) {
+			try (Connection con = DriverManager.getConnection(conURL)) {
+				sb.append(i).append(" ");
+				try (Statement stmt = con.createStatement()) {
+					process_script(stmt, script, 1, 3, 6);
+					process_script(stmt, script, 1, 3, 6);
+					process_script(stmt, script, 1, 3, 6);
+					process_script(stmt, script, 1, 3, 6);
+				}
+			}
+		}
+		sb.append("\n");
+		sb.append("Completed second test").append("\n");
+
+		// next try to make the execution hang by sending very many queries combined in 1 large script
+		final int queries = 260;
+		StringBuilder qry = new StringBuilder(queries * 13);
+		for (int i = 1; i <= queries; i++)
+			qry.append(" SELECT ").append(i).append(';');
+		script = qry.toString();
+		sb.append("Script size is " + script.length()).append("\n");
+		iterations = 9;
+		sb.append("Third test repeat " + iterations + " times.").append("\n");
+		try (Connection con = DriverManager.getConnection(conURL)) {
+			sb.append("Iteration: ");
+			for (int i = 1; i <= iterations; i++) {
+				sb.append(i).append(" ");
+				try (Statement stmt = con.createStatement()) {
+					process_script(stmt, script, queries, queries, 0);
+				}
+			}
+			sb.append("\n");
+		}
+		sb.append("Completed third test").append("\n");
+	}
+
+	private void process_script(Statement stmt, String script,
+				int expectedResults, int expectedTotalRows, int expectedUpdates) throws SQLException {
+		int results = 0;
+		int rows = 0;
+		int updates = 0;
+		stmt.execute(script);
+		do {
+			ResultSet rs = stmt.getResultSet();
+			if (rs != null) {
+				results++;
+				while(rs.next()) {
+					String val = rs.getString(1);
+					rows++;
+				}
+				rs.close();
+			} else {
+				int uc = stmt.getUpdateCount();
+				if (uc > 0)
+					updates += uc;
+			}
+		} while (stmt.getMoreResults() || stmt.getUpdateCount() != -1);
+
+		/* verify nr of processed resultsets and retrieved rows are as expected */
+		if (results != expectedResults)
+			sb.append(results + "!=" + expectedResults + " ");
+		if (rows != expectedTotalRows)
+			sb.append(rows + "!=" + expectedTotalRows + " ");
+		if (updates != expectedUpdates)
+			sb.append(updates + "!=" + expectedUpdates + " ");
+	}
+
+	private void Bug_PrepStmtSetObject_CLOB_6349() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
+			stmt = con.createStatement();
+			stmt.executeUpdate("CREATE TABLE PrepStmtSetObject_CLOB (myint INT, myvarchar VARCHAR(15), myclob CLOB)");
+			stmt.executeUpdate("INSERT INTO PrepStmtSetObject_CLOB VALUES (123, 'A string', 'A longer string')");
+			stmt.executeUpdate("INSERT INTO PrepStmtSetObject_CLOB VALUES (NULL, NULL, NULL)");  // all NULLs
+
+			pstmt = con.prepareStatement("SELECT myclob, myvarchar, myint FROM PrepStmtSetObject_CLOB WHERE myclob = ?");
+			ParameterMetaData pmd = pstmt.getParameterMetaData();
+			sb.append("Prepared Query has ").append(pmd.getParameterCount()).append(" parameters. Type of first is: ").append(pmd.getParameterTypeName(1)).append("\n");
+			ResultSetMetaData rsmd = pstmt.getMetaData();
+			sb.append("Prepared Query has ").append(rsmd.getColumnCount()).append(" columns. Type of first is: ").append(rsmd.getColumnTypeName(1)).append("\n");
+
+			pstmt.setObject(1, "A longer string");
+			rs = pstmt.executeQuery();
+			rsmd = rs.getMetaData();
+			sb.append("Query ResultSet has ").append(rsmd.getColumnCount()).append(" columns. Type of first is: ").append(rsmd.getColumnTypeName(1)).append("\n");
+
+			boolean has_row = rs.next();
+			boolean has_rows = rs.next();
+			if (has_row == false || has_rows == true)
+				sb.append("Fetching Query ResultSet failed").append("\n");
+		} catch (SQLException se) {
+			sb.append(se.getMessage()).append("\n");
+		}
+
+		// cleanup
+		try {
+			stmt.executeUpdate("DROP TABLE PrepStmtSetObject_CLOB");
+			sb.append("Table dropped").append("\n");
+		} catch (SQLException se) {
+			sb.append(se.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, null);
+		closeStmtResSet(pstmt, rs);
+
+		compareExpectedOutput("Bug_PrepStmtSetObject_CLOB_6349",
+				"0. true	true\n" +
+				"Prepared Query has 1 parameters. Type of first is: clob\n" +
+				"Prepared Query has 3 columns. Type of first is: clob\n" +
+				"Query ResultSet has 3 columns. Type of first is: clob\n" +
+				"Table dropped\n");
+	}
+
 	private void Bug_PrepStmtSetString_6382() {
 		sb.setLength(0);	// clear the output log buffer
 
@@ -3042,7 +3982,7 @@ final public class JDBC_API_Tester {
 			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 
 			stmt = con.createStatement();
-			sb.append("1. Creating table " + tableName);
+			sb.append("1. Creating table ").append(tableName);
 			if (stmt.executeUpdate("CREATE TABLE " + tableName + " (myint INT, myvarchar VARCHAR(15), myjson JSON, myuuid UUID, myurl URL, myinet INET)") != Statement.SUCCESS_NO_INFO)
 				sb.append("Wrong return status\n");
 
@@ -3061,9 +4001,9 @@ final public class JDBC_API_Tester {
 			pstmt = con.prepareStatement("INSERT INTO " + tableName + " VALUES (?,?, ? ,?,? , ?)");
 			ParameterMetaData pmd = pstmt.getParameterMetaData();
 			int pcount = pmd.getParameterCount();
-			sb.append("Prepared Statement has " + pcount + " parameters:" + (pcount != 6 ? " ERROR: Expected 6 parameters!" : "")).append("\n");
+			sb.append("Prepared Statement has ").append(pcount).append(" parameters:").append((pcount != 6 ? " ERROR: Expected 6 parameters!" : "")).append("\n");
 			for (int p = 1; p <= pcount; p++) {
-				sb.append(" Parameter " + p + " type is: " + pmd.getParameterTypeName(p) + ". JDBC SQL type: " + pmd.getParameterType(p)).append("\n");
+				sb.append(" Parameter ").append(p).append(" type is: ").append(pmd.getParameterTypeName(p)).append(". JDBC SQL type: ").append(pmd.getParameterType(p)).append("\n");
 			}
 
 			int row = 6;
@@ -3073,18 +4013,18 @@ final public class JDBC_API_Tester {
 			pstmt.setNull(4, 0);
 			pstmt.setNull(5, 0);
 			pstmt.setNull(6, 0);
-			sb.append("Inserting row " + row).append("\n");
+			sb.append("Inserting row ").append(row).append("\n");
 			int inserted = pstmt.executeUpdate();
-			sb.append("Inserted " + inserted + " row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row").append("\n");
 
 			row++;  // row 7
 			pstmt.setShort(1, (short)row);
 			pstmt.setNString(2, "row " + row);
 			pstmt.setNull(3, 0);
 			pstmt.setString(4, "4a148b7d-8d47-4e1e-a21e-09a71abf2215");
-			sb.append("Inserting row " + row).append("\n");
+			sb.append("Inserting row ").append(row).append("\n");
 			inserted = pstmt.executeUpdate();
-			sb.append("Inserted " + inserted + " row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row").append("\n");
 
 			row++;  // row 8
 			pstmt.setLong(1, (long)row);
@@ -3096,18 +4036,18 @@ final public class JDBC_API_Tester {
 			} catch (java.net.MalformedURLException mfe) {
 				sb.append(mfe).append("\n");
 			}
-			sb.append("Inserting row " + row).append("\n");
+			sb.append("Inserting row ").append(row).append("\n");
 			inserted = pstmt.executeUpdate();
-			sb.append("Inserted " + inserted + " row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row").append("\n");
 
 			row++;  // row 9
 			pstmt.setBigDecimal(1, new java.math.BigDecimal(row));
 			pstmt.setNString(2, "row " + row);
 			pstmt.setNull(5, 0);
 			pstmt.setString(6, "127.255.255.255");
-			sb.append("Inserting row " + row).append("\n");
+			sb.append("Inserting row ").append(row).append("\n");
 			inserted = pstmt.executeUpdate();
-			sb.append("Inserted " + inserted + " row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row").append("\n");
 
 			/* also test generic setObject(int, String) */
 			row++;  // row 10
@@ -3117,9 +4057,9 @@ final public class JDBC_API_Tester {
 			pstmt.setObject(4, "b39dc76e-4faf-4fd9-bc1e-17df48acf764");
 			pstmt.setObject(5, "https://en.wikipedia.org/wiki/IP_address");
 			pstmt.setObject(6, "223.255.255.255");
-			sb.append("Inserting row " + row).append("\n");
+			sb.append("Inserting row ").append(row).append("\n");
 			inserted = pstmt.executeUpdate();
-			sb.append("Inserted " + inserted + " row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row").append("\n");
 
 			row++;  // row 11
 			pstmt.setObject(1, new java.math.BigDecimal(row));
@@ -3136,20 +4076,20 @@ final public class JDBC_API_Tester {
 			INET myINET = new INET();
 			myINET.fromString("223.234.245.255");
 			pstmt.setObject(6, myINET);
-			sb.append("Inserting row " + row).append("\n");
+			sb.append("Inserting row ").append(row).append("\n");
 			inserted = pstmt.executeUpdate();
-			sb.append("Inserted " + inserted + " row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row").append("\n");
 
-			sb.append("List contents of TABLE " + tableName + " after " + row + " rows inserted").append("\n");
+			sb.append("List contents of TABLE ").append(tableName).append(" after ").append(row).append(" rows inserted").append("\n");
 			rs = stmt.executeQuery("SELECT * FROM " + tableName + " ORDER BY 1");
 			ResultSetMetaData rsmd = rs.getMetaData();
 			int colcount = rsmd.getColumnCount();
-			sb.append("Query has " + colcount + " output columns." + (colcount != 6 ? " ERROR: Expected 6 columns!" : "")).append("\n");
+			sb.append("Query has ").append(colcount).append(" output columns.").append((colcount != 6 ? " ERROR: Expected 6 columns!" : "")).append("\n");
 			row = 0;
 			while (rs.next()) {
-				sb.append("row " + ++row);
+				sb.append("row ").append(++row);
 				for (int c = 1; c <= colcount; c++) {
-					sb.append("\t" + rs.getString(c));
+					sb.append("\t").append(rs.getString(c));
 				}
 				sb.append("\n");
 			}
@@ -3158,7 +4098,7 @@ final public class JDBC_API_Tester {
 		}
 
 		try {
-			sb.append("Cleanup TABLE " + tableName).append("\n");
+			sb.append("Cleanup TABLE ").append(tableName).append("\n");
 			stmt.executeUpdate("DROP TABLE " + tableName);
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
@@ -3232,6 +4172,449 @@ final public class JDBC_API_Tester {
 				"}}]	b39dc76e-4faf-4fd9-bc1e-17df48acf764	https://en.wikipedia.org/wiki/IP_address	223.255.255.255\n" +
 				"row 11	11	row 11	null	ff125769-b63c-4c3c-859f-5b84a9349e24	https://en.wikipedia.org/wiki/IP_address	223.234.245.255\n" +
 				"Cleanup TABLE PrepStmtSetString_6382\n");
+	}
+
+	private void Bug_PrepStmt_With_Errors_Jira292() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
+			con.setNetworkTimeout(null, (10 *1000));
+
+			stmt = con.createStatement();
+			stmt.executeUpdate("drop table if exists abacus;");
+			stmt.executeUpdate("create table abacus ( \"'Zeitachse'\" date,\"'Abo_ID'\" int,\"'description'\" varchar(256),\"'Klassierungs-Typ'\" clob,\"'KlassierungApplikation'\" clob,\"'EP Netto'\" decimal,\"'Nettoumsatz'\" decimal,\"'validfrom'\" date,\"'validuntil'\" date,\"'Abo_aufgeschaltet'\" int,\"'Abo_deaktiviert'\" int,\"'Differenz'\" decimal,\"'User_ID'\" int,\"'UserName'\" varchar(256),\"'client'\" varchar(256),\"'Installations_ID'\" int,\"'InstallationsName'\" varchar(256),\"'Installationsprovider_ID'\" int,\"'InstallationsproviderName'\" varchar(256),\"'INR'\" bigint,\"'NAME'\" varchar(256),\"'PLZ'\" varchar(256),\"'ORT'\" varchar(256),\"'STAAT'\" varchar(256),\"'Reseller_ID'\" int,\"'ResellerName'\" varchar(256),\"'ET_ABO'\" clob,\"'UserName_1'\" varchar(256),\"'Anzahl_Abos'\" decimal,\"'Anzahl_User'\" decimal,\"'Jahr'\" decimal,\"'Monat'\" decimal,\"'Jahr_Monat'\" clob,\"'IFJ'\" clob,\"'RECNUM$'\" int,\"'InlineCalc_Year_Zeitachse'\" int);");
+			stmt.executeUpdate("insert into abacus values ('2019-10-30',2239,'description','Klassierungs-Typ','Klassierung-Applikation',73.28,68.29,'2018-01-01','2018-12-01',563,63,56.3,852,'UserName','client',134,'InstallationsName',892,'InstallationsproviderName',9348,'NAME','PLZ','ORT','STAAT',934,'ResellerName','ET_ABO','UserName_1',849.2739,1742.718,395.824,39.824,'Jahr_Monat','IFJ',395824,3789);");
+
+			sb.append("1. table created and inserted 1 row").append("\n");
+
+			String qry = "SELECT \"'ResellerName'\" FROM abacus WHERE  ( ( (\"'InstallationsproviderName'\"='Bienz Pius Treuhand- und Revisions AG')) AND  ( (\"'validuntil'\"='2018-01-01' AND \"'description'\"='ABEA 2' AND (EXTRACT(YEAR FROM \"'Zeitachse'\")*100 + EXTRACT(MONTH FROM \"'Zeitachse'\"))/100.0='2019.010' AND \"'UserName'\"='AL - Astrid Lincke (Delphys)' AND \"'validfrom'\"='2016-12-01')) AND  ( (\"'IFJ'\"='ohne IFJ')) AND  ( (\"'InlineCalc_Year_Zeitachse'\"='2019'))) GROUP BY \"'ResellerName'\" LIMIT 1001 OFFSET 0;";
+			try {
+				sb.append("2. before select query execution").append("\n");
+				rs = stmt.executeQuery(qry);
+				sb.append("2a. select query executed").append("\n");
+				if (rs != null) {
+					if (rs.next()) {
+						sb.append("2b. select query returned: " + rs.getString(1)).append("\n");
+					}
+					rs.close();
+					rs = null;
+					sb.append("2c. closed select query resultset").append("\n");
+				}
+				sb.append("2d. normal end of select query").append("\n");
+			} catch (SQLException se) {
+				sb.append("select query Exception: "+ se.getMessage()).append("\n");
+				while ((se = se.getNextException()) != null)
+					sb.append("next Exception: "+ se.getMessage()).append("\n");
+			}
+
+			try {
+				sb.append("3. before creating a prepared select query").append("\n");
+				pstmt = con.prepareStatement(qry);
+				sb.append("3a. prepared select query").append("\n");
+
+				ParameterMetaData pmd = pstmt.getParameterMetaData();
+				sb.append("3b. Prepared Query has " + pmd.getParameterCount() + " parameters."); // "Type of first is: " + pmd.getParameterTypeName(1)).append("\n");
+				ResultSetMetaData rsmd = pstmt.getMetaData();
+				sb.append("3c. Prepared Query has " + rsmd.getColumnCount() + " columns. Type of first is: " + rsmd.getColumnTypeName(1)).append("\n");
+
+				sb.append("3d. before executing the prepared select query").append("\n");
+				rs = pstmt.executeQuery();
+				sb.append("3e. prepared select query executed").append("\n");
+				if (rs != null) {
+					rsmd = rs.getMetaData();
+					sb.append("3f. prepared Query ResultSet has " + rsmd.getColumnCount() + " columns. Type of first is: " + rsmd.getColumnTypeName(1)).append("\n");
+
+					if (rs.next()) {
+						sb.append("3g. prepared select query returned: " + rs.getString(1)).append("\n");
+					}
+					rs.close();
+					rs = null;
+					sb.append("3h. closed prepared select query resultset").append("\n");
+				}
+				sb.append("3i. normal end of prepared select query").append("\n");
+			} catch (SQLException se) {
+				sb.append("prepared select query Exception: "+ se.getMessage()).append("\n");
+				while ((se = se.getNextException()) != null)
+					sb.append("next Exception: "+ se.getMessage()).append("\n");
+			}
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		try {
+			sb.append("4. drop table").append("\n");
+			stmt.executeUpdate("drop table abacus");
+			sb.append("5. normal end of test").append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(pstmt, rs);
+		closeStmtResSet(stmt, null);
+
+		compareExpectedOutput("Bug_PrepStmt_With_Errors_Jira292",
+				"0. true	true\n" +
+				"1. table created and inserted 1 row\n" +
+				"2. before select query execution\n" +
+				"2a. select query executed\n" +
+				"2c. closed select query resultset\n" +
+				"2d. normal end of select query\n" +
+				"3. before creating a prepared select query\n" +
+				"3a. prepared select query\n" +
+				"3b. Prepared Query has 0 parameters.3c. Prepared Query has 1 columns. Type of first is: varchar\n" +
+				"3d. before executing the prepared select query\n" +
+				"3e. prepared select query executed\n" +
+				"3f. prepared Query ResultSet has 1 columns. Type of first is: varchar\n" +
+				"3h. closed prepared select query resultset\n" +
+				"3i. normal end of prepared select query\n" +
+				"4. drop table\n" +
+				"5. normal end of test\n");
+	}
+
+	private void BugResultSetMetaData_Bug_6183() {
+		sb.setLength(0);	// clear the output log buffer
+
+		final String dqTblName = "\"my dq_table\"";
+		final String[] dqColNames = { "\"my space\"", "\"my, comma_space\"", "\"my$dollar\"", "\"my#hash\"", "\"my	tab\""
+			, "\"my	,tab_comma\"", "\"my,	comma_tab\"", "\"my\"\"double_doublequote\"", "\"Abc\"", "\" \"", "\"123\"" };
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			StringBuilder ctsb = new StringBuilder(30 + (dqColNames.length * (30 + 15)));
+			ctsb.append("CREATE TABLE ").append(dqTblName).append(" (");
+			for (int n = 0; n < dqColNames.length; n++) {
+				ctsb.append(dqColNames[n]);
+				ctsb.append(" varchar(").append(31 + n).append(')');
+				if (n < (dqColNames.length -1))
+					ctsb.append(", ");
+			}
+			ctsb.append(')');
+
+			stmt = con.createStatement();
+			sb.append("1. create table ").append(dqTblName).append("\n");
+			int ret = stmt.executeUpdate(ctsb.toString());
+			if (ret != -2)
+				sb.append(" returned: ").append(ret).append(" (expected -2)").append("\n");
+
+			String tblName = dqTblName.substring(1, dqTblName.length() -1);	// trim the leading and trailing double quote characters
+			sb.append("2. show column names of this new table (").append(tblName).append(") via sys.columns query").append("\n");
+			rs = stmt.executeQuery("SELECT number, name, type from sys.columns where table_id in (select id from sys._tables where name = '" + tblName + "') order by number");
+			showResultAndClose_6183(rs);
+
+			sb.append("3. insert 1 row of data with values same as column names").append("\n");
+			ctsb.setLength(0);
+			ctsb.append("INSERT INTO ").append(dqTblName).append(" VALUES (");
+			for (int n = 0; n < dqColNames.length; n++) {
+				ctsb.append('\'');
+				ctsb.append(dqColNames[n]);
+				ctsb.append('\'');
+				if (n < (dqColNames.length -1))
+					ctsb.append(", ");
+			}
+			ctsb.append(')');
+			ret = stmt.executeUpdate(ctsb.toString());
+			if (ret != 1)
+				sb.append(" returned: ").append(ret).append(" (expected 1)").append("\n");
+
+			sb.append("4. insert 1 row of data with values same as column names but without enclosing double quotes").append("\n");
+			ctsb.setLength(0);
+			ctsb.append("INSERT INTO ").append(dqTblName).append(" VALUES (");
+			for (int n = 0; n < dqColNames.length; n++) {
+				ctsb.append('\'');
+				// remove enclosing double quotes
+				ctsb.append(dqColNames[n].substring(1, dqColNames[n].length() -1));
+				ctsb.append('\'');
+				if (n < (dqColNames.length -1))
+					ctsb.append(", ");
+			}
+			ctsb.append(')');
+			ret = stmt.executeUpdate(ctsb.toString());
+			if (ret != 1)
+				sb.append(" returned: ").append(ret).append(" (expected 1)").append("\n");
+
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"1. create table \"my dq_table\"\n" +
+				"2. show column names of this new table (my dq_table) via sys.columns query\n" +
+				"Resultset with 3 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	number	number\n" +
+				"2	name	name\n" +
+				"3	type	type\n" +
+				"Data rows:\n" +
+				"0	my space	varchar\n" +
+				"1	my, comma_space	varchar\n" +
+				"2	my$dollar	varchar\n" +
+				"3	my#hash	varchar\n" +
+				"4	my	tab	varchar\n" +
+				"5	my	,tab_comma	varchar\n" +
+				"6	my,	comma_tab	varchar\n" +
+				"7	my\"double_doublequote	varchar\n" +
+				"8	Abc	varchar\n" +
+				"9	 	varchar\n" +
+				"10	123	varchar\n" +
+				"Listed 11 rows\n" +
+				"3. insert 1 row of data with values same as column names\n" +
+				"4. insert 1 row of data with values same as column names but without enclosing double quotes\n");
+			sb.setLength(0);	// clear the output log buffer
+
+			// query each column separately
+			int n = 0;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"5. show content of column(s): \"my space\"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	my space	my space\n" +
+				"Data rows:\n" +
+				"\"my space\"\n" +
+				"my space\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+			n++;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"6. show content of column(s): \"my, comma_space\"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	my, comma_space	my, comma_space\n" +
+				"Data rows:\n" +
+				"\"my, comma_space\"\n" +
+				"my, comma_space\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+			n++;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"7. show content of column(s): \"my$dollar\"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	my$dollar	my$dollar\n" +
+				"Data rows:\n" +
+				"\"my$dollar\"\n" +
+				"my$dollar\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+			n++;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"8. show content of column(s): \"my#hash\"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	my#hash	my#hash\n" +
+				"Data rows:\n" +
+				"\"my#hash\"\n" +
+				"my#hash\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+			n++;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"9. show content of column(s): \"my	tab\"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	my	tab	my	tab\n" +
+				"Data rows:\n" +
+				"\"my	tab\"\n" +
+				"my	tab\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+			n++;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"10. show content of column(s): \"my	,tab_comma\"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	my	,tab_comma	my	,tab_comma\n" +
+				"Data rows:\n" +
+				"\"my	,tab_comma\"\n" +
+				"my	,tab_comma\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+			n++;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"11. show content of column(s): \"my,	comma_tab\"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	my,	comma_tab	my,	comma_tab\n" +
+				"Data rows:\n" +
+				"\"my,	comma_tab\"\n" +
+				"my,	comma_tab\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+			n++;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"12. show content of column(s): \"my\"\"double_doublequote\"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	my\\\"double_doublequote	my\\\"double_doublequote\n" +
+				"Data rows:\n" +
+				"\"my\"\"double_doublequote\"\n" +
+				"my\"\"double_doublequote\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+			n++;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"13. show content of column(s): \"Abc\"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	Abc	Abc\n" +
+				"Data rows:\n" +
+				"\"Abc\"\n" +
+				"Abc\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+			n++;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"14. show content of column(s): \" \"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	 	 \n" +
+				"Data rows:\n" +
+				"\" \"\n" +
+				" \n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+			n++;
+			executeQueryAndShowResult_6183(stmt, dqTblName, dqColNames[n], 5 + n);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"15. show content of column(s): \"123\"\n" +
+				"Resultset with 1 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	123	123\n" +
+				"Data rows:\n" +
+				"\"123\"\n" +
+				"123\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+
+			// query all columns
+			executeQueryAndShowResult_6183(stmt, dqTblName, "*", 5 + dqColNames.length);
+			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"16. show content of column(s): *\n" +
+				"Resultset with 11 columns\n" +
+				"	Column Name, Column Label:\n" +
+				"1	my space	my space\n" +
+				"2	my, comma_space	my, comma_space\n" +
+				"3	my$dollar	my$dollar\n" +
+				"4	my#hash	my#hash\n" +
+				"5	my	tab	my	tab\n" +
+				"6	my	,tab_comma	my	,tab_comma\n" +
+				"7	my,	comma_tab	my,	comma_tab\n" +
+				"8	my\\\"double_doublequote	my\\\"double_doublequote\n" +
+				"9	Abc	Abc\n" +
+				"10	 	 \n" +
+				"11	123	123\n" +
+				"Data rows:\n" +
+				"\"my space\"	\"my, comma_space\"	\"my$dollar\"	\"my#hash\"	\"my	tab\"	\"my	,tab_comma\"	\"my,	comma_tab\"	\"my\"\"double_doublequote\"	\"Abc\"	\" \"	\"123\"\n" +
+				"my space	my, comma_space	my$dollar	my#hash	my	tab	my	,tab_comma	my,	comma_tab	my\"\"double_doublequote	Abc	 	123\n" +
+				"Listed 2 rows\n");
+			sb.setLength(0);	// clear the output log buffer
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		// cleanup
+		try {
+			sb.append("Finally drop table ").append(dqTblName).append("\n");
+			int ret = stmt.executeUpdate("DROP TABLE " + dqTblName);
+			if (ret != -2)
+				sb.append(" returned: ").append(ret).append(" (expected -2)").append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(stmt, rs);
+
+		compareExpectedOutput("BugResultSetMetaData_Bug_6183",
+				"Finally drop table \"my dq_table\"\n");
+	}
+
+	private void executeQueryAndShowResult_6183(Statement st, String dqTblName, String col_list, int query_count) throws SQLException {
+		sb.append(query_count).append(". show content of column(s): ").append(col_list).append("\n");
+		ResultSet rs = st.executeQuery("SELECT " + col_list + " from " + dqTblName);
+		showResultAndClose_6183(rs);
+	}
+
+	private void showResultAndClose_6183(ResultSet rs) throws SQLException {
+		ResultSetMetaData rsmd = rs.getMetaData();
+		int rs_col_count = rsmd.getColumnCount();
+		sb.append("Resultset with ").append(rs_col_count).append(" columns").append("\n");
+		sb.append("\tColumn Name, Column Label:").append("\n");
+		for (int col = 1; col <= rs_col_count; col++) {
+			sb.append(col).append("\t").append(rsmd.getColumnName(col)).append("\t").append(rsmd.getColumnLabel(col)).append("\n");
+		}
+
+		sb.append("Data rows:").append("\n");
+		long row_count = 0;
+		while (rs.next()) {
+			row_count++;
+			for (int col = 1; col <= rs_col_count; col++) {
+				if (col > 1)
+					sb.append("\t");
+				sb.append(rs.getString(col));
+			}
+			sb.append("\n");
+		}
+		rs.close();
+		sb.append("Listed ").append(row_count).append(" rows").append("\n");
+	}
+
+	private void BugSetQueryTimeout_Bug_3357() {
+		sb.setLength(0);	// clear the output log buffer
+
+		int originalQueryTimeout = 1;
+		Statement st = null;
+		try {
+			st = con.createStatement();
+			originalQueryTimeout = st.getQueryTimeout();
+			sb.append("original getQueryTimeout = ").append(originalQueryTimeout).append("\n");
+
+			testTimeout_3357(st, 123);
+			testTimeout_3357(st, 123456);
+			testTimeout_3357(st, 2134567890);
+			testTimeout_3357(st, 0);
+			testTimeout_3357(st, 10);
+			testTimeout_3357(st, -1);	// to generate an SQLException as negative timeouts are invalid
+		} catch (SQLException se) {
+			sb.append("\n SQLException: setQueryTimeout(timeout_value) throws: ").append(se).append("\n");
+		}
+
+		// restore originalQueryTimeout
+		try {
+			testTimeout_3357(st, originalQueryTimeout);
+		} catch (SQLException se) {
+			sb.append("setQueryTimeout(timeout_value) throws: ").append(se).append("\n");
+		}
+		closeStmtResSet(st, null);
+
+		compareExpectedOutput("BugSetQueryTimeout_Bug_3357",
+				"original getQueryTimeout = 0\n" +
+				"setQueryTimeout = 123. getQueryTimeout = 123\n" +
+				"setQueryTimeout = 123456. getQueryTimeout = 123456\n" +
+				"setQueryTimeout = 2134567890. getQueryTimeout = 2134567890\n" +
+				"setQueryTimeout = 0. getQueryTimeout = 0\n" +
+				"setQueryTimeout = 10. getQueryTimeout = 10\n" +
+				"setQueryTimeout = -1. \n" +
+				" SQLException: setQueryTimeout(timeout_value) throws: java.sql.SQLException: Illegal timeout value: -1\n" +
+				"setQueryTimeout = 0. getQueryTimeout = 0\n");
+	}
+
+	private void testTimeout_3357(Statement st, int secs) throws SQLException {
+		sb.append("setQueryTimeout = ").append(secs).append(". ");
+		st.setQueryTimeout(secs);
+		// as the call to set the timeout is delayed till a statement is executed, issue a select statment
+		ResultSet rs = st.executeQuery("SELECT " + secs);
+		if (rs != null)
+			rs.close();
+		sb.append("getQueryTimeout = ").append(st.getQueryTimeout()).append("\n");
 	}
 
 
