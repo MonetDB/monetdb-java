@@ -8,6 +8,7 @@
 
 package org.monetdb.mcl.parser;
 
+import java.nio.Buffer;	// needed as some CharBuffer overridden methods (mark() and reset()) return type changed between Java 8 (return Buffer) and 9 (or higher) (return CharBuffer)
 import java.nio.CharBuffer;
 
 /**
@@ -147,11 +148,11 @@ public final class StartOfHeaderParser {
 			throw new MCLParseException("unexpected end of string", soh.position() - 1);
 
 		int cnt = 0;
-		soh.mark();
+		((Buffer)soh).mark();
 		while (soh.hasRemaining() && soh.get() != ' ') {
 			cnt++;
 		}
-		soh.reset();
+		((Buffer)soh).reset();
 
 		return soh.subSequence(0, cnt).toString();
 	}
