@@ -94,6 +94,7 @@ final public class JDBC_API_Tester {
 		jt.Bug_PrepStmt_With_Errors_Jira292();
 		jt.BugResultSetMetaData_Bug_6183();
 		jt.BugSetQueryTimeout_Bug_3357();
+		jt.SQLcopyinto();
 
 		jt.closeConx(jt.con);
 	}
@@ -252,7 +253,7 @@ final public class JDBC_API_Tester {
 			stmt = con.createStatement();
 
 			// sending big script with many simple queries
-			sb.append("1. executing script").append("\n");
+			sb.append("1. executing script\n");
 			stmt.execute(bigq.toString());
 
 			int i = 1;	// we skip the first "getResultSet()"
@@ -260,12 +261,12 @@ final public class JDBC_API_Tester {
 				i++;
 			}
 			if (stmt.getUpdateCount() != -1) {
-				sb.append("Error: found an update count for a SELECT query").append("\n");
+				sb.append("Error: found an update count for a SELECT query\n");
 			}
 			if (i != size) {
 				sb.append("Error: expecting ").append(size).append(" tuples, only got ").append(i).append("\n");
 			}
-			sb.append("2. queries processed").append("\n");
+			sb.append("2. queries processed\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -345,16 +346,16 @@ final public class JDBC_API_Tester {
 			// test commit by checking if a change is visible in another connection
 			sb.append("1. create... ");
 			stmt1.executeUpdate("CREATE TABLE table_Test_Creplysize ( id int )");
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("2. populating with 21 records... ");
 			for (int i = 0; i < 21; i++)
 				stmt1.executeUpdate("INSERT INTO table_Test_Creplysize (id) values (" + (i + 1) + ")");
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("3. hinting the driver to use fetchsize 10... ");
 			stmt1.setFetchSize(10);
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("4. selecting all values... ");
 			rs = stmt1.executeQuery("SELECT * FROM table_Test_Creplysize");
@@ -371,11 +372,11 @@ final public class JDBC_API_Tester {
 
 			sb.append("5. resetting driver fetchsize hint... ");
 			stmt1.setFetchSize(0);
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("6. instructing the driver to return at max 10 rows...  ");
 			stmt1.setMaxRows(10);
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("7. selecting all values...  ");
 			rs = stmt1.executeQuery("SELECT * FROM table_Test_Creplysize");
@@ -392,7 +393,7 @@ final public class JDBC_API_Tester {
 
 			sb.append("8. hinting the driver to use fetchsize 5... ");
 			stmt1.setFetchSize(5);
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("9. selecting all values... ");
 			rs = stmt1.executeQuery("SELECT * FROM table_Test_Creplysize");
@@ -409,7 +410,7 @@ final public class JDBC_API_Tester {
 
 			sb.append("10. drop... ");
 			stmt1.executeUpdate("DROP TABLE table_Test_Creplysize");
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			con.rollback();
 
@@ -461,14 +462,14 @@ final public class JDBC_API_Tester {
 			sb.append("2. savepoint...");
 			/* make a savepoint, and discard it */
 			con.setSavepoint();
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			stmt = con.createStatement();
 			stmt.executeUpdate("CREATE TABLE table_Test_Csavepoints ( id int, PRIMARY KEY (id) )");
 
 			sb.append("3. savepoint...");
 			Savepoint sp2 = con.setSavepoint("empty table");
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			rs = stmt.executeQuery("SELECT id FROM table_Test_Csavepoints");
 			int i = 0;
@@ -481,7 +482,7 @@ final public class JDBC_API_Tester {
 			if (i != items) {
 				sb.append(" FAILED (").append(i).append(")");
 			}
-			sb.append(" passed").append("\n");
+			sb.append(" passed\n");
 
 			stmt.executeUpdate("INSERT INTO table_Test_Csavepoints VALUES (1)");
 			stmt.executeUpdate("INSERT INTO table_Test_Csavepoints VALUES (2)");
@@ -489,7 +490,7 @@ final public class JDBC_API_Tester {
 
 			sb.append("5. savepoint...");
 			Savepoint sp3 = con.setSavepoint("three values");
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			rs = stmt.executeQuery("SELECT id FROM table_Test_Csavepoints");
 			i = 0;
@@ -502,11 +503,11 @@ final public class JDBC_API_Tester {
 			if (i != items) {
 				sb.append(" FAILED (").append(i).append(")");
 			}
-			sb.append(" passed").append("\n");
+			sb.append(" passed\n");
 
 			sb.append("7. release...");
 			con.releaseSavepoint(sp3);
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			rs = stmt.executeQuery("SELECT id FROM table_Test_Csavepoints");
 			i = 0;
@@ -519,11 +520,11 @@ final public class JDBC_API_Tester {
 			if (i != items) {
 				sb.append(" FAILED (").append(i).append(") :(");
 			}
-			sb.append(" passed").append("\n");
+			sb.append(" passed\n");
 
 			sb.append("9. rollback...");
 			con.rollback(sp2);
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			rs = stmt.executeQuery("SELECT id FROM table_Test_Csavepoints");
 			i = 0;
@@ -586,11 +587,11 @@ final public class JDBC_API_Tester {
 			// a change would not be visible now
 			sb.append("3. commit...");
 			con.commit();
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("4. commit...");
 			con.commit();
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("5. rollback...");
 			con.rollback();
@@ -610,22 +611,22 @@ final public class JDBC_API_Tester {
 			stmt = con.createStatement();
 			sb.append("7. start transaction...");
 			stmt.executeUpdate("START TRANSACTION");
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("8. commit...");
 			con.commit();
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("9. true\t").append(con.getAutoCommit());
 			sb.append("\n");
 
 			sb.append("10. start transaction...");
 			stmt.executeUpdate("START TRANSACTION");
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("11. rollback...");
 			con.rollback();
-			sb.append("passed").append("\n");
+			sb.append("passed\n");
 
 			sb.append("12. true\t").append(con.getAutoCommit());
 		} catch (SQLException e) {
@@ -758,7 +759,7 @@ final public class JDBC_API_Tester {
 
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int columnCount = rsmd.getColumnCount();
-		sb.append("Resultset with ").append(columnCount).append(" columns").append("\n");
+		sb.append("Resultset with ").append(columnCount).append(" columns\n");
 		for (int col = 1; col <= columnCount; col++) {
 			if (col > 1)
 				sb.append("\t");
@@ -858,7 +859,7 @@ final public class JDBC_API_Tester {
 			rs.close();
 			sb.append("Expecting " + bi + ", got " + biRes).append("\n");
 			if (!bi.equals(biRes)) {
-				sb.append("value of bi is NOT equal to biRes!").append("\n");
+				sb.append("value of bi is NOT equal to biRes!\n");
 			}
 
 			rs = stmt.executeQuery("SELECT I FROM HUGEDECT");
@@ -867,7 +868,7 @@ final public class JDBC_API_Tester {
 			rs.close();
 			sb.append("Expecting " + bd + ", got " + bdRes).append("\n");
 			if (!bd.equals(bdRes)) {
-				sb.append("value of bd is NOT equal to bdRes!").append("\n");
+				sb.append("value of bd is NOT equal to bdRes!\n");
 			}
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
@@ -877,7 +878,7 @@ final public class JDBC_API_Tester {
 		try {
 			stmt.executeUpdate("DROP TABLE IF EXISTS HUGEINTT");
 			stmt.executeUpdate("DROP TABLE IF EXISTS HUGEDECT");
-			sb.append("SUCCESS").append("\n");
+			sb.append("SUCCESS\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -922,19 +923,19 @@ final public class JDBC_API_Tester {
 			pstmt.executeUpdate();
 			pstmt.executeUpdate();
 			pstmt.executeUpdate();
-			sb.append("success").append("\n");
+			sb.append("success\n");
 
 			// now get the generated keys
 			sb.append("2. getting generated keys...");
 			keys = pstmt.getGeneratedKeys();
 			if (keys == null) {
-				sb.append("there are no keys!").append("\n");
+				sb.append("there are no keys!\n");
 			} else {
 				while (keys.next()) {
 					sb.append("generated key index: ").append(keys.getInt(1)).append("\n");
 				}
 				if (keys.getStatement() == null) {
-					sb.append("ResultSet.getStatement() should never return null!").append("\n");
+					sb.append("ResultSet.getStatement() should never return null!\n");
 				}
 				keys.close();
 			}
@@ -970,7 +971,7 @@ final public class JDBC_API_Tester {
 			stmt = con.createStatement();
 			sb.append("1. creating test table...");
 			stmt.executeUpdate("CREATE TABLE table_Test_PSgetObject (ti tinyint, si smallint, i int, bi bigint)");
-			sb.append("success").append("\n");
+			sb.append("success\n");
 			stmt.close();
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
@@ -1001,11 +1002,11 @@ final public class JDBC_API_Tester {
 			pstmt.addBatch();
 
 			pstmt.executeBatch();
-			sb.append(" passed").append("\n");
+			sb.append(" passed\n");
 
 			sb.append("2b. closing PreparedStatement...");
 			pstmt.close();
-			sb.append(" passed").append("\n");
+			sb.append(" passed\n");
 		} catch (SQLException e) {
 			sb.append("FAILED to INSERT data: ").append(e.getMessage()).append("\n");
 			while ((e = e.getNextException()) != null)
@@ -1016,7 +1017,7 @@ final public class JDBC_API_Tester {
 			sb.append("3a. selecting records...");
 			pstmt = con.prepareStatement("SELECT ti,si,i,bi FROM table_Test_PSgetObject ORDER BY ti,si,i,bi");
 			rs = pstmt.executeQuery();
-			sb.append(" passed").append("\n");
+			sb.append(" passed\n");
 
 			while (rs.next()) {
 				// test fix for https://www.monetdb.org/bugzilla/show_bug.cgi?id=4026
@@ -1030,11 +1031,11 @@ final public class JDBC_API_Tester {
 
 			sb.append("3b. closing ResultSet...");
 			rs.close();
-			sb.append(" passed").append("\n");
+			sb.append(" passed\n");
 
 			sb.append("3c. closing PreparedStatement...");
 			pstmt.close();
-			sb.append(" passed").append("\n");
+			sb.append(" passed\n");
 		} catch (SQLException e) {
 			sb.append("FAILED to RETRIEVE data: ").append(e.getMessage()).append("\n");
 			while ((e = e.getNextException()) != null)
@@ -1045,7 +1046,7 @@ final public class JDBC_API_Tester {
 		try {
 			sb.append("4. Rollback changes...");
 			con.rollback();
-			sb.append(" passed").append("\n");
+			sb.append(" passed\n");
 
 			// restore default setting
 			con.setAutoCommit(true);
@@ -1088,18 +1089,18 @@ final public class JDBC_API_Tester {
 			stmt = con.createStatement();
 			sb.append("1. creating test table...");
 			stmt.execute("CREATE TABLE Test_PSlargebatchval (c INT, a CLOB, b DOUBLE)");
-			sb.append("success").append("\n");
+			sb.append("success\n");
 
 			sb.append("2. prepare insert...");
 			pstmt = con.prepareStatement("INSERT INTO Test_PSlargebatchval VALUES (?,?,?)");
-			sb.append("success").append("\n");
+			sb.append("success\n");
 
 			pstmt.setLong(1, 1L);
 			pstmt.setString(2, largeStr);
 			pstmt.setDouble(3, 1.0);
 			pstmt.addBatch();
 			pstmt.executeBatch();
-			sb.append("3. inserted 1 large string").append("\n");
+			sb.append("3. inserted 1 large string\n");
 
 			/* test issue reported at https://www.monetdb.org/bugzilla/show_bug.cgi?id=3470 */
 			pstmt.setLong(1, -2L);
@@ -1107,7 +1108,7 @@ final public class JDBC_API_Tester {
 			pstmt.setDouble(3, -2.0);
 			pstmt.addBatch();
 			pstmt.executeBatch();
-			sb.append("4. inserted 1 large clob via StringReader() object").append("\n");
+			sb.append("4. inserted 1 large clob via StringReader() object\n");
 
 			Clob myClob = con.createClob();
 			myClob.setString(1L, largeStr);
@@ -1117,19 +1118,19 @@ final public class JDBC_API_Tester {
 			pstmt.setDouble(3, 12345678901.98765);
 			pstmt.addBatch();
 			pstmt.executeBatch();
-			sb.append("5. inserted 1 large clob via createClob() object").append("\n");
+			sb.append("5. inserted 1 large clob via createClob() object\n");
 
 			pstmt.close();
 
 			sb.append("6. select count(*)... ");
 			rs = stmt.executeQuery("SELECT COUNT(*) FROM Test_PSlargebatchval");
 			if (rs.next())
-				sb.append(rs.getInt(1)).append(" rows inserted.").append("\n");
+				sb.append(rs.getInt(1)).append(" rows inserted.\n");
 			rs.close();
 
 			sb.append("7. drop table...");
 			stmt.execute("DROP TABLE Test_PSlargebatchval");
-			sb.append("success").append("\n");
+			sb.append("success\n");
 			stmt.close();
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
@@ -1169,7 +1170,7 @@ final public class JDBC_API_Tester {
 			sb.append("2. empty call...");
 			// should succeed (no arguments given)
 			pstmt.execute();
-			sb.append(" passed").append("\n");
+			sb.append(" passed\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -1486,7 +1487,7 @@ final public class JDBC_API_Tester {
 			// >> true: auto commit should be on
 			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
 
-			sb.append("1. Preparing and executing a unique statement").append("\n");
+			sb.append("1. Preparing and executing a unique statement\n");
 			for (int i = 0; i < 120; i++) {
 				pstmt = con.prepareStatement("select " + i + ", " + i + " = ?");
 				pstmt.setInt(1, i);
@@ -1568,7 +1569,7 @@ final public class JDBC_API_Tester {
 				for (int col = 1; col <= rsmd.getColumnCount(); col++) {
 					Object x = rs.getObject(col);
 					if (x == null || rs.wasNull()) {
-						sb.append(i).append(".\t<null>").append("\n");
+						sb.append(i).append(".\t<null>\n");
 					} else {
 						sb.append(i).append(".\t").append(x.toString()).append("\n");
 						if (x instanceof INET) {
@@ -2043,7 +2044,7 @@ final public class JDBC_API_Tester {
 			sb.append("Called Prepared procedure (with NULLs): ").append(proc_nm).append("\n");
 			showTblContents(tbl_nm);
 
-			sb.append("Test completed. Cleanup procedure and table.").append("\n");
+			sb.append("Test completed. Cleanup procedure and table.\n");
 			stmt.execute("DROP PROCEDURE IF EXISTS " + proc_nm + ";");
 			stmt.execute("DROP TABLE     IF EXISTS " + tbl_nm + ";");
 
@@ -2580,7 +2581,7 @@ final public class JDBC_API_Tester {
 					sb.append(i).append(".\t");
 					Object x = rs.getObject(col);
 					if (x == null) {
-						sb.append("<null>").append("\n");
+						sb.append("<null>\n");
 					} else {
 						sb.append(x.toString()).append("\n");
 						if (x instanceof INET) {
@@ -2965,23 +2966,23 @@ final public class JDBC_API_Tester {
 			stmt = con.createStatement();
 			sb.append("1. more results?...");
 			if (stmt.getMoreResults() != false || stmt.getUpdateCount() != -1)
-				sb.append("more results on an unitialised Statement, how can that be?").append("\n");
-			sb.append(" nope :)").append("\n");
+				sb.append("more results on an unitialised Statement, how can that be?\n");
+			sb.append(" nope :)\n");
 
 			sb.append("2. SELECT 1...");
 			if (stmt.execute("SELECT 1;") == false)
-				sb.append("SELECT 1 returns update or no results").append("\n");
-			sb.append(" ResultSet :)").append("\n");
+				sb.append("SELECT 1 returns update or no results\n");
+			sb.append(" ResultSet :)\n");
 
 			sb.append("3. more results?...");
 			if (stmt.getMoreResults() != false || stmt.getUpdateCount() != -1)
-				sb.append("more results after SELECT 1 query, how can that be?").append("\n");
-			sb.append(" nope :)").append("\n");
+				sb.append("more results after SELECT 1 query, how can that be?\n");
+			sb.append(" nope :)\n");
 
 			sb.append("4. even more results?...");
 			if (stmt.getMoreResults() != false)
-				sb.append("still more results after SELECT 1 query, how can that be?").append("\n");
-			sb.append(" nope :)").append("\n");
+				sb.append("still more results after SELECT 1 query, how can that be?\n");
+			sb.append(" nope :)\n");
 
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
@@ -3146,109 +3147,109 @@ final public class JDBC_API_Tester {
 			sb.append("0. true\t").append(con3.getAutoCommit()).append("\n");
 
 			// test the creation of a table with concurrent clients
-			sb.append("1.1. create table t1 using client 1...").append("\n");
+			sb.append("1.1. create table t1 using client 1...\n");
 			stmt1.executeUpdate("CREATE TABLE t1 ( id int, name varchar(1024) )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("1.2. check table existence in client 2...").append("\n");
+			sb.append("1.2. check table existence in client 2...\n");
 			rs2 = stmt2.executeQuery("SELECT name FROM tables where name LIKE 't1'");
 			while (rs2.next())
 				sb.append(rs2.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("1.3. check table existence in client 3...").append("\n");
+			sb.append("1.3. check table existence in client 3...\n");
 			rs3 = stmt3.executeQuery("SELECT name FROM tables where name LIKE 't1'");
 			while (rs3.next())
 				sb.append(rs3.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
 			// test the insertion of values with concurrent clients
-			sb.append("2 insert into t1 using client 1...").append("\n");
+			sb.append("2 insert into t1 using client 1...\n");
 			stmt1.executeUpdate("INSERT INTO t1 values( 1, 'monetdb' )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 			stmt1.executeUpdate("INSERT INTO t1 values( 2, 'monet' )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 			stmt1.executeUpdate("INSERT INTO t1 values( 3, 'mon' )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("2.1. check table status with client 1...").append("\n");
+			sb.append("2.1. check table status with client 1...\n");
 			rs1 = stmt1.executeQuery("SELECT * FROM t1");
 			while (rs1.next())
 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("2.2. check table status with client 2...").append("\n");
+			sb.append("2.2. check table status with client 2...\n");
 			rs2 = stmt2.executeQuery("SELECT * FROM t1");
 			while (rs2.next())
 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("2.3. check table status with client 3...").append("\n");
+			sb.append("2.3. check table status with client 3...\n");
 			rs3 = stmt3.executeQuery("SELECT * FROM t1");
 			while (rs3.next())
 				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
 			// test the insertion of values with concurrent clients
-			sb.append("3 insert into t1 using client 2...").append("\n");
+			sb.append("3 insert into t1 using client 2...\n");
 			stmt2.executeUpdate("INSERT INTO t1 values( 4, 'monetdb' )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 			stmt2.executeUpdate("INSERT INTO t1 values( 5, 'monet' )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 			stmt2.executeUpdate("INSERT INTO t1 values( 6, 'mon' )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("3.1. check table status with client 1...").append("\n");
+			sb.append("3.1. check table status with client 1...\n");
 			rs1 = stmt1.executeQuery("SELECT * FROM t1");
 			while (rs1.next())
 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("3.2. check table status with client 2...").append("\n");
+			sb.append("3.2. check table status with client 2...\n");
 			rs2 = stmt2.executeQuery("SELECT * FROM t1");
 			while (rs2.next())
 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("3.3. check table status with client 3...").append("\n");
+			sb.append("3.3. check table status with client 3...\n");
 			rs3 = stmt3.executeQuery("SELECT * FROM t1");
 			while (rs3.next())
 				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
 			// test the insertion of values with concurrent clients
-			sb.append("4 insert into t1 using client 3...").append("\n");
+			sb.append("4 insert into t1 using client 3...\n");
 			stmt3.executeUpdate("INSERT INTO t1 values( 7, 'monetdb' )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 			stmt3.executeUpdate("INSERT INTO t1 values( 8, 'monet' )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 			stmt3.executeUpdate("INSERT INTO t1 values( 9, 'mon' )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("4.1. check table status with client 1...").append("\n");
+			sb.append("4.1. check table status with client 1...\n");
 			rs1 = stmt1.executeQuery("SELECT * FROM t1");
 			while (rs1.next())
 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("4.2. check table status with client 2...").append("\n");
+			sb.append("4.2. check table status with client 2...\n");
 			rs2 = stmt2.executeQuery("SELECT * FROM t1");
 			while (rs2.next())
 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("4.3. check table status with client 3...").append("\n");
+			sb.append("4.3. check table status with client 3...\n");
 			rs3 = stmt3.executeQuery("SELECT * FROM t1");
 			while (rs3.next())
 				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
 		// cleanup
 		try {
-			sb.append("Cleanup TABLE t1").append("\n");
+			sb.append("Cleanup TABLE t1\n");
 			stmt3.executeUpdate("DROP TABLE t1");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
@@ -3380,47 +3381,50 @@ final public class JDBC_API_Tester {
 			// create a table
 			sb.append("1. create table t1 using client 1... ");
 			stmt1.executeUpdate("CREATE TABLE t1 ( id serial, who varchar(12) )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
 			// test the insertion of values with concurrent clients
 			sb.append("2. insert into t1 using client 1 and 2... ");
 			stmt1.executeUpdate("INSERT INTO t1(who) VALUES('client1')");
-			sb.append("client 1 passed :)").append("\n");
+			sb.append("client 1 passed :)\n");
+
 			con2.setAutoCommit(false);
 			stmt2.executeUpdate("INSERT INTO t1(who) VALUES('client2')");
-			sb.append("transaction on client 2 :)").append("\n");
+			sb.append("transaction on client 2 :)\n");
+
 			stmt1.executeUpdate("INSERT INTO t1(who) VALUES('client1')");
-			sb.append("client 1 passed :)").append("\n");
+			sb.append("client 1 passed :)\n");
+
 			try {
 				con2.commit();
-				sb.append("transaction client 2 PASSED :(").append("\n");
+				sb.append("transaction client 2 PASSED :(\n");
 			} catch (SQLException e) {
-				sb.append("transaction client 2 failed :)").append("\n");
+				sb.append("transaction client 2 failed :)\n");
 			}
 			con2.setAutoCommit(true);
 			stmt2.executeUpdate("INSERT INTO t1(who) VALUES('client2')");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("2.1. check table status with client 1...").append("\n");
+			sb.append("2.1. check table status with client 1...\n");
 			rs1 = stmt1.executeQuery("SELECT * FROM t1");
 			while (rs1.next())
 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("who")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("2.2. check table status with client 2...").append("\n");
+			sb.append("2.2. check table status with client 2...\n");
 			rs2 = stmt2.executeQuery("SELECT * FROM t1");
 			while (rs2.next())
 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("who")).append("\n");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
 			// drop the table (not dropping the sequence) from client 1
 			sb.append("3.1. drop table t1 using client 1... ");
 			stmt1.executeUpdate("DROP TABLE t1");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
 			sb.append("3.1. recreate t1 using client 1... ");
 			stmt1.executeUpdate("CREATE TABLE t1 ( id serial, who varchar(12) )");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -3434,19 +3438,19 @@ final public class JDBC_API_Tester {
 			con2 = DriverManager.getConnection(arg0);
 			stmt1 = con1.createStatement();
 			stmt2 = con2.createStatement();
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
 			// insert and print, should get 1,2
-			sb.append("4. insert into t1 using client 1 and 2...").append("\n");
+			sb.append("4. insert into t1 using client 1 and 2...\n");
 			stmt1.executeUpdate("INSERT INTO t1(who) VALUES('client1')");
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 			con2.setAutoCommit(false);
 			stmt2.executeUpdate("INSERT INTO t1(who) VALUES('client2')");
 			con2.commit();
 			con2.setAutoCommit(true);
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("4.1. check table status with client 1...").append("\n");
+			sb.append("4.1. check table status with client 1...\n");
 			rs1 = stmt1.executeQuery("SELECT * FROM t1 ORDER BY who");
 			for (int cntr = 1; rs1.next(); cntr++) {
 				int id = rs1.getInt("id");
@@ -3454,9 +3458,9 @@ final public class JDBC_API_Tester {
 				if (id != cntr)
 					sb.append("!! expected ").append(cntr).append(", got ").append(id);
 			}
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 
-			sb.append("4.2. check table status with client 2...").append("\n");
+			sb.append("4.2. check table status with client 2...\n");
 			rs2 = stmt2.executeQuery("SELECT * FROM t1 ORDER BY who");
 			for (int cntr = 1; rs2.next(); cntr++) {
 				int id = rs2.getInt("id");
@@ -3464,14 +3468,14 @@ final public class JDBC_API_Tester {
 				if (id != cntr)
 					sb.append("!! expected ").append(cntr).append(", got ").append(id);
 			}
-			sb.append("passed :)").append("\n");
+			sb.append("passed :)\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
 		// cleanup
 		try {
-			sb.append("Cleanup TABLE t1").append("\n");
+			sb.append("Cleanup TABLE t1\n");
 			stmt2.executeUpdate("DROP TABLE t1");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
@@ -3525,14 +3529,14 @@ final public class JDBC_API_Tester {
 		Statement stmt1 = null;
 		// create user, schema and alter schema default schema
 		try {
-			sb.append("1. CREATE USER voc").append("\n");
+			sb.append("1. CREATE USER voc\n");
 			stmt1 = con.createStatement();
 			stmt1.executeUpdate("CREATE USER \"voc\" WITH PASSWORD 'voc' NAME 'VOC Explorer' SCHEMA \"sys\"");
-			sb.append("2. CREATE SCHEMA voc").append("\n");
+			sb.append("2. CREATE SCHEMA voc\n");
 			stmt1.executeUpdate("CREATE SCHEMA \"voc\" AUTHORIZATION \"voc\"");
-			sb.append("3. ALTER USER voc").append("\n");
+			sb.append("3. ALTER USER voc\n");
 			stmt1.executeUpdate("ALTER USER \"voc\" SET SCHEMA \"voc\"");
-			sb.append("creation succeeded :)").append("\n");
+			sb.append("creation succeeded :)\n");
 		} catch (SQLException e) {
 			sb.append("FAILED creating user and schema voc. ").append(e.getMessage()).append("\n");
 		}
@@ -3540,45 +3544,45 @@ final public class JDBC_API_Tester {
 		Connection con2 = null;
 		ResultSet rs2 = null;
 		try {
-			sb.append("4.1. connect as user: voc").append("\n");
+			sb.append("4.1. connect as user: voc\n");
 			con2 = DriverManager.getConnection(arg0.replace("=monetdb", "=voc"));
-			sb.append("connected :)").append("\n");
+			sb.append("connected :)\n");
 
 			DatabaseMetaData dbmd = con2.getMetaData();
 
-			sb.append("4.2. getUserName()").append("\n");
+			sb.append("4.2. getUserName()\n");
 			sb.append("UserName = ").append(dbmd.getUserName()).append("\n");
 
-			sb.append("4.3. getMaxConnections()").append("\n");
+			sb.append("4.3. getMaxConnections()\n");
 			sb.append("MaxConnections = ").append(dbmd.getMaxConnections()).append("\n");
 
-			sb.append("4.4. getDatabaseProductVersion()").append("\n");
+			sb.append("4.4. getDatabaseProductVersion()\n");
 			String dbmsVersion = dbmd.getDatabaseProductVersion();	// should be 11.35.1 or higher
 			boolean postNov2019 = ("11.35.1".compareTo(dbmsVersion) <= 0);
 			sb.append("DatabaseProductVersion = ").append((postNov2019 ? "11.35.+" : dbmsVersion)).append("\n");
 
-			sb.append("4.5. getDatabaseMajorVersion()").append("\n");
+			sb.append("4.5. getDatabaseMajorVersion()\n");
 			sb.append("DatabaseMajorVersion = ").append(dbmd.getDatabaseMajorVersion()).append("\n");	// should be 11
 
-			sb.append("4.6. getDatabaseMinorVersion()").append("\n");
+			sb.append("4.6. getDatabaseMinorVersion()\n");
 			int dbmsMinorVersion = dbmd.getDatabaseMinorVersion();	// should be 35 or higher
 			sb.append("DatabaseMinorVersion = ").append((dbmsMinorVersion >= 35 ? "35+" : dbmsMinorVersion)).append("\n");
 
-			sb.append("4.7. getTables(null, 'tmp', null, null)").append("\n");
+			sb.append("4.7. getTables(null, 'tmp', null, null)\n");
 			rs2 = dbmd.getTables(null, "tmp", null, null);
 			if (rs2 != null) {
-				sb.append("List Tables in schema tmp:").append("\n");
+				sb.append("List Tables in schema tmp:\n");
 				while (rs2.next()) {
 					sb.append(rs2.getString(3)).append("\n");
 				}
 				rs2.close();
 			}
-			sb.append("completed listing Tables in schema tmp").append("\n");
+			sb.append("completed listing Tables in schema tmp\n");
 
-			sb.append("4.8. getTableTypes()").append("\n");
+			sb.append("4.8. getTableTypes()\n");
 			rs2 = dbmd.getTableTypes();
 			if (rs2 != null) {
-				sb.append("List TableTypes:").append("\n");
+				sb.append("List TableTypes:\n");
 				while (rs2.next()) {
 					// post Oct2020 releases the STREAM TABLE type is removed, so filter it out for a stable output
 					if (!"STREAM TABLE".equals(rs2.getString(1)))
@@ -3586,9 +3590,9 @@ final public class JDBC_API_Tester {
 				}
 				rs2.close();
 			}
-			sb.append("completed listing TableTypes").append("\n");
+			sb.append("completed listing TableTypes\n");
 
-			sb.append("voc meta data Test completed successfully").append("\n");
+			sb.append("voc meta data Test completed successfully\n");
 		} catch (SQLException e) {
 			sb.append("FAILED fetching MonetDatabaseMetaData. ").append(e.getMessage()).append("\n");
 		} finally {
@@ -3601,14 +3605,14 @@ final public class JDBC_API_Tester {
 
 		// cleanup: drop user, schema and alter schema default schema in reverse order
 		try {
-			sb.append("Cleanup created objects").append("\n");
-			sb.append("5. ALTER USER voc").append("\n");
+			sb.append("Cleanup created objects\n");
+			sb.append("5. ALTER USER voc\n");
 			stmt1.executeUpdate("ALTER USER \"voc\" SET SCHEMA \"sys\"");
-			sb.append("6. DROP SCHEMA voc").append("\n");
+			sb.append("6. DROP SCHEMA voc\n");
 			stmt1.executeUpdate("DROP SCHEMA \"voc\"");
-			sb.append("7. DROP USER voc").append("\n");
+			sb.append("7. DROP USER voc\n");
 			stmt1.executeUpdate("DROP USER \"voc\"");
-			sb.append("cleanup succeeded :)").append("\n");
+			sb.append("cleanup succeeded :)\n");
 		} catch (SQLException e) {
 			sb.append("FAILED dropping user and schema voc. ").append(e.getMessage()).append("\n");
 		}
@@ -3756,9 +3760,6 @@ final public class JDBC_API_Tester {
 			executeDML(stmt, "UPDATE t3350 set \"keyword\" = keyword||'_ext'"); // should update 4 rows
 			executeDML(stmt, "DELETE FROM t3350"); // should delete 4 rows
 			con.commit();
-
-			stmt.execute("DROP TABLE t3350");
-			con.commit();
 		} catch (SQLException se) {
 			sb.append(se.getMessage()).append("\n");
 		}
@@ -3766,6 +3767,8 @@ final public class JDBC_API_Tester {
 
 		// cleanup
 		try {
+			stmt.execute("DROP TABLE IF EXISTS t3350");
+			con.commit();
 			con.setAutoCommit(true);	// enable auto commit
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
@@ -3812,7 +3815,7 @@ final public class JDBC_API_Tester {
 		Statement st = null;
 		try {
 			con2 = DriverManager.getConnection(arg0);
-			sb.append("connected :)").append("\n");
+			sb.append("connected :)\n");
 
 			st = con2.createStatement();
 			st.setQueryTimeout(5);
@@ -3871,7 +3874,7 @@ final public class JDBC_API_Tester {
 			int ins = stmt.executeUpdate(insertCmd);
 			ins += stmt.executeUpdate(insertCmd);
 			ins += stmt.executeUpdate(insertCmd);
-			sb.append(ins).append(" rows inserted").append("\n");
+			sb.append(ins).append(" rows inserted\n");
 		} catch (SQLException se) {
 			sb.append(se.getMessage()).append("\n");
 		}
@@ -3891,7 +3894,7 @@ final public class JDBC_API_Tester {
 			sb.append(se.getMessage()).append("\n");
 		}
 
-		sb.append("Test completed without hanging").append("\n");
+		sb.append("Test completed without hanging\n");
 
 		compareExpectedOutput("Bug_LargeQueries_6571_6693",
 				"Created table: tbl6693\n" +
@@ -3930,7 +3933,7 @@ final public class JDBC_API_Tester {
 			}
 			sb.append("\n");
 		}
-		sb.append("Completed first test").append("\n");
+		sb.append("Completed first test\n");
 
 		// also try to make the execution hang after many iterations of making connections (each their own socket) and sending large scripts
 		sb.append("Second test repeat " + iterations + " times. ");
@@ -3947,7 +3950,7 @@ final public class JDBC_API_Tester {
 			}
 		}
 		sb.append("\n");
-		sb.append("Completed second test").append("\n");
+		sb.append("Completed second test\n");
 
 		// next try to make the execution hang by sending very many queries combined in 1 large script
 		final int queries = 260;
@@ -3957,7 +3960,7 @@ final public class JDBC_API_Tester {
 		script = qry.toString();
 		sb.append("Script size is " + script.length()).append("\n");
 		iterations = 9;
-		sb.append("Third test repeat " + iterations + " times.").append("\n");
+		sb.append("Third test repeat " + iterations + " times.\n");
 		try (Connection con = DriverManager.getConnection(conURL)) {
 			sb.append("Iteration: ");
 			for (int i = 1; i <= iterations; i++) {
@@ -3968,7 +3971,7 @@ final public class JDBC_API_Tester {
 			}
 			sb.append("\n");
 		}
-		sb.append("Completed third test").append("\n");
+		sb.append("Completed third test\n");
 	}
 
 	private void process_script(Statement stmt, String script,
@@ -4029,7 +4032,7 @@ final public class JDBC_API_Tester {
 			boolean has_row = rs.next();
 			boolean has_rows = rs.next();
 			if (has_row == false || has_rows == true)
-				sb.append("Fetching Query ResultSet failed").append("\n");
+				sb.append("Fetching Query ResultSet failed\n");
 		} catch (SQLException se) {
 			sb.append(se.getMessage()).append("\n");
 		}
@@ -4037,7 +4040,7 @@ final public class JDBC_API_Tester {
 		// cleanup
 		try {
 			stmt.executeUpdate("DROP TABLE PrepStmtSetObject_CLOB");
-			sb.append("Table dropped").append("\n");
+			sb.append("Table dropped\n");
 		} catch (SQLException se) {
 			sb.append(se.getMessage()).append("\n");
 		}
@@ -4097,7 +4100,7 @@ final public class JDBC_API_Tester {
 			pstmt.setNull(6, 0);
 			sb.append("Inserting row ").append(row).append("\n");
 			int inserted = pstmt.executeUpdate();
-			sb.append("Inserted ").append(inserted).append(" row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row\n");
 
 			row++;  // row 7
 			pstmt.setShort(1, (short)row);
@@ -4106,7 +4109,7 @@ final public class JDBC_API_Tester {
 			pstmt.setString(4, "4a148b7d-8d47-4e1e-a21e-09a71abf2215");
 			sb.append("Inserting row ").append(row).append("\n");
 			inserted = pstmt.executeUpdate();
-			sb.append("Inserted ").append(inserted).append(" row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row\n");
 
 			row++;  // row 8
 			pstmt.setLong(1, (long)row);
@@ -4120,7 +4123,7 @@ final public class JDBC_API_Tester {
 			}
 			sb.append("Inserting row ").append(row).append("\n");
 			inserted = pstmt.executeUpdate();
-			sb.append("Inserted ").append(inserted).append(" row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row\n");
 
 			row++;  // row 9
 			pstmt.setBigDecimal(1, new java.math.BigDecimal(row));
@@ -4129,7 +4132,7 @@ final public class JDBC_API_Tester {
 			pstmt.setString(6, "127.255.255.255");
 			sb.append("Inserting row ").append(row).append("\n");
 			inserted = pstmt.executeUpdate();
-			sb.append("Inserted ").append(inserted).append(" row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row\n");
 
 			/* also test generic setObject(int, String) */
 			row++;  // row 10
@@ -4141,7 +4144,7 @@ final public class JDBC_API_Tester {
 			pstmt.setObject(6, "223.255.255.255");
 			sb.append("Inserting row ").append(row).append("\n");
 			inserted = pstmt.executeUpdate();
-			sb.append("Inserted ").append(inserted).append(" row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row\n");
 
 			row++;  // row 11
 			pstmt.setObject(1, new java.math.BigDecimal(row));
@@ -4160,9 +4163,9 @@ final public class JDBC_API_Tester {
 			pstmt.setObject(6, myINET);
 			sb.append("Inserting row ").append(row).append("\n");
 			inserted = pstmt.executeUpdate();
-			sb.append("Inserted ").append(inserted).append(" row").append("\n");
+			sb.append("Inserted ").append(inserted).append(" row\n");
 
-			sb.append("List contents of TABLE ").append(tableName).append(" after ").append(row).append(" rows inserted").append("\n");
+			sb.append("List contents of TABLE ").append(tableName).append(" after ").append(row).append(" rows inserted\n");
 			rs = stmt.executeQuery("SELECT * FROM " + tableName + " ORDER BY 1");
 			ResultSetMetaData rsmd = rs.getMetaData();
 			int colcount = rsmd.getColumnCount();
@@ -4271,22 +4274,22 @@ final public class JDBC_API_Tester {
 			stmt.executeUpdate("create table abacus ( \"'Zeitachse'\" date,\"'Abo_ID'\" int,\"'description'\" varchar(256),\"'Klassierungs-Typ'\" clob,\"'KlassierungApplikation'\" clob,\"'EP Netto'\" decimal,\"'Nettoumsatz'\" decimal,\"'validfrom'\" date,\"'validuntil'\" date,\"'Abo_aufgeschaltet'\" int,\"'Abo_deaktiviert'\" int,\"'Differenz'\" decimal,\"'User_ID'\" int,\"'UserName'\" varchar(256),\"'client'\" varchar(256),\"'Installations_ID'\" int,\"'InstallationsName'\" varchar(256),\"'Installationsprovider_ID'\" int,\"'InstallationsproviderName'\" varchar(256),\"'INR'\" bigint,\"'NAME'\" varchar(256),\"'PLZ'\" varchar(256),\"'ORT'\" varchar(256),\"'STAAT'\" varchar(256),\"'Reseller_ID'\" int,\"'ResellerName'\" varchar(256),\"'ET_ABO'\" clob,\"'UserName_1'\" varchar(256),\"'Anzahl_Abos'\" decimal,\"'Anzahl_User'\" decimal,\"'Jahr'\" decimal,\"'Monat'\" decimal,\"'Jahr_Monat'\" clob,\"'IFJ'\" clob,\"'RECNUM$'\" int,\"'InlineCalc_Year_Zeitachse'\" int);");
 			stmt.executeUpdate("insert into abacus values ('2019-10-30',2239,'description','Klassierungs-Typ','Klassierung-Applikation',73.28,68.29,'2018-01-01','2018-12-01',563,63,56.3,852,'UserName','client',134,'InstallationsName',892,'InstallationsproviderName',9348,'NAME','PLZ','ORT','STAAT',934,'ResellerName','ET_ABO','UserName_1',849.2739,1742.718,395.824,39.824,'Jahr_Monat','IFJ',395824,3789);");
 
-			sb.append("1. table created and inserted 1 row").append("\n");
+			sb.append("1. table created and inserted 1 row\n");
 
 			String qry = "SELECT \"'ResellerName'\" FROM abacus WHERE  ( ( (\"'InstallationsproviderName'\"='Bienz Pius Treuhand- und Revisions AG')) AND  ( (\"'validuntil'\"='2018-01-01' AND \"'description'\"='ABEA 2' AND (EXTRACT(YEAR FROM \"'Zeitachse'\")*100 + EXTRACT(MONTH FROM \"'Zeitachse'\"))/100.0='2019.010' AND \"'UserName'\"='AL - Astrid Lincke (Delphys)' AND \"'validfrom'\"='2016-12-01')) AND  ( (\"'IFJ'\"='ohne IFJ')) AND  ( (\"'InlineCalc_Year_Zeitachse'\"='2019'))) GROUP BY \"'ResellerName'\" LIMIT 1001 OFFSET 0;";
 			try {
-				sb.append("2. before select query execution").append("\n");
+				sb.append("2. before select query execution\n");
 				rs = stmt.executeQuery(qry);
-				sb.append("2a. select query executed").append("\n");
+				sb.append("2a. select query executed\n");
 				if (rs != null) {
 					if (rs.next()) {
 						sb.append("2b. select query returned: " + rs.getString(1)).append("\n");
 					}
 					rs.close();
 					rs = null;
-					sb.append("2c. closed select query resultset").append("\n");
+					sb.append("2c. closed select query resultset\n");
 				}
-				sb.append("2d. normal end of select query").append("\n");
+				sb.append("2d. normal end of select query\n");
 			} catch (SQLException se) {
 				sb.append("select query Exception: "+ se.getMessage()).append("\n");
 				while ((se = se.getNextException()) != null)
@@ -4294,18 +4297,18 @@ final public class JDBC_API_Tester {
 			}
 
 			try {
-				sb.append("3. before creating a prepared select query").append("\n");
+				sb.append("3. before creating a prepared select query\n");
 				pstmt = con.prepareStatement(qry);
-				sb.append("3a. prepared select query").append("\n");
+				sb.append("3a. prepared select query\n");
 
 				ParameterMetaData pmd = pstmt.getParameterMetaData();
 				sb.append("3b. Prepared Query has " + pmd.getParameterCount() + " parameters."); // "Type of first is: " + pmd.getParameterTypeName(1)).append("\n");
 				ResultSetMetaData rsmd = pstmt.getMetaData();
 				sb.append("3c. Prepared Query has " + rsmd.getColumnCount() + " columns. Type of first is: " + rsmd.getColumnTypeName(1)).append("\n");
 
-				sb.append("3d. before executing the prepared select query").append("\n");
+				sb.append("3d. before executing the prepared select query\n");
 				rs = pstmt.executeQuery();
-				sb.append("3e. prepared select query executed").append("\n");
+				sb.append("3e. prepared select query executed\n");
 				if (rs != null) {
 					rsmd = rs.getMetaData();
 					sb.append("3f. prepared Query ResultSet has " + rsmd.getColumnCount() + " columns. Type of first is: " + rsmd.getColumnTypeName(1)).append("\n");
@@ -4315,9 +4318,9 @@ final public class JDBC_API_Tester {
 					}
 					rs.close();
 					rs = null;
-					sb.append("3h. closed prepared select query resultset").append("\n");
+					sb.append("3h. closed prepared select query resultset\n");
 				}
-				sb.append("3i. normal end of prepared select query").append("\n");
+				sb.append("3i. normal end of prepared select query\n");
 			} catch (SQLException se) {
 				sb.append("prepared select query Exception: "+ se.getMessage()).append("\n");
 				while ((se = se.getNextException()) != null)
@@ -4328,9 +4331,9 @@ final public class JDBC_API_Tester {
 		}
 
 		try {
-			sb.append("4. drop table").append("\n");
+			sb.append("4. drop table\n");
 			stmt.executeUpdate("drop table abacus");
-			sb.append("5. normal end of test").append("\n");
+			sb.append("5. normal end of test\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -4380,14 +4383,14 @@ final public class JDBC_API_Tester {
 			sb.append("1. create table ").append(dqTblName).append("\n");
 			int ret = stmt.executeUpdate(ctsb.toString());
 			if (ret != -2)
-				sb.append(" returned: ").append(ret).append(" (expected -2)").append("\n");
+				sb.append(" returned: ").append(ret).append(" (expected -2)\n");
 
 			String tblName = dqTblName.substring(1, dqTblName.length() -1);	// trim the leading and trailing double quote characters
-			sb.append("2. show column names of this new table (").append(tblName).append(") via sys.columns query").append("\n");
+			sb.append("2. show column names of this new table (").append(tblName).append(") via sys.columns query\n");
 			rs = stmt.executeQuery("SELECT number, name, type from sys.columns where table_id in (select id from sys._tables where name = '" + tblName + "') order by number");
 			showResultAndClose_6183(rs);
 
-			sb.append("3. insert 1 row of data with values same as column names").append("\n");
+			sb.append("3. insert 1 row of data with values same as column names\n");
 			ctsb.setLength(0);
 			ctsb.append("INSERT INTO ").append(dqTblName).append(" VALUES (");
 			for (int n = 0; n < dqColNames.length; n++) {
@@ -4400,9 +4403,9 @@ final public class JDBC_API_Tester {
 			ctsb.append(')');
 			ret = stmt.executeUpdate(ctsb.toString());
 			if (ret != 1)
-				sb.append(" returned: ").append(ret).append(" (expected 1)").append("\n");
+				sb.append(" returned: ").append(ret).append(" (expected 1)\n");
 
-			sb.append("4. insert 1 row of data with values same as column names but without enclosing double quotes").append("\n");
+			sb.append("4. insert 1 row of data with values same as column names but without enclosing double quotes\n");
 			ctsb.setLength(0);
 			ctsb.append("INSERT INTO ").append(dqTblName).append(" VALUES (");
 			for (int n = 0; n < dqColNames.length; n++) {
@@ -4416,7 +4419,7 @@ final public class JDBC_API_Tester {
 			ctsb.append(')');
 			ret = stmt.executeUpdate(ctsb.toString());
 			if (ret != 1)
-				sb.append(" returned: ").append(ret).append(" (expected 1)").append("\n");
+				sb.append(" returned: ").append(ret).append(" (expected 1)\n");
 
 			compareExpectedOutput("BugResultSetMetaData_Bug_6183",
 				"1. create table \"my dq_table\"\n" +
@@ -4608,7 +4611,7 @@ final public class JDBC_API_Tester {
 			sb.append("Finally drop table ").append(dqTblName).append("\n");
 			int ret = stmt.executeUpdate("DROP TABLE " + dqTblName);
 			if (ret != -2)
-				sb.append(" returned: ").append(ret).append(" (expected -2)").append("\n");
+				sb.append(" returned: ").append(ret).append(" (expected -2)\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -4628,13 +4631,13 @@ final public class JDBC_API_Tester {
 	private void showResultAndClose_6183(ResultSet rs) throws SQLException {
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int rs_col_count = rsmd.getColumnCount();
-		sb.append("Resultset with ").append(rs_col_count).append(" columns").append("\n");
-		sb.append("\tColumn Name, Column Label:").append("\n");
+		sb.append("Resultset with ").append(rs_col_count).append(" columns\n");
+		sb.append("\tColumn Name, Column Label:\n");
 		for (int col = 1; col <= rs_col_count; col++) {
 			sb.append(col).append("\t").append(rsmd.getColumnName(col)).append("\t").append(rsmd.getColumnLabel(col)).append("\n");
 		}
 
-		sb.append("Data rows:").append("\n");
+		sb.append("Data rows:\n");
 		long row_count = 0;
 		while (rs.next()) {
 			row_count++;
@@ -4646,7 +4649,7 @@ final public class JDBC_API_Tester {
 			sb.append("\n");
 		}
 		rs.close();
-		sb.append("Listed ").append(row_count).append(" rows").append("\n");
+		sb.append("Listed ").append(row_count).append(" rows\n");
 	}
 
 	private void BugSetQueryTimeout_Bug_3357() {
@@ -4699,6 +4702,138 @@ final public class JDBC_API_Tester {
 		sb.append("getQueryTimeout = ").append(st.getQueryTimeout()).append("\n");
 	}
 
+	/**
+	 * This SQLcopyinto program demonstrates how the MonetDB JDBC driver can facilitate
+	 * in performing COPY INTO ... FROM STDIN sequences.
+	 * It shows how a data stream via MapiSocket to STDIN can be performed.
+	 *
+	 * @author Fabian Groffen, Martin van Dinther
+	 */
+	private void SQLcopyinto() {
+		sb.setLength(0);	// clear the output log buffer
+
+		final String tablenm = "exampleSQLCopyInto";
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = con.createStatement();
+			stmt.execute("CREATE TABLE IF NOT EXISTS " + tablenm + " (id int, val varchar(24))");
+
+			fillTableUsingCopyIntoSTDIN(tablenm);
+
+			// check content of the table populated via COPY INTO ... FROM STDIN
+			sb.append("Listing uploaded data:\n");
+			int row = 0;
+			rs = stmt.executeQuery("SELECT * FROM " + tablenm);
+			if (rs != null) {
+				while (rs.next()) {
+					row++;
+					if ((row % 1000) == 0)
+						sb.append("Row data: ").append(rs.getString(1)).append(", ").append(rs.getString(2)).append("\n");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException se) {
+			sb.append("SQLException: ").append(se.getMessage()).append("\n");
+		} catch (Exception e) {
+			sb.append("Exception: ").append(e.getMessage()).append("\n");
+		}
+
+		// cleanup
+		try {
+			stmt.execute("DROP TABLE " + tablenm);
+			sb.append("SQLcopyinto completed\n");
+		} catch (SQLException se) {
+			sb.append("SQLException: ").append(se.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, rs);
+
+		compareExpectedOutput("SQLcopyinto()",
+				"CopyInto STDIN begin\n" +
+				"Before connecting to MonetDB server via MapiSocket\n" +
+				"Connected to MonetDB server via MapiSocket\n" +
+				"Before sending data to STDIN\n" +
+				"Completed sending data via STDIN\n" +
+				"CopyInto STDIN end\n" +
+				"Listing uploaded data:\n" +
+				"Row data: 999, val_999\n" +
+				"Row data: 1999, val_1999\n" +
+				"Row data: 2999, val_2999\n" +
+				"Row data: 3999, val_3999\n" +
+				"Row data: 4999, val_4999\n" +
+				"Row data: 5999, val_5999\n" +
+				"Row data: 6999, val_6999\n" +
+				"Row data: 7999, val_7999\n" +
+				"Row data: 8999, val_8999\n" +
+				"SQLcopyinto completed\n");
+	}
+
+	private void fillTableUsingCopyIntoSTDIN(String tablenm) throws Exception {
+		sb.append("CopyInto STDIN begin\n");
+
+		org.monetdb.mcl.net.MapiSocket server = new org.monetdb.mcl.net.MapiSocket();
+		try {
+			server.setLanguage("sql");
+
+			// extract from MonetConnection object the used connection properties
+			String host = con.getClientInfo("host");
+			int port = Integer.parseInt(con.getClientInfo("port"));
+			String login = con.getClientInfo("user");
+			String passw = con.getClientInfo("password");
+			// sb.append("host: " + host + " port: " + port + " login: " + login + " passwd: " + passw + "\n");
+
+			sb.append("Before connecting to MonetDB server via MapiSocket\n");
+			List<String> warning = server.connect(host, port, login, passw);
+			if (warning != null) {
+				for (Iterator<String> it = warning.iterator(); it.hasNext(); ) {
+					sb.append("Warning: ").append(it.next().toString()).append("\n");
+				}
+			}
+			sb.append("Connected to MonetDB server via MapiSocket\n");
+
+			org.monetdb.mcl.io.BufferedMCLReader mclIn = server.getReader();
+			org.monetdb.mcl.io.BufferedMCLWriter mclOut = server.getWriter();
+
+			String error = mclIn.waitForPrompt();
+			if (error != null)
+				sb.append("Received start error: ").append(error).append("\n");
+
+			sb.append("Before sending data to STDIN\n");
+
+			// the leading 's' is essential, since it is a protocol marker
+			// that should not be omitted, likewise the trailing semicolon
+			mclOut.write('s');
+			mclOut.write("COPY INTO " + tablenm + " FROM STDIN USING DELIMITERS ',',E'\\n';");
+			mclOut.newLine();
+			// now write the row data values as csv data lines to the STDIN stream
+			for (int i = 0; i < 9000; i++) {
+				mclOut.write("" + i + ",val_" + i);
+				mclOut.newLine();
+			}
+			mclOut.writeLine(""); // need this one for synchronisation over flush()
+
+			error = mclIn.waitForPrompt();
+			if (error != null)
+				sb.append("Received error: ").append(error).append("\n");
+
+			mclOut.writeLine(""); // need this one for synchronisation over flush()
+
+			error = mclIn.waitForPrompt();
+			if (error != null)
+				sb.append("Received finish error: ").append(error).append("\n");
+
+			sb.append("Completed sending data via STDIN\n");
+		} catch (Exception e) {
+			sb.append("Mapi Exception: ").append(e.getMessage()).append("\n");
+		} finally {
+			// close MAPI connection to MonetDB server
+			server.close();
+		}
+
+		sb.append("CopyInto STDIN end\n");
+	}
+
 
 	// some private utility methods for showing table content and params meta data
 	private void showTblContents(String tblnm) {
@@ -4709,7 +4844,7 @@ final public class JDBC_API_Tester {
 			rs = stmt.executeQuery("SELECT * FROM " + tblnm);
 			if (rs != null) {
 				ResultSetMetaData rsmd = rs.getMetaData();
-				sb.append("Table ").append(tblnm).append(" has ").append(rsmd.getColumnCount()).append(" columns:").append("\n");
+				sb.append("Table ").append(tblnm).append(" has ").append(rsmd.getColumnCount()).append(" columns:\n");
 				for (int col = 1; col <= rsmd.getColumnCount(); col++) {
 					sb.append("\t").append(rsmd.getColumnLabel(col));
 				}
