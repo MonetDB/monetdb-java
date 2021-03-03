@@ -62,12 +62,13 @@ import java.util.Map;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 0.6
+ * @version 0.7
  */
 public class MonetPreparedStatement
 	extends MonetStatement
 	implements PreparedStatement, AutoCloseable
 {
+	private final String sqlStatement;
 	private final String[] monetdbType;
 	private final int[] javaType;
 	private final int[] digits;
@@ -124,6 +125,7 @@ public class MonetPreparedStatement
 		if (!super.execute("PREPARE " + prepareQuery))
 			throw new SQLException("Unexpected server response", "M0M10");
 
+		sqlStatement = prepareQuery;
 		// cheat a bit to get the ID and the number of columns
 		id = ((MonetConnection.ResultSetResponse)header).id;
 		size = (int)((MonetConnection.ResultSetResponse)header).tuplecount;
@@ -2716,6 +2718,23 @@ public class MonetPreparedStatement
 		close();
 	}
 
+	/**
+	 * @return the prepared SQL statement including parameter types and parameter values that were already set.
+	 */
+	public String toString​() {
+		final StringBuilder sb = new StringBuilder(256);
+		sb.append("Prepared SQL: ").append(sqlStatement).append("\n");
+		int param = 1;
+		for (int i = 0; i < size; i++) {
+			/* when column[i] == null it is a parameter, when column[i] != null it is a result column of the prepared query */
+			if (column[i] == null) {
+				sb.append(" parameter ").append(param++).append(" ").append(monetdbType[i]);
+				sb.append(", set value: ").append((values[i] != null) ? values[i] : "<null>").append("\n");
+			}
+		}
+		return sb.toString();
+	}
+
 	//== Java 1.8 methods (JDBC 4.2)
 
 	@Override
@@ -2798,6 +2817,7 @@ public class MonetPreparedStatement
 
 		return buf.toString();
 	}
+
 
 	/**
 	 * Small helper method that formats the "Invalid Parameter Index number ..." message

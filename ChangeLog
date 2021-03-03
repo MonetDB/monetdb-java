@@ -2,6 +2,10 @@
 # This file is updated with Maddlog
 
 * Wed Mar  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented PreparedStatement.toString() as requested by
+  https://github.com/MonetDB/monetdb-java/issues/8
+
+* Wed Mar  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Implemented fix for released monetdb-jdbc-3.0.jre8.jar and
   monetdb-mcl-1.19.jre8.jar when it is was run using java build
   1.8.0_###.  It would throw:  java.lang.NoSuchMethodError:

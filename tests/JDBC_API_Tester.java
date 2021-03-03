@@ -1003,6 +1003,7 @@ final public class JDBC_API_Tester {
 
 			pstmt.executeBatch();
 			sb.append(" passed\n");
+			sb.append(pstmt.toString());	// test showing prepared statement
 
 			sb.append("2b. closing PreparedStatement...");
 			pstmt.close();
@@ -1058,6 +1059,11 @@ final public class JDBC_API_Tester {
 			"0. false	false\n" +
 			"1. creating test table...success\n" +
 			"2a. inserting 3 records as batch... passed\n" +
+			"Prepared SQL: INSERT INTO table_Test_PSgetObject (ti,si,i,bi) VALUES (?,?,?,?)\n" +
+			" parameter 1 tinyint, set value: -127\n" +
+			" parameter 2 smallint, set value: -12700\n" +
+			" parameter 3 int, set value: -1270000\n" +
+			" parameter 4 bigint, set value: -127000000\n" +
 			"2b. closing PreparedStatement... passed\n" +
 			"3a. selecting records... passed\n" +
 			"  Retrieved row data: ti=-127 si=-12700 i=-1270000 bi=-127000000\n" +
@@ -1297,6 +1303,7 @@ final public class JDBC_API_Tester {
 		PreparedStatement pstmt = null;
 		try {
 			pstmt = con.prepareStatement("SELECT CASE WHEN myint IS NULL THEN 0 ELSE 1 END AS intnull, * FROM table_Test_PSmetadata WHERE myint = ?");
+			sb.append(pstmt.toString());	// test showing prepared statement
 
 			// testing and showing result set meta data
 			ResultSetMetaData rsmd = pstmt.getMetaData();
@@ -1338,6 +1345,8 @@ final public class JDBC_API_Tester {
 
 		compareExpectedOutput("Test_PSmetadata",
 			"0. false\tfalse\n" +
+			"Prepared SQL: SELECT CASE WHEN myint IS NULL THEN 0 ELSE 1 END AS intnull, * FROM table_Test_PSmetadata WHERE myint = ?\n" +
+			" parameter 1 int, set value: <null>\n" +
 			"rsmd. 6 columns:\n" +
 			"RCol 1\n" +
 			"  classname     java.lang.Short\n" +
@@ -1554,6 +1563,7 @@ final public class JDBC_API_Tester {
 			pstmt.setObject(2, turl);
 			// insert first record
 			pstmt.execute();
+			sb.append(pstmt.toString());	// test showing prepared statement
 
 			try {
 				tinet.setNetmaskBits(16);
@@ -1605,6 +1615,9 @@ final public class JDBC_API_Tester {
 			"  type      12\n" +
 			"  typename  url\n" +
 			"  classname org.monetdb.jdbc.types.URL\n" +
+			"Prepared SQL: INSERT INTO table_Test_PSsqldata VALUES (?, ?)\n" +
+			" parameter 1 inet, set value: inet '172.5.5.5/24'\n" +
+			" parameter 2 url, set value: url 'http://www.monetdb.org/'\n" +
 			"1.	172.5.5.5/24\n" +
 			"  172.5.5.5/24\n" +
 			"  /172.5.5.5\n" +
