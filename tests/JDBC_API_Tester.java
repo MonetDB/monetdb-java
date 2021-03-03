@@ -10,6 +10,7 @@ import java.sql.*;
 
 import java.io.StringReader;
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -59,7 +60,7 @@ final public class JDBC_API_Tester {
 		jt.Test_Ctransaction();
 		jt.Test_Dobjects();
 		jt.Test_FetchSize();
-	//	jt.Test_Int128();
+		jt.Test_Int128();
 		jt.Test_PSgeneratedkeys();
 		jt.Test_PSgetObject();
 		jt.Test_PSlargebatchval();
@@ -806,6 +807,87 @@ final public class JDBC_API_Tester {
 			"ResultSet fetch size before set: 250\n" +
 			"Statement fetch size after set: 40\n" +
 			"ResultSet fetch size after set: 16384\n");
+	}
+
+	private void Test_Int128() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		ResultSet rs = null;
+
+		// check first if datatype hugeint is supported on this server
+		boolean supportsHugeInt = false;
+		try {
+			stmt = con.createStatement();
+			// query sys.types to find out if sql datatype hugeint is supported
+			rs = stmt.executeQuery("SELECT sqlname from sys.types where sqlname = 'hugeint';");
+			if (rs != null && rs.next()) {
+				String sqlname = rs.getString(1);
+				if ("hugeint".equals(sqlname))
+					supportsHugeInt = true;
+			}
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		if (!supportsHugeInt) {
+			closeStmtResSet(stmt, rs);
+			compareExpectedOutput("Test_Int128", "");
+			return;	// skip the rest of the test
+		}
+
+		// test whether we can represent a full-size int128 as JDBC results
+		PreparedStatement insertStatement = null;
+		try {
+			stmt.executeUpdate("CREATE TABLE HUGEINTT (I HUGEINT)");
+			stmt.executeUpdate("CREATE TABLE HUGEDECT (I DECIMAL(38,19))");
+
+			BigInteger bi = new BigInteger("123456789012345678909876543210987654321");
+			BigDecimal bd = new BigDecimal("1234567890123456789.9876543210987654321");
+
+			insertStatement = con.prepareStatement("INSERT INTO HUGEINTT VALUES (?)");
+			insertStatement.setBigDecimal(1, new BigDecimal(bi));
+			insertStatement.executeUpdate();
+			insertStatement.close();
+
+			stmt.executeUpdate("INSERT INTO HUGEDECT VALUES (" + bd + ");");
+
+			rs = stmt.executeQuery("SELECT I FROM HUGEINTT");
+			rs.next();
+			BigInteger biRes = rs.getBigDecimal(1).toBigInteger();
+			rs.close();
+			sb.append("Expecting " + bi + ", got " + biRes).append("\n");
+			if (!bi.equals(biRes)) {
+				sb.append("value of bi is NOT equal to biRes!").append("\n");
+			}
+
+			rs = stmt.executeQuery("SELECT I FROM HUGEDECT");
+			rs.next();
+			BigDecimal bdRes = rs.getBigDecimal(1);
+			rs.close();
+			sb.append("Expecting " + bd + ", got " + bdRes).append("\n");
+			if (!bd.equals(bdRes)) {
+				sb.append("value of bd is NOT equal to bdRes!").append("\n");
+			}
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		// cleanup
+		try {
+			stmt.executeUpdate("DROP TABLE IF EXISTS HUGEINTT");
+			stmt.executeUpdate("DROP TABLE IF EXISTS HUGEDECT");
+			sb.append("SUCCESS").append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(insertStatement, null);
+		closeStmtResSet(stmt, rs);
+
+		compareExpectedOutput("Test_Int128",
+			"Expecting 123456789012345678909876543210987654321, got 123456789012345678909876543210987654321\n" +
+			"Expecting 1234567890123456789.9876543210987654321, got 1234567890123456789.9876543210987654321\n" +
+			"SUCCESS\n");
 	}
 
 	private void Test_PSgeneratedkeys() {
