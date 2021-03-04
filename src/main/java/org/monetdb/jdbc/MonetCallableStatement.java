@@ -31,6 +31,7 @@ import java.util.Calendar;
 import java.util.Map;
 
 /**
+ *<pre>
  * A {@link CallableStatement} suitable for the MonetDB database.
  *
  * The interface used to execute SQL stored procedures.
@@ -39,15 +40,13 @@ import java.util.Map;
  * If used, the result parameter must be registered as an OUT parameter (MonetDB does not support this).
  * The other parameters can be used for input, output or both. Parameters are referred to sequentially, by number, with the first parameter being 1.
  *
- * <code>
  *  { call procedure-name [ (arg1, arg2, ...) ] }
  *  { ?= call procedure-name [ (arg1, arg2, ...) ] }
- * </code>
  *
  * IN parameter values are set using the set methods inherited from PreparedStatement.
  * The type of all OUT parameters must be registered prior to executing the stored procedure;
  * their values are retrieved after execution via the get methods provided here.
- * Note: MonetDB does not support OUT or INOUT parameters. Only input parameters are supported.
+ * <b>Note</b>: MonetDB does not support OUT or INOUT parameters. Only input parameters are supported.
  *
  * A CallableStatement can return one ResultSet object or multiple ResultSet objects.
  * Multiple ResultSet objects are handled using operations inherited from Statement.
@@ -62,6 +61,7 @@ import java.util.Map;
  * - all registerOutParameter(parameterIndex/parameterName, int sqlType, ...) methods
  * - wasNull() method
  * because output parameters in stored procedures are not supported by MonetDB.
+ *</pre>
  *
  * @author Martin van Dinther
  * @version 1.1

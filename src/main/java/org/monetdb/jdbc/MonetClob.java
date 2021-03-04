@@ -16,14 +16,16 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 
 /**
+ *<pre>
  * The MonetClob class implements the {@link java.sql.Clob} interface.
  *
  * Because MonetDB/SQL currently has no support for streams, this class is a
- * shallow wrapper of a {@link StringBuilder}.  It is more or less supplied to
- * enable an application that depends on it to run.  It may be obvious
+ * shallow wrapper of a {@link StringBuilder}. It is more or less supplied to
+ * enable an application that depends on it to run. It may be obvious
  * that it is a real resource expensive workaround that contradicts the
  * sole reason for a Clob: avoidance of huge resource consumption.
  * <b>Use of this class is highly discouraged.</b>
+ *</pre>
  *
  * @author Fabian Groffen
  */

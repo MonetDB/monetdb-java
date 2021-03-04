@@ -12,6 +12,7 @@ import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 
 /**
+ *<pre>
  * A Wrapper class which provide the ability to retrieve the delegate instance
  * when the instance in question is in fact a proxy class.
  *
@@ -21,6 +22,7 @@ import java.sql.SQLFeatureNotSupportedException;
  * as proxy class instances representing the the actual resources.
  * This class contains a standard mechanism to access these wrapped resources
  * represented by their proxy, to permit direct access to the resource delegates.
+ *</pre>
  *
  * @author Fabian Groffen, Martin van Dinther
  * @version 1.2
@@ -91,7 +93,7 @@ public class MonetWrapper implements java.sql.Wrapper {
 	}
 
 	/**
-	 * General utility function to add double quotes around an SQL Indentifier
+	 * General utility function to add double quotes around an SQL Identifier
 	 * such as column or table or schema name in SQL queries.
 	 * It also adds escapes for special characters: double quotes and the escape character
 	 *

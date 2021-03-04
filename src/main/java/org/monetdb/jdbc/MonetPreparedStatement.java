@@ -41,6 +41,7 @@ import java.util.Calendar;
 import java.util.Map;
 
 /**
+ *<pre>
  * A {@link PreparedStatement} suitable for the MonetDB database.
  *
  * This implementation of the PreparedStatement interface uses the
@@ -49,7 +50,6 @@ import java.util.Map;
  * returns the types it expects for them.
  *
  * An example of a server response on a prepare query is:
- * <pre>
  * % prepare select name from tables where id &gt; ? and id &lt; ?;
  * &amp;5 0 2 3 2
  * # prepare,      prepare,        prepare # table_name
@@ -58,7 +58,7 @@ import java.util.Map;
  * # 0,    0,      0 # length
  * [ "int",        9,      0       ]
  * [ "int",        9,      0       ]
- * </pre>
+ *</pre>
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
@@ -2719,9 +2719,12 @@ public class MonetPreparedStatement
 	}
 
 	/**
-	 * @return the prepared SQL statement including parameter types and parameter values that were already set.
+	 * Return the prepared SQL statement including parameter types and parameter values that were set.
+	 *
+	 * @return a String representing this Object
 	 */
-	public String toString​() {
+	@Override
+	public String toString() {
 		final StringBuilder sb = new StringBuilder(256);
 		sb.append("Prepared SQL: ").append(sqlStatement).append("\n");
 		int param = 1;
@@ -2817,7 +2820,6 @@ public class MonetPreparedStatement
 
 		return buf.toString();
 	}
-
 
 	/**
 	 * Small helper method that formats the "Invalid Parameter Index number ..." message

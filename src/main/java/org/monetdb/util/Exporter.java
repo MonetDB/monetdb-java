@@ -42,7 +42,7 @@ public abstract class Exporter {
 
 	/**
 	 * Convenience function to call the general utility function MonetWrapper.dq()
-	 * to add double quotes around an SQL Indentifier such as column or
+	 * to add double quotes around an SQL Identifier such as column or
 	 * table or schema name in SQL queries.
 	 * It also adds escapes for special characters: double quotes and the escape character
 	 *
@@ -81,8 +81,8 @@ public abstract class Exporter {
 	}
 
 	/**
-	 * Utility method to fetch the "query" value from sys.tables for a specific view or table in a specific schema
-	 * The "query" value contains the original SQL view creation text or the ON clause text when it is a REMOTE TABLE
+	 * Utility method to fetch the "query" column value from sys.tables for a specific view or table in a specific schema
+	 * The "query" column value contains the original SQL view creation text or the ON clause text when it is a REMOTE TABLE
 	 *
 	 * @param con the JDBC connection, may not be null
 	 * @param schema the schem name, may not be null or empty

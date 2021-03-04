@@ -16,15 +16,17 @@ import javax.sql.DataSource;
 import java.util.Properties;
 
 /**
+ *<pre>
  * A DataSource suitable for the MonetDB database.
  *
  * This DataSource allows retrieval of a Connection using the JNDI bean like
- * framework.  A DataSource has numerous advantages over using the DriverManager
- * to retrieve a Connection object.  Using the DataSource interface enables a
+ * framework. A DataSource has numerous advantages over using the DriverManager
+ * to retrieve a Connection object. Using the DataSource interface enables a
  * more transparent application where the location or database can be changed
  * without changing any application code.
  *
  * Additionally, pooled connections can be used when using a DataSource.
+ *</pre>
  *
  * @author Fabian Groffen
  * @version 0.2

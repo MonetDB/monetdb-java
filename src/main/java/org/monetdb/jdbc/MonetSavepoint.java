@@ -8,12 +8,16 @@
 
 package org.monetdb.jdbc;
 
+import java.sql.Savepoint;
 import java.sql.SQLException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ *<pre>
+ * A {@link Savepoint} suitable for the MonetDB database.
+ *
  * The representation of a savepoint, which is a point within the current
- * transaction that can be referenced from the Connection.rollback method.
+ * transaction that can be referenced from the Connection.rollback() method.
  * When a transaction is rolled back to a savepoint all changes made after
  * that savepoint are undone.
  * Savepoints can be either named or unnamed. Unnamed savepoints are
@@ -24,14 +28,15 @@ import java.util.concurrent.atomic.AtomicInteger;
  * internal representation of the save point.
  *
  * Because the IDs which get generated are a logical sequence, application
- * wide, two concurrent transactions are guaranteed to not to have the same
+ * wide, two concurrent transactions are guaranteed to not have the same
  * save point identifiers. In this implementation the validity of save points
  * is determined by the server, which makes this a light implementation.
+ *</pre>
  *
  * @author Fabian Groffen
  * @version 1.1
  */
-public final class MonetSavepoint implements java.sql.Savepoint {
+public final class MonetSavepoint implements Savepoint {
 	/** The id of the last created Savepoint */
 	private static final AtomicInteger highestId = new AtomicInteger(0);
 

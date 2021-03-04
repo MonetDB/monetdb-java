@@ -42,6 +42,7 @@ import org.monetdb.mcl.parser.MCLParseException;
 import org.monetdb.mcl.parser.StartOfHeaderParser;
 
 /**
+ *<pre>
  * A {@link Connection} suitable for the MonetDB database.
  *
  * This connection represents a connection (session) to a MonetDB
@@ -60,8 +61,9 @@ import org.monetdb.mcl.parser.StartOfHeaderParser;
  * must be called explicitly in order to commit changes; otherwise,
  * database changes will not be saved.
  *
- * The current state of this connection is that it nearly implements the
+ * The current state of this class is that it nearly implements the
  * whole Connection interface.
+ *</pre>
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
