@@ -3160,99 +3160,99 @@ final public class JDBC_API_Tester {
 			sb.append("0. true\t").append(con3.getAutoCommit()).append("\n");
 
 			// test the creation of a table with concurrent clients
-			sb.append("1.1. create table t1 using client 1...\n");
-			stmt1.executeUpdate("CREATE TABLE t1 ( id int, name varchar(1024) )");
+			sb.append("1.1. create table t1504657 using client 1...\n");
+			stmt1.executeUpdate("CREATE TABLE t1504657 ( id int, name varchar(1024) )");
 			sb.append("passed :)\n");
 
 			sb.append("1.2. check table existence in client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT name FROM tables where name LIKE 't1'");
+			rs2 = stmt2.executeQuery("SELECT name FROM tables where name LIKE 't1504657'");
 			while (rs2.next())
 				sb.append(rs2.getString("name")).append("\n");
 			sb.append("passed :)\n");
 
 			sb.append("1.3. check table existence in client 3...\n");
-			rs3 = stmt3.executeQuery("SELECT name FROM tables where name LIKE 't1'");
+			rs3 = stmt3.executeQuery("SELECT name FROM tables where name LIKE 't1504657'");
 			while (rs3.next())
 				sb.append(rs3.getString("name")).append("\n");
 			sb.append("passed :)\n");
 
 			// test the insertion of values with concurrent clients
-			sb.append("2 insert into t1 using client 1...\n");
-			stmt1.executeUpdate("INSERT INTO t1 values( 1, 'monetdb' )");
+			sb.append("2 insert into t1504657 using client 1...\n");
+			stmt1.executeUpdate("INSERT INTO t1504657 values( 1, 'monetdb' )");
 			sb.append("passed :)\n");
-			stmt1.executeUpdate("INSERT INTO t1 values( 2, 'monet' )");
+			stmt1.executeUpdate("INSERT INTO t1504657 values( 2, 'monet' )");
 			sb.append("passed :)\n");
-			stmt1.executeUpdate("INSERT INTO t1 values( 3, 'mon' )");
+			stmt1.executeUpdate("INSERT INTO t1504657 values( 3, 'mon' )");
 			sb.append("passed :)\n");
 
 			sb.append("2.1. check table status with client 1...\n");
-			rs1 = stmt1.executeQuery("SELECT * FROM t1");
+			rs1 = stmt1.executeQuery("SELECT * FROM t1504657");
 			while (rs1.next())
 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
 			sb.append("passed :)\n");
 
 			sb.append("2.2. check table status with client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT * FROM t1");
+			rs2 = stmt2.executeQuery("SELECT * FROM t1504657");
 			while (rs2.next())
 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
 			sb.append("passed :)\n");
 
 			sb.append("2.3. check table status with client 3...\n");
-			rs3 = stmt3.executeQuery("SELECT * FROM t1");
+			rs3 = stmt3.executeQuery("SELECT * FROM t1504657");
 			while (rs3.next())
 				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
 			sb.append("passed :)\n");
 
 			// test the insertion of values with concurrent clients
-			sb.append("3 insert into t1 using client 2...\n");
-			stmt2.executeUpdate("INSERT INTO t1 values( 4, 'monetdb' )");
+			sb.append("3 insert into t1504657 using client 2...\n");
+			stmt2.executeUpdate("INSERT INTO t1504657 values( 4, 'monetdb' )");
 			sb.append("passed :)\n");
-			stmt2.executeUpdate("INSERT INTO t1 values( 5, 'monet' )");
+			stmt2.executeUpdate("INSERT INTO t1504657 values( 5, 'monet' )");
 			sb.append("passed :)\n");
-			stmt2.executeUpdate("INSERT INTO t1 values( 6, 'mon' )");
+			stmt2.executeUpdate("INSERT INTO t1504657 values( 6, 'mon' )");
 			sb.append("passed :)\n");
 
 			sb.append("3.1. check table status with client 1...\n");
-			rs1 = stmt1.executeQuery("SELECT * FROM t1");
+			rs1 = stmt1.executeQuery("SELECT * FROM t1504657");
 			while (rs1.next())
 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
 			sb.append("passed :)\n");
 
 			sb.append("3.2. check table status with client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT * FROM t1");
+			rs2 = stmt2.executeQuery("SELECT * FROM t1504657");
 			while (rs2.next())
 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
 			sb.append("passed :)\n");
 
 			sb.append("3.3. check table status with client 3...\n");
-			rs3 = stmt3.executeQuery("SELECT * FROM t1");
+			rs3 = stmt3.executeQuery("SELECT * FROM t1504657");
 			while (rs3.next())
 				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
 			sb.append("passed :)\n");
 
 			// test the insertion of values with concurrent clients
-			sb.append("4 insert into t1 using client 3...\n");
-			stmt3.executeUpdate("INSERT INTO t1 values( 7, 'monetdb' )");
+			sb.append("4 insert into t1504657 using client 3...\n");
+			stmt3.executeUpdate("INSERT INTO t1504657 values( 7, 'monetdb' )");
 			sb.append("passed :)\n");
-			stmt3.executeUpdate("INSERT INTO t1 values( 8, 'monet' )");
+			stmt3.executeUpdate("INSERT INTO t1504657 values( 8, 'monet' )");
 			sb.append("passed :)\n");
-			stmt3.executeUpdate("INSERT INTO t1 values( 9, 'mon' )");
+			stmt3.executeUpdate("INSERT INTO t1504657 values( 9, 'mon' )");
 			sb.append("passed :)\n");
 
 			sb.append("4.1. check table status with client 1...\n");
-			rs1 = stmt1.executeQuery("SELECT * FROM t1");
+			rs1 = stmt1.executeQuery("SELECT * FROM t1504657");
 			while (rs1.next())
 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
 			sb.append("passed :)\n");
 
 			sb.append("4.2. check table status with client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT * FROM t1");
+			rs2 = stmt2.executeQuery("SELECT * FROM t1504657");
 			while (rs2.next())
 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
 			sb.append("passed :)\n");
 
 			sb.append("4.3. check table status with client 3...\n");
-			rs3 = stmt3.executeQuery("SELECT * FROM t1");
+			rs3 = stmt3.executeQuery("SELECT * FROM t1504657");
 			while (rs3.next())
 				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
 			sb.append("passed :)\n");
@@ -3262,8 +3262,8 @@ final public class JDBC_API_Tester {
 
 		// cleanup
 		try {
-			sb.append("Cleanup TABLE t1\n");
-			stmt3.executeUpdate("DROP TABLE t1");
+			sb.append("Cleanup TABLE t1504657\n");
+			stmt3.executeUpdate("DROP TABLE t1504657");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -3280,15 +3280,15 @@ final public class JDBC_API_Tester {
 				"0. true	true\n" +
 				"0. true	true\n" +
 				"0. true	true\n" +
-				"1.1. create table t1 using client 1...\n" +
+				"1.1. create table t1504657 using client 1...\n" +
 				"passed :)\n" +
 				"1.2. check table existence in client 2...\n" +
-				"t1\n" +
+				"t1504657\n" +
 				"passed :)\n" +
 				"1.3. check table existence in client 3...\n" +
-				"t1\n" +
+				"t1504657\n" +
 				"passed :)\n" +
-				"2 insert into t1 using client 1...\n" +
+				"2 insert into t1504657 using client 1...\n" +
 				"passed :)\n" +
 				"passed :)\n" +
 				"passed :)\n" +
@@ -3307,7 +3307,7 @@ final public class JDBC_API_Tester {
 				"2, monet\n" +
 				"3, mon\n" +
 				"passed :)\n" +
-				"3 insert into t1 using client 2...\n" +
+				"3 insert into t1504657 using client 2...\n" +
 				"passed :)\n" +
 				"passed :)\n" +
 				"passed :)\n" +
@@ -3335,7 +3335,7 @@ final public class JDBC_API_Tester {
 				"5, monet\n" +
 				"6, mon\n" +
 				"passed :)\n" +
-				"4 insert into t1 using client 3...\n" +
+				"4 insert into t1504657 using client 3...\n" +
 				"passed :)\n" +
 				"passed :)\n" +
 				"passed :)\n" +
@@ -3372,7 +3372,7 @@ final public class JDBC_API_Tester {
 				"8, monet\n" +
 				"9, mon\n" +
 				"passed :)\n" +
-				"Cleanup TABLE t1\n");
+				"Cleanup TABLE t1504657\n");
 	}
 
 	private void BugConcurrent_sequences(String arg0) {
@@ -3392,20 +3392,20 @@ final public class JDBC_API_Tester {
 			sb.append("0. true\t").append(con2.getAutoCommit()).append("\n");
 
 			// create a table
-			sb.append("1. create table t1 using client 1... ");
-			stmt1.executeUpdate("CREATE TABLE t1 ( id serial, who varchar(12) )");
+			sb.append("1. create table tconc_seq using client 1... ");
+			stmt1.executeUpdate("CREATE TABLE tconc_seq ( id serial, who varchar(12) )");
 			sb.append("passed :)\n");
 
 			// test the insertion of values with concurrent clients
-			sb.append("2. insert into t1 using client 1 and 2... ");
-			stmt1.executeUpdate("INSERT INTO t1(who) VALUES('client1')");
+			sb.append("2. insert into tconc_seq using client 1 and 2... ");
+			stmt1.executeUpdate("INSERT INTO tconc_seq(who) VALUES('client1')");
 			sb.append("client 1 passed :)\n");
 
 			con2.setAutoCommit(false);
-			stmt2.executeUpdate("INSERT INTO t1(who) VALUES('client2')");
+			stmt2.executeUpdate("INSERT INTO tconc_seq(who) VALUES('client2')");
 			sb.append("transaction on client 2 :)\n");
 
-			stmt1.executeUpdate("INSERT INTO t1(who) VALUES('client1')");
+			stmt1.executeUpdate("INSERT INTO tconc_seq(who) VALUES('client1')");
 			sb.append("client 1 passed :)\n");
 
 			try {
@@ -3415,28 +3415,28 @@ final public class JDBC_API_Tester {
 				sb.append("transaction client 2 failed :)\n");
 			}
 			con2.setAutoCommit(true);
-			stmt2.executeUpdate("INSERT INTO t1(who) VALUES('client2')");
+			stmt2.executeUpdate("INSERT INTO tconc_seq(who) VALUES('client2')");
 			sb.append("passed :)\n");
 
 			sb.append("2.1. check table status with client 1...\n");
-			rs1 = stmt1.executeQuery("SELECT * FROM t1");
+			rs1 = stmt1.executeQuery("SELECT * FROM tconc_seq");
 			while (rs1.next())
 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("who")).append("\n");
 			sb.append("passed :)\n");
 
 			sb.append("2.2. check table status with client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT * FROM t1");
+			rs2 = stmt2.executeQuery("SELECT * FROM tconc_seq");
 			while (rs2.next())
 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("who")).append("\n");
 			sb.append("passed :)\n");
 
 			// drop the table (not dropping the sequence) from client 1
-			sb.append("3.1. drop table t1 using client 1... ");
-			stmt1.executeUpdate("DROP TABLE t1");
+			sb.append("3.1. drop table tconc_seq using client 1... ");
+			stmt1.executeUpdate("DROP TABLE tconc_seq");
 			sb.append("passed :)\n");
 
-			sb.append("3.1. recreate t1 using client 1... ");
-			stmt1.executeUpdate("CREATE TABLE t1 ( id serial, who varchar(12) )");
+			sb.append("3.1. recreate tconc_seq using client 1... ");
+			stmt1.executeUpdate("CREATE TABLE tconc_seq ( id serial, who varchar(12) )");
 			sb.append("passed :)\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
@@ -3454,17 +3454,17 @@ final public class JDBC_API_Tester {
 			sb.append("passed :)\n");
 
 			// insert and print, should get 1,2
-			sb.append("4. insert into t1 using client 1 and 2...\n");
-			stmt1.executeUpdate("INSERT INTO t1(who) VALUES('client1')");
+			sb.append("4. insert into tconc_seq using client 1 and 2...\n");
+			stmt1.executeUpdate("INSERT INTO tconc_seq(who) VALUES('client1')");
 			sb.append("passed :)\n");
 			con2.setAutoCommit(false);
-			stmt2.executeUpdate("INSERT INTO t1(who) VALUES('client2')");
+			stmt2.executeUpdate("INSERT INTO tconc_seq(who) VALUES('client2')");
 			con2.commit();
 			con2.setAutoCommit(true);
 			sb.append("passed :)\n");
 
 			sb.append("4.1. check table status with client 1...\n");
-			rs1 = stmt1.executeQuery("SELECT * FROM t1 ORDER BY who");
+			rs1 = stmt1.executeQuery("SELECT * FROM tconc_seq ORDER BY who");
 			for (int cntr = 1; rs1.next(); cntr++) {
 				int id = rs1.getInt("id");
 				sb.append(id).append(", ").append(rs1.getString("who")).append("\n");
@@ -3474,7 +3474,7 @@ final public class JDBC_API_Tester {
 			sb.append("passed :)\n");
 
 			sb.append("4.2. check table status with client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT * FROM t1 ORDER BY who");
+			rs2 = stmt2.executeQuery("SELECT * FROM tconc_seq ORDER BY who");
 			for (int cntr = 1; rs2.next(); cntr++) {
 				int id = rs2.getInt("id");
 				sb.append(id).append(", ").append(rs2.getString("who")).append("\n");
@@ -3488,8 +3488,8 @@ final public class JDBC_API_Tester {
 
 		// cleanup
 		try {
-			sb.append("Cleanup TABLE t1\n");
-			stmt2.executeUpdate("DROP TABLE t1");
+			sb.append("Cleanup TABLE tconc_seq\n");
+			stmt2.executeUpdate("DROP TABLE tconc_seq");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -3503,8 +3503,8 @@ final public class JDBC_API_Tester {
 		compareExpectedOutput("BugConcurrent_sequences",
 				"0. true	true\n" +
 				"0. true	true\n" +
-				"1. create table t1 using client 1... passed :)\n" +
-				"2. insert into t1 using client 1 and 2... client 1 passed :)\n" +
+				"1. create table tconc_seq using client 1... passed :)\n" +
+				"2. insert into tconc_seq using client 1 and 2... client 1 passed :)\n" +
 				"transaction on client 2 :)\n" +
 				"client 1 passed :)\n" +
 				"transaction client 2 failed :)\n" +
@@ -3519,10 +3519,10 @@ final public class JDBC_API_Tester {
 				"3, client1\n" +
 				"4, client2\n" +
 				"passed :)\n" +
-				"3.1. drop table t1 using client 1... passed :)\n" +
-				"3.1. recreate t1 using client 1... passed :)\n" +
+				"3.1. drop table tconc_seq using client 1... passed :)\n" +
+				"3.1. recreate tconc_seq using client 1... passed :)\n" +
 				"x. Reconnecting client 1 and 2... passed :)\n" +
-				"4. insert into t1 using client 1 and 2...\n" +
+				"4. insert into tconc_seq using client 1 and 2...\n" +
 				"passed :)\n" +
 				"passed :)\n" +
 				"4.1. check table status with client 1...\n" +
@@ -3533,7 +3533,7 @@ final public class JDBC_API_Tester {
 				"1, client1\n" +
 				"2, client2\n" +
 				"passed :)\n" +
-				"Cleanup TABLE t1\n");
+				"Cleanup TABLE tconc_seq\n");
 	}
 
 	private void Bug_Connect_as_voc_getMetaData_Failure_Bug_6388(String arg0) {
