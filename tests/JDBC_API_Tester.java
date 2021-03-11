@@ -81,6 +81,7 @@ final public class JDBC_API_Tester {
 		jt.Test_Sbatching();
 		jt.Test_Smoreresults();
 		jt.Test_Wrapper();
+		jt.bogus_auto_generated_keys();
 		jt.BugConcurrent_clients_SF_1504657(con_URL);
 		jt.BugConcurrent_sequences(con_URL);
 		jt.Bug_Connect_as_voc_getMetaData_Failure_Bug_6388(con_URL);
@@ -3138,6 +3139,88 @@ final public class JDBC_API_Tester {
 		} catch (SQLException se) {
 			sb.append(se.getMessage());
 		}
+	}
+
+	private void bogus_auto_generated_keys() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		ResultSet rs = null;
+		int upd = 0;
+		try {
+			stmt = con.createStatement();
+			sb.append("1. create table...");
+			// create a simple table with an auto-generated key (id)
+			upd = stmt.executeUpdate("CREATE TABLE bogus_gen_keys (\n	\"id\" serial,\n	\"x\" varchar(12)\n);");
+			if (upd != Statement.SUCCESS_NO_INFO)
+				sb.append("Wrong return status: ").append(upd).append("\n");
+			else
+				sb.append("passed\n");
+
+			// perform an update, useless, but illustrates the bug, this time no
+			// generated key is reported, which is correct
+			sb.append("2. update empty table...");
+			upd = stmt.executeUpdate("UPDATE bogus_gen_keys SET \"x\" = 'bla' WHERE \"id\" = 12;");
+			if (upd != 0)
+				sb.append("Wrong return status: ").append(upd).append("\n");
+			else
+				sb.append("passed\n");
+
+			// insert some value, should get a generated key
+			sb.append("3. insert 1 row ...");
+			upd = stmt.executeUpdate("INSERT INTO bogus_gen_keys (\"x\") VALUES ('boe');");
+			if (upd != 1)
+				sb.append("Wrong return status: ").append(upd).append("\n");
+			else
+				sb.append("passed\n");
+
+			sb.append("4. show values of inserted row ...");
+			rs = stmt.executeQuery("SELECT \"id\", \"x\" from bogus_gen_keys;");
+			if (rs != null && rs.next()) {
+				sb.append(" id: ").append(rs.getString(1)).append("  x: ").append(rs.getString(2));
+			}
+			sb.append("\n");
+
+			// update again, we expect NO generated key, but we DO get one
+			sb.append("5. update row 1...");
+			upd = stmt.executeUpdate("UPDATE bogus_gen_keys SET \"x\" = 'bla' WHERE \"id\" = 1;");
+			if (upd != 1)
+				sb.append("Wrong return status: ").append(upd).append("\n");
+			else
+				sb.append("passed\n");
+
+			sb.append("6. update row 12...");
+			upd = stmt.executeUpdate("UPDATE bogus_gen_keys SET \"x\" = 'bla' WHERE \"id\" = 12;");
+			if (upd != 0)
+				sb.append("Wrong return status: ").append(upd).append("\n");
+			else
+				sb.append("passed\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		// cleanup
+		try {
+			sb.append("7. drop table...");
+			upd = stmt.executeUpdate("DROP TABLE bogus_gen_keys");
+			if (upd != Statement.SUCCESS_NO_INFO)
+				sb.append("Wrong return status: ").append(upd).append("\n");
+			else
+				sb.append("passed\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(stmt, rs);
+
+		compareExpectedOutput("bogus_auto_generated_keys",
+				"1. create table...passed\n" +
+				"2. update empty table...passed\n" +
+				"3. insert 1 row ...passed\n" +
+				"4. show values of inserted row ... id: 1  x: boe\n" +
+				"5. update row 1...passed\n" +
+				"6. update row 12...passed\n" +
+				"7. drop table...passed\n");
 	}
 
 	private void BugConcurrent_clients_SF_1504657(String arg0) {
