@@ -60,6 +60,7 @@ public final class MDBvalidator {
 	private int minorversion;
 
 	private boolean verbose = false;	// set it to true for tracing all generated SQL queries, see validateQuery(qry, ...)
+	private boolean showValidationInfo = true;	// set it to false when no validation type header info should be written to stdout
 
 	MDBvalidator(Connection conn) {
 		con = conn;
@@ -107,8 +108,14 @@ public final class MDBvalidator {
 	}
 */
 
+	// public class methods (called from JdbcClient.java)
 	public static void validateSqlCatalogIntegrity(final Connection conn) {
+		validateSqlCatalogIntegrity(conn, true);
+	}
+
+	public static void validateSqlCatalogIntegrity(final Connection conn, boolean showValidationHeaderInfo) {
 		final MDBvalidator mdbv = new MDBvalidator(conn);
+		mdbv.showValidationInfo = showValidationHeaderInfo;
 		if (mdbv.checkMonetDBVersion()) {
 			mdbv.validateSchema("sys", null, sys_pkeys, sys_akeys, sys_fkeys, sys_notnull, true);
 			mdbv.validateSchema("tmp", null, tmp_pkeys, tmp_akeys, tmp_fkeys, tmp_notnull, true);
@@ -116,7 +123,12 @@ public final class MDBvalidator {
 	}
 
 	public static void validateSqlNetcdfTablesIntegrity(final Connection conn) {
+		validateSqlNetcdfTablesIntegrity(conn, true);
+	}
+
+	public static void validateSqlNetcdfTablesIntegrity(final Connection conn, boolean showValidationHeaderInfo) {
 		final MDBvalidator mdbv = new MDBvalidator(conn);
+		mdbv.showValidationInfo = showValidationHeaderInfo;
 		if (mdbv.checkMonetDBVersion()) {
 			// determine if the 5 netcdf tables exist in the sys schema
 			if (mdbv.checkTableExists("sys", "netcdf_files")
@@ -129,7 +141,12 @@ public final class MDBvalidator {
 	}
 
 	public static void validateSqlGeomTablesIntegrity(final Connection conn) {
+		validateSqlGeomTablesIntegrity(conn, true);
+	}
+
+	public static void validateSqlGeomTablesIntegrity(final Connection conn, boolean showValidationHeaderInfo) {
 		final MDBvalidator mdbv = new MDBvalidator(conn);
+		mdbv.showValidationInfo = showValidationHeaderInfo;
 		if (mdbv.checkMonetDBVersion()) {
 			if (mdbv.checkTableExists("sys", "spatial_ref_sys"))	// No need to also test if view sys.geometry_columns exists
 				mdbv.validateSchema("sys", "geom", geom_pkeys, geom_akeys, geom_fkeys, geom_notnull, false);
@@ -137,15 +154,26 @@ public final class MDBvalidator {
 	}
 
 	public static void validateSchemaIntegrity(final Connection conn, final String schema) {
+		validateSchemaIntegrity(conn, schema, true);
+	}
+
+	public static void validateSchemaIntegrity(final Connection conn, final String schema, boolean showValidationHeaderInfo) {
 		final MDBvalidator mdbv = new MDBvalidator(conn);
+		mdbv.showValidationInfo = showValidationHeaderInfo;
 		if (mdbv.checkSchemaExists(schema))
 			mdbv.validateSchema(schema, null, null, null, null, null, true);
 		else
-			System.out.println("Schema: " + schema + " does not exist in this database.");
+			if (mdbv.showValidationInfo)
+				System.out.println("Schema: " + schema + " does not exist in this database.");
 	}
 
 	public static void validateDBIntegrity(final Connection conn) {
+		validateDBIntegrity(conn, true);
+	}
+
+	public static void validateDBIntegrity(final Connection conn, boolean showValidationHeaderInfo) {
 		final MDBvalidator mdbv = new MDBvalidator(conn);
+		mdbv.showValidationInfo = showValidationHeaderInfo;
 		final Statement stmt = mdbv.createStatement("validateDBIntegrity()");
 		if (stmt == null)
 			return;
@@ -169,11 +197,11 @@ public final class MDBvalidator {
 			printExceptions(e);
 		}
 		freeStmtRs(stmt, rs);
-		if (!hasUserSchemas)
+		if (!hasUserSchemas && mdbv.showValidationInfo)
 			System.out.println("No user schemas found in this database.");
 	}
 
-
+	// private object methods
 	private void validateSchema(
 		final String schema,
 		final String group,
@@ -222,7 +250,8 @@ public final class MDBvalidator {
 		final String checkType)
 	{
 		final int len = data.length;
-		System.out.println("Checking " + minimumWidth(len,6) + (group != null ? " " + group : "") + " tables/keys  in schema " + schema + " for " + checkType + " violations.");
+		if (showValidationInfo)
+			System.out.println("Checking " + minimumWidth(len,6) + (group != null ? " " + group : "") + " tables/keys  in schema " + schema + " for " + checkType + " violations.");
 
 		final StringBuilder sb = new StringBuilder(256);	// reusable buffer to compose SQL validation queries
 		sb.append("SELECT COUNT(*) AS duplicates, ");
@@ -264,7 +293,8 @@ public final class MDBvalidator {
 			.append(" and s.name = '").append(schema).append("'");
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
-		System.out.println("Checking " + minimumWidth(count,6) + " keys         in schema " + schema + " for " + checkType + " violations.");
+		if (showValidationInfo)
+			System.out.println("Checking " + minimumWidth(count,6) + " keys         in schema " + schema + " for " + checkType + " violations.");
 
 		ResultSet rs = null;
 		try {
@@ -338,7 +368,8 @@ public final class MDBvalidator {
 		final String checkType)
 	{
 		final int len = data.length;
-		System.out.println("Checking " + minimumWidth(len,6) + (group != null ? " " + group : "") + " foreign keys in schema " + schema + " for " + checkType + " violations.");
+		if (showValidationInfo)
+			System.out.println("Checking " + minimumWidth(len,6) + (group != null ? " " + group : "") + " foreign keys in schema " + schema + " for " + checkType + " violations.");
 
 		final StringBuilder sb = new StringBuilder(400);	// reusable buffer to compose SQL validation queries
 		sb.append("SELECT ");
@@ -390,7 +421,8 @@ public final class MDBvalidator {
 			.append(" and s.name = '").append(schema).append("'");
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
-		System.out.println("Checking " + minimumWidth(count,6) + " foreign keys in schema " + schema + " for " + checkType + " violations.");
+		if (showValidationInfo)
+			System.out.println("Checking " + minimumWidth(count,6) + " foreign keys in schema " + schema + " for " + checkType + " violations.");
 
 		ResultSet rs = null;
 		try {
@@ -500,7 +532,8 @@ public final class MDBvalidator {
 		final String checkType)
 	{
 		final int len = data.length;
-		System.out.println("Checking " + minimumWidth(len,6) + (group != null ? " " + group : "") + " columns      in schema " + schema + " for " + checkType + " violations.");
+		if (showValidationInfo)
+			System.out.println("Checking " + minimumWidth(len,6) + (group != null ? " " + group : "") + " columns      in schema " + schema + " for " + checkType + " violations.");
 
 		final StringBuilder sb = new StringBuilder(256);	// reusable buffer to compose SQL validation queries
 		sb.append("SELECT ");
@@ -554,7 +587,8 @@ public final class MDBvalidator {
 			.append(" and s.name = '").append(schema).append("'");
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
-		System.out.println("Checking " + minimumWidth(count,6) + " columns      in schema " + schema + " for " + checkType + " violations.");
+		if (showValidationInfo)
+			System.out.println("Checking " + minimumWidth(count,6) + " columns      in schema " + schema + " for " + checkType + " violations.");
 
 		ResultSet rs = null;
 		try {
@@ -605,7 +639,8 @@ public final class MDBvalidator {
 			.append(" and s.name = '").append(schema).append("'");
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
-		System.out.println("Checking " + minimumWidth(count,6) + " columns      in schema " + schema + " for " + checkType + " violations.");
+		if (showValidationInfo)
+			System.out.println("Checking " + minimumWidth(count,6) + " columns      in schema " + schema + " for " + checkType + " violations.");
 
 		ResultSet rs = null;
 		try {
