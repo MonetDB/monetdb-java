@@ -9,10 +9,8 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2021 MonetDB B.V.
 -->
 
 <!--
-
-  Build file to allow ant (http://jakarta.apache.org/ant/) to be used
+  Build file to allow ant (http://ant.apache.org/) to be used
   to build and run the tests
-
 -->
 
 <project name="JDBCTests" default="compile" basedir=".">
@@ -28,6 +26,8 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2021 MonetDB B.V.
 
   <property name="jvm.version" value="8" />
   <property name="jre.version" value="jre8" />
+  <property name="javac.flags" value="-source 8" />
+  <property name="javac.flags" value="-target 8" />
   <property name="javac.flags" value="-profile compact2" />
   <property name="javac.flags" value="-Xlint" />
 
