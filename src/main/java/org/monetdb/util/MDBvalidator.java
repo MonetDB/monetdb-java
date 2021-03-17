@@ -109,11 +109,7 @@ public final class MDBvalidator {
 */
 
 	// public class methods (called from JdbcClient.java)
-	public static void validateSqlCatalogIntegrity(final Connection conn) {
-		validateSqlCatalogIntegrity(conn, true);
-	}
-
-	public static void validateSqlCatalogIntegrity(final Connection conn, boolean showValidationHeaderInfo) {
+	public static void validateSqlCatalogIntegrity(final Connection conn, final boolean showValidationHeaderInfo) {
 		final MDBvalidator mdbv = new MDBvalidator(conn);
 		mdbv.showValidationInfo = showValidationHeaderInfo;
 		if (mdbv.checkMonetDBVersion()) {
@@ -122,11 +118,7 @@ public final class MDBvalidator {
 		}
 	}
 
-	public static void validateSqlNetcdfTablesIntegrity(final Connection conn) {
-		validateSqlNetcdfTablesIntegrity(conn, true);
-	}
-
-	public static void validateSqlNetcdfTablesIntegrity(final Connection conn, boolean showValidationHeaderInfo) {
+	public static void validateSqlNetcdfTablesIntegrity(final Connection conn, final boolean showValidationHeaderInfo) {
 		final MDBvalidator mdbv = new MDBvalidator(conn);
 		mdbv.showValidationInfo = showValidationHeaderInfo;
 		if (mdbv.checkMonetDBVersion()) {
@@ -140,11 +132,7 @@ public final class MDBvalidator {
 		}
 	}
 
-	public static void validateSqlGeomTablesIntegrity(final Connection conn) {
-		validateSqlGeomTablesIntegrity(conn, true);
-	}
-
-	public static void validateSqlGeomTablesIntegrity(final Connection conn, boolean showValidationHeaderInfo) {
+	public static void validateSqlGeomTablesIntegrity(final Connection conn, final boolean showValidationHeaderInfo) {
 		final MDBvalidator mdbv = new MDBvalidator(conn);
 		mdbv.showValidationInfo = showValidationHeaderInfo;
 		if (mdbv.checkMonetDBVersion()) {
@@ -153,25 +141,21 @@ public final class MDBvalidator {
 		}
 	}
 
-	public static void validateSchemaIntegrity(final Connection conn, final String schema) {
-		validateSchemaIntegrity(conn, schema, true);
-	}
-
-	public static void validateSchemaIntegrity(final Connection conn, final String schema, boolean showValidationHeaderInfo) {
+	public static void validateSchemaIntegrity(final Connection conn, String schema, final boolean showValidationHeaderInfo) {
 		final MDBvalidator mdbv = new MDBvalidator(conn);
 		mdbv.showValidationInfo = showValidationHeaderInfo;
+		// the schema name may be surrounded by double quotes. If so, remove them.
+		if (schema.startsWith("\"") && schema.endsWith("\"")) {
+			schema = schema.substring(1, schema.length() -1);
+		}
 		if (mdbv.checkSchemaExists(schema))
 			mdbv.validateSchema(schema, null, null, null, null, null, true);
 		else
-			if (mdbv.showValidationInfo)
+			if (showValidationHeaderInfo)
 				System.out.println("Schema: " + schema + " does not exist in this database.");
 	}
 
-	public static void validateDBIntegrity(final Connection conn) {
-		validateDBIntegrity(conn, true);
-	}
-
-	public static void validateDBIntegrity(final Connection conn, boolean showValidationHeaderInfo) {
+	public static void validateDBIntegrity(final Connection conn, final boolean showValidationHeaderInfo) {
 		final MDBvalidator mdbv = new MDBvalidator(conn);
 		mdbv.showValidationInfo = showValidationHeaderInfo;
 		final Statement stmt = mdbv.createStatement("validateDBIntegrity()");
@@ -186,7 +170,7 @@ public final class MDBvalidator {
 			if (rs != null) {
 				// for each user schema do:
 				while (rs.next()) {
-					String schema = rs.getString(1);
+					final String schema = rs.getString(1);
 					if (schema != null && !schema.isEmpty()) {
 						hasUserSchemas = true;
 						mdbv.validateSchema(schema, null, null, null, null, null, true);
@@ -197,7 +181,8 @@ public final class MDBvalidator {
 			printExceptions(e);
 		}
 		freeStmtRs(stmt, rs);
-		if (!hasUserSchemas && mdbv.showValidationInfo)
+
+		if (showValidationHeaderInfo && !hasUserSchemas)
 			System.out.println("No user schemas found in this database.");
 	}
 

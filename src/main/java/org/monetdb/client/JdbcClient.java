@@ -790,28 +790,30 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 							if (tbl != null)
 								tbl.close();
 						}
-					} else if (command.equals("\\vsci")) {
-						MDBvalidator.validateSqlCatalogIntegrity(con);
-					} else if (command.equals("\\vsci_noheader")) {	// used only for internal automated testing
-						MDBvalidator.validateSqlCatalogIntegrity(con, false);
-					} else if (command.equals("\\vsni")) {
-						MDBvalidator.validateSqlNetcdfTablesIntegrity(con);
-					} else if (command.equals("\\vsni_noheader")) {	// used only for internal automated testing
-						MDBvalidator.validateSqlNetcdfTablesIntegrity(con, false);
-					} else if (command.equals("\\vsgi")) {
-						MDBvalidator.validateSqlGeomTablesIntegrity(con);
-					} else if (command.equals("\\vsgi_noheader")) {	// used only for internal automated testing
-						MDBvalidator.validateSqlGeomTablesIntegrity(con, false);
-					} else if (command.startsWith("\\vsi ")) {
-						String schema_arg = command.substring(5);
-						MDBvalidator.validateSchemaIntegrity(con, schema_arg);
-					} else if (command.startsWith("\\vsi_noheader ")) {	// used only for internal automated testing
-						String schema_arg = command.substring(14);
-						MDBvalidator.validateSchemaIntegrity(con, schema_arg, false);
-					} else if (command.equals("\\vdbi")) {
-						MDBvalidator.validateDBIntegrity(con);
-					} else if (command.equals("\\vdbi_noheader")) {	// used only for internal automated testing
-						MDBvalidator.validateDBIntegrity(con, false);
+					} else if (command.startsWith("\\v")) {
+						if (command.equals("\\vsci")) {
+							MDBvalidator.validateSqlCatalogIntegrity(con, true);
+						} else if (command.equals("\\vsci_noheader")) {	// used only for internal automated testing
+							MDBvalidator.validateSqlCatalogIntegrity(con, false);
+						} else if (command.equals("\\vsni")) {
+							MDBvalidator.validateSqlNetcdfTablesIntegrity(con, true);
+						} else if (command.equals("\\vsni_noheader")) {	// used only for internal automated testing
+							MDBvalidator.validateSqlNetcdfTablesIntegrity(con, false);
+						} else if (command.equals("\\vsgi")) {
+							MDBvalidator.validateSqlGeomTablesIntegrity(con, true);
+						} else if (command.equals("\\vsgi_noheader")) {	// used only for internal automated testing
+							MDBvalidator.validateSqlGeomTablesIntegrity(con, false);
+						} else if (command.startsWith("\\vsi ")) {
+							String schema_nm = command.substring(5);
+							MDBvalidator.validateSchemaIntegrity(con, schema_nm, true);
+						} else if (command.startsWith("\\vsi_noheader ")) {	// used only for internal automated testing
+							String schema_nm = command.substring(14);
+							MDBvalidator.validateSchemaIntegrity(con, schema_nm, false);
+						} else if (command.equals("\\vdbi")) {
+							MDBvalidator.validateDBIntegrity(con, true);
+						} else if (command.equals("\\vdbi_noheader")) {	// used only for internal automated testing
+							MDBvalidator.validateDBIntegrity(con, false);
+						}
 					} else if (command.startsWith("\\l") || command.startsWith("\\i")) {
 						String object = command.substring(2).trim();
 						if (scolonterm && object.endsWith(";"))
@@ -1079,8 +1081,8 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 			final boolean scolonterm)
 	{
 		// examine string, char for char
-		boolean wasInString = (stack.peek() == '\'');
-		boolean wasInIdentifier = (stack.peek() == '"');
+		final boolean wasInString = (stack.peek() == '\'');
+		final boolean wasInIdentifier = (stack.peek() == '"');
 		boolean escaped = false;
 		int len = query.length();
 		for (int i = 0; i < len; i++) {
