@@ -40,6 +40,7 @@ import org.monetdb.jdbc.types.URL;
 final public class JDBC_API_Tester {
 	StringBuilder sb;	// buffer to collect the test output
 	final static int sbInitLen = 3712;
+    int err_count = 0;
 	Connection con;	// main connection shared by all tests
 
 	public static void main(String[] args) throws Exception {
@@ -98,6 +99,9 @@ final public class JDBC_API_Tester {
 		jt.SQLcopyinto();
 
 		jt.closeConx(jt.con);
+
+        if (jt.err_count > 0) System.exit(-1);
+
 	}
 
 	private void Test_Cautocommit(String arg0) {
@@ -5043,19 +5047,20 @@ final public class JDBC_API_Tester {
 
 	private void compareExpectedOutput(String testname, String expected) {
 		if (!expected.equals(sb.toString())) {
-			System.out.print("Test '");
-			System.out.print(testname);
+            this.err_count +=1;
+			System.err.print("Test '");
+			System.err.print(testname);
 			if (!testname.endsWith(")"))
-				System.out.print("()");
-			System.out.println("' produced different output!");
-			System.out.println("Expected:");
-			System.out.println(expected);
-			System.out.println("Gotten:");
-			System.out.println(sb);
-			System.out.println();
+				System.err.print("()");
+			System.err.println("' produced different output!");
+			System.err.println("Expected:");
+			System.err.println(expected);
+			System.err.println("Gotten:");
+			System.err.println(sb);
+			System.err.println();
 		}
 		if (sb.length() > sbInitLen) {
-			System.out.println("Test '" + testname
+			System.err.println("Test '" + testname
 				+ "' produced output > " + sbInitLen
 				+ " chars! Enlarge sbInitLen to: " + sb.length());
 		}
