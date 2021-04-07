@@ -96,6 +96,8 @@ final public class JDBC_API_Tester {
 		jt.BugResultSetMetaData_Bug_6183();
 		jt.BugSetQueryTimeout_Bug_3357();
 		jt.SQLcopyinto();
+		/* run next long running test (11 minutes) only before a new release */
+	/*	jt.Test_PSlargeamount(); */
 
 		jt.closeConx(jt.con);
 	}
@@ -1523,6 +1525,90 @@ final public class JDBC_API_Tester {
 			"60, true\n" +
 			"80, true\n" +
 			"100, true\n");
+	}
+
+	/* Create a lot of PreparedStatements, to emulate webloads such as those from Hibernate. */
+	/* this test is same as Test_PSsomeamount() but for many more PreparedStatements to stress the server */
+	private void Test_PSlargeamount() {
+		sb.setLength(0);	// clear the output log buffer
+
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			// >> true: auto commit should be on
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
+
+			sb.append("1. Preparing and executing a unique statement\n");
+			for (int i = 0; i < 50001; i++) {
+				pstmt = con.prepareStatement("select " + i + ", " + i + " = ?");
+				pstmt.setInt(1, i);
+				rs = pstmt.executeQuery();
+				if (rs.next() && i % 1000 == 0) {
+					sb.append(rs.getInt(1)).append(", ").append(rs.getBoolean(2)).append("\n");
+				}
+				/* next call should cause resources on the server to be freed */
+				pstmt.close();
+			}
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(pstmt, rs);
+
+		compareExpectedOutput("Test_PSlargeamount",
+			"0. true	true\n" +
+			"1. Preparing and executing a unique statement\n" +
+			"0, true\n" +
+			"1000, true\n" +
+			"2000, true\n" +
+			"3000, true\n" +
+			"4000, true\n" +
+			"5000, true\n" +
+			"6000, true\n" +
+			"7000, true\n" +
+			"8000, true\n" +
+			"9000, true\n" +
+			"10000, true\n" +
+			"11000, true\n" +
+			"12000, true\n" +
+			"13000, true\n" +
+			"14000, true\n" +
+			"15000, true\n" +
+			"16000, true\n" +
+			"17000, true\n" +
+			"18000, true\n" +
+			"19000, true\n" +
+			"20000, true\n" +
+			"21000, true\n" +
+			"22000, true\n" +
+			"23000, true\n" +
+			"24000, true\n" +
+			"25000, true\n" +
+			"26000, true\n" +
+			"27000, true\n" +
+			"28000, true\n" +
+			"29000, true\n" +
+			"30000, true\n" +
+			"31000, true\n" +
+			"32000, true\n" +
+			"33000, true\n" +
+			"34000, true\n" +
+			"35000, true\n" +
+			"36000, true\n" +
+			"37000, true\n" +
+			"38000, true\n" +
+			"39000, true\n" +
+			"40000, true\n" +
+			"41000, true\n" +
+			"42000, true\n" +
+			"43000, true\n" +
+			"44000, true\n" +
+			"45000, true\n" +
+			"46000, true\n" +
+			"47000, true\n" +
+			"48000, true\n" +
+			"49000, true\n" +
+			"50000, true\n");
 	}
 
 	private void Test_PSsqldata() {
