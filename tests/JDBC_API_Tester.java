@@ -1811,36 +1811,37 @@ final public class JDBC_API_Tester {
 			// The zoneless fields will show differences since the time
 			// is inserted translated to the given timezones, and
 			// retrieved as in they were given in those timezones.
-			//  When the insert zone matches the retrieve zone, Java should
+			// When the insert zone matches the retrieve zone, Java should
 			// eventually see 1st Jan 1970.
 			while (rs.next()) {
-				sb.append("retrieved row (String):\n").append(
-						rs.getString("ts")).append(" | ").append(
-						rs.getString("tsz")).append(" | ").append(
-						rs.getString("t")).append(" | ").append(
-						rs.getString("tz")).append("\n");
+				sb.append("retrieved row (String):\n")
+				.append(rs.getString("ts")).append(" | ")
+			//	.append(rs.getString("tsz")).append(" | ")	-- this values changes when summer or wintertime changes so no stable output
+				.append(rs.getString("t")).append(" | ")
+			//	.append(rs.getString("tz"))	-- this values changes when summer or wintertime changes so no stable output
+				.append("\n");
 
 				tsz.setTimeZone(TimeZone.getDefault());
 				tz.setTimeZone(tsz.getTimeZone());
-				sb.append("default (").append(tsz.getTimeZone().getID()).append("):\n").append(
-						tsz.format(rs.getTimestamp("ts"))).append(" | ").append(
-						tsz.format(rs.getTimestamp("tsz"))).append(" | ").append(
-						tz.format(rs.getTime("t"))).append(" | ").append(
-						tz.format(rs.getTime("tz"))).append("\n");
+				sb.append("default (").append(tsz.getTimeZone().getID()).append("):\n")
+				.append(tsz.format(rs.getTimestamp("ts"))).append(" | ")
+				.append(tsz.format(rs.getTimestamp("tsz"))).append(" | ")
+				.append(tz.format(rs.getTime("t"))).append(" | ")
+				.append(tz.format(rs.getTime("tz"))).append("\n");
 
 				c.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
-				sb.append(c.getTimeZone().getID()).append(":\n").append(
-						rs.getTimestamp("ts", c)).append(" | ").append(
-						rs.getTimestamp("tsz", c)).append(" | ").append(
-						rs.getTime("t", c)).append(" | ").append(
-						rs.getTime("tz", c)).append("\n");
+				sb.append(c.getTimeZone().getID()).append(":\n")
+				.append(rs.getTimestamp("ts", c)).append(" | ")
+				.append(rs.getTimestamp("tsz", c)).append(" | ")
+				.append(rs.getTime("t", c)).append(" | ")
+				.append(rs.getTime("tz", c)).append("\n");
 
 				c.setTimeZone(TimeZone.getTimeZone("Africa/Windhoek"));
-				sb.append(c.getTimeZone().getID()).append(":\n").append(
-						rs.getTimestamp("ts", c)).append(" | ").append(
-						rs.getTimestamp("tsz", c)).append(" | ").append(
-						rs.getTime("t", c)).append(" | ").append(
-						rs.getTime("tz", c)).append("\n");
+				sb.append(c.getTimeZone().getID()).append(":\n")
+				.append(rs.getTimestamp("ts", c)).append(" | ")
+				.append(rs.getTimestamp("tsz", c)).append(" | ")
+				.append(rs.getTime("t", c)).append(" | ")
+				.append(rs.getTime("tz", c)).append("\n");
 
 				SQLWarning w = rs.getWarnings();
 				while (w != null) {
@@ -1872,7 +1873,8 @@ final public class JDBC_API_Tester {
 			"3. closing PreparedStatement... passed\n" +
 			"4. selecting records... passed\n" +
 			"retrieved row (String):\n" +
-			"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
+// old output		"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
+			"1970-01-01 00:00:00.000000 | 00:00:00 | \n" +
 			"default (UTC):\n" +
 			"1970-01-01 00:00:00.000+0000 | 1970-01-01 00:00:00.000+0000 | 00:00:00.000+0000 | 00:00:00.000+0000\n" +
 			"America/Los_Angeles:\n" +
@@ -1880,7 +1882,8 @@ final public class JDBC_API_Tester {
 			"Africa/Windhoek:\n" +
 			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
 			"retrieved row (String):\n" +
-			"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
+// old output		"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
+			"1970-01-01 00:00:00.000000 | 00:00:00 | \n" +
 			"default (UTC):\n" +
 			"1970-01-01 00:00:00.000+0000 | 1970-01-01 00:00:00.000+0000 | 00:00:00.000+0000 | 00:00:00.000+0000\n" +
 			"America/Los_Angeles:\n" +
@@ -1888,7 +1891,8 @@ final public class JDBC_API_Tester {
 			"Africa/Windhoek:\n" +
 			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
 			"retrieved row (String):\n" +
-			"1969-12-31 16:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 16:00:00 | 01:00:00+01:00\n" +
+// old output		"1969-12-31 16:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 16:00:00 | 01:00:00+01:00\n" +
+			"1969-12-31 16:00:00.000000 | 16:00:00 | \n" +
 			"default (UTC):\n" +
 			"1969-12-31 16:00:00.000+0000 | 1970-01-01 00:00:00.000+0000 | 16:00:00.000+0000 | 00:00:00.000+0000\n" +
 			"America/Los_Angeles:\n" +
@@ -1896,7 +1900,8 @@ final public class JDBC_API_Tester {
 			"Africa/Windhoek:\n" +
 			"1969-12-31 14:00:00.0 | 1970-01-01 00:00:00.0 | 14:00:00 | 00:00:00\n" +
 			"retrieved row (String):\n" +
-			"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
+// old output		"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
+			"1970-01-01 00:00:00.000000 | 00:00:00 | \n" +
 			"default (UTC):\n" +
 			"1970-01-01 00:00:00.000+0000 | 1970-01-01 00:00:00.000+0000 | 00:00:00.000+0000 | 00:00:00.000+0000\n" +
 			"America/Los_Angeles:\n" +
