@@ -18,6 +18,7 @@ import org.monetdb.util.XMLExporter;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.Console;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.File;
@@ -257,7 +258,11 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 		// we need the password from the user, fetch it with a pseudo
 		// password protector
 		if (pass == null) {
-			final char[] tmp = System.console().readPassword("password: ");
+			Console con = System.console();
+			char[] tmp = null;
+			if (con != null) {
+				tmp = con.readPassword("password: ");
+			}
 			if (tmp == null) {
 				System.err.println("Invalid password!");
 				System.exit(1);
