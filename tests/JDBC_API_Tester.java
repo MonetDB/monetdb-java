@@ -32,7 +32,7 @@ import org.monetdb.jdbc.types.URL;
  * to only one time instead of 40+ times.
  * Also all output is no longer send to system out/err but collected in a StringBuilder.
  * The contents of it is compared with the expected output at the end of each test.
- * Only when it deviates the output is sent to system out, see compareExpectedOutput().
+ * Only when it deviates the output is sent to system err, see compareExpectedOutput().
  *
  * @author Martin van Dinther
  * @version 0.2
@@ -41,6 +41,7 @@ final public class JDBC_API_Tester {
 	StringBuilder sb;	// buffer to collect the test output
 	final static int sbInitLen = 3712;
 	Connection con;	// main connection shared by all tests
+	boolean foundDifferences = false;
 
 	public static void main(String[] args) throws Exception {
 		String con_URL = args[0];
@@ -100,6 +101,9 @@ final public class JDBC_API_Tester {
 	/*	jt.Test_PSlargeamount(); */
 
 		jt.closeConx(jt.con);
+
+		if (jt.foundDifferences)
+			System.exit(-1);
 	}
 
 	private void Test_Cautocommit(String arg0) {
@@ -4119,7 +4123,7 @@ final public class JDBC_API_Tester {
 				"Script size is 83256\n" +
 				"First test repeat 10 times. Iteration: 1 2 3 4 5 6 7 8 9 10 \n" +
 				"Completed first test\n" +
-				"Second test repeat 10 times. Iteration: 1 2 3 4 5 6 7 8 9 10 \n" + 
+				"Second test repeat 10 times. Iteration: 1 2 3 4 5 6 7 8 9 10 \n" +
 				"Completed second test\n" +
 				"Script size is 3012\n" +
 				"Third test repeat 9 times.\n" +
@@ -5134,19 +5138,20 @@ final public class JDBC_API_Tester {
 
 	private void compareExpectedOutput(String testname, String expected) {
 		if (!expected.equals(sb.toString())) {
-			System.out.print("Test '");
-			System.out.print(testname);
+			foundDifferences = true;
+			System.err.print("Test '");
+			System.err.print(testname);
 			if (!testname.endsWith(")"))
-				System.out.print("()");
-			System.out.println("' produced different output!");
-			System.out.println("Expected:");
-			System.out.println(expected);
-			System.out.println("Gotten:");
-			System.out.println(sb);
-			System.out.println();
+				System.err.print("()");
+			System.err.println("' produced different output!");
+			System.err.println("Expected:");
+			System.err.println(expected);
+			System.err.println("Gotten:");
+			System.err.println(sb);
+			System.err.println();
 		}
 		if (sb.length() > sbInitLen) {
-			System.out.println("Test '" + testname
+			System.err.println("Test '" + testname
 				+ "' produced output > " + sbInitLen
 				+ " chars! Enlarge sbInitLen to: " + sb.length());
 		}
