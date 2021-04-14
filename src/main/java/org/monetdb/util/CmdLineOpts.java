@@ -39,7 +39,7 @@ public final class CmdLineOpts {
 			final String defaulta,
 			final String descriptiona)
 		throws OptionsException {
-		OptionContainer oc =
+		final OptionContainer oc =
 			new OptionContainer(
 				shorta,
 				longa,
@@ -54,7 +54,7 @@ public final class CmdLineOpts {
 	}
 
 	public void removeOption(final String name) {
-		OptionContainer oc = opts.get(name);
+		final OptionContainer oc = opts.get(name);
 		if (oc != null) {
 			opts.remove(oc.shorta);
 			opts.remove(oc.longa);
@@ -62,7 +62,7 @@ public final class CmdLineOpts {
 	}
 
 	public OptionContainer getOption(final String key) throws OptionsException {
-		OptionContainer ret = opts.get(key);
+		final OptionContainer ret = opts.get(key);
 		if (ret == null)
 			throw new OptionsException("No such option: " + key);
 
@@ -80,9 +80,11 @@ public final class CmdLineOpts {
 				in.close();
 			}
 
+			String key;
+			OptionContainer option = null;
 			for (java.util.Enumeration<?> e = prop.propertyNames(); e.hasMoreElements(); ) {
-				String key = (String) e.nextElement();
-				OptionContainer option = opts.get(key);
+				key = (String) e.nextElement();
+				option = opts.get(key);
 				if (option == null)
 					throw new OptionsException("Unknown option: " + key);
 				option.resetArguments();
@@ -346,9 +348,8 @@ public final class CmdLineOpts {
 		public void addArgument(final String val) throws OptionsException {
 			if (cardinality == CAR_ZERO) {
 				throw new OptionsException("option " + name + " does not allow arguments");
-			} else if ((cardinality == CAR_ONE ||
-					cardinality == CAR_ZERO_ONE) &&
-					values.size() >= 1) {
+			}
+			if ((cardinality == CAR_ONE || cardinality == CAR_ZERO_ONE) && values.size() >= 1) {
 				throw new OptionsException("option " + name + " does at max allow only one argument");
 			}
 			// we can add it

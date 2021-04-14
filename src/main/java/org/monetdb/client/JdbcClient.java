@@ -258,10 +258,10 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 		// we need the password from the user, fetch it with a pseudo
 		// password protector
 		if (pass == null) {
-			Console con = System.console();
+			final Console syscon = System.console();
 			char[] tmp = null;
-			if (con != null) {
-				tmp = con.readPassword("password: ");
+			if (syscon != null) {
+				tmp = syscon.readPassword("password: ");
 			}
 			if (tmp == null) {
 				System.err.println("Invalid password!");
@@ -337,26 +337,27 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 			dbmd = null;
 		}
 
+		stmt = con.createStatement();	// is used by processInteractive(), processBatch(), doDump()
+
 		in = new BufferedReader(new InputStreamReader(System.in));
 		out = new PrintWriter(new BufferedWriter(new java.io.OutputStreamWriter(System.out)));
 
-		stmt = con.createStatement();	// is used by doDump
-
 		// see if we will have to perform a database dump (only in SQL mode)
 		if ("sql".equals(lang) && copts.getOption("dump").isPresent() && dbmd != null) {
+			final int argcount = copts.getOption("dump").getArgumentCount();
+
 			// use the given file for writing
 			oc = copts.getOption("file");
 			if (oc.isPresent())
 				out = new PrintWriter(new BufferedWriter(new java.io.FileWriter(oc.getArgument())));
 
-			// we only want user tables and views to be dumped, unless a specific table is requested
+			// we only want user tables and views to be dumped (DDL and optional data), unless a specific table is requested
 			final String[] types = {"TABLE","VIEW","MERGE TABLE","REMOTE TABLE","REPLICA TABLE","STREAM TABLE"};
 			// Future: fetch all type names using dbmd.getTableTypes() and construct String[] with all
 			// table type names excluding the SYSTEM ... ones and LOCAL TEMPORARY TABLE ones.
 
-			// request the list of tables available in the current schema in the database
-			ResultSet tbl = dbmd.getTables(null, con.getSchema(), null,
-							(copts.getOption("dump").getArgumentCount() == 0) ? types : null);
+			// request the list of tables/views available in the current schema in the database
+			ResultSet tbl = dbmd.getTables(null, con.getSchema(), null, (argcount == 0) ? types : null);
 			// fetch all tables and store them in a LinkedList of Table objects
 			final LinkedList<Table> tables = new LinkedList<Table>();
 			while (tbl.next()) {
@@ -384,7 +385,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 				out.println("START TRANSACTION;\n");
 
 			// dump specific table(s) or not?
-			if (copts.getOption("dump").getArgumentCount() > 0) { // yes we do
+			if (argcount > 0) { // yes we do
 				final String[] dumpers = copts.getOption("dump").getArguments();
 				for (int i = 0; i < tables.size(); i++) {
 					Table ttmp = tables.get(i);
@@ -818,6 +819,8 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 							MDBvalidator.validateDBIntegrity(con, true);
 						} else if (command.equals("\\vdbi_noheader")) {	// used only for internal automated testing
 							MDBvalidator.validateDBIntegrity(con, false);
+						} else {
+							doProcess = true;
 						}
 					} else if (command.startsWith("\\l") || command.startsWith("\\i")) {
 						String object = command.substring(2).trim();
@@ -908,7 +911,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 
 		// execute the query, let the driver decide what type it is
 		int aff = -1;
-		boolean	nextRslt = stmt.execute(query, Statement.RETURN_GENERATED_KEYS);
+		boolean nextRslt = stmt.execute(query, Statement.RETURN_GENERATED_KEYS);
 		if (!nextRslt)
 			aff = stmt.getUpdateCount();
 		do {
@@ -964,8 +967,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 		} while ((nextRslt = stmt.getMoreResults()) ||
 			 (aff = stmt.getUpdateCount()) != -1);
 
-		// if there were warnings for this statement,
-		// and/or connection show them!
+		// if there were warnings for this statement show them!
 		warn = stmt.getWarnings();
 		while (warn != null) {
 			System.err.println("Statement warning: " + warn.getMessage());
@@ -973,6 +975,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 		}
 		stmt.clearWarnings();
 
+		// if there were warnings for this connection show them!
 		warn = con.getWarnings();
 		while (warn != null) {
 			// suppress warning when issueing a "set schema xyz;" command
@@ -1041,11 +1044,12 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 		exporter.dumpSchema(dbmd, tableType, table.getSchem(), table.getName());
 		out.println();
 
-		// only dump data from real tables, not from views / MERGE / REMOTE / REPLICA tables
+		// only dump data from real tables, not from VIEWs / MERGE / REMOTE / REPLICA / STREAM tables
 		if (tableType.contains("TABLE")
 		&& !tableType.equals("MERGE TABLE")
 		&& !tableType.equals("REMOTE TABLE")
-		&& !tableType.equals("REPLICA TABLE")) {
+		&& !tableType.equals("REPLICA TABLE")
+		&& !tableType.equals("STREAM TABLE")) {
 			final ResultSet rs = stmt.executeQuery("SELECT * FROM " + table.getFqnameQ());
 			if (rs != null) {
 				exporter.dumpResultSet(rs);
