@@ -971,8 +971,8 @@ public class MonetResultSet
 	 */
 	@Override
 	public String getCursorName() throws SQLException {
-		throw new SQLException("Positioned updates not supported for this " +
-				   "cursor (" + (header != null ? header.id : "") + ")", "0AM21");
+		throw new SQLException("Positioned updates not supported for this cursor ("
+				+ (header != null ? header.id : "") + ")", "0AM21");
 	}
 
 	/**
@@ -1250,13 +1250,16 @@ public class MonetResultSet
 			private final String[] schemas = (header != null) ? header.getSchemaNames() : null;
 			private final String[] tables = (header != null) ? header.getTableNames() : null;
 			private final MonetConnection conn = (MonetConnection)getStatement().getConnection();
-			// for the more expensive methods (getPrecision(), getScale(), isNullable(), isAutoIncrement()), we
-			// use caches to store precision, scale and isNullable values from getColumnInfo() combined per fully qualified column.
+
+			// for the methods: getPrecision(), getScale(), isNullable() and isAutoIncrement(), we use
+			// caches to store precision, scale, isNullable and isAutoincrement values for each resultset column
+			// so they do not need to queried and fetched from the server again and again.
 			private final int array_size = columns.length + 1;  // add 1 as in JDBC columns start from 1 (array from 0).
+			private final boolean[] _is_queried = new boolean[array_size];
 			private final boolean[] _is_fetched = new boolean[array_size];
 			private final int[] _precision	= new int[array_size];
 			private final int[] _scale	= new int[array_size];
-			private final int[] _isNullable	= new int[array_size];
+			private final int[] _isNullable = new int[array_size];
 			private final boolean[] _isAutoincrement = new boolean[array_size];
 
 			/**
@@ -1269,81 +1272,161 @@ public class MonetResultSet
 			}
 
 			/**
-			 * A private method to fetch the precision, scale, isNullable and isAutoincrement value for a fully qualified column.
-			 * As getColumnInfo() is an expensive method we call it only once per column and store
-			 * the precision, scale, isNullable and isAutoincrement values in the above array caches.
-			 * Also we only call getColumnInfo() when we have a non empty schema name and table name and column name.
+			 * A private method to fetch the precision, scale, isNullable and isAutoincrement values
+			 * combined for a specific column.
+			 * The fetched values are stored in the above array caches.
 			 */
-			private final void fetchColumnInfo(final int column) throws SQLException
-			{
+			private final void fetchColumnInfo(final int column) throws SQLException {
+				// for debug: System.out.println("fetchColumnInfo(" + column + ")");
 				checkColumnIndexValidity(column);
 
-				_is_fetched[column] = true;
+				if (_is_fetched[column] != true) {
+					// fetch column info for multiple columns combined in one go, starting at 1
+					fetchManyColumnsInfo(1);
+					if (_is_fetched[column] != true) {
+						// fetch info for column x if it was not fetched by the previous call
+						fetchManyColumnsInfo(column);
+					}
+				}
+
+				if (_is_fetched[column])
+					return;
+
+				// apparently no data could be fetched for this resultset column, fall back to defaults
 				_precision[column] = 0;
 				_scale[column] = 0;
 				_isNullable[column] = columnNullableUnknown;
 				_isAutoincrement[column] = false;
+			}
 
-				// we will only call getColumnInfo() when we have a specific schema name, table name and column name
-				final String schName = getSchemaName(column);
-				if (schName != null && !schName.isEmpty()) {
-					final String tblName = getTableName(column);
-					if (tblName != null && !tblName.isEmpty()) {
-						final String colName = getColumnName(column);
-						if (colName != null && !colName.isEmpty()) {
-							// for precision, scale, isNullable and isAutoincrement we query the information from data dictionary
-							final ResultSet colInfo = getColumnInfo(schName, tblName, colName);
-							if (colInfo != null) {
-								// we expect exactly one row in the resultset
-								if (colInfo.next()) {
-									_precision[column] = colInfo.getInt(1);  // col 1 (was 7) is "COLUMN_SIZE"
-									_scale[column] = colInfo.getInt(2);  // col 2 (was 9) is "DECIMAL_DIGITS"
-									_isNullable[column] = colInfo.getInt(3);  // col 3 (was 11) is "NULLABLE"
-									_isAutoincrement[column] = colInfo.getBoolean(4);  // col 4 (was 23) is "IS_AUTOINCREMENT"
+			/**
+			 * A private method to fetch the precision, scale, isNullable and isAutoincrement values
+			 * for many fully qualified columns combined in one SQL query to reduce the number of queries sent.
+			 * As fetching this meta information from the server per column is costly we combine the querying of
+			 * the precision, scale, isNullable and isAutoincrement values and cache it in internal arrays.
+			 * We also do this for many (up to 50) columns combined in one query to reduce
+			 * the number of queries needed for fetching this metadata for all resultset columns.
+			 * Many generic JDBC database tools (e.g. SQuirreL) request this meta data for each column of each resultset,
+			 * so these optimisations reduces the number of meta data queries significantly.
+			 */
+			private final void fetchManyColumnsInfo(final int column) throws SQLException {
+				// for debug: System.out.println("fetchManyColumnsInfo(" + column + ")");
+
+				// Most queries have less than 50 resultset columns
+				// So 50 is a good balance between speedup (up to 49x) and size of query sent to server
+				final int MAX_COLUMNS_PER_QUERY = 50;
+
+				final StringBuilder query = new StringBuilder(600 + (MAX_COLUMNS_PER_QUERY * 150));
+				/* next SQL query is a simplified version of query in MonetDatabaseMetaData.getColumns(), to fetch only the needed attributes of a column */
+				query.append("SELECT " +
+					"s.\"name\" AS schnm, " +
+					"t.\"name\" AS tblnm, " +
+					"c.\"name\" AS colnm, " +
+					"c.\"type_digits\", " +
+					"c.\"type_scale\", " +
+					"cast(CASE c.\"null\" WHEN true THEN ").append(ResultSetMetaData.columnNullable)
+						.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls)
+						.append(" ELSE ").append(ResultSetMetaData.columnNullableUnknown)
+						.append(" END AS int) AS nullable, ").append(
+					"cast(CASE WHEN c.\"default\" IS NOT NULL AND c.\"default\" LIKE 'next value for %' THEN true ELSE false END AS boolean) AS isautoincrement " +
+				"FROM \"sys\".\"columns\" c " +
+				"JOIN \"sys\".\"tables\" t ON c.\"table_id\" = t.\"id\" " +
+				"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
+				"WHERE ");
+
+				/* combine the conditions for multiple (up to 50) columns into the WHERE-clause */
+				String schName = null;
+				String tblName = null;
+				String colName = null;
+				int queriedcolcount = 0;
+				for (int col = column; col < array_size && queriedcolcount < MAX_COLUMNS_PER_QUERY; col++) {
+					if (_is_fetched[col] != true) {
+						if (_is_queried[col] != true) {
+							_precision[col] = 0;
+							_scale[col] = 0;
+							_isNullable[col] = columnNullableUnknown;
+							_isAutoincrement[col] = false;
+							schName = getSchemaName(col);
+							if (schName != null && !schName.isEmpty()) {
+								tblName = getTableName(col);
+								if (tblName != null && !tblName.isEmpty()) {
+									colName = getColumnName(col);
+									if (colName != null && !colName.isEmpty()) {
+										if (queriedcolcount > 0)
+											query.append(" OR ");
+										query.append("(s.\"name\" = ").append(MonetWrapper.sq(schName));
+										query.append(" AND t.\"name\" = ").append(MonetWrapper.sq(tblName));
+										query.append(" AND c.\"name\" = ").append(MonetWrapper.sq(colName));
+										query.append(")");
+										_is_queried[col] = true;	// flag it
+										queriedcolcount++;
+									}
 								}
-								colInfo.close();  // close the resultset to release resources
+							}
+							if (_is_queried[col] != true) {
+								// make sure we do not try to query it again next time as it is not queryable
+								_is_fetched[col] = true;
 							}
 						}
 					}
 				}
-			}
 
-			/* private simplified copy of MonetDatabaseMetaData.getColumns() method to fetch only 4 needed attributes of a specific column */
-			private final ResultSet getColumnInfo(final String schemaName, final String tableName, final String columnName) throws SQLException
-			{
-				final StringBuilder query = new StringBuilder(700);
-				query.append("SELECT " +
-					"c.\"type_digits\" AS \"COLUMN_SIZE\", " +
-					"c.\"type_scale\" AS \"DECIMAL_DIGITS\", " +
-					"cast(CASE c.\"null\" WHEN true THEN ").append(ResultSetMetaData.columnNullable)
-						.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls)
-						.append(" ELSE ").append(columnNullableUnknown)
-						.append(" END AS int) AS \"NULLABLE\", ").append(
-					"cast(CASE WHEN c.\"default\" IS NOT NULL AND c.\"default\" LIKE 'next value for %' THEN true ELSE false END AS boolean) AS \"IS_AUTOINCREMENT\" " +
-					// ", s.\"name\" AS \"TABLE_SCHEM\", t.\"name\" AS \"TABLE_NAME\", c.\"name\" AS \"COLUMN_NAME\" " +
-				"FROM \"sys\".\"columns\" c " +
-				"JOIN \"sys\".\"tables\" t ON c.\"table_id\" = t.\"id\" " +
-				"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" ");
+				if (queriedcolcount == 0)
+					return;
 
-				query.append("WHERE s.\"name\" = ").append(MonetWrapper.sq(schemaName));
-				query.append(" AND t.\"name\" = ").append(MonetWrapper.sq(tableName));
-				query.append(" AND c.\"name\" = ").append(MonetWrapper.sq(columnName));
-				// query.append(" ORDER BY \"TABLE_SCHEM\", \"TABLE_NAME\"");
-
-				ResultSet rs = null;
+				// execute query to get information on queriedcolcount (or less) columns.
 				final Statement stmt = conn.createStatement();
 				if (stmt != null) {
 					// for debug: System.out.println("SQL (len " + query.length() + "): " + query.toString());
-					rs = stmt.executeQuery(query.toString());
+					final ResultSet rs = stmt.executeQuery(query.toString());
 					if (rs != null) {
-						/* we want the statement object to be closed also when the resultset is closed by the caller */
-						stmt.closeOnCompletion();
-					} else {
-						/* failed to produce a resultset, so release resources for created statement object now */
-						stmt.close();
+						String rsSchema = null;
+						String rsTable = null;
+						String rsColumn = null;
+						while (rs.next()) {
+							rsSchema = rs.getString(1);	// col 1 is schnm
+							rsTable = rs.getString(2);	// col 2 is tblnm
+							rsColumn = rs.getString(3);	// col 3 is colnm
+							// find the matching schema.table.column entry in the array
+							for (int col = 1; col < array_size; col++) {
+								if (_is_fetched[col] != true && _is_queried[col]) {
+									colName = getColumnName(col);
+									if (colName != null && colName.equals(rsColumn)) {
+										tblName = getTableName(col);
+										if (tblName != null && tblName.equals(rsTable)) {
+											schName = getSchemaName(col);
+											if (schName != null && schName.equals(rsSchema)) {
+												// found matching entry
+												// for debug: System.out.println("Found match at [" + col + "] for " + schName + "." + tblName + "." + colName);
+												_precision[col] = rs.getInt(4);	// col 4 is "type_digits" (or "COLUMN_SIZE")
+												_scale[col] = rs.getInt(5);		// col 5 is "type_scale" (or "DECIMAL_DIGITS")
+												_isNullable[col] = rs.getInt(6);	// col 6 is nullable (or "NULLABLE")
+												_isAutoincrement[col] = rs.getBoolean(7); // col 7 is isautoincrement (or "IS_AUTOINCREMENT")
+												_is_fetched[col] = true;
+												queriedcolcount--;
+												// we found the match, exit the for-loop
+												col = array_size;
+											}
+										}
+									}
+								}
+							}
+						}
+						rs.close();
+					}
+					stmt.close();
+				}
+
+				if (queriedcolcount != 0) {
+					// not all queried columns have resulted in a returned data row.
+					// make sure we do not match those columns again next run
+					for (int col = column; col < array_size; col++) {
+						if (_is_fetched[col] != true && _is_queried[col]) {
+							_is_fetched[col] = true;
+							// for debug: System.out.println("Found NO match at [" + col + "] for " + getSchemaName(col) + "." + getTableName(col) + "." + getColumnName(col));
+						}
 					}
 				}
-				return rs;
 			}
 
 			/**

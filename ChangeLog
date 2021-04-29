@@ -1,6 +1,16 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Apr 29 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved performance of ResultSetMetaData methods getPrecision(),
+  getScale(), isNullable() and isAutoIncrement().  The data is fetched
+  from the server by sending a query. This used to be one query for
+  each column of the ResultSet.  Now these queries are combined into
+  one query fetching this meta data for up to 50 columns in one query.
+  This reduces the number of queries sent to the server significantly.
+  This is noticable for instance when using generic JDBC query tools
+  such as SQuirreL, which now respond much faster.
+
 * Wed Mar  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Implemented PreparedStatement.toString() as requested by
   https://github.com/MonetDB/monetdb-java/issues/8

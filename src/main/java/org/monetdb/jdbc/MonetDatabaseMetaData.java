@@ -2131,7 +2131,9 @@ public class MonetDatabaseMetaData
 				"WHEN c.\"type\" IN ('int','smallint','tinyint','bigint','hugeint','float','real','double','oid','wrd') THEN 2 " +
 				"ELSE 0 END AS int) AS \"NUM_PREC_RADIX\", " +
 			"cast(CASE c.\"null\" WHEN true THEN ").append(ResultSetMetaData.columnNullable)
-			.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls).append(" END AS int) AS \"NULLABLE\", ")
+				.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls)
+				.append(" ELSE ").append(ResultSetMetaData.columnNullableUnknown)
+				.append(" END AS int) AS \"NULLABLE\", ")
 			.append(useCommentsTable ? "cm.\"remark\"" : "cast(null AS varchar(9999))").append(" AS \"REMARKS\", " +
 			"c.\"default\" AS \"COLUMN_DEF\", " +
 			"cast(0 as int) AS \"SQL_DATA_TYPE\", " +
