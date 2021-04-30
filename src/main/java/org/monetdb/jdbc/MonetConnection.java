@@ -147,6 +147,9 @@ public class MonetConnection
 	/** The last set query timeout on the server as used by Statement, PreparedStatement and CallableStatement */
 	protected int lastSetQueryTimeout;	// 0 means no timeout, which is the default on the server
 
+	/** A cache to reduce the number of DatabaseMetaData objects created by getMetaData() to maximum 1 per connection */
+	private DatabaseMetaData dbmd;
+
 
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
@@ -586,10 +589,14 @@ public class MonetConnection
 	 */
 	@Override
 	public DatabaseMetaData getMetaData() throws SQLException {
+		// for debug: System.out.println("calling getMetaData()");
 		if (lang != LANG_SQL)
 			throw new SQLException("This method is only supported in SQL mode", "M0M04");
-
-		return new MonetDatabaseMetaData(this);
+		if (dbmd == null) {
+			// first use, construct it once and reuse it for all next calls
+			dbmd = new MonetDatabaseMetaData(this);
+		}
+		return dbmd;
 	}
 
 	/**
