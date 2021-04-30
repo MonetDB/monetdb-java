@@ -80,7 +80,8 @@ public class MonetPreparedStatement
 	private final int size;
 	private final int rscolcnt;
 
-	private final String[] values;
+	private int paramCount = 0;
+	private final String[] paramValues;
 
 	/* placeholders for date/time pattern formats created once (only when needed), used multiple times */
 	/** Format of a timestamp with RFC822 time zone */
@@ -139,7 +140,6 @@ public class MonetPreparedStatement
 		schema = new String[size];
 		table = new String[size];
 		column = new String[size];
-		values = new String[size];
 
 		// fill the arrays
 		final ResultSet rs = super.getResultSet();
@@ -169,12 +169,16 @@ public class MonetPreparedStatement
 				schema[i] = rs.getString(schema_colnr);
 				table[i] = rs.getString(table_colnr);
 				column[i] = rs.getString(column_colnr);
+				// System.out.println("column " + i + " has value: " + column[i]);
 				/* when column[i] != null it is a result column of the prepared query, see getColumnIdx(int),
 				   when column[i] == null it is a parameter for the prepared statement, see getParamIdx(int). */
-				// System.out.println("column " + i + " has value: " + column[i]);
+				if (column[i] == null)
+					paramCount++;
 			}
 			rs.close();
 		}
+
+		paramValues = new String[paramCount + 1];	// parameters start from 1
 
 		// PreparedStatements are by default poolable
 		poolable = true;
@@ -212,7 +216,7 @@ public class MonetPreparedStatement
 		schema = null;
 		table = null;
 		column = null;
-		values = null;
+		paramValues = null;
 		id = -1;
 		size = -1;
 		rscolcnt = -1;
@@ -249,8 +253,8 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void clearParameters() {
-		for (int i = 0; i < size; i++) {
-			values[i] = null;
+		for (int param = 1; param <= paramCount; param++) {
+			paramValues[param] = null;
 		}
 	}
 
@@ -785,17 +789,10 @@ public class MonetPreparedStatement
 			 * object contains information.
 			 *
 			 * @return the number of parameters
-			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int getParameterCount() throws SQLException {
-				int cnt = 0;
-
-				for (int i = 0; i < size; i++) {
-					if (column[i] == null)
-						cnt++;
-				}
-				return cnt;
+			public int getParameterCount() {
+				return paramCount;
 			}
 
 			/**
@@ -809,10 +806,9 @@ public class MonetPreparedStatement
 			 *         one of ParameterMetaData.parameterNoNulls,
 			 *         ParameterMetaData.parameterNullable, or
 			 *         ParameterMetaData.parameterNullableUnknown
-			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int isNullable(final int param) throws SQLException {
+			public int isNullable(final int param) {
 				return ParameterMetaData.parameterNullableUnknown;
 			}
 
@@ -962,10 +958,9 @@ public class MonetPreparedStatement
 			 *         ParameterMetaData.parameterModeOut, or
 			 *         ParameterMetaData.parameterModeInOut
 			 *         ParameterMetaData.parameterModeUnknown.
-			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
-			public int getParameterMode(final int param) throws SQLException {
+			public int getParameterMode(final int param) {
 				return ParameterMetaData.parameterModeIn;
 			}
 		};
@@ -1263,7 +1258,7 @@ public class MonetPreparedStatement
 	@Override
 	public void setBytes(final int parameterIndex, final byte[] x) throws SQLException {
 		if (x == null) {
-			setNull(parameterIndex, -1);
+			setValue(parameterIndex, "NULL");
 			return;
 		}
 
@@ -1358,7 +1353,7 @@ public class MonetPreparedStatement
 	@Override
 	public void setClob(final int parameterIndex, final Clob x) throws SQLException {
 		if (x == null) {
-			setNull(parameterIndex, -1);
+			setValue(parameterIndex, "NULL");
 			return;
 		}
 
@@ -1379,7 +1374,7 @@ public class MonetPreparedStatement
 	@Override
 	public void setClob(final int parameterIndex, final Reader reader) throws SQLException {
 		if (reader == null) {
-			setNull(parameterIndex, -1);
+			setValue(parameterIndex, "NULL");
 			return;
 		}
 
@@ -1417,7 +1412,7 @@ public class MonetPreparedStatement
 	@Override
 	public void setClob(final int parameterIndex, final Reader reader, final long length) throws SQLException {
 		if (reader == null) {
-			setNull(parameterIndex, -1);
+			setValue(parameterIndex, "NULL");
 			return;
 		}
 		if (length < 0 || length > Integer.MAX_VALUE) {
@@ -1471,7 +1466,7 @@ public class MonetPreparedStatement
 		throws SQLException
 	{
 		if (x == null) {
-			setNull(parameterIndex, -1);
+			setValue(parameterIndex, "NULL");
 			return;
 		}
 
@@ -1780,7 +1775,7 @@ public class MonetPreparedStatement
 		throws SQLException
 	{
 		if (x == null) {
-			setNull(parameterIndex, -1);
+			setValue(parameterIndex, "NULL");
 			return;
 		}
 
@@ -2218,7 +2213,7 @@ public class MonetPreparedStatement
 	@Override
 	public void setString(final int parameterIndex, final String x) throws SQLException {
 		if (x == null) {
-			setNull(parameterIndex, -1);
+			setValue(parameterIndex, "NULL");
 			return;
 		}
 
@@ -2530,7 +2525,7 @@ public class MonetPreparedStatement
 		throws SQLException
 	{
 		if (x == null) {
-			setNull(parameterIndex, -1);
+			setValue(parameterIndex, "NULL");
 			return;
 		}
 
@@ -2600,7 +2595,7 @@ public class MonetPreparedStatement
 		throws SQLException
 	{
 		if (x == null) {
-			setNull(parameterIndex, -1);
+			setValue(parameterIndex, "NULL");
 			return;
 		}
 
@@ -2674,7 +2669,7 @@ public class MonetPreparedStatement
 	@Override
 	public void setURL(final int parameterIndex, final URL x) throws SQLException {
 		if (x == null) {
-			setNull(parameterIndex, -1);
+			setValue(parameterIndex, "NULL");
 			return;
 		}
 
@@ -2725,14 +2720,15 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public String toString() {
-		final StringBuilder sb = new StringBuilder(256);
+		final StringBuilder sb = new StringBuilder(128 + paramCount * 64);
 		sb.append("Prepared SQL: ").append(sqlStatement).append("\n");
 		int param = 1;
 		for (int i = 0; i < size; i++) {
 			/* when column[i] == null it is a parameter, when column[i] != null it is a result column of the prepared query */
 			if (column[i] == null) {
-				sb.append(" parameter ").append(param++).append(" ").append(monetdbType[i]);
-				sb.append(", set value: ").append((values[i] != null) ? values[i] : "<null>").append("\n");
+				sb.append(" parameter ").append(param).append(" ").append(monetdbType[i]);
+				sb.append(", set value: ").append((paramValues[param] != null) ? paramValues[param] : "<null>").append("\n");
+				param++;
 			}
 		}
 		return sb.toString();
@@ -2788,37 +2784,41 @@ public class MonetPreparedStatement
 	 * @throws SQLException if the given index is out of bounds
 	 */
 	private final void setValue(final int parameterIndex, final String val) throws SQLException {
-		values[getParamIdx(parameterIndex)] = (val == null ? "NULL" : val);
+		if (parameterIndex < 1 || parameterIndex > paramCount)
+			throw new SQLException("No such parameter with index: " + parameterIndex, "M1M05");
+
+		if (val != null)
+			paramValues[parameterIndex] = val;
+		else
+			paramValues[parameterIndex] = "NULL";
 	}
 
 	/**
-	 * Transforms the prepare query into a simple SQL query by replacing
-	 * the ?'s with the given column contents.
-	 * Mind that the JDBC specs allow `reuse' of a value for a column over
-	 * multiple executes.
+	 * Constructs an "exec ##(paramval, ...)" statement string for the current parameter values.
+	 * Mind that the JDBC specs allow 'reuse' of a value for a parameter over multiple executes.
 	 *
-	 * @return the simple SQL string for the prepare query
-	 * @throws SQLException if not all columns are set
+	 * @return the "exec ##(...)" string
+	 * @throws SQLException if not all parameters are set with a value
 	 */
+	private StringBuilder execStmt;	// created once, re-used multiple times so much less objects are created and gc-ed
 	private final String transform() throws SQLException {
-		final StringBuilder buf = new StringBuilder(8 + 12 * size);
-		buf.append("exec ").append(id).append('(');
-		// check if all columns are set and do a replace
-		int col = 0;
-		for (int i = 0; i < size; i++) {
-			if (column[i] != null)
-				continue;
-			col++;
-			if (col > 1)
-				buf.append(',');
-			if (values[i] == null)
-				throw new SQLException("Cannot execute, parameter " + col + " is missing.", "M1M05");
+		if (execStmt == null)
+			// first time use, create it once
+			execStmt = new StringBuilder(32 + paramCount * 32);
+		else
+			execStmt.setLength(0);	// clear the buffer
 
-			buf.append(values[i]);
+		execStmt.append("exec ").append(id).append('(');
+		// check if all parameters are set and add the parameter values
+		for (int param = 1; param <= paramCount; param++) {
+			if (paramValues[param] == null)
+				throw new SQLException("Cannot execute, parameter " + param + " is missing.", "M1M05");
+			if (param > 1)
+				execStmt.append(',');
+			execStmt.append(paramValues[param]);
 		}
-		buf.append(')');
-
-		return buf.toString();
+		execStmt.append(')');
+		return execStmt.toString();
 	}
 
 	/**
