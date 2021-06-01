@@ -11,6 +11,10 @@ For more information see https://www.monetdb.org/
 The latest MonetDB JDBC driver can be downloaded from
 https://www.monetdb.org/downloads/Java/
 
+The sources for this JDBC driver and related Java programs can be found at:
+https://dev.monetdb.org/hg/monetdb-java/file/tip
+
+
 The MonetDB JDBC connection URL format to use is:
   jdbc:monetdb://<hostname>[:<portnr>]/<databasename>[?<property>=<value>[&<property>=<value>]]
 
@@ -79,6 +83,8 @@ please let us know at our bugtracker:
 
 Currently implemented JDBC 4.2 interfaces include:
   * java.sql.Driver
+    The next method is NOT useable/supported:
+    - getParentLogger
 
   * java.sql.Connection
     The next features/methods are NOT useable/supported:
@@ -127,7 +133,11 @@ Currently implemented JDBC 4.2 interfaces include:
     - getAsciiStream, getUnicodeStream
     - getNClob
     - getRef, getRowId, getSQLXML
-    - All methods related to updateable result sets
+    - getObject(column, Class<T> type)
+    - moveToCurrentRow, moveToInsertRow,
+    - All methods related to updateable result sets such as:
+      updateArray ... updateTimestamp, cancelRowUpdates,
+      deleteRow, insertRow, refreshRow
 
   * java.sql.ResultSetMetaData
 
@@ -151,6 +161,8 @@ Currently implemented JDBC 4.2 interfaces include:
             and by class: org.monetdb.jdbc.types.URL
 
   * javax.sql.DataSource (not tested)
+    The next method is NOT useable/supported:
+    - getParentLogger
 
 
 The following java.sql.* interfaces are NOT implemented:
