@@ -140,9 +140,9 @@ public class MonetConnection
 	private final int lang;
 
 	/** Whether or not BLOB is mapped to Types.VARBINARY instead of Types.BLOB within this connection */
-	private boolean treatBlobAsVarBinary = true;	// turned on by default for optimal performance (from JDBC Driver release 2.30 onwards)
+	private boolean treatBlobAsVarBinary = true;	// turned on by default for optimal performance (from JDBC Driver release 3.0 onwards)
 	/** Whether or not CLOB is mapped to Types.VARCHAR instead of Types.CLOB within this connection */
-	private boolean treatClobAsVarChar = true;	// turned on by default for optimal performance (from JDBC Driver release 2.30 onwards)
+	private boolean treatClobAsVarChar = true;	// turned on by default for optimal performance (from JDBC Driver release 3.0 onwards)
 
 	/** The last set query timeout on the server as used by Statement, PreparedStatement and CallableStatement */
 	protected int lastSetQueryTimeout;	// 0 means no timeout, which is the default on the server
