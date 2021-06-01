@@ -3,10 +3,10 @@
 
 * Thu Apr 29 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved performance of ResultSetMetaData methods getPrecision(),
-  getScale(), isNullable() and isAutoIncrement().  The data is fetched
+  getScale(), isNullable() and isAutoIncrement(). The data is fetched
   from the server by sending a query. This used to be one query for
-  each column of the ResultSet.  Now these queries are combined into
-  one query fetching this meta data for up to 50 columns in one query.
+  each column of the ResultSet. Now these metadata queries are combined
+  into one query fetching this meta data for up to 50 columns in one query.
   This reduces the number of queries sent to the server significantly.
   This is noticable for instance when using generic JDBC query tools
   such as SQuirreL, which now respond much faster.
@@ -17,173 +17,17 @@
 
 * Wed Mar  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Implemented fix for released monetdb-jdbc-3.0.jre8.jar and
-  monetdb-mcl-1.19.jre8.jar when it is was run using java build
-  1.8.0_###.  It would throw:  java.lang.NoSuchMethodError:
-  java.nio.CharBuffer.mark()Ljava/nio/CharBuffer; at
-  org.monetdb.mcl.parser.StartOfHeaderParser.getNextAsString(Unknown
-  Source) at
-  org.monetdb.jdbc.MonetConnection$ResponseList.executeQuery(Unknown
-  Source) at
-  org.monetdb.jdbc.MonetConnection$ResponseList.processQuery(Unknown
-  Source) at org.monetdb.jdbc.MonetStatement.internalExecute(Unknown
-  Source) at org.monetdb.jdbc.MonetStatement.execute(Unknown Source)
+  monetdb-mcl-1.19.jre8.jar when it is was run using java build 1.8.0_###.
+  It would throw:
+  java.lang.NoSuchMethodError: java.nio.CharBuffer.mark()Ljava/nio/CharBuffer;
+  at org.monetdb.mcl.parser.StartOfHeaderParser.getNextAsString(Unknown Source)
+  at org.monetdb.jdbc.MonetConnection$ResponseList.executeQuery(Unknown Source)
+  at org.monetdb.jdbc.MonetConnection$ResponseList.processQuery(Unknown Source)
+  at org.monetdb.jdbc.MonetStatement.internalExecute(Unknown Source)
+  at org.monetdb.jdbc.MonetStatement.execute(Unknown Source)
   The problem is caused by a change in java.nio.CharBuffer API (return
   types of methods mark() and reset() have changed from Buffer to
   CharBuffer) from Java 8 to Java 9+.
 
-* Wed Feb 17 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Compiled and released new jar files: monetdb-jdbc-3.0.jre8.jar,
-  monetdb-mcl-1.19.jre8.jar and jdbcclient.jre8.jar
-
-  monetdb-jdbc-3.0.jre8.jar is a new major release of the MonetDB JDBC driver.
-  The MonetDB JDBC Driver is now compliant with the Java™ Database
-  Connectivity (JDBC) 4.2 specification as defined in Java 8 and requires
-  Java 8 runtime (profile compact2) as minimum version.
-
-  Important: the MonetDB JDBC driver class name has also been changed in
-  this release to: org.monetdb.jdbc.MonetDriver.  The old driver class
-  (nl.cwi.monetdb.jdbc.MonetDriver) is also included in the jar file, but
-  only to ease the transition for existing deployments. It will be removed
-  in a future release of this JDBC driver. Please use the new driver
-  class name if this is used in your configuration files or Java code.
-
-  The JdbcClient program (jdbcclient.jre8.jar) has been extended with
-  functionality to validate the integrity of the system tables (\vsci) or
-  to validate the integrity of data in tables of a specific schema (\vsi xyz)
-  based on defined declarative constraints (pkey, fkey, not null, etc.).
-  This will be usefull to find and report inconsistencies in your database.
-  This functionality is a beta release. Please let us know if you
-  encounter any issues running it. See below for more information.
-
-  Besides a few bug fixes also performance has been improved in multiple areas.
-
-* Wed Feb  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Added support for escaped wildcards (\% en \_) in String arguments of
-  DatabaseMetaData methods which return a ResultSet, such as getTables(),
-  getColumns(), etc.  When you do not want the characters % or _ to be
-  interpreted as wildcards but as normal characters you can prefix them
-  with a backslash (so \% and \_). Note: be sure all wildcards characters
-  in the String argument are escaped else the search must still use a
-  LIKE operator instead of an = comparison operator.
-  This fixes: https://github.com/MonetDB/monetdb-java/issues/3
-
-* Thu Jan 28 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Corrected the ordering of the output of DatabaseMetaData methods
-  getImportedKeys(), getExportedKeys() and getCrossReference(). In cases
-  where a table would have multiple fks to the same external table,
-  the output was not as expected. This has been corrected, so the columns
-  now appear in the order as defined in the creation of the fks.
-
-* Thu Jan 28 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- The dumping of table definitions from JdbcClient program has been
-  improved. It now includes the ON UPDATE and ON DELETE rules for foreign
-  key constraints. Also it no longer generates CREATE INDEX statements
-  for foreign key constraints whose name is not system generated but
-  user specified.
-
-* Thu Jan 14 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Improved DatabaseMetaData.getTypeInfo() output for temporal data
-  types: sec_interval, day_interval, month_interval, date, time, timetz,
-  timestamp and timestamptz.
-
-* Wed Jan  6 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Corrected output of resultset columns UPDATE_RULE and DELETE_RULE
-  when calling DatabaseMetaData API methods getImportedKeys() or
-  getExportedKeys() or getCrossReference(). These columns used to
-  always return DatabaseMetaData.importedKeyNoAction but now they
-  can also report the other values when set:
-     DatabaseMetaData.importedKeyCascade
-  or DatabaseMetaData.importedKeyRestrict
-  or DatabaseMetaData.importedKeySetNull
-  or DatabaseMetaData.importedKeySetDefault.
-
-* Thu Nov 12 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Moved Java classes from packages starting with nl.cwi.monetdb.*
-  to package org.monetdb.* This naming complies to the Java Package
-  Naming convention as MonetDB's main website is www.monetdb.org.
-  To prevent problems with existing Java programs and JDBC driver
-  configurations we still support usage of the following classes:
-   nl.cwi.monetdb.jdbc.MonetDriver
-   nl.cwi.monetdb.jdbc.types.INET
-   nl.cwi.monetdb.jdbc.types.URL
-   nl.cwi.monetdb.mcl.net.MapiSocket
-   nl.cwi.monetdb.client.JdbcClient
-  They are implemented as simple wrappers of their org.monetdb.* equivalents.
-  Note: These nl.cwi.monetdb.* classes are now marked as deprecated and may
-  be removed in a future release. If you still use them in your Java code or
-  configuration files, update them to use the new package names.
-
-* Thu Oct 29 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Extended JdbcClient program with 3 new commands to quickly validate
-  data integrity:
-  \vsci          validate sql system catalog integrity
-  \vsi <schema>  validate integrity of data in the given schema
-  \vdbi          validate integrity of data in all user schemas in the database
-  The current validations include:
-  - Primary Key uniqueness
-  - Primary Key column(s) being NOT NULL (currently only for \vsci)
-  - Unique constraint uniqueness
-  - Foreign Key referential integrity
-  - Column NOT NULL constraint
-  - Varchar(n) max length constraint
-  - Idem for char(n), clob(n), blob(n), json(n) and url(n).
-  It can be usefull to run \vsci before and after an upgrade of MonetDB server.
-  Use \vsi my_schema  to validate data in all tables of a specific schema.
-  Use \vdbi  to validate integrity of data in all user schemas in
-  the database. Note: this can take a while, depending on your number
-  of user schemas, tables, columns and rows. Despite being tested on several
-  internal dbs the functionality is still beta, so you can get false
-  errors reported. If you encounter any let us know asap.
-
-* Thu Oct  8 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Improved performance of ResultSetMetaData methods isAutoIncrement(),
-  getPrecision() and getScale() significantly for columns of specific data
-  types as in some cases no costly meta data query is executed anymore.
-
-* Thu Oct  8 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- The connection properties  treat_clob_as_varchar  and  treat_blob_as_binary
-  are now set to true by default within the JDBC driver.  This is done
-  as it results by default in less memory usage, (much) faster response
-  and better user experience for many generic JDBC applications (like
-  SQuirreL SQL, DBeaver, etc) when fetching data from CLOB or BLOB result
-  columns.  See release.txt for more information and how you can turn
-  it off to get the old JDBC driver behavior if you require it.
-
-* Wed Oct  7 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Added support for new Java 8 java.sql.Types: Types.TIME_WITH_TIMEZONE and
-  Types.TIMESTAMP_WITH_TIMEZONE.
-
-* Wed Sep 23 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Updated JDBC driver to comply with JDBC 4.2 interface now we compile
-  for Java 8. This includes:
-  - adding 8 methods to MonetCallableStatement
-  - adding 2 methods to MonetDatabaseMetaData
-  - adding 3 methods to MonetPreparedStatement
-  - adding 4 methods to MonetResultSet
-  - adding 8 methods to MonetStatement
-
-* Wed Sep 23 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Corrected MonetDatabaseMetaData.getTypeInfo()
-  - The LITERAL_PREFIX column now includes the required casting name for
-    types: clob, inet, json, url, uuid and blob.
-  - The SEARCHABLE column now returns typePredBasic instead of typeSearchable
-    for type: blob.
-  - The AUTO_INCREMENT column now returns false for types: hugeint, decimal,
-    oid and wrd.
-
-* Thu Sep 10 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Removed support for deprecated MD5 encryption algorithm in MapiSocket.
-
-* Wed Sep 9 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Corrected Statement.executeBatch() method. It now implicitly clears the
-  batch buffer, ready to accept new addBatch() calls without the need for
-  an explicit clearBatch() call.
-  See also https://www.monetdb.org/bugzilla/show_bug.cgi?id=6953
-
-* Wed Feb 19 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Corrected the return value of getCatalogTerm() to "cat".
-
-* Wed Feb 12 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- As Java 7 is no longer supported we now compile for Java 8 as the
-  minimum required JVM version (profile compact2).
-
+For a complete list of changes in previous monetdb-java releases see:
+  https://www.monetdb.org/downloads/Java/archive/ChangeLog-Archive
