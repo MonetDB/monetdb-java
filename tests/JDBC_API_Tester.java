@@ -829,10 +829,13 @@ final public class JDBC_API_Tester {
 			stmt = con.createStatement();
 			// query sys.types to find out if sql datatype hugeint is supported
 			rs = stmt.executeQuery("SELECT sqlname from sys.types where sqlname = 'hugeint';");
-			if (rs != null && rs.next()) {
-				String sqlname = rs.getString(1);
-				if ("hugeint".equals(sqlname))
-					supportsHugeInt = true;
+			if (rs != null) {
+				if (rs.next()) {
+					if ("hugeint".equals(rs.getString(1)))
+						supportsHugeInt = true;
+				}
+				rs.close();
+				rs = null;
 			}
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
