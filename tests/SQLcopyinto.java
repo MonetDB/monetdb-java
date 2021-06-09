@@ -28,7 +28,7 @@ public class SQLcopyinto {
 		System.out.println("SQLcopyinto started");
 		if (args.length == 0) {
 			System.err.println("Error: missing startup argument: the jdbc connection url !");
-			System.err.println("Usage: java -cp monetdb-jdbc-2.29.jre7.jar:. SQLcopyinto \"jdbc:monetdb://localhost:50000/demo?user=monetdb&password=monetdb\"");
+			System.err.println("Usage: java -cp monetdb-jdbc-3.0.jre8.jar:. SQLcopyinto \"jdbc:monetdb://localhost:50000/demo?user=monetdb&password=monetdb\"");
 			System.exit(-1);
 		}
 		String jdbc_url = args[0];
@@ -118,14 +118,13 @@ public class SQLcopyinto {
 				mclOut.write("" + i + ",val_" + i);
 				mclOut.newLine();
 			}
-			mclOut.writeLine(""); // need this one for synchronisation over flush()
 
+			mclOut.writeLine(""); // need this one for synchronisation over flush()
 			error = mclIn.waitForPrompt();
 			if (error != null)
 				System.err.println("Received error: " + error);
 
 			mclOut.writeLine(""); // need this one for synchronisation over flush()
-
 			error = mclIn.waitForPrompt();
 			if (error != null)
 				System.err.println("Received finish error: " + error);
@@ -134,7 +133,7 @@ public class SQLcopyinto {
 		} catch (Exception e) {
 			System.err.println("Mapi Exception: " + e.getMessage());
 		} finally {
-			// close connection to MonetDB server
+			// close MapiSocket connection to MonetDB server
 			server.close();
 		}
 
