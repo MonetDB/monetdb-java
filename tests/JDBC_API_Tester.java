@@ -2852,13 +2852,13 @@ final public class JDBC_API_Tester {
 			"3. d 2004-04-24 to tm: 00:00:00\n" +
 			"3. d 2004-04-24 to dt: 2004-04-24\n" +
 			"4. vc 2004-04-24 11:43:53.654321 to ts: 2004-04-24 11:43:53.654321\n" +
-			"4. vc 2004-04-24 11:43:53.654321 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"2004-04-24 11:43:53.654321\" at pos: 5\n" +
+			"4. vc 2004-04-24 11:43:53.654321 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 5 found: '-' in '2004-04-24 11:43:53.654321'\n" +
 			"4. vc 2004-04-24 11:43:53.654321 to dt: 2004-04-24\n" +
-			"5. vc 11:43:53 to ts: rs.getTimestamp(colnm) failed with error: parsing failed, found: ':' in: \"11:43:53\" at pos: 3\n" +
+			"5. vc 11:43:53 to ts: rs.getTimestamp(colnm) failed with error: parsing failed at pos 3 found: ':' in '11:43:53'\n" +
 			"5. vc 11:43:53 to tm: 11:43:53\n" +
-			"5. vc 11:43:53 to dt: rs.getDate(colnm) failed with error: parsing failed, found: ':' in: \"11:43:53\" at pos: 3\n" +
+			"5. vc 11:43:53 to dt: rs.getDate(colnm) failed with error: parsing failed at pos 3 found: ':' in '11:43:53'\n" +
 			"6. vc 2004-04-24 to ts: 2004-04-24 00:00:00.0\n" +
-			"6. vc 2004-04-24 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"2004-04-24\" at pos: 5\n" +
+			"6. vc 2004-04-24 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 5 found: '-' in '2004-04-24'\n" +
 			"6. vc 2004-04-24 to dt: 2004-04-24\n" +
 			"11. ts 904-04-24 11:43:53.567000 to ts: 0904-04-24 11:43:53.567\n" +
 			"11. ts 904-04-24 11:43:53.567000 to tm: 11:43:53\n" +
@@ -2879,13 +2879,13 @@ final public class JDBC_API_Tester {
 			"16. d 4-04-24 to tm: 00:00:00\n" +
 			"16. d 4-04-24 to dt: 0004-04-24\n" +
 			"17. vc 904-04-24 11:43:53.567 to ts: 0904-04-24 11:43:53.567\n" +
-			"17. vc 904-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"904-04-24 11:43:53.567\" at pos: 4\n" +
+			"17. vc 904-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 4 found: '-' in '904-04-24 11:43:53.567'\n" +
 			"17. vc 904-04-24 11:43:53.567 to dt: 0904-04-24\n" +
 			"18. vc 74-04-24 11:43:53.567 to ts: 0074-04-24 11:43:53.567\n" +
-			"18. vc 74-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"74-04-24 11:43:53.567\" at pos: 3\n" +
+			"18. vc 74-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 3 found: '-' in '74-04-24 11:43:53.567'\n" +
 			"18. vc 74-04-24 11:43:53.567 to dt: 0074-04-24\n" +
 			"19. vc 4-04-24 11:43:53.567 to ts: 0004-04-24 11:43:53.567\n" +
-			"19. vc 4-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"4-04-24 11:43:53.567\" at pos: 2\n" +
+			"19. vc 4-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 2 found: '-' in '4-04-24 11:43:53.567'\n" +
 			"19. vc 4-04-24 11:43:53.567 to dt: 0004-04-24\n" +
 			"21. ts -4-04-24 11:43:53.567000 to ts: 0004-04-24 11:43:53.567\n" +
 			"21. ts -4-04-24 11:43:53.567000 to tm: 11:43:53\n" +
@@ -2900,10 +2900,10 @@ final public class JDBC_API_Tester {
 			"24. d -3004-04-24 to tm: 00:00:00\n" +
 			"24. d -3004-04-24 to dt: 3004-04-24\n" +
 			"25. vc -2004-04-24 11:43:53.654321 to ts: 2004-04-24 11:43:53.654321\n" +
-			"25. vc -2004-04-24 11:43:53.654321 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"-2004-04-24 11:43:53.654321\" at pos: 6\n" +
+			"25. vc -2004-04-24 11:43:53.654321 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 6 found: '-' in '-2004-04-24 11:43:53.654321'\n" +
 			"25. vc -2004-04-24 11:43:53.654321 to dt: 2004-04-24\n" +
 			"26. vc -3004-04-24 to ts: 3004-04-24 00:00:00.0\n" +
-			"26. vc -3004-04-24 to tm: rs.getTime(colnm) failed with error: parsing failed, found: '-' in: \"-3004-04-24\" at pos: 6\n" +
+			"26. vc -3004-04-24 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 6 found: '-' in '-3004-04-24'\n" +
 			"26. vc -3004-04-24 to dt: 3004-04-24\n" +
 			"0. true	true\n");
 	}
