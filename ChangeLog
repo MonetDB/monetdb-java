@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Mon Jun 14 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Compiled and released new jar files: monetdb-jdbc-3.1.jre8.jar,
+  monetdb-mcl-1.20.jre8.jar and jdbcclient.jre8.jar
+
 * Thu Apr 29 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved performance of ResultSetMetaData methods getPrecision(),
   getScale(), isNullable() and isAutoIncrement(). The data is fetched
@@ -9,7 +13,7 @@
   into one query fetching this meta data for up to 50 columns in one query.
   This reduces the number of queries sent to the server significantly.
   This is noticable for instance when using generic JDBC query tools
-  such as SQuirreL, which now respond much faster.
+  such as SQuirreL, DBeaver, which now respond much faster.
 
 * Wed Mar  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Implemented PreparedStatement.toString() as requested by

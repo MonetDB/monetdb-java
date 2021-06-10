@@ -62,6 +62,14 @@ For example:
 See also: https://www.monetdb.org/Documentation/SQLreference/Programming/JDBC
 
 
+The MonetDB JDBC driver class name is: org.monetdb.jdbc.MonetDriver
+This has been changed as of release 3.0 (monetdb-jdbc-3.0.jre8.jar).
+The old driver class (nl.cwi.monetdb.jdbc.MonetDriver) has been deprecated.
+It is still included in the jar file to ease the transition for existing deployments.
+However it will be removed in a future release of the MonetDB JDBC driver.
+Please use the new driver class name asap in your configuration files or Java code.
+
+
 JDBC COMPLIANCE
 The MonetDB JDBC driver is a type 4 driver (100% pure Java) and
 complies to JDBC 4.2 definition, see
