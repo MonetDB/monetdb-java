@@ -263,7 +263,10 @@ public class MonetResultSet
 		// store it
 		curRow = row;
 
-		final String tmpLine = (header != null) ? header.getLine(row - 1) : null;
+		if (header == null)
+			return false;
+
+		final String tmpLine = header.getLine(row - 1);
 		if (tmpLine == null)
 			return false;
 
@@ -434,7 +437,7 @@ public class MonetResultSet
 						return null;
 					return new java.io.ByteArrayInputStream(bte);
 			}
-			throw new SQLException("Cannot operate on " + types[columnIndex - 1] + " type", "M1M05");
+			throw new SQLException("Cannot operate on type: " + types[columnIndex - 1], "M1M05");
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -904,7 +907,7 @@ public class MonetResultSet
 				case Types.LONGVARBINARY:
 					return MonetBlob.hexStrToByteArray(val);
 				default:
-					throw new SQLException("Cannot operate on " + types[columnIndex - 1] + " type", "M1M05");
+					throw new SQLException("Cannot operate on type: " + types[columnIndex - 1], "M1M05");
 			}
 		} catch (NumberFormatException e) {
 			throw newSQLNumberFormatException(e);
@@ -972,7 +975,7 @@ public class MonetResultSet
 	@Override
 	public String getCursorName() throws SQLException {
 		throw new SQLException("Positioned updates not supported for this cursor ("
-				+ (header != null ? header.id : "") + ")", "0AM21");
+				+ (header != null ? header.id + ")" : ")"), "0AM21");
 	}
 
 	/**
@@ -1052,7 +1055,7 @@ public class MonetResultSet
 			break;
 		case ResultSet.FETCH_REVERSE:
 		case ResultSet.FETCH_UNKNOWN:
-			throw new SQLException("Not supported direction " + direction, "0A000");
+			throw new SQLException("Not supported direction: " + direction, "0A000");
 		default:
 			throw new SQLException("Illegal direction: " + direction, "M1M05");
 		}
@@ -2818,19 +2821,18 @@ public class MonetResultSet
 		}
 		if (pdate == null) {
 			// parsing failed
-			final String errMsg;
+			final StringBuilder errMsg = new StringBuilder(128);
 			final int epos = ppos.getErrorIndex();
 			if (epos == -1) {
-				errMsg = "parsing '" + monetDateStr + "' failed";
+				errMsg.append("parsing '").append(monetDateStr).append("' failed");
 			} else if (epos < monetDate.length()) {
-				errMsg = "parsing failed," +
-					 " found: '" + monetDate.charAt(epos) + "'" +
-					 " in: \"" + monetDateStr + "\"" +
-					 " at pos: " + (epos + (negativeYear ? 2 : 1));
+				errMsg.append("parsing failed at pos ").append(epos + (negativeYear ? 2 : 1))
+					.append(" found: '").append(monetDate.charAt(epos))
+					.append("' in '").append(monetDateStr).append("'");
 			} else {
-				errMsg = "parsing failed, expected more data after '" +	monetDateStr + "'";
+				errMsg.append("parsing failed, expected more data after '").append(monetDateStr).append("'");
 			}
-			throw new SQLException(errMsg, "01M10");
+			throw new SQLException(errMsg.toString(), "01M10");
 		}
 
 		cal.setTime(pdate);
@@ -2871,10 +2873,11 @@ public class MonetResultSet
 					while (ctr++ < 9)
 						nanos *= 10;
 				} catch (MCLParseException e) {
+					final int offset = e.getErrorOffset();
 					addWarning(e.getMessage() +
-							" found: '" + monDate[e.getErrorOffset()] + "'" +
-							" in: \"" + monetDate + "\"" +
-							" at pos: " + e.getErrorOffset(), "01M10");
+							" found: '" + monDate[offset] +
+							"' in: \"" + monetDate +
+							"\" at pos: " + offset, "01M10");
 					// default value
 					nanos = 0;
 				}
@@ -2957,8 +2960,9 @@ public class MonetResultSet
 				}
 				cal = Calendar.getInstance();
 			}
-			final int ret = getJavaDate(cal, columnIndex, Types.DATE);
-			return ret == -1 ? null : new java.sql.Date(cal.getTimeInMillis());
+			if (getJavaDate(cal, columnIndex, Types.DATE) == -1)
+				return null;
+			return new java.sql.Date(cal.getTimeInMillis());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -3046,8 +3050,9 @@ public class MonetResultSet
 				}
 				cal = Calendar.getInstance();
 			}
-			final int ret = getJavaDate(cal, columnIndex, Types.TIME);
-			return ret == -1 ? null : new Time(cal.getTimeInMillis());
+			if (getJavaDate(cal, columnIndex, Types.TIME) == -1)
+				return null;
+			return new Time(cal.getTimeInMillis());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}

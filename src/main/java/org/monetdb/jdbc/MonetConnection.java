@@ -1200,8 +1200,8 @@ public class MonetConnection
 	 */
 	@Override
 	public String toString() {
-		return "MonetDB Connection (" + getJDBCURL() + ") " +
-				(closed ? "disconnected" : "connected");
+		return "MonetDB Connection (" + getJDBCURL()
+			+ (closed ? ") disconnected" : ") connected");
 	}
 
 	//== Java 1.6 methods (JDBC 4.0)
@@ -1694,10 +1694,12 @@ public class MonetConnection
 		checkNotClosed();
 		Statement st = null;
 		try {
+			final String callstmt;
 			// as of release Jun2020 (11.37.7) the function sys.settimeout(bigint) is deprecated and replaced by new sys.setquerytimeout(int)
-			final boolean postJun2020 = (getDatabaseMajorVersion() >=11) && (getDatabaseMinorVersion() >= 37);
-			final String callstmt = postJun2020 ? "CALL sys.\"setquerytimeout\"(" + millis + ")"
-							    : "CALL sys.\"settimeout\"(" + millis + ")";
+			if ((getDatabaseMajorVersion() == 11) && (getDatabaseMinorVersion() < 37))
+				callstmt = "CALL sys.\"settimeout\"(" + millis + ")";
+			else
+				callstmt = "CALL sys.\"setquerytimeout\"(" + millis + ")";
 			// for debug: System.out.println("Before: " + callstmt);
 			st = createStatement();
 			st.execute(callstmt);
@@ -1867,8 +1869,8 @@ public class MonetConnection
 			if (env_monet_version != null) {
 				try {
 					// from version string such as 11.33.9 extract number: 11
-					final int start = env_monet_version.indexOf('.');
-					databaseMajorVersion = Integer.parseInt((start >= 0) ? env_monet_version.substring(0, start) : env_monet_version);
+					final int end = env_monet_version.indexOf('.');
+					databaseMajorVersion = Integer.parseInt((end >= 0) ? env_monet_version.substring(0, end) : env_monet_version);
 				} catch (NumberFormatException nfe) {
 					// ignore
 				}
@@ -2043,8 +2045,10 @@ public class MonetConnection
 	private void sendCommand(final String command, final boolean usequeryTempl) throws SQLException {
 		synchronized (server) {
 			try {
-				out.writeLine(usequeryTempl ? (queryTempl[0] + command + queryTempl[1])
-							: (commandTempl[0] + command + commandTempl[1]) );
+				if (usequeryTempl)
+					out.writeLine(queryTempl[0] + command + queryTempl[1]);
+				else
+					out.writeLine(commandTempl[0] + command + commandTempl[1]);
 				final String error = in.waitForPrompt();
 				if (error != null)
 					throw new SQLException(error.substring(6), error.substring(0, 5));
@@ -2966,7 +2970,9 @@ public class MonetConnection
 					 * then ignore this call.  If it is set to 0 we get a
 					 * prompt after the server sent it's header.
 					 */
-					int size = (cachesize == 0 ? defaultFetchSize : cachesize);
+					int size = cachesize;
+					if (size == 0)
+						size = defaultFetchSize;
 					if (maxrows > 0 && maxrows < size)
 						size = (int)maxrows;
 					// don't do work if it's not needed
@@ -2979,7 +2985,7 @@ public class MonetConnection
 					// }}} set reply size
 
 					// send query to the server
-					out.writeLine( (templ[0] == null ? "" : templ[0]) + query + (templ[1] == null ? "" : templ[1]) );
+					out.writeLine(templ[0] + query + templ[1]);
 
 					// go for new results
 					String tmpLine = in.readLine();
@@ -3020,7 +3026,7 @@ public class MonetConnection
 									res = new SchemaResponse();
 									break;
 								case StartOfHeaderParser.Q_TRANS:
-									final boolean ac = sohp.getNextAsString().equals("t") ? true : false;
+									final boolean ac = sohp.getNextAsString().equals("t");
 									if (autoCommit && ac) {
 										addWarning("Server enabled auto commit mode " +
 											"while local state already was auto commit.", "01M11");
@@ -3034,7 +3040,11 @@ public class MonetConnection
 									sohp.getNextAsInt();	// columncount
 									final int rowcount = sohp.getNextAsInt();
 									final int offset = sohp.getNextAsInt();
-									final ResultSetResponse t = (rsresponses != null) ? rsresponses.get(Integer.valueOf(id)) : null;
+									final ResultSetResponse t;
+									if (rsresponses != null)
+										t = rsresponses.get(Integer.valueOf(id));
+									else
+										t = null;
 									if (t == null) {
 										error = "M0M12!no ResultSetResponse with id " + id + " found";
 										break;
@@ -3045,11 +3055,12 @@ public class MonetConnection
 								} break;
 								} // end of switch (sohp.parse(tmpLine))
 							} catch (MCLParseException e) {
+								final int offset = e.getErrorOffset();
 								error = "M0M10!error while parsing start of header:\n" +
 									e.getMessage() +
-									" found: '" + tmpLine.charAt(e.getErrorOffset()) + "'" +
-									" in: \"" + tmpLine + "\"" +
-									" at pos: " + e.getErrorOffset();
+									" found: '" + tmpLine.charAt(offset) +
+									"' in: \"" + tmpLine +
+									"\" at pos: " + offset;
 								// flush all the rest
 								in.waitForPrompt();
 								linetype = in.getLineType();

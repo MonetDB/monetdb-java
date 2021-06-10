@@ -206,7 +206,10 @@ public class MonetStatement
 		// copy contents of long[] into new int[]
 		final int[] counts = new int[ret.length];
 		for (int i = 0; i < ret.length; i++) {
-			counts[i] = (ret[i] >= Integer.MAX_VALUE) ? Integer.MAX_VALUE : (int)ret[i];
+			if (ret[i] >= Integer.MAX_VALUE)
+				counts[i] = Integer.MAX_VALUE;
+			else
+				counts[i] = (int)ret[i];
 		}
 		return counts;
 	}
@@ -776,10 +779,9 @@ public class MonetStatement
 	 */
 	@Override
 	public ResultSet getResultSet() throws SQLException {
-		return (header != null && header instanceof MonetConnection.ResultSetResponse)
-			? new MonetResultSet(this,
-					(MonetConnection.ResultSetResponse)header)
-			: null;
+		if (header != null && header instanceof MonetConnection.ResultSetResponse)
+			return new MonetResultSet(this, (MonetConnection.ResultSetResponse)header);
+		return null;
 	}
 
 	/**
@@ -1111,17 +1113,16 @@ public class MonetStatement
 	 * @throws SQLException if a database access error occurs or this
 	 *	method is called on a closed Statement
 	 */
+	@Override
 	public long getLargeUpdateCount() throws SQLException {
-		long ret = -1;
 		if (header != null) {
 			if (header instanceof MonetConnection.UpdateResponse) {
-				ret = ((MonetConnection.UpdateResponse)header).count;
+				return ((MonetConnection.UpdateResponse)header).count;
 			} else if (header instanceof MonetConnection.SchemaResponse) {
-				ret = ((MonetConnection.SchemaResponse)header).state;
+				return ((MonetConnection.SchemaResponse)header).state;
 			}
 		}
-
-		return ret;
+		return -1;
 	}
 
 	/**
@@ -1570,9 +1571,7 @@ final class MonetVirtualResultSet extends MonetResultSet {
 	 */
 	@Override
 	public void close() {
-		if (!closed) {
-			closed = true;
-			// types and columns are MonetResultSets private parts
-		}
+		closed = true;
+		// types and columns are MonetResultSets private parts
 	}
 }
