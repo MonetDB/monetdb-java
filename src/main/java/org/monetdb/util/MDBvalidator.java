@@ -665,7 +665,7 @@ public final class MDBvalidator {
 	/* Run a validation query.
 	 * It should result in no rows returned.
 	 * When rows are returned those are the ones that contain violations.
-	 * Retrieve them and convert the results (currently first 16 only) into a (large) violation string
+	 * Retrieve them and convert the results (currently first 16 only) into a (large) violation string.
 	 * Log/Print the violation.
 	 */
 	private void validateQuery(
@@ -869,7 +869,7 @@ public final class MDBvalidator {
 	{
 		final StringBuilder sb = new StringBuilder(2048);
 		sb.append(checkType).append(" violation(s) found in \"")
-		  .append(schema).append("\".\"").append(table).append("\".\"").append(columns).append("\":\n")
+		  .append(schema).append("\".\"").append(table).append("\" (").append(columns).append("):\n")
 		  .append(violations)
 		  .append("Found using query: ").append(query).append("\n");
 		System.out.println(sb.toString());
@@ -894,7 +894,7 @@ public final class MDBvalidator {
 
 	private static String minimumWidth(int val, int minWidth) {
 		final String valstr = Integer.toString(val);
-		int spacesneeded = minWidth - valstr.length();
+		final int spacesneeded = minWidth - valstr.length();
 		switch (spacesneeded) {
 			case 1: return " " + valstr;
 			case 2: return "  " + valstr;
