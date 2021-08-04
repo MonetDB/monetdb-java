@@ -1232,9 +1232,11 @@ final public class JDBC_API_Tester {
 					sb.append("should have seen a ResultSet!");
 
 				ResultSet rs = pstmt.getResultSet();
-				if (!rs.next())
-					sb.append("ResultSet is empty");
-				sb.append(" result: ").append(rs.getString(1));
+				if (rs != null) {
+					if (!rs.next())
+						sb.append("ResultSet is empty");
+					sb.append(" result: ").append(rs.getString(1));
+				}
 
 				// close the connection and associated resources
 				pstmt.getConnection().close();
@@ -1511,7 +1513,7 @@ final public class JDBC_API_Tester {
 				pstmt = con.prepareStatement("select " + i + ", " + i + " = ?");
 				pstmt.setInt(1, i);
 				rs = pstmt.executeQuery();
-				if (rs.next() && i % 20 == 0) {
+				if (rs != null && rs.next() && i % 20 == 0) {
 					sb.append(rs.getInt(1)).append(", ").append(rs.getBoolean(2)).append("\n");
 				}
 				/* next call should cause resources on the server to be freed */
@@ -1550,7 +1552,7 @@ final public class JDBC_API_Tester {
 				pstmt = con.prepareStatement("select " + i + ", " + i + " = ?");
 				pstmt.setInt(1, i);
 				rs = pstmt.executeQuery();
-				if (rs.next() && i % 1000 == 0) {
+				if (rs != null && rs.next() && i % 1000 == 0) {
 					sb.append(rs.getInt(1)).append(", ").append(rs.getBoolean(2)).append("\n");
 				}
 				/* next call should cause resources on the server to be freed */
@@ -1752,10 +1754,11 @@ final public class JDBC_API_Tester {
 			}
 
 			sb.append("2. inserting a record...");
-			java.util.Date d = new java.util.Date();
-			pstmt.setTime(1, new java.sql.Time(d.getTime()));
-			pstmt.setTimestamp(2, new java.sql.Timestamp(d.getTime()));
-			pstmt.setDate(3, new java.sql.Date(d.getTime()));
+			final java.util.Date d = new java.util.Date();
+			final long tm = d.getTime();
+			pstmt.setTime(1, new java.sql.Time(tm));
+			pstmt.setTimestamp(2, new java.sql.Timestamp(tm));
+			pstmt.setDate(3, new java.sql.Date(tm));
 
 			pstmt.executeUpdate();
 			sb.append(" passed\n");
@@ -1769,20 +1772,20 @@ final public class JDBC_API_Tester {
 			rs = pstmt.executeQuery();
 			sb.append(" passed\n");
 
-			while (rs.next()) {
+			while (rs != null && rs.next()) {
 				for (int j = 1; j <= 3; j++) {
 					sb.append((j+4)).append(". retrieving...");
-					java.util.Date x = (java.util.Date)(rs.getObject(j));
+					Object x = rs.getObject(j);
 					boolean matches = false;
-					if (x instanceof Time) {
+					if (x instanceof java.sql.Time) {
 						sb.append(" (Time)");
-						matches = (new Time(d.getTime())).toString().equals(x.toString());
-					} else if (x instanceof Date) {
+						matches = (new java.sql.Time(tm)).toString().equals(x.toString());
+					} else if (x instanceof java.sql.Date) {
 						sb.append(" (Date)");
-						matches = (new Date(d.getTime())).toString().equals(x.toString());
-					} else if (x instanceof Timestamp) {
+						matches = (new java.sql.Date(tm)).toString().equals(x.toString());
+					} else if (x instanceof java.sql.Timestamp) {
 						sb.append(" (Timestamp)");
-						matches = (new Timestamp(d.getTime())).toString().equals(x.toString());
+						matches = (new java.sql.Timestamp(tm)).toString().equals(x.toString());
 					}
 					if (matches) {
 						sb.append(" passed\n");
@@ -2027,7 +2030,7 @@ final public class JDBC_API_Tester {
 				"       freq     double ," +
 				"       bw       double ," +
 				"       type     decimal(1,0)," +
-				"       imageurl varchar(100)," +
+				"       imageurl url(100)," +
 				"       comment  varchar(100)," +
 				"       CONSTRAINT htmtest_htmid_pkey PRIMARY KEY (htmid)" +
 				")" );
@@ -2155,6 +2158,8 @@ final public class JDBC_API_Tester {
 			cstmt.executeUpdate();
 			sb.append("Called Prepared procedure (with NULLs): ").append(proc_nm).append("\n");
 			showTblContents(tbl_nm);
+
+			cstmt.clearParameters();
 
 			sb.append("Test completed. Cleanup procedure and table.\n");
 			stmt.execute("DROP PROCEDURE IF EXISTS " + proc_nm + ";");
@@ -2963,6 +2968,9 @@ final public class JDBC_API_Tester {
 				sb.append("Wrong return status\n");
 			else
 				sb.append("passed\n");
+
+			// for large batches of DML always set sys.optimizer = 'minimal_pipe'. It makes a big difference in performance.
+			stmt.execute("SET sys.optimizer = 'minimal_pipe'");
 
 			// start batching a large amount of inserts
 			for (int i = 1; i <= 3432; i++) {
@@ -3808,9 +3816,10 @@ final public class JDBC_API_Tester {
 			if (rs2 != null) {
 				sb.append("List TableTypes:\n");
 				while (rs2.next()) {
+					String tt = rs2.getString(1);
 					// post Oct2020 releases the STREAM TABLE type is removed, so filter it out for a stable output
-					if (!"STREAM TABLE".equals(rs2.getString(1)))
-						sb.append(rs2.getString(1)).append("\n");
+					if (!"STREAM TABLE".equals(tt))
+						sb.append(tt).append("\n");
 				}
 				rs2.close();
 			}
@@ -4055,9 +4064,9 @@ final public class JDBC_API_Tester {
 			sb.append("getQueryTimeout must give 0: ").append(st.getQueryTimeout()).append("\n");
 			st.close();
 
-			st.setQueryTimeout(5);
+			st.setQueryTimeout(7);
 			con.isValid(3);
-			sb.append("getQueryTimeout must give 5: ").append(st.getQueryTimeout()).append("\n");
+			sb.append("getQueryTimeout must give 7: ").append(st.getQueryTimeout()).append("\n");
 			st.close();
 		} catch (SQLException se) {
 			sb.append(se.getMessage()).append("\n");
@@ -4070,7 +4079,7 @@ final public class JDBC_API_Tester {
 				"getQueryTimeout must give 5: 5\n" +
 				"getQueryTimeout must give 0: 0\n" +
 				"getQueryTimeout must give 0: 0\n" +
-				"getQueryTimeout must give 5: 5\n");
+				"getQueryTimeout must give 7: 7\n");
 	}
 
 	private void Bug_LargeQueries_6571_6693(String arg0) {
