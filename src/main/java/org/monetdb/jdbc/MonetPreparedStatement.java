@@ -314,10 +314,10 @@ public class MonetPreparedStatement
 	 * be an SQL INSERT, UPDATE or DELETE statement; or an SQL statement that
 	 * returns nothing, such as a DDL statement.
 	 *
-	 * @return either (1) the row count for INSERT, UPDATE, or DELETE
-	 *         statements or (2) 0 for SQL statements that return nothing
+	 * @return either (1) the row count for INSERT, UPDATE, or DELETE statements
+	 *             or (2) 0 for SQL statements that return nothing
 	 * @throws SQLException if a database access error occurs or the SQL
-	 *                     statement returns a ResultSet object
+	 *                      statement returns a ResultSet object
 	 */
 	@Override
 	public int executeUpdate() throws SQLException {
@@ -417,8 +417,8 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public boolean isAutoIncrement(final int column) throws SQLException {
-				/* TODO: in MonetDB only numeric (int, decimal) columns could be autoincrement/serial
-				 * This however requires an expensive dbmd.getColumns(null, schema, table, column)
+				/* In MonetDB only integer (int, bigint, smallint, tinyint) columns can be autoincrement/serial
+				 * TODO: This however requires an expensive dbmd.getColumns(null, schema, table, column)
 				 * query call to pull the IS_AUTOINCREMENT value for this column.
 				 * See also ResultSetMetaData.isAutoIncrement()
 				 */
@@ -1673,16 +1673,16 @@ public class MonetPreparedStatement
 	 * @param parameterIndex the first parameter is 1, the second is 2, ...
 	 * @param sqlType a value from java.sql.Types
 	 * @param typeName the fully-qualified name of an SQL user-defined type;
-	 *                 ignored if the parameter is not a user-defined type or
-	 *                 REF
+	 *                 ignored if the parameter is not a user-defined type or REF
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public void setNull(final int parameterIndex, final int sqlType, final String typeName)
 		throws SQLException
 	{
-		// MonetDB/SQL's NULL needs no type
-		setNull(parameterIndex, sqlType);
+		// we discard the given type and name here, the backend converts the
+		// value NULL to whatever it needs for the column
+		setValue(parameterIndex, "NULL");
 	}
 
 	/**
