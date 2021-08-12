@@ -2985,7 +2985,8 @@ public class MonetConnection
 					// }}} set reply size
 
 					// send query to the server
-					out.writeLine(templ[0] + query + templ[1]);
+					String queryLine = (templ[0] == null ? "" : templ[0]) + query + (templ[1] == null ? "" : templ[1]);
+					out.writeLine(queryLine);
 
 					// go for new results
 					String tmpLine = in.readLine();
