@@ -542,8 +542,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 						+ language + ":"
 						+ (database == null ? "" : database) + ":";
 				if (chaltok.length > 6) {
-					// this ':' delimits the FILETRANS field, currently empty because we don't support it.
-					response += ":";
+					response += "FILETRANS:";
 
 					// if supported, send handshake options
 					for (String part : chaltok[6].split(",")) {
