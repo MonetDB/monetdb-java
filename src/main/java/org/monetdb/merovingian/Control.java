@@ -207,17 +207,17 @@ public class Control {
 		mout.writeLine(database + " " + command + "\n");
 		ArrayList<String> l = new ArrayList<String>();
 		String tmpLine = min.readLine();
-		int linetype = min.getLineType();
-		if (linetype == BufferedMCLReader.ERROR)
+		LineType linetype = min.getLineType();
+		if (linetype == LineType.ERROR)
 			throw new MerovingianException(tmpLine.substring(6));
-		if (linetype != BufferedMCLReader.RESULT)
+		if (linetype != LineType.RESULT)
 			throw new MerovingianException("unexpected line: " + tmpLine);
 		if (!tmpLine.substring(1).equals(RESPONSE_OK))
 			throw new MerovingianException(tmpLine.substring(1));
 		tmpLine = min.readLine();
 		linetype = min.getLineType();
-		while (linetype != BufferedMCLReader.PROMPT) {
-			if (linetype != BufferedMCLReader.RESULT)
+		while (linetype != LineType.PROMPT) {
+			if (linetype != LineType.RESULT)
 				throw new MerovingianException("unexpected line: " +
 						tmpLine);
 

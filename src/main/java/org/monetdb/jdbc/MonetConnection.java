@@ -35,6 +35,7 @@ import java.util.concurrent.Executor;
 
 import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
+import org.monetdb.mcl.io.LineType;
 import org.monetdb.mcl.net.HandshakeOptions;
 import org.monetdb.mcl.net.MapiSocket;
 import org.monetdb.mcl.parser.HeaderLineParser;
@@ -2100,7 +2101,7 @@ public class MonetConnection
 		 * @return a non-null String if the line is invalid,
 		 *         or additional lines are not allowed.
 		 */
-		public abstract String addLine(String line, int linetype);
+		public abstract String addLine(String line, LineType linetype);
 
 		/**
 		 * Returns whether this Response expects more lines to be added
@@ -2259,12 +2260,12 @@ public class MonetConnection
 		 */
 		// {{{ addLine
 		@Override
-		public String addLine(final String tmpLine, final int linetype) {
+		public String addLine(final String tmpLine, final LineType linetype) {
 			if (isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES]) {
 				return resultBlocks[0].addLine(tmpLine, linetype);
 			}
 
-			if (linetype != BufferedMCLReader.HEADER)
+			if (linetype != LineType.HEADER)
 				return "header expected, got: " + tmpLine;
 
 			// depending on the name of the header, we continue
@@ -2634,8 +2635,8 @@ public class MonetConnection
 		 *         or additional lines are not allowed.
 		 */
 		@Override
-		public String addLine(final String line, final int linetype) {
-			if (linetype != BufferedMCLReader.RESULT)
+		public String addLine(final String line, final LineType linetype) {
+			if (linetype != LineType.RESULT)
 				return "protocol violation: unexpected line in data block: " + line;
 			// add to the backing array
 			data[++pos] = line;
@@ -2725,7 +2726,7 @@ public class MonetConnection
 		}
 
 		@Override
-		public String addLine(final String line, final int linetype) {
+		public String addLine(final String line, final LineType linetype) {
 			return "Header lines are not supported for an UpdateResponse";
 		}
 
@@ -2762,7 +2763,7 @@ public class MonetConnection
 		public final int state = Statement.SUCCESS_NO_INFO;
 
 		@Override
-		public String addLine(final String line, final int linetype) {
+		public String addLine(final String line, final LineType linetype) {
 			return "Header lines are not supported for a SchemaResponse";
 		}
 
@@ -2990,12 +2991,12 @@ public class MonetConnection
 
 					// go for new results
 					String tmpLine = in.readLine();
-					int linetype = in.getLineType();
+					LineType linetype = in.getLineType();
 					Response res = null;
-					while (linetype != BufferedMCLReader.PROMPT) {
+					while (linetype != LineType.PROMPT) {
 						// each response should start with a start of header (or error)
 						switch (linetype) {
-						case BufferedMCLReader.SOHEADER:
+						case SOHEADER:
 							// make the response object, and fill it
 							try {
 								switch (sohp.parse(tmpLine)) {
@@ -3100,7 +3101,7 @@ public class MonetConnection
 							tmpLine = in.readLine();
 							linetype = in.getLineType();
 							break;
-						case BufferedMCLReader.INFO:
+						case INFO:
 							addWarning(tmpLine.substring(1), "01000");
 							// read the next line (can be prompt, new result, error, etc.)
 							// before we start the loop over
@@ -3111,7 +3112,7 @@ public class MonetConnection
 							// we have something we don't expect/understand, let's make it an error message
 							tmpLine = "!M0M10!protocol violation, unexpected line: " + tmpLine;
 							// don't break; fall through...
-						case BufferedMCLReader.ERROR:
+						case ERROR:
 							// read everything till the prompt (should be
 							// error) we don't know if we ignore some
 							// garbage here... but the log should reveal that

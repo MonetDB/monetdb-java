@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
+import org.monetdb.mcl.io.LineType;
 import org.monetdb.mcl.net.MapiSocket;
 
 /**
@@ -53,9 +54,9 @@ public final class SQLRestore {
 					final String line = _is.readLine();
 					if (line == null)
 						break;
-					final int result = _is.getLineType();
+					final LineType result = _is.getLineType();
 					switch (result) {
-					case BufferedMCLReader.ERROR:
+					case ERROR:
 						_errorMessage = line;
 						_errorState.set(true);
 						return;

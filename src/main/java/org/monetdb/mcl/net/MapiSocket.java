@@ -31,6 +31,7 @@ import java.util.List;
 import org.monetdb.mcl.MCLException;
 import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
+import org.monetdb.mcl.io.LineType;
 import org.monetdb.mcl.parser.MCLParseException;
 
 /**
@@ -293,7 +294,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		final ArrayList<String> redirects = new ArrayList<String>();
 		final List<String> warns = new ArrayList<String>();
 		String err = "", tmp;
-		int lineType;
+		LineType lineType;
 		do {
 			tmp = reader.readLine();
 			if (tmp == null)
@@ -301,14 +302,14 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 						con.getInetAddress().getHostName() + ":" +
 						con.getPort() + ": End of stream reached");
 			lineType = reader.getLineType();
-			if (lineType == BufferedMCLReader.ERROR) {
+			if (lineType == LineType.ERROR) {
 				err += "\n" + tmp.substring(7);
-			} else if (lineType == BufferedMCLReader.INFO) {
+			} else if (lineType == LineType.INFO) {
 				warns.add(tmp.substring(1));
-			} else if (lineType == BufferedMCLReader.REDIRECT) {
+			} else if (lineType == LineType.REDIRECT) {
 				redirects.add(tmp.substring(1));
 			}
-		} while (lineType != BufferedMCLReader.PROMPT);
+		} while (lineType != LineType.PROMPT);
 
 		if (err.length() > 0) {
 			close();
@@ -984,7 +985,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					block[blockLen++] = '\n';
 				}
 				// insert 'fake' flush
-				block[blockLen++] = BufferedMCLReader.PROMPT;
+				block[blockLen++] = LineType.PROMPT.chr();
 				block[blockLen++] = '\n';
 				if (debug)
 					log("RD ", "inserting prompt", true);
