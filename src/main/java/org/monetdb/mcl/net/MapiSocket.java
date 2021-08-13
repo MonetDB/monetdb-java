@@ -985,7 +985,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					block[blockLen++] = '\n';
 				}
 				// insert 'fake' flush
-				block[blockLen++] = LineType.PROMPT.chr();
+				for (byte b: LineType.PROMPT.bytes()) {
+					block[blockLen++] = b;
+				}
 				block[blockLen++] = '\n';
 				if (debug)
 					log("RD ", "inserting prompt", true);

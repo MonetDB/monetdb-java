@@ -104,39 +104,7 @@ public final class BufferedMCLReader extends BufferedReader {
 	 * @param line the string to examine
 	 */
 	public void setLineType(final String line) {
-		if (line == null || line.isEmpty()) {
-			lineType = UNKNOWN;
-			return;
-		}
-		switch (line.charAt(0)) {
-			case '.':
-				lineType = PROMPT;
-				break;
-			case ',':
-				lineType = MORE;
-				break;
-			case '[':	/* multi field result */
-			case '=':	/* single value result */
-				lineType = RESULT;
-				break;
-			case '%':
-				lineType = HEADER;
-				break;
-			case '&':
-				lineType = SOHEADER;
-				break;
-			case '#':
-				lineType = INFO;
-				break;
-			case '!':
-				lineType = ERROR;
-				break;
-			case '^':
-				lineType = REDIRECT;
-				break;
-			default:
-				lineType = UNKNOWN;
-		}
+		lineType = LineType.classify(line);
 	}
 
 	/**
