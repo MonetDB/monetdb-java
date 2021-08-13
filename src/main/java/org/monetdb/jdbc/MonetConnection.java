@@ -3110,7 +3110,7 @@ public class MonetConnection
 							break;
 						default:	// Yeah... in Java this is correct!
 							// we have something we don't expect/understand, let's make it an error message
-							tmpLine = "!M0M10!protocol violation, unexpected line: " + tmpLine;
+							tmpLine = String.format("!M0M10!protocol violation, unexpected %s line: %s", linetype, tmpLine);
 							// don't break; fall through...
 						case ERROR:
 							// read everything till the prompt (should be
