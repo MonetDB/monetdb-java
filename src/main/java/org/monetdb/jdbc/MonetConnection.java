@@ -3108,6 +3108,17 @@ public class MonetConnection
 							tmpLine = in.readLine();
 							linetype = in.getLineType();
 							break;
+						case FILETRANSFER:
+							// Consume the command
+							String dummy = in.readLine();
+							// Consume the fake prompt inserted by MapiSocket.
+							dummy = in.readLine();
+							// Complain
+							out.writeLine("!HY000!JDBC driver does not support file transfer yet\n");
+							// Then prepare for the next iteration
+							tmpLine = in.readLine();
+							linetype = in.getLineType();
+							break;
 						default:	// Yeah... in Java this is correct!
 							// we have something we don't expect/understand, let's make it an error message
 							tmpLine = String.format("!M0M10!protocol violation, unexpected %s line: %s", linetype, tmpLine);
