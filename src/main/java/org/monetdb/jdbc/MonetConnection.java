@@ -10,6 +10,8 @@ package org.monetdb.jdbc;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.io.UnsupportedEncodingException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.sql.CallableStatement;
@@ -3110,11 +3112,14 @@ public class MonetConnection
 							break;
 						case FILETRANSFER:
 							// Consume the command
-							String dummy = in.readLine();
+							String transferCommand = in.readLine();
 							// Consume the fake prompt inserted by MapiSocket.
-							dummy = in.readLine();
-							// Complain
-							out.writeLine("!HY000!JDBC driver does not support file transfer yet\n");
+							String dummy = in.readLine();
+							// Handle the request
+							error = handleTransfer(transferCommand);
+							if (error != null) {
+								out.writeLine("!HY000!" + error + "\n");
+							}
 							// Then prepare for the next iteration
 							tmpLine = in.readLine();
 							linetype = in.getLineType();
@@ -3167,4 +3172,58 @@ public class MonetConnection
 		}
 	}
 	// }}}
+
+	private String handleTransfer(String transferCommand) throws IOException {
+		String[] parts = transferCommand.split(" " , 3);
+		if (parts.length == 3) {
+			if (parts[0].equals("r")) {
+				int offset;
+				try {
+					offset = Integer.parseInt(parts[1]);
+				} catch (NumberFormatException e) {
+					return e.toString();
+				}
+				return handleUpload(parts[2], true, offset);
+			}
+			if (parts[0].equals("r")) {
+				int offset;
+				try {
+					offset = Integer.parseInt(parts[1]);
+				} catch (NumberFormatException e) {
+					return e.toString();
+				}
+				return handleUpload(parts[2], false, offset);
+			}
+		} else if (parts.length == 2) {
+			if (parts[0].equals("w")) {
+				return handleDownload(parts[1]);
+			}
+		}
+		return "JDBC does not support this file transfer yet: " + transferCommand;
+	}
+
+	private String handleUpload(String path, boolean textMode, int offset) throws IOException {
+		boolean wasFaking = server.setInsertFakeFlushes(false);
+		try {
+			MapiSocket.UploadStream us = server.uploadStream();
+			us.write('\n');
+			PrintStream ps = null;
+			try {
+				ps = new PrintStream(us, false, "UTF-8");
+			} catch (UnsupportedEncodingException e) {
+				return e.toString();
+			}
+			for (int i = 0; i < 1200; i++) {
+				ps.println("banana " + i);
+			}
+			ps.close();
+			return null;
+		} finally {
+			server.setInsertFakeFlushes(wasFaking);
+		}
+	}
+
+	private String handleDownload(String path) {
+		return "JDBC driver does not support downloads yet";
+	}
 }
