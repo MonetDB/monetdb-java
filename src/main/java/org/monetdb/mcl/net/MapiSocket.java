@@ -90,7 +90,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	/** The TCP Socket timeout in milliseconds. Default is 0 meaning the timeout is disabled (i.e., timeout of infinity) */
 	private int soTimeout = 0;
 	/** Stream from the Socket for reading */
-	private InputStream fromMonet;
+	private BlockInputStream fromMonet;
 	/** Stream from the Socket for writing */
 	private OutputStream toMonet;
 	/** MCLReader on the InputStream */
@@ -720,6 +720,10 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		return handshakeOptions;
 	}
 
+	public boolean setInsertFakeFlushes(boolean b) {
+		return fromMonet.setInsertFakeFlush(b);
+	}
+
 	/**
 	 * Inner class that is used to write data on a normal stream as a
 	 * blocked stream.  A call to the flush() method will write a
@@ -852,6 +856,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		private int readPos = 0;
 		private int blockLen = 0;
 		private final byte[] block = new byte[BLOCK + 3]; // \n.\n
+		private boolean insertFakeFlush = true;
 
 		/**
 		 * Constructs this BlockInputStream, backed by the given
@@ -862,6 +867,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			// much bytes to write/read, since this is just faster for
 			// some reason
 			super(new BufferedInputStream(in));
+		}
+
+		public boolean setInsertFakeFlush(boolean doFake) {
+			boolean old = insertFakeFlush;
+			insertFakeFlush = doFake;
+			return old;
 		}
 
 		@Override
@@ -985,10 +996,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					block[blockLen++] = '\n';
 				}
 				// insert 'fake' flush
-				for (byte b: LineType.PROMPT.bytes()) {
-					block[blockLen++] = b;
+				if (insertFakeFlush) {
+					for (byte b : LineType.PROMPT.bytes()) {
+						block[blockLen++] = b;
+					}
+					block[blockLen++] = '\n';
 				}
-				block[blockLen++] = '\n';
 				if (debug)
 					log("RD ", "inserting prompt", true);
 			}
