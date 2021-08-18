@@ -153,6 +153,8 @@ public class MonetConnection
 	/** A cache to reduce the number of DatabaseMetaData objects created by getMetaData() to maximum 1 per connection */
 	private DatabaseMetaData dbmd;
 
+	/** A handler for ON CLIENT requests */
+	private MonetFileTransfer fileTransfer;
 
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
@@ -1194,6 +1196,22 @@ public class MonetConnection
 	@Override
 	public void setTypeMap(final Map<String, Class<?>> map) {
 		typeMap = map;
+	}
+
+	/**
+	 * Registers a MonetFileTransfer handler to support for example COPY ON CLIENT
+	 *
+	 * @param fileTransfer the handler to register, or null to deregister
+	 */
+	public void setFileTransfer(MonetFileTransfer fileTransfer) {
+		this.fileTransfer = fileTransfer;
+	}
+
+	/**
+	 * Returns the currently registerered MonetFileTransfer handler, or null
+	 */
+	public MonetFileTransfer setFileTransfer() {
+		return fileTransfer;
 	}
 
 	/**
@@ -3174,53 +3192,41 @@ public class MonetConnection
 	// }}}
 
 	private String handleTransfer(String transferCommand) throws IOException {
-		String[] parts = transferCommand.split(" " , 3);
-		if (parts.length == 3) {
-			if (parts[0].equals("r")) {
-				int offset;
-				try {
-					offset = Integer.parseInt(parts[1]);
-				} catch (NumberFormatException e) {
-					return e.toString();
-				}
-				return handleUpload(parts[2], true, offset);
+		String[] parts = transferCommand.split(" ", 3);
+		if (transferCommand.startsWith("r ") && parts.length == 3) {
+			final int offset;
+			try {
+				offset = Integer.parseInt(parts[1]);
+			} catch (NumberFormatException e) {
+				return e.toString();
 			}
-			if (parts[0].equals("r")) {
-				int offset;
-				try {
-					offset = Integer.parseInt(parts[1]);
-				} catch (NumberFormatException e) {
-					return e.toString();
-				}
-				return handleUpload(parts[2], false, offset);
-			}
-		} else if (parts.length == 2) {
-			if (parts[0].equals("w")) {
-				return handleDownload(parts[1]);
-			}
+			return handleUpload(parts[2], true, offset);
+		} else if (transferCommand.startsWith("rb ")) {
+			return handleUpload(transferCommand.substring(3), false, 0);
+		} else {
+			return "JDBC does not support this file transfer yet: " + transferCommand;
 		}
-		return "JDBC does not support this file transfer yet: " + transferCommand;
 	}
 
 	private String handleUpload(String path, boolean textMode, int offset) throws IOException {
+		if (fileTransfer == null) {
+			return "No file transfer handler has been registered";
+		}
+
+		MonetUploadHandle handle = new MonetUploadHandle(server);
 		boolean wasFaking = server.setInsertFakeFlushes(false);
 		try {
-			MapiSocket.UploadStream us = server.uploadStream();
-			us.write('\n');
-			PrintStream ps = null;
-			try {
-				ps = new PrintStream(us, false, "UTF-8");
-			} catch (UnsupportedEncodingException e) {
-				return e.toString();
+			fileTransfer.handleUpload(handle, path, textMode, offset);
+			if (!handle.hasBeenUsed()) {
+				String message = String.format("Call to %s.handleUpload for path '%s' sent neither data nor an error message",
+						fileTransfer.getClass().getCanonicalName(), path);
+				throw new IOException(message);
 			}
-			for (int i = 0; i < 1200; i++) {
-				ps.println("banana " + i);
-			}
-			ps.close();
-			return null;
+			handle.close();
 		} finally {
 			server.setInsertFakeFlushes(wasFaking);
 		}
+		return handle.getError();
 	}
 
 	private String handleDownload(String path) {
