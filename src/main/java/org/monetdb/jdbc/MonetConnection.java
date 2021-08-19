@@ -3149,11 +3149,14 @@ public class MonetConnection
 							String dummy = in.readLine();
 							// Handle the request
 							error = handleTransfer(transferCommand);
+							// Then prepare for the next iteration
 							if (error != null) {
 								out.writeLine("!HY000!" + error + "\n");
+								out.flush();
+								error = in.waitForPrompt();
+							} else {
+								tmpLine = in.readLine();
 							}
-							// Then prepare for the next iteration
-							tmpLine = in.readLine();
 							linetype = in.getLineType();
 							break;
 						default:	// Yeah... in Java this is correct!
