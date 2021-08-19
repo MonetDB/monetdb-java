@@ -855,6 +855,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	final class BlockInputStream extends FilterInputStream {
 		private int readPos = 0;
 		private int blockLen = 0;
+		private boolean wasEndBlock = false;
 		private final byte[] block = new byte[BLOCK + 3]; // \n.\n
 		private boolean insertFakeFlush = true;
 
@@ -968,10 +969,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					(blklen[0] & 0xFF) >> 1 |
 					(blklen[1] & 0xFF) << 7
 					);
+			wasEndBlock = (blklen[0] & 0x1) == 1;
+
 			readPos = 0;
 
 			if (debug) {
-				if ((blklen[0] & 0x1) == 1) {
+				if (wasEndBlock) {
 					log("RD ", "read final block: " + blockLen + " bytes", false);
 				} else {
 					log("RD ", "read new block: " + blockLen + " bytes", false);
@@ -990,7 +993,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				log("RX ", new String(block, 0, blockLen, "UTF-8"), true);
 
 			// if this is the last block, make it end with a newline and prompt
-			if ((blklen[0] & 0x1) == 1) {
+			if (wasEndBlock) {
 				// insert 'fake' newline and flush
 				if (insertFakeFlush) {
 					if (blockLen > 0 && block[blockLen - 1] != '\n') {
@@ -1075,6 +1078,39 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				}
 			}
 			return n;
+		}
+
+		Raw getRaw() {
+			return new Raw();
+		}
+
+		/** An alternative I/O interface that exposes the block based nature of the MAPI protocol */
+		final class Raw {
+			byte[] getBytes() {
+				return block;
+			}
+
+			int getLength() {
+				return blockLen;
+			}
+
+			int getPosition() {
+				return readPos;
+			}
+
+			int consume(int delta) {
+				int pos = readPos;
+				readPos += delta;
+				return pos;
+			}
+
+			int readBlock() throws IOException {
+				return BlockInputStream.this.readBlock();
+			}
+
+			boolean wasEndBlock() {
+				return wasEndBlock;
+			}
 		}
 	}
 
