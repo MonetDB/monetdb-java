@@ -3254,17 +3254,13 @@ public class MonetConnection
 		}
 
 		MonetDownloadHandle handle = new MonetDownloadHandle(server);
-		try {
-			downloader.handleDownload(handle, path, true);
-			if (!handle.hasBeenUsed()) {
-				String message = String.format("Call to %s.handleDownload for path '%s' sent neither data nor an error message",
-						downloader.getClass().getCanonicalName(), path);
-				throw new IOException(message);
-			}
-			handle.close();
-		} finally {
-			//
+		downloader.handleDownload(handle, path, true);
+		if (!handle.hasBeenUsed()) {
+			String message = String.format("Call to %s.handleDownload for path '%s' sent neither data nor an error message",
+					downloader.getClass().getCanonicalName(), path);
+			throw new IOException(message);
 		}
+		handle.close();
 		return handle.getError();
 	}
 }
