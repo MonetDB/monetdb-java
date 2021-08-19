@@ -10,8 +10,6 @@ package org.monetdb.jdbc;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.io.UnsupportedEncodingException;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
 import java.sql.CallableStatement;
@@ -154,7 +152,7 @@ public class MonetConnection
 	private DatabaseMetaData dbmd;
 
 	/** A handler for ON CLIENT requests */
-	private MonetFileTransfer fileTransfer;
+	private MonetUploader uploader;
 
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
@@ -1199,19 +1197,19 @@ public class MonetConnection
 	}
 
 	/**
-	 * Registers a MonetFileTransfer handler to support for example COPY ON CLIENT
+	 * Registers a MonetUploader to support for example COPY ON CLIENT
 	 *
-	 * @param fileTransfer the handler to register, or null to deregister
+	 * @param uploader the handler to register, or null to deregister
 	 */
-	public void setFileTransfer(MonetFileTransfer fileTransfer) {
-		this.fileTransfer = fileTransfer;
+	public void setUploader(MonetUploader uploader) {
+		this.uploader = uploader;
 	}
 
 	/**
-	 * Returns the currently registerered MonetFileTransfer handler, or null
+	 * Returns the currently registerered MonetUploader, or null
 	 */
-	public MonetFileTransfer setFileTransfer() {
-		return fileTransfer;
+	public MonetUploader getUploader() {
+		return uploader;
 	}
 
 	/**
@@ -3209,17 +3207,17 @@ public class MonetConnection
 	}
 
 	private String handleUpload(String path, boolean textMode, int offset) throws IOException {
-		if (fileTransfer == null) {
+		if (uploader == null) {
 			return "No file transfer handler has been registered";
 		}
 
 		MonetUploadHandle handle = new MonetUploadHandle(server);
 		boolean wasFaking = server.setInsertFakeFlushes(false);
 		try {
-			fileTransfer.handleUpload(handle, path, textMode, offset);
+			uploader.handleUpload(handle, path, textMode, offset);
 			if (!handle.hasBeenUsed()) {
 				String message = String.format("Call to %s.handleUpload for path '%s' sent neither data nor an error message",
-						fileTransfer.getClass().getCanonicalName(), path);
+						uploader.getClass().getCanonicalName(), path);
 				throw new IOException(message);
 			}
 			handle.close();
