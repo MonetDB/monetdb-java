@@ -991,12 +991,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 			// if this is the last block, make it end with a newline and prompt
 			if ((blklen[0] & 0x1) == 1) {
-				if (blockLen > 0 && block[blockLen - 1] != '\n') {
-					// to terminate the block in a Reader
-					block[blockLen++] = '\n';
-				}
-				// insert 'fake' flush
+				// insert 'fake' newline and flush
 				if (insertFakeFlush) {
+					if (blockLen > 0 && block[blockLen - 1] != '\n') {
+						// to terminate the block in a Reader
+						block[blockLen++] = '\n';
+					}
 					for (byte b : LineType.PROMPT.bytes()) {
 						block[blockLen++] = b;
 					}
