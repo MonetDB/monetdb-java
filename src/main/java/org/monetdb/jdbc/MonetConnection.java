@@ -151,8 +151,9 @@ public class MonetConnection
 	/** A cache to reduce the number of DatabaseMetaData objects created by getMetaData() to maximum 1 per connection */
 	private DatabaseMetaData dbmd;
 
-	/** A handler for ON CLIENT requests */
+	/** Handlers for ON CLIENT requests */
 	private MonetUploader uploader;
+	private MonetDownloader downloader;
 
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
@@ -1210,6 +1211,21 @@ public class MonetConnection
 	 */
 	public MonetUploader getUploader() {
 		return uploader;
+	}
+	/**
+	 * Registers a MonetDownloader to support for example COPY ON CLIENT
+	 *
+	 * @param downloader the handler to register, or null to deregister
+	 */
+	public void setDownloader(MonetDownloader downloader) {
+		this.downloader = downloader;
+	}
+
+	/**
+	 * Returns the currently registerered MonetDownloadHandler handler, or null
+	 */
+	public MonetDownloader getDownloader() {
+		return downloader;
 	}
 
 	/**
@@ -3201,6 +3217,8 @@ public class MonetConnection
 			return handleUpload(parts[2], true, offset);
 		} else if (transferCommand.startsWith("rb ")) {
 			return handleUpload(transferCommand.substring(3), false, 0);
+		} else if (transferCommand.startsWith("w ")) {
+			return handleDownload(transferCommand.substring(2));
 		} else {
 			return "JDBC does not support this file transfer yet: " + transferCommand;
 		}
@@ -3208,7 +3226,7 @@ public class MonetConnection
 
 	private String handleUpload(String path, boolean textMode, int offset) throws IOException {
 		if (uploader == null) {
-			return "No file transfer handler has been registered";
+			return "No file upload handler has been registered with the JDBC driver";
 		}
 
 		MonetUploadHandle handle = new MonetUploadHandle(server);
@@ -3227,7 +3245,23 @@ public class MonetConnection
 		return handle.getError();
 	}
 
-	private String handleDownload(String path) {
-		return "JDBC driver does not support downloads yet";
+	private String handleDownload(String path) throws IOException {
+		if (downloader == null) {
+			return "No file download handler has been registered with the JDBC driver";
+		}
+
+		MonetDownloadHandle handle = new MonetDownloadHandle(server);
+		try {
+			downloader.handleDownload(handle, path, true);
+			if (!handle.hasBeenUsed()) {
+				String message = String.format("Call to %s.handleDownload for path '%s' sent neither data nor an error message",
+						downloader.getClass().getCanonicalName(), path);
+				throw new IOException(message);
+			}
+			handle.close();
+		} finally {
+			//
+		}
+		return handle.getError();
 	}
 }
