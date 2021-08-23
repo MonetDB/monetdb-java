@@ -8,10 +8,10 @@
 
 package org.monetdb.jdbc;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -152,8 +152,8 @@ public class MonetConnection
 	private DatabaseMetaData dbmd;
 
 	/** Handlers for ON CLIENT requests */
-	private MonetUploader uploader;
-	private MonetDownloader downloader;
+	private MonetUploadHandler uploader;
+	private MonetDownloadHandler downloader;
 
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
@@ -1200,31 +1200,31 @@ public class MonetConnection
 	/**
 	 * Registers a MonetUploader to support for example COPY ON CLIENT
 	 *
-	 * @param uploader the handler to register, or null to deregister
+	 * @param uploadHandler the handler to register, or null to deregister
 	 */
-	public void setUploader(MonetUploader uploader) {
-		this.uploader = uploader;
+	public void setUploadHandler(MonetUploadHandler uploadHandler) {
+		this.uploader = uploadHandler;
 	}
 
 	/**
 	 * Returns the currently registerered MonetUploader, or null
 	 */
-	public MonetUploader getUploader() {
+	public MonetUploadHandler getUploadHandler() {
 		return uploader;
 	}
 	/**
 	 * Registers a MonetDownloader to support for example COPY ON CLIENT
 	 *
-	 * @param downloader the handler to register, or null to deregister
+	 * @param downloadHandler the handler to register, or null to deregister
 	 */
-	public void setDownloader(MonetDownloader downloader) {
-		this.downloader = downloader;
+	public void setDownloadHandler(MonetDownloadHandler downloadHandler) {
+		this.downloader = downloadHandler;
 	}
 
 	/**
 	 * Returns the currently registerered MonetDownloadHandler handler, or null
 	 */
-	public MonetDownloader getDownloader() {
+	public MonetDownloadHandler getDownloadHandler() {
 		return downloader;
 	}
 
@@ -3232,7 +3232,7 @@ public class MonetConnection
 			return "No file upload handler has been registered with the JDBC driver";
 		}
 
-		MonetUploadHandle handle = new MonetUploadHandle(server);
+		Upload handle = new Upload(server);
 		boolean wasFaking = server.setInsertFakePrompts(false);
 		try {
 			uploader.handleUpload(handle, path, textMode, offset);
@@ -3253,7 +3253,7 @@ public class MonetConnection
 			return "No file download handler has been registered with the JDBC driver";
 		}
 
-		MonetDownloadHandle handle = new MonetDownloadHandle(server);
+		Download handle = new Download(server);
 		downloader.handleDownload(handle, path, true);
 		if (!handle.hasBeenUsed()) {
 			String message = String.format("Call to %s.handleDownload for path '%s' sent neither data nor an error message",
@@ -3262,5 +3262,141 @@ public class MonetConnection
 		}
 		handle.close();
 		return handle.getError();
+	}
+
+	public static class Upload {
+		private final MapiSocket server;
+		private PrintStream print = null;
+		private String error = null;
+
+		Upload(MapiSocket server) {
+			this.server = server;
+		}
+
+		public void sendError(String errorMessage) throws IOException {
+			if (error != null) {
+				throw new IOException("another error has already been sent: " + error);
+			}
+			error = errorMessage;
+		}
+
+		public PrintStream getStream() throws IOException {
+			if (error != null) {
+				throw new IOException("Cannot send data after an error has been sent");
+			}
+			if (print == null) {
+				try {
+					MapiSocket.UploadStream up = server.uploadStream();
+					print = new PrintStream(up, false, "UTF-8");
+					up.write('\n');
+				} catch (UnsupportedEncodingException e) {
+					throw new RuntimeException("The system is guaranteed to support the UTF-8 encoding but apparently it doesn't", e);
+				}
+			}
+			return print;
+		}
+
+		public boolean hasBeenUsed() {
+			return print != null || error != null;
+		}
+
+		public String getError() {
+			return error;
+		}
+
+		public void uploadFrom(InputStream inputStream) throws IOException {
+			OutputStream s = getStream();
+			byte[] buffer = new byte[64 * 1024];
+			while (true) {
+				int nread = inputStream.read(buffer);
+				if (nread < 0) {
+					break;
+				}
+				s.write(buffer, 0, nread);
+			}
+		}
+
+		public void uploadFrom(BufferedReader reader, int offset) throws IOException {
+			// we're 1-based but also accept 0
+			if (offset > 0) {
+				offset -= 1;
+			}
+
+			for (int i = 0; i < offset; i++) {
+				String line = reader.readLine();
+				if (line == null) {
+					return;
+				}
+			}
+
+			uploadFrom(reader);
+		}
+
+		public void uploadFrom(BufferedReader reader) throws IOException {
+			OutputStream s = getStream();
+			OutputStreamWriter writer = new OutputStreamWriter(s, StandardCharsets.UTF_8);
+			char[] buffer = new char[64 * 1024];
+			while (true) {
+				int nread = reader.read(buffer, 0, buffer.length);
+				if (nread < 0) {
+					break;
+				}
+				writer.write(buffer, 0, nread);
+				writer.close();
+			}
+		}
+
+		public void close() {
+			if (print != null) {
+				print.close();
+			}
+		}
+	}
+
+	public static class Download {
+		private final MapiSocket server;
+		private MapiSocket.DownloadStream stream = null;
+		private String error = null;
+
+		boolean closed = false;
+
+		Download(MapiSocket server) {
+			this.server = server;
+		}
+
+		public void sendError(String errorMessage) throws IOException {
+			if (error != null) {
+				throw new IOException("another error has already been sent: " + error);
+			}
+			error = errorMessage;
+		}
+
+		public InputStream getStream() throws IOException {
+			if (error != null) {
+				throw new IOException("cannot receive data after error has been sent");
+			}
+			if (stream == null) {
+				stream = server.downloadStream();
+				server.getOutputStream().flush();
+			}
+			return stream;
+		}
+		public boolean hasBeenUsed() {
+			return error != null || stream != null;
+		}
+
+		public String getError() {
+			return error;
+		}
+		public void close() throws IOException {
+			if (closed) {
+				return;
+			}
+			if (stream != null) {
+				stream.close();
+			}
+			closed = true;
+		}
+
 	}
 }

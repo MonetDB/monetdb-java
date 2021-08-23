@@ -1,30 +1,32 @@
 package org.monetdb.util;
 
-import org.monetdb.jdbc.MonetUploader;
-import org.monetdb.jdbc.MonetUploadHandle;
+import org.monetdb.jdbc.MonetConnection;
+import org.monetdb.jdbc.MonetUploadHandler;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
-public class FileTransfer implements MonetUploader {
+public class FileTransferHandler implements MonetUploadHandler {
 	private final Path root;
 	private final boolean utf8Encoded;
 
-	public FileTransfer(Path dir, boolean utf8Encoded) {
+	public FileTransferHandler(Path dir, boolean utf8Encoded) {
 		root = dir.toAbsolutePath().normalize();
 		this.utf8Encoded = utf8Encoded;
 	}
 
-	public FileTransfer(String dir, boolean utf8Encoded) {
+	public FileTransferHandler(String dir, boolean utf8Encoded) {
 		this(FileSystems.getDefault().getPath(dir), utf8Encoded);
 	}
 
-	public void handleUpload(MonetUploadHandle handle, String name, boolean textMode, int offset) throws IOException {
+	public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
 		Path path = root.resolve(name).normalize();
 		if (!path.startsWith(root)) {
 			handle.sendError("File is not in upload directory");
@@ -37,11 +39,7 @@ public class FileTransfer implements MonetUploader {
 		if (textMode && (offset > 1 || !utf8Encoded)) {
 			Charset encoding = utf8Encoded ? StandardCharsets.UTF_8 : Charset.defaultCharset();
 			BufferedReader reader = Files.newBufferedReader(path, encoding);
-			int toSkip = offset > 1 ? offset - 1 : 0;
-			for (int i = 0; i < toSkip; i++) {
-				reader.readLine();
-			}
-			handle.uploadFrom(reader);
+			handle.uploadFrom(reader, offset);
 		} else {
 			handle.uploadFrom(Files.newInputStream(path));
 		}
