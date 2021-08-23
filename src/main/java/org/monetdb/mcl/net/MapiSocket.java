@@ -1307,8 +1307,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				nextBlock();
 			}
 			// Send acknowledgement to server
-			out.write('c');
+			out.write('\n');
 			out.flush();
+			// And await the acknowledgement of the acknowledgement
 			// Do whatever super has to do
 			super.close();
 		}
