@@ -27,7 +27,6 @@ public class MonetDownloadHandle {
 		}
 		if (stream == null) {
 			stream = server.downloadStream();
-			server.getOutputStream().write('\n');
 			server.getOutputStream().flush();
 		}
 		return stream;
