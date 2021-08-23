@@ -3381,6 +3381,18 @@ public class MonetConnection
 			}
 			return stream;
 		}
+
+		public void downloadTo(OutputStream stream) throws IOException {
+			InputStream s = getStream();
+			byte[] buffer = new byte[65536];
+			while (true) {
+				int nread = s.read(buffer);
+				if (nread < 0)
+					break;
+				stream.write(buffer, 0, nread);
+			}
+		}
+
 		public boolean hasBeenUsed() {
 			return error != null || stream != null;
 		}

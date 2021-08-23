@@ -1,6 +1,7 @@
 package org.monetdb.util;
 
 import org.monetdb.jdbc.MonetConnection;
+import org.monetdb.jdbc.MonetDownloadHandler;
 import org.monetdb.jdbc.MonetUploadHandler;
 
 import java.io.BufferedReader;
@@ -13,7 +14,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
-public class FileTransferHandler implements MonetUploadHandler {
+public class FileTransferHandler implements MonetUploadHandler, MonetDownloadHandler {
 	private final Path root;
 	private final boolean utf8Encoded;
 
@@ -43,5 +44,19 @@ public class FileTransferHandler implements MonetUploadHandler {
 		} else {
 			handle.uploadFrom(Files.newInputStream(path));
 		}
+	}
+
+	public void handleDownload(MonetConnection.Download handle, String name, boolean textMode) throws IOException {
+		Path path = root.resolve(name).normalize();
+		if (!path.startsWith(root)) {
+			handle.sendError("File is not in upload directory");
+			return;
+		}
+		if (!Files.exists(path)) {
+			handle.sendError("File exists: " + name);
+			return;
+		}
+		OutputStream outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
+
 	}
 }
