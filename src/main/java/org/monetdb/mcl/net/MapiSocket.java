@@ -720,8 +720,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		return handshakeOptions;
 	}
 
-	public boolean setInsertFakeFlushes(boolean b) {
-		return fromMonet.setInsertFakeFlush(b);
+	public boolean setInsertFakePrompts(boolean b) {
+		return fromMonet.setInsertFakePrompts(b);
 	}
 
 	/**
@@ -857,7 +857,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		private int blockLen = 0;
 		private boolean wasEndBlock = false;
 		private final byte[] block = new byte[BLOCK + 3]; // \n.\n
-		private boolean insertFakeFlush = true;
+		private boolean insertFakePrompts = true;
 
 		/**
 		 * Constructs this BlockInputStream, backed by the given
@@ -870,9 +870,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			super(new BufferedInputStream(in));
 		}
 
-		public boolean setInsertFakeFlush(boolean doFake) {
-			boolean old = insertFakeFlush;
-			insertFakeFlush = doFake;
+		public boolean setInsertFakePrompts(boolean doFake) {
+			boolean old = insertFakePrompts;
+			insertFakePrompts = doFake;
 			return old;
 		}
 
@@ -995,7 +995,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			// if this is the last block, make it end with a newline and prompt
 			if (wasEndBlock) {
 				// insert 'fake' newline and flush
-				if (insertFakeFlush) {
+				if (insertFakePrompts) {
 					if (blockLen > 0 && block[blockLen - 1] != '\n') {
 						// to terminate the block in a Reader
 						block[blockLen++] = '\n';
@@ -1004,9 +1004,10 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 						block[blockLen++] = b;
 					}
 					block[blockLen++] = '\n';
+					if (debug) {
+						log("RD ", "inserting prompt", true);
+					}
 				}
-				if (debug)
-					log("RD ", "inserting prompt", true);
 			}
 
 			return blockLen;
@@ -1105,11 +1106,11 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			}
 
 			int readBlock() throws IOException {
-				boolean wasFaking = setInsertFakeFlush(false);
+				boolean wasFaking = setInsertFakePrompts(false);
 				try {
 					return BlockInputStream.this.readBlock();
 				} finally {
-					setInsertFakeFlush(wasFaking);
+					setInsertFakePrompts(wasFaking);
 				}
 			}
 

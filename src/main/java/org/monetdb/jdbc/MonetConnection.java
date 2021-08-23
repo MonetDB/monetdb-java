@@ -3233,7 +3233,7 @@ public class MonetConnection
 		}
 
 		MonetUploadHandle handle = new MonetUploadHandle(server);
-		boolean wasFaking = server.setInsertFakeFlushes(false);
+		boolean wasFaking = server.setInsertFakePrompts(false);
 		try {
 			uploader.handleUpload(handle, path, textMode, offset);
 			if (!handle.hasBeenUsed()) {
@@ -3243,7 +3243,7 @@ public class MonetConnection
 			}
 			handle.close();
 		} finally {
-			server.setInsertFakeFlushes(wasFaking);
+			server.setInsertFakePrompts(wasFaking);
 		}
 		return handle.getError();
 	}
