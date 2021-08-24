@@ -3152,7 +3152,6 @@ public class MonetConnection
 							// Then prepare for the next iteration
 							if (error != null) {
 								out.writeLine("!HY000!" + error + "\n");
-								out.flush();
 								error = in.waitForPrompt();
 							} else {
 								tmpLine = in.readLine();
