@@ -1126,7 +1126,7 @@ public final class MDBvalidator {
 // not a fk:	{"queue", "sessionid", "sessionid", "sessions", "37"},	// as queue contains a historical list, the session may have been closed in the meantime, so not a real persistent fk
 // not a fk:	{"queue", "\"username\"", "name", "users", null},	// as queue contains a historical list, the user may have been removed in the meantime, so not a real persistent fk
 		{"sessions", "\"username\"", "name", "users", null},
-		{"sessions", "optimizer", "name", "optimizers", "37"},
+		{"sessions", "sessions.optimizer", "name", "optimizers", "37"}, 	// without the sessions. prefix it will give an error on Jun2020 release
 		{"statistics", "column_id", "id", "(SELECT id FROM sys._columns UNION ALL SELECT id FROM tmp._columns) as c", null},
 		{"statistics", "type", "sqlname", "types", null},
 		{"storage()", "schema", "name", "schemas", null},
