@@ -85,13 +85,15 @@ public final class CmdLineOpts {
 			for (java.util.Enumeration<?> e = prop.propertyNames(); e.hasMoreElements(); ) {
 				key = (String) e.nextElement();
 				option = opts.get(key);
-				if (option == null)
-					throw new OptionsException("Unknown option: " + key);
-				option.resetArguments();
-				option.addArgument(prop.getProperty(key));
+				if (option != null) {
+					option.resetArguments();
+					option.addArgument(prop.getProperty(key));
+				} else
+					// ignore unknown options (it used to throw an OptionsException)
+					System.out.println("Info: Ignoring unknown/unsupported option (in " + file.getAbsolutePath() + "): " + key);
 			}
 		} catch (java.io.IOException e) {
-			// well... then forget about it
+			throw new OptionsException("File IO Exception: " + e);
 		}
 	}
 
