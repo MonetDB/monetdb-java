@@ -643,6 +643,9 @@ public final class MDBvalidator {
 					tbl = rs.getString(2);
 					col = rs.getString(3);
 					max_len = rs.getLong(4);
+					// patch for Aug2018 and older versions, for columns: sys._tables.query and tmp._tables.query and sys.tables.query
+					if (system && max_len == 2048 && col.equals("query"))
+						max_len = 1048576;
 					// compose validation query for this specific column
 					sb.setLength(0);	// empty previous usage of sb
 					sb.append("SELECT '").append(sch).append('.').append(tbl).append('.').append(col).append("' as full_col_nm, ")
@@ -1078,7 +1081,7 @@ public final class MDBvalidator {
 		{"functions", "type", "function_type_id", "function_types", "27"},
 		{"functions", "language", "language_id", "function_languages", "27"},
 		// system functions should refer only to functions in MonetDB system schemas
-		{"functions WHERE system AND ", "schema_id", "id", "schemas WHERE system", null},
+		{"functions WHERE system AND ", "schema_id", "id", "schemas WHERE system", "33"},
 		{"args", "func_id", "id", "functions", null},
 		{"args", "type", "sqlname", "types", null},
 		{"types", "schema_id", "id", "schemas", null},
@@ -1125,7 +1128,7 @@ public final class MDBvalidator {
 		{"querylog_history", "pipe", "name", "optimizers", null},
 // not a fk:	{"queue", "sessionid", "sessionid", "sessions", "37"},	// as queue contains a historical list, the session may have been closed in the meantime, so not a real persistent fk
 // not a fk:	{"queue", "\"username\"", "name", "users", null},	// as queue contains a historical list, the user may have been removed in the meantime, so not a real persistent fk
-		{"sessions", "\"username\"", "name", "users", null},
+		{"sessions", "\"username\"", "name", "users", "37"},
 		{"sessions", "sessions.optimizer", "name", "optimizers", "37"}, 	// without the sessions. prefix it will give an error on Jun2020 release
 		{"statistics", "column_id", "id", "(SELECT id FROM sys._columns UNION ALL SELECT id FROM tmp._columns) as c", null},
 		{"statistics", "type", "sqlname", "types", null},
@@ -1238,7 +1241,7 @@ public final class MDBvalidator {
 		{"function_languages", "language_name", "27"},
 		{"function_types", "function_type_id", "27"},
 		{"function_types", "function_type_name", "27"},
-		{"function_types", "function_type_keyword", "27"},
+		{"function_types", "function_type_keyword", "29"},	// column is added in release 29
 		{"functions", "id", null},
 		{"functions", "name", null},
 		{"functions", "func", null},
@@ -1249,7 +1252,7 @@ public final class MDBvalidator {
 		{"functions", "varres", null},
 		{"functions", "vararg", null},
 		{"functions", "schema_id", null},
-		{"functions", "system", null},
+		{"functions", "system", "33"},
 		{"idxs", "id", null},
 		{"idxs", "table_id", null},
 		{"idxs", "type", null},
@@ -1328,7 +1331,7 @@ public final class MDBvalidator {
 		{"storagemodelinput", "reference", null},
 		{"storagemodelinput", "sorted", null},
 		{"storagemodelinput", "\"unique\"", null},
-		{"storagemodelinput", "isacolumn", null},
+		{"storagemodelinput", "isacolumn", "33"},
 		{"table_types", "table_type_id", "21"},
 		{"table_types", "table_type_name", "21"},
 		{"tables", "id", null},
