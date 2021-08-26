@@ -579,4 +579,22 @@ public final class OnClientTester {
 		update("COPY OFFSET 2 INTO foo FROM 'banana' ON CLIENT", 2);
 		queryInt("SELECT i FROM foo WHERE t = 'three'", 3);
 	}
+
+	public void test_FailUploadLate() throws SQLException, Failure {
+		prepare();
+		conn.setUploadHandler(new MyUploadHandler(100, 50, "i don't like line 50"));
+		expectError("COPY INTO foo FROM 'banana' ON CLIENT", "i don't like");
+		assertEq("connection is closed", true, conn.isClosed());
+	}
+
+	// Disabled because it hangs, triggering the watchdog timer
+	public void testx_FailDownloadLate() throws SQLException, Failure {
+		prepare();
+		MyDownloadHandler handler = new MyDownloadHandler(200, "download refused");
+		conn.setDownloadHandler(handler);
+		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)", 100);
+		expectError("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT", "download refused");
+		queryInt("SELECT 42 -- check if the connection still works", 42);
+	}
+
 }
