@@ -5,6 +5,7 @@ import org.monetdb.jdbc.MonetUploadHandler;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 
 public final class OnClientTester {
@@ -437,4 +438,51 @@ public final class OnClientTester {
 		test_Download(4_000_000);
 	}
 
+	public void test_UploadFromStream() throws SQLException, Failure {
+		prepare();
+		MonetUploadHandler handler = new MonetUploadHandler() {
+			String data = "1|one\n2|two\n3|three\n";
+
+			@Override
+			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
+				ByteArrayInputStream s = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
+				handle.uploadFrom(s);
+			}
+		};
+		conn.setUploadHandler(handler);
+		update("COPY INTO foo FROM 'banana' ON CLIENT", 3);
+		queryInt("SELECT i FROM foo WHERE t = 'three'", 3);
+	}
+
+	public void test_UploadFromReader() throws SQLException, Failure {
+		prepare();
+		MonetUploadHandler handler = new MonetUploadHandler() {
+			String data = "1|one\n2|two\n3|three\n";
+
+			@Override
+			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
+				StringReader r = new StringReader(data);
+				handle.uploadFrom(r);
+			}
+		};
+		conn.setUploadHandler(handler);
+		update("COPY INTO foo FROM 'banana' ON CLIENT", 3);
+		queryInt("SELECT i FROM foo WHERE t = 'three'", 3);
+	}
+
+	public void test_UploadFromReaderOffset() throws SQLException, Failure {
+		prepare();
+		MonetUploadHandler handler = new MonetUploadHandler() {
+			String data = "1|one\n2|two\n3|three\n";
+
+			@Override
+			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
+				BufferedReader r = new BufferedReader(new StringReader(data));
+				handle.uploadFrom(r, offset);
+			}
+		};
+		conn.setUploadHandler(handler);
+		update("COPY OFFSET 2 INTO foo FROM 'banana' ON CLIENT", 2);
+		queryInt("SELECT i FROM foo WHERE t = 'three'", 3);
+	}
 }

@@ -3336,7 +3336,7 @@ public class MonetConnection
 			uploadFrom(reader);
 		}
 
-		public void uploadFrom(BufferedReader reader) throws IOException {
+		public void uploadFrom(Reader reader) throws IOException {
 			OutputStream s = getStream();
 			OutputStreamWriter writer = new OutputStreamWriter(s, StandardCharsets.UTF_8);
 			char[] buffer = new char[64 * 1024];
