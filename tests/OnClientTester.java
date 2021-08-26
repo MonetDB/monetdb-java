@@ -8,8 +8,11 @@ import java.lang.reflect.Method;
 import java.sql.*;
 
 public final class OnClientTester {
+	public static final int VERBOSITY_NONE = 0;
+	public static final int VERBOSITY_ON = 1;
+	public static final int VERBOSITY_SHOW_ALL = 2;
 	private String jdbcUrl;
-	boolean verbose = false;
+	int verbosity = VERBOSITY_NONE;
 	int testCount = 0;
 	int failureCount = 0;
 	private MonetConnection conn;
@@ -18,34 +21,43 @@ public final class OnClientTester {
 	private StringWriter outBuffer;
 
 	public static void main(String[] args) throws SQLException, NoSuchMethodException {
-		String jdbcUrl;
+		String jdbcUrl = null;
 		String specificTest = null;
-		switch (args.length) {
-			case 2:
-				specificTest = args[1];
-				/* fallthrough */
-			case 1:
-				jdbcUrl = args[0];
-				break;
-			default:
-				throw new IllegalArgumentException("Usage: OnClientTester JDBC_URL [TESTNAME]");
+		int verbosity = 0;
+
+		for (String arg: args) {
+			if (arg.equals("-v"))
+				verbosity++;
+			else if (arg.equals("-vv"))
+				verbosity += 2;
+			else if (jdbcUrl == null)
+				jdbcUrl = arg;
+			else if (specificTest == null)
+				specificTest = arg;
+			else {
+				System.err.println("Unexpected argument " + arg);
+				System.exit(2);
+			}
 		}
 
-		OnClientTester tester = new OnClientTester(jdbcUrl);
+		OnClientTester tester = new OnClientTester(jdbcUrl, verbosity);
 		if (specificTest != null)
 			tester.runTest(specificTest);
 		else
 			tester.runTests();
 
-		System.out.println();
-		System.out.println("Ran " + tester.testCount + " tests, " + tester.failureCount + " failed");
+		if (tester.verbosity >= VERBOSITY_ON || tester.failureCount > 0) {
+			System.out.println();
+			System.out.println("Ran " + tester.testCount + " tests, " + tester.failureCount + " failed");
+		}
 		if (tester.failureCount > 0) {
 			System.exit(1);
 		}
 	}
 
-	public OnClientTester(String jdbcUrl) {
+	public OnClientTester(String jdbcUrl, int verbosity) {
 		this.jdbcUrl = jdbcUrl;
+		this.verbosity = verbosity;
 	}
 
 	private void runTests() throws SQLException, NoSuchMethodException {
@@ -72,8 +84,6 @@ public final class OnClientTester {
 		conn = genericConnection.unwrap(MonetConnection.class);
 		stmt = conn.createStatement();
 
-		System.out.println();
-
 		boolean failed = false;
 		try {
 			try {
@@ -89,24 +99,28 @@ public final class OnClientTester {
 				}
 			}
 
-			System.out.println("Test " + testName + " succeeded");
-			if (verbose)
+			if (verbosity > VERBOSITY_ON)
+				System.out.println();
+			if (verbosity >= VERBOSITY_ON)
+				System.out.println("Test " + testName + " succeeded");
+			if (verbosity >= VERBOSITY_SHOW_ALL)
 				dumpOutput(testName);
 		} catch (Failure e) {
 			failed = true;
+			System.out.println();
 			System.out.println("Test " + testName + " failed");
 			dumpOutput(testName);
 		} catch (Exception e) {
 			failed = true;
+			System.out.println();
 			System.out.println("Test " + testName + " failed:");
-			e.printStackTrace();
+			e.printStackTrace(System.out);
 			dumpOutput(testName);
 			// Show the inner bits of the exception again, they may have scrolled off screen
 			Throwable t = e;
 			while (t.getCause() != null) {
 				t = t.getCause();
 			}
-			System.out.println();
 			System.out.println("Innermost cause was " + t);
 			if (t.getStackTrace().length > 0) {
 				System.out.println("                 at " + t.getStackTrace()[0]);
@@ -115,6 +129,10 @@ public final class OnClientTester {
 			testCount++;
 			if (failed)
 				failureCount++;
+			if (failed && verbosity == VERBOSITY_ON) {
+				// next test case will not print separator
+				System.out.println();
+			}
 			stmt.close();
 			conn.close();
 		}
@@ -125,7 +143,7 @@ public final class OnClientTester {
 		if (output.isEmpty()) {
 			System.out.println("(Test did not produce any output)");
 		} else {
-			System.out.println("------ Accumulated output for " + testName + ":");
+			System.out.println("------ Accumulated output for test " + testName + ":");
 			boolean terminated = output.endsWith(System.lineSeparator());
 			if (terminated) {
 				System.out.print(output);
@@ -141,14 +159,20 @@ public final class OnClientTester {
 		throw new Failure(message);
 	}
 
+	private void checked(String quantity, Object actual) {
+		out.println("  CHECKED: " + "<" + quantity + "> is " + actual + " as expected");
+	}
+
 	private void assertEq(String quantity, Object expected, Object actual) throws Failure {
-		if (expected.equals(actual))
-			return;
-		fail("Expected '" + quantity + "' to be " + expected + ", got " + actual);
+		if (expected.equals(actual)) {
+			checked(quantity, actual);
+		} else {
+			fail("Expected <" + quantity + "' to be " + expected + "> got " + actual);
+		}
 	}
 
 	protected boolean execute(String query) throws SQLException {
-		out.println("EXEC " + query);
+		out.println("EXECUTE: " + query);
 		boolean result;
 		result = stmt.execute(query);
 		if (result) {
@@ -193,6 +217,7 @@ public final class OnClientTester {
 			fail(message);
 		}
 		rs.close();
+		checked("row count", 1);
 		assertEq("query result", expected, result);
 	}
 
@@ -395,8 +420,7 @@ public final class OnClientTester {
 		conn.setDownloadHandler(handler);
 		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)", 100);
 		expectError("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT", "download refused");
-		// check if the connection still works
-		queryInt("SELECT 42", 42);
+		queryInt("SELECT 42 -- check if the connection still works", 42);
 	}
 
 	public void test_LargeUpload() throws SQLException, Failure {
