@@ -453,7 +453,7 @@ public final class OnClientTester {
 		queryInt("SELECT COUNT(*) FROM foo", 100);
 	}
 
-	public void test_ClientRefuses() throws Exception {
+	public void test_ClientRefusesUpload() throws Exception {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler("immediate error"));
 		expectError("COPY INTO foo FROM 'banana' ON CLIENT", "immediate error");
@@ -484,7 +484,7 @@ public final class OnClientTester {
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
 
-	public void testx_ServerCancels() throws SQLException, Failure {
+	public void test_ServerStopsReading() throws SQLException, Failure {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler(100));
 		update("COPY 10 RECORDS INTO foo FROM 'banana' ON CLIENT", 96);
@@ -507,7 +507,7 @@ public final class OnClientTester {
 		test_Download(100);
 	}
 
-	public void test_CancelledDownload() throws SQLException, Failure {
+	public void test_ClientRefusesDownload() throws SQLException, Failure {
 		prepare();
 		MyDownloadHandler handler = new MyDownloadHandler("download refused");
 		conn.setDownloadHandler(handler);
