@@ -207,6 +207,9 @@ public final class OnClientTester {
 		private final int rows;
 		private final int errorAt;
 		private final String errorMessage;
+
+		private int chunkSize = 100; // small number to trigger more bugs
+
 		MyUploadHandler(int rows, int errorAt, String errorMessage) {
 			this.rows = rows;
 			this.errorAt = errorAt;
@@ -221,6 +224,10 @@ public final class OnClientTester {
 			this(0, -1, errorMessage);
 		}
 
+		public void setChunkSize(int chunkSize) {
+			this.chunkSize = chunkSize;
+		}
+
 		@Override
 		public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
 			int toSkip = offset > 0 ? offset - 1 : 0;
@@ -228,6 +235,7 @@ public final class OnClientTester {
 				handle.sendError(errorMessage);
 				return;
 			}
+			handle.setChunkSize(chunkSize);
 			PrintStream stream = handle.getStream();
 			for (int i = toSkip; i < rows; i++) {
 				if (i == errorAt) {
@@ -368,14 +376,19 @@ public final class OnClientTester {
 		queryInt("SELECT COUNT(i) FROM foo", 10);
 	}
 
-	private void test_Download() throws SQLException, Failure {
+	private void test_Download(int n) throws SQLException, Failure {
 		prepare();
 		MyDownloadHandler handler = new MyDownloadHandler();
 		conn.setDownloadHandler(handler);
-		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)", 100);
+		String q = "INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, " + n + ")";
+		update(q, n);
 		update("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT", -1);
 		assertEq("download attempts", 1, handler.countAttempts());
-		assertEq("lines downloaded", 100, handler.lineCount());
+		assertEq("lines downloaded", n, handler.lineCount());
+	}
+
+	private void test_Download() throws SQLException, Failure {
+		test_Download(100);
 	}
 
 	private void test_CancelledDownload() throws SQLException, Failure {
@@ -388,5 +401,18 @@ public final class OnClientTester {
 		queryInt("SELECT 42", 42);
 	}
 
+	public void test_LargeUpload() throws SQLException, Failure {
+		prepare();
+		int n = 4_000_000;
+		MyUploadHandler handler = new MyUploadHandler(n);
+		conn.setUploadHandler(handler);
+		handler.setChunkSize(1024 * 1024);
+		update("COPY INTO foo FROM 'banana' ON CLIENT", n);
+		queryInt("SELECT COUNT(DISTINCT i) FROM foo", n);
+	}
+
+	private void test_LargeDownload() throws SQLException, Failure {
+		test_Download(4_000_000);
+	}
 
 }
