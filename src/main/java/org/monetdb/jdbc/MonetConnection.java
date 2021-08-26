@@ -3267,6 +3267,7 @@ public class MonetConnection
 		private final MapiSocket server;
 		private PrintStream print = null;
 		private String error = null;
+		private int customChunkSize = -1;
 
 		Upload(MapiSocket server) {
 			this.server = server;
@@ -3279,13 +3280,17 @@ public class MonetConnection
 			error = errorMessage;
 		}
 
+		public void setChunkSize(int chunkSize) {
+			this.customChunkSize = chunkSize;
+		}
+
 		public PrintStream getStream() throws IOException {
 			if (error != null) {
 				throw new IOException("Cannot send data after an error has been sent");
 			}
 			if (print == null) {
 				try {
-					MapiSocket.UploadStream up = server.uploadStream();
+					MapiSocket.UploadStream up = customChunkSize >= 0 ? server.uploadStream(customChunkSize) : server.uploadStream();
 					print = new PrintStream(up, false, "UTF-8");
 					up.write('\n');
 				} catch (UnsupportedEncodingException e) {

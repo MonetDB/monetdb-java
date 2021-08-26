@@ -1164,6 +1164,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		}
 	}
 
+	public UploadStream uploadStream(int chunkSize) {
+		return new UploadStream(chunkSize);
+	}
 
 	public UploadStream uploadStream() {
 		return new UploadStream();
@@ -1188,16 +1191,26 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	}
 
 	public class UploadStream extends FilterOutputStream {
-		private final int CHUNK_SIZE = 100;
+		public final static int DEFAULT_CHUNK_SIZE = 1024 * 1024;
+		private final int chunkSize;
 		private boolean closed = false;
-		private int chunkLeft = CHUNK_SIZE;
+		private int chunkLeft;
 		private byte[] promptBuffer;
 
-		UploadStream() {
+		UploadStream(int chunkSize) {
 			super(toMonet);
+			if (chunkSize <= 0) {
+				throw new IllegalArgumentException("chunk size must be positive");
+			}
+			this.chunkSize = chunkSize;
 			assert LineType.MORE.bytes().length == LineType.FILETRANSFER.bytes().length;
 			int promptLen = LineType.MORE.bytes().length;
 			promptBuffer = new byte[promptLen + 1];
+			chunkLeft = this.chunkSize;
+		}
+
+		UploadStream() {
+			this(DEFAULT_CHUNK_SIZE);
 		}
 
 		@Override
@@ -1234,7 +1247,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			if (closed) {
 				return;
 			}
-			if (chunkLeft != CHUNK_SIZE) {
+			if (chunkLeft != chunkSize) {
 				// flush pending data
 				flushAndReadPrompt();
 			}
@@ -1259,7 +1272,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 		private void flushAndReadPrompt() throws IOException {
 			out.flush();
-			chunkLeft = CHUNK_SIZE;
+			chunkLeft = chunkSize;
 			LineType lineType = readPrompt();
 			switch (lineType) {
 				case MORE:
