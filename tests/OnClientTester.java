@@ -20,6 +20,7 @@ public final class OnClientTester {
 	private PrintWriter out;
 	private Statement stmt;
 	private StringWriter outBuffer;
+	private WatchDog watchDog;
 
 	public static void main(String[] args) throws SQLException, NoSuchMethodException {
 		String jdbcUrl = null;
@@ -59,25 +60,27 @@ public final class OnClientTester {
 	}
 
 	private void runTests(String testPrefix) throws SQLException, NoSuchMethodException {
-		String initialPrefix = "test_";
-		String methodPrefix = testPrefix == null ? initialPrefix : initialPrefix + testPrefix;
+		watchDog = new WatchDog();
+		try {
+			String initialPrefix = "test_";
+			String methodPrefix = testPrefix == null ? initialPrefix : initialPrefix + testPrefix;
 
-		for (Method method : this.getClass().getDeclaredMethods()) {
-			String methodName = method.getName();
-			if (methodName.startsWith(methodPrefix) && method.getParameterCount() == 0) {
-				String testName = methodName.substring(initialPrefix.length());
-				runTest(testName, method);
+			for (Method method : this.getClass().getDeclaredMethods()) {
+				String methodName = method.getName();
+				if (methodName.startsWith(methodPrefix) && method.getParameterCount() == 0) {
+					String testName = methodName.substring(initialPrefix.length());
+					runTest(testName, method);
+				}
 			}
+		} finally {
+			watchDog.kill();
+			watchDog = null;
 		}
 	}
 
-	private void runTest(String testName) throws SQLException, NoSuchMethodException {
-		String methodName = "test_" + testName;
-		Method method = this.getClass().getDeclaredMethod(methodName);
-		runTest(testName, method);
-	}
-
 	private synchronized void runTest(String testName, Method method) throws SQLException {
+		watchDog.setContext("test " + testName);
+		watchDog.setDuration(3_000);
 		outBuffer = new StringWriter();
 		out = new PrintWriter(outBuffer);
 
@@ -87,8 +90,12 @@ public final class OnClientTester {
 
 		boolean failed = false;
 		try {
+			long duration;
 			try {
+				long t0 = System.currentTimeMillis();
 				method.invoke(this);
+				long t1 = System.currentTimeMillis();
+				duration = t1 - t0;
 			} catch (InvocationTargetException e) {
 				Throwable cause = e.getCause();
 				if (cause instanceof  Failure)
@@ -103,7 +110,7 @@ public final class OnClientTester {
 			if (verbosity > VERBOSITY_ON)
 				System.out.println();
 			if (verbosity >= VERBOSITY_ON)
-				System.out.println("Test " + testName + " succeeded");
+				System.out.println("Test " + testName + " succeeded in " + duration + "ms");
 			if (verbosity >= VERBOSITY_SHOW_ALL)
 				dumpOutput(testName);
 		} catch (Failure e) {
@@ -127,6 +134,7 @@ public final class OnClientTester {
 				System.out.println("                 at " + t.getStackTrace()[0]);
 			}
 		} finally {
+			watchDog.setContext(null);
 			testCount++;
 			if (failed)
 				failureCount++;
@@ -173,15 +181,20 @@ public final class OnClientTester {
 	}
 
 	protected boolean execute(String query) throws SQLException {
-		out.println("EXECUTE: " + query);
-		boolean result;
-		result = stmt.execute(query);
-		if (result) {
-			out.println("  OK");
-		} else {
-			out.println("  OK, updated " + stmt.getUpdateCount() + " rows");
+		try {
+			watchDog.start();
+			out.println("EXECUTE: " + query);
+			boolean result;
+			result = stmt.execute(query);
+			if (result) {
+				out.println("  OK");
+			} else {
+				out.println("  OK, updated " + stmt.getUpdateCount() + " rows");
+			}
+			return result;
+		} finally {
+			watchDog.stop();
 		}
-		return result;
 	}
 
 	protected void update(String query, int expectedUpdateCount) throws SQLException, Failure {
@@ -354,6 +367,85 @@ public final class OnClientTester {
 
 	}
 
+	static class WatchDog {
+		private long duration = 1000;
+		private long started = 0;
+		private String context = "no context";
+
+		WatchDog() {
+			Thread watchDog = new Thread(this::work);
+			watchDog.setName("watchdog_timer");
+			watchDog.setDaemon(true);
+			watchDog.start();
+		}
+
+		synchronized void setContext(String context) {
+			this.context = context;
+		}
+		synchronized void setDuration(long duration) {
+			if (duration <= 0)
+				throw new IllegalArgumentException("duration should be > 0");
+			this.duration = duration;
+			this.notifyAll();
+		}
+
+		synchronized void start() {
+			started = System.currentTimeMillis();
+			this.notifyAll();
+		}
+
+		synchronized void stop() {
+			started = 0;
+			this.notifyAll();
+		}
+
+		synchronized void kill() {
+			started = -1;
+			this.notifyAll();
+		}
+
+		private synchronized void work() {
+			long now;
+			try {
+				while (true) {
+					now = System.currentTimeMillis();
+					final long sleepTime;
+					if (started < 0) {
+						// client asked us to go away
+						// System.err.println("++ EXIT");
+						return;
+					} else if (started == 0) {
+						// wait for client to start us
+						sleepTime = 600_000;
+					} else {
+						long deadline = started + duration;
+						sleepTime = deadline - now;
+					}
+					// System.err.printf("++ now=%d, started=now%+d, duration=%d, sleep=%d%n",
+					// 		now, started - now, duration, sleepTime
+					// 		);
+					if (sleepTime > 0) {
+						this.wait(sleepTime);
+					} else {
+						trigger();
+						return;
+					}
+				}
+			} catch (InterruptedException e) {
+				System.err.println("WATCHDOG TIMER INTERRUPTED, SHOULDN'T HAPPEN");
+				System.exit(4);
+			}
+		}
+
+		private void trigger() {
+			String c = context != null ? context : "no context";
+			System.err.println();
+			System.err.println();
+			System.err.println("WATCHDOG TIMER EXPIRED [" + c + "], KILLING TESTS");
+			System.exit(3);
+		}
+	}
+
 	public void test_Upload() throws Exception {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler(100));
@@ -425,6 +517,7 @@ public final class OnClientTester {
 	}
 
 	public void test_LargeUpload() throws SQLException, Failure {
+		watchDog.setDuration(25_000);
 		prepare();
 		int n = 4_000_000;
 		MyUploadHandler handler = new MyUploadHandler(n);
@@ -435,6 +528,7 @@ public final class OnClientTester {
 	}
 
 	public void test_LargeDownload() throws SQLException, Failure {
+		watchDog.setDuration(25_000);
 		test_Download(4_000_000);
 	}
 
