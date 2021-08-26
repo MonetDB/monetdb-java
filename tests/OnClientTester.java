@@ -5,7 +5,6 @@ import org.monetdb.jdbc.MonetUploadHandler;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.charset.StandardCharsets;
 import java.sql.*;
 
 public final class OnClientTester {
@@ -203,7 +202,6 @@ public final class OnClientTester {
 	}
 
 	static class MyUploadHandler implements MonetUploadHandler {
-
 		private final int rows;
 		private final int errorAt;
 		private final String errorMessage;
@@ -330,21 +328,21 @@ public final class OnClientTester {
 
 	}
 
-	private void test_Upload() throws Exception {
+	public void test_Upload() throws Exception {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler(100));
 		update("COPY INTO foo FROM 'banana' ON CLIENT", 100);
 		queryInt("SELECT COUNT(*) FROM foo", 100);
 	}
 
-	private void test_ClientRefuses() throws Exception {
+	public void test_ClientRefuses() throws Exception {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler("immediate error"));
 		expectError("COPY INTO foo FROM 'banana' ON CLIENT", "immediate error");
 		queryInt("SELECT COUNT(*) FROM foo", 0);
 	}
 
-	private void test_Offset0() throws SQLException, Failure {
+	public void test_Offset0() throws SQLException, Failure {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler(100));
 		update("COPY OFFSET 0 INTO foo FROM 'banana' ON CLIENT", 100);
@@ -352,7 +350,7 @@ public final class OnClientTester {
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
 
-	private void test_Offset1() throws SQLException, Failure {
+	public void test_Offset1() throws SQLException, Failure {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler(100));
 		update("COPY OFFSET 1 INTO foo FROM 'banana' ON CLIENT", 100);
@@ -360,7 +358,7 @@ public final class OnClientTester {
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
 
-	private void test_Offset5() throws SQLException, Failure {
+	public void test_Offset5() throws SQLException, Failure {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler(100));
 		update("COPY OFFSET 5 INTO foo FROM 'banana' ON CLIENT", 96);
@@ -368,7 +366,7 @@ public final class OnClientTester {
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
 
-	private void testx_ServerCancels() throws SQLException, Failure {
+	public void testx_ServerCancels() throws SQLException, Failure {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler(100));
 		update("COPY 10 RECORDS INTO foo FROM 'banana' ON CLIENT", 96);
@@ -376,7 +374,7 @@ public final class OnClientTester {
 		queryInt("SELECT COUNT(i) FROM foo", 10);
 	}
 
-	private void test_Download(int n) throws SQLException, Failure {
+	public void test_Download(int n) throws SQLException, Failure {
 		prepare();
 		MyDownloadHandler handler = new MyDownloadHandler();
 		conn.setDownloadHandler(handler);
@@ -387,11 +385,11 @@ public final class OnClientTester {
 		assertEq("lines downloaded", n, handler.lineCount());
 	}
 
-	private void test_Download() throws SQLException, Failure {
+	public void test_Download() throws SQLException, Failure {
 		test_Download(100);
 	}
 
-	private void test_CancelledDownload() throws SQLException, Failure {
+	public void test_CancelledDownload() throws SQLException, Failure {
 		prepare();
 		MyDownloadHandler handler = new MyDownloadHandler("download refused");
 		conn.setDownloadHandler(handler);
@@ -411,7 +409,7 @@ public final class OnClientTester {
 		queryInt("SELECT COUNT(DISTINCT i) FROM foo", n);
 	}
 
-	private void test_LargeDownload() throws SQLException, Failure {
+	public void test_LargeDownload() throws SQLException, Failure {
 		test_Download(4_000_000);
 	}
 
