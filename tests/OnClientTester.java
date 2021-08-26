@@ -22,18 +22,18 @@ public final class OnClientTester {
 
 	public static void main(String[] args) throws SQLException, NoSuchMethodException {
 		String jdbcUrl = null;
-		String specificTest = null;
+		String requiredPrefix = null;
 		int verbosity = 0;
 
-		for (String arg: args) {
+		for (String arg : args) {
 			if (arg.equals("-v"))
 				verbosity++;
 			else if (arg.equals("-vv"))
 				verbosity += 2;
 			else if (jdbcUrl == null)
 				jdbcUrl = arg;
-			else if (specificTest == null)
-				specificTest = arg;
+			else if (requiredPrefix == null)
+				requiredPrefix = arg;
 			else {
 				System.err.println("Unexpected argument " + arg);
 				System.exit(2);
@@ -41,10 +41,7 @@ public final class OnClientTester {
 		}
 
 		OnClientTester tester = new OnClientTester(jdbcUrl, verbosity);
-		if (specificTest != null)
-			tester.runTest(specificTest);
-		else
-			tester.runTests();
+		tester.runTests(requiredPrefix);
 
 		if (tester.verbosity >= VERBOSITY_ON || tester.failureCount > 0) {
 			System.out.println();
@@ -60,11 +57,14 @@ public final class OnClientTester {
 		this.verbosity = verbosity;
 	}
 
-	private void runTests() throws SQLException, NoSuchMethodException {
-		for (Method method: this.getClass().getDeclaredMethods()) {
+	private void runTests(String testPrefix) throws SQLException, NoSuchMethodException {
+		String initialPrefix = "test_";
+		String methodPrefix = testPrefix == null ? initialPrefix : initialPrefix + testPrefix;
+
+		for (Method method : this.getClass().getDeclaredMethods()) {
 			String methodName = method.getName();
-			if (methodName.startsWith("test_") && method.getParameterCount() == 0) {
-				String testName = methodName.substring(5);
+			if (methodName.startsWith(methodPrefix) && method.getParameterCount() == 0) {
+				String testName = methodName.substring(initialPrefix.length());
 				runTest(testName, method);
 			}
 		}
