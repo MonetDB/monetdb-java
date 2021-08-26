@@ -1,18 +1,18 @@
 import org.monetdb.jdbc.MonetConnection;
+import org.monetdb.jdbc.MonetDownloadHandler;
 import org.monetdb.jdbc.MonetUploadHandler;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.charset.StandardCharsets;
 import java.sql.*;
 
 public final class OnClientTester {
 	private String jdbcUrl;
 	boolean verbose = false;
-	boolean succeeded = true;
+	int testCount = 0;
+	int failureCount = 0;
 	private MonetConnection conn;
 	private PrintWriter out;
 	private Statement stmt;
@@ -33,16 +33,13 @@ public final class OnClientTester {
 		}
 
 		OnClientTester tester = new OnClientTester(jdbcUrl);
-		boolean succeeded;
 		if (specificTest != null)
-			succeeded = tester.runTest(specificTest);
+			tester.runTest(specificTest);
 		else
-			succeeded = tester.runTests();
+			tester.runTests();
 
-		if (tester.verbosity >= VERBOSITY_ON || tester.failureCount > 0) {
-			System.out.println();
-			System.out.println("Ran " + tester.testCount + " tests, " + tester.failureCount + " failed");
-		}
+		System.out.println();
+		System.out.println("Ran " + tester.testCount + " tests, " + tester.failureCount + " failed");
 		if (tester.failureCount > 0) {
 			System.exit(1);
 		}
@@ -52,7 +49,7 @@ public final class OnClientTester {
 		this.jdbcUrl = jdbcUrl;
 	}
 
-	private boolean runTests() throws SQLException, NoSuchMethodException {
+	private void runTests() throws SQLException, NoSuchMethodException {
 		for (Method method: this.getClass().getDeclaredMethods()) {
 			String methodName = method.getName();
 			if (methodName.startsWith("test_") && method.getParameterCount() == 0) {
@@ -60,18 +57,15 @@ public final class OnClientTester {
 				runTest(testName, method);
 			}
 		}
-
-		return succeeded;
 	}
 
-	private boolean runTest(String testName) throws SQLException, NoSuchMethodException {
+	private void runTest(String testName) throws SQLException, NoSuchMethodException {
 		String methodName = "test_" + testName;
 		Method method = this.getClass().getDeclaredMethod(methodName);
-
-		return runTest(testName, method);
+		runTest(testName, method);
 	}
 
-	private synchronized boolean runTest(String testName, Method method) throws SQLException {
+	private synchronized void runTest(String testName, Method method) throws SQLException {
 		outBuffer = new StringWriter();
 		out = new PrintWriter(outBuffer);
 
@@ -81,6 +75,7 @@ public final class OnClientTester {
 
 		System.out.println();
 
+		boolean failed = false;
 		try {
 			try {
 				method.invoke(this);
@@ -97,17 +92,16 @@ public final class OnClientTester {
 
 			System.out.println("Test " + testName + " succeeded");
 			if (verbose)
-				dumpOutput();
+				dumpOutput(testName);
 		} catch (Failure e) {
-			succeeded = false;
+			failed = true;
 			System.out.println("Test " + testName + " failed");
-			dumpOutput();
+			dumpOutput(testName);
 		} catch (Exception e) {
-			succeeded = false;
+			failed = true;
 			System.out.println("Test " + testName + " failed:");
 			e.printStackTrace();
-			System.out.println();
-			dumpOutput();
+			dumpOutput(testName);
 			// Show the inner bits of the exception again, they may have scrolled off screen
 			Throwable t = e;
 			while (t.getCause() != null) {
@@ -119,19 +113,20 @@ public final class OnClientTester {
 				System.out.println("                 at " + t.getStackTrace()[0]);
 			}
 		} finally {
+			testCount++;
+			if (failed)
+				failureCount++;
 			stmt.close();
 			conn.close();
 		}
-
-		return succeeded;
 	}
 
-	private void dumpOutput() {
+	private void dumpOutput(String testName) {
 		String output = outBuffer.getBuffer().toString();
 		if (output.isEmpty()) {
 			System.out.println("(Test did not produce any output)");
 		} else {
-			System.out.println("------ Accumulated output:");
+			System.out.println("------ Accumulated output for " + testName + ":");
 			boolean terminated = output.endsWith(System.lineSeparator());
 			if (terminated) {
 				System.out.print(output);
@@ -145,6 +140,12 @@ public final class OnClientTester {
 	private void fail(String message) throws Failure {
 		out.println("FAILURE: " + message);
 		throw new Failure(message);
+	}
+
+	private void assertEq(String quantity, Object expected, Object actual) throws Failure {
+		if (expected.equals(actual))
+			return;
+		fail("Expected '" + quantity + "' to be " + expected + ", got " + actual);
 	}
 
 	protected boolean execute(String query) throws SQLException {
@@ -162,9 +163,7 @@ public final class OnClientTester {
 	protected void update(String query, int expectedUpdateCount) throws SQLException, Failure {
 		execute(query);
 		int updateCount = stmt.getUpdateCount();
-		if (updateCount != expectedUpdateCount) {
-			fail("Query updated " + updateCount + "rows, expected " + expectedUpdateCount);
-		}
+		assertEq("Update count", expectedUpdateCount, updateCount);
 	}
 
 	protected void expectError(String query, String expectedError) throws SQLException, Failure {
@@ -185,9 +184,7 @@ public final class OnClientTester {
 		}
 		ResultSet rs = stmt.getResultSet();
 		ResultSetMetaData metaData = rs.getMetaData();
-		if (metaData.getColumnCount() != 1) {
-			fail("Result should have exactly one column");
-		}
+		assertEq("column count", 1, metaData.getColumnCount());
 		if (!rs.next()) {
 			fail("Result set is empty");
 		}
@@ -197,8 +194,7 @@ public final class OnClientTester {
 			fail(message);
 		}
 		rs.close();
-		if (result != expected)
-			fail("Query returned " + result + ", expected " + expected);
+		assertEq("query result", expected, result);
 	}
 
 	protected void prepare() throws SQLException {
@@ -225,7 +221,6 @@ public final class OnClientTester {
 			this(0, -1, errorMessage);
 		}
 
-
 		@Override
 		public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
 			int toSkip = offset > 0 ? offset - 1 : 0;
@@ -243,6 +238,79 @@ public final class OnClientTester {
 		}
 
 	}
+
+	static class MyDownloadHandler implements MonetDownloadHandler {
+		private final int errorAtByte;
+		private final String errorMessage;
+		private int attempts = 0;
+		private int bytesSeen = 0;
+		private int lineEndingsSeen = 0;
+		private int startOfLine = 0;
+
+		MyDownloadHandler(int errorAtByte, String errorMessage) {
+			this.errorAtByte = errorAtByte;
+			this.errorMessage = errorMessage;
+		}
+
+		MyDownloadHandler(String errorMessage) {
+			this(-1, errorMessage);
+		}
+
+		MyDownloadHandler() {
+			this(-1, null);
+		}
+
+		@Override
+		public void handleDownload(MonetConnection.Download handle, String name, boolean textMode) throws IOException {
+			attempts++;
+			bytesSeen = 0;
+			lineEndingsSeen = 0;
+			startOfLine = 0;
+
+			if (errorMessage != null && errorAtByte < 0) {
+				handle.sendError(errorMessage);
+				return;
+			}
+
+			InputStream stream = handle.getStream();
+			byte[] buffer = new byte[1024];
+			while (true) {
+				int toRead = buffer.length;
+				if (errorMessage != null && errorAtByte >= 0) {
+					if (bytesSeen == errorAtByte) {
+						throw new IOException(errorMessage);
+					}
+					toRead = Integer.min(toRead, errorAtByte - bytesSeen);
+				}
+				int nread = stream.read(buffer, 0, toRead);
+				if (nread < 0)
+					break;
+				for (int i = 0; i < nread; i++) {
+					if (buffer[i] == '\n') {
+						lineEndingsSeen += 1;
+						startOfLine = bytesSeen + i + 1;
+					}
+				}
+				bytesSeen += nread;
+			}
+		}
+
+		public int countAttempts() {
+			return attempts;
+		}
+		public int countBytes() {
+			return bytesSeen;
+		}
+
+		public int lineCount() {
+			int lines = lineEndingsSeen;
+			if (startOfLine != bytesSeen)
+				lines++;
+			return lines;
+		}
+	}
+
+
 	static class Failure extends Exception {
 
 		public Failure(String message) {
@@ -261,7 +329,7 @@ public final class OnClientTester {
 		queryInt("SELECT COUNT(*) FROM foo", 100);
 	}
 
-	private void test_ImmediateError() throws Exception {
+	private void test_ClientRefuses() throws Exception {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler("immediate error"));
 		expectError("COPY INTO foo FROM 'banana' ON CLIENT", "immediate error");
@@ -292,12 +360,32 @@ public final class OnClientTester {
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
 
-	private void test_ServerCancels() throws SQLException, Failure {
+	private void testx_ServerCancels() throws SQLException, Failure {
 		prepare();
 		conn.setUploadHandler(new MyUploadHandler(100));
 		update("COPY 10 RECORDS INTO foo FROM 'banana' ON CLIENT", 96);
-		queryInt("SELECT MIN(i) FROM foo", 5);
-		queryInt("SELECT MAX(i) FROM foo", 100);
+		// Server stopped reading after 10 rows. Will we stay in sync?
+		queryInt("SELECT COUNT(i) FROM foo", 10);
+	}
+
+	private void test_Download() throws SQLException, Failure {
+		prepare();
+		MyDownloadHandler handler = new MyDownloadHandler();
+		conn.setDownloadHandler(handler);
+		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)", 100);
+		update("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT", -1);
+		assertEq("download attempts", 1, handler.countAttempts());
+		assertEq("lines downloaded", 100, handler.lineCount());
+	}
+
+	private void test_CancelledDownload() throws SQLException, Failure {
+		prepare();
+		MyDownloadHandler handler = new MyDownloadHandler("download refused");
+		conn.setDownloadHandler(handler);
+		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)", 100);
+		expectError("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT", "download refused");
+		// check if the connection still works
+		queryInt("SELECT 42", 42);
 	}
 
 
