@@ -20,18 +20,21 @@ public final class OnClientTester {
 	private PrintWriter out;
 	private Statement stmt;
 	private StringWriter outBuffer;
-	private WatchDog watchDog;
+	private final WatchDog watchDog;
 
 	public static void main(String[] args) throws SQLException, NoSuchMethodException {
 		String jdbcUrl = null;
 		String requiredPrefix = null;
 		int verbosity = 0;
+		boolean watchDogEnabled = true;
 
 		for (String arg : args) {
 			if (arg.equals("-v"))
 				verbosity++;
 			else if (arg.equals("-vv"))
 				verbosity += 2;
+			else if (arg.equals("-w"))
+				watchDogEnabled = false;
 			else if (jdbcUrl == null)
 				jdbcUrl = arg;
 			else if (requiredPrefix == null)
@@ -42,7 +45,7 @@ public final class OnClientTester {
 			}
 		}
 
-		OnClientTester tester = new OnClientTester(jdbcUrl, verbosity);
+		OnClientTester tester = new OnClientTester(jdbcUrl, verbosity, watchDogEnabled);
 		tester.runTests(requiredPrefix);
 
 		if (tester.verbosity >= VERBOSITY_ON || tester.failureCount > 0) {
@@ -54,13 +57,18 @@ public final class OnClientTester {
 		}
 	}
 
-	public OnClientTester(String jdbcUrl, int verbosity) {
+	public OnClientTester(String jdbcUrl, int verbosity, boolean watchDogEnabled) {
 		this.jdbcUrl = jdbcUrl;
 		this.verbosity = verbosity;
+		watchDog = new WatchDog();
+		if (watchDogEnabled)
+			watchDog.enable();
+		else
+			watchDog.disable();
 	}
 
 	private void runTests(String testPrefix) throws SQLException, NoSuchMethodException {
-		watchDog = new WatchDog();
+		watchDog.stop();
 		try {
 			String initialPrefix = "test_";
 			String methodPrefix = testPrefix == null ? initialPrefix : initialPrefix + testPrefix;
@@ -73,8 +81,7 @@ public final class OnClientTester {
 				}
 			}
 		} finally {
-			watchDog.kill();
-			watchDog = null;
+			watchDog.stop();
 		}
 	}
 
@@ -368,6 +375,7 @@ public final class OnClientTester {
 	}
 
 	static class WatchDog {
+		private boolean enabled;
 		private long duration = 1000;
 		private long started = 0;
 		private String context = "no context";
@@ -377,6 +385,16 @@ public final class OnClientTester {
 			watchDog.setName("watchdog_timer");
 			watchDog.setDaemon(true);
 			watchDog.start();
+		}
+
+		synchronized void enable() {
+			this.enabled = true;
+			this.notifyAll();
+		}
+
+		synchronized void disable() {
+			this.enabled = false;
+			this.notifyAll();
 		}
 
 		synchronized void setContext(String context) {
@@ -414,8 +432,8 @@ public final class OnClientTester {
 						// client asked us to go away
 						// System.err.println("++ EXIT");
 						return;
-					} else if (started == 0) {
-						// wait for client to start us
+					} else if (!enabled || started == 0) {
+						// wait for client to enable/start us
 						sleepTime = 600_000;
 					} else {
 						long deadline = started + duration;
