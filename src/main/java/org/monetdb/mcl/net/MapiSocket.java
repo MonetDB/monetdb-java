@@ -1194,6 +1194,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		public final static int DEFAULT_CHUNK_SIZE = 1024 * 1024;
 		private final int chunkSize;
 		private boolean closed = false;
+		private boolean serverCancelled = false;
 		private int chunkLeft;
 		private byte[] promptBuffer;
 
@@ -1215,6 +1216,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 		@Override
 		public void write(int b) throws IOException {
+			if (serverCancelled) {
+				// We have already thrown an exception and apparently that has been ignored.
+				// Probably because they're calling print methods instead of write.
+				// Throw another one, maybe they'll catch this one.
+				throw new IOException("Server aborted the upload");
+			}
 			handleChunking();
 			super.write(b);
 			wrote(1);
@@ -1227,6 +1234,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 		@Override
 		public void write(byte[] b, int off, int len) throws IOException {
+			if (serverCancelled) {
+				// We have already thrown an exception and apparently that has been ignored.
+				// Probably because they're calling print methods instead of write.
+				// Throw another one, maybe they'll catch this one.
+				throw new IOException("Server aborted the upload");
+			}
 			while (len > 0) {
 				handleChunking();
 				int toWrite = Integer.min(len, chunkLeft);
@@ -1247,6 +1260,15 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			if (closed) {
 				return;
 			}
+			closed = true;
+
+			if (serverCancelled)
+				closeAfterServerCancelled();
+			else
+				closeAfterSuccesfulUpload();
+		}
+
+		private void closeAfterSuccesfulUpload() throws IOException {
 			if (chunkLeft != chunkSize) {
 				// flush pending data
 				flushAndReadPrompt();
@@ -1257,6 +1279,10 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			if (acknowledgement != LineType.FILETRANSFER) {
 				throw new IOException("Expected server to acknowledge end of file");
 			}
+		}
+
+		private void closeAfterServerCancelled() throws IOException {
+			// nothing to do here, we have already read the error prompt.
 		}
 
 		private void wrote(int i) {
@@ -1278,6 +1304,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				case MORE:
 					return;
 				case FILETRANSFER:
+					// Note, if the caller is calling print methods instead of write, the IO exception gets hidden.
+					// This is unfortunate but there's nothing we can do about it.
+					serverCancelled = true;
 					throw new IOException("Server aborted the upload");
 				default:
 					throw new IOException("Expected MORE/DONE from server, got " + lineType);

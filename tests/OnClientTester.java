@@ -49,46 +49,58 @@ public final class OnClientTester extends TestRunner {
 
 	public void test_Upload() throws Exception {
 		prepare();
-		conn.setUploadHandler(new MyUploadHandler(100));
+		MyUploadHandler handler = new MyUploadHandler(100);
+		conn.setUploadHandler(handler);
 		update("COPY INTO foo FROM 'banana' ON CLIENT", 100);
+		assertEq("handler encountered write error", false, handler.encounteredWriteError());
 		queryInt("SELECT COUNT(*) FROM foo", 100);
 	}
 
 	public void test_ClientRefusesUpload() throws Exception {
 		prepare();
-		conn.setUploadHandler(new MyUploadHandler("immediate error"));
+		MyUploadHandler handler = new MyUploadHandler("immediate error");
+		conn.setUploadHandler(handler);
 		expectError("COPY INTO foo FROM 'banana' ON CLIENT", "immediate error");
+		assertEq("handler encountered write error", false, handler.encounteredWriteError());
 		queryInt("SELECT COUNT(*) FROM foo", 0);
 	}
 
 	public void test_Offset0() throws SQLException, Failure {
 		prepare();
-		conn.setUploadHandler(new MyUploadHandler(100));
+		MyUploadHandler handler = new MyUploadHandler(100);
+		conn.setUploadHandler(handler);
 		update("COPY OFFSET 0 INTO foo FROM 'banana' ON CLIENT", 100);
+		assertEq("handler encountered write error", false, handler.encounteredWriteError());
 		queryInt("SELECT MIN(i) FROM foo", 1);
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
 
 	public void test_Offset1() throws SQLException, Failure {
 		prepare();
-		conn.setUploadHandler(new MyUploadHandler(100));
+		MyUploadHandler handler = new MyUploadHandler(100);
+		conn.setUploadHandler(handler);
 		update("COPY OFFSET 1 INTO foo FROM 'banana' ON CLIENT", 100);
+		assertEq("handler encountered write error", false, handler.encounteredWriteError());
 		queryInt("SELECT MIN(i) FROM foo", 1);
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
 
 	public void test_Offset5() throws SQLException, Failure {
 		prepare();
-		conn.setUploadHandler(new MyUploadHandler(100));
+		MyUploadHandler handler = new MyUploadHandler(100);
+		conn.setUploadHandler(handler);
 		update("COPY OFFSET 5 INTO foo FROM 'banana' ON CLIENT", 96);
+		assertEq("handler encountered write error", false, handler.encounteredWriteError());
 		queryInt("SELECT MIN(i) FROM foo", 5);
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
 
 	public void test_ServerStopsReading() throws SQLException, Failure {
 		prepare();
-		conn.setUploadHandler(new MyUploadHandler(100));
-		update("COPY 10 RECORDS INTO foo FROM 'banana' ON CLIENT", 96);
+		MyUploadHandler handler = new MyUploadHandler(100);
+		conn.setUploadHandler(handler);
+		update("COPY 10 RECORDS INTO foo FROM 'banana' ON CLIENT", 10);
+		assertEq("handler encountered write error", true, handler.encounteredWriteError());
 		// Server stopped reading after 10 rows. Will we stay in sync?
 		queryInt("SELECT COUNT(i) FROM foo", 10);
 	}
@@ -125,6 +137,7 @@ public final class OnClientTester extends TestRunner {
 		conn.setUploadHandler(handler);
 		handler.setChunkSize(1024 * 1024);
 		update("COPY INTO foo FROM 'banana' ON CLIENT", n);
+		assertEq("handler encountered write error", false, handler.encounteredWriteError());
 		queryInt("SELECT COUNT(DISTINCT i) FROM foo", n);
 	}
 
@@ -183,8 +196,10 @@ public final class OnClientTester extends TestRunner {
 
 	public void test_FailUploadLate() throws SQLException, Failure {
 		prepare();
-		conn.setUploadHandler(new MyUploadHandler(100, 50, "i don't like line 50"));
+		MyUploadHandler handler = new MyUploadHandler(100, 50, "i don't like line 50");
+		conn.setUploadHandler(handler);
 		expectError("COPY INTO foo FROM 'banana' ON CLIENT", "i don't like");
+		assertEq("handler encountered write error", false, handler.encounteredWriteError());
 		assertEq("connection is closed", true, conn.isClosed());
 	}
 
@@ -202,6 +217,7 @@ public final class OnClientTester extends TestRunner {
 		private final int rows;
 		private final int errorAt;
 		private final String errorMessage;
+		private boolean encounteredWriteError;
 
 		private int chunkSize = 100; // small number to trigger more bugs
 
@@ -237,9 +253,16 @@ public final class OnClientTester extends TestRunner {
 					throw new IOException(errorMessage);
 				}
 				stream.printf("%d|%d%n", i + 1, i + 1);
+				if (i % 25 == 0 && stream.checkError()) {
+					encounteredWriteError = true;
+					break;
+				}
 			}
 		}
 
+		public Object encounteredWriteError() {
+			return encounteredWriteError;
+		}
 	}
 
 	static class MyDownloadHandler implements MonetDownloadHandler {
