@@ -1,5 +1,8 @@
 package org.monetdb.mcl.io;
 
+/**
+ * Enumeration of the various message types used in the MAPI protocol.
+ */
 public enum LineType {
 	/** "there is currently no line", or the the type is unknown is represented by UNKNOWN */
 	UNKNOWN(null),
@@ -41,6 +44,9 @@ public enum LineType {
 		return this.bytes;
 	}
 
+	/**
+	 * Look at a mapi message and decide the LineType
+	 */
 	public static final LineType classify(String line) {
 		if (line == null) {
 			return UNKNOWN;
@@ -54,6 +60,9 @@ public enum LineType {
 		}
 	}
 
+	/**
+	 * Look at a mapi message and decide the LineType
+	 */
 	public static final LineType classify(byte[] line) {
 		if (line == null) {
 			return UNKNOWN;

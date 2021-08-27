@@ -14,15 +14,34 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+/**
+ * Sample implement of ON CLIENT handling
+ *
+ * Can be registered with {@link MonetConnection#setUploadHandler(MonetUploadHandler)}
+ * and {@link MonetConnection#setDownloadHandler(MonetDownloadHandler)}.
+ * Implements uploads and downloads by reading and writing files on the file system.
+ */
 public class FileTransferHandler implements MonetUploadHandler, MonetDownloadHandler {
 	private final Path root;
 	private final boolean utf8Encoded;
 
+	/**
+	 * Create a new FileTransferHandler which serves the given directory.
+	 *
+	 * @param dir directory to read and write files from
+	 * @param utf8Encoded set this to true if all files in the directory are known to be utf-8 encoded.
+	 */
 	public FileTransferHandler(Path dir, boolean utf8Encoded) {
 		root = dir.toAbsolutePath().normalize();
 		this.utf8Encoded = utf8Encoded;
 	}
 
+	/**
+	 * Create a new FileTransferHandler which serves the given directory.
+	 *
+	 * @param dir directory to read and write files from
+	 * @param utf8Encoded set this to true if all files in the directory are known to be utf-8 encoded.
+	 */
 	public FileTransferHandler(String dir, boolean utf8Encoded) {
 		this(FileSystems.getDefault().getPath(dir), utf8Encoded);
 	}
@@ -57,6 +76,5 @@ public class FileTransferHandler implements MonetUploadHandler, MonetDownloadHan
 			return;
 		}
 		OutputStream outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
-
 	}
 }

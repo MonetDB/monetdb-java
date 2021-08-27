@@ -152,8 +152,8 @@ public class MonetConnection
 	private DatabaseMetaData dbmd;
 
 	/** Handlers for ON CLIENT requests */
-	private MonetUploadHandler uploader;
-	private MonetDownloadHandler downloader;
+	private MonetUploadHandler uploadHandler;
+	private MonetDownloadHandler downloadHandler;
 
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
@@ -1198,34 +1198,34 @@ public class MonetConnection
 	}
 
 	/**
-	 * Registers a MonetUploader to support for example COPY ON CLIENT
+	 * Registers a {@link MonetUploadHandler} to support for example COPY ON CLIENT
 	 *
 	 * @param uploadHandler the handler to register, or null to deregister
 	 */
 	public void setUploadHandler(MonetUploadHandler uploadHandler) {
-		this.uploader = uploadHandler;
+		this.uploadHandler = uploadHandler;
 	}
 
 	/**
-	 * Returns the currently registerered MonetUploader, or null
+	 * Returns the currently registerered {@link MonetUploadHandler}, or null
 	 */
 	public MonetUploadHandler getUploadHandler() {
-		return uploader;
+		return uploadHandler;
 	}
 	/**
-	 * Registers a MonetDownloader to support for example COPY ON CLIENT
+	 * Registers a {@link MonetDownloadHandler} to support for example COPY ON CLIENT
 	 *
 	 * @param downloadHandler the handler to register, or null to deregister
 	 */
 	public void setDownloadHandler(MonetDownloadHandler downloadHandler) {
-		this.downloader = downloadHandler;
+		this.downloadHandler = downloadHandler;
 	}
 
 	/**
-	 * Returns the currently registerered MonetDownloadHandler handler, or null
+	 * Returns the currently registerered {@link MonetDownloadHandler} handler, or null
 	 */
 	public MonetDownloadHandler getDownloadHandler() {
-		return downloader;
+		return downloadHandler;
 	}
 
 	/**
@@ -3227,17 +3227,17 @@ public class MonetConnection
 	}
 
 	private String handleUpload(String path, boolean textMode, int offset) throws IOException {
-		if (uploader == null) {
+		if (uploadHandler == null) {
 			return "No file upload handler has been registered with the JDBC driver";
 		}
 
 		Upload handle = new Upload(server);
 		boolean wasFaking = server.setInsertFakePrompts(false);
 		try {
-			uploader.handleUpload(handle, path, textMode, offset);
+			uploadHandler.handleUpload(handle, path, textMode, offset);
 			if (!handle.hasBeenUsed()) {
 				String message = String.format("Call to %s.handleUpload for path '%s' sent neither data nor an error message",
-						uploader.getClass().getCanonicalName(), path);
+						uploadHandler.getClass().getCanonicalName(), path);
 				throw new IOException(message);
 			}
 			handle.close();
@@ -3248,21 +3248,24 @@ public class MonetConnection
 	}
 
 	private String handleDownload(String path) throws IOException {
-		if (downloader == null) {
+		if (downloadHandler == null) {
 			return "No file download handler has been registered with the JDBC driver";
 		}
 
 		Download handle = new Download(server);
-		downloader.handleDownload(handle, path, true);
+		downloadHandler.handleDownload(handle, path, true);
 		if (!handle.hasBeenUsed()) {
 			String message = String.format("Call to %s.handleDownload for path '%s' sent neither data nor an error message",
-					downloader.getClass().getCanonicalName(), path);
+					downloadHandler.getClass().getCanonicalName(), path);
 			throw new IOException(message);
 		}
 		handle.close();
 		return handle.getError();
 	}
 
+	/**
+	 * Handle passed to {@link MonetUploadHandler} to allow communication with the server
+	 */
 	public static class Upload {
 		private final MapiSocket server;
 		private PrintStream print = null;
@@ -3273,6 +3276,18 @@ public class MonetConnection
 			this.server = server;
 		}
 
+		/**
+		 * Send an error message to the server
+		 *
+		 * The server will generally let the currently executing statement fail
+		 * with this error message. The connection will remain usable. 
+		 *
+		 * This method can only be sent if no data has been sent to the server
+		 * yet. After data has been sent, you can still throw an
+		 * {@link IOException} but this will terminate the connection.
+		 * @param errorMessage
+		 * @throws IOException
+		 */
 		public void sendError(String errorMessage) throws IOException {
 			if (error != null) {
 				throw new IOException("another error has already been sent: " + error);
@@ -3280,10 +3295,22 @@ public class MonetConnection
 			error = errorMessage;
 		}
 
+		/**
+		 * After every {@code chunkSize} bytes, the server gets the opportunity to
+		 * terminate the upload.
+		 * @param chunkSize
+		 */
 		public void setChunkSize(int chunkSize) {
 			this.customChunkSize = chunkSize;
 		}
 
+		/**
+		 * Get a {@link PrintStream} to write data to.
+		 *
+		 * For text mode uploads, the data MUST be validly UTF-8 encoded.
+		 * @return
+		 * @throws IOException
+		 */
 		public PrintStream getStream() throws IOException {
 			if (error != null) {
 				throw new IOException("Cannot send data after an error has been sent");
@@ -3300,14 +3327,29 @@ public class MonetConnection
 			return print;
 		}
 
+		/**
+		 * Returns true if data or an error has been sent.
+		 * @return
+		 */
 		public boolean hasBeenUsed() {
 			return print != null || error != null;
 		}
 
+		/**
+		 * Get the error that was sent, if any
+		 * @return
+		 */
 		public String getError() {
 			return error;
 		}
 
+		/**
+		 * Read from the given input stream and write it to the server.
+		 * 
+		 * For text mode uploads, the data MUST be validly UTF-8 encoded.
+		 * @param inputStream
+		 * @throws IOException
+		 */
 		public void uploadFrom(InputStream inputStream) throws IOException {
 			OutputStream s = getStream();
 			byte[] buffer = new byte[64 * 1024];
@@ -3320,6 +3362,13 @@ public class MonetConnection
 			}
 		}
 
+		/**
+		 * Read data from the given buffered reader and send it to the server
+		 * @param reader reader to read from
+		 * @param offset start uploading at line {@code offset}. Value 0 and 1
+		 * both mean upload the whole file, value 2 means skip the first line, etc.q
+		 * @throws IOException
+		 */
 		public void uploadFrom(BufferedReader reader, int offset) throws IOException {
 			// we're 1-based but also accept 0
 			if (offset > 0) {
@@ -3336,6 +3385,12 @@ public class MonetConnection
 			uploadFrom(reader);
 		}
 
+
+		/**
+		 * Read data from the given buffered reader and send it to the server
+		 * @param reader reader to read from
+		 * @throws IOException
+		 */
 		public void uploadFrom(Reader reader) throws IOException {
 			OutputStream s = getStream();
 			OutputStreamWriter writer = new OutputStreamWriter(s, StandardCharsets.UTF_8);
@@ -3357,6 +3412,9 @@ public class MonetConnection
 		}
 	}
 
+	/**
+	 * Handle passed to {@link MonetDownloadHandler} to allow communication with the server
+	 */
 	public static class Download {
 		private final MapiSocket server;
 		private MapiSocket.DownloadStream stream = null;
@@ -3368,6 +3426,21 @@ public class MonetConnection
 			this.server = server;
 		}
 
+		/**
+		 * Send an error message to the server
+		 *
+		 * The server will generally let the currently executing statement fail
+		 * with this error message. The connection will remain usable.
+		 *
+		 * This method can only be sent if no data has been received from the server
+		 * yet. After data has been received, you can still throw an
+		 * {@link IOException} but this will terminate the connection.
+		 * 
+		 * Note: as of MonetDB version Jul2021 the server always terminates the connection
+		 * when this error is used.  This will probably change in the future.
+		 * @param errorMessage
+		 * @throws IOException
+		 */
 		public void sendError(String errorMessage) throws IOException {
 			if (error != null) {
 				throw new IOException("another error has already been sent: " + error);
@@ -3375,6 +3448,13 @@ public class MonetConnection
 			error = errorMessage;
 		}
 
+		/**
+		 * Get an {@link InputStream} to read data from.
+		 * 
+		 * Textual data is UTF-8 encoded.
+		 * @return
+		 * @throws IOException
+		 */
 		public InputStream getStream() throws IOException {
 			if (error != null) {
 				throw new IOException("cannot receive data after error has been sent");
@@ -3386,6 +3466,11 @@ public class MonetConnection
 			return stream;
 		}
 
+		/**
+		 * Write the data from the server to the given {@link OutputStream}.
+		 * @param stream
+		 * @throws IOException
+		 */
 		public void downloadTo(OutputStream stream) throws IOException {
 			InputStream s = getStream();
 			byte[] buffer = new byte[65536];
@@ -3397,9 +3482,19 @@ public class MonetConnection
 			}
 		}
 
+		/**
+		 * Returns true if data has been received or an error has been sent.
+		 * @return
+		 */
+
 		public boolean hasBeenUsed() {
 			return error != null || stream != null;
 		}
+
+		/**
+		 * Get the error that was sent, if any
+		 * @return
+		 */
 
 		public String getError() {
 			return error;
@@ -3413,6 +3508,5 @@ public class MonetConnection
 			}
 			closed = true;
 		}
-
 	}
 }

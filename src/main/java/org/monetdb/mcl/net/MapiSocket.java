@@ -720,6 +720,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		return handshakeOptions;
 	}
 
+	/**
+	 * For internal use
+	 */
 	public boolean setInsertFakePrompts(boolean b) {
 		return fromMonet.setInsertFakePrompts(b);
 	}
@@ -1081,6 +1084,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			return n;
 		}
 
+		/**
+		 * For internal use
+		 */
 		Raw getRaw() {
 			return new Raw();
 		}
@@ -1164,14 +1170,31 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		}
 	}
 
+	/**
+	 * Return an UploadStream for use with for example COPY FROM filename ON CLIENT.
+	 *
+	 * Building block for {@link org.monetdb.jdbc.MonetUploadHandler}.
+	 * @param chunkSize chunk size for the upload stream
+	 */
 	public UploadStream uploadStream(int chunkSize) {
 		return new UploadStream(chunkSize);
 	}
 
+	/**
+	 * Return an UploadStream for use with for example COPY FROM filename ON CLIENT.
+	 *
+	 * Building block for {@link org.monetdb.jdbc.MonetUploadHandler}.
+	 */
 	public UploadStream uploadStream() {
 		return new UploadStream();
 	}
 
+	/**
+	 * Return a DownloadStream for use with for example COPY INTO filename ON CLIENT
+	 *
+	 * Building block for {@link org.monetdb.jdbc.MonetDownloadHandler}.
+	 * @return
+	 */
 	public DownloadStream downloadStream() {
 		return new DownloadStream(fromMonet.getRaw(), toMonet);
 	}
@@ -1190,6 +1213,14 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		super.finalize();
 	}
 
+	/**
+	 * Stream of data sent to the server
+	 * 
+ 	 * Building block for {@link org.monetdb.jdbc.MonetUploadHandler}.
+	 *
+	 * An UploadStream has a chunk size. Every chunk size bytes, the server gets
+	 * the opportunity to abort the upload.
+	 */
 	public class UploadStream extends FilterOutputStream {
 		public final static int DEFAULT_CHUNK_SIZE = 1024 * 1024;
 		private final int chunkSize;
@@ -1198,6 +1229,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		private int chunkLeft;
 		private byte[] promptBuffer;
 
+		/** Create an UploadStream with the given chunk size */
 		UploadStream(int chunkSize) {
 			super(toMonet);
 			if (chunkSize <= 0) {
@@ -1210,6 +1242,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			chunkLeft = this.chunkSize;
 		}
 
+		/** Create an UploadStream with the default chunk size */
 		UploadStream() {
 			this(DEFAULT_CHUNK_SIZE);
 		}
@@ -1323,6 +1356,11 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		}
 	}
 
+	/**
+	 * Stream of data received from the server
+	 * 
+ 	 * Building block for {@link org.monetdb.jdbc.MonetDownloadHandler}.
+	 */
 	public static class DownloadStream extends InputStream {
 
 		private final BlockInputStream.Raw rawIn;
@@ -1390,6 +1428,4 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				return off - origOff;
 		}
 	}
-
-
 }
