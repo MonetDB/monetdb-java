@@ -126,7 +126,8 @@ public final class OnClientTester extends TestRunner {
 		conn.setDownloadHandler(handler);
 		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)", 100);
 		expectError("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT", "download refused");
-		queryInt("SELECT 42 -- check if the connection still works", 42);
+		// Wish it were different but the server closes the connection
+		expectError("SELECT 42 -- check if the connection still works", "Connection to server lost!");
 	}
 
 	public void test_LargeUpload() throws SQLException, Failure {
