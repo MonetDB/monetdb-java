@@ -5,6 +5,7 @@ import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.sql.*;
+import java.util.ArrayList;
 
 public class TestRunner {
 	public static final int VERBOSITY_NONE = 0;
@@ -17,8 +18,6 @@ public class TestRunner {
 	private Statement stmt;
 	private StringWriter outBuffer;
 	private PrintWriter out;
-	int testCount = 0;
-	int failureCount = 0;
 
 	public TestRunner(String jdbcUrl, int verbosity, boolean watchDogEnabled) {
 		this.jdbcUrl = jdbcUrl;
@@ -31,31 +30,61 @@ public class TestRunner {
 	}
 
 	protected int runTests(String testPrefix) throws SQLException, NoSuchMethodException {
+		int testCount = 0;
+		int skippedCount = 0;
+		ArrayList<String> failures = new ArrayList<>();
+
 		watchDog.stop();
 		try {
-			String initialPrefix = "test_";
-			String methodPrefix = testPrefix == null ? initialPrefix : initialPrefix + testPrefix;
+			final String initialPrefix = "test_";
+			if (testPrefix == null)
+				testPrefix = "";
+			final String methodPrefix = initialPrefix + testPrefix;
 
 			for (Method method : this.getClass().getDeclaredMethods()) {
-				String methodName = method.getName();
-				if (methodName.startsWith(methodPrefix) && method.getParameterCount() == 0) {
-					String testName = methodName.substring(initialPrefix.length());
-					runTest(testName, method);
+				if (method.getParameterCount() != 0) {
+					continue;
 				}
+				if (!method.getName().startsWith(initialPrefix)) {
+					continue;
+				}
+				testCount++;
+				// so user can add $ to force full match
+				String augmentedMethodName = method.getName() + "$";
+				if (!augmentedMethodName.startsWith(methodPrefix)) {
+					skippedCount++;
+					continue;
+				}
+				String testName = method.getName().substring(initialPrefix.length());
+				boolean succeeded = runTest(testName, method);
+				if (!succeeded)
+					failures.add(testName);
 			}
 		} finally {
 			watchDog.stop();
 		}
 
-		if (verbosity >= VERBOSITY_ON || failureCount > 0) {
+		if (testCount > 0 && skippedCount == testCount && !testPrefix.isEmpty()) {
+			System.err.printf("None of the %d tests matched prefix '%s'%n", testCount, testPrefix);
+			return 1;
+		}
+
+		int failureCount = failures.size();
+		if (failureCount > 0) {
 			System.out.println();
-			System.out.println("Ran " + testCount + " tests, " + failureCount + " failed");
+			System.out.printf("Ran %d out of %d tests, %d failed: %s%n",
+					testCount - skippedCount, testCount, failureCount,
+					String.join(", ", failures)
+					);
+		} else if (verbosity >= VERBOSITY_ON) {
+			System.out.println();
+			System.out.printf("Ran %d out of %d tests, none failed%n", testCount - skippedCount, testCount);
 		}
 
 		return failureCount;
 	}
 
-	private synchronized void runTest(String testName, Method method) throws SQLException {
+	private synchronized boolean runTest(String testName, Method method) throws SQLException {
 		watchDog.setContext("test " + testName);
 		watchDog.setDuration(3_000);
 		outBuffer = new StringWriter();
@@ -65,7 +94,7 @@ public class TestRunner {
 		conn = genericConnection.unwrap(MonetConnection.class);
 		stmt = conn.createStatement();
 
-		boolean failed = false;
+		boolean failed = true;
 		try {
 			long duration;
 			try {
@@ -84,6 +113,8 @@ public class TestRunner {
 				}
 			}
 
+			failed = false;
+
 			if (verbosity > VERBOSITY_ON)
 				System.out.println();
 			if (verbosity >= VERBOSITY_ON)
@@ -91,12 +122,10 @@ public class TestRunner {
 			if (verbosity >= VERBOSITY_SHOW_ALL)
 				dumpOutput(testName);
 		} catch (Failure e) {
-			failed = true;
 			System.out.println();
 			System.out.println("Test " + testName + " failed");
 			dumpOutput(testName);
 		} catch (Exception e) {
-			failed = true;
 			System.out.println();
 			System.out.println("Test " + testName + " failed:");
 			e.printStackTrace(System.out);
@@ -112,9 +141,6 @@ public class TestRunner {
 			}
 		} finally {
 			watchDog.setContext(null);
-			testCount++;
-			if (failed)
-				failureCount++;
 			if (failed && verbosity == VERBOSITY_ON) {
 				// next test case will not print separator
 				System.out.println();
@@ -122,6 +148,8 @@ public class TestRunner {
 			stmt.close();
 			conn.close();
 		}
+
+		return !failed;
 	}
 
 	private void dumpOutput(String testName) {
