@@ -1,0 +1,75 @@
+ON CLIENT support
+
+MonetDB provides the nonstandard COPY INTO statement to perform bulk inserts and
+retrievals, see also
+https://www.monetdb.org/Documentation/ServerAdministration/LoadingBulkData.
+
+By default, COPY INTO accesses files on the server but it also has a mode to
+access files on the client.  This has long been supported by the command line
+tool mclient(1) and is now also supported as an extension to the MonetDB JDBC
+driver.
+
+This is how it works: The JDBC client automatically announces that it is capable
+of file transfers.  If you execute, for example,
+
+	COPY INTO mytable FROM 'data.csv' ON CLIENT;
+
+the server will send a request for file 'data.csv' to the JDBC driver.
+By default, the JDBC driver will refuse with an error message:
+
+	'No file upload handler has been registered with the JDBC driver'.
+
+This is for security reasons.  However, you can register a callback to handle
+these requests from the server:
+
+	Connection conn = DriverManager.getConnection(dbUrl, userName, password);
+	MyUploader handler = new MyUploadHandler();
+	conn.unwrap(MonetConnection.class).setUploadHandler(handler);
+
+Here, MyUploadHandler is an implementation of the interface MonetUploadHandler,
+whose main component is the method
+
+	/**
+	 * Called if the server sends a request to write a file.
+	 *
+	 * Use the given handle to receive data or send errors to the server.
+	 *
+	 * @param handle Handle to communicate with the server
+	 * @param name Name of the file the server would like to read. Make sure to
+	 *             validate this before reading from the file system
+	 * @param textMode Whether this is text or binary data.
+	 */
+	void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset)
+			throws IOException;
+
+In your implementation of this method, you can use the 'handle' object to
+communicate with the server, for example:
+
+- PrintStream getStream() to obtain a stream object to which you can write.
+  This is useful if you want to generate the data on the fly.
+
+- void uploadFrom(InputStream stream) to have the JDBC driver read data from the
+  stream and send it to the server as-is.  For text mode uploads this means the
+  text must be UTF-8 encoded.
+
+- void uploadFrom(Reader reader) to have the JDBC driver read text from the given
+  Reader and upload it.
+
+- void uploadFrom(BufferedReader reader, int offset) to have the JDBC driver read from
+  the given BufferedReader, and upload the text starting at line 'offset'. Typically
+  you would use the offset passed to handleUpload in parameter 'offset'.
+
+- void sendError(String errorMessage) to refuse the upload.
+
+If you use sendError to refuse the upload, the COPY INTO statement will fail but
+the connection will remain usable. On the other hand, if you implementation of
+handleUpload throws an IO Exception, the connection will be closed because there
+is no way to signal errors to the server once the transfer has begun.
+
+The interface for downloading is similar to that for uploading.
+
+Class org.monetdb.util.FileTransferHandler provides a default implementation of
+both MonetUploadHandler and MonetDownloadHandler.  You pass it a directory name
+and a flag indicating whether the contents of that directory can be assumed to
+be UTF-8 encoded. It is intended for situations where  you do not need to
+generate or transform data while uploading.

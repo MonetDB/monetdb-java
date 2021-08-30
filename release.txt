@@ -185,6 +185,9 @@ The following java.sql.* interfaces are NOT implemented:
   * java.sql.SQLXML
   * java.sql.Struct
 
+Since version VERSION_NUMBER, the MonetDB JDBC driver has support for the
+ON CLIENT clause of the COPY statement. You can register callback to provide
+data when the server asks for it, see onclient.txt for more information.
 
 Notes and Tips for Java Programmers using MonetDB JDBC driver:
 - Close JDBC ResultSet, Statement, PreparedStatement, CallableStatement and
@@ -248,4 +251,3 @@ Warning:
 Note: as of Febr 2021 (monetdb-jdbc-3.0.jre8.jar) we compile all
  the java sources to target: Java SE 8 (profile compact2), so
  you need a JRE/JDK JVM of version 8 or higher to use it.
-
