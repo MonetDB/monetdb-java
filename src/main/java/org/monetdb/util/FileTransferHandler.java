@@ -1,8 +1,6 @@
 package org.monetdb.util;
 
 import org.monetdb.jdbc.MonetConnection;
-import org.monetdb.jdbc.MonetDownloadHandler;
-import org.monetdb.jdbc.MonetUploadHandler;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -17,11 +15,11 @@ import java.nio.file.StandardOpenOption;
 /**
  * Sample implement of ON CLIENT handling
  *
- * Can be registered with {@link MonetConnection#setUploadHandler(MonetUploadHandler)}
- * and {@link MonetConnection#setDownloadHandler(MonetDownloadHandler)}.
+ * Can be registered with {@link MonetConnection#setUploadHandler(MonetConnection.UploadHandler)}
+ * and {@link MonetConnection#setDownloadHandler(MonetConnection.DownloadHandler)}.
  * Implements uploads and downloads by reading and writing files on the file system.
  */
-public class FileTransferHandler implements MonetUploadHandler, MonetDownloadHandler {
+public class FileTransferHandler implements MonetConnection.UploadHandler, MonetConnection.DownloadHandler {
 	private final Path root;
 	private final boolean utf8Encoded;
 

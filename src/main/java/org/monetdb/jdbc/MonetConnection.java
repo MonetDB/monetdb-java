@@ -152,8 +152,8 @@ public class MonetConnection
 	private DatabaseMetaData dbmd;
 
 	/** Handlers for ON CLIENT requests */
-	private MonetUploadHandler uploadHandler;
-	private MonetDownloadHandler downloadHandler;
+	private UploadHandler uploadHandler;
+	private DownloadHandler downloadHandler;
 
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
@@ -1676,33 +1676,33 @@ public class MonetConnection
 	//== end methods of interface java.sql.Connection
 
 	/**
-	 * Registers a {@link MonetUploadHandler} to support for example COPY ON CLIENT
+	 * Registers a {@link UploadHandler} to support for example COPY ON CLIENT
 	 *
 	 * @param uploadHandler the handler to register, or null to deregister
 	 */
-	public void setUploadHandler(MonetUploadHandler uploadHandler) {
+	public void setUploadHandler(UploadHandler uploadHandler) {
 		this.uploadHandler = uploadHandler;
 	}
 
 	/**
-	 * Returns the currently registerered {@link MonetUploadHandler}, or null
+	 * Returns the currently registerered {@link UploadHandler}, or null
 	 */
-	public MonetUploadHandler getUploadHandler() {
+	public UploadHandler getUploadHandler() {
 		return uploadHandler;
 	}
 	/**
-	 * Registers a {@link MonetDownloadHandler} to support for example COPY ON CLIENT
+	 * Registers a {@link DownloadHandler} to support for example COPY ON CLIENT
 	 *
 	 * @param downloadHandler the handler to register, or null to deregister
 	 */
-	public void setDownloadHandler(MonetDownloadHandler downloadHandler) {
+	public void setDownloadHandler(DownloadHandler downloadHandler) {
 		this.downloadHandler = downloadHandler;
 	}
 
 	/**
-	 * Returns the currently registerered {@link MonetDownloadHandler} handler, or null
+	 * Returns the currently registerered {@link DownloadHandler} handler, or null
 	 */
-	public MonetDownloadHandler getDownloadHandler() {
+	public DownloadHandler getDownloadHandler() {
 		return downloadHandler;
 	}
 
@@ -3267,7 +3267,46 @@ public class MonetConnection
 	}
 
 	/**
-	 * Handle passed to {@link MonetUploadHandler} to allow communication with the server
+	 * Callback for sending files for COPY ON CLIENT
+	 *
+	 * To be registered with {@link MonetConnection#setUploadHandler(UploadHandler)}
+	 */
+
+	public static interface UploadHandler {
+		/**
+		 * Called if the server sends a request to write a file.
+		 *
+		 * Use the given handle to receive data or send errors to the server.
+		 *
+		 * @param handle Handle to communicate with the server
+		 * @param name Name of the file the server would like to read. Make sure to validate this before reading from
+		 *             the file system
+		 * @param textMode Whether this is text or binary data.
+		 */
+		void handleUpload(Upload handle, String name, boolean textMode, int offset) throws IOException;
+	}
+
+	/**
+	 * Callback for receiving files with COPY ON CLIENT
+	 *
+	 * To be registered with {@link MonetConnection#setDownloadHandler(DownloadHandler)}
+	 */
+	public static interface DownloadHandler {
+		/**
+		 * Called if the server sends a request to write a file.
+		 *
+		 * Use the given handle to send data or errors to the server.
+		 *
+		 * @param handle Handle to communicate with the server
+		 * @param name Name of the file the server would like to write. Make sure to validate this before writing to
+		 *             the file system
+		 * @param textMode Whether this is text or binary data.
+		 */
+		void handleDownload(Download handle, String name, boolean textMode) throws IOException;
+	}
+
+	/**
+	 * Handle passed to {@link UploadHandler} to allow communication with the server
 	 */
 	public static class Upload {
 		private final MapiSocket server;
@@ -3416,7 +3455,7 @@ public class MonetConnection
 	}
 
 	/**
-	 * Handle passed to {@link MonetDownloadHandler} to allow communication with the server
+	 * Handle passed to {@link DownloadHandler} to allow communication with the server
 	 */
 	public static class Download {
 		private final MapiSocket server;

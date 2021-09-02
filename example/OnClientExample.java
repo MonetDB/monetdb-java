@@ -1,5 +1,5 @@
 import org.monetdb.jdbc.MonetConnection;
-import org.monetdb.jdbc.MonetUploadHandler;
+import org.monetdb.jdbc.MonetConnection.UploadHandler;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -78,7 +78,7 @@ public class OnClientExample {
 	}
 
 
-	private static class MyUploader implements MonetUploadHandler {
+	private static class MyUploader implements UploadHandler {
 		private final Path uploadDir;
 		private final boolean filesAreUtf8;
 

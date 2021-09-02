@@ -1,6 +1,6 @@
 import org.monetdb.jdbc.MonetConnection;
-import org.monetdb.jdbc.MonetDownloadHandler;
-import org.monetdb.jdbc.MonetUploadHandler;
+import org.monetdb.jdbc.MonetConnection.UploadHandler;
+import org.monetdb.jdbc.MonetConnection.DownloadHandler;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
@@ -149,7 +149,7 @@ public final class OnClientTester extends TestRunner {
 
 	public void test_UploadFromStream() throws SQLException, Failure {
 		prepare();
-		MonetUploadHandler handler = new MonetUploadHandler() {
+		UploadHandler handler = new UploadHandler() {
 			final String data = "1|one\n2|two\n3|three\n";
 
 			@Override
@@ -165,7 +165,7 @@ public final class OnClientTester extends TestRunner {
 
 	public void test_UploadFromReader() throws SQLException, Failure {
 		prepare();
-		MonetUploadHandler handler = new MonetUploadHandler() {
+		UploadHandler handler = new UploadHandler() {
 			final String data = "1|one\n2|two\n3|three\n";
 
 			@Override
@@ -181,7 +181,7 @@ public final class OnClientTester extends TestRunner {
 
 	public void test_UploadFromReaderOffset() throws SQLException, Failure {
 		prepare();
-		MonetUploadHandler handler = new MonetUploadHandler() {
+		UploadHandler handler = new UploadHandler() {
 			final String data = "1|one\n2|two\n3|three\n";
 
 			@Override
@@ -214,7 +214,7 @@ public final class OnClientTester extends TestRunner {
 		queryInt("SELECT 42 -- check if the connection still works", 42);
 	}
 
-	static class MyUploadHandler implements MonetUploadHandler {
+	static class MyUploadHandler implements UploadHandler {
 		private final int rows;
 		private final int errorAt;
 		private final String errorMessage;
@@ -266,7 +266,7 @@ public final class OnClientTester extends TestRunner {
 		}
 	}
 
-	static class MyDownloadHandler implements MonetDownloadHandler {
+	static class MyDownloadHandler implements DownloadHandler {
 		private final int errorAtByte;
 		private final String errorMessage;
 		private int attempts = 0;
