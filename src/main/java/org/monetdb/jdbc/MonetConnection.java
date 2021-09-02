@@ -3148,7 +3148,10 @@ public class MonetConnection
 							// Consume the fake prompt inserted by MapiSocket.
 							String dummy = in.readLine();
 							// Handle the request
-							error = handleTransfer(transferCommand);
+							if (transferCommand != null)
+								error = handleTransfer(transferCommand);
+							else
+								error = "!M0M10!protocol violation, expected transfer command, got nothing";
 							// Then prepare for the next iteration
 							if (error != null) {
 								out.writeLine("!HY000!" + error + "\n");
