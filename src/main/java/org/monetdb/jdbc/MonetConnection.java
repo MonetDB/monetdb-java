@@ -1198,37 +1198,6 @@ public class MonetConnection
 	}
 
 	/**
-	 * Registers a {@link MonetUploadHandler} to support for example COPY ON CLIENT
-	 *
-	 * @param uploadHandler the handler to register, or null to deregister
-	 */
-	public void setUploadHandler(MonetUploadHandler uploadHandler) {
-		this.uploadHandler = uploadHandler;
-	}
-
-	/**
-	 * Returns the currently registerered {@link MonetUploadHandler}, or null
-	 */
-	public MonetUploadHandler getUploadHandler() {
-		return uploadHandler;
-	}
-	/**
-	 * Registers a {@link MonetDownloadHandler} to support for example COPY ON CLIENT
-	 *
-	 * @param downloadHandler the handler to register, or null to deregister
-	 */
-	public void setDownloadHandler(MonetDownloadHandler downloadHandler) {
-		this.downloadHandler = downloadHandler;
-	}
-
-	/**
-	 * Returns the currently registerered {@link MonetDownloadHandler} handler, or null
-	 */
-	public MonetDownloadHandler getDownloadHandler() {
-		return downloadHandler;
-	}
-
-	/**
 	 * Returns a string identifying this Connection to the MonetDB server.
 	 *
 	 * @return a String representing this Object
@@ -1705,6 +1674,37 @@ public class MonetConnection
 	}
 
 	//== end methods of interface java.sql.Connection
+
+	/**
+	 * Registers a {@link MonetUploadHandler} to support for example COPY ON CLIENT
+	 *
+	 * @param uploadHandler the handler to register, or null to deregister
+	 */
+	public void setUploadHandler(MonetUploadHandler uploadHandler) {
+		this.uploadHandler = uploadHandler;
+	}
+
+	/**
+	 * Returns the currently registerered {@link MonetUploadHandler}, or null
+	 */
+	public MonetUploadHandler getUploadHandler() {
+		return uploadHandler;
+	}
+	/**
+	 * Registers a {@link MonetDownloadHandler} to support for example COPY ON CLIENT
+	 *
+	 * @param downloadHandler the handler to register, or null to deregister
+	 */
+	public void setDownloadHandler(MonetDownloadHandler downloadHandler) {
+		this.downloadHandler = downloadHandler;
+	}
+
+	/**
+	 * Returns the currently registerered {@link MonetDownloadHandler} handler, or null
+	 */
+	public MonetDownloadHandler getDownloadHandler() {
+		return downloadHandler;
+	}
 
 
 	//== internal helper methods which do not belong to the JDBC interface
