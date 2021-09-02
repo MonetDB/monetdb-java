@@ -72,6 +72,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2021 MonetDB B.V.
     <jar jarfile="${jdbctests-jar}">
       <fileset dir="${builddir}">
         <include name="JDBC_API_Tester.class" />
+        <include name="TestRunner.class" />
         <include name="OnClientTester.class" />
       </fileset>
     </jar>
@@ -102,6 +103,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2021 MonetDB B.V.
   <!-- Run tests -->
   <target name="test">
     <antcall target="JDBC_API_Tester" />
+    <antcall target="OnClientTester" />
   </target>
 
   <target name="test_class" depends="compile,jdbc">
