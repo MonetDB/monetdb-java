@@ -997,7 +997,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 			// if this is the last block, make it end with a newline and prompt
 			if (wasEndBlock) {
-				// insert 'fake' newline and flush
+				// insert 'fake' newline and prompt
 				if (insertFakePrompts) {
 					if (blockLen > 0 && block[blockLen - 1] != '\n') {
 						// to terminate the block in a Reader
