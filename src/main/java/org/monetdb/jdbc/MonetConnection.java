@@ -3274,14 +3274,17 @@ public class MonetConnection
 
 	public static interface UploadHandler {
 		/**
-		 * Called if the server sends a request to write a file.
+		 * Called if the server sends a request to read file data.
 		 *
 		 * Use the given handle to receive data or send errors to the server.
 		 *
 		 * @param handle Handle to communicate with the server
-		 * @param name Name of the file the server would like to read. Make sure to validate this before reading from
-		 *             the file system
+		 * @param name Name of the file the server would like to read. Make sure
+		 *             to validate this before reading from the file system
 		 * @param textMode Whether this is text or binary data.
+		 * @param offset line number of the first line to upload. Both 0 and 1
+		 *               mean 'upload the whole file', 2 means 'skip line 1',
+		 *               etc.
 		 */
 		void handleUpload(Upload handle, String name, boolean textMode, int offset) throws IOException;
 	}

@@ -1,10 +1,18 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2021 MonetDB B.V.
+ */
+
 package org.monetdb.mcl.io;
 
 /**
  * Enumeration of the various message types used in the MAPI protocol.
  */
 public enum LineType {
-	/** "there is currently no line", or the the type is unknown is represented by UNKNOWN */
+	/** "there is currently no line", or the type is unknown is represented by UNKNOWN */
 	UNKNOWN(null),
 
 	/** a line starting with ! indicates ERROR */

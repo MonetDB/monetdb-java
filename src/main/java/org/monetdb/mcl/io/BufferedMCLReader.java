@@ -14,7 +14,9 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 
-import static org.monetdb.mcl.io.LineType.*;
+import static org.monetdb.mcl.io.LineType.ERROR;
+import static org.monetdb.mcl.io.LineType.PROMPT;
+import static org.monetdb.mcl.io.LineType.UNKNOWN;
 
 /**
  * Read text from a character-input stream, buffering characters so as

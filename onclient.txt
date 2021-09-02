@@ -5,9 +5,8 @@ retrievals, see also
 https://www.monetdb.org/Documentation/ServerAdministration/LoadingBulkData.
 
 By default, COPY INTO accesses files on the server but it also has a mode to
-access files on the client.  This has long been supported by the command line
-tool mclient(1) and is now also supported as an extension to the MonetDB JDBC
-driver.
+access files on the client.  This is supported by the command line tool
+mclient(1) and now also as an extension to the MonetDB JDBC driver.
 
 This is how it works: The JDBC client automatically announces that it is capable
 of file transfers.  If you execute, for example,
