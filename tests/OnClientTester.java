@@ -212,6 +212,27 @@ public final class OnClientTester extends TestRunner {
 		assertEq("connection is closed", true, conn.isClosed());
 	}
 
+
+	public void test_FailUploadLate2() throws SQLException, Failure {
+		// Here we send empty lines only, to check if the server detects is properly instead
+		// of simply complaining about an incomplete file.
+		prepare();
+		UploadHandler handler = new UploadHandler() {
+			@Override
+			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
+				PrintStream stream = handle.getStream();
+				for (int i = 1; i <= 20_000; i++)
+					stream.println();
+				stream.flush();
+				throw new IOException("exception after all");
+			}
+		};
+		conn.setUploadHandler(handler);
+		expectError("COPY INTO foo(t) FROM 'banana'(t) ON CLIENT", "after all");
+		assertEq("connection is closed", true, conn.isClosed());
+		// Cannot check the server log, but at the time I checked, it said "prematurely stopped client", which is fine.
+	}
+
 	// Disabled because it hangs, triggering the watchdog timer
 	public void testx_FailDownloadLate() throws SQLException, Failure {
 		prepare();
