@@ -80,8 +80,10 @@ public class TestRunner {
 		int failureCount = failures.size();
 		if (failureCount > 0) {
 			System.out.println();
-			System.out.printf("Ran %d out of %d tests, %d failed: %s%n",
-					testCount - skippedCount, testCount, failureCount,
+			System.out.printf("Ran %d out of %d %s tests, %d failed: %s%n",
+					testCount - skippedCount, testCount,
+					this.getClass().getSimpleName(),
+					failureCount,
 					String.join(", ", failures)
 					);
 		} else if (verbosity >= VERBOSITY_ON) {
