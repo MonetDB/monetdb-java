@@ -237,13 +237,14 @@ public final class OnClientTester extends TestRunner {
 	}
 
 	// Disabled because it hangs, triggering the watchdog timer
-	public void testx_FailDownloadLate() throws SQLException, Failure {
+	public void test_FailDownloadLate() throws SQLException, Failure {
 		prepare();
 		MyDownloadHandler handler = new MyDownloadHandler(200, "download refused");
 		conn.setDownloadHandler(handler);
 		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)", 100);
-		expectError("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT", "download refused");
-		queryInt("SELECT 42 -- check if the connection still works", 42);
+		expectError("COPY (SELECT * FROM sys.generate_series(0,200)) INTO 'banana' ON CLIENT", "download refused");
+		// Exception closes the connection
+		assertEq("connection is closed", conn.isClosed(), true);
 	}
 
 	static class MyUploadHandler implements UploadHandler {
