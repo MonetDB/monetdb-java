@@ -1173,7 +1173,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	/**
 	 * Return an UploadStream for use with for example COPY FROM filename ON CLIENT.
 	 *
-	 * Building block for {@link MonetConnection.UploadHandler}.
+	 * Building block for {@link org.monetdb.jdbc.MonetConnection.UploadHandler}.
 	 * @param chunkSize chunk size for the upload stream
 	 */
 	public UploadStream uploadStream(int chunkSize) {
@@ -1183,7 +1183,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	/**
 	 * Return an UploadStream for use with for example COPY FROM filename ON CLIENT.
 	 *
-	 * Building block for {@link MonetConnection.UploadHandler}.
+	 * Building block for {@link org.monetdb.jdbc.MonetConnection.UploadHandler}.
 	 */
 	public UploadStream uploadStream() {
 		return new UploadStream();
@@ -1192,7 +1192,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	/**
 	 * Return a DownloadStream for use with for example COPY INTO filename ON CLIENT
 	 *
-	 * Building block for {@link MonetConnection.DownloadHandler}.
+	 * Building block for {@link org.monetdb.jdbc.MonetConnection.DownloadHandler}.
 	 * @return
 	 */
 	public DownloadStream downloadStream() {
@@ -1216,7 +1216,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	/**
 	 * Stream of data sent to the server
 	 * 
- 	 * Building block for {@link MonetConnection.UploadHandler}.
+ 	 * Building block for {@link org.monetdb.jdbc.MonetConnection.UploadHandler}.
 	 *
 	 * An UploadStream has a chunk size. Every chunk size bytes, the server gets
 	 * the opportunity to abort the upload.
@@ -1359,7 +1359,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	/**
 	 * Stream of data received from the server
 	 * 
- 	 * Building block for {@link MonetConnection.DownloadHandler}.
+ 	 * Building block for {@link org.monetdb.jdbc.MonetConnection.DownloadHandler}.
 	 */
 	public static class DownloadStream extends InputStream {
 
