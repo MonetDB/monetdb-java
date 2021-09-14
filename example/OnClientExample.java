@@ -96,15 +96,14 @@ public class OnClientExample {
 		}
 
 		@Override
-		public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
+		public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
 
 			// COPY OFFSET line numbers are 1-based but 0 is also allowed.
 			// Compute the number of lines to skip
-			long toSkip = offset <= 1 ? 0 : offset - 1;
 
 			// We can upload data read from the file system but also make up our own data
 			if (name.equals("generated.csv")) {
-				uploadGenerated(handle, toSkip);
+				uploadGenerated(handle, linesToSkip);
 				return;
 			}
 
@@ -124,12 +123,12 @@ public class OnClientExample {
 			boolean binary = !textMode;
 			if (binary) {
 				uploadBinary(handle, path);
-			} else if (toSkip == 0 && filesAreUtf8) {
+			} else if (linesToSkip == 0 && filesAreUtf8) {
 				// Avoid unnecessary character set conversions by pretending it's binary
 				uploadBinary(handle, path);
 			} else {
 				// Charset and skip handling really necessary
-				uploadTextFile(handle, path, toSkip);
+				uploadTextFile(handle, path, linesToSkip);
 			}
 		}
 

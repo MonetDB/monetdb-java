@@ -3213,9 +3213,9 @@ public class MonetConnection
 	private String handleTransfer(String transferCommand) throws IOException {
 		String[] parts = transferCommand.split(" ", 3);
 		if (transferCommand.startsWith("r ") && parts.length == 3) {
-			final int offset;
+			final long offset;
 			try {
-				offset = Integer.parseInt(parts[1]);
+				offset = Long.parseLong(parts[1]);
 			} catch (NumberFormatException e) {
 				return e.toString();
 			}
@@ -3229,15 +3229,16 @@ public class MonetConnection
 		}
 	}
 
-	private String handleUpload(String path, boolean textMode, int offset) throws IOException {
+	private String handleUpload(String path, boolean textMode, long offset) throws IOException {
 		if (uploadHandler == null) {
 			return "No file upload handler has been registered with the JDBC driver";
 		}
 
+		long linesToSkip = offset >= 1 ? offset - 1 : 0;
 		Upload handle = new Upload(server);
 		boolean wasFaking = server.setInsertFakePrompts(false);
 		try {
-			uploadHandler.handleUpload(handle, path, textMode, offset);
+			uploadHandler.handleUpload(handle, path, textMode, linesToSkip);
 			if (!handle.hasBeenUsed()) {
 				String message = String.format("Call to %s.handleUpload for path '%s' sent neither data nor an error message",
 						uploadHandler.getClass().getCanonicalName(), path);
@@ -3280,16 +3281,16 @@ public class MonetConnection
 		 * Called if the server sends a request to read file data.
 		 *
 		 * Use the given handle to receive data or send errors to the server.
-		 *
-		 * @param handle Handle to communicate with the server
+		 *  @param handle Handle to communicate with the server
 		 * @param name Name of the file the server would like to read. Make sure
 		 *             to validate this before reading from the file system
 		 * @param textMode Whether this is text or binary data.
-		 * @param offset line number of the first line to upload. Both 0 and 1
-		 *               mean 'upload the whole file', 2 means 'skip line 1',
-		 *               etc.
+		 * @param linesToSkip In text mode, number of initial lines to skip.
+		 *                    0 means upload everything, 1 means skip the first line, etc.
+		 *                    Note: this is different from the OFFSET option of the COPY INTO,
+		 *                    where both 0 and 1 mean 'upload everything'
 		 */
-		void handleUpload(Upload handle, String name, boolean textMode, int offset) throws IOException;
+		void handleUpload(Upload handle, String name, boolean textMode, long linesToSkip) throws IOException;
 	}
 
 	/**
@@ -3413,17 +3414,12 @@ public class MonetConnection
 		/**
 		 * Read data from the given buffered reader and send it to the server
 		 * @param reader reader to read from
-		 * @param offset start uploading at line {@code offset}. Value 0 and 1
+		 * @param linesToSkip start uploading at line {@code offset}. Value 0 and 1
 		 * both mean upload the whole file, value 2 means skip the first line, etc.q
 		 * @throws IOException
 		 */
-		public void uploadFrom(BufferedReader reader, int offset) throws IOException {
-			// we're 1-based but also accept 0
-			if (offset > 0) {
-				offset -= 1;
-			}
-
-			for (int i = 0; i < offset; i++) {
+		public void uploadFrom(BufferedReader reader, long linesToSkip) throws IOException {
+			for (int i = 0; i < linesToSkip; i++) {
 				String line = reader.readLine();
 				if (line == null) {
 					return;

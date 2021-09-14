@@ -52,7 +52,7 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 		this(FileSystems.getDefault().getPath(dir), utf8Encoded);
 	}
 
-	public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
+	public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
 		Path path = root.resolve(name).normalize();
 		if (!path.startsWith(root)) {
 			handle.sendError("File is not in upload directory");
@@ -62,10 +62,10 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			handle.sendError("Cannot read " + name);
 			return;
 		}
-		if (textMode && (offset > 1 || !utf8Encoded)) {
+		if (textMode && (linesToSkip > 0 || !utf8Encoded)) {
 			Charset encoding = utf8Encoded ? StandardCharsets.UTF_8 : Charset.defaultCharset();
 			BufferedReader reader = Files.newBufferedReader(path, encoding);
-			handle.uploadFrom(reader, offset);
+			handle.uploadFrom(reader, linesToSkip);
 		} else {
 			handle.uploadFrom(Files.newInputStream(path));
 		}

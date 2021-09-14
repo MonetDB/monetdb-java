@@ -164,7 +164,8 @@ public final class OnClientTester extends TestRunner {
 			final String data = "1|one\n2|two\n3|three\n";
 
 			@Override
-			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
+			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
+				// ignoring linesToSkip as it's not used in this test
 				ByteArrayInputStream s = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8));
 				handle.uploadFrom(s);
 			}
@@ -180,7 +181,8 @@ public final class OnClientTester extends TestRunner {
 			final String data = "1|one\n2|two\n3|three\n";
 
 			@Override
-			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
+			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
+				// ignoring linesToSkip as it's not used in this test
 				StringReader r = new StringReader(data);
 				handle.uploadFrom(r);
 			}
@@ -196,9 +198,9 @@ public final class OnClientTester extends TestRunner {
 			final String data = "1|one\n2|two\n3|three\n";
 
 			@Override
-			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
+			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
 				BufferedReader r = new BufferedReader(new StringReader(data));
-				handle.uploadFrom(r, offset);
+				handle.uploadFrom(r, linesToSkip);
 			}
 		};
 		conn.setUploadHandler(handler);
@@ -222,7 +224,8 @@ public final class OnClientTester extends TestRunner {
 		prepare();
 		UploadHandler handler = new UploadHandler() {
 			@Override
-			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
+			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
+				// ignoring linesToSkip as it's not used in this test
 				PrintStream stream = handle.getStream();
 				for (int i = 1; i <= 20_000; i++)
 					stream.println();
@@ -248,20 +251,20 @@ public final class OnClientTester extends TestRunner {
 	}
 
 	static class MyUploadHandler implements UploadHandler {
-		private final int rows;
-		private final int errorAt;
+		private final long rows;
+		private final long errorAt;
 		private final String errorMessage;
 		private boolean encounteredWriteError;
 
 		private int chunkSize = 100; // small number to trigger more bugs
 
-		MyUploadHandler(int rows, int errorAt, String errorMessage) {
+		MyUploadHandler(long rows, long errorAt, String errorMessage) {
 			this.rows = rows;
 			this.errorAt = errorAt;
 			this.errorMessage = errorMessage;
 		}
 
-		MyUploadHandler(int rows) {
+		MyUploadHandler(long rows) {
 			this(rows, -1, null);
 		}
 
@@ -274,15 +277,14 @@ public final class OnClientTester extends TestRunner {
 		}
 
 		@Override
-		public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset) throws IOException {
-			int toSkip = offset > 0 ? offset - 1 : 0;
+		public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
 			if (errorAt == -1 && errorMessage != null) {
 				handle.sendError(errorMessage);
 				return;
 			}
 			handle.setChunkSize(chunkSize);
 			PrintStream stream = handle.getStream();
-			for (int i = toSkip; i < rows; i++) {
+			for (long i = linesToSkip; i < rows; i++) {
 				if (i == errorAt) {
 					throw new IOException(errorMessage);
 				}
