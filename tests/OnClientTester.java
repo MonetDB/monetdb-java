@@ -20,11 +20,14 @@ public final class OnClientTester extends TestRunner {
 		super(jdbcUrl, verbosity, watchDogEnabled);
 	}
 
-	public static void main(String[] args) throws SQLException, NoSuchMethodException {
+	public static void main(String[] args) throws SQLException, NoSuchMethodException, ClassNotFoundException {
 		String jdbcUrl = null;
 		String requiredPrefix = null;
 		int verbosity = 0;
 		boolean watchDogEnabled = true;
+
+		// Don't know why I need this all of a sudden.. is it only on my system?
+		Class.forName("org.monetdb.jdbc.MonetDriver");
 
 		for (String arg : args) {
 			if (arg.equals("-v"))
