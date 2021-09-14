@@ -3256,13 +3256,16 @@ public class MonetConnection
 		}
 
 		Download handle = new Download(server);
-		downloadHandler.handleDownload(handle, path, true);
-		if (!handle.hasBeenUsed()) {
-			String message = String.format("Call to %s.handleDownload for path '%s' sent neither data nor an error message",
-					downloadHandler.getClass().getCanonicalName(), path);
-			throw new IOException(message);
+		try {
+			downloadHandler.handleDownload(handle, path, true);
+			if (!handle.hasBeenUsed()) {
+				String message = String.format("Call to %s.handleDownload for path '%s' sent neither data nor an error message",
+						downloadHandler.getClass().getCanonicalName(), path);
+				throw new IOException(message);
+			}
+		} finally {
+			handle.close();
 		}
-		handle.close();
 		return handle.getError();
 	}
 
