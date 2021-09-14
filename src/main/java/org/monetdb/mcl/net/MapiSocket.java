@@ -1366,6 +1366,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		private final BlockInputStream.Raw rawIn;
 		private final OutputStream out;
 		private boolean endBlockSeen = false;
+		private boolean closed = false;
 
 		DownloadStream(BlockInputStream.Raw rawIn, OutputStream out) {
 			this.rawIn = rawIn;
@@ -1373,7 +1374,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		}
 
 		void nextBlock() throws IOException {
-			if (endBlockSeen)
+			if (endBlockSeen || closed)
 				return;
 			int ret = rawIn.readBlock();
 			if (ret < 0 || rawIn.wasEndBlock()) {
@@ -1383,13 +1384,15 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 		@Override
 		public void close() throws IOException {
+			if (closed)
+				return;
+			closed = true;
 			while (!endBlockSeen) {
 				nextBlock();
 			}
 			// Send acknowledgement to server
 			out.write('\n');
 			out.flush();
-			// And await the acknowledgement of the acknowledgement
 			// Do whatever super has to do
 			super.close();
 		}
