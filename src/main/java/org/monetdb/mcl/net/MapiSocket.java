@@ -1193,7 +1193,6 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	 * Return a DownloadStream for use with for example COPY INTO filename ON CLIENT
 	 *
 	 * Building block for {@link org.monetdb.jdbc.MonetConnection.DownloadHandler}.
-	 * @return
 	 */
 	public DownloadStream downloadStream() {
 		return new DownloadStream(fromMonet.getRaw(), toMonet);

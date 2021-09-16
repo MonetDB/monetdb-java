@@ -3333,8 +3333,7 @@ public class MonetConnection
 		 * This method can only be sent if no data has been sent to the server
 		 * yet. After data has been sent, you can still throw an
 		 * {@link IOException} but this will terminate the connection.
-		 * @param errorMessage
-		 * @throws IOException
+		 * @param errorMessage error message to send
 		 */
 		public void sendError(String errorMessage) throws IOException {
 			if (error != null) {
@@ -3346,7 +3345,6 @@ public class MonetConnection
 		/**
 		 * After every {@code chunkSize} bytes, the server gets the opportunity to
 		 * terminate the upload.
-		 * @param chunkSize
 		 */
 		public void setChunkSize(int chunkSize) {
 			this.customChunkSize = chunkSize;
@@ -3356,8 +3354,6 @@ public class MonetConnection
 		 * Get a {@link PrintStream} to write data to.
 		 *
 		 * For text mode uploads, the data MUST be validly UTF-8 encoded.
-		 * @return
-		 * @throws IOException
 		 */
 		public PrintStream getStream() throws IOException {
 			if (error != null) {
@@ -3376,16 +3372,14 @@ public class MonetConnection
 		}
 
 		/**
-		 * Returns true if data or an error has been sent.
-		 * @return
+		 * @return true if data or an error has been sent.
 		 */
 		public boolean hasBeenUsed() {
 			return print != null || error != null;
 		}
 
 		/**
-		 * Get the error that was sent, if any
-		 * @return
+		 * @return the error that was sent, if any
 		 */
 		public String getError() {
 			return error;
@@ -3395,8 +3389,6 @@ public class MonetConnection
 		 * Read from the given input stream and write it to the server.
 		 * 
 		 * For text mode uploads, the data MUST be validly UTF-8 encoded.
-		 * @param inputStream
-		 * @throws IOException
 		 */
 		public void uploadFrom(InputStream inputStream) throws IOException {
 			OutputStream s = getStream();
@@ -3415,7 +3407,6 @@ public class MonetConnection
 		 * @param reader reader to read from
 		 * @param linesToSkip start uploading at line {@code offset}. Value 0 and 1
 		 * both mean upload the whole file, value 2 means skip the first line, etc.q
-		 * @throws IOException
 		 */
 		public void uploadFrom(BufferedReader reader, long linesToSkip) throws IOException {
 			for (int i = 0; i < linesToSkip; i++) {
@@ -3432,7 +3423,6 @@ public class MonetConnection
 		/**
 		 * Read data from the given buffered reader and send it to the server
 		 * @param reader reader to read from
-		 * @throws IOException
 		 */
 		public void uploadFrom(Reader reader) throws IOException {
 			OutputStream s = getStream();
@@ -3481,8 +3471,6 @@ public class MonetConnection
 		 * 
 		 * Note: as of MonetDB version Jul2021 the server always terminates the connection
 		 * when this error is used.  This will probably change in the future.
-		 * @param errorMessage
-		 * @throws IOException
 		 */
 		public void sendError(String errorMessage) throws IOException {
 			if (error != null) {
@@ -3495,8 +3483,6 @@ public class MonetConnection
 		 * Get an {@link InputStream} to read data from.
 		 * 
 		 * Textual data is UTF-8 encoded.
-		 * @return
-		 * @throws IOException
 		 */
 		public InputStream getStream() throws IOException {
 			if (error != null) {
@@ -3511,8 +3497,6 @@ public class MonetConnection
 
 		/**
 		 * Write the data from the server to the given {@link OutputStream}.
-		 * @param stream
-		 * @throws IOException
 		 */
 		public void downloadTo(OutputStream stream) throws IOException {
 			InputStream s = getStream();
@@ -3526,8 +3510,7 @@ public class MonetConnection
 		}
 
 		/**
-		 * Returns true if data has been received or an error has been sent.
-		 * @return
+		 * @return  true if data has been received or an error has been sent.
 		 */
 
 		public boolean hasBeenUsed() {
@@ -3535,8 +3518,7 @@ public class MonetConnection
 		}
 
 		/**
-		 * Get the error that was sent, if any
-		 * @return
+		 * @return the error that was sent, if any
 		 */
 
 		public String getError() {

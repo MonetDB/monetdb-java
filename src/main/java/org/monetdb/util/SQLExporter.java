@@ -427,7 +427,6 @@ public final class SQLExporter extends Exporter {
 	 * format.
 	 *
 	 * @param rs the ResultSet to convert into INSERT INTO statements
-	 * @param absolute if true, dumps table name prepended with schema name
 	 * @throws SQLException if a database related error occurs
 	 */
 	private void resultSetToSQL(final ResultSet rs)

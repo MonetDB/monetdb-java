@@ -77,7 +77,7 @@ public class MonetCallableStatement
 	 * which deals with most of the required stuff of this class.
 	 *
 	 * @param connection the connection that created this Statement
-	 * @param resultSetType type of {@link ResultSet} to produce
+	 * @param resultSetType type of {@link java.sql.ResultSet} to produce
 	 * @param resultSetConcurrency concurrency of ResultSet to produce
 	 * @param callQuery - an SQL CALL statement that may contain one or more '?' parameter placeholders.
 	 *	Typically this statement is specified using JDBC call escape syntax:

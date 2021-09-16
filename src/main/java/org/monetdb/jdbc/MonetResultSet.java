@@ -1267,7 +1267,7 @@ public class MonetResultSet
 
 			/**
 			 * A private utility method to check validity of column index number
-			 * @throws an SQLDataException when invalid column index number
+			 * @throws SQLDataException when invalid column index number
 			 */
 			private final void checkColumnIndexValidity(final int column) throws SQLDataException {
 				if (column < 1 || column > columns.length)
@@ -2717,7 +2717,7 @@ public class MonetResultSet
 	 * The dates are parsed with the given Calendar.
 	 *
 	 * @param cal the Calendar to use/fill when parsing the date/time
-	 * @param col the column to parse
+	 * @param columnIndex the column to parse
 	 * @param type the corresponding java.sql.Types type of the calling function
 	 * @return the fractional seconds (nanos) or -1 if the value is NULL
 	 * @throws SQLException if a database error occurs
