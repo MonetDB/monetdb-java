@@ -24,13 +24,21 @@ public class OnClientExample {
 		int status;
 		try {
 			// Ideally this would not be hardcoded..
-			final String dbUrl = "jdbc:monetdb://localhost:55000/banana";
-			final String uploadDir = "/home/jvr/mydata";
-			final boolean filesAreUtf8 = false;
+			final String dbUrl = "jdbc:monetdb://localhost:50000/demo";
 			final String userName = "monetdb";
 			final String password = "monetdb";
+			final String uploadDir = "/home/jvr/mydata";
+			final boolean filesAreUtf8 = false;
+			String[] queries = {
+					"DROP TABLE IF EXISTS mytable",
+					"CREATE TABLE mytable(i INT, t TEXT)",
+					"COPY INTO mytable FROM 'generated.csv' ON CLIENT",
+					"COPY 20 RECORDS OFFSET 5 INTO mytable FROM 'generated.csv' ON CLIENT",
+					"COPY INTO mytable FROM 'nonexistentfilethatdoesnotexist.csv' ON CLIENT",
+					"SELECT COUNT(*) FROM mytable",
+			};
 
-			status = run(dbUrl, userName, password, uploadDir, filesAreUtf8);
+			status = run(dbUrl, userName, password, uploadDir, filesAreUtf8, queries);
 
 		} catch (Exception e) {
 			status = 1;
@@ -39,7 +47,7 @@ public class OnClientExample {
 		System.exit(status);
 	}
 
-	private static int run(String dbUrl, String userName, String password, String uploadDir, boolean filesAreUtf8) throws ClassNotFoundException, SQLException {
+	private static int run(String dbUrl, String userName, String password, String uploadDir, boolean filesAreUtf8, String[] queries) throws ClassNotFoundException, SQLException {
 		int status = 0;
 
 		// Connect
@@ -50,29 +58,20 @@ public class OnClientExample {
 		MyUploader handler = new MyUploader(uploadDir, filesAreUtf8);
 		conn.unwrap(MonetConnection.class).setUploadHandler(handler);
 
-		// Run some SQL statements involving ON CLIENT
-		String[] queries = {
-				"DROP TABLE IF EXISTS bar",
-				"CREATE TABLE bar(i INT, t TEXT)",
-				"COPY INTO bar FROM 'generated.csv' ON CLIENT",
-				"COPY INTO bar FROM 'file.csv' ON CLIENT",
-				// following statement will run even if file.csv does not exist
-				"SELECT COUNT(*) FROM bar",
-		};
 		Statement stmt = conn.createStatement();
 		for (String q : queries) {
 			System.out.println(q);
 			try {
-				stmt.execute(q);
-				ResultSet rs = stmt.getResultSet();
-				if (rs == null) {
-					System.out.printf("  OK, %d rows updated%n", stmt.getUpdateCount());
-				} else {
+				boolean hasResultSet = stmt.execute(q);
+				if (hasResultSet) {
+					ResultSet rs = stmt.getResultSet();
 					long count = 0;
 					while (rs.next()) {
 						count++;
 					}
 					System.out.printf("  OK, returned %d rows%n", count);
+				} else {
+					System.out.printf("  OK, updated %d rows%n", stmt.getUpdateCount());
 				}
 			} catch (SQLNonTransientException e) {
 				throw e;
@@ -80,6 +79,7 @@ public class OnClientExample {
 				System.out.println("  => SQL ERROR " + e.getMessage());
 				status = 1;
 			}
+
 		}
 
 		return status;
@@ -89,6 +89,7 @@ public class OnClientExample {
 	private static class MyUploader implements UploadHandler {
 		private final Path uploadDir;
 		private final boolean filesAreUtf8;
+		private boolean stopUploading = false;
 
 		public MyUploader(String uploadDir, boolean filesAreUtf8) {
 			this.uploadDir = FileSystems.getDefault().getPath(uploadDir).normalize();
@@ -96,39 +97,47 @@ public class OnClientExample {
 		}
 
 		@Override
-		public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
+		public void uploadCancelled() {
+			System.out.println("  CANCELLATION CALLBACK: server cancelled the upload");
+			stopUploading = true;
+		}
 
-			// COPY OFFSET line numbers are 1-based but 0 is also allowed.
-			// Compute the number of lines to skip
+		@Override
+		public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
 
 			// We can upload data read from the file system but also make up our own data
 			if (name.equals("generated.csv")) {
-				uploadGenerated(handle, linesToSkip);
+				uploadGeneratedData(handle, linesToSkip);
 				return;
 			}
 
 			// Validate the path, demonstrating two ways of dealing with errors
 			Path path = securityCheck(name);
 			if (path == null || !Files.exists(path)) {
-				// This makes the COPY command fail but keeps the connection alive.
-				// Can only be used if we haven't sent any data yet
+				// This makes the COPY command fail but keeps the connection
+				// alive. Can only be used if we haven't sent any data yet
 				handle.sendError("Invalid path");
 				return;
 			}
 			if (!Files.isReadable(path)) {
-				// As opposed to handle.sendError(), throwing an IOException ends the whole connection.
+				// As opposed to handle.sendError(), we can throw an IOException
+				// at any time. Unfortunately, the file upload protocol does not
+				// provide a way to indicate to the server that the data sent so
+				// far is incomplete, so for the time being throwing an
+				// IOException from {@handleUpload} terminates the connection.
 				throw new IOException("Unreadable: " + path);
 			}
 
 			boolean binary = !textMode;
 			if (binary) {
-				uploadBinary(handle, path);
+				uploadAsBinary(handle, path);
 			} else if (linesToSkip == 0 && filesAreUtf8) {
-				// Avoid unnecessary character set conversions by pretending it's binary
-				uploadBinary(handle, path);
+				// Avoid unnecessary UTF-8 -> Java String -> UTF-8 conversions
+				// by pretending the data is binary.
+				uploadAsBinary(handle, path);
 			} else {
 				// Charset and skip handling really necessary
-				uploadTextFile(handle, path, linesToSkip);
+				uploadAsText(handle, path, linesToSkip);
 			}
 		}
 
@@ -141,15 +150,29 @@ public class OnClientExample {
 			}
 		}
 
-		private void uploadGenerated(MonetConnection.Upload handle, long toSkip) throws IOException {
+		private void uploadGeneratedData(MonetConnection.Upload handle, long toSkip) throws IOException {
+			// Set the chunk size to a tiny amount so we can demonstrate
+			// cancellation handling. The default chunk size is one megabyte.
+			// DO NOT DO THIS IN PRODUCTION!
+			handle.setChunkSize(50);
+
+			// Make up some data and upload it.
 			PrintStream stream = handle.getStream();
-			for (long i = toSkip + 1; i <= 100; i++) {
+			long n = 100;
+			System.out.printf("  HANDLER: uploading %d generated lines, numbered %d to %d%n", n - toSkip, toSkip +1, n);
+			long i;
+			for (i = toSkip + 1; i <= n; i++) {
+				if (stopUploading) {
+					System.out.printf("  HANDLER: at line %d we noticed the server asked us to stop sending%n", i);
+					break;
+				}
 				stream.printf("%d|the number is %d%n", i, i);
 			}
+			System.out.println("  HANDLER: done uploading");
 			stream.close();
 		}
 
-		private void uploadTextFile(MonetConnection.Upload handle, Path path, long toSkip) throws IOException {
+		private void uploadAsText(MonetConnection.Upload handle, Path path, long toSkip) throws IOException {
 			BufferedReader reader = Files.newBufferedReader(path);// Converts from system encoding to Java text
 			for (long i = 0; i < toSkip; i++) {
 				reader.readLine();
@@ -157,7 +180,7 @@ public class OnClientExample {
 			handle.uploadFrom(reader); // Converts from Java text to UTF-8 as required by MonetDB
 		}
 
-		private void uploadBinary(MonetConnection.Upload handle, Path path) throws IOException {
+		private void uploadAsBinary(MonetConnection.Upload handle, Path path) throws IOException {
 			// No charset conversion whatsoever..
 			// Use this for binary data or when you are certain the file is UTF-8 encoded.
 			InputStream stream = Files.newInputStream(path);
