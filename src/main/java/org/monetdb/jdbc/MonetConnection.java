@@ -3283,7 +3283,7 @@ public class MonetConnection
 		 *  @param handle Handle to communicate with the server
 		 * @param name Name of the file the server would like to read. Make sure
 		 *             to validate this before reading from the file system
-		 * @param textMode Whether this is text or binary data.
+		 * @param textMode Whether to open the file as text or binary data.
 		 * @param linesToSkip In text mode, number of initial lines to skip.
 		 *                    0 means upload everything, 1 means skip the first line, etc.
 		 *                    Note: this is different from the OFFSET option of the COPY INTO,
