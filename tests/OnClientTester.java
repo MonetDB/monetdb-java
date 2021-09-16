@@ -63,7 +63,7 @@ public final class OnClientTester extends TestRunner {
 		MyUploadHandler handler = new MyUploadHandler(100);
 		conn.setUploadHandler(handler);
 		update("COPY INTO foo FROM 'banana' ON CLIENT", 100);
-		assertEq("handler encountered write error", false, handler.encounteredWriteError());
+		assertEq("cancellation callback called", false, handler.isCancelled());
 		queryInt("SELECT COUNT(*) FROM foo", 100);
 	}
 
@@ -72,7 +72,7 @@ public final class OnClientTester extends TestRunner {
 		MyUploadHandler handler = new MyUploadHandler("immediate error");
 		conn.setUploadHandler(handler);
 		expectError("COPY INTO foo FROM 'banana' ON CLIENT", "immediate error");
-		assertEq("handler encountered write error", false, handler.encounteredWriteError());
+		assertEq("cancellation callback called", false, handler.isCancelled());
 		queryInt("SELECT COUNT(*) FROM foo", 0);
 	}
 
@@ -81,7 +81,7 @@ public final class OnClientTester extends TestRunner {
 		MyUploadHandler handler = new MyUploadHandler(100);
 		conn.setUploadHandler(handler);
 		update("COPY OFFSET 0 INTO foo FROM 'banana' ON CLIENT", 100);
-		assertEq("handler encountered write error", false, handler.encounteredWriteError());
+		assertEq("cancellation callback called", false, handler.isCancelled());
 		queryInt("SELECT MIN(i) FROM foo", 1);
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
@@ -91,7 +91,7 @@ public final class OnClientTester extends TestRunner {
 		MyUploadHandler handler = new MyUploadHandler(100);
 		conn.setUploadHandler(handler);
 		update("COPY OFFSET 1 INTO foo FROM 'banana' ON CLIENT", 100);
-		assertEq("handler encountered write error", false, handler.encounteredWriteError());
+		assertEq("cancellation callback called", false, handler.isCancelled());
 		queryInt("SELECT MIN(i) FROM foo", 1);
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
@@ -101,7 +101,7 @@ public final class OnClientTester extends TestRunner {
 		MyUploadHandler handler = new MyUploadHandler(100);
 		conn.setUploadHandler(handler);
 		update("COPY OFFSET 5 INTO foo FROM 'banana' ON CLIENT", 96);
-		assertEq("handler encountered write error", false, handler.encounteredWriteError());
+		assertEq("cancellation callback called", false, handler.isCancelled());
 		queryInt("SELECT MIN(i) FROM foo", 5);
 		queryInt("SELECT MAX(i) FROM foo", 100);
 	}
@@ -111,6 +111,7 @@ public final class OnClientTester extends TestRunner {
 		MyUploadHandler handler = new MyUploadHandler(100);
 		conn.setUploadHandler(handler);
 		update("COPY 10 RECORDS INTO foo FROM 'banana' ON CLIENT", 10);
+		assertEq("cancellation callback called", true, handler.isCancelled());
 		assertEq("handler encountered write error", true, handler.encounteredWriteError());
 		// Server stopped reading after 10 rows. Will we stay in sync?
 		queryInt("SELECT COUNT(i) FROM foo", 10);
@@ -149,7 +150,7 @@ public final class OnClientTester extends TestRunner {
 		conn.setUploadHandler(handler);
 		handler.setChunkSize(1024 * 1024);
 		update("COPY INTO foo FROM 'banana' ON CLIENT", n);
-		assertEq("handler encountered write error", false, handler.encounteredWriteError());
+		assertEq("cancellation callback called", false, handler.isCancelled());
 		queryInt("SELECT COUNT(DISTINCT i) FROM foo", n);
 	}
 
@@ -213,7 +214,7 @@ public final class OnClientTester extends TestRunner {
 		MyUploadHandler handler = new MyUploadHandler(100, 50, "i don't like line 50");
 		conn.setUploadHandler(handler);
 		expectError("COPY INTO foo FROM 'banana' ON CLIENT", "i don't like");
-		assertEq("handler encountered write error", false, handler.encounteredWriteError());
+		assertEq("cancellation callback called", false, handler.isCancelled());
 		assertEq("connection is closed", true, conn.isClosed());
 	}
 
@@ -254,7 +255,8 @@ public final class OnClientTester extends TestRunner {
 		private final long rows;
 		private final long errorAt;
 		private final String errorMessage;
-		private boolean encounteredWriteError;
+		private boolean encounteredWriteError = false;
+		private boolean cancelled = false;
 
 		private int chunkSize = 100; // small number to trigger more bugs
 
@@ -274,6 +276,11 @@ public final class OnClientTester extends TestRunner {
 
 		public void setChunkSize(int chunkSize) {
 			this.chunkSize = chunkSize;
+		}
+
+		@Override
+		public void uploadCancelled() {
+			cancelled = true;
 		}
 
 		@Override
@@ -298,6 +305,10 @@ public final class OnClientTester extends TestRunner {
 
 		public Object encounteredWriteError() {
 			return encounteredWriteError;
+		}
+
+		public boolean isCancelled() {
+			return cancelled;
 		}
 	}
 

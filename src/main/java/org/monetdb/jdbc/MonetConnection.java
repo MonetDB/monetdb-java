@@ -3236,7 +3236,7 @@ public class MonetConnection
 		}
 
 		long linesToSkip = offset >= 1 ? offset - 1 : 0;
-		Upload handle = new Upload(server);
+		Upload handle = new Upload(server, uploadHandler::uploadCancelled);
 		boolean wasFaking = server.setInsertFakePrompts(false);
 		try {
 			uploadHandler.handleUpload(handle, path, textMode, linesToSkip);
@@ -3290,6 +3290,13 @@ public class MonetConnection
 		 *                    where both 0 and 1 mean 'upload everything'
 		 */
 		void handleUpload(Upload handle, String name, boolean textMode, long linesToSkip) throws IOException;
+
+		/**
+		 * Called when the upload is cancelled halfway by the server.
+		 *
+		 * The default implementation does nothing.
+		 */
+		default void uploadCancelled() {}
 	}
 
 	/**
@@ -3316,12 +3323,14 @@ public class MonetConnection
 	 */
 	public static class Upload {
 		private final MapiSocket server;
+		private final Runnable cancellationCallback;
 		private PrintStream print = null;
 		private String error = null;
 		private int customChunkSize = -1;
 
-		Upload(MapiSocket server) {
+		Upload(MapiSocket server, Runnable cancellationCallback) {
 			this.server = server;
+			this.cancellationCallback = cancellationCallback;
 		}
 
 		/**
@@ -3362,6 +3371,7 @@ public class MonetConnection
 			if (print == null) {
 				try {
 					MapiSocket.UploadStream up = customChunkSize >= 0 ? server.uploadStream(customChunkSize) : server.uploadStream();
+					up.setCancellationCallback(cancellationCallback);
 					print = new PrintStream(up, false, "UTF-8");
 					up.write('\n');
 				} catch (UnsupportedEncodingException e) {

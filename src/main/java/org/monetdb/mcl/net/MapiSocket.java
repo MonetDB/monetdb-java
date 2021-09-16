@@ -1233,6 +1233,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		private boolean serverCancelled = false;
 		private int chunkLeft;
 		private byte[] promptBuffer;
+		private Runnable cancellationCallback = null;
 
 		/** Create an UploadStream with the given chunk size */
 		UploadStream(int chunkSize) {
@@ -1250,6 +1251,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		/** Create an UploadStream with the default chunk size */
 		UploadStream() {
 			this(DEFAULT_CHUNK_SIZE);
+		}
+
+		/** Set a callback to be invoked if the server cancels the upload
+		 */
+		public void setCancellationCallback(Runnable cancellationCallback) {
+			this.cancellationCallback = cancellationCallback;
 		}
 
 		@Override
@@ -1345,6 +1352,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					// Note, if the caller is calling print methods instead of write, the IO exception gets hidden.
 					// This is unfortunate but there's nothing we can do about it.
 					serverCancelled = true;
+					if (cancellationCallback != null) {
+						cancellationCallback.run();
+					}
 					throw new IOException("Server aborted the upload");
 				default:
 					throw new IOException("Expected MORE/DONE from server, got " + lineType);
