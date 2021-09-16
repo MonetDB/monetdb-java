@@ -22,6 +22,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -470,12 +471,10 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				}
 				try {
 					final MessageDigest md = MessageDigest.getInstance(algo);
-					md.update(password.getBytes("UTF-8"));
+					md.update(password.getBytes(StandardCharsets.UTF_8));
 					password = toHex(md.digest());
 				} catch (NoSuchAlgorithmException e) {
-					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e.toString());
-				} catch (UnsupportedEncodingException e) {
-					throw new MCLException("This JVM does not support UTF-8 encoding\n" + e.toString());
+					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e);
 				}
 
 				// proto 7 (finally) used the challenge and works with a
@@ -518,13 +517,11 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				}
 				try {
 					final MessageDigest md = MessageDigest.getInstance(algo);
-					md.update(password.getBytes("UTF-8"));
-					md.update(chaltok[0].getBytes("UTF-8"));	// salt/key
+					md.update(password.getBytes(StandardCharsets.UTF_8));
+					md.update(chaltok[0].getBytes(StandardCharsets.UTF_8));	// salt/key
 					pwhash += toHex(md.digest());
 				} catch (NoSuchAlgorithmException e) {
-					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e.toString());
-				} catch (UnsupportedEncodingException e) {
-					throw new MCLException("This JVM does not support UTF-8 encoding\n" + e.toString());
+					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e);
 				}
 
 				// TODO: some day when we need this, we should store this
@@ -804,7 +801,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				} else {
 					log("TD ", "write block: " + writePos + " bytes", false);
 				}
-				log("TX ", new String(block, 0, writePos, "UTF-8"), true);
+				log("TX ", new String(block, 0, writePos, StandardCharsets.UTF_8), true);
 			}
 
 			writePos = 0;
@@ -922,7 +919,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					if (off > 0) {
 						if (debug) {
 							log("RD ", "the following incomplete block was received:", false);
-							log("RX ", new String(b, 0, off, "UTF-8"), true);
+							log("RX ", new String(b, 0, off, StandardCharsets.UTF_8), true);
 						}
 						throw new IOException("Read from " +
 								con.getInetAddress().getHostName() + ":" +
@@ -993,7 +990,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				return -1;
 
 			if (debug)
-				log("RX ", new String(block, 0, blockLen, "UTF-8"), true);
+				log("RX ", new String(block, 0, blockLen, StandardCharsets.UTF_8), true);
 
 			// if this is the last block, make it end with a newline and prompt
 			if (wasEndBlock) {
@@ -1024,7 +1021,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			}
 
 			if (debug)
-				log("RX ", new String(block, readPos, 1, "UTF-8"), true);
+				log("RX ", new String(block, readPos, 1, StandardCharsets.UTF_8), true);
 
 			return (int)block[readPos++];
 		}
