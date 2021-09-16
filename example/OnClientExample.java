@@ -21,7 +21,7 @@ import java.sql.*;
 public class OnClientExample {
 
 	public static void main(String[] args) {
-		int status = 0;
+		int status;
 		try {
 			// Ideally this would not be hardcoded..
 			final String dbUrl = "jdbc:monetdb://localhost:55000/banana";

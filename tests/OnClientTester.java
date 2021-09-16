@@ -53,7 +53,7 @@ public final class OnClientTester extends TestRunner {
 			System.exit(1);
 	}
 
-	protected void prepare() throws SQLException {
+	void prepare() throws SQLException {
 		execute("DROP TABLE IF EXISTS foo");
 		execute("CREATE TABLE foo (i INT, t TEXT)");
 	}
@@ -359,10 +359,6 @@ public final class OnClientTester extends TestRunner {
 
 		public int countAttempts() {
 			return attempts;
-		}
-
-		public int countBytes() {
-			return bytesSeen;
 		}
 
 		public int lineCount() {

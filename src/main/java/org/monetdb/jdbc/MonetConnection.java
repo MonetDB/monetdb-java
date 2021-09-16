@@ -2135,7 +2135,7 @@ public class MonetConnection
 		 * @return a non-null String if the line is invalid,
 		 *         or additional lines are not allowed.
 		 */
-		public abstract String addLine(String line, LineType linetype);
+		String addLine(String line, LineType linetype);
 
 		/**
 		 * Returns whether this Response expects more lines to be added
@@ -2143,7 +2143,7 @@ public class MonetConnection
 		 *
 		 * @return true if a next line should be added, false otherwise
 		 */
-		public abstract boolean wantsMore();
+		boolean wantsMore();
 
 		/**
 		 * Indicates that no more header lines will be added to this
@@ -2160,7 +2160,7 @@ public class MonetConnection
 		 * Instructs the Response implementation to close and do the
 		 * necessary clean up procedures.
 		 */
-		public abstract void close();
+		void close();
 	}
 	// }}}
 
@@ -3050,7 +3050,7 @@ public class MonetConnection
 									if (rowcount < tuplecount) {
 										if (rsresponses == null)
 											rsresponses = new HashMap<Integer, ResultSetResponse>();
-										rsresponses.put(Integer.valueOf(id), (ResultSetResponse) res);
+										rsresponses.put(id, (ResultSetResponse) res);
 									}
 								} break;
 								case StartOfHeaderParser.Q_UPDATE:
@@ -3078,7 +3078,7 @@ public class MonetConnection
 									final int offset = sohp.getNextAsInt();
 									final ResultSetResponse t;
 									if (rsresponses != null)
-										t = rsresponses.get(Integer.valueOf(id));
+										t = rsresponses.get(id);
 									else
 										t = null;
 									if (t == null) {
@@ -3275,7 +3275,7 @@ public class MonetConnection
 	 * To be registered with {@link MonetConnection#setUploadHandler(UploadHandler)}
 	 */
 
-	public static interface UploadHandler {
+	public interface UploadHandler {
 		/**
 		 * Called if the server sends a request to read file data.
 		 *
@@ -3297,7 +3297,7 @@ public class MonetConnection
 	 *
 	 * To be registered with {@link MonetConnection#setDownloadHandler(DownloadHandler)}
 	 */
-	public static interface DownloadHandler {
+	public interface DownloadHandler {
 		/**
 		 * Called if the server sends a request to write a file.
 		 *

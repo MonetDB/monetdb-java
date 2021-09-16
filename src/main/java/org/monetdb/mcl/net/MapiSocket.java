@@ -346,26 +346,32 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 						int pos = args[i].indexOf("=");
 						if (pos > 0) {
 							tmp = args[i].substring(0, pos);
-							if (tmp.equals("database")) {
-								tmp = args[i].substring(pos + 1);
-								if (!tmp.equals(database)) {
-									warns.add("redirect points to different database: " + tmp);
-									setDatabase(tmp);
-								}
-							} else if (tmp.equals("language")) {
-								tmp = args[i].substring(pos + 1);
-								warns.add("redirect specifies use of different language: " + tmp);
-								setLanguage(tmp);
-							} else if (tmp.equals("user")) {
-								tmp = args[i].substring(pos + 1);
-								if (!tmp.equals(user))
-									warns.add("ignoring different username '" + tmp + "' set by " +
-											"redirect, what are the security implications?");
-							} else if (tmp.equals("password")) {
-								warns.add("ignoring different password set by redirect, " +
-										"what are the security implications?");
-							} else {
-								warns.add("ignoring unknown argument '" + tmp + "' from redirect");
+							switch (tmp) {
+								case "database":
+									tmp = args[i].substring(pos + 1);
+									if (!tmp.equals(database)) {
+										warns.add("redirect points to different database: " + tmp);
+										setDatabase(tmp);
+									}
+									break;
+								case "language":
+									tmp = args[i].substring(pos + 1);
+									warns.add("redirect specifies use of different language: " + tmp);
+									setLanguage(tmp);
+									break;
+								case "user":
+									tmp = args[i].substring(pos + 1);
+									if (!tmp.equals(user))
+										warns.add("ignoring different username '" + tmp + "' set by " +
+												"redirect, what are the security implications?");
+									break;
+								case "password":
+									warns.add("ignoring different password set by redirect, " +
+											"what are the security implications?");
+									break;
+								default:
+									warns.add("ignoring unknown argument '" + tmp + "' from redirect");
+									break;
 							}
 						} else {
 							warns.add("ignoring illegal argument from redirect: " + args[i]);
@@ -456,18 +462,23 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				String pwhash = chaltok[5];
 				/* NOTE: Java doesn't support RIPEMD160 :( */
 				/* see: https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#MessageDigest */
-				if (pwhash.equals("SHA512")) {
-					algo = "SHA-512";
-				} else if (pwhash.equals("SHA384")) {
-					algo = "SHA-384";
-				} else if (pwhash.equals("SHA256")) {
-					algo = "SHA-256";
-				/* NOTE: Java 7 doesn't support SHA-224. Java 8 does but we have not tested it. It is also not requested yet. */
-				} else if (pwhash.equals("SHA1")) {
-					algo = "SHA-1";
-				} else {
-					/* Note: MD5 has been deprecated by security experts and support is removed from Oct 2020 release */
-					throw new MCLException("Unsupported password hash: " + pwhash);
+				switch (pwhash) {
+					case "SHA512":
+						algo = "SHA-512";
+						break;
+					case "SHA384":
+						algo = "SHA-384";
+						break;
+					case "SHA256":
+						algo = "SHA-256";
+						/* NOTE: Java 7 doesn't support SHA-224. Java 8 does but we have not tested it. It is also not requested yet. */
+						break;
+					case "SHA1":
+						algo = "SHA-1";
+						break;
+					default:
+						/* Note: MD5 has been deprecated by security experts and support is removed from Oct 2020 release */
+						throw new MCLException("Unsupported password hash: " + pwhash);
 				}
 				try {
 					final MessageDigest md = MessageDigest.getInstance(algo);
@@ -822,9 +833,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 		@Override
 		public void write(final byte[] b, int off, int len) throws IOException {
-			int t = 0;
 			while (len > 0) {
-				t = BLOCK - writePos;
+				int t = BLOCK - writePos;
 				if (len > t) {
 					System.arraycopy(b, off, block, writePos, t);
 					off += t;
@@ -1066,9 +1076,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		@Override
 		public long skip(final long n) throws IOException {
 			long skip = n;
-			int t = 0;
 			while (skip > 0) {
-				t = available();
+				int t = available();
 				if (skip > t) {
 					skip -= t;
 					readPos += t;

@@ -37,7 +37,7 @@ public class TestRunner {
 			watchDog.disable();
 	}
 
-	protected int runTests(String testPrefix) throws SQLException, NoSuchMethodException {
+	protected int runTests(String testPrefix) throws SQLException {
 		int testCount = 0;
 		int skippedCount = 0;
 		ArrayList<String> failures = new ArrayList<>();
@@ -218,7 +218,7 @@ public class TestRunner {
 		assertEq("Update count", expectedUpdateCount, updateCount);
 	}
 
-	protected void expectError(String query, String expectedError) throws SQLException, Failure {
+	protected void expectError(String query, String expectedError) throws SQLException {
 		try {
 			execute(query);
 		} catch (SQLException e) {
@@ -303,11 +303,6 @@ public class TestRunner {
 
 		synchronized void stop() {
 			started = 0;
-			this.notifyAll();
-		}
-
-		synchronized void kill() {
-			started = -1;
 			this.notifyAll();
 		}
 
