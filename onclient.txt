@@ -26,44 +26,55 @@ these requests from the server:
 	conn.unwrap(MonetConnection.class).setUploadHandler(handler);
 
 Here, MyUploadHandler is an implementation of the interface MonetConnection.UploadHandler,
-whose main component is the method
+which looks like this:
 
-	/**
-	 * Called if the server sends a request to write a file.
-	 *
-	 * Use the given handle to receive data or send errors to the server.
-	 *
-	 * @param handle Handle to communicate with the server
-	 * @param name Name of the file the server would like to read. Make sure to
-	 *             validate this before reading from the file system
-	 * @param textMode Whether this is text or binary data.
-	 */
-	void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, int offset)
-			throws IOException;
+	public interface UploadHandler {
+		/**
+		 * Called if the server sends a request to read file data.
+		 *
+		 * Use the given handle to receive data or send errors to the server.
+		 *  @param handle Handle to communicate with the server
+		 * @param name Name of the file the server would like to read. Make sure
+		 *             to validate this before reading from the file system
+		 * @param textMode Whether to open the file as text or binary data.
+		 * @param linesToSkip In text mode, number of initial lines to skip.
+		 *                    0 means upload everything, 1 means skip the first line, etc.
+		 *                    Note: this is different from the OFFSET option of the COPY INTO,
+		 *                    where both 0 and 1 mean 'upload everything'
+		 */
+		void handleUpload(Upload handle, String name, boolean textMode, long linesToSkip) throws IOException;
 
-In your implementation of this method, you can use the 'handle' object to
+		/**
+		 * Called when the upload is cancelled halfway by the server.
+		 *
+		 * The default implementation does nothing.
+		 */
+		default void uploadCancelled() {}
+	}
+
+In your implementation of handleUpload(), you can use the 'handle' object to
 communicate with the server, for example:
 
-- PrintStream getStream() to obtain a stream object to which you can write.
+- handle.getStream() to obtain a stream object to which you can write.
   This is useful if you want to generate the data on the fly.
 
 - void uploadFrom(InputStream stream) to have the JDBC driver read data from the
   stream and send it to the server as-is.  For text mode uploads this means the
   text must be UTF-8 encoded.
 
-- void uploadFrom(Reader reader) to have the JDBC driver read text from the given
+- handle.uploadFrom(Reader reader) to have the JDBC driver read text from the given
   Reader and upload it.
 
-- void uploadFrom(BufferedReader reader, int offset) to have the JDBC driver read from
+- handle.uploadFrom(BufferedReader reader, int offset) to have the JDBC driver read from
   the given BufferedReader, and upload the text starting at line 'offset'. Typically
   you would use the offset passed to handleUpload in parameter 'offset'.
 
-- void sendError(String errorMessage) to refuse the upload.
+- handle.sendError(String errorMessage) to refuse the upload.
 
 If you use sendError to refuse the upload, the COPY INTO statement will fail but
 the connection will remain usable. On the other hand, if you implementation of
 handleUpload throws an IO Exception, the connection will be closed because there
-is no way to signal errors to the server once the transfer has begun.
+is currently no way to signal errors to the server once the transfer has begun.
 
 The interface for downloading is similar to that for uploading.
 
