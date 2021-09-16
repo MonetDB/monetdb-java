@@ -56,32 +56,28 @@ public enum LineType {
 	 * Look at a mapi message and decide the LineType
 	 */
 	public static final LineType classify(String line) {
-		if (line == null) {
-			return UNKNOWN;
+		if (line != null) {
+			if (line.length() > 1) {
+				return classify(line.charAt(0), line.charAt(1));
+			} else if (line.length() == 1) {
+				return classify(line.charAt(0), 0);
+			}
 		}
-		if (line.length() > 1) {
-			return classify(line.charAt(0), line.charAt(1));
-		} else if (line.length() == 1) {
-			return classify(line.charAt(0), 0);
-		} else {
-			return UNKNOWN;
-		}
+		return UNKNOWN;
 	}
 
 	/**
 	 * Look at a mapi message and decide the LineType
 	 */
 	public static final LineType classify(byte[] line) {
-		if (line == null) {
-			return UNKNOWN;
+		if (line != null) {
+			if (line.length > 1) {
+				return classify(line[0], line[1]);
+			} else if (line.length == 1) {
+				return classify(line[0], 0);
+			}
 		}
-		if (line.length > 1) {
-			return classify(line[0], line[1]);
-		} else if (line.length == 1) {
-			return classify(line[0], 0);
-		} else {
-			return UNKNOWN;
-		}
+		return UNKNOWN;
 	}
 
 	private static final LineType classify(int ch0, int ch1) {

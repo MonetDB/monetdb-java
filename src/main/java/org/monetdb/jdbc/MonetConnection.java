@@ -3020,7 +3020,7 @@ public class MonetConnection
 					// }}} set reply size
 
 					// send query to the server
-					String queryLine = (templ[0] == null ? "" : templ[0]) + query + (templ[1] == null ? "" : templ[1]);
+					String queryLine = templ[0] + query + templ[1];
 					out.writeLine(queryLine);
 
 					// go for new results
@@ -3163,7 +3163,7 @@ public class MonetConnection
 							break;
 						default:	// Yeah... in Java this is correct!
 							// we have something we don't expect/understand, let's make it an error message
-							tmpLine = String.format("!M0M10!protocol violation, unexpected %s line: %s", linetype, tmpLine);
+							tmpLine = "!M0M10!protocol violation, unexpected " + linetype + " line: " + tmpLine;
 							// don't break; fall through...
 						case ERROR:
 							// read everything till the prompt (should be
@@ -3211,22 +3211,23 @@ public class MonetConnection
 	// }}}
 
 	private String handleTransfer(String transferCommand) throws IOException {
-		String[] parts = transferCommand.split(" ", 3);
-		if (transferCommand.startsWith("r ") && parts.length == 3) {
-			final long offset;
-			try {
-				offset = Long.parseLong(parts[1]);
-			} catch (NumberFormatException e) {
-				return e.toString();
+		if (transferCommand.startsWith("r ")) {
+			String[] parts = transferCommand.split(" ", 3);
+			if (parts.length == 3) {
+				final long offset;
+				try {
+					offset = Long.parseLong(parts[1]);
+				} catch (NumberFormatException e) {
+					return e.toString();
+				}
+				return handleUpload(parts[2], true, offset);
 			}
-			return handleUpload(parts[2], true, offset);
 		} else if (transferCommand.startsWith("rb ")) {
 			return handleUpload(transferCommand.substring(3), false, 0);
 		} else if (transferCommand.startsWith("w ")) {
 			return handleDownload(transferCommand.substring(2));
-		} else {
-			return "JDBC does not support this file transfer yet: " + transferCommand;
 		}
+		return "JDBC does not support this file transfer yet: " + transferCommand;
 	}
 
 	private String handleUpload(String path, boolean textMode, long offset) throws IOException {
@@ -3240,8 +3241,7 @@ public class MonetConnection
 		try {
 			uploadHandler.handleUpload(handle, path, textMode, linesToSkip);
 			if (!handle.hasBeenUsed()) {
-				String message = String.format("Call to %s.handleUpload for path '%s' sent neither data nor an error message",
-						uploadHandler.getClass().getCanonicalName(), path);
+				String message = "Call to " + uploadHandler.getClass().getCanonicalName() + ".handleUpload for path '" + path + "' sent neither data nor an error message";
 				throw new IOException(message);
 			}
 			handle.close();
@@ -3260,8 +3260,7 @@ public class MonetConnection
 		try {
 			downloadHandler.handleDownload(handle, path, true);
 			if (!handle.hasBeenUsed()) {
-				String message = String.format("Call to %s.handleDownload for path '%s' sent neither data nor an error message",
-						downloadHandler.getClass().getCanonicalName(), path);
+				String message = "Call to " + downloadHandler.getClass().getCanonicalName() + ".handleDownload for path '" + path + "' sent neither data nor an error message";
 				throw new IOException(message);
 			}
 		} finally {

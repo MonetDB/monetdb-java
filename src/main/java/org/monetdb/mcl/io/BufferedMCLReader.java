@@ -14,10 +14,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 
-import static org.monetdb.mcl.io.LineType.ERROR;
-import static org.monetdb.mcl.io.LineType.PROMPT;
-import static org.monetdb.mcl.io.LineType.UNKNOWN;
-
 /**
  * Read text from a character-input stream, buffering characters so as
  * to provide a means for efficient reading of characters, arrays and
@@ -47,7 +43,7 @@ import static org.monetdb.mcl.io.LineType.UNKNOWN;
 public final class BufferedMCLReader extends BufferedReader {
 
 	/** The type of the last line read */
-	private LineType lineType = UNKNOWN;
+	private LineType lineType = LineType.UNKNOWN;
 
 	/**
 	 * Create a buffering character-input stream that uses a
@@ -93,7 +89,7 @@ public final class BufferedMCLReader extends BufferedReader {
 	public String readLine() throws IOException {
 		String r = super.readLine();
 		setLineType(r);
-		if (lineType == ERROR && r != null && !r.matches("^![0-9A-Z]{5}!.+")) {
+		if (lineType == LineType.ERROR && r != null && !r.matches("^![0-9A-Z]{5}!.+")) {
 			r = "!22000!" + r.substring(1);
 		}
 		return r;
@@ -138,11 +134,11 @@ public final class BufferedMCLReader extends BufferedReader {
 		final StringBuilder ret = new StringBuilder(128);
 		String tmp;
 
-		while (lineType != PROMPT) {
+		while (lineType != LineType.PROMPT) {
 			tmp = readLine();
 			if (tmp == null)
 				throw new IOException("Connection to server lost!");
-			if (lineType == ERROR)
+			if (lineType == LineType.ERROR)
 				ret.append('\n').append(tmp.substring(1));
 		}
 		return ret.length() == 0 ? null : ret.toString().trim();
