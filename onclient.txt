@@ -1,4 +1,4 @@
-ON CLIENT support
+ON CLIENT support in the MonetDB JDBC driver
 
 MonetDB provides the nonstandard COPY INTO statement to perform bulk inserts and
 retrievals, see also
