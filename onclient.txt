@@ -1,4 +1,4 @@
-COPY ... ON CLIENT support in the MonetDB JDBC driver nad JdbcClient program.
+COPY ... ON CLIENT support in the MonetDB JDBC driver and JdbcClient program.
 
 MonetDB provides the nonstandard COPY INTO statement to perform bulk inserts and
 retrievals, see also
@@ -87,4 +87,5 @@ Class org.monetdb.util.FileTransferHandler provides a default implementation of
 both MonetConnection.UploadHandler and MonetConnection.DownloadHandler.  You
 pass it a directory name and a flag indicating whether the contents of that
 directory can be assumed to be UTF-8 encoded. It is intended for situations
-where  you do not need to generate or transform data while uploading.
+where you do not need to generate or transform data while uploading.
+
