@@ -9,8 +9,10 @@
 package org.monetdb.client;
 
 import org.monetdb.jdbc.MonetDriver;
+import org.monetdb.jdbc.MonetConnection;
 import org.monetdb.util.CmdLineOpts;
 import org.monetdb.util.Exporter;
+import org.monetdb.util.FileTransferHandler;
 import org.monetdb.util.MDBvalidator;
 import org.monetdb.util.OptionsException;
 import org.monetdb.util.SQLExporter;
@@ -336,6 +338,12 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 			// SQL language
 			dbmd = null;
 		}
+
+		// register file data uploadHandler to allow support for: COPY INTO mytable FROM 'data.csv' ON CLIENT;
+		FileTransferHandler FThandler = new FileTransferHandler("", true);
+		con.unwrap(MonetConnection.class).setUploadHandler(FThandler);
+		// register file data downloadHandler to allow support for: COPY select_query INTO 'data.csv' ON CLIENT;
+		con.unwrap(MonetConnection.class).setDownloadHandler(FThandler);
 
 		stmt = con.createStatement();	// is used by processInteractive(), processBatch(), doDump()
 

@@ -1,8 +1,9 @@
-ON CLIENT support in the MonetDB JDBC driver
+COPY ... ON CLIENT support in the MonetDB JDBC driver nad JdbcClient program.
 
 MonetDB provides the nonstandard COPY INTO statement to perform bulk inserts and
 retrievals, see also
-https://www.monetdb.org/Documentation/ServerAdministration/LoadingBulkData.
+https://www.monetdb.org/Documentation/ServerAdministration/LoadingBulkData/CSVBulkLoads
+https://www.monetdb.org/Documentation/ServerAdministration/ExportingBulkData
 
 By default, COPY INTO accesses files on the server but it also has a mode to
 access files on the client.  This is supported by the command line tool
@@ -16,7 +17,11 @@ of file transfers.  If you execute, for example,
 the server will send a request for file 'data.csv' to the JDBC driver.
 By default, the JDBC driver will refuse with an error message:
 
-	'No file upload handler has been registered with the JDBC driver'.
+	'No file upload handler has been registered with the JDBC driver'
+
+or in JdbcClient:
+	'Error [22000] !HY000!data.csv: No file upload handler has been registered with the JDBC driver;
+	'Error [22000] cannot transfer files from client'
 
 This is for security reasons.  However, you can register a callback to handle
 these requests from the server:
