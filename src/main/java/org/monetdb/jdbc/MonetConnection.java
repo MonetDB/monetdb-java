@@ -1675,6 +1675,9 @@ public class MonetConnection
 
 	//== end methods of interface java.sql.Connection
 
+
+	//== internal helper methods which do not belong to the JDBC interface
+
 	/**
 	 * Registers a {@link UploadHandler} to support for example COPY ON CLIENT
 	 *
@@ -1705,9 +1708,6 @@ public class MonetConnection
 	public DownloadHandler getDownloadHandler() {
 		return downloadHandler;
 	}
-
-
-	//== internal helper methods which do not belong to the JDBC interface
 
 	/**
 	 * Local helper method to test whether the Connection object is closed
@@ -2153,7 +2153,7 @@ public class MonetConnection
 		 *         consistent or sufficient.
 		 */
 		/* MvD: disabled not used/needed code
-		public abstract void complete() throws SQLException;
+		void complete() throws SQLException;
 		*/
 
 		/**
@@ -3337,7 +3337,7 @@ public class MonetConnection
 		 * Send an error message to the server
 		 *
 		 * The server will generally let the currently executing statement fail
-		 * with this error message. The connection will remain usable. 
+		 * with this error message. The connection will remain usable.
 		 *
 		 * This method can only be sent if no data has been sent to the server
 		 * yet. After data has been sent, you can still throw an
@@ -3397,7 +3397,7 @@ public class MonetConnection
 
 		/**
 		 * Read from the given input stream and write it to the server.
-		 * 
+		 *
 		 * For text mode uploads, the data MUST be validly UTF-8 encoded.
 		 */
 		public void uploadFrom(InputStream inputStream) throws IOException {
@@ -3478,7 +3478,7 @@ public class MonetConnection
 		 * This method can only be sent if no data has been received from the server
 		 * yet. After data has been received, you can still throw an
 		 * {@link IOException} but this will terminate the connection.
-		 * 
+		 *
 		 * Note: as of MonetDB version Jul2021 the server always terminates the connection
 		 * when this error is used.  This will probably change in the future.
 		 */
@@ -3491,7 +3491,7 @@ public class MonetConnection
 
 		/**
 		 * Get an {@link InputStream} to read data from.
-		 * 
+		 *
 		 * Textual data is UTF-8 encoded.
 		 */
 		public InputStream getStream() throws IOException {
