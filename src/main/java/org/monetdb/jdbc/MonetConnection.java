@@ -151,10 +151,6 @@ public class MonetConnection
 	/** A cache to reduce the number of DatabaseMetaData objects created by getMetaData() to maximum 1 per connection */
 	private DatabaseMetaData dbmd;
 
-	/** Handlers for ON CLIENT requests */
-	private UploadHandler uploadHandler;
-	private DownloadHandler downloadHandler;
-
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
 	 * current implementation limits itself to storing the given host,
@@ -1678,8 +1674,12 @@ public class MonetConnection
 
 	//== internal helper methods which do not belong to the JDBC interface
 
+	/** Handlers for ON CLIENT requests */
+	private UploadHandler uploadHandler;
+	private DownloadHandler downloadHandler;
+
 	/**
-	 * Registers a {@link UploadHandler} to support for example COPY ON CLIENT
+	 * Registers a {@link UploadHandler} to support for example COPY INTO mytable FROM 'data.csv' ON CLIENT
 	 *
 	 * @param uploadHandler the handler to register, or null to deregister
 	 */
@@ -1694,7 +1694,7 @@ public class MonetConnection
 		return uploadHandler;
 	}
 	/**
-	 * Registers a {@link DownloadHandler} to support for example COPY ON CLIENT
+	 * Registers a {@link DownloadHandler} to support for example COPY select_result INTO 'data.csv' ON CLIENT
 	 *
 	 * @param downloadHandler the handler to register, or null to deregister
 	 */
