@@ -3151,10 +3151,10 @@ public class MonetConnection
 							if (transferCommand != null)
 								error = handleTransfer(transferCommand);
 							else
-								error = "!M0M10!protocol violation, expected transfer command, got nothing";
+								error = "Protocol violation, expected transfer command, got nothing";
 							// Then prepare for the next iteration
 							if (error != null) {
-								out.writeLine("!HY000!" + error + "\n");
+								out.writeLine(error + "\n");
 								error = in.waitForPrompt();
 							} else {
 								tmpLine = in.readLine();
