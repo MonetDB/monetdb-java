@@ -77,8 +77,8 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			handle.sendError("File is not in upload directory");
 			return;
 		}
-		if (!Files.exists(path)) {
-			handle.sendError("File exists: " + name);
+		if (Files.exists(path)) {
+			handle.sendError("File already exists: " + name);
 			return;
 		}
 		OutputStream outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
