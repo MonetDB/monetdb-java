@@ -3260,8 +3260,8 @@ public class MonetConnection
 		try {
 			downloadHandler.handleDownload(handle, path, true);
 			if (!handle.hasBeenUsed()) {
-				String message = "Call to " + downloadHandler.getClass().getCanonicalName() + ".handleDownload for path '" + path + "' sent neither data nor an error message";
-				throw new IOException(message);
+				String message = "Call to " + downloadHandler.getClass().getSimpleName() + ".handleDownload sent neither data nor error";
+				handle.sendError(message);
 			}
 		} finally {
 			handle.close();
