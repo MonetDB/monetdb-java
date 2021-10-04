@@ -21,6 +21,7 @@ public class TestRunner {
 	public static final int VERBOSITY_SHOW_ALL = 2;
 	protected final String jdbcUrl;
 	private final int verbosity;
+	protected String currentTestName;
 	protected final WatchDog watchDog;
 	protected MonetConnection conn;
 	private Statement stmt;
@@ -95,6 +96,7 @@ public class TestRunner {
 	}
 
 	private synchronized boolean runTest(String testName, Method method) throws SQLException {
+		currentTestName = testName;
 		watchDog.setContext("test " + testName);
 		watchDog.setDuration(3_000);
 		outBuffer = new StringWriter();
