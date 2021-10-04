@@ -200,7 +200,7 @@ public class TestRunner {
 		if (expected.equals(actual)) {
 			checked(quantity, actual);
 		} else {
-			fail("Expected <" + quantity + "' to be " + expected + "> got " + actual);
+			fail("Expected <" + quantity + "> to be " + expected + " got " + actual);
 		}
 	}
 

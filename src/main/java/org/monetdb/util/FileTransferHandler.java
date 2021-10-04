@@ -74,7 +74,7 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 	public void handleDownload(MonetConnection.Download handle, String name, boolean textMode) throws IOException {
 		Path path = root.resolve(name).normalize();
 		if (!path.startsWith(root)) {
-			handle.sendError("File is not in upload directory");
+			handle.sendError("File is not in download directory");
 			return;
 		}
 		if (Files.exists(path)) {
@@ -82,5 +82,6 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			return;
 		}
 		OutputStream outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
+		handle.downloadTo(outputStream);
 	}
 }

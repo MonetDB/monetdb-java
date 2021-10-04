@@ -9,10 +9,16 @@
 import org.monetdb.jdbc.MonetConnection;
 import org.monetdb.jdbc.MonetConnection.UploadHandler;
 import org.monetdb.jdbc.MonetConnection.DownloadHandler;
+import org.monetdb.util.FileTransferHandler;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.List;
+
+import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
 public final class OnClientTester extends TestRunner {
 
@@ -249,6 +255,62 @@ public final class OnClientTester extends TestRunner {
 		expectError("COPY (SELECT * FROM sys.generate_series(0,200)) INTO 'banana' ON CLIENT", "download refused");
 		// Exception closes the connection
 		assertEq("connection is closed", conn.isClosed(), true);
+	}
+
+	public void test_FileTransferHandlerUpload() throws IOException, SQLException, Failure {
+		prepare();
+		Path d = getTmpDir(currentTestName);
+		Path f = d.resolve("data.txt");
+		OutputStream s = Files.newOutputStream(f, CREATE_NEW);
+		PrintStream ps = new PrintStream(s, false, "UTF-8");
+		ps.println("1|one");
+		ps.println("2|two");
+		ps.println("3|three");
+		ps.close();
+		conn.setUploadHandler(new FileTransferHandler(d, true));
+		update("COPY INTO foo FROM 'data.txt' ON CLIENT", 3);
+		queryInt("SELECT SUM(i) FROM foo", 6);
+	}
+
+	public void test_FileTransferHandlerUploadRefused() throws IOException, SQLException, Failure {
+		prepare();
+		Path d = getTmpDir(currentTestName);
+		Path f = d.resolve("data.txt");
+		OutputStream s = Files.newOutputStream(f, CREATE_NEW);
+		PrintStream ps = new PrintStream(s, false, "UTF-8");
+		ps.println("1|one");
+		ps.println("2|two");
+		ps.println("3|three");
+		ps.close();
+
+		Path d2 = getTmpDir(currentTestName + "2");
+		conn.setUploadHandler(new FileTransferHandler(d2, false));
+		String quoted = f.toAbsolutePath().toString().replaceAll("'", "''");
+		expectError("COPY INTO foo FROM R'"+ quoted + "' ON CLIENT", "not in upload directory");
+		// connection is still alive
+		queryInt("SELECT SUM(i) FROM foo", 0);
+	}
+
+	public void test_FileTransferHandlerDownload() throws SQLException, Failure, IOException {
+		prepare();
+		update("INSERT INTO foo VALUES (42, 'forty-two')", 1);
+		Path d = getTmpDir(currentTestName);
+		conn.setDownloadHandler(new FileTransferHandler(d, false));
+		update("COPY SELECT * FROM foo INTO 'data.txt' ON CLIENT", -1);
+		List<String> lines = Files.readAllLines(d.resolve("data.txt"));
+		assertEq("lines written", lines.size(), 1);
+		assertEq("line content", lines.get(0), "42|\"forty-two\"");
+	}
+
+	public void test_FileTransferHandlerDownloadRefused() throws SQLException, Failure, IOException {
+		prepare();
+		update("INSERT INTO foo VALUES (42, 'forty-two')", 1);
+		Path d = getTmpDir(currentTestName);
+		Path d2 = getTmpDir(currentTestName + "2");
+		conn.setDownloadHandler(new FileTransferHandler(d2, false));
+		String quoted = d.resolve("data.txt").toAbsolutePath().toString().replaceAll("'", "''");
+		expectError("COPY SELECT * FROM foo INTO R'" + quoted + "' ON CLIENT", "not in download directory");
+
 	}
 
 	static class MyUploadHandler implements UploadHandler {
