@@ -8,10 +8,16 @@
 
 import org.monetdb.jdbc.MonetConnection;
 
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.*;
 import java.util.ArrayList;
 
@@ -27,6 +33,7 @@ public class TestRunner {
 	private Statement stmt;
 	private StringWriter outBuffer;
 	private PrintWriter out;
+	private Path tmpDir = null;
 
 	public TestRunner(String jdbcUrl, int verbosity, boolean watchDogEnabled) {
 		this.jdbcUrl = jdbcUrl;
@@ -250,6 +257,34 @@ public class TestRunner {
 		rs.close();
 		checked("row count", 1);
 		assertEq("query result", expected, result);
+	}
+
+	protected synchronized Path getTmpDir(String name) throws IOException {
+		if (tmpDir == null) {
+			tmpDir = Files.createTempDirectory("testMonetDB");
+			Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+				try {
+					Files.walkFileTree(tmpDir, new SimpleFileVisitor<Path>() {
+						@Override
+						public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException {
+							Files.delete(file);
+							return FileVisitResult.CONTINUE;
+						}
+
+						@Override
+						public FileVisitResult postVisitDirectory(Path dir, IOException exc) throws IOException {
+							Files.delete(dir);
+							return FileVisitResult.CONTINUE;
+						}
+					});
+				} catch (IOException e) {
+					// we do this on a best effort basis
+				}
+			}));
+		}
+		Path p = tmpDir.resolve(name);
+		Files.createDirectory(p);
+		return p;
 	}
 
 	static class Failure extends Exception {
