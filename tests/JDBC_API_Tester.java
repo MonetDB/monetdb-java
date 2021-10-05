@@ -4347,7 +4347,7 @@ final public class JDBC_API_Tester {
 			row++;  // row 8
 			pstmt.setLong(1, (long)row);
 			pstmt.setString(2, "row " + row);
-			pstmt.setObject(3, "+3.1415E-06");
+			pstmt.setObject(3, "[3.1415E-06]");
 			pstmt.setNull(4, 0);
 			try {
 				pstmt.setURL(5, new java.net.URL("https://www.cwi.nl/"));
@@ -4468,8 +4468,8 @@ final public class JDBC_API_Tester {
 				"  }\n" +
 				"}}	null	null	null\n" +
 				"row 7	7	row 7	null	4a148b7d-8d47-4e1e-a21e-09a71abf2215	null	null\n" +
-				"row 8	8	row 8	+3.1415E-06	null	https://www.cwi.nl/	null\n" +
-				"row 9	9	row 9	+3.1415E-06	null	null	127.255.255.255\n" +
+				"row 8	8	row 8	[3.1415E-06]	null	https://www.cwi.nl/	null\n" +
+				"row 9	9	row 9	[3.1415E-06]	null	null	127.255.255.255\n" +
 				"row 10	10	row 10	[{\"menu\": {\n" +
 				"    \"header\": \"SVG Viewer\",\n" +
 				"    \"items\": [\n" +
