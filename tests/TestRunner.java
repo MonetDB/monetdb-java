@@ -30,9 +30,9 @@ public class TestRunner {
 	protected String currentTestName;
 	protected final WatchDog watchDog;
 	protected MonetConnection conn;
-	private Statement stmt;
+	protected Statement stmt;
 	private StringWriter outBuffer;
-	private PrintWriter out;
+	protected PrintWriter out;
 	private Path tmpDir = null;
 
 	public TestRunner(String jdbcUrl, int verbosity, boolean watchDogEnabled) {
@@ -239,7 +239,7 @@ public class TestRunner {
 		}
 	}
 
-	protected void queryInt(String query, int expected) throws SQLException, Failure {
+	protected void assertQueryInt(String query, int expected) throws SQLException, Failure {
 		if (execute(query) == false) {
 			fail("Query does not return a result set");
 		}
@@ -257,6 +257,26 @@ public class TestRunner {
 		rs.close();
 		checked("row count", 1);
 		assertEq("query result", expected, result);
+	}
+
+	protected String queryString(String query) throws SQLException, Failure {
+		if (execute(query) == false) {
+			fail("Query does not return a result set");
+		}
+		ResultSet rs = stmt.getResultSet();
+		ResultSetMetaData metaData = rs.getMetaData();
+		assertEq("column count", 1, metaData.getColumnCount());
+		if (!rs.next()) {
+			fail("Result set is empty");
+		}
+		String result = rs.getString(1);
+		if (rs.next()) {
+			String message = "Result set has more than one row";
+			fail(message);
+		}
+		rs.close();
+		checked("row count", 1);
+		return result;
 	}
 
 	protected synchronized Path getTmpDir(String name) throws IOException {
