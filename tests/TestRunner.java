@@ -221,10 +221,8 @@ public class TestRunner {
 		}
 	}
 
-	protected void update(String query, int expectedUpdateCount) throws SQLException, Failure {
+	protected void update(String query) throws SQLException, Failure {
 		execute(query);
-		int updateCount = stmt.getUpdateCount();
-		assertEq("Update count", expectedUpdateCount, updateCount);
 	}
 
 	protected void expectError(String query, String expectedError) throws SQLException {

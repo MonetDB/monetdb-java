@@ -158,7 +158,7 @@ public final class OnClientTester extends TestRunner {
 		prepare();
 		MyUploadHandler handler = new MyUploadHandler(100);
 		conn.setUploadHandler(handler);
-		update("COPY INTO foo FROM 'banana' ON CLIENT", 100);
+		update("COPY INTO foo FROM 'banana' ON CLIENT");
 		assertEq("cancellation callback called", false, handler.isCancelled());
 		assertQueryInt("SELECT COUNT(*) FROM foo", 100);
 	}
@@ -176,7 +176,7 @@ public final class OnClientTester extends TestRunner {
 		prepare();
 		MyUploadHandler handler = new MyUploadHandler(100);
 		conn.setUploadHandler(handler);
-		update("COPY OFFSET 0 INTO foo FROM 'banana' ON CLIENT", 100);
+		update("COPY OFFSET 0 INTO foo FROM 'banana' ON CLIENT");
 		assertEq("cancellation callback called", false, handler.isCancelled());
 		assertQueryInt("SELECT MIN(i) FROM foo", 1);
 		assertQueryInt("SELECT MAX(i) FROM foo", 100);
@@ -186,7 +186,7 @@ public final class OnClientTester extends TestRunner {
 		prepare();
 		MyUploadHandler handler = new MyUploadHandler(100);
 		conn.setUploadHandler(handler);
-		update("COPY OFFSET 1 INTO foo FROM 'banana' ON CLIENT", 100);
+		update("COPY OFFSET 1 INTO foo FROM 'banana' ON CLIENT");
 		assertEq("cancellation callback called", false, handler.isCancelled());
 		assertQueryInt("SELECT MIN(i) FROM foo", 1);
 		assertQueryInt("SELECT MAX(i) FROM foo", 100);
@@ -196,7 +196,7 @@ public final class OnClientTester extends TestRunner {
 		prepare();
 		MyUploadHandler handler = new MyUploadHandler(100);
 		conn.setUploadHandler(handler);
-		update("COPY OFFSET 5 INTO foo FROM 'banana' ON CLIENT", 96);
+		update("COPY OFFSET 5 INTO foo FROM 'banana' ON CLIENT");
 		assertEq("cancellation callback called", false, handler.isCancelled());
 		assertQueryInt("SELECT MIN(i) FROM foo", 5);
 		assertQueryInt("SELECT MAX(i) FROM foo", 100);
@@ -206,7 +206,7 @@ public final class OnClientTester extends TestRunner {
 		prepare();
 		MyUploadHandler handler = new MyUploadHandler(100);
 		conn.setUploadHandler(handler);
-		update("COPY 10 RECORDS INTO foo FROM 'banana' ON CLIENT", 10);
+		update("COPY 10 RECORDS INTO foo FROM 'banana' ON CLIENT");
 		assertEq("cancellation callback called", true, handler.isCancelled());
 		assertEq("handler encountered write error", true, handler.encounteredWriteError());
 		// connection is still alive
@@ -218,8 +218,8 @@ public final class OnClientTester extends TestRunner {
 		MyDownloadHandler handler = new MyDownloadHandler();
 		conn.setDownloadHandler(handler);
 		String q = "INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, " + n + ")";
-		update(q, n);
-		update("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT", -1);
+		update(q);
+		update("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT");
 		assertEq("download attempts", 1, handler.countAttempts());
 		assertEq("lines downloaded", n, handler.lineCount());
 		// connection is still alive
@@ -235,7 +235,7 @@ public final class OnClientTester extends TestRunner {
 		BugFixLevel level = getLevel();
 		MyDownloadHandler handler = new MyDownloadHandler("download refused");
 		conn.setDownloadHandler(handler);
-		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)", 100);
+		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)");
 		expectError("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT", "download refused");
 		// Wish it were different but the server closes the connection
 		expectError("SELECT 42 -- check if the connection still works", "Connection to server lost!");
@@ -252,7 +252,7 @@ public final class OnClientTester extends TestRunner {
 		MyUploadHandler handler = new MyUploadHandler(n);
 		conn.setUploadHandler(handler);
 		handler.setChunkSize(1024 * 1024);
-		update("COPY INTO foo FROM 'banana' ON CLIENT", n);
+		update("COPY INTO foo FROM 'banana' ON CLIENT");
 		assertEq("cancellation callback called", false, handler.isCancelled());
 		// connection is still alive
 		assertQueryInt("SELECT COUNT(DISTINCT i) FROM foo", n);
@@ -276,7 +276,7 @@ public final class OnClientTester extends TestRunner {
 			}
 		};
 		conn.setUploadHandler(handler);
-		update("COPY INTO foo FROM 'banana' ON CLIENT", 3);
+		update("COPY INTO foo FROM 'banana' ON CLIENT");
 		// connection is still alive
 		assertQueryInt("SELECT i FROM foo WHERE t = 'three'", 3);
 	}
@@ -294,7 +294,7 @@ public final class OnClientTester extends TestRunner {
 			}
 		};
 		conn.setUploadHandler(handler);
-		update("COPY INTO foo FROM 'banana' ON CLIENT", 3);
+		update("COPY INTO foo FROM 'banana' ON CLIENT");
 		assertQueryInt("SELECT i FROM foo WHERE t = 'three'", 3);
 	}
 
@@ -310,7 +310,7 @@ public final class OnClientTester extends TestRunner {
 			}
 		};
 		conn.setUploadHandler(handler);
-		update("COPY OFFSET 2 INTO foo FROM 'banana' ON CLIENT", 2);
+		update("COPY OFFSET 2 INTO foo FROM 'banana' ON CLIENT");
 		assertQueryInt("SELECT i FROM foo WHERE t = 'three'", 3);
 	}
 
@@ -349,7 +349,7 @@ public final class OnClientTester extends TestRunner {
 		prepare();
 		MyDownloadHandler handler = new MyDownloadHandler(200, "download refused");
 		conn.setDownloadHandler(handler);
-		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)", 100);
+		update("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)");
 		expectError("COPY (SELECT * FROM sys.generate_series(0,200)) INTO 'banana' ON CLIENT", "download refused");
 		// Exception closes the connection
 		assertEq("connection is closed", conn.isClosed(), true);
@@ -366,7 +366,7 @@ public final class OnClientTester extends TestRunner {
 		ps.println("3|three");
 		ps.close();
 		conn.setUploadHandler(new FileTransferHandler(d, true));
-		update("COPY INTO foo FROM 'data.txt' ON CLIENT", 3);
+		update("COPY INTO foo FROM 'data.txt' ON CLIENT");
 		assertQueryInt("SELECT SUM(i) FROM foo", 6);
 	}
 
@@ -391,10 +391,10 @@ public final class OnClientTester extends TestRunner {
 
 	public void test_FileTransferHandlerDownload() throws SQLException, Failure, IOException {
 		prepare();
-		update("INSERT INTO foo VALUES (42, 'forty-two')", 1);
+		update("INSERT INTO foo VALUES (42, 'forty-two')");
 		Path d = getTmpDir(currentTestName);
 		conn.setDownloadHandler(new FileTransferHandler(d, false));
-		update("COPY SELECT * FROM foo INTO 'data.txt' ON CLIENT", -1);
+		update("COPY SELECT * FROM foo INTO 'data.txt' ON CLIENT");
 		List<String> lines = Files.readAllLines(d.resolve("data.txt"));
 		assertEq("lines written", lines.size(), 1);
 		assertEq("line content", lines.get(0), "42|\"forty-two\"");
@@ -405,7 +405,7 @@ public final class OnClientTester extends TestRunner {
 	public void test_FileTransferHandlerDownloadRefused() throws SQLException, Failure, IOException {
 		prepare();
 		BugFixLevel level = getLevel();
-		update("INSERT INTO foo VALUES (42, 'forty-two')", 1);
+		update("INSERT INTO foo VALUES (42, 'forty-two')");
 		Path d = getTmpDir(currentTestName);
 		Path d2 = getTmpDir(currentTestName + "2");
 		conn.setDownloadHandler(new FileTransferHandler(d2, false));
