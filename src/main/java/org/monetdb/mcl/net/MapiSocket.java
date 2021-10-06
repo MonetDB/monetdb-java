@@ -550,8 +550,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 						+ pwhash + ":"
 						+ language + ":"
 						+ (database == null ? "" : database) + ":";
+				response += "FILETRANS:";
 				if (chaltok.length > 6) {
-					response += "FILETRANS:";
 
 					// if supported, send handshake options
 					for (String part : chaltok[6].split(",")) {
