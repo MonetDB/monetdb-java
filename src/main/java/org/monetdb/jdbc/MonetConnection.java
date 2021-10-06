@@ -68,7 +68,7 @@ import org.monetdb.mcl.parser.StartOfHeaderParser;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 1.6
+ * @version 1.7
  */
 public class MonetConnection
 	extends MonetWrapper
@@ -1238,7 +1238,6 @@ public class MonetConnection
 		throw newSQLFeatureNotSupportedException("createArrayOf");
 	}
 
-
 	/**
 	 * Constructs an object that implements the Clob interface. The
 	 * object returned initially contains no data. The setAsciiStream,
@@ -1674,8 +1673,9 @@ public class MonetConnection
 
 	//== internal helper methods which do not belong to the JDBC interface
 
-	/** Handlers for ON CLIENT requests */
+	/** Handler for COPY ... INTO ... FROM 'data-file-name' ON CLIENT requests */
 	private UploadHandler uploadHandler;
+	/** Handler for COPY ... INTO 'data-file-name' ON CLIENT requests */
 	private DownloadHandler downloadHandler;
 
 	/**
@@ -1683,7 +1683,7 @@ public class MonetConnection
 	 *
 	 * @param uploadHandler the handler to register, or null to deregister
 	 */
-	public void setUploadHandler(UploadHandler uploadHandler) {
+	public void setUploadHandler(final UploadHandler uploadHandler) {
 		this.uploadHandler = uploadHandler;
 	}
 
@@ -1693,12 +1693,13 @@ public class MonetConnection
 	public UploadHandler getUploadHandler() {
 		return uploadHandler;
 	}
+
 	/**
 	 * Registers a {@link DownloadHandler} to support for example COPY select_result INTO 'data.csv' ON CLIENT
 	 *
 	 * @param downloadHandler the handler to register, or null to deregister
 	 */
-	public void setDownloadHandler(DownloadHandler downloadHandler) {
+	public void setDownloadHandler(final DownloadHandler downloadHandler) {
 		this.downloadHandler = downloadHandler;
 	}
 
@@ -3020,8 +3021,7 @@ public class MonetConnection
 					// }}} set reply size
 
 					// send query to the server
-					String queryLine = templ[0] + query + templ[1];
-					out.writeLine(queryLine);
+					out.writeLine(templ[0] + query + templ[1]);
 
 					// go for new results
 					String tmpLine = in.readLine();
@@ -3210,9 +3210,9 @@ public class MonetConnection
 	}
 	// }}}
 
-	private String handleTransfer(String transferCommand) throws IOException {
+	private String handleTransfer(final String transferCommand) throws IOException {
 		if (transferCommand.startsWith("r ")) {
-			String[] parts = transferCommand.split(" ", 3);
+			final String[] parts = transferCommand.split(" ", 3);
 			if (parts.length == 3) {
 				final long offset;
 				try {
@@ -3230,19 +3230,18 @@ public class MonetConnection
 		return "JDBC does not support this file transfer yet: " + transferCommand;
 	}
 
-	private String handleUpload(String path, boolean textMode, long offset) throws IOException {
+	private String handleUpload(final String path, final boolean textMode, final long offset) throws IOException {
 		if (uploadHandler == null) {
 			return "No file upload handler has been registered with the JDBC driver";
 		}
 
-		long linesToSkip = offset >= 1 ? offset - 1 : 0;
-		Upload handle = new Upload(server, uploadHandler::uploadCancelled);
-		boolean wasFaking = server.setInsertFakePrompts(false);
+		final long linesToSkip = offset >= 1 ? offset - 1 : 0;
+		final Upload handle = new Upload(server, uploadHandler::uploadCancelled);
+		final boolean wasFaking = server.setInsertFakePrompts(false);
 		try {
 			uploadHandler.handleUpload(handle, path, textMode, linesToSkip);
 			if (!handle.hasBeenUsed()) {
-				String message = "Call to " + uploadHandler.getClass().getCanonicalName() + ".handleUpload for path '" + path + "' sent neither data nor an error message";
-				throw new IOException(message);
+				throw new IOException("Call to " + uploadHandler.getClass().getCanonicalName() + ".handleUpload for path '" + path + "' sent neither data nor an error message");
 			}
 			handle.close();
 		} finally {
@@ -3251,17 +3250,16 @@ public class MonetConnection
 		return handle.getError();
 	}
 
-	private String handleDownload(String path) throws IOException {
+	private String handleDownload(final String path) throws IOException {
 		if (downloadHandler == null) {
 			return "No file download handler has been registered with the JDBC driver";
 		}
 
-		Download handle = new Download(server);
+		final Download handle = new Download(server);
 		try {
 			downloadHandler.handleDownload(handle, path, true);
 			if (!handle.hasBeenUsed()) {
-				String message = "Call to " + downloadHandler.getClass().getSimpleName() + ".handleDownload sent neither data nor error";
-				handle.sendError(message);
+				handle.sendError("Call to " + downloadHandler.getClass().getSimpleName() + ".handleDownload sent neither data nor error");
 			}
 		} finally {
 			handle.close();
@@ -3270,9 +3268,11 @@ public class MonetConnection
 	}
 
 	/**
-	 * Callback for sending files for COPY ON CLIENT
+	 * Callback for sending files for COPY INTO "table" FROM 'file-name' ON CLIENT commands
 	 *
 	 * To be registered with {@link MonetConnection#setUploadHandler(UploadHandler)}
+	 *
+	 * An example implementation can be found at ../util/FileTransferHandler.java
 	 */
 
 	public interface UploadHandler {
@@ -3300,9 +3300,11 @@ public class MonetConnection
 	}
 
 	/**
-	 * Callback for receiving files with COPY ON CLIENT
+	 * Callback for receiving files from COPY .. INTO 'file-name' ON CLIENT commands
 	 *
 	 * To be registered with {@link MonetConnection#setDownloadHandler(DownloadHandler)}
+	 *
+	 * An example implementation can be found at ../util/FileTransferHandler.java
 	 */
 	public interface DownloadHandler {
 		/**
@@ -3344,7 +3346,7 @@ public class MonetConnection
 		 * {@link IOException} but this will terminate the connection.
 		 * @param errorMessage error message to send
 		 */
-		public void sendError(String errorMessage) throws IOException {
+		public void sendError(final String errorMessage) throws IOException {
 			if (error != null) {
 				throw new IOException("another error has already been sent: " + error);
 			}
@@ -3355,7 +3357,7 @@ public class MonetConnection
 		 * After every {@code chunkSize} bytes, the server gets the opportunity to
 		 * terminate the upload.
 		 */
-		public void setChunkSize(int chunkSize) {
+		public void setChunkSize(final int chunkSize) {
 			this.customChunkSize = chunkSize;
 		}
 
@@ -3370,7 +3372,7 @@ public class MonetConnection
 			}
 			if (print == null) {
 				try {
-					MapiSocket.UploadStream up = customChunkSize >= 0 ? server.uploadStream(customChunkSize) : server.uploadStream();
+					final MapiSocket.UploadStream up = customChunkSize >= 0 ? server.uploadStream(customChunkSize) : server.uploadStream();
 					up.setCancellationCallback(cancellationCallback);
 					print = new PrintStream(up, false, "UTF-8");
 					up.write('\n');
@@ -3400,9 +3402,9 @@ public class MonetConnection
 		 *
 		 * For text mode uploads, the data MUST be validly UTF-8 encoded.
 		 */
-		public void uploadFrom(InputStream inputStream) throws IOException {
-			OutputStream s = getStream();
-			byte[] buffer = new byte[64 * 1024];
+		public void uploadFrom(final InputStream inputStream) throws IOException {
+			final OutputStream s = getStream();
+			final byte[] buffer = new byte[64 * 1024];
 			while (true) {
 				int nread = inputStream.read(buffer);
 				if (nread < 0) {
@@ -3418,7 +3420,7 @@ public class MonetConnection
 		 * @param linesToSkip start uploading at line {@code offset}. Value 0 and 1
 		 * both mean upload the whole file, value 2 means skip the first line, etc.q
 		 */
-		public void uploadFrom(BufferedReader reader, long linesToSkip) throws IOException {
+		public void uploadFrom(final BufferedReader reader, final long linesToSkip) throws IOException {
 			for (int i = 0; i < linesToSkip; i++) {
 				String line = reader.readLine();
 				if (line == null) {
@@ -3429,15 +3431,14 @@ public class MonetConnection
 			uploadFrom(reader);
 		}
 
-
 		/**
 		 * Read data from the given buffered reader and send it to the server
 		 * @param reader reader to read from
 		 */
-		public void uploadFrom(Reader reader) throws IOException {
-			OutputStream s = getStream();
-			OutputStreamWriter writer = new OutputStreamWriter(s, StandardCharsets.UTF_8);
-			char[] buffer = new char[64 * 1024];
+		public void uploadFrom(final Reader reader) throws IOException {
+			final OutputStream s = getStream();
+			final OutputStreamWriter writer = new OutputStreamWriter(s, StandardCharsets.UTF_8);
+			final char[] buffer = new char[64 * 1024];
 			while (true) {
 				int nread = reader.read(buffer, 0, buffer.length);
 				if (nread < 0) {
@@ -3448,9 +3449,13 @@ public class MonetConnection
 			}
 		}
 
+		/**
+		 * Close opened {@link PrintStream}.
+		 */
 		public void close() {
 			if (print != null) {
 				print.close();
+				print = null;
 			}
 		}
 	}
@@ -3462,8 +3467,6 @@ public class MonetConnection
 		private final MapiSocket server;
 		private MapiSocket.DownloadStream stream = null;
 		private String error = null;
-
-		boolean closed = false;
 
 		Download(MapiSocket server) {
 			this.server = server;
@@ -3508,13 +3511,14 @@ public class MonetConnection
 		/**
 		 * Write the data from the server to the given {@link OutputStream}.
 		 */
-		public void downloadTo(OutputStream stream) throws IOException {
-			InputStream s = getStream();
-			byte[] buffer = new byte[65536];
+		public void downloadTo(final OutputStream stream) throws IOException {
+			final InputStream s = getStream();
+			final byte[] buffer = new byte[65536];
 			while (true) {
 				int nread = s.read(buffer);
-				if (nread < 0)
+				if (nread < 0) {
 					break;
+				}
 				stream.write(buffer, 0, nread);
 			}
 		}
@@ -3522,7 +3526,6 @@ public class MonetConnection
 		/**
 		 * @return  true if data has been received or an error has been sent.
 		 */
-
 		public boolean hasBeenUsed() {
 			return error != null || stream != null;
 		}
@@ -3530,18 +3533,22 @@ public class MonetConnection
 		/**
 		 * @return the error that was sent, if any
 		 */
-
 		public String getError() {
 			return error;
 		}
-		public void close() throws IOException {
-			if (closed) {
-				return;
-			}
+
+		/**
+		 * Close opened stream.
+		 */
+		public void close() {
 			if (stream != null) {
-				stream.close();
+				try {
+					stream.close();
+					stream = null;
+				} catch (IOException e) {
+					/* ignore close error */
+				}
 			}
-			closed = true;
 		}
 	}
 }

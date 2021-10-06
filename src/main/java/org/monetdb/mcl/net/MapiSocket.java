@@ -81,7 +81,7 @@ import org.monetdb.mcl.parser.MCLParseException;
  * geared towards the format of the data.
  *
  * @author Fabian Groffen
- * @version 4.1
+ * @version 4.2
  * @see org.monetdb.mcl.io.BufferedMCLReader
  * @see org.monetdb.mcl.io.BufferedMCLWriter
  */
@@ -431,6 +431,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	 * @param language the language to use
 	 * @param database the database to connect to
 	 * @param hash the hash method(s) to use, or NULL for all supported hashes
+	 * @return the response string for the server
 	 */
 	private String getChallengeResponse(
 			final String chalstr,
@@ -549,10 +550,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 						+ username + ":"
 						+ pwhash + ":"
 						+ language + ":"
-						+ (database == null ? "" : database) + ":";
-				response += "FILETRANS:";
+						+ (database == null ? "" : database) + ":"
+						+ "FILETRANS:";	 // this capability is added in monetdb-jdbc-3.2.jre8.jar
 				if (chaltok.length > 6) {
-
 					// if supported, send handshake options
 					for (String part : chaltok[6].split(",")) {
 						if (part.startsWith("sql=") && handshakeOptions != null) {
@@ -568,7 +568,6 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					}
 					// this ':' delimits the handshake options field.
 					response += ":";
-
 				}
 				return response;
 			default:
@@ -598,7 +597,6 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			? (char) ('a' + (n - 10))
 			: (char) ('0' + n);
 	}
-
 
 	/**
 	 * Returns an InputStream that reads from this open connection on
@@ -734,6 +732,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	public boolean setInsertFakePrompts(boolean b) {
 		return fromMonet.setInsertFakePrompts(b);
 	}
+
 
 	/**
 	 * Inner class that is used to write data on a normal stream as a
@@ -1218,10 +1217,11 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		super.finalize();
 	}
 
+
 	/**
 	 * Stream of data sent to the server
-	 * 
- 	 * Building block for {@link org.monetdb.jdbc.MonetConnection.UploadHandler}.
+	 *
+	 * Building block for {@link org.monetdb.jdbc.MonetConnection.UploadHandler}.
 	 *
 	 * An UploadStream has a chunk size. Every chunk size bytes, the server gets
 	 * the opportunity to abort the upload.
@@ -1236,7 +1236,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		private Runnable cancellationCallback = null;
 
 		/** Create an UploadStream with the given chunk size */
-		UploadStream(int chunkSize) {
+		UploadStream(final int chunkSize) {
 			super(toMonet);
 			if (chunkSize <= 0) {
 				throw new IllegalArgumentException("chunk size must be positive");
@@ -1255,12 +1255,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 		/** Set a callback to be invoked if the server cancels the upload
 		 */
-		public void setCancellationCallback(Runnable cancellationCallback) {
+		public void setCancellationCallback(final Runnable cancellationCallback) {
 			this.cancellationCallback = cancellationCallback;
 		}
 
 		@Override
-		public void write(int b) throws IOException {
+		public void write(final int b) throws IOException {
 			if (serverCancelled) {
 				// We have already thrown an exception and apparently that has been ignored.
 				// Probably because they're calling print methods instead of write.
@@ -1273,12 +1273,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		}
 
 		@Override
-		public void write(byte[] b) throws IOException {
+		public void write(final byte[] b) throws IOException {
 			write(b, 0, b.length);
 		}
 
 		@Override
-		public void write(byte[] b, int off, int len) throws IOException {
+		public void write(final byte[] b, int off, int len) throws IOException {
 			if (serverCancelled) {
 				// We have already thrown an exception and apparently that has been ignored.
 				// Probably because they're calling print methods instead of write.
@@ -1320,17 +1320,17 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			}
 			// send empty block
 			out.flush();
-			LineType acknowledgement = readPrompt();
+			final LineType acknowledgement = readPrompt();
 			if (acknowledgement != LineType.FILETRANSFER) {
 				throw new IOException("Expected server to acknowledge end of file");
 			}
 		}
 
-		private void closeAfterServerCancelled() throws IOException {
+		private void closeAfterServerCancelled() {
 			// nothing to do here, we have already read the error prompt.
 		}
 
-		private void wrote(int i) {
+		private void wrote(final int i) {
 			chunkLeft -= i;
 		}
 
@@ -1344,7 +1344,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		private void flushAndReadPrompt() throws IOException {
 			out.flush();
 			chunkLeft = chunkSize;
-			LineType lineType = readPrompt();
+			final LineType lineType = readPrompt();
 			switch (lineType) {
 				case MORE:
 					return;
@@ -1362,22 +1362,21 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		}
 
 		private LineType readPrompt() throws IOException {
-			int nread = fromMonet.read(promptBuffer);
+			final int nread = fromMonet.read(promptBuffer);
 			if (nread != promptBuffer.length || promptBuffer[promptBuffer.length - 1] != '\n') {
 				throw new IOException("server return incomplete prompt");
 			}
-			LineType lineType = LineType.classify(promptBuffer);
-			return lineType;
+			return LineType.classify(promptBuffer);
 		}
 	}
 
+
 	/**
 	 * Stream of data received from the server
-	 * 
- 	 * Building block for {@link org.monetdb.jdbc.MonetConnection.DownloadHandler}.
+	 *
+	 * Building block for {@link org.monetdb.jdbc.MonetConnection.DownloadHandler}.
 	 */
 	public static class DownloadStream extends InputStream {
-
 		private final BlockInputStream.Raw rawIn;
 		private final OutputStream out;
 		private boolean endBlockSeen = false;
@@ -1391,7 +1390,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		void nextBlock() throws IOException {
 			if (endBlockSeen || closed)
 				return;
-			int ret = rawIn.readBlock();
+			final int ret = rawIn.readBlock();
 			if (ret < 0 || rawIn.wasEndBlock()) {
 				endBlockSeen = true;
 			}
@@ -1414,8 +1413,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 		@Override
 		public int read() throws IOException {
-			byte[] buf = { 0 };
-			int nread = read(buf, 0, 1);
+			final byte[] buf = { 0 };
+			final int nread = read(buf, 0, 1);
 			if (nread == 1)
 				return buf[0];
 			else
@@ -1423,8 +1422,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		}
 
 		@Override
-		public int read(byte[] b, int off, int len) throws IOException {
-			int origOff = off;
+		public int read(final byte[] b, int off, int len) throws IOException {
+			final int origOff = off;
 			while (len > 0) {
 				int chunk = Integer.min(len, rawIn.getLength() - rawIn.getPosition());
 				if (chunk > 0) {

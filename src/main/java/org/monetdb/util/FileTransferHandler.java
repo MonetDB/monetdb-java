@@ -10,9 +10,7 @@ package org.monetdb.util;
 
 import org.monetdb.jdbc.MonetConnection;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
@@ -21,7 +19,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 /**
- * Sample implement of ON CLIENT handling
+ * Sample implementation of COPY ... INTO 'file-name' ON CLIENT handling
  *
  * Can be registered with {@link MonetConnection#setUploadHandler(MonetConnection.UploadHandler)}
  * and {@link MonetConnection#setDownloadHandler(MonetConnection.DownloadHandler)}.
@@ -37,7 +35,7 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 	 * @param dir directory to read and write files from
 	 * @param utf8Encoded set this to true if all files in the directory are known to be utf-8 encoded.
 	 */
-	public FileTransferHandler(Path dir, boolean utf8Encoded) {
+	public FileTransferHandler(final Path dir, final boolean utf8Encoded) {
 		root = dir.toAbsolutePath().normalize();
 		this.utf8Encoded = utf8Encoded;
 	}
@@ -48,12 +46,12 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 	 * @param dir directory to read and write files from
 	 * @param utf8Encoded set this to true if all files in the directory are known to be utf-8 encoded.
 	 */
-	public FileTransferHandler(String dir, boolean utf8Encoded) {
+	public FileTransferHandler(final String dir, final boolean utf8Encoded) {
 		this(FileSystems.getDefault().getPath(dir), utf8Encoded);
 	}
 
-	public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
-		Path path = root.resolve(name).normalize();
+	public void handleUpload(final MonetConnection.Upload handle, final String name, final boolean textMode, final long linesToSkip) throws IOException {
+		final Path path = root.resolve(name).normalize();
 		if (!path.startsWith(root)) {
 			handle.sendError("File is not in upload directory");
 			return;
@@ -63,16 +61,15 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			return;
 		}
 		if (textMode && (linesToSkip > 0 || !utf8Encoded)) {
-			Charset encoding = utf8Encoded ? StandardCharsets.UTF_8 : Charset.defaultCharset();
-			BufferedReader reader = Files.newBufferedReader(path, encoding);
-			handle.uploadFrom(reader, linesToSkip);
+			final Charset encoding = utf8Encoded ? StandardCharsets.UTF_8 : Charset.defaultCharset();
+			handle.uploadFrom(Files.newBufferedReader(path, encoding), linesToSkip);
 		} else {
 			handle.uploadFrom(Files.newInputStream(path));
 		}
 	}
 
-	public void handleDownload(MonetConnection.Download handle, String name, boolean textMode) throws IOException {
-		Path path = root.resolve(name).normalize();
+	public void handleDownload(final MonetConnection.Download handle, final String name, final boolean textMode) throws IOException {
+		final Path path = root.resolve(name).normalize();
 		if (!path.startsWith(root)) {
 			handle.sendError("File is not in download directory");
 			return;
@@ -81,7 +78,6 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			handle.sendError("File already exists: " + name);
 			return;
 		}
-		OutputStream outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
-		handle.downloadTo(outputStream);
+		handle.downloadTo(Files.newOutputStream(path, StandardOpenOption.CREATE_NEW));
 	}
 }
