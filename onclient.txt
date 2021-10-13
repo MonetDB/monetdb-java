@@ -20,8 +20,7 @@ By default, the JDBC driver will refuse with an error message:
 	'No file upload handler has been registered with the JDBC driver'
 
 or in JdbcClient:
-	'Error [22000] !HY000!data.csv: No file upload handler has been registered with the JDBC driver;
-	'Error [22000] cannot transfer files from client'
+	'Error [22000] data.csv: No file upload handler has been registered with the JDBC driver'
 
 This is for security reasons.  However, you can register a callback to handle
 these requests from the server:
@@ -29,6 +28,8 @@ these requests from the server:
 	Connection conn = DriverManager.getConnection(dbUrl, userName, password);
 	MyUploader handler = new MyUploadHandler();
 	conn.unwrap(MonetConnection.class).setUploadHandler(handler);
+
+or provide the JdbcClient startup argument: --csvdir "/path/to/csvfilesdir"
 
 Here, MyUploadHandler is an implementation of the interface MonetConnection.UploadHandler,
 which looks like this:
@@ -83,9 +84,10 @@ is currently no way to signal errors to the server once the transfer has begun.
 
 The interface for downloading is similar to that for uploading.
 
-Class org.monetdb.util.FileTransferHandler provides a default implementation of
-both MonetConnection.UploadHandler and MonetConnection.DownloadHandler.  You
-pass it a directory name and a flag indicating whether the contents of that
-directory can be assumed to be UTF-8 encoded. It is intended for situations
-where you do not need to generate or transform data while uploading.
+Class org.monetdb.util.FileTransferHandler provides a default implementation
+of both MonetConnection.UploadHandler and MonetConnection.DownloadHandler for
+reading from and writing to local csv files. You pass the FileTransferHandler
+constructor a directory name and a flag indicating whether the contents of
+the csv files data are UTF-8 encoded. FileTransferHandler is intended for
+situations where you do not need to generate or transform data while uploading.
 
