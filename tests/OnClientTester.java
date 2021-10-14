@@ -365,7 +365,7 @@ public final class OnClientTester extends TestRunner {
 		ps.println("2|two");
 		ps.println("3|three");
 		ps.close();
-		conn.setUploadHandler(new FileTransferHandler(d, true));
+		conn.setUploadHandler(new FileTransferHandler(d, StandardCharsets.UTF_8));
 		update("COPY INTO foo FROM 'data.txt' ON CLIENT");
 		assertQueryInt("SELECT SUM(i) FROM foo", 6);
 	}
@@ -382,7 +382,7 @@ public final class OnClientTester extends TestRunner {
 		ps.close();
 
 		Path d2 = getTmpDir(currentTestName + "2");
-		conn.setUploadHandler(new FileTransferHandler(d2, false));
+		conn.setUploadHandler(new FileTransferHandler(d2, StandardCharsets.UTF_8));
 		String quoted = f.toAbsolutePath().toString().replaceAll("'", "''");
 		expectError("COPY INTO foo FROM R'"+ quoted + "' ON CLIENT", "not in upload directory");
 		// connection is still alive
@@ -393,7 +393,7 @@ public final class OnClientTester extends TestRunner {
 		prepare();
 		update("INSERT INTO foo VALUES (42, 'forty-two')");
 		Path d = getTmpDir(currentTestName);
-		conn.setDownloadHandler(new FileTransferHandler(d, false));
+		conn.setDownloadHandler(new FileTransferHandler(d, StandardCharsets.UTF_8));
 		update("COPY SELECT * FROM foo INTO 'data.txt' ON CLIENT");
 		List<String> lines = Files.readAllLines(d.resolve("data.txt"));
 		assertEq("lines written", lines.size(), 1);
@@ -408,7 +408,7 @@ public final class OnClientTester extends TestRunner {
 		update("INSERT INTO foo VALUES (42, 'forty-two')");
 		Path d = getTmpDir(currentTestName);
 		Path d2 = getTmpDir(currentTestName + "2");
-		conn.setDownloadHandler(new FileTransferHandler(d2, false));
+		conn.setDownloadHandler(new FileTransferHandler(d2, StandardCharsets.UTF_8));
 		String quoted = d.resolve("data.txt").toAbsolutePath().toString().replaceAll("'", "''");
 		expectError("COPY SELECT * FROM foo INTO R'" + quoted + "' ON CLIENT", "not in download directory");
 		if (level.compareTo(BugFixLevel.CanRefuseDownload) >= 0) {

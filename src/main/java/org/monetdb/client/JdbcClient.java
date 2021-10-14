@@ -27,6 +27,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;	// this import is required as it will trigger loading the org.monetdb.jdbc.MonetDriver class
@@ -353,7 +354,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 				// check if provided csvdir is an existing dir
 				// else a download of data into file will terminate the JDBC connection!!
 				if (java.nio.file.Files.isDirectory(java.nio.file.Paths.get(csvdir))) {
-					final FileTransferHandler FThandler = new FileTransferHandler(csvdir, true);
+					final FileTransferHandler FThandler = new FileTransferHandler(csvdir, Charset.defaultCharset());
 
 					// register file data uploadHandler to allow support
 					// for: COPY INTO mytable FROM 'data.csv' ON CLIENT;

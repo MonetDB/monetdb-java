@@ -10,6 +10,7 @@ package org.monetdb.util;
 
 import org.monetdb.jdbc.MonetConnection;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -27,17 +28,16 @@ import java.nio.file.StandardOpenOption;
  */
 public class FileTransferHandler implements MonetConnection.UploadHandler, MonetConnection.DownloadHandler {
 	private final Path root;
-	private final boolean utf8Encoded;
+	private final Charset encoding;
 
 	/**
 	 * Create a new FileTransferHandler which serves the given directory.
-	 *
 	 * @param dir directory to read and write files from
-	 * @param utf8Encoded set this to true if all files in the directory are known to be utf-8 encoded.
+	 * @param encoding set this to true if all files in the directory are known to be utf-8 encoded.
 	 */
-	public FileTransferHandler(final Path dir, final boolean utf8Encoded) {
-		root = dir.toAbsolutePath().normalize();
-		this.utf8Encoded = utf8Encoded;
+	public FileTransferHandler(final Path dir, final Charset encoding) {
+		this.root = dir.toAbsolutePath().normalize();
+		this.encoding = encoding;
 	}
 
 	/**
@@ -46,8 +46,8 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 	 * @param dir directory to read and write files from
 	 * @param utf8Encoded set this to true if all files in the directory are known to be utf-8 encoded.
 	 */
-	public FileTransferHandler(final String dir, final boolean utf8Encoded) {
-		this(FileSystems.getDefault().getPath(dir), utf8Encoded);
+	public FileTransferHandler(final String dir, final Charset encoding) {
+		this(FileSystems.getDefault().getPath(dir), encoding);
 	}
 
 	public void handleUpload(final MonetConnection.Upload handle, final String name, final boolean textMode, final long linesToSkip) throws IOException {
@@ -60,9 +60,9 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			handle.sendError("Cannot read " + name);
 			return;
 		}
-		if (textMode && (linesToSkip > 0 || !utf8Encoded)) {
-			final Charset encoding = utf8Encoded ? StandardCharsets.UTF_8 : Charset.defaultCharset();
-			handle.uploadFrom(Files.newBufferedReader(path, encoding), linesToSkip);
+		if (textMode && (linesToSkip > 0 || !isUtf8Encoded())) {
+			final BufferedReader reader = Files.newBufferedReader(path, encoding);
+			handle.uploadFrom(reader, linesToSkip);
 		} else {
 			handle.uploadFrom(Files.newInputStream(path));
 		}
@@ -79,5 +79,9 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			return;
 		}
 		handle.downloadTo(Files.newOutputStream(path, StandardOpenOption.CREATE_NEW));
+	}
+
+	public boolean isUtf8Encoded() {
+		return encoding.equals(StandardCharsets.UTF_8);
 	}
 }
