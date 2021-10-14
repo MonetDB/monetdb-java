@@ -257,6 +257,26 @@ public class TestRunner {
 		assertEq("query result", expected, result);
 	}
 
+	protected void assertQueryString(String query, String expected) throws SQLException, Failure {
+		if (execute(query) == false) {
+			fail("Query does not return a result set");
+		}
+		ResultSet rs = stmt.getResultSet();
+		ResultSetMetaData metaData = rs.getMetaData();
+		assertEq("column count", 1, metaData.getColumnCount());
+		if (!rs.next()) {
+			fail("Result set is empty");
+		}
+		String result = rs.getString(1);
+		if (rs.next()) {
+			String message = "Result set has more than one row";
+			fail(message);
+		}
+		rs.close();
+		checked("row count", 1);
+		assertEq("query result", expected, result);
+	}
+
 	protected String queryString(String query) throws SQLException, Failure {
 		if (execute(query) == false) {
 			fail("Query does not return a result set");
