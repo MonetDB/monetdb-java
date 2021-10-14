@@ -3524,6 +3524,22 @@ public class MonetConnection
 		}
 
 		/**
+		 * Write the textual data from the server to the given {@link Writer}
+		 * @param writer
+		 */
+		public void downloadTo(final Writer writer) throws IOException {
+			final InputStream s = getStream();
+			final InputStreamReader r = new InputStreamReader(s, StandardCharsets.UTF_8);
+			final char[] buffer = new char[65536];
+			while (true) {
+				final int nread = r.read(buffer);
+				if (nread < 0)
+					break;
+				writer.write(buffer, 0, nread);
+			}
+		}
+
+		/**
 		 * @return  true if data has been received or an error has been sent.
 		 */
 		public boolean hasBeenUsed() {

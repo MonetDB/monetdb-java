@@ -11,7 +11,9 @@ package org.monetdb.util;
 import org.monetdb.jdbc.MonetConnection;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
@@ -60,11 +62,16 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			handle.sendError("Cannot read " + name);
 			return;
 		}
-		if (textMode && (linesToSkip > 0 || !isUtf8Encoded())) {
+		if (!textMode) {
+			// must upload as a byte stream
+			handle.uploadFrom(Files.newInputStream(path));
+		} else if (linesToSkip == 0 && utf8Encoded()) {
+			// more efficient to upload as a byte stream
+			handle.uploadFrom(Files.newInputStream(path));
+		} else {
+			// cannot upload as a byte stream, must deal with encoding
 			final BufferedReader reader = Files.newBufferedReader(path, encoding);
 			handle.uploadFrom(reader, linesToSkip);
-		} else {
-			handle.uploadFrom(Files.newInputStream(path));
 		}
 	}
 
@@ -78,10 +85,23 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			handle.sendError("File already exists: " + name);
 			return;
 		}
-		handle.downloadTo(Files.newOutputStream(path, StandardOpenOption.CREATE_NEW));
+		if (!textMode) {
+			// must download as a byte stream
+			final OutputStream outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
+			handle.downloadTo(outputStream);
+		} else if (utf8Encoded()) {
+			// more efficient to download as a byte stream
+			final OutputStream outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
+			handle.downloadTo(outputStream);
+		} else {
+			// cannot download as a byte stream, must deal with encoding
+			final BufferedWriter writer = Files.newBufferedWriter(path, encoding, StandardOpenOption.CREATE_NEW);
+			handle.downloadTo(writer);
+			writer.close();
+		}
 	}
 
-	public boolean isUtf8Encoded() {
+	public boolean utf8Encoded() {
 		return encoding.equals(StandardCharsets.UTF_8);
 	}
 }
