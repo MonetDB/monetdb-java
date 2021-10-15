@@ -1,6 +1,6 @@
 RELEASE NOTES
-MonetDB JDBC driver version 3.1 (Liberica/MCL-1.20)
-Release date: 2021-06-14
+MonetDB JDBC driver version 3.2 (Liberica/MCL-1.21)
+Release date: 2021-10-15
 
 The Java Database Connectivity (JDBC) API provides universal data access from
 the Java programming language.
@@ -206,7 +206,6 @@ explicit new startup argument
 or on MS Windows
   --csvdir "C:\\path\\to\\csvdatafiles"
 in order to allow the JdbcClient to down/up load data to/from local csv files.
-All csv data in the local files must be UTF-8 encoded and uncompressed.
 
 
 Notes and Tips for Java Programmers using MonetDB JDBC driver:
