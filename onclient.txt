@@ -71,9 +71,10 @@ communicate with the server, for example:
 - handle.uploadFrom(Reader reader) to have the JDBC driver read text from the given
   Reader and upload it.
 
-- handle.uploadFrom(BufferedReader reader, int offset) to have the JDBC driver read from
-  the given BufferedReader, and upload the text starting at line 'offset'. Typically
-  you would use the offset passed to handleUpload in parameter 'offset'.
+- handle.uploadFrom(BufferedReader reader, long linesToSkip) to have the JDBC
+  driver read from the given BufferedReader and upload the text, skipping the first
+  'linesToSkip' lines. Typically you would use the value passed to handleUpload in
+  parameter 'linesToSkip'.
 
 - handle.sendError(String errorMessage) to refuse the upload.
 
