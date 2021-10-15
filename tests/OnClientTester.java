@@ -357,24 +357,28 @@ public final class OnClientTester extends TestRunner {
 	}
 
 	public void test_FileTransferHandlerUploadUtf8() throws IOException, SQLException, Failure {
-		testFileTransferHandlerUpload("UTF-8");
+		testFileTransferHandlerUpload(StandardCharsets.UTF_8, "UTF-8");
 	}
 
 	public void test_FileTransferHandlerUploadLatin1() throws IOException, SQLException, Failure {
-		testFileTransferHandlerUpload("latin1");
+		testFileTransferHandlerUpload(Charset.forName("latin1"), "latin1");
 	}
 
-	public void testFileTransferHandlerUpload(String encoding) throws IOException, SQLException, Failure {
+	public void test_FileTransferHandlerUploadNull() throws IOException, SQLException, Failure {
+		testFileTransferHandlerUpload(null, Charset.defaultCharset().name());
+	}
+
+	public void testFileTransferHandlerUpload(Charset handlerEncoding, String fileEncoding) throws IOException, SQLException, Failure {
 		prepare();
 		Path d = getTmpDir(currentTestName);
 		Path f = d.resolve("data.txt");
 		OutputStream s = Files.newOutputStream(f, CREATE_NEW);
-		PrintStream ps = new PrintStream(s, false, encoding);
+		PrintStream ps = new PrintStream(s, false, fileEncoding);
 		ps.println("1|one");
 		ps.println("2|twø");
 		ps.println("3|three");
 		ps.close();
-		conn.setUploadHandler(new FileTransferHandler(d, Charset.forName(encoding)));
+		conn.setUploadHandler(new FileTransferHandler(d, handlerEncoding));
 		update("COPY INTO foo FROM 'data.txt' ON CLIENT");
 		assertQueryInt("SELECT SUM(i) FROM foo", 6);
 		assertQueryString("SELECT t FROM foo WHERE i = 2", "twø");
@@ -400,21 +404,25 @@ public final class OnClientTester extends TestRunner {
 	}
 
 	public void test_FileTransferHandlerDownloadUtf8() throws SQLException, Failure, IOException {
-		testFileTransferHandlerDownload(StandardCharsets.UTF_8);
+		testFileTransferHandlerDownload(StandardCharsets.UTF_8, StandardCharsets.UTF_8);
 	}
 
 	public void test_FileTransferHandlerDownloadLatin1() throws SQLException, Failure, IOException {
 		Charset latin1 = Charset.forName("latin1");
-		testFileTransferHandlerDownload(latin1);
+		testFileTransferHandlerDownload(latin1, latin1);
 	}
 
-	public void testFileTransferHandlerDownload(Charset encoding) throws SQLException, Failure, IOException {
+	public void test_FileTransferHandlerDownloadNull() throws SQLException, Failure, IOException {
+		testFileTransferHandlerDownload(null, Charset.defaultCharset());
+	}
+
+	public void testFileTransferHandlerDownload(Charset handlerEncoding, Charset fileEncoding) throws SQLException, Failure, IOException {
 		prepare();
 		update("INSERT INTO foo VALUES (42, 'forty-twø')");
 		Path d = getTmpDir(currentTestName);
-		conn.setDownloadHandler(new FileTransferHandler(d, encoding));
+		conn.setDownloadHandler(new FileTransferHandler(d, handlerEncoding));
 		update("COPY SELECT * FROM foo INTO 'data.txt' ON CLIENT");
-		List<String> lines = Files.readAllLines(d.resolve("data.txt"), encoding);
+		List<String> lines = Files.readAllLines(d.resolve("data.txt"), fileEncoding);
 		assertEq("lines written", lines.size(), 1);
 		assertEq("line content", lines.get(0), "42|\"forty-twø\"");
 		// connection is still alive

@@ -39,7 +39,7 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 	 */
 	public FileTransferHandler(final Path dir, final Charset encoding) {
 		this.root = dir.toAbsolutePath().normalize();
-		this.encoding = encoding;
+		this.encoding = encoding != null ? encoding: Charset.defaultCharset();
 	}
 
 	/**
