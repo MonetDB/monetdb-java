@@ -159,7 +159,7 @@ public class OnClientExample {
 			// Make up some data and upload it.
 			PrintStream stream = handle.getStream();
 			long n = 100;
-			System.out.printf("  HANDLER: uploading %d generated lines, numbered %d to %d%n", n - toSkip, toSkip +1, n);
+			System.out.printf("  HANDLER: uploading %d generated lines, numbered %d to %d%n", n - toSkip, toSkip + 1, n);
 			long i;
 			for (i = toSkip + 1; i <= n; i++) {
 				if (stopUploading) {
