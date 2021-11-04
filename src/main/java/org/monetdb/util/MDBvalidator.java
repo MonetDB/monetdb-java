@@ -50,7 +50,7 @@ import java.util.Set;
 		SELECT "column_id", "expression", 'column_id and expression may not both be populated. One of them must be NULL' AS violation, * FROM "sys"."table_partitions" WHERE "column_id" IS NOT NULL AND "expression" IS NOT NULL;
  *</pre>
  * @author Martin van Dinther
- * @version 0.1
+ * @version 0.2
  */
 
 public final class MDBvalidator {
@@ -787,6 +787,12 @@ public final class MDBvalidator {
 					// System.out.println("MonetDB server version " + dbmd.getDatabaseProductVersion());
 					majorversion = dbmd.getDatabaseMajorVersion();
 					minorversion = dbmd.getDatabaseMinorVersion();
+					// check if the version number is even, if so it is an unreleased version (e.g. default branch)
+					if (((minorversion  / 2 ) * 2) == minorversion) {
+						// to allow testing on new tables introduced on an unreleased version, increase it with 1
+						//System.out.println("Info: changed internal match version number from " + minorversion + " to " + (minorversion +1));
+						minorversion++;
+					}
 				}
 			} catch (SQLException e) {
 				printExceptions(e);
@@ -923,7 +929,7 @@ public final class MDBvalidator {
 		{"_columns", "id", null},
 		{"columns", "id", null},	// is a view
 		{"functions", "id", null},
-		{"systemfunctions", "function_id", null},	// has become a view in Apr2019 (11.33.3) and maybe removed in the future as is deprecated
+// old		{"systemfunctions", "function_id", null},	// has become a view in Apr2019 (11.33.3) and deprecated so will be removed in the future. Disabled check on Nov 2021.
 		{"args", "id", null},
 		{"types", "id", null},
 		{"objects", "id, nr", null},
@@ -944,41 +950,48 @@ public final class MDBvalidator {
 		{"environment", "name", null},	// is a view on sys.env()
 		{"db_user_info", "name", null},
 		{"statistics", "column_id", null},
-// old	{"tracelog", "event", null},		-- Error: Profiler not started. This table now (Jun2020) contains only: ticks, stmt
-//		{"storage", "schema, table, column", null},	// is a view on table producing function: storage().
+// old	{"tracelog", "event", null},		-- Error: Profiler not started. This table now (from Jun2020) contains only: ticks, stmt
 		{"\"storage\"()", "schema, table, column", null},	// the function "storage"() also lists the storage for system tables
+//		{"storage", "schema, table, column", null},	// is a view on table producing function: sys.storage() which filters out all system tables.
 		{"storagemodelinput", "schema, table, column", null},
-
-		{"rejects", "rowid", "19"},	// querying this view caused problems in versions pre Jul2015, see https://www.monetdb.org/bugzilla/show_bug.cgi?id=3794
-
-		{"keywords", "keyword", "21"},		// introduced in Jul2015 release (11.21.5)
-		{"table_types", "table_type_id", "21"},		// introduced in Jul2015 release (11.21.5)
-
-		{"function_languages", "language_id", "27"},		// introduced in Jul2017 release (11.27.1)
-		{"function_types", "function_type_id", "27"},		// introduced in Jul2017 release (11.27.1)
-		{"index_types", "index_type_id", "27"},		// introduced in Jul2017 release (11.27.1)
-		{"key_types", "key_type_id", "27"},		// introduced in Jul2017 release (11.27.1)
-		{"privilege_codes", "privilege_code_id", "27"},		// introduced in Jul2017 release (11.27.1)
-
-		{"comments", "id", "29"},		// introduced in Mar2018 release (11.29.3)
-		{"ids", "id", "29"},		// introduced in Mar2018 release (11.29.3), it is a view
-		{"var_values", "var_name", "29"},		// var_values is introduced in Mar2018 release (11.29.3), it is a view
-
-		// new views introduced in Apr 2019 feature release (11.33.3)
-//		{"tablestorage", "schema, table", "33"},	// is a view on view storage
-//		{"schemastorage", "schema", "33"},	// is a view on view storage
 //		{"storagemodel", "schema, table, column", null},	// is a view on storagemodelinput
 //		{"tablestoragemodel", "schema, table", null},	// is a view on storagemodelinput
 
+		{"rejects", "rowid", "19"},	// querying this view caused problems in versions pre Jul2015, see https://www.monetdb.org/bugzilla/show_bug.cgi?id=3794
+
+	// new tables introduced in Jul2015 release (11.21.5)
+		{"keywords", "keyword", "21"},
+		{"table_types", "table_type_id", "21"},
+
+	// new tables introduced in Jul2017 release (11.27.1)
+		{"function_languages", "language_id", "27"},
+		{"function_types", "function_type_id", "27"},
+		{"index_types", "index_type_id", "27"},
+		{"key_types", "key_type_id", "27"},
+		{"privilege_codes", "privilege_code_id", "27"},
+
+	// new tables and views introduced in Mar2018 release (11.29.3)
+		{"comments", "id", "29"},
+		{"ids", "id", "29"},		// is a view
+		{"var_values", "var_name", "29"},	// is a view
+
+	// new views introduced in Apr 2019 feature release (11.33.3)
+//		{"tablestorage", "schema, table", "33"},	// is a view on view storage, see check on "storage"() above
+//		{"schemastorage", "schema", "33"},	// is a view on view storage, see check on "storage"() above
 	// new tables introduced in Apr 2019 feature release (11.33.3)
 		{"table_partitions", "id", "33"},
 		{"range_partitions", "table_id, partition_id, minimum", "33"},
 		{"value_partitions", "table_id, partition_id, \"value\"", "33"},
 
+	// changed tables in Jun2020 feature release (11.37.7)
 // old	{"queue", "qtag", null},	// queue has changed in Jun2020 (11.37.7), pkey was previously qtag
 		{"queue", "tag", "37"},		// queue has changed in Jun2020 (11.37.7), pkey is now called tag
 // old	{"sessions", "\"user\", login, active", null},	// sessions has changed in Jun2020 (11.37.7), pkey was previously "user", login, active
-		{"sessions", "sessionid", "37"}		// sessions has changed in Jun2020 (11.37.7), pkey is now called sessionid
+		{"sessions", "sessionid", "37"},	// sessions has changed in Jun2020 (11.37.7), pkey is now called sessionid
+
+	// new tables / views introduced in Jan?? 2022 feature release (11.43.1)
+		{"fkey_actions", "action_id", "43"},
+		{"fkeys", "id", "43"}
 	};
 
 	private static final String[][] tmp_pkeys = {
@@ -1041,7 +1054,10 @@ public final class MDBvalidator {
 	// new tables introduced in Apr 2019 feature release (11.33.3)
 		{"table_partitions WHERE column_id IS NOT NULL", "table_id, column_id", "33"},	// requires WHERE "column_id" IS NOT NULL
 		{"table_partitions WHERE \"expression\" IS NOT NULL", "table_id, \"expression\"", "33"},	// requires WHERE "expression" IS NOT NULL
-		{"range_partitions", "table_id, partition_id, \"maximum\"", "33"}
+		{"range_partitions", "table_id, partition_id, \"maximum\"", "33"},
+	// new tables / views introduced in Jan?? 2022 feature release (11.43.1)
+		{"fkey_actions", "action_name", "43"},
+		{"fkeys", "table_id, name", "43"}
 	};
 
 	private static final String[][] tmp_akeys = {
@@ -1081,7 +1097,7 @@ public final class MDBvalidator {
 		{"functions", "type", "function_type_id", "function_types", "27"},
 		{"functions", "language", "language_id", "function_languages", "27"},
 		// system functions should refer only to functions in MonetDB system schemas
-		{"functions WHERE system AND ", "schema_id", "id", "schemas WHERE system", "33"},
+		{"functions WHERE system AND ", "schema_id", "id", "schemas WHERE system", "33"},	// column "system" was added in release 11.33.3
 		{"args", "func_id", "id", "functions", null},
 		{"args", "type", "sqlname", "types", null},
 		{"types", "schema_id", "id", "schemas", null},
@@ -1093,7 +1109,6 @@ public final class MDBvalidator {
 		{"keys", "table_id", "id", "tables", null},
 		{"keys", "type", "key_type_id", "key_types", "27"},
 		{"keys WHERE rkey <> -1 AND ", "rkey", "id", "keys", null},
-// SELECT * FROM sys.keys WHERE action <> -1 AND action NOT IN (SELECT id FROM sys.?);  -- TODO: find out which action values are valid and what they mean.
 		{"idxs", "id", "id", "objects", null},
 		{"idxs", "table_id", "id", "_tables", null},
 		{"idxs", "table_id", "id", "tables", null},
@@ -1165,7 +1180,13 @@ public final class MDBvalidator {
 		{"range_partitions", "table_id", "id", "_tables", "33"},
 		{"range_partitions", "partition_id", "id", "table_partitions", "33"},
 		{"value_partitions", "table_id", "id", "_tables", "33"},
-		{"value_partitions", "partition_id", "id", "table_partitions", "33"}
+		{"value_partitions", "partition_id", "id", "table_partitions", "33"},
+	// new tables / views introduced in Jan?? 2022 feature release (11.43.1)
+		{"keys WHERE action >= 0 AND ", "cast(((action >> 8) & 255) as smallint)", "action_id", "fkey_actions", "43"},	// update action id
+		{"keys WHERE action >= 0 AND ", "cast((action & 255) as smallint)", "action_id", "fkey_actions", "43"},	// delete action id
+		{"fkeys", "id, table_id, type, name, rkey", "id, table_id, type, name, rkey", "keys", "43"},
+		{"fkeys", "update_action_id", "action_id", "fkey_actions", "43"},
+		{"fkeys", "delete_action_id", "action_id", "fkey_actions", "43"}
 	};
 
 	private static final String[][] tmp_fkeys = {
@@ -1177,7 +1198,8 @@ public final class MDBvalidator {
 		{"keys", "table_id", "id", "_tables", null},
 		{"keys", "type", "key_type_id", "sys.key_types", "27"},
 		{"keys WHERE rkey <> -1 AND ", "rkey", "id", "keys", null},
-// SELECT * FROM tmp.keys WHERE action <> -1 AND action NOT IN (SELECT id FROM tmp.?);  -- TODO: find out which action values are valid and what they mean.
+		{"keys WHERE action >= 0 AND ", "cast(((action >> 8) & 255) as smallint)", "action_id", "sys.fkey_actions", "43"},	// update action id
+		{"keys WHERE action >= 0 AND ", "cast((action & 255) as smallint)", "action_id", "sys.fkey_actions", "43"},	// delete action id
 		{"idxs", "id", "id", "objects", null},
 		{"idxs", "table_id", "id", "_tables", null},
 		{"idxs", "type", "index_type_id", "sys.index_types", "27"},
@@ -1375,7 +1397,18 @@ public final class MDBvalidator {
 		{"table_partitions", "type", "33"},
 		{"value_partitions", "table_id", "33"},
 		{"value_partitions", "partition_id", "33"},
-		{"value_partitions", "value", "33"}		// Can this be null when WITH NULL VALUES is specified?
+	// new tables / views introduced in Jan?? 2022 feature release (11.43.1)
+		{"fkey_actions", "action_id", "43"},
+		{"fkey_actions", "action_name", "43"},
+		{"fkeys", "id", "43"},
+		{"fkeys", "table_id", "43"},
+		{"fkeys", "type", "43"},
+		{"fkeys", "name", "43"},
+		{"fkeys", "rkey", "43"},
+		{"fkeys", "update_action_id", "43"},
+		{"fkeys", "update_action", "43"},
+		{"fkeys", "delete_action_id", "43"},
+		{"fkeys", "delete_action", "43"}
 	};
 
 	private static final String[][] tmp_notnull = {
