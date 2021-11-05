@@ -5014,8 +5014,11 @@ final public class JDBC_API_Tester {
 			int port = Integer.parseInt(con.getClientInfo("port"));
 			String login = con.getClientInfo("user");
 			String passw = con.getClientInfo("password");
-			// sb.append("host: " + host + " port: " + port + " login: " + login + " passwd: " + passw + "\n");
 
+			String database = con.getClientInfo("database");
+			server.setDatabase(database);
+
+			// sb.append("host: " + host + " port: " + port + " login: " + login + " passwd: " + passw + "\n");
 			sb.append("Before connecting to MonetDB server via MapiSocket\n");
 			List<String> warning = server.connect(host, port, login, passw);
 			if (warning != null) {
