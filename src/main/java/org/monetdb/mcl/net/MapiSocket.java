@@ -22,6 +22,7 @@ import java.net.Socket;
 import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -31,6 +32,7 @@ import java.util.List;
 import org.monetdb.mcl.MCLException;
 import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
+import org.monetdb.mcl.io.LineType;
 import org.monetdb.mcl.parser.MCLParseException;
 
 /**
@@ -79,7 +81,7 @@ import org.monetdb.mcl.parser.MCLParseException;
  * geared towards the format of the data.
  *
  * @author Fabian Groffen
- * @version 4.1
+ * @version 4.2
  * @see org.monetdb.mcl.io.BufferedMCLReader
  * @see org.monetdb.mcl.io.BufferedMCLWriter
  */
@@ -89,7 +91,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	/** The TCP Socket timeout in milliseconds. Default is 0 meaning the timeout is disabled (i.e., timeout of infinity) */
 	private int soTimeout = 0;
 	/** Stream from the Socket for reading */
-	private InputStream fromMonet;
+	private BlockInputStream fromMonet;
 	/** Stream from the Socket for writing */
 	private OutputStream toMonet;
 	/** MCLReader on the InputStream */
@@ -293,7 +295,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		final ArrayList<String> redirects = new ArrayList<String>();
 		final List<String> warns = new ArrayList<String>();
 		String err = "", tmp;
-		int lineType;
+		LineType lineType;
 		do {
 			tmp = reader.readLine();
 			if (tmp == null)
@@ -301,14 +303,14 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 						con.getInetAddress().getHostName() + ":" +
 						con.getPort() + ": End of stream reached");
 			lineType = reader.getLineType();
-			if (lineType == BufferedMCLReader.ERROR) {
+			if (lineType == LineType.ERROR) {
 				err += "\n" + tmp.substring(7);
-			} else if (lineType == BufferedMCLReader.INFO) {
+			} else if (lineType == LineType.INFO) {
 				warns.add(tmp.substring(1));
-			} else if (lineType == BufferedMCLReader.REDIRECT) {
+			} else if (lineType == LineType.REDIRECT) {
 				redirects.add(tmp.substring(1));
 			}
-		} while (lineType != BufferedMCLReader.PROMPT);
+		} while (lineType != LineType.PROMPT);
 
 		if (err.length() > 0) {
 			close();
@@ -344,26 +346,32 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 						int pos = args[i].indexOf("=");
 						if (pos > 0) {
 							tmp = args[i].substring(0, pos);
-							if (tmp.equals("database")) {
-								tmp = args[i].substring(pos + 1);
-								if (!tmp.equals(database)) {
-									warns.add("redirect points to different database: " + tmp);
-									setDatabase(tmp);
-								}
-							} else if (tmp.equals("language")) {
-								tmp = args[i].substring(pos + 1);
-								warns.add("redirect specifies use of different language: " + tmp);
-								setLanguage(tmp);
-							} else if (tmp.equals("user")) {
-								tmp = args[i].substring(pos + 1);
-								if (!tmp.equals(user))
-									warns.add("ignoring different username '" + tmp + "' set by " +
-											"redirect, what are the security implications?");
-							} else if (tmp.equals("password")) {
-								warns.add("ignoring different password set by redirect, " +
-										"what are the security implications?");
-							} else {
-								warns.add("ignoring unknown argument '" + tmp + "' from redirect");
+							switch (tmp) {
+								case "database":
+									tmp = args[i].substring(pos + 1);
+									if (!tmp.equals(database)) {
+										warns.add("redirect points to different database: " + tmp);
+										setDatabase(tmp);
+									}
+									break;
+								case "language":
+									tmp = args[i].substring(pos + 1);
+									warns.add("redirect specifies use of different language: " + tmp);
+									setLanguage(tmp);
+									break;
+								case "user":
+									tmp = args[i].substring(pos + 1);
+									if (!tmp.equals(user))
+										warns.add("ignoring different username '" + tmp + "' set by " +
+												"redirect, what are the security implications?");
+									break;
+								case "password":
+									warns.add("ignoring different password set by redirect, " +
+											"what are the security implications?");
+									break;
+								default:
+									warns.add("ignoring unknown argument '" + tmp + "' from redirect");
+									break;
 							}
 						} else {
 							warns.add("ignoring illegal argument from redirect: " + args[i]);
@@ -423,6 +431,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	 * @param language the language to use
 	 * @param database the database to connect to
 	 * @param hash the hash method(s) to use, or NULL for all supported hashes
+	 * @return the response string for the server
 	 */
 	private String getChallengeResponse(
 			final String chalstr,
@@ -454,27 +463,30 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				String pwhash = chaltok[5];
 				/* NOTE: Java doesn't support RIPEMD160 :( */
 				/* see: https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#MessageDigest */
-				if (pwhash.equals("SHA512")) {
-					algo = "SHA-512";
-				} else if (pwhash.equals("SHA384")) {
-					algo = "SHA-384";
-				} else if (pwhash.equals("SHA256")) {
-					algo = "SHA-256";
-				/* NOTE: Java 7 doesn't support SHA-224. Java 8 does but we have not tested it. It is also not requested yet. */
-				} else if (pwhash.equals("SHA1")) {
-					algo = "SHA-1";
-				} else {
-					/* Note: MD5 has been deprecated by security experts and support is removed from Oct 2020 release */
-					throw new MCLException("Unsupported password hash: " + pwhash);
+				switch (pwhash) {
+					case "SHA512":
+						algo = "SHA-512";
+						break;
+					case "SHA384":
+						algo = "SHA-384";
+						break;
+					case "SHA256":
+						algo = "SHA-256";
+						/* NOTE: Java 7 doesn't support SHA-224. Java 8 does but we have not tested it. It is also not requested yet. */
+						break;
+					case "SHA1":
+						algo = "SHA-1";
+						break;
+					default:
+						/* Note: MD5 has been deprecated by security experts and support is removed from Oct 2020 release */
+						throw new MCLException("Unsupported password hash: " + pwhash);
 				}
 				try {
 					final MessageDigest md = MessageDigest.getInstance(algo);
-					md.update(password.getBytes("UTF-8"));
+					md.update(password.getBytes(StandardCharsets.UTF_8));
 					password = toHex(md.digest());
 				} catch (NoSuchAlgorithmException e) {
-					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e.toString());
-				} catch (UnsupportedEncodingException e) {
-					throw new MCLException("This JVM does not support UTF-8 encoding\n" + e.toString());
+					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e);
 				}
 
 				// proto 7 (finally) used the challenge and works with a
@@ -517,13 +529,11 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				}
 				try {
 					final MessageDigest md = MessageDigest.getInstance(algo);
-					md.update(password.getBytes("UTF-8"));
-					md.update(chaltok[0].getBytes("UTF-8"));	// salt/key
+					md.update(password.getBytes(StandardCharsets.UTF_8));
+					md.update(chaltok[0].getBytes(StandardCharsets.UTF_8));	// salt/key
 					pwhash += toHex(md.digest());
 				} catch (NoSuchAlgorithmException e) {
-					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e.toString());
-				} catch (UnsupportedEncodingException e) {
-					throw new MCLException("This JVM does not support UTF-8 encoding\n" + e.toString());
+					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e);
 				}
 
 				// TODO: some day when we need this, we should store this
@@ -540,11 +550,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 						+ username + ":"
 						+ pwhash + ":"
 						+ language + ":"
-						+ (database == null ? "" : database) + ":";
+						+ (database == null ? "" : database) + ":"
+						+ "FILETRANS:";	 // this capability is added in monetdb-jdbc-3.2.jre8.jar
 				if (chaltok.length > 6) {
-					// this ':' delimits the FILETRANS field, currently empty because we don't support it.
-					response += ":";
-
 					// if supported, send handshake options
 					for (String part : chaltok[6].split(",")) {
 						if (part.startsWith("sql=") && handshakeOptions != null) {
@@ -560,7 +568,6 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					}
 					// this ':' delimits the handshake options field.
 					response += ":";
-
 				}
 				return response;
 			default:
@@ -590,7 +597,6 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			? (char) ('a' + (n - 10))
 			: (char) ('0' + n);
 	}
-
 
 	/**
 	 * Returns an InputStream that reads from this open connection on
@@ -721,6 +727,14 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	}
 
 	/**
+	 * For internal use
+	 */
+	public boolean setInsertFakePrompts(boolean b) {
+		return fromMonet.setInsertFakePrompts(b);
+	}
+
+
+	/**
 	 * Inner class that is used to write data on a normal stream as a
 	 * blocked stream.  A call to the flush() method will write a
 	 * "final" block to the underlying stream.  Non-final blocks are
@@ -797,7 +811,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				} else {
 					log("TD ", "write block: " + writePos + " bytes", false);
 				}
-				log("TX ", new String(block, 0, writePos, "UTF-8"), true);
+				log("TX ", new String(block, 0, writePos, StandardCharsets.UTF_8), true);
 			}
 
 			writePos = 0;
@@ -818,9 +832,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 		@Override
 		public void write(final byte[] b, int off, int len) throws IOException {
-			int t = 0;
 			while (len > 0) {
-				t = BLOCK - writePos;
+				int t = BLOCK - writePos;
 				if (len > t) {
 					System.arraycopy(b, off, block, writePos, t);
 					off += t;
@@ -851,7 +864,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	final class BlockInputStream extends FilterInputStream {
 		private int readPos = 0;
 		private int blockLen = 0;
+		private boolean wasEndBlock = false;
 		private final byte[] block = new byte[BLOCK + 3]; // \n.\n
+		private boolean insertFakePrompts = true;
 
 		/**
 		 * Constructs this BlockInputStream, backed by the given
@@ -862,6 +877,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			// much bytes to write/read, since this is just faster for
 			// some reason
 			super(new BufferedInputStream(in));
+		}
+
+		public boolean setInsertFakePrompts(boolean doFake) {
+			boolean old = insertFakePrompts;
+			insertFakePrompts = doFake;
+			return old;
 		}
 
 		@Override
@@ -907,7 +928,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					if (off > 0) {
 						if (debug) {
 							log("RD ", "the following incomplete block was received:", false);
-							log("RX ", new String(b, 0, off, "UTF-8"), true);
+							log("RX ", new String(b, 0, off, StandardCharsets.UTF_8), true);
 						}
 						throw new IOException("Read from " +
 								con.getInetAddress().getHostName() + ":" +
@@ -957,10 +978,12 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					(blklen[0] & 0xFF) >> 1 |
 					(blklen[1] & 0xFF) << 7
 					);
+			wasEndBlock = (blklen[0] & 0x1) == 1;
+
 			readPos = 0;
 
 			if (debug) {
-				if ((blklen[0] & 0x1) == 1) {
+				if (wasEndBlock) {
 					log("RD ", "read final block: " + blockLen + " bytes", false);
 				} else {
 					log("RD ", "read new block: " + blockLen + " bytes", false);
@@ -976,19 +999,24 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				return -1;
 
 			if (debug)
-				log("RX ", new String(block, 0, blockLen, "UTF-8"), true);
+				log("RX ", new String(block, 0, blockLen, StandardCharsets.UTF_8), true);
 
 			// if this is the last block, make it end with a newline and prompt
-			if ((blklen[0] & 0x1) == 1) {
-				if (blockLen > 0 && block[blockLen - 1] != '\n') {
-					// to terminate the block in a Reader
+			if (wasEndBlock) {
+				// insert 'fake' newline and prompt
+				if (insertFakePrompts) {
+					if (blockLen > 0 && block[blockLen - 1] != '\n') {
+						// to terminate the block in a Reader
+						block[blockLen++] = '\n';
+					}
+					for (byte b : LineType.PROMPT.bytes()) {
+						block[blockLen++] = b;
+					}
 					block[blockLen++] = '\n';
+					if (debug) {
+						log("RD ", "inserting prompt", true);
+					}
 				}
-				// insert 'fake' flush
-				block[blockLen++] = BufferedMCLReader.PROMPT;
-				block[blockLen++] = '\n';
-				if (debug)
-					log("RD ", "inserting prompt", true);
 			}
 
 			return blockLen;
@@ -1002,7 +1030,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			}
 
 			if (debug)
-				log("RX ", new String(block, readPos, 1, "UTF-8"), true);
+				log("RX ", new String(block, readPos, 1, StandardCharsets.UTF_8), true);
 
 			return (int)block[readPos++];
 		}
@@ -1047,9 +1075,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		@Override
 		public long skip(final long n) throws IOException {
 			long skip = n;
-			int t = 0;
 			while (skip > 0) {
-				t = available();
+				int t = available();
 				if (skip > t) {
 					skip -= t;
 					readPos += t;
@@ -1060,6 +1087,47 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				}
 			}
 			return n;
+		}
+
+		/**
+		 * For internal use
+		 */
+		Raw getRaw() {
+			return new Raw();
+		}
+
+		/** An alternative I/O interface that exposes the block based nature of the MAPI protocol */
+		final class Raw {
+			byte[] getBytes() {
+				return block;
+			}
+
+			int getLength() {
+				return blockLen;
+			}
+
+			int getPosition() {
+				return readPos;
+			}
+
+			int consume(int delta) {
+				int pos = readPos;
+				readPos += delta;
+				return pos;
+			}
+
+			int readBlock() throws IOException {
+				boolean wasFaking = setInsertFakePrompts(false);
+				try {
+					return BlockInputStream.this.readBlock();
+				} finally {
+					setInsertFakePrompts(wasFaking);
+				}
+			}
+
+			boolean wasEndBlock() {
+				return wasEndBlock;
+			}
 		}
 	}
 
@@ -1108,6 +1176,34 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	}
 
 	/**
+	 * Return an UploadStream for use with for example COPY FROM filename ON CLIENT.
+	 *
+	 * Building block for {@link org.monetdb.jdbc.MonetConnection.UploadHandler}.
+	 * @param chunkSize chunk size for the upload stream
+	 */
+	public UploadStream uploadStream(int chunkSize) {
+		return new UploadStream(chunkSize);
+	}
+
+	/**
+	 * Return an UploadStream for use with for example COPY FROM filename ON CLIENT.
+	 *
+	 * Building block for {@link org.monetdb.jdbc.MonetConnection.UploadHandler}.
+	 */
+	public UploadStream uploadStream() {
+		return new UploadStream();
+	}
+
+	/**
+	 * Return a DownloadStream for use with for example COPY INTO filename ON CLIENT
+	 *
+	 * Building block for {@link org.monetdb.jdbc.MonetConnection.DownloadHandler}.
+	 */
+	public DownloadStream downloadStream() {
+		return new DownloadStream(fromMonet.getRaw(), toMonet);
+	}
+
+	/**
 	 * Destructor called by garbage collector before destroying this
 	 * object tries to disconnect the MonetDB connection if it has not
 	 * been disconnected already.
@@ -1119,5 +1215,234 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	protected void finalize() throws Throwable {
 		close();
 		super.finalize();
+	}
+
+
+	/**
+	 * Stream of data sent to the server
+	 *
+	 * Building block for {@link org.monetdb.jdbc.MonetConnection.UploadHandler}.
+	 *
+	 * An UploadStream has a chunk size. Every chunk size bytes, the server gets
+	 * the opportunity to abort the upload.
+	 */
+	public class UploadStream extends FilterOutputStream {
+		public final static int DEFAULT_CHUNK_SIZE = 1024 * 1024;
+		private final int chunkSize;
+		private boolean closed = false;
+		private boolean serverCancelled = false;
+		private int chunkLeft;
+		private byte[] promptBuffer;
+		private Runnable cancellationCallback = null;
+
+		/** Create an UploadStream with the given chunk size */
+		UploadStream(final int chunkSize) {
+			super(toMonet);
+			if (chunkSize <= 0) {
+				throw new IllegalArgumentException("chunk size must be positive");
+			}
+			this.chunkSize = chunkSize;
+			assert LineType.MORE.bytes().length == LineType.FILETRANSFER.bytes().length;
+			int promptLen = LineType.MORE.bytes().length;
+			promptBuffer = new byte[promptLen + 1];
+			chunkLeft = this.chunkSize;
+		}
+
+		/** Create an UploadStream with the default chunk size */
+		UploadStream() {
+			this(DEFAULT_CHUNK_SIZE);
+		}
+
+		/** Set a callback to be invoked if the server cancels the upload
+		 */
+		public void setCancellationCallback(final Runnable cancellationCallback) {
+			this.cancellationCallback = cancellationCallback;
+		}
+
+		@Override
+		public void write(final int b) throws IOException {
+			if (serverCancelled) {
+				// We have already thrown an exception and apparently that has been ignored.
+				// Probably because they're calling print methods instead of write.
+				// Throw another one, maybe they'll catch this one.
+				throw new IOException("Server aborted the upload");
+			}
+			handleChunking();
+			super.write(b);
+			wrote(1);
+		}
+
+		@Override
+		public void write(final byte[] b) throws IOException {
+			write(b, 0, b.length);
+		}
+
+		@Override
+		public void write(final byte[] b, int off, int len) throws IOException {
+			if (serverCancelled) {
+				// We have already thrown an exception and apparently that has been ignored.
+				// Probably because they're calling print methods instead of write.
+				// Throw another one, maybe they'll catch this one.
+				throw new IOException("Server aborted the upload");
+			}
+			while (len > 0) {
+				handleChunking();
+				int toWrite = Integer.min(len, chunkLeft);
+				super.write(b, off, toWrite);
+				off += toWrite;
+				len -= toWrite;
+				wrote(toWrite);
+			}
+		}
+
+		@Override
+		public void flush() throws IOException {
+			// suppress flushes
+		}
+
+		@Override
+		public void close() throws IOException {
+			if (closed) {
+				return;
+			}
+			closed = true;
+
+			if (serverCancelled)
+				closeAfterServerCancelled();
+			else
+				closeAfterSuccesfulUpload();
+		}
+
+		private void closeAfterSuccesfulUpload() throws IOException {
+			if (chunkLeft != chunkSize) {
+				// flush pending data
+				flushAndReadPrompt();
+			}
+			// send empty block
+			out.flush();
+			final LineType acknowledgement = readPrompt();
+			if (acknowledgement != LineType.FILETRANSFER) {
+				throw new IOException("Expected server to acknowledge end of file");
+			}
+		}
+
+		private void closeAfterServerCancelled() {
+			// nothing to do here, we have already read the error prompt.
+		}
+
+		private void wrote(final int i) {
+			chunkLeft -= i;
+		}
+
+		private void handleChunking() throws IOException {
+			if (chunkLeft > 0) {
+				return;
+			}
+			flushAndReadPrompt();
+		}
+
+		private void flushAndReadPrompt() throws IOException {
+			out.flush();
+			chunkLeft = chunkSize;
+			final LineType lineType = readPrompt();
+			switch (lineType) {
+				case MORE:
+					return;
+				case FILETRANSFER:
+					// Note, if the caller is calling print methods instead of write, the IO exception gets hidden.
+					// This is unfortunate but there's nothing we can do about it.
+					serverCancelled = true;
+					if (cancellationCallback != null) {
+						cancellationCallback.run();
+					}
+					throw new IOException("Server aborted the upload");
+				default:
+					throw new IOException("Expected MORE/DONE from server, got " + lineType);
+			}
+		}
+
+		private LineType readPrompt() throws IOException {
+			final int nread = fromMonet.read(promptBuffer);
+			if (nread != promptBuffer.length || promptBuffer[promptBuffer.length - 1] != '\n') {
+				throw new IOException("server return incomplete prompt");
+			}
+			return LineType.classify(promptBuffer);
+		}
+	}
+
+
+	/**
+	 * Stream of data received from the server
+	 *
+	 * Building block for {@link org.monetdb.jdbc.MonetConnection.DownloadHandler}.
+	 */
+	public static class DownloadStream extends InputStream {
+		private final BlockInputStream.Raw rawIn;
+		private final OutputStream out;
+		private boolean endBlockSeen = false;
+		private boolean closed = false;
+
+		DownloadStream(BlockInputStream.Raw rawIn, OutputStream out) {
+			this.rawIn = rawIn;
+			this.out = out;
+		}
+
+		void nextBlock() throws IOException {
+			if (endBlockSeen || closed)
+				return;
+			final int ret = rawIn.readBlock();
+			if (ret < 0 || rawIn.wasEndBlock()) {
+				endBlockSeen = true;
+			}
+		}
+
+		@Override
+		public void close() throws IOException {
+			if (closed)
+				return;
+			closed = true;
+			while (!endBlockSeen) {
+				nextBlock();
+			}
+			// Send acknowledgement to server
+			out.write('\n');
+			out.flush();
+			// Do whatever super has to do
+			super.close();
+		}
+
+		@Override
+		public int read() throws IOException {
+			final byte[] buf = { 0 };
+			final int nread = read(buf, 0, 1);
+			if (nread == 1)
+				return buf[0];
+			else
+				return -1;
+		}
+
+		@Override
+		public int read(final byte[] b, int off, int len) throws IOException {
+			final int origOff = off;
+			while (len > 0) {
+				int chunk = Integer.min(len, rawIn.getLength() - rawIn.getPosition());
+				if (chunk > 0) {
+					// make progress copying some bytes
+					System.arraycopy(rawIn.getBytes(), rawIn.getPosition(), b, off, chunk);
+					off += chunk;
+					rawIn.consume(chunk);
+					len -= chunk;
+				} else {
+					// make progress fetching data
+					if (endBlockSeen)
+						break;
+					nextBlock();
+				}
+			}
+			if (off == origOff && endBlockSeen)
+				return -1;
+			else
+				return off - origOff;
+		}
 	}
 }

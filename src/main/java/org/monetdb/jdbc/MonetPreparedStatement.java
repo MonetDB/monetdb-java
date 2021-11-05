@@ -720,7 +720,7 @@ public class MonetPreparedStatement
 			/**
 			 * Gets the designated column's name
 			 *
-			 * @param column the first column is 1, the second is 2, ...
+			 * @param colnr column number, the first column is 1, the second is 2, ...
 			 * @return the column name
 			 * @throws SQLException if there is no such column
 			 */

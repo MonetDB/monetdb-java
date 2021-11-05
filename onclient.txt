@@ -1,0 +1,94 @@
+COPY ... ON CLIENT support in the MonetDB JDBC driver and JdbcClient program.
+
+MonetDB provides the nonstandard COPY INTO statement to perform bulk inserts and
+retrievals, see also
+https://www.monetdb.org/Documentation/ServerAdministration/LoadingBulkData/CSVBulkLoads
+https://www.monetdb.org/Documentation/ServerAdministration/ExportingBulkData
+
+By default, COPY INTO accesses files on the server but it also has a mode to
+access files on the client.  This is supported by the command line tool
+mclient(1) and now also as an extension to the MonetDB JDBC driver.
+
+This is how it works: The JDBC client automatically announces that it is capable
+of file transfers.  If you execute, for example,
+
+	COPY INTO mytable FROM 'data.csv' ON CLIENT;
+
+the server will send a request for file 'data.csv' to the JDBC driver.
+By default, the JDBC driver will refuse with an error message:
+
+	'No file upload handler has been registered with the JDBC driver'
+
+or in JdbcClient:
+	'Error [22000] data.csv: No file upload handler has been registered with the JDBC driver'
+
+This is for security reasons.  However, you can register a callback to handle
+these requests from the server:
+
+	Connection conn = DriverManager.getConnection(dbUrl, userName, password);
+	MyUploader handler = new MyUploadHandler();
+	conn.unwrap(MonetConnection.class).setUploadHandler(handler);
+
+or provide the JdbcClient startup argument: --csvdir "/path/to/csvfilesdir"
+
+Here, MyUploadHandler is an implementation of the interface MonetConnection.UploadHandler,
+which looks like this:
+
+	public interface UploadHandler {
+		/**
+		 * Called if the server sends a request to read file data.
+		 *
+		 * Use the given handle to receive data or send errors to the server.
+		 *  @param handle Handle to communicate with the server
+		 * @param name Name of the file the server would like to read. Make sure
+		 *             to validate this before reading from the file system
+		 * @param textMode Whether to open the file as text or binary data.
+		 * @param linesToSkip In text mode, number of initial lines to skip.
+		 *                    0 means upload everything, 1 means skip the first line, etc.
+		 *                    Note: this is different from the OFFSET option of the COPY INTO,
+		 *                    where both 0 and 1 mean 'upload everything'
+		 */
+		void handleUpload(Upload handle, String name, boolean textMode, long linesToSkip) throws IOException;
+
+		/**
+		 * Called when the upload is cancelled halfway by the server.
+		 *
+		 * The default implementation does nothing.
+		 */
+		default void uploadCancelled() {}
+	}
+
+In your implementation of handleUpload(), you can use the 'handle' object to
+communicate with the server, for example:
+
+- handle.getStream() to obtain a stream object to which you can write.
+  This is useful if you want to generate the data on the fly.
+
+- void uploadFrom(InputStream stream) to have the JDBC driver read data from the
+  stream and send it to the server as-is.  For text mode uploads this means the
+  text must be UTF-8 encoded.
+
+- handle.uploadFrom(Reader reader) to have the JDBC driver read text from the given
+  Reader and upload it.
+
+- handle.uploadFrom(BufferedReader reader, long linesToSkip) to have the JDBC
+  driver read from the given BufferedReader and upload the text, skipping the first
+  'linesToSkip' lines. Typically you would use the value passed to handleUpload in
+  parameter 'linesToSkip'.
+
+- handle.sendError(String errorMessage) to refuse the upload.
+
+If you use sendError to refuse the upload, the COPY INTO statement will fail but
+the connection will remain usable. On the other hand, if you implementation of
+handleUpload throws an IO Exception, the connection will be closed because there
+is currently no way to signal errors to the server once the transfer has begun.
+
+The interface for downloading is similar to that for uploading.
+
+Class org.monetdb.util.FileTransferHandler provides a default implementation
+of both MonetConnection.UploadHandler and MonetConnection.DownloadHandler for
+reading from and writing to local csv files. You pass the FileTransferHandler
+constructor a directory name and a flag indicating whether the contents of
+the csv files data are UTF-8 encoded. FileTransferHandler is intended for
+situations where you do not need to generate or transform data while uploading.
+

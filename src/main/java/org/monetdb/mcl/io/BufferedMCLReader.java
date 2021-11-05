@@ -41,27 +41,9 @@ import java.io.UnsupportedEncodingException;
  * @see org.monetdb.mcl.io.BufferedMCLWriter
  */
 public final class BufferedMCLReader extends BufferedReader {
-	/** "there is currently no line", or the the type is unknown is represented by UNKNOWN */
-	public final static int UNKNOWN  = 0;
-	/** a line starting with ! indicates ERROR */
-	public final static int ERROR    = '!';
-	/** a line starting with % indicates HEADER */
-	public final static int HEADER   = '%';
-	/** a line starting with [ indicates RESULT */
-	public final static int RESULT   = '[';
-	/** a line which matches the pattern of prompt1 is a PROMPT */
-	public final static int PROMPT   = '.';
-	/** a line which matches the pattern of prompt2 is a MORE */
-	public final static int MORE     = ',';
-	/** a line starting with &amp; indicates the start of a header block */
-	public final static int SOHEADER = '&';
-	/** a line starting with ^ indicates REDIRECT */
-	public final static int REDIRECT = '^';
-	/** a line starting with # indicates INFO */
-	public final static int INFO     = '#';
 
 	/** The type of the last line read */
-	private int lineType = UNKNOWN;
+	private LineType lineType = LineType.UNKNOWN;
 
 	/**
 	 * Create a buffering character-input stream that uses a
@@ -107,7 +89,7 @@ public final class BufferedMCLReader extends BufferedReader {
 	public String readLine() throws IOException {
 		String r = super.readLine();
 		setLineType(r);
-		if (lineType == ERROR && r != null && !r.matches("^![0-9A-Z]{5}!.+")) {
+		if (lineType == LineType.ERROR && r != null && !r.matches("^![0-9A-Z]{5}!.+")) {
 			r = "!22000!" + r.substring(1);
 		}
 		return r;
@@ -120,39 +102,7 @@ public final class BufferedMCLReader extends BufferedReader {
 	 * @param line the string to examine
 	 */
 	public void setLineType(final String line) {
-		if (line == null || line.isEmpty()) {
-			lineType = UNKNOWN;
-			return;
-		}
-		switch (line.charAt(0)) {
-			case '.':
-				lineType = PROMPT;
-				break;
-			case ',':
-				lineType = MORE;
-				break;
-			case '[':	/* multi field result */
-			case '=':	/* single value result */
-				lineType = RESULT;
-				break;
-			case '%':
-				lineType = HEADER;
-				break;
-			case '&':
-				lineType = SOHEADER;
-				break;
-			case '#':
-				lineType = INFO;
-				break;
-			case '!':
-				lineType = ERROR;
-				break;
-			case '^':
-				lineType = REDIRECT;
-				break;
-			default:
-				lineType = UNKNOWN;
-		}
+		lineType = LineType.classify(line);
 	}
 
 	/**
@@ -162,7 +112,7 @@ public final class BufferedMCLReader extends BufferedReader {
 	 *         following constants: UNKNOWN, HEADER, ERROR, PROMPT, MORE,
 	 *         RESULT, SOHEADER, REDIRECT, INFO
 	 */
-	public int getLineType() {
+	public LineType getLineType() {
 		return lineType;
 	}
 
@@ -184,11 +134,11 @@ public final class BufferedMCLReader extends BufferedReader {
 		final StringBuilder ret = new StringBuilder(128);
 		String tmp;
 
-		while (lineType != PROMPT) {
+		while (lineType != LineType.PROMPT) {
 			tmp = readLine();
 			if (tmp == null)
 				throw new IOException("Connection to server lost!");
-			if (lineType == ERROR)
+			if (lineType == LineType.ERROR)
 				ret.append('\n').append(tmp.substring(1));
 		}
 		return ret.length() == 0 ? null : ret.toString().trim();

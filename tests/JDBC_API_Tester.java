@@ -104,6 +104,11 @@ final public class JDBC_API_Tester {
 
 		if (jt.foundDifferences)
 			System.exit(-1);
+
+		OnClientTester oct = new OnClientTester(con_URL, 0, true);
+		int failures = oct.runTests("");
+		if (failures > 0)
+			System.exit(-1);
 	}
 
 	private void Test_Cautocommit(String arg0) {

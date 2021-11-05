@@ -8,10 +8,10 @@
 
 package org.monetdb.jdbc;
 
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.nio.charset.StandardCharsets;
 import java.sql.CallableStatement;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
@@ -35,6 +35,7 @@ import java.util.concurrent.Executor;
 
 import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
+import org.monetdb.mcl.io.LineType;
 import org.monetdb.mcl.net.HandshakeOptions;
 import org.monetdb.mcl.net.MapiSocket;
 import org.monetdb.mcl.parser.HeaderLineParser;
@@ -67,7 +68,7 @@ import org.monetdb.mcl.parser.StartOfHeaderParser;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 1.6
+ * @version 1.7
  */
 public class MonetConnection
 	extends MonetWrapper
@@ -149,7 +150,6 @@ public class MonetConnection
 
 	/** A cache to reduce the number of DatabaseMetaData objects created by getMetaData() to maximum 1 per connection */
 	private DatabaseMetaData dbmd;
-
 
 	/**
 	 * Constructor of a Connection for MonetDB. At this moment the
@@ -1238,7 +1238,6 @@ public class MonetConnection
 		throw newSQLFeatureNotSupportedException("createArrayOf");
 	}
 
-
 	/**
 	 * Constructs an object that implements the Clob interface. The
 	 * object returned initially contains no data. The setAsciiStream,
@@ -1674,6 +1673,43 @@ public class MonetConnection
 
 	//== internal helper methods which do not belong to the JDBC interface
 
+	/** Handler for COPY ... INTO ... FROM 'data-file-name' ON CLIENT requests */
+	private UploadHandler uploadHandler;
+	/** Handler for COPY ... INTO 'data-file-name' ON CLIENT requests */
+	private DownloadHandler downloadHandler;
+
+	/**
+	 * Registers a {@link UploadHandler} to support for example COPY INTO mytable FROM 'data.csv' ON CLIENT
+	 *
+	 * @param uploadHandler the handler to register, or null to deregister
+	 */
+	public void setUploadHandler(final UploadHandler uploadHandler) {
+		this.uploadHandler = uploadHandler;
+	}
+
+	/**
+	 * Returns the currently registerered {@link UploadHandler}, or null
+	 */
+	public UploadHandler getUploadHandler() {
+		return uploadHandler;
+	}
+
+	/**
+	 * Registers a {@link DownloadHandler} to support for example COPY select_result INTO 'data.csv' ON CLIENT
+	 *
+	 * @param downloadHandler the handler to register, or null to deregister
+	 */
+	public void setDownloadHandler(final DownloadHandler downloadHandler) {
+		this.downloadHandler = downloadHandler;
+	}
+
+	/**
+	 * Returns the currently registerered {@link DownloadHandler} handler, or null
+	 */
+	public DownloadHandler getDownloadHandler() {
+		return downloadHandler;
+	}
+
 	/**
 	 * Local helper method to test whether the Connection object is closed
 	 * When closed it throws an SQLException
@@ -2100,7 +2136,7 @@ public class MonetConnection
 		 * @return a non-null String if the line is invalid,
 		 *         or additional lines are not allowed.
 		 */
-		public abstract String addLine(String line, int linetype);
+		String addLine(String line, LineType linetype);
 
 		/**
 		 * Returns whether this Response expects more lines to be added
@@ -2108,7 +2144,7 @@ public class MonetConnection
 		 *
 		 * @return true if a next line should be added, false otherwise
 		 */
-		public abstract boolean wantsMore();
+		boolean wantsMore();
 
 		/**
 		 * Indicates that no more header lines will be added to this
@@ -2118,14 +2154,14 @@ public class MonetConnection
 		 *         consistent or sufficient.
 		 */
 		/* MvD: disabled not used/needed code
-		public abstract void complete() throws SQLException;
+		void complete() throws SQLException;
 		*/
 
 		/**
 		 * Instructs the Response implementation to close and do the
 		 * necessary clean up procedures.
 		 */
-		public abstract void close();
+		void close();
 	}
 	// }}}
 
@@ -2259,12 +2295,12 @@ public class MonetConnection
 		 */
 		// {{{ addLine
 		@Override
-		public String addLine(final String tmpLine, final int linetype) {
+		public String addLine(final String tmpLine, final LineType linetype) {
 			if (isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES]) {
 				return resultBlocks[0].addLine(tmpLine, linetype);
 			}
 
-			if (linetype != BufferedMCLReader.HEADER)
+			if (linetype != LineType.HEADER)
 				return "header expected, got: " + tmpLine;
 
 			// depending on the name of the header, we continue
@@ -2634,8 +2670,8 @@ public class MonetConnection
 		 *         or additional lines are not allowed.
 		 */
 		@Override
-		public String addLine(final String line, final int linetype) {
-			if (linetype != BufferedMCLReader.RESULT)
+		public String addLine(final String line, final LineType linetype) {
+			if (linetype != LineType.RESULT)
 				return "protocol violation: unexpected line in data block: " + line;
 			// add to the backing array
 			data[++pos] = line;
@@ -2725,7 +2761,7 @@ public class MonetConnection
 		}
 
 		@Override
-		public String addLine(final String line, final int linetype) {
+		public String addLine(final String line, final LineType linetype) {
 			return "Header lines are not supported for an UpdateResponse";
 		}
 
@@ -2762,7 +2798,7 @@ public class MonetConnection
 		public final int state = Statement.SUCCESS_NO_INFO;
 
 		@Override
-		public String addLine(final String line, final int linetype) {
+		public String addLine(final String line, final LineType linetype) {
 			return "Header lines are not supported for a SchemaResponse";
 		}
 
@@ -2946,7 +2982,7 @@ public class MonetConnection
 		 * Internal executor of queries.
 		 *
 		 * @param templ the template to fill in
-		 * @param the query to execute
+		 * @param query the query to execute
 		 * @throws SQLException if a database error occurs
 		 */
 		@SuppressWarnings("fallthrough")
@@ -2989,12 +3025,12 @@ public class MonetConnection
 
 					// go for new results
 					String tmpLine = in.readLine();
-					int linetype = in.getLineType();
+					LineType linetype = in.getLineType();
 					Response res = null;
-					while (linetype != BufferedMCLReader.PROMPT) {
+					while (linetype != LineType.PROMPT) {
 						// each response should start with a start of header (or error)
 						switch (linetype) {
-						case BufferedMCLReader.SOHEADER:
+						case SOHEADER:
 							// make the response object, and fill it
 							try {
 								switch (sohp.parse(tmpLine)) {
@@ -3014,7 +3050,7 @@ public class MonetConnection
 									if (rowcount < tuplecount) {
 										if (rsresponses == null)
 											rsresponses = new HashMap<Integer, ResultSetResponse>();
-										rsresponses.put(Integer.valueOf(id), (ResultSetResponse) res);
+										rsresponses.put(id, (ResultSetResponse) res);
 									}
 								} break;
 								case StartOfHeaderParser.Q_UPDATE:
@@ -3042,7 +3078,7 @@ public class MonetConnection
 									final int offset = sohp.getNextAsInt();
 									final ResultSetResponse t;
 									if (rsresponses != null)
-										t = rsresponses.get(Integer.valueOf(id));
+										t = rsresponses.get(id);
 									else
 										t = null;
 									if (t == null) {
@@ -3099,18 +3135,37 @@ public class MonetConnection
 							tmpLine = in.readLine();
 							linetype = in.getLineType();
 							break;
-						case BufferedMCLReader.INFO:
+						case INFO:
 							addWarning(tmpLine.substring(1), "01000");
 							// read the next line (can be prompt, new result, error, etc.)
 							// before we start the loop over
 							tmpLine = in.readLine();
 							linetype = in.getLineType();
 							break;
+						case FILETRANSFER:
+							// Consume the command
+							String transferCommand = in.readLine();
+							// Consume the fake prompt inserted by MapiSocket.
+							String dummy = in.readLine();
+							// Handle the request
+							if (transferCommand != null)
+								error = handleTransfer(transferCommand);
+							else
+								error = "Protocol violation, expected transfer command, got nothing";
+							// Then prepare for the next iteration
+							if (error != null) {
+								out.writeLine(error + "\n");
+								error = in.waitForPrompt();
+							} else {
+								tmpLine = in.readLine();
+							}
+							linetype = in.getLineType();
+							break;
 						default:	// Yeah... in Java this is correct!
 							// we have something we don't expect/understand, let's make it an error message
-							tmpLine = "!M0M10!protocol violation, unexpected line: " + tmpLine;
+							tmpLine = "!M0M10!protocol violation, unexpected " + linetype + " line: " + tmpLine;
 							// don't break; fall through...
-						case BufferedMCLReader.ERROR:
+						case ERROR:
 							// read everything till the prompt (should be
 							// error) we don't know if we ignore some
 							// garbage here... but the log should reveal that
@@ -3154,4 +3209,362 @@ public class MonetConnection
 		}
 	}
 	// }}}
+
+	private String handleTransfer(final String transferCommand) throws IOException {
+		if (transferCommand.startsWith("r ")) {
+			final String[] parts = transferCommand.split(" ", 3);
+			if (parts.length == 3) {
+				final long offset;
+				try {
+					offset = Long.parseLong(parts[1]);
+				} catch (NumberFormatException e) {
+					return e.toString();
+				}
+				return handleUpload(parts[2], true, offset);
+			}
+		} else if (transferCommand.startsWith("rb ")) {
+			return handleUpload(transferCommand.substring(3), false, 0);
+		} else if (transferCommand.startsWith("w ")) {
+			return handleDownload(transferCommand.substring(2));
+		}
+		return "JDBC does not support this file transfer yet: " + transferCommand;
+	}
+
+	private String handleUpload(final String path, final boolean textMode, final long offset) throws IOException {
+		if (uploadHandler == null) {
+			return "No file upload handler has been registered with the JDBC driver";
+		}
+
+		final long linesToSkip = offset >= 1 ? offset - 1 : 0;
+		final Upload handle = new Upload(server, uploadHandler::uploadCancelled);
+		final boolean wasFaking = server.setInsertFakePrompts(false);
+		try {
+			uploadHandler.handleUpload(handle, path, textMode, linesToSkip);
+			if (!handle.hasBeenUsed()) {
+				throw new IOException("Call to " + uploadHandler.getClass().getCanonicalName() + ".handleUpload for path '" + path + "' sent neither data nor an error message");
+			}
+			handle.close();
+		} finally {
+			server.setInsertFakePrompts(wasFaking);
+		}
+		return handle.getError();
+	}
+
+	private String handleDownload(final String path) throws IOException {
+		if (downloadHandler == null) {
+			return "No file download handler has been registered with the JDBC driver";
+		}
+
+		final Download handle = new Download(server);
+		try {
+			downloadHandler.handleDownload(handle, path, true);
+			if (!handle.hasBeenUsed()) {
+				handle.sendError("Call to " + downloadHandler.getClass().getSimpleName() + ".handleDownload sent neither data nor error");
+			}
+		} finally {
+			handle.close();
+		}
+		return handle.getError();
+	}
+
+	/**
+	 * Callback for sending files for COPY INTO "table" FROM 'file-name' ON CLIENT commands
+	 *
+	 * To be registered with {@link MonetConnection#setUploadHandler(UploadHandler)}
+	 *
+	 * An example implementation can be found at ../util/FileTransferHandler.java
+	 */
+
+	public interface UploadHandler {
+		/**
+		 * Called if the server sends a request to read file data.
+		 *
+		 * Use the given handle to receive data or send errors to the server.
+		 *  @param handle Handle to communicate with the server
+		 * @param name Name of the file the server would like to read. Make sure
+		 *             to validate this before reading from the file system
+		 * @param textMode Whether to open the file as text or binary data.
+		 * @param linesToSkip In text mode, number of initial lines to skip.
+		 *                    0 means upload everything, 1 means skip the first line, etc.
+		 *                    Note: this is different from the OFFSET option of the COPY INTO,
+		 *                    where both 0 and 1 mean 'upload everything'
+		 */
+		void handleUpload(Upload handle, String name, boolean textMode, long linesToSkip) throws IOException;
+
+		/**
+		 * Called when the upload is cancelled halfway by the server.
+		 *
+		 * The default implementation does nothing.
+		 */
+		default void uploadCancelled() {}
+	}
+
+	/**
+	 * Callback for receiving files from COPY .. INTO 'file-name' ON CLIENT commands
+	 *
+	 * To be registered with {@link MonetConnection#setDownloadHandler(DownloadHandler)}
+	 *
+	 * An example implementation can be found at ../util/FileTransferHandler.java
+	 */
+	public interface DownloadHandler {
+		/**
+		 * Called if the server sends a request to write a file.
+		 *
+		 * Use the given handle to send data or errors to the server.
+		 *
+		 * @param handle Handle to communicate with the server
+		 * @param name Name of the file the server would like to write. Make sure to validate this before writing to
+		 *             the file system
+		 * @param textMode Whether this is text or binary data.
+		 */
+		void handleDownload(Download handle, String name, boolean textMode) throws IOException;
+	}
+
+	/**
+	 * Handle passed to {@link UploadHandler} to allow communication with the server
+	 */
+	public static class Upload {
+		private final MapiSocket server;
+		private final Runnable cancellationCallback;
+		private PrintStream print = null;
+		private String error = null;
+		private int customChunkSize = -1;
+
+		Upload(MapiSocket server, Runnable cancellationCallback) {
+			this.server = server;
+			this.cancellationCallback = cancellationCallback;
+		}
+
+		/**
+		 * Send an error message to the server
+		 *
+		 * The server will generally let the currently executing statement fail
+		 * with this error message. The connection will remain usable.
+		 *
+		 * This method can only be sent if no data has been sent to the server
+		 * yet. After data has been sent, you can still throw an
+		 * {@link IOException} but this will terminate the connection.
+		 * @param errorMessage error message to send
+		 */
+		public void sendError(final String errorMessage) throws IOException {
+			if (error != null) {
+				throw new IOException("another error has already been sent: " + error);
+			}
+			error = errorMessage;
+		}
+
+		/**
+		 * After every {@code chunkSize} bytes, the server gets the opportunity to
+		 * terminate the upload.
+		 */
+		public void setChunkSize(final int chunkSize) {
+			this.customChunkSize = chunkSize;
+		}
+
+		/**
+		 * Get a {@link PrintStream} to write data to.
+		 *
+		 * For text mode uploads, the data MUST be validly UTF-8 encoded.
+		 */
+		public PrintStream getStream() throws IOException {
+			if (error != null) {
+				throw new IOException("Cannot send data after an error has been sent");
+			}
+			if (print == null) {
+				try {
+					final MapiSocket.UploadStream up = customChunkSize >= 0 ? server.uploadStream(customChunkSize) : server.uploadStream();
+					up.setCancellationCallback(cancellationCallback);
+					print = new PrintStream(up, false, "UTF-8");
+					up.write('\n');
+				} catch (UnsupportedEncodingException e) {
+					throw new RuntimeException("The system is guaranteed to support the UTF-8 encoding but apparently it doesn't", e);
+				}
+			}
+			return print;
+		}
+
+		/**
+		 * @return true if data or an error has been sent.
+		 */
+		public boolean hasBeenUsed() {
+			return print != null || error != null;
+		}
+
+		/**
+		 * @return the error that was sent, if any
+		 */
+		public String getError() {
+			return error;
+		}
+
+		/**
+		 * Read from the given input stream and write it to the server.
+		 *
+		 * For text mode uploads, the data MUST be validly UTF-8 encoded.
+		 */
+		public void uploadFrom(final InputStream inputStream) throws IOException {
+			final OutputStream s = getStream();
+			final byte[] buffer = new byte[64 * 1024];
+			while (true) {
+				int nread = inputStream.read(buffer);
+				if (nread < 0) {
+					break;
+				}
+				s.write(buffer, 0, nread);
+			}
+		}
+
+		/**
+		 * Read data from the given buffered reader and send it to the server
+		 * @param reader reader to read from
+		 * @param linesToSkip start uploading at line {@code offset}. Value 0 and 1
+		 * both mean upload the whole file, value 2 means skip the first line, etc.q
+		 */
+		public void uploadFrom(final BufferedReader reader, final long linesToSkip) throws IOException {
+			for (int i = 0; i < linesToSkip; i++) {
+				String line = reader.readLine();
+				if (line == null) {
+					return;
+				}
+			}
+
+			uploadFrom(reader);
+		}
+
+		/**
+		 * Read data from the given buffered reader and send it to the server
+		 * @param reader reader to read from
+		 */
+		public void uploadFrom(final Reader reader) throws IOException {
+			final OutputStream s = getStream();
+			final OutputStreamWriter writer = new OutputStreamWriter(s, StandardCharsets.UTF_8);
+			final char[] buffer = new char[64 * 1024];
+			while (true) {
+				int nread = reader.read(buffer, 0, buffer.length);
+				if (nread < 0) {
+					break;
+				}
+				writer.write(buffer, 0, nread);
+				writer.close();
+			}
+		}
+
+		/**
+		 * Close opened {@link PrintStream}.
+		 */
+		public void close() {
+			if (print != null) {
+				print.close();
+				print = null;
+			}
+		}
+	}
+
+	/**
+	 * Handle passed to {@link DownloadHandler} to allow communication with the server
+	 */
+	public static class Download {
+		private final MapiSocket server;
+		private MapiSocket.DownloadStream stream = null;
+		private String error = null;
+
+		Download(MapiSocket server) {
+			this.server = server;
+		}
+
+		/**
+		 * Send an error message to the server
+		 *
+		 * The server will generally let the currently executing statement fail
+		 * with this error message. The connection will remain usable.
+		 *
+		 * This method can only be sent if no data has been received from the server
+		 * yet. After data has been received, you can still throw an
+		 * {@link IOException} but this will terminate the connection.
+		 *
+		 * Note: as of MonetDB version Jul2021 the server always terminates the connection
+		 * when this error is used.  This will probably change in the future.
+		 */
+		public void sendError(String errorMessage) throws IOException {
+			if (error != null) {
+				throw new IOException("another error has already been sent: " + error);
+			}
+			error = errorMessage;
+		}
+
+		/**
+		 * Get an {@link InputStream} to read data from.
+		 *
+		 * Textual data is UTF-8 encoded.
+		 */
+		public InputStream getStream() throws IOException {
+			if (error != null) {
+				throw new IOException("cannot receive data after error has been sent");
+			}
+			if (stream == null) {
+				stream = server.downloadStream();
+				server.getOutputStream().flush();
+			}
+			return stream;
+		}
+
+		/**
+		 * Write the data from the server to the given {@link OutputStream}.
+		 */
+		public void downloadTo(final OutputStream stream) throws IOException {
+			final InputStream s = getStream();
+			final byte[] buffer = new byte[65536];
+			while (true) {
+				int nread = s.read(buffer);
+				if (nread < 0) {
+					break;
+				}
+				stream.write(buffer, 0, nread);
+			}
+		}
+
+		/**
+		 * Write the textual data from the server to the given {@link Writer}
+		 * @param writer
+		 */
+		public void downloadTo(final Writer writer) throws IOException {
+			final InputStream s = getStream();
+			final InputStreamReader r = new InputStreamReader(s, StandardCharsets.UTF_8);
+			final char[] buffer = new char[65536];
+			while (true) {
+				final int nread = r.read(buffer);
+				if (nread < 0)
+					break;
+				writer.write(buffer, 0, nread);
+			}
+		}
+
+		/**
+		 * @return  true if data has been received or an error has been sent.
+		 */
+		public boolean hasBeenUsed() {
+			return error != null || stream != null;
+		}
+
+		/**
+		 * @return the error that was sent, if any
+		 */
+		public String getError() {
+			return error;
+		}
+
+		/**
+		 * Close opened stream.
+		 */
+		public void close() {
+			if (stream != null) {
+				try {
+					stream.close();
+					stream = null;
+				} catch (IOException e) {
+					/* ignore close error */
+				}
+			}
+		}
+	}
 }

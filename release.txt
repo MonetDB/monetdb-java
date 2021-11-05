@@ -1,6 +1,6 @@
 RELEASE NOTES
-MonetDB JDBC driver version 3.1 (Liberica/MCL-1.20)
-Release date: 2021-06-14
+MonetDB JDBC driver version 3.2 (Liberica/MCL-1.21)
+Release date: 2021-10-15
 
 The Java Database Connectivity (JDBC) API provides universal data access from
 the Java programming language.
@@ -186,6 +186,28 @@ The following java.sql.* interfaces are NOT implemented:
   * java.sql.Struct
 
 
+Since release 3.2 (monetdb-jdbc-3.2.jre8.jar), the MonetDB JDBC driver has
+support for the ON CLIENT clause of the COPY statement. To make use of
+this functionality you must register handlers for upload and download of data.
+The MonetConnection class has been extended with 2 methods:
+ public void setUploadHandler(UploadHandler uploadHandler)
+ public void setDownloadHandler(DownloadHandler downloadHandler)
+The API has been extended with interfaces and utility class:
+ public interface org.monetdb.jdbc.MonetConnection.UploadHandler
+ public interface org.monetdb.jdbc.MonetConnection.DownloadHandler
+ public class org.monetdb.util.FileTransferHandler
+  which implements MonetConnection.UploadHandler, MonetConnection.DownloadHandler
+See onclient.txt for more information on how to use these from Java.
+
+The JdbcClient application has also been extended to support COPY ...
+ON CLIENT functionality. However for security reasons you must provide an
+explicit new startup argument
+  --csvdir "/path/to/csvdatafiles"
+or on MS Windows
+  --csvdir "C:\\path\\to\\csvdatafiles"
+in order to allow the JdbcClient to down/up load data to/from local csv files.
+
+
 Notes and Tips for Java Programmers using MonetDB JDBC driver:
 - Close JDBC ResultSet, Statement, PreparedStatement, CallableStatement and
   Connection objects immediately (via close()) when they are no longer needed,
@@ -248,4 +270,4 @@ Warning:
 Note: as of Febr 2021 (monetdb-jdbc-3.0.jre8.jar) we compile all
  the java sources to target: Java SE 8 (profile compact2), so
  you need a JRE/JDK JVM of version 8 or higher to use it.
-
+ 

@@ -9,8 +9,10 @@
 package org.monetdb.client;
 
 import org.monetdb.jdbc.MonetDriver;
+import org.monetdb.jdbc.MonetConnection;
 import org.monetdb.util.CmdLineOpts;
 import org.monetdb.util.Exporter;
+import org.monetdb.util.FileTransferHandler;
 import org.monetdb.util.MDBvalidator;
 import org.monetdb.util.OptionsException;
 import org.monetdb.util.SQLExporter;
@@ -25,6 +27,7 @@ import java.io.File;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;	// this import is required as it will trigger loading the org.monetdb.jdbc.MonetDriver class
@@ -65,7 +68,8 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 	 *
 	 * <pre>Usage java -jar jdbcclient.jre8.jar
 	 *		[-h host[:port]] [-p port] [-f file] [-u user]
-	 *		[-l language] [-d database] [-e] [-D [table]] [-X&lt;opt&gt;]
+	 *		[-l language] [-d database] [-e] [-D [table]]
+	 *		[--csvdir /path/to/csvfiles] [-X&lt;opt&gt;]
 	 *		| [--help] | [--version]
 	 * or using long option equivalents --host --port --file --user --language
 	 * --dump --echo --database.
@@ -98,6 +102,8 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 	 * -e --echo     Also outputs the contents of the input file, if any.
 	 * -q --quiet    Suppress printing the welcome header.
 	 * -D --dump     Dumps the given table(s), or the complete database if none given.
+	 * --csvdir      The directory path where csv data files wil be read from or
+	 ^               written to when COPY ... ON CLIENT commands are executed.
 	 * -Xoutput      The output mode when dumping.  Default is sql, xml may be used for
 	 *               an experimental XML output.
 	 * -Xhash        Use the given hash algorithm during challenge response.
@@ -142,6 +148,9 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 				"if connecting to monetdbd).");
 		copts.addOption("l", "language", CmdLineOpts.CAR_ONE, "sql",
 				"Use the given language, defaults to 'sql'.");
+		copts.addOption(null, "csvdir", CmdLineOpts.CAR_ONE, null,
+				"The directory path where csv data files are read or " +
+				"written when using ON CLIENT clause of COPY command.");
 
 		// arguments which have no argument(s)
 		copts.addOption(null, "help", CmdLineOpts.CAR_ZERO, null,
@@ -220,7 +229,8 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 			System.out.print(
 				"Usage java -jar jdbcclient.jre8.jar\n" +
 				"\t\t[-h host[:port]] [-p port] [-f file] [-u user]\n" +
-				"\t\t[-l language] [-d database] [-e] [-D [table]] [-X<opt>]\n" +
+				"\t\t[-l language] [-d database] [-e] [-D [table]]\n" +
+				"\t\t[--csvdir /path/to/csvfiles]] [-X<opt>]\n" +
 				"\t\t| [--help] | [--version]\n" +
 				"or using long option equivalents --host --port --file --user --language\n" +
 				"--dump --echo --database.\n" +
@@ -335,6 +345,28 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 			// we ignore this because it's probably because we don't use
 			// SQL language
 			dbmd = null;
+		}
+
+		oc = copts.getOption("csvdir");
+		if (oc.isPresent()) {
+			final String csvdir = oc.getArgument();
+			if (csvdir != null) {
+				// check if provided csvdir is an existing dir
+				// else a download of data into file will terminate the JDBC connection!!
+				if (java.nio.file.Files.isDirectory(java.nio.file.Paths.get(csvdir))) {
+					final FileTransferHandler FThandler = new FileTransferHandler(csvdir, Charset.defaultCharset());
+
+					// register file data uploadHandler to allow support
+					// for: COPY INTO mytable FROM 'data.csv' ON CLIENT;
+					((MonetConnection) con).setUploadHandler(FThandler);
+
+					// register file data downloadHandler to allow support
+					// for: COPY select_query INTO 'data.csv' ON CLIENT;
+					((MonetConnection) con).setDownloadHandler(FThandler);
+				} else {
+					System.err.println("Warning: provided csvdir \"" + csvdir + "\" does not exist. Ignoring csvdir setting.");
+				}
+			}
 		}
 
 		stmt = con.createStatement();	// is used by processInteractive(), processBatch(), doDump()

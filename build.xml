@@ -108,6 +108,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2021 MonetDB B.V.
         <include name="${nl-cwi-jdbc-package}/types/*.class" />
         <include name="${mcl-package}/**/*.class" />
         <include name="${nl-cwi-mcl-package}/net/MapiSocket.class" />
+        <include name="${util-package}/FileTransferHandler.class" />
       </fileset>
     </jar>
   </target>
@@ -203,6 +204,7 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2021 MonetDB B.V.
       <include name="${nl-cwi-jdbc-package}/MonetDriver.java" />
       <include name="${nl-cwi-jdbc-package}/types/*.java" />
       <include name="${nl-cwi-mcl-package}/net/MapiSocket.java" />
+      <include name="${util-package}/FileTransferHandler.java" />
       <compilerarg line="${javac.flags}" />
     </javac>
   </target>
