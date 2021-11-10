@@ -25,6 +25,7 @@ public class TestRunner {
 	public static final int VERBOSITY_NONE = 0;
 	public static final int VERBOSITY_ON = 1;
 	public static final int VERBOSITY_SHOW_ALL = 2;
+
 	protected final String jdbcUrl;
 	private final int verbosity;
 	protected String currentTestName;
@@ -33,7 +34,7 @@ public class TestRunner {
 	protected Statement stmt;
 	private StringWriter outBuffer;
 	protected PrintWriter out;
-	private Path tmpDir = null;
+	private Path tmpDir;
 
 	public TestRunner(String jdbcUrl, int verbosity, boolean watchDogEnabled) {
 		this.jdbcUrl = jdbcUrl;
@@ -48,7 +49,7 @@ public class TestRunner {
 	protected int runTests(String testPrefix) throws SQLException {
 		int testCount = 0;
 		int skippedCount = 0;
-		ArrayList<String> failures = new ArrayList<>();
+		final ArrayList<String> failures = new ArrayList<>();
 
 		watchDog.stop();
 		try {
@@ -66,13 +67,13 @@ public class TestRunner {
 				}
 				testCount++;
 				// so user can add $ to force full match
-				String augmentedMethodName = method.getName() + "$";
+				final String augmentedMethodName = method.getName() + "$";
 				if (!augmentedMethodName.startsWith(methodPrefix)) {
 					skippedCount++;
 					continue;
 				}
-				String testName = method.getName().substring(initialPrefix.length());
-				boolean succeeded = runTest(testName, method);
+				final String testName = method.getName().substring(initialPrefix.length());
+				final boolean succeeded = runTest(testName, method);
 				if (!succeeded)
 					failures.add(testName);
 			}
@@ -85,7 +86,7 @@ public class TestRunner {
 			return 1;
 		}
 
-		int failureCount = failures.size();
+		final int failureCount = failures.size();
 		if (failureCount > 0) {
 			System.out.println();
 			System.out.printf("Ran %d out of %d %s tests, %d failed: %s%n",
@@ -102,14 +103,14 @@ public class TestRunner {
 		return failureCount;
 	}
 
-	private synchronized boolean runTest(String testName, Method method) throws SQLException {
+	private synchronized boolean runTest(final String testName, final Method method) throws SQLException {
 		currentTestName = testName;
 		watchDog.setContext("test " + testName);
 		watchDog.setDuration(3_000);
 		outBuffer = new StringWriter();
 		out = new PrintWriter(outBuffer);
 
-		Connection genericConnection = DriverManager.getConnection(jdbcUrl);
+		final Connection genericConnection = DriverManager.getConnection(jdbcUrl);
 		conn = genericConnection.unwrap(MonetConnection.class);
 		stmt = conn.createStatement();
 
@@ -171,13 +172,13 @@ public class TestRunner {
 		return !failed;
 	}
 
-	private void dumpOutput(String testName) {
-		String output = outBuffer.getBuffer().toString();
+	private void dumpOutput(final String testName) {
+		final String output = outBuffer.getBuffer().toString();
 		if (output.isEmpty()) {
 			System.out.println("(Test did not produce any output)");
 		} else {
 			System.out.println("------ Accumulated output for test " + testName + ":");
-			boolean terminated = output.endsWith(System.lineSeparator());
+			final boolean terminated = output.endsWith(System.lineSeparator());
 			if (terminated) {
 				System.out.print(output);
 			} else {
@@ -208,8 +209,7 @@ public class TestRunner {
 		try {
 			watchDog.start();
 			out.println("EXECUTE: " + query);
-			boolean result;
-			result = stmt.execute(query);
+			final boolean result = stmt.execute(query);
 			if (result) {
 				out.println("  OK");
 			} else {
@@ -241,16 +241,15 @@ public class TestRunner {
 		if (execute(query) == false) {
 			fail("Query does not return a result set");
 		}
-		ResultSet rs = stmt.getResultSet();
-		ResultSetMetaData metaData = rs.getMetaData();
+		final ResultSet rs = stmt.getResultSet();
+		final ResultSetMetaData metaData = rs.getMetaData();
 		assertEq("column count", 1, metaData.getColumnCount());
 		if (!rs.next()) {
 			fail("Result set is empty");
 		}
-		int result = rs.getInt(1);
+		final int result = rs.getInt(1);
 		if (rs.next()) {
-			String message = "Result set has more than one row";
-			fail(message);
+			fail("Result set has more than one row");
 		}
 		rs.close();
 		checked("row count", 1);
@@ -261,16 +260,15 @@ public class TestRunner {
 		if (execute(query) == false) {
 			fail("Query does not return a result set");
 		}
-		ResultSet rs = stmt.getResultSet();
-		ResultSetMetaData metaData = rs.getMetaData();
+		final ResultSet rs = stmt.getResultSet();
+		final ResultSetMetaData metaData = rs.getMetaData();
 		assertEq("column count", 1, metaData.getColumnCount());
 		if (!rs.next()) {
 			fail("Result set is empty");
 		}
-		String result = rs.getString(1);
+		final String result = rs.getString(1);
 		if (rs.next()) {
-			String message = "Result set has more than one row";
-			fail(message);
+			fail("Result set has more than one row");
 		}
 		rs.close();
 		checked("row count", 1);
@@ -281,16 +279,15 @@ public class TestRunner {
 		if (execute(query) == false) {
 			fail("Query does not return a result set");
 		}
-		ResultSet rs = stmt.getResultSet();
-		ResultSetMetaData metaData = rs.getMetaData();
+		final ResultSet rs = stmt.getResultSet();
+		final ResultSetMetaData metaData = rs.getMetaData();
 		assertEq("column count", 1, metaData.getColumnCount());
 		if (!rs.next()) {
 			fail("Result set is empty");
 		}
-		String result = rs.getString(1);
+		final String result = rs.getString(1);
 		if (rs.next()) {
-			String message = "Result set has more than one row";
-			fail(message);
+			fail("Result set has more than one row");
 		}
 		rs.close();
 		checked("row count", 1);
@@ -320,12 +317,13 @@ public class TestRunner {
 				}
 			}));
 		}
-		Path p = tmpDir.resolve(name);
+		final Path p = tmpDir.resolve(name);
 		Files.createDirectory(p);
 		return p;
 	}
 
 	static class Failure extends Exception {
+		static final long serialVersionUID = 3387516993124229948L;
 
 		public Failure(String message) {
 			super(message);
@@ -334,7 +332,6 @@ public class TestRunner {
 		public Failure(String message, Throwable cause) {
 			super(message, cause);
 		}
-
 	}
 
 	static class WatchDog {
@@ -395,12 +392,10 @@ public class TestRunner {
 						// wait for client to enable/start us
 						sleepTime = 600_000;
 					} else {
-						long deadline = started + duration;
-						sleepTime = deadline - now;
+						sleepTime = started + duration - now;
 					}
 					// System.err.printf("++ now=%d, started=now%+d, duration=%d, sleep=%d%n",
-					// 		now, started - now, duration, sleepTime
-					// 		);
+					//		now, started - now, duration, sleepTime );
 					if (sleepTime > 0) {
 						this.wait(sleepTime);
 					} else {
@@ -415,7 +410,7 @@ public class TestRunner {
 		}
 
 		private void trigger() {
-			String c = context != null ? context : "no context";
+			final String c = context != null ? context : "no context";
 			System.err.println();
 			System.err.println();
 			System.err.println("WATCHDOG TIMER EXPIRED [" + c + "], KILLING TESTS");
