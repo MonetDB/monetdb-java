@@ -16,6 +16,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -34,7 +35,7 @@ public final class OnClientTester extends TestRunner {
 		boolean watchDogEnabled = true;
 
 		// Don't know why I need this all of a sudden.. is it only on my system?
-		Class.forName("org.monetdb.jdbc.MonetDriver");
+		// Class.forName("org.monetdb.jdbc.MonetDriver");	// should not be needed if you add: import java.sql.DriverManager;
 
 		for (String arg : args) {
 			if (arg.equals("-v"))
@@ -324,7 +325,6 @@ public final class OnClientTester extends TestRunner {
 		assertEq("connection is closed", true, conn.isClosed());
 	}
 
-
 	public void test_FailUploadLate2() throws SQLException, Failure {
 		// Here we send empty lines only, to check if the server detects is properly instead
 		// of simply complaining about an incomplete file.
@@ -572,5 +572,4 @@ public final class OnClientTester extends TestRunner {
 			return lines;
 		}
 	}
-
 }
