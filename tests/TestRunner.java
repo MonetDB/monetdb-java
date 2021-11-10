@@ -142,13 +142,13 @@ public class TestRunner {
 			if (verbosity >= VERBOSITY_SHOW_ALL)
 				dumpOutput(testName);
 		} catch (Failure e) {
-			System.out.println();
-			System.out.println("Test " + testName + " failed");
+			System.err.println();
+			System.err.println("Test " + testName + " failed");
 			dumpOutput(testName);
 		} catch (Exception e) {
-			System.out.println();
-			System.out.println("Test " + testName + " failed:");
-			e.printStackTrace(System.out);
+			System.err.println();
+			System.err.println("Test " + testName + " failed:");
+			e.printStackTrace(System.err);
 			dumpOutput(testName);
 			// Show the inner bits of the exception again, they may have scrolled off screen
 			Throwable t = e;
@@ -157,7 +157,7 @@ public class TestRunner {
 			}
 			System.out.println("Innermost cause was " + t);
 			if (t.getStackTrace().length > 0) {
-				System.out.println("                 at " + t.getStackTrace()[0]);
+				System.err.println("                 at " + t.getStackTrace()[0]);
 			}
 		} finally {
 			watchDog.setContext(null);
