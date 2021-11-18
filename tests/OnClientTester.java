@@ -148,6 +148,11 @@ public final class OnClientTester {
 			if (t.getStackTrace().length > 0) {
 				System.err.println("                 at " + t.getStackTrace()[0]);
 			}
+		} finally {
+			try {
+				// cleanup created test table
+				execute("DROP TABLE IF EXISTS foo");
+			} catch (SQLException e) { /* ignore */ }
 		}
 		closeConnection();
 		return failures;
@@ -668,11 +673,11 @@ public final class OnClientTester {
 	private boolean execute(String query) throws SQLException {
 		outBuffer.append("EXECUTE: ").append(query).append("\n");
 		final boolean result = stmt.execute(query);
-		if (result) {
-			outBuffer.append("  OK").append("\n");
-		} else {
-			outBuffer.append("  OK, updated ").append(stmt.getUpdateCount()).append(" rows").append("\n");
+		outBuffer.append("  OK");
+		if (!result) {
+			outBuffer.append(", updated ").append(stmt.getUpdateCount()).append(" rows");
 		}
+		outBuffer.append("\n");
 		return result;
 	}
 
@@ -712,21 +717,7 @@ public final class OnClientTester {
 	}
 
 	private void assertQueryString(String query, String expected) throws SQLException, Failure {
-		if (execute(query) == false) {
-			fail("Query does not return a result set");
-		}
-		final ResultSet rs = stmt.getResultSet();
-		final ResultSetMetaData metaData = rs.getMetaData();
-		assertEq("column count", 1, metaData.getColumnCount());
-		if (!rs.next()) {
-			fail("Result set is empty");
-		}
-		final String result = rs.getString(1);
-		if (rs.next()) {
-			fail("Result set has more than one row");
-		}
-		rs.close();
-		checked("row count", 1);
+		final String result = queryString(query);
 		assertEq("query result", expected, result);
 	}
 
