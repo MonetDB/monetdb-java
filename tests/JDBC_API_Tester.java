@@ -3572,14 +3572,11 @@ final public class JDBC_API_Tester {
 	private void BugConcurrent_sequences(String arg0) {
 		sb.setLength(0);	// clear the output log buffer
 
-		boolean isPostOct2020 = false;
 		Connection con1 = null, con2 = null;
 		Statement stmt1 = null, stmt2 = null;
 		ResultSet rs1 = null, rs2 = null;
 		try {
 			con1 = DriverManager.getConnection(arg0);
-			DatabaseMetaData dbmd = con1.getMetaData();
-			isPostOct2020 = (dbmd.getDatabaseMajorVersion() >=11) && (dbmd.getDatabaseMinorVersion() > 39);
 			con2 = DriverManager.getConnection(arg0);
 			stmt1 = con1.createStatement();
 			stmt2 = con2.createStatement();
@@ -3616,13 +3613,13 @@ final public class JDBC_API_Tester {
 			sb.append("passed :)\n");
 
 			sb.append("2.1. check table status with client 1...\n");
-			rs1 = stmt1.executeQuery("SELECT * FROM tconc_seq");
+			rs1 = stmt1.executeQuery("SELECT * FROM tconc_seq ORDER BY id");
 			while (rs1.next())
 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("who")).append("\n");
 			sb.append("passed :)\n");
 
 			sb.append("2.2. check table status with client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT * FROM tconc_seq");
+			rs2 = stmt2.executeQuery("SELECT * FROM tconc_seq ORDER BY id");
 			while (rs2.next())
 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("who")).append("\n");
 			sb.append("passed :)\n");
@@ -3640,30 +3637,6 @@ final public class JDBC_API_Tester {
 		}
 
 		compareExpectedOutput("BugConcurrent_sequences",
-			isPostOct2020 ?
-				"0. true	true\n" +
-				"0. true	true\n" +
-				"1. create table tconc_seq using client 1... passed :)\n" +
-				"2. insert into tconc_seq using client 1 and 2... client 1 passed :)\n" +
-				"transaction on client 2 :)\n" +
-				"client 1 passed :)\n" +
-				"transaction client 2 passed :)\n" +
-				"passed :)\n" +
-				"2.1. check table status with client 1...\n" +
-				"1, client1\n" +
-				"2, client2\n" +
-				"3, client1\n" +
-				"4, client2\n" +
-				"passed :)\n" +
-				"2.2. check table status with client 2...\n" +
-				"1, client1\n" +
-				"2, client2\n" +
-				"3, client1\n" +
-				"4, client2\n" +
-				"passed :)\n" +
-				"3.1. drop table tconc_seq using client 1... passed :)\n" +
-				"3.1. recreate tconc_seq using client 1... passed :)\n"
-			:	// behavior of older MonetDB versions (up to Oct2020 release) was different
 				"0. true	true\n" +
 				"0. true	true\n" +
 				"1. create table tconc_seq using client 1... passed :)\n" +
