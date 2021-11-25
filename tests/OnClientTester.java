@@ -12,6 +12,7 @@ import org.monetdb.jdbc.MonetConnection.DownloadHandler;
 import org.monetdb.util.FileTransferHandler;
 
 import java.io.*;
+import java.lang.Character.UnicodeBlock;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileVisitResult;
@@ -263,7 +264,7 @@ public final class OnClientTester {
 
 		static BugFixLevel forVersion(int major, int minor, int micro) {
 			BugFixLevel lastValid = Baseline;
-			for (BugFixLevel level: BugFixLevel.values()) {
+			for (BugFixLevel level : BugFixLevel.values()) {
 				if (level.includesVersion(major, minor, micro))
 					lastValid = level;
 				else
@@ -565,6 +566,27 @@ public final class OnClientTester {
 		exitTest();
 	}
 
+	private String hexdump(String s)
+	{
+		StringBuilder buf = new StringBuilder();
+		char[] chars = s.toCharArray();
+		for (char c: chars) {
+			buf.append(' ');
+			buf.append((int)c);
+
+			UnicodeBlock b = UnicodeBlock.of(c);
+			if (!Character.isISOControl(c) && b != null) {
+				if (b != UnicodeBlock.HIGH_SURROGATES && b != UnicodeBlock.LOW_SURROGATES && b != UnicodeBlock.SPECIALS) {
+						buf.append("='");
+						buf.append(c);
+						buf.append("'");
+				}
+			}
+		}
+
+		return "<" + buf.toString().trim() + ">";
+	}
+
 	private void testFileTransferHandlerUpload(Charset handlerEncoding, String fileEncoding) throws IOException, SQLException, Failure {
 		prepare();
 		Path d = getTmpDir(currentTestName);
@@ -578,7 +600,13 @@ public final class OnClientTester {
 		conn.setUploadHandler(new FileTransferHandler(d, handlerEncoding));
 		update("COPY INTO foo FROM 'data.txt' ON CLIENT");
 		assertQueryInt("SELECT SUM(i) FROM foo", 6);
-		assertQueryString("SELECT t FROM foo WHERE i = 2", "twø");
+		final String result = queryString("SELECT t FROM foo WHERE i = 2");
+		String two = "twø";
+		//
+		String hexTwo = hexdump(two);
+		String hexResult = hexdump(result);
+		assertEq("query result hexdump", hexTwo, hexResult);
+		assertEq("query result", two, result);
 	}
 
 	private void test_FileTransferHandlerUploadRefused() throws IOException, SQLException, Failure {
