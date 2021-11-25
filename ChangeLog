@@ -1,6 +1,41 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Nov 25 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Extended FileTransferHandler utility class by adding support for reading from
+  and writing to gzip compressed files when using file name extension .gz
+  Also improve error handling by testing on empty file name and provide more
+  information when invalid file name is given or other compression formats are
+  requested. As the FileTransferHandler utility class is used by JdbcClient
+  application, it will now also support this functionality.
+
+* Fri Nov 05 2021 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Extended the MonetDB JDBC driver with support for the ON CLIENT clause of
+  the COPY statements. To make use of this functionality you must first
+  register handlers for upload and download of data.
+  The MonetConnection class has been extended with 2 methods:
+    public void setUploadHandler(UploadHandler uploadHandler)
+    public void setDownloadHandler(DownloadHandler downloadHandler)
+  The MonetDB JDBC driver API has been extended with interfaces:
+    public interface org.monetdb.jdbc.MonetConnection.UploadHandler
+    public interface org.monetdb.jdbc.MonetConnection.DownloadHandler
+  See onclient.txt for more information on how to use these from Java.
+  We also provide a utility class:
+    public class org.monetdb.util.FileTransferHandler
+  which provides an example implementation of the MonetConnection.UploadHandler
+  and MonetConnection.DownloadHandler interfaces useable for reading files
+  from or writing files to a local file system.
+
+* Fri Nov 05 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- The JdbcClient application has been extended to support the new
+    COPY ... ON CLIENT functionality.
+  However for security reasons you must provide an explicit new startup argument
+    --csvdir "/absolute/path/to/csvdatafiles"
+  or on MS Windows
+    --csvdir "C:\\path\\to\\csvdatafiles"
+  in order to activate the JdbcClient application to down/up load data to/from
+  the local file system.
+
 * Mon Jun 14 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Compiled and released new jar files: monetdb-jdbc-3.1.jre8.jar,
   monetdb-mcl-1.20.jre8.jar and jdbcclient.jre8.jar
