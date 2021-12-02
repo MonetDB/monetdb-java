@@ -93,7 +93,7 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 		}
 		// In this implementation we ONLY support gzip compression format and none of the other compression formats.
 		if (name.endsWith(".bz2") || name.endsWith(".lz4") || name.endsWith(".xz") || name.endsWith(".zip")) {
-			final String extension = name.substring(name.lastIndexOf​('.'));
+			final String extension = name.substring(name.lastIndexOf('.'));
 			handle.sendError("Specified file compression format " + extension + " is not supported. Only .gz is supported.");
 			return;
 		}
@@ -144,7 +144,7 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 		}
 		// In this implementation we ONLY support gzip compression format and none of the other compression formats.
 		if (name.endsWith(".bz2") || name.endsWith(".lz4") || name.endsWith(".xz") || name.endsWith(".zip")) {
-			final String extension = name.substring(name.lastIndexOf​('.'));
+			final String extension = name.substring(name.lastIndexOf('.'));
 			handle.sendError("Requested file compression format " + extension + " is not supported. Use .gz instead.");
 			return;
 		}
