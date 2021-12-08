@@ -929,7 +929,7 @@ public final class MDBvalidator {
 		{"_columns", "id", null},
 		{"columns", "id", null},	// is a view
 		{"functions", "id", null},
-// old		{"systemfunctions", "function_id", null},	// has become a view in Apr2019 (11.33.3) and deprecated so will be removed in the future. Disabled check on Nov 2021.
+// old		{"systemfunctions", "function_id", null},	// has become a view in Apr2019 (11.33.3) and deprecated. It is removed since Jan2022 release.
 		{"args", "id", null},
 		{"types", "id", null},
 		{"objects", "id, nr", null},
@@ -975,10 +975,10 @@ public final class MDBvalidator {
 		{"ids", "id", "29"},		// is a view
 		{"var_values", "var_name", "29"},	// is a view
 
-	// new views introduced in Apr 2019 feature release (11.33.3)
+	// new views introduced in Apr2019 feature release (11.33.3)
 //		{"tablestorage", "schema, table", "33"},	// is a view on view storage, see check on "storage"() above
 //		{"schemastorage", "schema", "33"},	// is a view on view storage, see check on "storage"() above
-	// new tables introduced in Apr 2019 feature release (11.33.3)
+	// new tables introduced in Apr2019 feature release (11.33.3)
 		{"table_partitions", "id", "33"},
 		{"range_partitions", "table_id, partition_id, minimum", "33"},
 		{"value_partitions", "table_id, partition_id, \"value\"", "33"},
@@ -989,7 +989,7 @@ public final class MDBvalidator {
 // old	{"sessions", "\"user\", login, active", null},	// sessions has changed in Jun2020 (11.37.7), pkey was previously "user", login, active
 		{"sessions", "sessionid", "37"},	// sessions has changed in Jun2020 (11.37.7), pkey is now called sessionid
 
-	// new tables / views introduced in Jan?? 2022 feature release (11.43.1)
+	// new tables / views introduced in Jan2022 feature release (11.43.1)
 		{"fkey_actions", "action_id", "43"},
 		{"fkeys", "id", "43"}
 	};
@@ -1051,11 +1051,11 @@ public final class MDBvalidator {
 		{"key_types", "key_type_name", "27"},
 		{"privilege_codes", "privilege_code_name", "27"},
 		{"comments", "id", "29"},
-	// new tables introduced in Apr 2019 feature release (11.33.3)
+	// new tables introduced in Apr2019 feature release (11.33.3)
 		{"table_partitions WHERE column_id IS NOT NULL", "table_id, column_id", "33"},	// requires WHERE "column_id" IS NOT NULL
 		{"table_partitions WHERE \"expression\" IS NOT NULL", "table_id, \"expression\"", "33"},	// requires WHERE "expression" IS NOT NULL
 		{"range_partitions", "table_id, partition_id, \"maximum\"", "33"},
-	// new tables / views introduced in Jan?? 2022 feature release (11.43.1)
+	// new tables / views introduced in Jan2022 feature release (11.43.1)
 		{"fkey_actions", "action_name", "43"},
 		{"fkeys", "table_id, name", "43"}
 	};
@@ -1181,7 +1181,7 @@ public final class MDBvalidator {
 		{"range_partitions", "partition_id", "id", "table_partitions", "33"},
 		{"value_partitions", "table_id", "id", "_tables", "33"},
 		{"value_partitions", "partition_id", "id", "table_partitions", "33"},
-	// new tables / views introduced in Jan?? 2022 feature release (11.43.1)
+	// new tables / views introduced in Jan2022 feature release (11.43.1)
 		{"keys WHERE action >= 0 AND ", "cast(((action >> 8) & 255) as smallint)", "action_id", "fkey_actions", "43"},	// update action id
 		{"keys WHERE action >= 0 AND ", "cast((action & 255) as smallint)", "action_id", "fkey_actions", "43"},	// delete action id
 		{"fkeys", "id, table_id, type, name, rkey", "id, table_id, type, name, rkey", "keys", "43"},
@@ -1318,9 +1318,9 @@ public final class MDBvalidator {
 		{"sequences", "cacheinc", null},
 		{"sequences", "cycle", null},
 		{"statistics", "column_id", null},
-		{"statistics", "\"schema\"", null},
-		{"statistics", "\"table\"", null},
-		{"statistics", "\"column\"", null},
+		{"statistics", "\"schema\"", "43"},	// new column as of Jan2022 release (11.43.1)
+		{"statistics", "\"table\"", "43"},	// new column as of Jan2022 release (11.43.1)
+		{"statistics", "\"column\"", "43"},	// new column as of Jan2022 release (11.43.1)
 		{"statistics", "\"type\"", null},
 		{"statistics", "\"width\"", null},
 		{"statistics", "\"count\"", null},
@@ -1389,7 +1389,7 @@ public final class MDBvalidator {
 		{"users", "default_schema", null},
 		{"var_values", "var_name", "29"},
 		{"var_values", "value", "29"},
-	// new tables introduced in Apr 2019 feature release (11.33.3)
+	// new tables introduced in Apr2019 feature release (11.33.3)
 		{"range_partitions", "table_id", "33"},
 		{"range_partitions", "partition_id", "33"},
 		{"range_partitions", "with_nulls", "33"},
@@ -1398,7 +1398,7 @@ public final class MDBvalidator {
 		{"table_partitions", "type", "33"},
 		{"value_partitions", "table_id", "33"},
 		{"value_partitions", "partition_id", "33"},
-	// new tables / views introduced in Jan?? 2022 feature release (11.43.1)
+	// new tables / views introduced in Jan2022 feature release (11.43.1)
 		{"fkey_actions", "action_id", "43"},
 		{"fkey_actions", "action_name", "43"},
 		{"fkeys", "id", "43"},
