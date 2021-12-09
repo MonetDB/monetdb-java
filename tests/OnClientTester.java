@@ -108,11 +108,7 @@ public final class OnClientTester {
 	}
 
 	boolean isSelected(String name) {
-		if (selectedTests == null) {
-			return true;
-		} else {
-			return selectedTests.contains(name);
-		}
+		return selectedTests == null || selectedTests.isEmpty() || selectedTests.contains(name);
 	}
 
 	public int runTests() {
