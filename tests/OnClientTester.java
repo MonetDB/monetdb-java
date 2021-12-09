@@ -574,14 +574,14 @@ public final class OnClientTester {
 			buf.append(' ');
 			buf.append((int)c);
 
-			UnicodeBlock b = UnicodeBlock.of(c);
-			if (!Character.isISOControl(c) && b != null) {
-				if (b != UnicodeBlock.HIGH_SURROGATES && b != UnicodeBlock.LOW_SURROGATES && b != UnicodeBlock.SPECIALS) {
-						buf.append("='");
-						buf.append(c);
-						buf.append("'");
-				}
-			}
+//			UnicodeBlock b = UnicodeBlock.of(c);
+//			if (!Character.isISOControl(c) && b != null) {
+//				if (b != UnicodeBlock.HIGH_SURROGATES && b != UnicodeBlock.LOW_SURROGATES && b != UnicodeBlock.SPECIALS) {
+//						buf.append("='");
+//						buf.append(c);
+//						buf.append("'");
+//				}
+//			}
 		}
 
 		return "<" + buf.toString().trim() + ">";
@@ -589,6 +589,7 @@ public final class OnClientTester {
 
 	private void testFileTransferHandlerUpload(Charset handlerEncoding, String fileEncoding) throws IOException, SQLException, Failure {
 		prepare();
+		outBuffer.append("Default encoding is " + Charset.defaultCharset().displayName() + "\n");
 		Path d = getTmpDir(currentTestName);
 		Path f = d.resolve("data.txt");
 		OutputStream s = Files.newOutputStream(f, CREATE_NEW);
@@ -606,7 +607,7 @@ public final class OnClientTester {
 		String hexTwo = hexdump(two);
 		String hexResult = hexdump(result);
 		assertEq("query result hexdump", hexTwo, hexResult);
-		assertEq("query result", two, result);
+//		assertEq("query result", two, result);
 	}
 
 	private void test_FileTransferHandlerUploadRefused() throws IOException, SQLException, Failure {
