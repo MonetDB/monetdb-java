@@ -26,6 +26,7 @@ import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
@@ -56,6 +57,7 @@ public final class OnClientTester {
 
 	private final String jdbcUrl;
 	private final int verbosity;
+	private final ArrayList<String> selectedTests;
 	private String currentTestName;
 	private long startTime;
 	private MonetConnection conn;
@@ -66,11 +68,19 @@ public final class OnClientTester {
 	public OnClientTester(String jdbcUrl, int verbosity) {
 		this.jdbcUrl = jdbcUrl;
 		this.verbosity = verbosity;
+		this.selectedTests = null;
+	}
+
+	public OnClientTester(String jdbcUrl, int verbosity, ArrayList<String> selectedTests) {
+		this.jdbcUrl = jdbcUrl;
+		this.verbosity = verbosity;
+		this.selectedTests = selectedTests;
 	}
 
 	public static void main(String[] args) {
 		String jdbcUrl = null;
 		int verbosity = 0;
+		ArrayList<String> selectedTests = new ArrayList<>();
 
 		for (String arg : args) {
 			if (arg.equals("-v"))
@@ -79,9 +89,11 @@ public final class OnClientTester {
 				verbosity += 2;
 			else if (jdbcUrl == null)
 				jdbcUrl = arg;
-			else {
+			else if (arg.startsWith("-")){
 				System.err.println("Unexpected argument " + arg);
 				System.exit(2);
+			} else {
+				selectedTests.add(arg);
 			}
 		}
 		if (jdbcUrl == null || jdbcUrl.isEmpty()) {
@@ -89,10 +101,18 @@ public final class OnClientTester {
 			System.exit(1);
 		}
 
-		OnClientTester tester = new OnClientTester(jdbcUrl, verbosity);
+		OnClientTester tester = new OnClientTester(jdbcUrl, verbosity, selectedTests);
 		int failures = tester.runTests();
 		if (failures > 0)
 			System.exit(-1);
+	}
+
+	boolean isSelected(String name) {
+		if (selectedTests == null) {
+			return true;
+		} else {
+			return selectedTests.contains(name);
+		}
 	}
 
 	public int runTests() {
@@ -104,31 +124,56 @@ public final class OnClientTester {
 		int failures = 0;
 		try {
 			// all test methods start with test_ and have no arguments
-			test_BugFixLevel();
-			test_Upload();
-			test_ClientRefusesUpload();
-			test_Offset0();
-			test_Offset1();
-			test_Offset5();
-			test_ServerStopsReading();
-			test_Download();
-			test_ClientRefusesDownload();
-			test_LargeUpload();
-			test_LargeDownload();
-			test_UploadFromStream();
-			test_UploadFromReader();
-			test_UploadFromReaderOffset();
-			test_FailUploadLate();
-			test_FailUploadLate2();
-			test_FailDownloadLate();
-			test_FileTransferHandlerUploadUtf8();
-			test_FileTransferHandlerUploadLatin1();
-			test_FileTransferHandlerUploadNull();
-			test_FileTransferHandlerUploadRefused();
-			test_FileTransferHandlerDownloadUtf8();
-			test_FileTransferHandlerDownloadLatin1();
-			test_FileTransferHandlerDownloadNull();
-			test_FileTransferHandlerDownloadRefused();
+			if (isSelected("BugFixLevel"))
+				test_BugFixLevel();
+			if (isSelected("Upload"))
+				test_Upload();
+			if (isSelected("ClientRefusesUpload"))
+				test_ClientRefusesUpload();
+			if (isSelected("Offset0"))
+				test_Offset0();
+			if (isSelected("Offset1"))
+				test_Offset1();
+			if (isSelected("Offset5"))
+				test_Offset5();
+			if (isSelected("ServerStopsReading"))
+				test_ServerStopsReading();
+			if (isSelected("Download"))
+				test_Download();
+			if (isSelected("ClientRefusesDownload"))
+				test_ClientRefusesDownload();
+			if (isSelected("LargeUpload"))
+				test_LargeUpload();
+			if (isSelected("LargeDownload"))
+				test_LargeDownload();
+			if (isSelected("UploadFromStream"))
+				test_UploadFromStream();
+			if (isSelected("UploadFromReader"))
+				test_UploadFromReader();
+			if (isSelected("UploadFromReaderOffset"))
+				test_UploadFromReaderOffset();
+			if (isSelected("FailUploadLate"))
+				test_FailUploadLate();
+			if (isSelected("FailUploadLate2"))
+				test_FailUploadLate2();
+			if (isSelected("FailDownloadLate"))
+				test_FailDownloadLate();
+			if (isSelected("FileTransferHandlerUploadUtf8"))
+				test_FileTransferHandlerUploadUtf8();
+			if (isSelected("FileTransferHandlerUploadLatin1"))
+				test_FileTransferHandlerUploadLatin1();
+			if (isSelected("FileTransferHandlerUploadNull"))
+				test_FileTransferHandlerUploadNull();
+			if (isSelected("FileTransferHandlerUploadRefused"))
+				test_FileTransferHandlerUploadRefused();
+			if (isSelected("FileTransferHandlerDownloadUtf8"))
+				test_FileTransferHandlerDownloadUtf8();
+			if (isSelected("FileTransferHandlerDownloadLatin1"))
+				test_FileTransferHandlerDownloadLatin1();
+			if (isSelected("FileTransferHandlerDownloadNull"))
+				test_FileTransferHandlerDownloadNull();
+			if (isSelected("FileTransferHandlerDownloadRefused"))
+				test_FileTransferHandlerDownloadRefused();
 		} catch (Failure e) {
 			failures++;
 			System.err.println();
