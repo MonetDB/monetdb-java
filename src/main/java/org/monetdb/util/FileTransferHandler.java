@@ -14,7 +14,9 @@ import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.io.OutputStreamWriter;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
@@ -91,6 +93,7 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			handle.sendError("Cannot read file " + path.toString());
 			return;
 		}
+
 		// In this implementation we ONLY support gzip compression format and none of the other compression formats.
 		if (name.endsWith(".bz2") || name.endsWith(".lz4") || name.endsWith(".xz") || name.endsWith(".zip")) {
 			final String extension = name.substring(name.lastIndexOf('.'));
@@ -98,29 +101,21 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			return;
 		}
 
-		final boolean useGZIP = name.endsWith(".gz");
+		InputStream byteStream = Files.newInputStream(path);
+		if (name.endsWith(".gz")) {
+			byteStream = new GZIPInputStream(byteStream, 128 * 1024);
+		}
+
 		if (!textMode || (linesToSkip == 0 && utf8Encoded())) {
 			// when !textMode we must upload as a byte stream
 			// when utf8Encoded and linesToSkip is 0 it is more efficient to upload as a byte stream
-			final InputStream inputStream = Files.newInputStream(path);
-			if (useGZIP) {
-				final GZIPInputStream gzipInputStream = new GZIPInputStream(inputStream, 128 * 1024);
-				handle.uploadFrom(gzipInputStream);
-				gzipInputStream.close();
-			} else {
-				handle.uploadFrom(inputStream);
-			}
+			handle.uploadFrom(byteStream);
+			byteStream.close();
 		} else {
 			// cannot upload as a byte stream, must deal with encoding and/or linesToSkip
-			if (useGZIP) {
-				// TODO add support for: useGZIP
-				handle.sendError("Sorry, uploading compressed .gz file data with an offset or a none utf-8 encoding is not yet supported");
-				return;
-			} else {
-				final BufferedReader reader = Files.newBufferedReader(path, encoding);
-				handle.uploadFrom(reader, linesToSkip);
-				reader.close();
-			}
+			final BufferedReader reader = new BufferedReader(new InputStreamReader(byteStream, encoding));
+			handle.uploadFrom(reader, linesToSkip);
+			reader.close();
 		}
 	}
 
@@ -142,6 +137,7 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			handle.sendError("File already exists: " + path.toString());
 			return;
 		}
+
 		// In this implementation we ONLY support gzip compression format and none of the other compression formats.
 		if (name.endsWith(".bz2") || name.endsWith(".lz4") || name.endsWith(".xz") || name.endsWith(".zip")) {
 			final String extension = name.substring(name.lastIndexOf('.'));
@@ -149,30 +145,21 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			return;
 		}
 
-		final boolean useGZIP = name.endsWith(".gz");
+		OutputStream byteStream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
+		if (name.endsWith(".gz")) {
+			byteStream = new GZIPOutputStream(byteStream, 128 * 1024);
+		}
+
 		if (!textMode || utf8Encoded()) {
 			// when !textMode we must download as a byte stream
 			// when utf8Encoded it is more efficient to download as a byte stream
-			final OutputStream outputStream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
-			if (useGZIP) {
-				final GZIPOutputStream gzipOutputStream = new GZIPOutputStream(outputStream, 128 * 1024);
-				handle.downloadTo(gzipOutputStream);
-				gzipOutputStream.flush();
-				gzipOutputStream.close();
-			} else {
-				handle.downloadTo(outputStream);
-			}
+			handle.downloadTo(byteStream);
+			byteStream.close();
 		} else {
 			// cannot download as a byte stream, must deal with encoding
-			if (useGZIP) {
-				// TODO add support for: useGZIP
-				handle.sendError("Sorry, downloading data in a none utf-8 encoding to a compressed .gz file is not yet supported");
-				return;
-			} else {
-				final BufferedWriter writer = Files.newBufferedWriter(path, encoding, StandardOpenOption.CREATE_NEW);
-				handle.downloadTo(writer);
-				writer.close();
-			}
+			final BufferedWriter writer = new BufferedWriter(new OutputStreamWriter(byteStream, encoding));
+			handle.downloadTo(writer);
+			writer.close();
 		}
 	}
 
