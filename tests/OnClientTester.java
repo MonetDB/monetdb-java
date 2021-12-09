@@ -28,6 +28,7 @@ import java.sql.Statement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.zip.GZIPOutputStream;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 
@@ -168,6 +169,14 @@ public final class OnClientTester {
 				test_FileTransferHandlerDownloadLatin1();
 			if (isSelected("FileTransferHandlerDownloadNull"))
 				test_FileTransferHandlerDownloadNull();
+			if (isSelected("test_FileTransferHandlerUploadNotCompressed"))
+				test_FileTransferHandlerUploadNotCompressed();
+			if (isSelected("test_FileTransferHandlerUploadNotCompressedSkip"))
+				test_FileTransferHandlerUploadNotCompressedSkip();
+			if (isSelected("test_FileTransferHandlerUploadCompressed"))
+				test_FileTransferHandlerUploadCompressed();
+			if (isSelected("test_FileTransferHandlerUploadCompressedSkip"))
+				test_FileTransferHandlerUploadCompressedSkip();
 			if (isSelected("FileTransferHandlerDownloadRefused"))
 				test_FileTransferHandlerDownloadRefused();
 		} catch (Failure e) {
@@ -589,21 +598,45 @@ public final class OnClientTester {
 		exitTest();
 	}
 
+	private void test_FileTransferHandlerUploadNotCompressed() throws IOException, SQLException, Failure {
+		initTest("FileTransferHandlerUploadNotCompressed");
+		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, false, 0);
+		exitTest();
+	}
+
+	private void test_FileTransferHandlerUploadNotCompressedSkip() throws IOException, SQLException, Failure {
+		initTest("FileTransferHandlerUploadNotCompressedSkip");
+		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, false, 2);
+		exitTest();
+	}
+
+	private void test_FileTransferHandlerUploadCompressed() throws IOException, SQLException, Failure {
+		initTest("FileTransferHandlerUploadCompressed");
+		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, true, 0);
+		exitTest();
+	}
+
+	private void test_FileTransferHandlerUploadCompressedSkip() throws IOException, SQLException, Failure {
+		initTest("FileTransferHandlerUploadCompressedSkip");
+		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, true, 2);
+		exitTest();
+	}
+
 	private void test_FileTransferHandlerUploadUtf8() throws IOException, SQLException, Failure {
 		initTest("test_FileTransferHandlerUploadUtf8");
-		testFileTransferHandlerUpload(StandardCharsets.UTF_8, "UTF-8");
+		testFileTransferHandlerUploadEncoding(StandardCharsets.UTF_8, "UTF-8");
 		exitTest();
 	}
 
 	private void test_FileTransferHandlerUploadLatin1() throws IOException, SQLException, Failure {
 		initTest("test_FileTransferHandlerUploadLatin1");
-		testFileTransferHandlerUpload(Charset.forName("latin1"), "latin1");
+		testFileTransferHandlerUploadEncoding(Charset.forName("latin1"), "latin1");
 		exitTest();
 	}
 
 	private void test_FileTransferHandlerUploadNull() throws IOException, SQLException, Failure {
 		initTest("test_FileTransferHandlerUploadNull");
-		testFileTransferHandlerUpload(null, Charset.defaultCharset().name());
+		testFileTransferHandlerUploadEncoding(null, Charset.defaultCharset().name());
 		exitTest();
 	}
 
@@ -628,7 +661,7 @@ public final class OnClientTester {
 		return "<" + buf.toString().trim() + ">";
 	}
 
-	private void testFileTransferHandlerUpload(Charset handlerEncoding, String fileEncoding) throws IOException, SQLException, Failure {
+	private void testFileTransferHandlerUploadEncoding(Charset handlerEncoding, String fileEncoding) throws IOException, SQLException, Failure {
 		prepare();
 		outBuffer.append("Default encoding is " + Charset.defaultCharset().displayName() + "\n");
 		Path d = getTmpDir(currentTestName);
@@ -649,6 +682,37 @@ public final class OnClientTester {
 		String hexResult = hexdump(result);
 		assertEq("query result hexdump", hexTwo, hexResult);
 //		assertEq("query result", two, result);
+	}
+
+	private void testFileTransferHandlerUploadCompressed(Charset encoding, boolean compressed, int skipLines) throws IOException, SQLException, Failure {
+		prepare();
+		Path d = getTmpDir(currentTestName);
+		String fileName = "data.txt";
+		if (compressed)
+			fileName += ".gz";
+		Path f = d.resolve(fileName);
+		OutputStream s = Files.newOutputStream(f, CREATE_NEW);
+		if (compressed) {
+			s = new GZIPOutputStream(s);
+		}
+		Writer w = new OutputStreamWriter(s, encoding);
+		PrintWriter ps = new PrintWriter(w);
+		String[] words = { "one", "twø", "three" };
+		int i = 0;
+		int expectedSum = 0;
+		for (String word: words) {
+			int n = i + 1;
+			ps.println("" + n + "|" + word);
+			if (i >= skipLines) {
+				expectedSum += n;
+			}
+			i += 1;
+		}
+		ps.close();
+		conn.setUploadHandler(new FileTransferHandler(d, encoding));
+		String query = "COPY OFFSET " + (skipLines + 1) + " INTO foo FROM '" + fileName + "' ON CLIENT";
+		update(query);
+		assertQueryInt("SELECT SUM(i) FROM foo", expectedSum);
 	}
 
 	private void test_FileTransferHandlerUploadRefused() throws IOException, SQLException, Failure {
