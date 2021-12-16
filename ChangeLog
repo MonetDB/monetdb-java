@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Day Jan ## 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Compiled and released new jar files: monetdb-jdbc-3.2.jre8.jar,
+  monetdb-mcl-1.21.jre8.jar and jdbcclient.jre8.jar
+
 * Thu Nov 25 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Extended FileTransferHandler utility class by adding support for reading from
   and writing to gzip compressed files when using file name extension .gz
@@ -36,37 +40,6 @@
   in order to activate the JdbcClient application to down/up load data to/from
   the local file system.
 
-* Mon Jun 14 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Compiled and released new jar files: monetdb-jdbc-3.1.jre8.jar,
-  monetdb-mcl-1.20.jre8.jar and jdbcclient.jre8.jar
-
-* Thu Apr 29 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Improved performance of ResultSetMetaData methods getPrecision(),
-  getScale(), isNullable() and isAutoIncrement(). The data is fetched
-  from the server by sending a query. This used to be one query for
-  each column of the ResultSet. Now these metadata queries are combined
-  into one query fetching this meta data for up to 50 columns in one query.
-  This reduces the number of queries sent to the server significantly.
-  This is noticable for instance when using generic JDBC query tools
-  such as SQuirreL, DBeaver, which now respond much faster.
-
-* Wed Mar  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Implemented PreparedStatement.toString() as requested by
-  https://github.com/MonetDB/monetdb-java/issues/8
-
-* Wed Mar  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Implemented fix for released monetdb-jdbc-3.0.jre8.jar and
-  monetdb-mcl-1.19.jre8.jar when it is was run using java build 1.8.0_###.
-  It would throw:
-  java.lang.NoSuchMethodError: java.nio.CharBuffer.mark()Ljava/nio/CharBuffer;
-  at org.monetdb.mcl.parser.StartOfHeaderParser.getNextAsString(Unknown Source)
-  at org.monetdb.jdbc.MonetConnection$ResponseList.executeQuery(Unknown Source)
-  at org.monetdb.jdbc.MonetConnection$ResponseList.processQuery(Unknown Source)
-  at org.monetdb.jdbc.MonetStatement.internalExecute(Unknown Source)
-  at org.monetdb.jdbc.MonetStatement.execute(Unknown Source)
-  The problem is caused by a change in java.nio.CharBuffer API (return
-  types of methods mark() and reset() have changed from Buffer to
-  CharBuffer) from Java 8 to Java 9+.
-
 For a complete list of changes in previous monetdb-java releases see:
   https://www.monetdb.org/downloads/Java/archive/ChangeLog-Archive
+
