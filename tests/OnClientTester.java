@@ -839,10 +839,12 @@ public final class OnClientTester {
 		final ResultSetMetaData metaData = rs.getMetaData();
 		assertEq("column count", 1, metaData.getColumnCount());
 		if (!rs.next()) {
+			rs.close();
 			fail("Result set is empty");
 		}
 		final int result = rs.getInt(1);
 		if (rs.next()) {
+			rs.close();
 			fail("Result set has more than one row");
 		}
 		rs.close();
@@ -863,10 +865,12 @@ public final class OnClientTester {
 		final ResultSetMetaData metaData = rs.getMetaData();
 		assertEq("column count", 1, metaData.getColumnCount());
 		if (!rs.next()) {
+			rs.close();
 			fail("Result set is empty");
 		}
 		final String result = rs.getString(1);
 		if (rs.next()) {
+			rs.close();
 			fail("Result set has more than one row");
 		}
 		rs.close();
