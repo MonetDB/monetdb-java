@@ -21,7 +21,12 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.SQLNonTransientException;
+import java.sql.Statement;
 
 public class OnClientExample {
 
@@ -179,7 +184,7 @@ public class OnClientExample {
 		private void uploadFileData(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
 			// Validate the path, demonstrating two ways of dealing with errors
 			Path path = securelyResolvePath(name);
-			if (path == null  || !Files.exists(path)) {
+			if (path == null || !Files.exists(path)) {
 				// This makes the COPY command fail but keeps the connection
 				// alive. Can only be used if we haven't sent any data yet
 				handle.sendError("Invalid path");
