@@ -1,6 +1,6 @@
 RELEASE NOTES
 MonetDB JDBC driver version 3.2 (Liberica/MCL-1.21)
-Release date: 2021-10-15
+Release date: 2022-01-19
 
 The Java Database Connectivity (JDBC) API provides universal data access from
 the Java programming language.
@@ -109,7 +109,8 @@ Currently implemented JDBC 4.2 interfaces include:
   * java.sql.Statement
     The next methods/options are NOT useable/supported:
     - cancel (query execution cannot be terminated, once started)
-       see also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6222
+       see also: https://github.com/MonetDB/monetdb-java/issues/7
+       or https://www.monetdb.org/bugzilla/show_bug.cgi?id=6222
     - execute with column indices or names
     - executeUpdate with column indices or names
     - setMaxFieldSize

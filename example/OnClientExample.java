@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2021 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2022 MonetDB B.V.
  */
 
 import org.monetdb.jdbc.MonetConnection;
@@ -98,6 +98,7 @@ public class OnClientExample {
 					while (rs.next()) {
 						count++;
 					}
+					rs.close();
 					System.out.printf("  OK, returned %d rows%n", count);
 				} else {
 					System.out.printf("  OK, updated %d rows%n", stmt.getUpdateCount());
@@ -108,7 +109,6 @@ public class OnClientExample {
 				System.out.println("  => SQL ERROR " + e.getMessage());
 				status = 1;
 			}
-
 		}
 
 		return status;
@@ -229,7 +229,6 @@ public class OnClientExample {
 			handle.uploadFrom(stream);
 		}
 
-
 		private void justCountLines(MonetConnection.Download handle) throws IOException {
 			System.out.println("  HANDLER: not writing the download to file, just counting the lines");
 			InputStream stream = handle.getStream();
@@ -260,6 +259,5 @@ public class OnClientExample {
 				bufwriter.close(); // do not forget this
 			}
 		}
-
 	}
 }
