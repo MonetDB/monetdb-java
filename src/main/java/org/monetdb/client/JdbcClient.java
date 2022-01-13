@@ -48,7 +48,7 @@ import java.util.List;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 1.6
+ * @version 1.7
  */
 
 public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.JdbcClient extends this class */
@@ -714,120 +714,9 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 					doProcess = false;
 					// check for commands only when the previous row was complete
 					if (command.equals("\\q") || command.equals("quit") || command.equals("exit")) {
-						// quit
 						break;
-					} else if (command.equals("\\?") || command.equals("\\h")) {
-						out.println("Available commands:");
-						out.println("\\q       quits this program (you can also use: quit or exit)");
-						if (dbmd != null) {
-							out.println("\\d       list available user tables and views in current schema");
-							out.println("\\dS      list available system tables and views in sys schema");
-							out.println("\\d <obj> describes the given table or view");
-						}
-						out.println("\\l<uri>  executes the contents of the given file or URL");
-						out.println("\\i<uri>  batch executes the inserts from the given file or URL");
-						out.println("\\vsci    validate sql system catalog integrity");
-					//	out.println("\\vsni    validate sql system netcdf tables integrity");	// do not list as it depends on availability of netcdf library on server
-					//	out.println("\\vsgi    validate sql system geom tables integrity");	// do not list as it depends on availability of geom library on server
-						out.println("\\vsi <schema>  validate integrity of data in the given schema");
-						out.println("\\vdbi    validate integrity of data in all user schemas in the database");
-						out.println("\\? or \\h this help screen");
 					} else if (dbmd != null && command.startsWith("\\d")) {
-						ResultSet tbl = null;
-						try {
-							if (command.equals("\\dS")) {
-								String curSchema = con.getSchema();
-								if (!("sys".equals(curSchema) || "tmp".equals(curSchema) || "logging".equals(curSchema)))
-									curSchema = "sys";
-								// list available system tables and views in sys/tmp/logging schema
-								tbl = dbmd.getTables(null, curSchema, null, null);
-
-								// give us a list of all non-system tables and views (including temp ones)
-								while (tbl.next()) {
-									final String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
-									if (tableType != null && tableType.startsWith("SYSTEM ")) {
-										String tableNm = tbl.getString(3);	// 3 = "TABLE_NAME"
-										if (tableNm.contains(" ") || tableNm.contains("\t"))
-											tableNm = Exporter.dq(tableNm);
-										out.println(tableType + "\t" +
-											tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
-											tableNm);
-									}
-								}
-							} else {
-								String object = command.substring(2).trim();
-								if (scolonterm && object.endsWith(";"))
-									object = object.substring(0, object.length() - 1);
-								if (object.isEmpty()) {
-									// list available user tables and views in current schema
-									tbl = dbmd.getTables(null, con.getSchema(), null, null);
-
-									// give us a list of all non-system tables and views (including temp ones)
-									while (tbl.next()) {
-										final String tableType = tbl.getString(4);	// 4 = "TABLE_TYPE"
-										if (tableType != null && !tableType.startsWith("SYSTEM ")) {
-											String tableNm = tbl.getString(3);	// 3 = "TABLE_NAME"
-											if (tableNm.contains(" ") || tableNm.contains("\t"))
-												tableNm = Exporter.dq(tableNm);
-											out.println(tableType + "\t" +
-												tbl.getString(2) + "." +	// 2 = "TABLE_SCHEM"
-												tableNm);
-										}
-									}
-								} else {
-									// describes the given table or view
-									String schema;
-									String obj_nm = object;
-									int len;
-									boolean found = false;
-									final int dot = object.indexOf(".");
-									if (dot > 0) {
-										// use specified schema
-										schema = object.substring(0, dot);
-										obj_nm = object.substring(dot + 1);
-										// remove potential surrounding double quotes around schema name
-										len = schema.length();
-										if (len > 2 && schema.charAt(0) == '"' && schema.charAt(len -1) == '"')
-											schema = schema.substring(1, len -1);
-									} else {
-										// use current schema
-										schema = con.getSchema();
-									}
-									// remove potential surrounding double quotes around table or view name
-									len = obj_nm.length();
-									if (len > 2 && obj_nm.charAt(0) == '"' && obj_nm.charAt(len -1) == '"')
-										obj_nm = obj_nm.substring(1, len -1);
-
-									// System.err.println("calling dbmd.getTables(" + schema + ", " + obj_nm + ")");
-									tbl = dbmd.getTables(null, schema, obj_nm, null);
-									while (tbl.next() && !found) {
-										final String schemaName = tbl.getString(2);	// 2 = "TABLE_SCHEM"
-										final String tableName = tbl.getString(3);	// 3 = "TABLE_NAME"
-										if (obj_nm.equals(tableName) && schema.equals(schemaName)) {
-											// we found it, describe it
-											exporter.dumpSchema(dbmd,
-												tbl.getString(4),	// 4 = "TABLE_TYPE"
-												schemaName,
-												tableName);
-
-											found = true;
-											break;
-										}
-									}
-									if (!found)
-										System.err.println("No match found for table or view: " + object);
-								}
-							}
-						} catch (SQLException e) {
-							out.flush();
-							do {
-								System.err.println("Error [" + e.getSQLState() + "]: " + e.getMessage());
-								// print all error messages in the chain (if any)
-							} while ((e = e.getNextException()) != null);
-						} finally {
-							if (tbl != null)
-								tbl.close();
-						}
+						processDescribeCmd(command, scolonterm);
 					} else if (command.startsWith("\\v")) {
 						if (command.equals("\\vsci")) {
 							MDBvalidator.validateSqlCatalogIntegrity(con, true);
@@ -852,7 +741,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 						} else if (command.equals("\\vdbi_noheader")) {	// used only for internal automated testing
 							MDBvalidator.validateDBIntegrity(con, false);
 						} else {
-							doProcess = true;
+							showCommands();
 						}
 					} else if (command.startsWith("\\l") || command.startsWith("\\i")) {
 						String object = command.substring(2).trim();
@@ -878,6 +767,8 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 								in = console;
 							}
 						}
+					} else if (command.equals("\\?") || command.equals("\\h") || command.startsWith("\\")) {
+						showCommands();
 					} else {
 						doProcess = true;
 					}
@@ -917,6 +808,228 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 			}
 			out.flush();
 		}
+	}
+
+	private static void showCommands()
+	{
+		out.println("Available commands:");
+		out.println("\\q       quits this program (you can also use: quit or exit)");
+		if (dbmd != null) {
+			out.println("\\d       list available user tables and views in current schema");
+			out.println("\\dt      list available user tables in current schema");
+			out.println("\\dv      list available user views in current schema");
+			out.println("\\df      list available user functions in current schema");
+			out.println("\\dp      list available user procedures in current schema");
+			out.println("\\ds      list available user sequences in current schema");
+			out.println("\\dn      list available user schemas");
+			out.println("\\dS      list available system tables and views in sys/tmp schema");
+			out.println("\\dSt     list available system tables in sys/tmp schema");
+			out.println("\\dSv     list available system views in sys/logging schema");
+			out.println("\\dSf     list available system functions in current schema");
+			out.println("\\dSp     list available system procedures in current schema");
+			out.println("\\dSn     list available system schemas");
+			out.println("\\d <obj> describes the given table or view");
+		}
+		out.println("\\l<uri>  executes the contents of the given file or URL");
+		out.println("\\i<uri>  batch executes the inserts from the given file or URL");
+		out.println("\\vsci    validate sql system catalog integrity");
+	//	out.println("\\vsni    validate sql system netcdf tables integrity");	// do not print as it depends on availability of netcdf library on server
+	//	out.println("\\vsgi    validate sql system geom tables integrity");	// do not print as it depends on availability of geom library on server
+		out.println("\\vsi <schema>  validate integrity of data in the given schema");
+		out.println("\\vdbi    validate integrity of data in all user schemas in the database");
+		out.println("\\? or \\h this help screen");
+	}
+
+	/**
+	 * Process the commands that start with \d
+	 * These commands list the available user or system tables, views, functions, procedures, schemas
+	 * or user sequences
+	 * or describe a specific table or view by printing the CREATE DDL statement
+	 * See also showCommands()
+	 * These commands are almost the same as in mclient program
+	 */
+	private static void processDescribeCmd(final String dcommand, final boolean scolonterm)
+	{
+		final String command = dcommand.substring(1);	// remove the leading \ character first
+		ResultSet rs = null;
+		Statement st = null;
+		try {
+			if (command.equals("d") || command.equals("dt") || command.equals("dv")) {
+				// list available user tables and/or views in current schema (maybe tmp schema to show temporary tables)
+				boolean tablesOnly = command.equals("dt");
+				boolean viewsOnly = command.equals("dv");
+				rs = dbmd.getTables(null, con.getSchema(), null, null);
+				while (rs.next()) {
+					final String tableType = rs.getString(4);	// 4 = "TABLE_TYPE"
+					boolean include = (tableType != null && !tableType.startsWith("SYSTEM "));
+					if (include && tablesOnly && !tableType.contains("TABLE"))
+						include = false;
+					if (include && viewsOnly && !tableType.contains("VIEW"))
+						include = false;
+					if (include) {
+						out.println(tableType + "\t" +
+							optAddDqs(rs.getString(2)) + "." +	// 2 = "TABLE_SCHEM"
+							optAddDqs(rs.getString(3)) );		// 3 = "TABLE_NAME"
+					}
+				}
+			} else
+			if (command.equals("dS") || command.equals("dSt") || command.equals("dSv") || command.equals("dtS") || command.equals("dvS")) {
+				// list available system tables and/or views in sys/tmp/logging schema
+				boolean tablesOnly = command.contains("t");
+				boolean viewsOnly = command.contains("v");
+				String curSchema = con.getSchema();
+				// only schemas: sys, tmp and logging contain system tables and views.
+				if (!("sys".equals(curSchema) || "tmp".equals(curSchema) || "logging".equals(curSchema)))
+					// when currently in another schema, default to the sys tables/views else nothing will be listed
+					curSchema = "sys";
+				rs = dbmd.getTables(null, curSchema, null, null);
+				while (rs.next()) {
+					final String tableType = rs.getString(4);	// 4 = "TABLE_TYPE"
+					boolean include = (tableType != null && tableType.startsWith("SYSTEM "));
+					if (include && tablesOnly && !tableType.contains("TABLE"))
+						include = false;
+					if (include && viewsOnly && !tableType.contains("VIEW"))
+						include = false;
+					if (include) {
+						out.println(tableType + "\t" +
+							optAddDqs(rs.getString(2)) + "." +	// 2 = "TABLE_SCHEM"
+							optAddDqs(rs.getString(3)) );		// 3 = "TABLE_NAME"
+					}
+				}
+			} else
+			if (command.equals("df") || command.equals("dp") || command.equals("dSf") || command.equals("dSp") || command.equals("dfS") || command.equals("dpS")) {
+				// list available user/system functions or procedures in current schema (maybe tmp schema)
+				boolean proceduresOnly = command.contains("p");
+				boolean systemOnly = command.contains("S");
+				// Note we cannot use: dbmd.getFunctions(null, con.getSchema(), null);  or  dbmd.getProcedures(null, con.getSchema(), null);
+				// as they do not return the full function type name, nor provide information whether it is a system function or system procedure.
+				// Instead we query the MonetDB system catog tables directly using:
+				String qy = "SELECT DISTINCT " + (systemOnly ? "'SYSTEM ' || " : "") + "\"function_type_keyword\" as func_type, " +
+					"\"schemas\".\"name\" as schem_name, \"functions\".\"name\" as func_name" +
+					" FROM sys.\"functions\"" +
+					" JOIN sys.\"function_types\" ON \"functions\".\"type\" = \"function_types\".\"function_type_id\"" +
+					" JOIN sys.\"schemas\" ON \"functions\".\"schema_id\" = \"schemas\".\"id\"" +
+					" WHERE \"functions\".\"system\" = " + (systemOnly ? "true" : "false") +
+					" AND \"functions\".\"type\" " + (proceduresOnly ? "= 2" : "<> 2") +
+					" AND \"schemas\".\"name\" = current_schema" +
+					" ORDER BY 2, 3";
+				st = con.createStatement();
+				rs = st.executeQuery(qy);
+				while (rs.next()) {
+					out.println(rs.getString(1) + "\t" +		// 1 = func_type
+						optAddDqs(rs.getString(2)) + "." +	// 2 = schem_name
+						optAddDqs(rs.getString(3)) );		// 3 = func_name
+				}
+			} else
+			if (command.equals("ds")) {
+				// list available (user) sequences in current schema
+				String qy = "SELECT \"schemas\".\"name\", \"sequences\".\"name\"" +
+					" FROM sys.\"sequences\"" +
+					" JOIN sys.\"schemas\" ON \"sequences\".\"schema_id\" = \"schemas\".\"id\"" +
+					" WHERE \"schemas\".\"name\" = current_schema" +
+					" ORDER BY 1, 2";
+				st = con.createStatement();
+				rs = st.executeQuery(qy);
+				while (rs.next()) {
+					out.println("SEQUENCE  " +
+						optAddDqs(rs.getString(1)) + "." +	// 1 = schemas.name
+						optAddDqs(rs.getString(2)) );		// 2 = sequences.name
+				}
+			} else
+			if (command.equals("dn") || command.equals("dSn") || command.equals("dnS")) {
+				// list available user/system schemas in the database
+				boolean systemOnly = command.contains("S");
+				String qy = "SELECT \"name\"" +
+					" FROM sys.\"schemas\"" +
+					" WHERE \"system\" = " + (systemOnly ? "true" : "false") +
+					" ORDER BY 1";
+				String schema_type = (systemOnly ? "SYSTEM SCHEMA\t" : "SCHEMA\t");
+				st = con.createStatement();
+				rs = st.executeQuery(qy);
+				while (rs.next()) {
+					out.println(schema_type + optAddDqs(rs.getString(1)) );	// 1 = schemas.name
+				}
+			} else
+			if (command.startsWith("d ")) {
+				// describes the given table or view name. It may be a fully qualified name such as: sys."keys"
+				String object = command.substring(2).trim();
+				if (scolonterm && object.endsWith(";"))
+					object = object.substring(0, object.length() - 1);
+				if (object.isEmpty()) {
+					System.err.println("Missing name of object to describe");
+				} else {
+					// extract the name of the schema first. If none found use current schema
+					String schema;
+					String obj_nm = object;
+					int len;
+					boolean found = false;
+					final int dot = object.indexOf(".");
+					if (dot > 0) {
+						// use specified schema
+						schema = object.substring(0, dot);
+						obj_nm = object.substring(dot + 1);
+						// remove potential surrounding double quotes around schema name
+						len = schema.length();
+						if (len > 2 && schema.charAt(0) == '"' && schema.charAt(len -1) == '"')
+							schema = schema.substring(1, len -1);
+					} else {
+						// use current schema
+						schema = con.getSchema();
+					}
+					// remove potential surrounding double quotes around table or view name
+					len = obj_nm.length();
+					if (len > 2 && obj_nm.charAt(0) == '"' && obj_nm.charAt(len -1) == '"')
+						obj_nm = obj_nm.substring(1, len -1);
+
+					// System.err.println("calling dbmd.getTables(" + schema + ", " + obj_nm + ")");
+					rs = dbmd.getTables(null, schema, obj_nm, null);
+					while (rs.next() && !found) {
+						final String schemaName = rs.getString(2);	// 2 = "TABLE_SCHEM"
+						final String tableName = rs.getString(3);	// 3 = "TABLE_NAME"
+						if (obj_nm.equals(tableName) && schema.equals(schemaName)) {
+							String tableType = rs.getString(4);	// 4 = "TABLE_TYPE"
+							if (tableType.startsWith("SYSTEM "))
+								tableType = tableType.substring(7);
+							// we found it, describe it
+							exporter.dumpSchema(dbmd, tableType, schemaName, tableName);
+							found = true;
+							break;
+						}
+					}
+					if (!found)
+						System.err.println("table or view: " + schema + "." + obj_nm + " does not exist");
+				}
+			} else
+			if (command.startsWith("d")) {
+				System.err.println("unknown sub-command for \\d: " + command.substring(1));
+			} else {
+				showCommands();
+			}
+		} catch (SQLException e) {
+			out.flush();
+			do {
+				System.err.println("Error [" + e.getSQLState() + "]: " + e.getMessage());
+				// print all error messages in the chain (if any)
+			} while ((e = e.getNextException()) != null);
+		} finally {
+			if (rs != null) {
+				try {
+					rs.close();
+				} catch (SQLException e) { /* ignore */ }
+			}
+			if (st != null) {
+				try {
+					st.close();
+				} catch (SQLException e) { /* ignore */ }
+			}
+		}
+	}
+
+	private static String optAddDqs(final String name)
+	{
+		if (name.contains(" ") || name.contains("\t") || name.contains("\n"))
+			return Exporter.dq(name);
+		return name;
 	}
 
 	/**
