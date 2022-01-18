@@ -125,6 +125,10 @@ public final class OnClientTester {
 				test_BugFixLevel();
 			if (isSelected("Upload"))
 				test_Upload();
+			if (isSelected("UploadCrLf"))
+				test_UploadCrLf();
+			if (isSelected("NormalizeCrLf"))
+				test_NormalizeCrLf();
 			if (isSelected("ClientRefusesUpload"))
 				test_ClientRefusesUpload();
 			if (isSelected("Offset0"))
@@ -377,6 +381,108 @@ public final class OnClientTester {
 		assertEq("cancellation callback called", false, handler.isCancelled());
 		assertQueryInt("SELECT COUNT(*) FROM foo", 100);
 		exitTest();
+	}
+
+	private void test_UploadCrLf() throws SQLException, Failure {
+		initTest("test_UploadCrLf");
+		prepare();
+		MonetConnection.UploadHandler handler = new MonetConnection.UploadHandler() {
+			@Override
+			public void handleUpload(MonetConnection.Upload handle, String name, boolean textMode, long linesToSkip) throws IOException {
+				String contentText = "100|foo\r\n10|bar\r\n1|baz\r\n";
+				byte[] contentBytes = contentText.getBytes(StandardCharsets.UTF_8);
+				ByteArrayInputStream contentStream = new ByteArrayInputStream(contentBytes);
+				handle.uploadFrom(contentStream);
+			}
+		};
+		conn.setUploadHandler(handler);
+		update("COPY INTO foo FROM 'banana' ON CLIENT");
+		assertQueryInt("SELECT SUM(i * LENGTH(t)) FROM foo", 333);
+		exitTest();
+	}
+
+	private void test_NormalizeCrLf() throws Failure, IOException {
+		initTest("test_NormalizeCrLf");
+		String[] fragments = {
+				/* does not end in pending cr */ "\r\naaa\n\n\r\n",
+				/* ends in pending cr */ "\n\r\naaa\r",
+				/* clears it */ "\n",
+				/* means call the single-argument write(), cr now pending */ "13",
+				/* again, should flush the pending one and remain pending */ "13",
+				/* now the pending cr should be dropped */ "10",
+				/* same as above, but with arrays */ "\r", "\r", "\n",
+				/* empty write should not clear the pending */ "\r", "", "\n",
+				/* trailing \r */ "\r",
+		};
+
+		ByteArrayOutputStream out0 = new ByteArrayOutputStream();
+		MonetConnection.StripCrLfStream out = new MonetConnection.StripCrLfStream(out0);
+		ByteArrayOutputStream ref = new ByteArrayOutputStream();
+		ArrayList<Integer> fragmentPositions = new ArrayList();
+		ArrayList<Boolean> wasPending = new ArrayList();
+		for (String f : fragments) {
+			int pos = out0.toByteArray().length;
+			boolean pending = out.pending();
+			fragmentPositions.add(pos);
+			wasPending.add(pending);
+			if (!f.isEmpty() && Character.isDigit(f.charAt(0))) {
+				int n = Integer.parseInt(f);
+				ref.write(n);
+				out.write(n);
+			} else {
+				byte[] bytes = f.getBytes(StandardCharsets.UTF_8);
+				ref.write(bytes);
+				out.write(bytes);
+			}
+		}
+		out.close();
+
+		String data = new String(out0.toByteArray());
+		String refData = new String(ref.toByteArray()).replaceAll("\r\n", "\n");
+
+		outBuffer.append("GOT\t\tEXPECTED\n");
+		int fragNo = 0;
+		boolean different = false;
+		for (int i = 0; i < data.length() || i < refData.length(); i++) {
+			while (fragNo < fragmentPositions.size() && i == fragmentPositions.get(fragNo)) {
+				outBuffer.append("(Start of fragment ");
+				outBuffer.append(fragNo);
+				if (wasPending.get(fragNo)) {
+					outBuffer.append(", cr pending");
+				} else {
+					outBuffer.append(", cr not pending");
+				}
+				outBuffer.append(':');
+				String frag = fragments[fragNo];
+				if (!frag.isEmpty() && Character.isDigit(frag.charAt(0))) {
+					outBuffer.append(Integer.parseInt(frag));
+				} else {
+					for (int k = 0; k < frag.length(); k++) {
+						int c = frag.charAt(k);
+						outBuffer.append(' ');
+						outBuffer.append(c);
+						if (c == '\n' && k != frag.length() - 1)
+							outBuffer.append("  ");
+					}
+				}
+				outBuffer.append(")\n");
+				fragNo++;
+			}
+			int left = i < data.length() ? data.charAt(i) : 0;
+			int right = i < refData.length() ? refData.charAt(i) : 0;
+			outBuffer.append(left);
+			outBuffer.append("\t\t");
+			outBuffer.append(right);
+			if (!different && left != right) {
+				outBuffer.append("\t\t <---------------------- first difference found!");
+				different = true;
+			}
+			outBuffer.append('\n');
+		}
+
+		if (different) {
+			fail("Normalized text is different than expected");
+		}
 	}
 
 	private void test_ClientRefusesUpload() throws SQLException, Failure {

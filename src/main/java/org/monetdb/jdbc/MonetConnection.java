@@ -3236,7 +3236,7 @@ public class MonetConnection
 		}
 
 		final long linesToSkip = offset >= 1 ? offset - 1 : 0;
-		final Upload handle = new Upload(server, uploadHandler::uploadCancelled);
+		final Upload handle = new Upload(server, uploadHandler::uploadCancelled, textMode);
 		final boolean wasFaking = server.setInsertFakePrompts(false);
 		try {
 			uploadHandler.handleUpload(handle, path, textMode, linesToSkip);
@@ -3326,13 +3326,15 @@ public class MonetConnection
 	public static class Upload {
 		private final MapiSocket server;
 		private final Runnable cancellationCallback;
+		private final boolean textMode;
 		private PrintStream print = null;
 		private String error = null;
 		private int customChunkSize = -1;
 
-		Upload(MapiSocket server, Runnable cancellationCallback) {
+		Upload(MapiSocket server, Runnable cancellationCallback, boolean textMode) {
 			this.server = server;
 			this.cancellationCallback = cancellationCallback;
+			this.textMode = textMode;
 		}
 
 		/**
@@ -3374,7 +3376,7 @@ public class MonetConnection
 				try {
 					final MapiSocket.UploadStream up = customChunkSize >= 0 ? server.uploadStream(customChunkSize) : server.uploadStream();
 					up.setCancellationCallback(cancellationCallback);
-					print = new PrintStream(up, false, "UTF-8");
+					print = new PrintStream(textMode ? new StripCrLfStream(up) : up, false, "UTF-8");
 					up.write('\n');
 				} catch (UnsupportedEncodingException e) {
 					throw new RuntimeException("The system is guaranteed to support the UTF-8 encoding but apparently it doesn't", e);
@@ -3565,6 +3567,84 @@ public class MonetConnection
 					/* ignore close error */
 				}
 			}
+		}
+	}
+
+	public static class StripCrLfStream extends FilterOutputStream {
+		private boolean crPending = false;
+
+		public StripCrLfStream(OutputStream out) {
+			super(out);
+		}
+
+		public boolean pending() {
+			return this.crPending;
+		}
+
+		@Override
+		public void write(int b) throws IOException {
+			if (crPending && b != '\n') {
+					out.write('\r');
+			}
+			if (b != '\r') {
+				out.write(b);
+				crPending = false;
+			} else {
+				crPending = true;
+			}
+		}
+
+		@Override
+		public void write(byte[] b) throws IOException {
+			this.write(b, 0, b.length);
+		}
+
+		@Override
+		public void write(byte[] b, int off, int len) throws IOException {
+			if (len == 0) {
+				return;
+			}
+			if (crPending && b[0] != '\n') {
+				out.write('\r');
+			}
+
+			// deal with final \r up front
+			if (b[len - 1] == '\r') {
+				crPending = true;
+				len -= 1;
+			} else {
+				crPending = false;
+			}
+
+			for (int i = off; i < off + len - 1; i++) {
+				if (b[i] == '\r' && b[i + 1] == '\n') {
+					int chunk = i - off;
+					out.write(b, off, chunk);
+					// chunk + 1 because we want to skip the \r
+					len -= chunk + 1;
+					off += chunk + 1;
+					// we don't have to look at the \n because we know it's no \r.
+					i++;
+				}
+			}
+
+			// write the remainder
+			out.write(b, off, len);
+		}
+
+		@Override
+		public void flush() throws IOException {
+			// we cannot flush our pending CR but we can ask our downstream to flush what we have sent them so far
+			out.flush();
+		}
+
+		@Override
+		public void close() throws IOException {
+			if (crPending) {
+				out.write('\r');
+			}
+			crPending = false;
+			super.close();
 		}
 	}
 }
