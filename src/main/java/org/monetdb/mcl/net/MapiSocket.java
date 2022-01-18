@@ -1268,13 +1268,13 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				throw new IOException("Server aborted the upload");
 			}
 			handleChunking();
-			super.write(b);
+			out.write(b);
 			wrote(1);
 		}
 
 		@Override
 		public void write(final byte[] b) throws IOException {
-			write(b, 0, b.length);
+			this.write(b, 0, b.length);
 		}
 
 		@Override
@@ -1288,7 +1288,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			while (len > 0) {
 				handleChunking();
 				int toWrite = Integer.min(len, chunkLeft);
-				super.write(b, off, toWrite);
+				out.write(b, off, toWrite);
 				off += toWrite;
 				len -= toWrite;
 				wrote(toWrite);
