@@ -643,7 +643,6 @@ public final class OnClientTester {
 		assertEq("Index of first lonely \\n", -1, replaced.indexOf('\n'));
 
 		String withoutData = result.replaceAll("[0-9]", "");
-		Files.writeString(Path.of("/tmp/x.csv"), withoutData, StandardCharsets.UTF_8);
 		assertEq("Length after dropping data, modulo 3", 0, withoutData.length() % 3);
 		for (int i = 0; i < withoutData.length(); i += 3) {
 			String sub = withoutData.substring(i, i+3);
