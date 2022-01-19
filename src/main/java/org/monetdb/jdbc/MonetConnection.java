@@ -3449,8 +3449,8 @@ public class MonetConnection
 					break;
 				}
 				writer.write(buffer, 0, nread);
-				writer.close();
 			}
+			writer.close();
 		}
 
 		/**
