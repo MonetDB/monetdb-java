@@ -1198,9 +1198,10 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	 * Return a DownloadStream for use with for example COPY INTO filename ON CLIENT
 	 *
 	 * Building block for {@link org.monetdb.jdbc.MonetConnection.DownloadHandler}.
+	 * @param prependCr convert \n to \r\n
 	 */
-	public DownloadStream downloadStream() {
-		return new DownloadStream(fromMonet.getRaw(), toMonet);
+	public DownloadStream downloadStream(boolean prependCr) {
+		return new DownloadStream(fromMonet.getRaw(), toMonet, prependCr);
 	}
 
 	/**
@@ -1379,12 +1380,15 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	public static class DownloadStream extends InputStream {
 		private final BlockInputStream.Raw rawIn;
 		private final OutputStream out;
+		private final boolean prependCr;
 		private boolean endBlockSeen = false;
 		private boolean closed = false;
+		private boolean newlinePending = false; // used for crlf conversion
 
-		DownloadStream(BlockInputStream.Raw rawIn, OutputStream out) {
+		DownloadStream(BlockInputStream.Raw rawIn, OutputStream out, boolean prependCr) {
 			this.rawIn = rawIn;
 			this.out = out;
+			this.prependCr = prependCr;
 		}
 
 		void nextBlock() throws IOException {
@@ -1422,23 +1426,55 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		}
 
 		@Override
-		public int read(final byte[] b, int off, int len) throws IOException {
+		public int read(final byte[] dest, int off, int len) throws IOException {
 			final int origOff = off;
-			while (len > 0) {
-				int chunk = Integer.min(len, rawIn.getLength() - rawIn.getPosition());
-				if (chunk > 0) {
-					// make progress copying some bytes
-					System.arraycopy(rawIn.getBytes(), rawIn.getPosition(), b, off, chunk);
-					off += chunk;
-					rawIn.consume(chunk);
-					len -= chunk;
-				} else {
-					// make progress fetching data
+			int end = off + len;
+
+			while (off < end) {
+				// minimum of what's requested and what we have in stock
+				int chunk = Integer.min(end - off, rawIn.getLength() - rawIn.getPosition());
+				assert chunk >= 0;
+				if (chunk == 0) {
+					// make progress by fetching more data
 					if (endBlockSeen)
 						break;
 					nextBlock();
+					continue;
+				}
+				// make progress copying some bytes
+				if (!prependCr) {
+					// no conversion needed, use arraycopy
+					System.arraycopy(rawIn.getBytes(), rawIn.getPosition(), dest, off, chunk);
+					off += chunk;
+					rawIn.consume(chunk);
+				} else {
+					int chunkEnd = off + chunk;
+					if (newlinePending && off < chunkEnd) {
+						// we were in the middle of a line ending conversion
+						dest[off++] = '\n';
+						newlinePending = false;
+					}
+					while (off < chunkEnd) {
+						byte b = rawIn.getBytes()[rawIn.consume(1)];
+						if (b != '\n') {
+							dest[off++] = b;
+						} else if (chunkEnd - off >= 2) {
+							dest[off++] = '\r';
+							dest[off++] = '\n';
+						} else {
+							dest[off++] = '\r';
+							newlinePending = true;
+							break;
+						}
+					}
 				}
 			}
+
+			if (off < end && newlinePending) {
+				dest[off++] = '\n';
+				newlinePending = false;
+			}
+
 			if (off == origOff && endBlockSeen)
 				return -1;
 			else

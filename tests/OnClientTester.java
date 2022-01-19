@@ -28,6 +28,7 @@ import java.sql.Statement;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.zip.GZIPOutputStream;
 
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
@@ -147,6 +148,8 @@ public final class OnClientTester {
 				test_LargeUpload();
 			if (isSelected("LargeDownload"))
 				test_LargeDownload();
+			if (isSelected("DownloadCrLf"))
+				test_DownloadCrLf();
 			if (isSelected("UploadFromStream"))
 				test_UploadFromStream();
 			if (isSelected("UploadFromReader"))
@@ -602,6 +605,61 @@ public final class OnClientTester {
 		exitTest();
 	}
 
+	private void test_DownloadCrLf() throws SQLException, Failure, IOException {
+
+		// This tests forces line ending conversion and reads in small batches, hoping to trigger corner cases
+
+		initTest("test_DownloadCrLf");
+		prepare();
+		update("ALTER TABLE foo DROP COLUMN t");
+		update("ALTER TABLE foo ADD COLUMN j INT");
+		update("INSERT INTO foo SELECT rand() % CASE WHEN value % 10 = 0 THEN 1000 ELSE 10 END AS i, 0 AS j FROM generate_series(0, 500000)");
+		ByteArrayOutputStream target = new ByteArrayOutputStream();
+		Random rng = new Random(42);
+		DownloadHandler handler = (handle, name, textMode) -> {
+			handle.setLineSeparator("\r\n");
+			InputStream s = handle.getStream();
+			byte[] buf = new byte[10];
+			boolean expectEof = false;
+			for (;;) {
+				int n = rng.nextInt(buf.length - 1) + 1;
+				int nread = s.read(buf, 0, n);
+				if (nread < 0) {
+					break;
+				}
+				target.write(buf, 0, nread);
+			}
+
+		};
+		conn.setDownloadHandler(handler);
+		update("COPY SELECT * FROM foo INTO 'banana' ON CLIENT");
+		// go to String instead of byte[] because Strings have handy replace methods.
+		String result = new String(target.toByteArray(), StandardCharsets.UTF_8);
+
+		// It should contain only \r\n's, no lonely \r's or \n's.
+		String replaced = result.replaceAll("\r\n", "XX");
+
+		assertEq("Index of first lonely \\r", -1, replaced.indexOf('\r'));
+		assertEq("Index of first lonely \\n", -1, replaced.indexOf('\n'));
+
+		String withoutData = result.replaceAll("[0-9]", "");
+		Files.writeString(Path.of("/tmp/x.csv"), withoutData, StandardCharsets.UTF_8);
+		assertEq("Length after dropping data, modulo 3", 0, withoutData.length() % 3);
+		for (int i = 0; i < withoutData.length(); i += 3) {
+			String sub = withoutData.substring(i, i+3);
+			if (!sub.equals("|\r\n")) {
+				fail(String.format(
+						"At index %d out of %d in the skeleton (=digits removed) we find <%02x %02x %02x> instead of <7c 0d 0a>",
+						i, withoutData.length(),
+						(int)sub.charAt(0), (int)sub.charAt(1), (int)sub.charAt(2)));
+			}
+		}
+		// only to show some succesful output if the above succeeds
+		assertEq("Every 3-byte normalized chunk", "|\\r\\n", "|\\r\\n");
+
+		exitTest();
+	}
+
 	private void test_UploadFromStream() throws SQLException, Failure {
 		initTest("test_UploadFromStream");
 		prepare();
@@ -894,6 +952,11 @@ public final class OnClientTester {
 
 
 	/* utility methods */
+	private void say(String message) throws Failure {
+		outBuffer.append(message).append("\n");
+		throw new Failure(message);
+	}
+
 	private void fail(String message) throws Failure {
 		outBuffer.append("FAILURE: ").append(message).append("\n");
 		throw new Failure(message);

@@ -3225,7 +3225,9 @@ public class MonetConnection
 		} else if (transferCommand.startsWith("rb ")) {
 			return handleUpload(transferCommand.substring(3), false, 0);
 		} else if (transferCommand.startsWith("w ")) {
-			return handleDownload(transferCommand.substring(2));
+			return handleDownload(transferCommand.substring(2), true);
+		} else if (transferCommand.startsWith("wb ")) {
+			return handleDownload(transferCommand.substring(2), false);
 		}
 		return "JDBC does not support this file transfer yet: " + transferCommand;
 	}
@@ -3250,12 +3252,12 @@ public class MonetConnection
 		return handle.getError();
 	}
 
-	private String handleDownload(final String path) throws IOException {
+	private String handleDownload(final String path, boolean textMode) throws IOException {
 		if (downloadHandler == null) {
 			return "No file download handler has been registered with the JDBC driver";
 		}
 
-		final Download handle = new Download(server);
+		final Download handle = new Download(server, textMode);
 		try {
 			downloadHandler.handleDownload(handle, path, true);
 			if (!handle.hasBeenUsed()) {
@@ -3467,11 +3469,16 @@ public class MonetConnection
 	 */
 	public static class Download {
 		private final MapiSocket server;
+		private boolean prependCr;
 		private MapiSocket.DownloadStream stream = null;
 		private String error = null;
 
-		Download(MapiSocket server) {
+		Download(MapiSocket server, boolean textMode) {
 			this.server = server;
+			prependCr = false;
+			if (textMode) {
+				setLineSeparator(System.lineSeparator());
+			}
 		}
 
 		/**
@@ -3497,14 +3504,16 @@ public class MonetConnection
 		/**
 		 * Get an {@link InputStream} to read data from.
 		 *
-		 * Textual data is UTF-8 encoded.
+		 * Textual data is UTF-8 encoded. If the download is in text mode, line endings
+		 * are converted according to {@link java.lang.System#lineSeparator()}.
+		 * This can be overridden with {@link Download#setLineSeparator(String)}.
 		 */
 		public InputStream getStream() throws IOException {
 			if (error != null) {
 				throw new IOException("cannot receive data after error has been sent");
 			}
 			if (stream == null) {
-				stream = server.downloadStream();
+				stream = server.downloadStream(prependCr);
 				server.getOutputStream().flush();
 			}
 			return stream;
@@ -3566,6 +3575,21 @@ public class MonetConnection
 				} catch (IOException e) {
 					/* ignore close error */
 				}
+			}
+		}
+
+		/**
+		 * Set the line endings used in the stream returned by {@link Download#getStream()}
+		 * @param sep separator to use
+		 * @throws IllegalArgumentException if sep is neither "\n" nor "\r\n"
+		 */
+		public void setLineSeparator(String sep) {
+			if ("\n".equals(sep)) {
+				prependCr = false;
+			} else if ("\r\n".equals(sep)) {
+				prependCr = true;
+			} else {
+				throw new IllegalArgumentException("sep must be \n or \r\n");
 			}
 		}
 	}
