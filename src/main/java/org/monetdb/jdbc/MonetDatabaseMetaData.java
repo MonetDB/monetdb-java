@@ -2425,9 +2425,17 @@ public class MonetDatabaseMetaData
 			MonetConnection.closeResultsetStatement(pkey, null);
 		}
 
+		// TODO: when there is No PK and there are multiple unique constraints, pick only the unique constraint which has a) the least number of columns and b) the smallest total(size in bytes)
+		// TODO: when there is No PK and No unique constraints, we potentially should return all columns of the table (else in SQuirreL no header is shown in the "Row IDs" tab)
+
 		final StringBuilder query = new StringBuilder(1500);
-		// Note: DISTINCT is needed to filter out possible duplicate column names from multiple unique constraints
-		query.append("SELECT DISTINCT cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
+		query.append("SELECT ");
+		if (!hasPK) {
+			// Note: currently DISTINCT is needed to filter out possible duplicate column names when there are multiple unique constraints !!
+			// TODO: when no PK and there are multiple unique constraints determine which one to select such that DISTINCT keyword is not needed anymore
+			query.append("DISTINCT ");
+		}
+		query.append("cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
 			"c.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("c.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"c.\"type\" AS \"TYPE_NAME\", " +
@@ -2441,7 +2449,6 @@ public class MonetDatabaseMetaData
 		"JOIN \"sys\".\"tables\" t ON k.\"table_id\" = t.\"id\" " +
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 		"WHERE k.\"type\" = ").append(hasPK ? "0" : "1");	// the primary key (type = 0) or else any unique key (type = 1)
-		// TODO: when there is no PK and there are multiple unique constraints, pick only the unique constraint which has a) the least number of columns and b) the smallest total(size in bytes)
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -2465,7 +2472,13 @@ public class MonetDatabaseMetaData
 			}
 		}
 
-		query.append(" ORDER BY \"SCOPE\", o.\"nr\", \"COLUMN_NAME\"");
+		// was: query.append(" ORDER BY \"SCOPE\", o.\"nr\", \"COLUMN_NAME\"");
+		// But as of Jan2022 this ordering returns error: SELECT: with DISTINCT ORDER BY expressions must appear in select list
+		// so had to remove the o.\"nr\", part when there is No PKey. This means the columns are than ordered on names instead of creation order in their unique constraint definition
+		query.append(" ORDER BY \"SCOPE\", ");
+		if (hasPK)
+			query.append("o.\"nr\", ");
+		query.append("\"COLUMN_NAME\"");
 
 		return executeMetaDataQuery(query.toString());
 	}

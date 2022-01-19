@@ -5,6 +5,14 @@
 - Compiled and released new jar files: monetdb-jdbc-3.2.jre8.jar,
   monetdb-mcl-1.21.jre8.jar and jdbcclient.jre8.jar
 
+* Wed Jan 19 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Fixed an SQL query problem in DatabaseMetaData.getBestRowIdentifier()
+  method when used with MonetDB Jan2022 (or newer) releases. It
+  returned java.sql.SQLException:
+   SELECT: with DISTINCT ORDER BY expressions must appear in select list
+  As of MonetDB Jan2022 (11.43.1) such queries are no longer allowed.
+  The internally used SQL query has been improved.
+
 * Thu Jan 13 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Extended JdbcClient application with support for following \d commands:
     \dt  \dv  \dSt  \dSv  \df  \dp  \dSf  \dSp  \dn  \dSn  and  \ds

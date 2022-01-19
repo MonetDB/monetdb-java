@@ -735,6 +735,12 @@ final public class JDBC_API_Tester {
 			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	3	0	null\n" +
 			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	3	0	null\n");
 
+			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "function_languages", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, sys, function_languages, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"2	language_id	5	smallint	16	0	0	1\n");
+
 			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table\\_types"), "getTablePrivileges(null, sys, table\\_types)",
 			"Resultset with 7 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
