@@ -3144,9 +3144,9 @@ public class MonetConnection
 							break;
 						case FILETRANSFER:
 							// Consume the command
-							String transferCommand = in.readLine();
+							final String transferCommand = in.readLine();
 							// Consume the fake prompt inserted by MapiSocket.
-							String dummy = in.readLine();
+							in.readLine();
 							// Handle the request
 							if (transferCommand != null)
 								error = handleTransfer(transferCommand);
@@ -3227,7 +3227,7 @@ public class MonetConnection
 		} else if (transferCommand.startsWith("w ")) {
 			return handleDownload(transferCommand.substring(2), true);
 		} else if (transferCommand.startsWith("wb ")) {
-			return handleDownload(transferCommand.substring(2), false);
+			return handleDownload(transferCommand.substring(3), false);
 		}
 		return "JDBC does not support this file transfer yet: " + transferCommand;
 	}
@@ -3245,14 +3245,14 @@ public class MonetConnection
 			if (!handle.hasBeenUsed()) {
 				throw new IOException("Call to " + uploadHandler.getClass().getCanonicalName() + ".handleUpload for path '" + path + "' sent neither data nor an error message");
 			}
-			handle.close();
 		} finally {
+			handle.close();
 			server.setInsertFakePrompts(wasFaking);
 		}
 		return handle.getError();
 	}
 
-	private String handleDownload(final String path, boolean textMode) throws IOException {
+	private String handleDownload(final String path, final boolean textMode) throws IOException {
 		if (downloadHandler == null) {
 			return "No file download handler has been registered with the JDBC driver";
 		}
@@ -3282,7 +3282,8 @@ public class MonetConnection
 		 * Called if the server sends a request to read file data.
 		 *
 		 * Use the given handle to receive data or send errors to the server.
-		 *  @param handle Handle to communicate with the server
+		 *
+		 * @param handle Handle to communicate with the server
 		 * @param name Name of the file the server would like to read. Make sure
 		 *             to validate this before reading from the file system
 		 * @param textMode Whether to open the file as text or binary data.
@@ -3315,8 +3316,8 @@ public class MonetConnection
 		 * Use the given handle to send data or errors to the server.
 		 *
 		 * @param handle Handle to communicate with the server
-		 * @param name Name of the file the server would like to write. Make sure to validate this before writing to
-		 *             the file system
+		 * @param name Name of the file the server would like to write. Make sure
+		 *             to validate this before writing to the file system
 		 * @param textMode Whether this is text or binary data.
 		 */
 		void handleDownload(Download handle, String name, boolean textMode) throws IOException;
@@ -3422,7 +3423,7 @@ public class MonetConnection
 		 * Read data from the given buffered reader and send it to the server
 		 * @param reader reader to read from
 		 * @param linesToSkip start uploading at line {@code offset}. Value 0 and 1
-		 * both mean upload the whole file, value 2 means skip the first line, etc.q
+		 *        both mean upload the whole file, value 2 means skip the first line, etc.
 		 */
 		public void uploadFrom(final BufferedReader reader, final long linesToSkip) throws IOException {
 			for (int i = 0; i < linesToSkip; i++) {
@@ -3494,7 +3495,7 @@ public class MonetConnection
 		 * Note: as of MonetDB version Jul2021 the server always terminates the connection
 		 * when this error is used.  This will probably change in the future.
 		 */
-		public void sendError(String errorMessage) throws IOException {
+		public void sendError(final String errorMessage) throws IOException {
 			if (error != null) {
 				throw new IOException("another error has already been sent: " + error);
 			}
@@ -3544,8 +3545,9 @@ public class MonetConnection
 			final char[] buffer = new char[65536];
 			while (true) {
 				final int nread = r.read(buffer);
-				if (nread < 0)
+				if (nread < 0) {
 					break;
+				}
 				writer.write(buffer, 0, nread);
 			}
 		}
@@ -3554,7 +3556,7 @@ public class MonetConnection
 		 * @return  true if data has been received or an error has been sent.
 		 */
 		public boolean hasBeenUsed() {
-			return error != null || stream != null;
+			return stream != null || error != null;
 		}
 
 		/**
@@ -3583,13 +3585,13 @@ public class MonetConnection
 		 * @param sep separator to use
 		 * @throws IllegalArgumentException if sep is neither "\n" nor "\r\n"
 		 */
-		public void setLineSeparator(String sep) {
+		public void setLineSeparator(final String sep) {
 			if ("\n".equals(sep)) {
 				prependCr = false;
 			} else if ("\r\n".equals(sep)) {
 				prependCr = true;
 			} else {
-				throw new IllegalArgumentException("sep must be \n or \r\n");
+				throw new IllegalArgumentException("sep must be \\n or \\r\\n");
 			}
 		}
 	}
@@ -3606,9 +3608,9 @@ public class MonetConnection
 		}
 
 		@Override
-		public void write(int b) throws IOException {
+		public void write(final int b) throws IOException {
 			if (crPending && b != '\n') {
-					out.write('\r');
+				out.write('\r');
 			}
 			if (b != '\r') {
 				out.write(b);
@@ -3619,12 +3621,12 @@ public class MonetConnection
 		}
 
 		@Override
-		public void write(byte[] b) throws IOException {
+		public void write(final byte[] b) throws IOException {
 			this.write(b, 0, b.length);
 		}
 
 		@Override
-		public void write(byte[] b, int off, int len) throws IOException {
+		public void write(final byte[] b, int off, int len) throws IOException {
 			if (len == 0) {
 				return;
 			}
