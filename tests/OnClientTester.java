@@ -483,6 +483,7 @@ public final class OnClientTester {
 		if (different) {
 			fail("Normalized text is different than expected");
 		}
+		exitTest();
 	}
 
 	private void test_ClientRefusesUpload() throws SQLException, Failure {
