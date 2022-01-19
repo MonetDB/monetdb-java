@@ -42,7 +42,7 @@ import static java.nio.file.StandardOpenOption.CREATE_NEW;
  *
  * Specifically it tests the MonetDB specific extensions to register upload and download handlers
  * see {@link org.monetdb.jdbc.MonetConnection#setUploadHandler(UploadHandler)}
- * see {@link org.monetdb.jdbc.MonetConnection#setUploadHandler(DownloadHandler)}
+ * see {@link org.monetdb.jdbc.MonetConnection#setDownloadHandler(DownloadHandler)}
  * and streaming of csv data to and from the MonetDB server using MAPI protocol.
  *
  * It also tests reading / writing data from / to a local file using
