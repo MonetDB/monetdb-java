@@ -320,6 +320,7 @@ public class MonetResultSet
 	 */
 	@Override
 	public void close() {
+		clearWarnings();
 		if (header != null && !header.isClosed()) {
 			header.close();
 		}

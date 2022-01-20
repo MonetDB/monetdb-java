@@ -252,11 +252,15 @@ public class MonetStatement
 	 */
 	@Override
 	public void close() {
+		clearBatch();
+		clearWarnings();
 		// close previous ResultSet, if not closed already
 		if (lastResponseList != null) {
 			lastResponseList.close();
 			lastResponseList = null;
 		}
+		header = null;
+		batchLock = null;
 		closed = true;
 	}
 
@@ -904,8 +908,7 @@ public class MonetStatement
 	 * general should not be necessary given SQL standards compliance.
 	 * In this sense, this driver will ignore any call to this function.
 	 *
-	 * @param enable true to enable escape processing; false to disable
-	 *        it
+	 * @param enable true to enable escape processing; false to disable it
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
@@ -952,7 +955,7 @@ public class MonetStatement
 	 */
 	@Override
 	public void setFetchSize(final int rows) throws SQLException {
-		if (rows >= 0 && !(getMaxRows() != 0 && rows > getMaxRows())) {
+		if (rows >= 0 && !(maxRows != 0 && rows > getMaxRows())) {
 			fetchSize = rows;
 		} else {
 			throw new SQLException("Illegal fetch size value: " + rows, "M1M05");
@@ -1509,7 +1512,7 @@ public class MonetStatement
  * TODO: try to eliminate the need for this class completely.
  */
 final class MonetVirtualResultSet extends MonetResultSet {
-	private final String results[][];
+	private String results[][];
 	private boolean closed;
 
 	MonetVirtualResultSet(
@@ -1571,7 +1574,8 @@ final class MonetVirtualResultSet extends MonetResultSet {
 	 */
 	@Override
 	public void close() {
+		results = null;
 		closed = true;
-		// types and columns are MonetResultSets private parts
+		super.close();
 	}
 }

@@ -432,7 +432,14 @@ public class MonetConnection
 	 */
 	@Override
 	public void close() {
+		if (closed)
+			return;
+
+		clearWarnings();
+		dbmd = null;
 		synchronized (server) {
+			// Note: An entry in a WeakHashMap will automatically be
+			// removed when its key is no longer in ordinary use.
 			for (Statement st : statements.keySet()) {
 				try {
 					st.close();
@@ -2587,7 +2594,8 @@ public class MonetConnection
 		 */
 		@Override
 		public void close() {
-			if (closed) return;
+			if (closed)
+				return;
 
 			// send command to server indicating we're done with this
 			// result only if we had an ID in the header and this result
@@ -2605,7 +2613,12 @@ public class MonetConnection
 				if (r != null)
 					r.close();
 			}
-
+			name = null;
+			type = null;
+			columnLengths = null;
+			tableNames = null;
+			schemaNames = null;
+			resultBlocks = null;
 			closed = true;
 		}
 

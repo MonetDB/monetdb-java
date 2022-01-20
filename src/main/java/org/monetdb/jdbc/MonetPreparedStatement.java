@@ -2692,25 +2692,21 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public void close() {
-		try {
-			if (!closed && id != -1)
+		if (!closed && id != -1) {
+			try {
 				connection.sendControlCommand("release " + id);
-		} catch (SQLException e) {
-			// probably server closed connection
+			} catch (SQLException e) {
+				// probably server closed connection
+			}
 		}
+		clearParameters();
+		mTimestampZ = null;
+		mTimestamp = null;
+		mTimeZ = null;
+		mTime = null;
+		mDate = null;
+		execStmt = null;
 		super.close();
-	}
-
-	/**
-	 * Call close to release the server-sided handle for this
-	 * PreparedStatement.
-	 *
-	 * @deprecated (since="9")
-	 */
-	@Override
-	@Deprecated
-	protected void finalize() {
-		close();
 	}
 
 	/**
