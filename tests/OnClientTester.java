@@ -23,7 +23,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
 import java.sql.Statement;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -82,7 +81,7 @@ public final class OnClientTester {
 	public static void main(String[] args) {
 		String jdbcUrl = null;
 		int verbosity = 0;
-		ArrayList<String> selectedTests = new ArrayList<>();
+		ArrayList<String> selectedTests = new ArrayList<String>();
 
 		for (String arg : args) {
 			if (arg.equals("-v"))
@@ -992,8 +991,9 @@ public final class OnClientTester {
 		try {
 			execute(query);
 		} catch (SQLException e) {
-			if (e.getMessage().contains(expectedError)) {
-				outBuffer.append("  GOT EXPECTED EXCEPTION: ").append(e.getMessage()).append("\n");
+			String msg = e.getMessage();
+			if (msg.contains(expectedError)) {
+				outBuffer.append("  GOT EXPECTED EXCEPTION: ").append(msg).append("\n");
 			} else {
 				throw e;
 			}
@@ -1005,8 +1005,7 @@ public final class OnClientTester {
 			fail("Query does not return a result set");
 		}
 		final ResultSet rs = stmt.getResultSet();
-		final ResultSetMetaData metaData = rs.getMetaData();
-		assertEq("column count", 1, metaData.getColumnCount());
+		assertEq("column count", 1, rs.getMetaData().getColumnCount());
 		if (!rs.next()) {
 			rs.close();
 			fail("Result set is empty");
@@ -1031,8 +1030,7 @@ public final class OnClientTester {
 			fail("Query does not return a result set");
 		}
 		final ResultSet rs = stmt.getResultSet();
-		final ResultSetMetaData metaData = rs.getMetaData();
-		assertEq("column count", 1, metaData.getColumnCount());
+		assertEq("column count", 1, rs.getMetaData().getColumnCount());
 		if (!rs.next()) {
 			rs.close();
 			fail("Result set is empty");
