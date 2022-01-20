@@ -421,8 +421,8 @@ public final class OnClientTester {
 		ByteArrayOutputStream out0 = new ByteArrayOutputStream();
 		MonetConnection.StripCrLfStream out = new MonetConnection.StripCrLfStream(out0);
 		ByteArrayOutputStream ref = new ByteArrayOutputStream();
-		ArrayList<Integer> fragmentPositions = new ArrayList();
-		ArrayList<Boolean> wasPending = new ArrayList();
+		ArrayList<Integer> fragmentPositions = new ArrayList<Integer>();
+		ArrayList<Boolean> wasPending = new ArrayList<Boolean>();
 		for (String f : fragments) {
 			int pos = out0.toByteArray().length;
 			boolean pending = out.pending();
