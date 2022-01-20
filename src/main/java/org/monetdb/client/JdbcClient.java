@@ -916,7 +916,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 				st = con.createStatement();
 				rs = st.executeQuery(qy);
 				while (rs.next()) {
-					out.println(rs.getString(1) + "\t" +		// 1 = func_type
+					out.println(rs.getString(1) + "    \t" +	// 1 = func_type
 						optAddDqs(rs.getString(2)) + "." +	// 2 = schem_name
 						optAddDqs(rs.getString(3)) );		// 3 = func_name
 				}
