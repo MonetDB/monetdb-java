@@ -96,7 +96,8 @@ public class MonetDatabaseMetaData
 	 * In an ascending order, if this method returns true, NULL values will appear at the end.
 	 * By contrast, the method nullsAreSortedAtEnd indicates whether NULL values are sorted at the end regardless of sort order.
 	 *
-	 * @return false because MonetDB shows NULL values at the beginning upon ORDER BY .. ASC
+	 * @return false because MonetDB shows NULL values at the beginning upon ORDER BY .. ASC, not at the end
+	 * @see #nullsAreSortedLow()
 	 */
 	@Override
 	public boolean nullsAreSortedHigh() {
@@ -110,8 +111,6 @@ public class MonetDatabaseMetaData
 	 * By contrast, the method nullsAreSortedAtStart indicates whether NULL values are sorted at the beginning regardless of sort order.
 	 *
 	 * @return true because MonetDB shows NULL values at the beginning upon ORDER BY .. ASC
-	 *
-	 * @return negative of nullsAreSortedHigh()
 	 * @see #nullsAreSortedHigh()
 	 */
 	@Override
@@ -362,7 +361,7 @@ public class MonetDatabaseMetaData
 
 	/**
 	 * Internal utility method getConcatenatedStringFromQuery(String query)
-	 * args: query: SQL SELECT query. Only the output of the first column is concatenated.
+	 * @param query the SQL SELECT query. Only the output of the first column is fetched and concatenated.
 	 * @return a String of query result values concatenated into one string, and values separated by comma's
 	 */
 	private String getConcatenatedStringFromQuery(final String query) {

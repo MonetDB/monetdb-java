@@ -54,6 +54,9 @@ public enum LineType {
 
 	/**
 	 * Look at a mapi message and decide the LineType
+	 *
+	 * @param line the line containing the coded LineType
+	 * @return LineType the type of line
 	 */
 	public static final LineType classify(String line) {
 		if (line != null) {
@@ -68,6 +71,9 @@ public enum LineType {
 
 	/**
 	 * Look at a mapi message and decide the LineType
+	 *
+	 * @param line the line containing the coded LineType
+	 * @return LineType the type of line
 	 */
 	public static final LineType classify(byte[] line) {
 		if (line != null) {

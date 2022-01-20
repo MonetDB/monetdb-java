@@ -1695,7 +1695,7 @@ public class MonetConnection
 	}
 
 	/**
-	 * Returns the currently registerered {@link UploadHandler}, or null
+	 * @return the currently registerered {@link UploadHandler}, or null
 	 */
 	public UploadHandler getUploadHandler() {
 		return uploadHandler;
@@ -1711,7 +1711,7 @@ public class MonetConnection
 	}
 
 	/**
-	 * Returns the currently registerered {@link DownloadHandler} handler, or null
+	 * @return the currently registerered {@link DownloadHandler} handler, or null
 	 */
 	public DownloadHandler getDownloadHandler() {
 		return downloadHandler;
@@ -3304,6 +3304,7 @@ public class MonetConnection
 		 *                    0 means upload everything, 1 means skip the first line, etc.
 		 *                    Note: this is different from the OFFSET option of the COPY INTO,
 		 *                    where both 0 and 1 mean 'upload everything'
+		 * @throws IOException when I/O problem occurs
 		 */
 		void handleUpload(Upload handle, String name, boolean textMode, long linesToSkip) throws IOException;
 
@@ -3332,6 +3333,7 @@ public class MonetConnection
 		 * @param name Name of the file the server would like to write. Make sure
 		 *             to validate this before writing to the file system
 		 * @param textMode Whether this is text or binary data.
+		 * @throws IOException when I/O problem occurs
 		 */
 		void handleDownload(Download handle, String name, boolean textMode) throws IOException;
 	}
@@ -3362,7 +3364,9 @@ public class MonetConnection
 		 * This method can only be sent if no data has been sent to the server
 		 * yet. After data has been sent, you can still throw an
 		 * {@link IOException} but this will terminate the connection.
-		 * @param errorMessage error message to send
+		 *
+		 * @param errorMessage the error message to send
+		 * @throws IOException when error message is null
 		 */
 		public void sendError(final String errorMessage) throws IOException {
 			if (error != null) {
@@ -3374,6 +3378,8 @@ public class MonetConnection
 		/**
 		 * After every {@code chunkSize} bytes, the server gets the opportunity to
 		 * terminate the upload.
+		 *
+		 * @param chunkSize size of chunk
 		 */
 		public void setChunkSize(final int chunkSize) {
 			this.customChunkSize = chunkSize;
@@ -3383,6 +3389,9 @@ public class MonetConnection
 		 * Get a {@link PrintStream} to write data to.
 		 *
 		 * For text mode uploads, the data MUST be validly UTF-8 encoded.
+		 *
+		 * @return PrintStream a PrintStream
+		 * @throws IOException when error message is null or I/O problem occurs
 		 */
 		public PrintStream getStream() throws IOException {
 			if (error != null) {
@@ -3419,6 +3428,9 @@ public class MonetConnection
 		 * Read from the given input stream and write it to the server.
 		 *
 		 * For text mode uploads, the data MUST be validly UTF-8 encoded.
+		 *
+		 * @param inputStream stream to read from
+		 * @throws IOException when I/O problem occurs
 		 */
 		public void uploadFrom(final InputStream inputStream) throws IOException {
 			final OutputStream s = getStream();
@@ -3434,9 +3446,11 @@ public class MonetConnection
 
 		/**
 		 * Read data from the given buffered reader and send it to the server
-		 * @param reader reader to read from
+		 *
+		 * @param reader buffered reader to read from
 		 * @param linesToSkip start uploading at line {@code offset}. Value 0 and 1
 		 *        both mean upload the whole file, value 2 means skip the first line, etc.
+		 * @throws IOException when I/O problem occurs
 		 */
 		public void uploadFrom(final BufferedReader reader, final long linesToSkip) throws IOException {
 			for (int i = 0; i < linesToSkip; i++) {
@@ -3451,7 +3465,9 @@ public class MonetConnection
 
 		/**
 		 * Read data from the given buffered reader and send it to the server
+		 *
 		 * @param reader reader to read from
+		 * @throws IOException when ...
 		 */
 		public void uploadFrom(final Reader reader) throws IOException {
 			final OutputStream s = getStream();
@@ -3507,6 +3523,9 @@ public class MonetConnection
 		 *
 		 * Note: as of MonetDB version Jul2021 the server always terminates the connection
 		 * when this error is used.  This will probably change in the future.
+		 *
+		 * @param errorMessage the error message to send
+		 * @throws IOException when error message is null
 		 */
 		public void sendError(final String errorMessage) throws IOException {
 			if (error != null) {
@@ -3521,6 +3540,9 @@ public class MonetConnection
 		 * Textual data is UTF-8 encoded. If the download is in text mode, line endings
 		 * are converted according to {@link java.lang.System#lineSeparator()}.
 		 * This can be overridden with {@link Download#setLineSeparator(String)}.
+		 *
+		 * @return InputStream the stream to read from
+		 * @throws IOException when error message exist or I/O problem occurs
 		 */
 		public InputStream getStream() throws IOException {
 			if (error != null) {
@@ -3535,6 +3557,9 @@ public class MonetConnection
 
 		/**
 		 * Write the data from the server to the given {@link OutputStream}.
+		 *
+		 * @param stream the OutputStream to write to
+		 * @throws IOException when cannot read from InputStream or write to OutputStream
 		 */
 		public void downloadTo(final OutputStream stream) throws IOException {
 			final InputStream s = getStream();
@@ -3550,7 +3575,9 @@ public class MonetConnection
 
 		/**
 		 * Write the textual data from the server to the given {@link Writer}
-		 * @param writer
+		 *
+		 * @param writer to write to
+		 * @throws IOException when cannot read from InputStreamReader or write to Writer
 		 */
 		public void downloadTo(final Writer writer) throws IOException {
 			final InputStream s = getStream();
@@ -3566,7 +3593,7 @@ public class MonetConnection
 		}
 
 		/**
-		 * @return  true if data has been received or an error has been sent.
+		 * @return true if data has been received or an error has been sent.
 		 */
 		public boolean hasBeenUsed() {
 			return stream != null || error != null;
@@ -3595,6 +3622,7 @@ public class MonetConnection
 
 		/**
 		 * Set the line endings used in the stream returned by {@link Download#getStream()}
+		 *
 		 * @param sep separator to use
 		 * @throws IllegalArgumentException if sep is neither "\n" nor "\r\n"
 		 */

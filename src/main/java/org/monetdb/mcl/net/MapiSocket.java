@@ -728,6 +728,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 	/**
 	 * For internal use
+	 *
+	 * @param b to enable/disable insert 'fake' newline and prompt
+	 * @return previous setting
 	 */
 	public boolean setInsertFakePrompts(boolean b) {
 		return fromMonet.setInsertFakePrompts(b);
@@ -1179,7 +1182,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	 * Return an UploadStream for use with for example COPY FROM filename ON CLIENT.
 	 *
 	 * Building block for {@link org.monetdb.jdbc.MonetConnection.UploadHandler}.
+	 *
 	 * @param chunkSize chunk size for the upload stream
+	 * @return UploadStream new upload stream with the given chunk size
 	 */
 	public UploadStream uploadStream(int chunkSize) {
 		return new UploadStream(chunkSize);
@@ -1189,6 +1194,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	 * Return an UploadStream for use with for example COPY FROM filename ON CLIENT.
 	 *
 	 * Building block for {@link org.monetdb.jdbc.MonetConnection.UploadHandler}.
+	 *
+	 * @return UploadStream new upload stream
 	 */
 	public UploadStream uploadStream() {
 		return new UploadStream();
@@ -1198,7 +1205,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	 * Return a DownloadStream for use with for example COPY INTO filename ON CLIENT
 	 *
 	 * Building block for {@link org.monetdb.jdbc.MonetConnection.DownloadHandler}.
+	 *
 	 * @param prependCr convert \n to \r\n
+	 * @return DownloadStream new download stream
 	 */
 	public DownloadStream downloadStream(boolean prependCr) {
 		return new DownloadStream(fromMonet.getRaw(), toMonet, prependCr);
@@ -1255,6 +1264,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		}
 
 		/** Set a callback to be invoked if the server cancels the upload
+		 *
+		 * @param cancellationCallback callback to call
 		 */
 		public void setCancellationCallback(final Runnable cancellationCallback) {
 			this.cancellationCallback = cancellationCallback;
