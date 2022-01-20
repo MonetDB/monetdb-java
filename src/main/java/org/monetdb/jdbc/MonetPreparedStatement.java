@@ -78,7 +78,6 @@ public class MonetPreparedStatement
 	private final String[] column;
 	private final int id;
 	private final int size;
-	private final int rscolcnt;
 
 	private int paramCount = 0;
 	private final String[] paramValues;
@@ -97,15 +96,15 @@ public class MonetPreparedStatement
 
 	/**
 	 * MonetPreparedStatement constructor which checks the arguments for
-	 * validity.  A MonetPreparedStatement is backed by a
-	 * {@link MonetStatement}, which deals with most of the required stuff of
-	 * this class.
+	 * validity. A MonetPreparedStatement is backed by a {@link MonetStatement},
+	 * which deals with most of the required stuff of this class.
 	 *
 	 * @param connection the connection that created this Statement
 	 * @param resultSetType type of {@link ResultSet} to produce
 	 * @param resultSetConcurrency concurrency of ResultSet to produce
+	 * @param resultSetHoldability holdability of ResultSet to produce
 	 * @param prepareQuery the query string to prepare
-	 * @throws SQLException if an error occurs during login
+	 * @throws SQLException if an error occurs during execution of the prepareQuery
 	 * @throws IllegalArgumentException is one of the arguments is null or empty
 	 */
 	MonetPreparedStatement(
@@ -130,7 +129,6 @@ public class MonetPreparedStatement
 		// cheat a bit to get the ID and the number of columns
 		id = ((MonetConnection.ResultSetResponse)header).id;
 		size = (int)((MonetConnection.ResultSetResponse)header).tuplecount;
-		rscolcnt = ((MonetConnection.ResultSetResponse)header).columncount;
 
 		// initialise blank finals
 		monetdbType = new String[size];
@@ -164,8 +162,6 @@ public class MonetPreparedStatement
 				}
 				digits[i] = rs.getInt(digits_colnr);
 				scale[i] = rs.getInt(scale_colnr);
-				if (rscolcnt == 3)
-					continue;
 				schema[i] = rs.getString(schema_colnr);
 				table[i] = rs.getString(table_colnr);
 				column[i] = rs.getString(column_colnr);
@@ -183,45 +179,6 @@ public class MonetPreparedStatement
 		// PreparedStatements are by default poolable
 		poolable = true;
 	}
-
-	/**
-	 * Constructs an empty MonetPreparedStatement.  This constructor is
-	 * in particular useful for extensions of this class.
-	 *
-	 * @param connection the connection that created this Statement
-	 * @param resultSetType type of ResultSet to produce
-	 * @param resultSetConcurrency concurrency of ResultSet to produce
-	 * @throws SQLException if an error occurs during login
-	 */
-	/* Disabled this constructor code as it is not part of the JDBC interface
-	   It may be enabled again when a subclass is constructed which needs it.
-	MonetPreparedStatement(
-			MonetConnection connection,
-			int resultSetType,
-			int resultSetConcurrency,
-			int resultSetHoldability)
-		throws SQLException
-	{
-		super(
-			connection,
-			resultSetType,
-			resultSetConcurrency,
-			resultSetHoldability
-		);
-		// initialise blank finals
-		monetdbType = null;
-		javaType = null;
-		digits = null;
-		scale = null;
-		schema = null;
-		table = null;
-		column = null;
-		paramValues = null;
-		id = -1;
-		size = -1;
-		rscolcnt = -1;
-	}
-	*/
 
 	//== methods interface PreparedStatement
 
@@ -387,9 +344,6 @@ public class MonetPreparedStatement
 	 */
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
-		if (rscolcnt == 3)
-			return null; // not sufficient data with pre-Dec2011 PREPARE
-
 		// return inner class which implements the ResultSetMetaData interface
 		return new rsmdw() {
 			/**
