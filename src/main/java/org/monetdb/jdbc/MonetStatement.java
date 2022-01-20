@@ -457,10 +457,9 @@ public class MonetStatement
 	}
 
 	/**
-	 * Executes the given SQL statement, which returns a single ResultSet
-	 * object.
+	 * Executes the given SQL query, which returns a single ResultSet object.
 	 *
-	 * @param sql an SQL statement to be sent to the database, typically a
+	 * @param sql an SQL query statement to be sent to the database, typically a
 	 *        static SQL SELECT statement
 	 * @return a ResultSet object that contains the data produced by the given
 	 *         query; never null
@@ -490,7 +489,7 @@ public class MonetStatement
 	@Override
 	public int executeUpdate(final String sql) throws SQLException {
 		if (execute(sql) != false)
-			throw new SQLException("Query produced a result set", "M1M17");
+			throw new SQLException("Statement produced a result set", "M1M17");
 
 		return getUpdateCount();
 	}
@@ -523,7 +522,7 @@ public class MonetStatement
 
 		/* MonetDB has no way to disable this, so just do the normal thing ;) */
 		if (execute(sql) != false)
-			throw new SQLException("Query produced a result set", "M1M17");
+			throw new SQLException("Statement produced a result set", "M1M17");
 
 		return getUpdateCount();
 	}
@@ -677,9 +676,6 @@ public class MonetStatement
 	 * VARBINARY, LONGVARBINARY, CHAR, VARCHAR, and LONGVARCHAR
 	 * columns. If the limit is exceeded, the excess data is silently
 	 * discarded.
-	 *
-	 * The MonetDB JDBC driver currently doesn't support limiting
-	 * fieldsizes, and hence always return 0 (unlimited).
 	 *
 	 * @return the current column size limit for columns storing
 	 *         character and binary values; zero means there is no limit
@@ -1341,7 +1337,7 @@ public class MonetStatement
 	@Override
 	public long executeLargeUpdate(final String sql) throws SQLException {
 		if (execute(sql) != false)
-			throw new SQLException("Query produced a result set", "M1M17");
+			throw new SQLException("Statement produced a result set", "M1M17");
 
 		return getLargeUpdateCount();
 	}
@@ -1383,7 +1379,7 @@ public class MonetStatement
 
 		/* MonetDB has no way to disable this, so just do the normal thing ;) */
 		if (execute(sql) != false)
-			throw new SQLException("Query produced a result set", "M1M17");
+			throw new SQLException("Statement produced a result set", "M1M17");
 
 		return getLargeUpdateCount();
 	}
