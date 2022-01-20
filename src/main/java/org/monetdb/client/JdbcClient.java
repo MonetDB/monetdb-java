@@ -103,7 +103,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 	 * -q --quiet    Suppress printing the welcome header.
 	 * -D --dump     Dumps the given table(s), or the complete database if none given.
 	 * --csvdir      The directory path where csv data files wil be read from or
-	 ^               written to when COPY ... ON CLIENT commands are executed.
+	 *               written to when COPY ... ON CLIENT commands are executed.
 	 * -Xoutput      The output mode when dumping.  Default is sql, xml may be used for
 	 *               an experimental XML output.
 	 * -Xhash        Use the given hash algorithm during challenge response.
