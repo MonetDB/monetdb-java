@@ -51,6 +51,7 @@ public class Control {
 	private final String passphrase;
 	/** The file we should write MapiSocket debuglog to */
 	private String debug;
+	private int soTimeout = -1; /* -1 means not initialized */
 
 
 	/**
@@ -68,6 +69,15 @@ public class Control {
 		this.host = host;
 		this.port = port;
 		this.passphrase = passphrase;
+	}
+	
+	/**
+	 * Sets the socket timeout.
+	 * 
+	 * @param timeout (in milliseconds) Use -1 to unset timeout (and use default)
+	 */
+	public void setSoTimeout(int timeout) {
+		soTimeout = timeout;
 	}
 
 	/**
@@ -121,6 +131,8 @@ public class Control {
 		MapiSocket ms = new MapiSocket();
 		ms.setDatabase("merovingian");
 		ms.setLanguage("control");
+		if (soTimeout != -1)
+			ms.setSoTimeout(soTimeout);
 		if (debug != null)
 			ms.debug(debug);
 		try {
