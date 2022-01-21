@@ -249,6 +249,22 @@ public class Control {
 		sendCommand(database, "start", false);
 	}
 
+	public boolean isStopped(String database) 
+		throws MerovingianException, IOException 
+	{
+		switch (getStatus(database).getState()) {
+		case SABdbInactive:
+		case SABdbCrashed:
+		case SABdbIllegal:
+			return true;
+		case SABdbStarting:
+		case SABdbRunning:
+			return false;
+		default:
+			throw new IllegalStateException();
+		}
+	}
+	
 	public void stop(String database)
 		throws MerovingianException, IOException
 	{
