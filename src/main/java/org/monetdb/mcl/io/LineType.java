@@ -93,6 +93,7 @@ public enum LineType {
 			case '%':
 				return HEADER;
 			case '[':
+			case '=':
 				return RESULT;
 			case '&':
 				return SOHEADER;
