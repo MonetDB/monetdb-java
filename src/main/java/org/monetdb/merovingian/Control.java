@@ -183,7 +183,7 @@ public class Control {
 					throw new MerovingianException("server closed the connection");
 				}
 
-				if (!response.equals(RESPONSE_OK)) {
+				if (!response.substring(1).equals(RESPONSE_OK)) {
 					throw new MerovingianException(response);
 				}
 
@@ -197,7 +197,7 @@ public class Control {
 				if (response == null) {
 					throw new MerovingianException("server closed the connection");
 				}
-				if (!response.equals(RESPONSE_OK)) {
+				if (!response.substring(1).equals(RESPONSE_OK)) {
 					throw new MerovingianException(response);
 				}
 
@@ -220,23 +220,32 @@ public class Control {
 		ArrayList<String> l = new ArrayList<String>();
 		String tmpLine = min.readLine();
 		LineType linetype = min.getLineType();
-		if (linetype == LineType.ERROR)
+		switch (linetype) {
+		case ERROR:
 			throw new MerovingianException(tmpLine.substring(6));
-		if (linetype != LineType.RESULT)
+		case RESULT:
+			if (!tmpLine.substring(1).equals(RESPONSE_OK))
+				throw new MerovingianException(tmpLine);
+			break;
+		default:
 			throw new MerovingianException("unexpected line: " + tmpLine);
-		if (!tmpLine.substring(1).equals(RESPONSE_OK))
-			throw new MerovingianException(tmpLine.substring(1));
-		tmpLine = min.readLine();
-		linetype = min.getLineType();
-		while (linetype != LineType.PROMPT) {
-			if (linetype != LineType.RESULT)
-				throw new MerovingianException("unexpected line: " +
-						tmpLine);
+		}
 
-			l.add(tmpLine.substring(1));
-
+		boolean hasPrompt = false;
+		while (!hasPrompt) {
 			tmpLine = min.readLine();
 			linetype = min.getLineType();
+
+			switch (linetype) {
+			case PROMPT:
+				hasPrompt = true;
+				break;
+			case RESULT:
+				l.add(tmpLine.substring(1));
+				break;
+			default:
+				throw new MerovingianException("unexpected line: " + tmpLine);
+			}
 		}
 
 		ms.close();
