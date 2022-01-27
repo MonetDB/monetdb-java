@@ -106,5 +106,5 @@ sed \
 
 file="pom.xml"
 sed \
-	-e "s|<version>${ESC_MAJOR}\.${ESC_MINOR}</version>|<version>${NEW_MAJOR}.${NEW_MINOR}</version>|g" \
+	-e "/monetdb-jdbc/,/MonetDB JDBC driver/s|<version>${ESC_MAJOR}\.${ESC_MINOR}</version>|<version>${NEW_MAJOR}.${NEW_MINOR}</version>|g" \
 	${file} | ${diff} ${file} - | ${patch}
