@@ -1,6 +1,6 @@
 RELEASE NOTES
 MonetDB JDBC driver version 3.2 (Liberica/MCL-1.21)
-Release date: 2022-01-19
+Release date: 2022-01-27
 
 The Java Database Connectivity (JDBC) API provides universal data access from
 the Java programming language.
