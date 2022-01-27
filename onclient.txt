@@ -32,14 +32,15 @@ these requests from the server:
 or provide the JdbcClient startup argument: --csvdir "/path/to/csvfilesdir"
 
 Here, MyUploadHandler is an implementation of the interface MonetConnection.UploadHandler,
-which looks like this:
+which signature looks like this:
 
 	public interface UploadHandler {
 		/**
 		 * Called if the server sends a request to read file data.
 		 *
 		 * Use the given handle to receive data or send errors to the server.
-		 *  @param handle Handle to communicate with the server
+		 *
+		 * @param handle Handle to communicate with the server
 		 * @param name Name of the file the server would like to read. Make sure
 		 *             to validate this before reading from the file system
 		 * @param textMode Whether to open the file as text or binary data.
@@ -47,6 +48,7 @@ which looks like this:
 		 *                    0 means upload everything, 1 means skip the first line, etc.
 		 *                    Note: this is different from the OFFSET option of the COPY INTO,
 		 *                    where both 0 and 1 mean 'upload everything'
+		 * @throws IOException when I/O problem occurs
 		 */
 		void handleUpload(Upload handle, String name, boolean textMode, long linesToSkip) throws IOException;
 
@@ -78,17 +80,35 @@ communicate with the server, for example:
 
 - handle.sendError(String errorMessage) to refuse the upload.
 
-If you use sendError to refuse the upload, the COPY INTO statement will fail but
-the connection will remain usable. On the other hand, if you implementation of
+See also: https://www.monetdb.org/hg/monetdb-java/file/tip/src/main/java/org/monetdb/jdbc/MonetConnection.java#l3344
+
+If you use sendError() to refuse the upload, the COPY INTO statement will fail but
+the connection will remain usable. On the other hand, if your implementation of
 handleUpload throws an IO Exception, the connection will be closed because there
 is currently no way to signal errors to the server once the transfer has begun.
 
-The interface for downloading is similar to that for uploading.
+The interface for DownloadHandler is:
+
+	public interface DownloadHandler {
+		/**
+		 * Called if the server sends a request to write a file.
+		 *
+		 * Use the given handle to send data or errors to the server.
+		 *
+		 * @param handle Handle to communicate with the server
+		 * @param name Name of the file the server would like to write. Make sure
+		 *             to validate this before writing to the file system
+		 * @param textMode Whether this is text or binary data.
+		 * @throws IOException when I/O problem occurs
+		 */
+		void handleDownload(Download handle, String name, boolean textMode) throws IOException;
+	}
 
 Class org.monetdb.util.FileTransferHandler provides a default implementation
 of both MonetConnection.UploadHandler and MonetConnection.DownloadHandler for
-reading from and writing to local csv files. You pass the FileTransferHandler
-constructor a directory name and a flag indicating whether the contents of
-the csv files data are UTF-8 encoded. FileTransferHandler is intended for
-situations where you do not need to generate or transform data while uploading.
+reading from and writing to local csv files.
+You pass the FileTransferHandler constructor a directory name and a Charset to
+specify the encoding used for the data in the csv files.
+FileTransferHandler class is intended for situations where you do not need to
+generate or transform data while uploading or downloading to a file.
 

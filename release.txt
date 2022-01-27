@@ -193,9 +193,11 @@ this functionality you must register handlers for upload and download of data.
 The MonetConnection class has been extended with 2 methods:
  public void setUploadHandler(UploadHandler uploadHandler)
  public void setDownloadHandler(DownloadHandler downloadHandler)
-The API has been extended with interfaces and utility class:
+The API has been extended with interfaces and utility classes:
  public interface org.monetdb.jdbc.MonetConnection.UploadHandler
  public interface org.monetdb.jdbc.MonetConnection.DownloadHandler
+ public static class org.monetdb.jdbc.MonetConnection.Upload
+ public static class org.monetdb.jdbc.MonetConnection.Download
  public class org.monetdb.util.FileTransferHandler
   which implements MonetConnection.UploadHandler, MonetConnection.DownloadHandler
 See onclient.txt for more information on how to use these from Java.
@@ -210,6 +212,8 @@ in order to allow the JdbcClient to down/up load data to/from local csv files.
 
 
 Notes and Tips for Java Programmers using MonetDB JDBC driver:
+- After creating a Connection object check for SQLWarnings via conn.getWarnings();
+
 - Close JDBC ResultSet, Statement, PreparedStatement, CallableStatement and
   Connection objects immediately (via close()) when they are no longer needed,
   in order to release resources and memory on the server and client side.
@@ -220,7 +224,7 @@ Notes and Tips for Java Programmers using MonetDB JDBC driver:
   which return a ResultSet (such as dbmd.getColumns(...)) are
   TYPE_SCROLL_INSENSITIVE, so they cache their ResultSet data to
   allow absolute, relative and random access to data rows and fields.
-  To free heap memory and server resoucres, close those ResultSets
+  To free heap memory and server resources, close those ResultSets
   immediately when no longer needed.
 
 - By default the ResultSets created by stmt.executeQuery(...) or
