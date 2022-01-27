@@ -679,6 +679,16 @@ final public class JDBC_API_Tester {
 	private void Test_Dobjects() {
 		sb.setLength(0);	// clear the output log buffer
 
+		Statement stmt = null;
+		try {
+			stmt = con.createStatement();
+			int response = stmt.executeUpdate("CREATE TABLE nopk_twoucs (id INT NOT NULL UNIQUE, name VARCHAR(99) UNIQUE)");
+			if (response != Statement.SUCCESS_NO_INFO)
+				sb.append("Creating table nopk_twoucs failed to return -2!! It returned: " + response + "\n");
+		} catch (SQLException e) {
+			sb.append("failed to create test table nopk_twoucs: ").append(e.getMessage());
+		}
+
 		try {
 			DatabaseMetaData dbmd = con.getMetaData();
 
@@ -742,6 +752,19 @@ final public class JDBC_API_Tester {
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"2	language_id	5	smallint	16	0	0	1\n");
 
+			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, sys, nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"2	id	4	int	32	0	0	1\n" +
+			"2	name	12	varchar	99	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
+						"getBestRowIdentifier(null, sys, nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"2	id	4	int	32	0	0	1\n");
+
 			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table\\_types"), "getTablePrivileges(null, sys, table\\_types)",
 			"Resultset with 7 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
@@ -769,6 +792,17 @@ final public class JDBC_API_Tester {
 			sb.setLength(0);	// clear the output log buffer
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
+
+		try {
+			int response = stmt.executeUpdate("DROP TABLE nopk_twoucs");
+			if (response != Statement.SUCCESS_NO_INFO)
+				sb.append("Dropping table nopk_twoucs failed to return -2!! It returned: " + response + "\n");
+		} catch (SQLException e) {
+			// this means we get what we expect
+			sb.append("failed to drop table: ").append(e.getMessage());
+		}
+
+		closeStmtResSet(stmt, null);
 
 		compareExpectedOutput("Test_Dobjects", "");
 	}
