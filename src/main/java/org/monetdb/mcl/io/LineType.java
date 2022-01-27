@@ -21,7 +21,7 @@ public enum LineType {
 	/** a line starting with % indicates HEADER */
 	HEADER(new byte[] { '%' }),
 
-	/** a line starting with [ indicates RESULT */
+	/** a line starting with [ or = indicates RESULT */
 	RESULT(new byte[] { '[' }),
 
 	/** a line which matches the pattern of prompt1 is a PROMPT */
@@ -92,8 +92,8 @@ public enum LineType {
 				return ERROR;
 			case '%':
 				return HEADER;
-			case '[':
-			case '=':
+			case '[':	// tuple result
+			case '=':	// single value result or result of PLAN/EXPLAIN/TRACE queries
 				return RESULT;
 			case '&':
 				return SOHEADER;

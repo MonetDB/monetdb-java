@@ -108,9 +108,9 @@ public final class BufferedMCLReader extends BufferedReader {
 	/**
 	 * getLineType returns the type of the last line read.
 	 *
-	 * @return an integer representing the kind of line this is, one of the
-	 *         following constants: UNKNOWN, HEADER, ERROR, PROMPT, MORE,
-	 *         RESULT, SOHEADER, REDIRECT, INFO
+	 * @return Linetype representing the kind of line this is, one of the
+	 *         following enums: UNKNOWN, HEADER, ERROR, RESULT,
+	 *         PROMPT, MORE, FILETRANSFER, SOHEADER, REDIRECT, INFO
 	 */
 	public LineType getLineType() {
 		return lineType;
