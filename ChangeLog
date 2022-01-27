@@ -1,7 +1,7 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
-* Day Jan ## 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+* Thu Jan 27 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Compiled and released new jar files: monetdb-jdbc-3.2.jre8.jar,
   monetdb-mcl-1.21.jre8.jar and jdbcclient.jre8.jar
 
@@ -10,7 +10,7 @@
   method when used with MonetDB Jan2022 (or newer) releases. It
   returned java.sql.SQLException:
    SELECT: with DISTINCT ORDER BY expressions must appear in select list
-  As of MonetDB Jan2022 (11.43.1) such queries are no longer allowed.
+  As of MonetDB Jan2022 (11.43.5) such queries are no longer allowed.
   The internally used SQL query has been improved.
 
 * Thu Jan 13 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
