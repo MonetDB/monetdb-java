@@ -62,6 +62,7 @@ final public class JDBC_API_Tester {
 		jt.Test_Dobjects();
 		jt.Test_FetchSize();
 		jt.Test_Int128();
+		jt.Test_PlanExplainTraceDebugCmds();
 		jt.Test_PSgeneratedkeys();
 		jt.Test_PSgetObject();
 		jt.Test_PSlargebatchval();
@@ -910,6 +911,98 @@ final public class JDBC_API_Tester {
 			"Expecting 123456789012345678909876543210987654321, got 123456789012345678909876543210987654321\n" +
 			"Expecting 1234567890123456789.9876543210987654321, got 1234567890123456789.9876543210987654321\n" +
 			"SUCCESS\n");
+	}
+
+	private void Test_PlanExplainTraceDebugCmds() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = con.createStatement();
+			String qry = "SELECT 1;";
+			rs = stmt.executeQuery(qry);
+			while (rs.next()) {
+				sb.append(rs.getString(1)).append("\n");
+			}
+			rs.close();
+			rs = null;
+			compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry, "1\n");
+			sb.setLength(0);	// clear the output log buffer
+
+			qry = "plan SELECT 2;";
+			rs = stmt.executeQuery(qry);
+			compareResultSet(rs, qry,
+				"Resultset with 1 columns\n" +
+				"rel\n" +
+				"project (\n" +
+				"|  [ boolean(1) \"true\" ]\n" +
+				") [ tinyint(2) \"2\" ]\n");
+			rs.close();
+			rs = null;
+			sb.setLength(0);	// clear the output log buffer
+
+			qry = "explain SELECT 3;";
+			rs = stmt.executeQuery(qry);
+			while (rs.next()) {
+				String val = rs.getString(1);
+				if (!val.startsWith("#"))
+					sb.append(val).append("\n");
+			}
+			rs.close();
+			rs = null;
+			compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
+				"function user.main():void;\n" +
+				"    X_1:void := querylog.define(\"explain select 3;\":str, \"default_pipe\":str, 6:int);\n" +
+				"    X_10:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 2:int, 0:int, 7:int, 3:bte);\n" +
+				"end user.main;\n");
+			sb.setLength(0);	// clear the output log buffer
+
+			qry = "trace SELECT 4;";
+			rs = stmt.executeQuery(qry);
+			while (rs.next()) {
+				sb.append(rs.getString(1)).append("\n");
+			}
+			if (stmt.getMoreResults()) {
+				sb.append("Another resultset\n");
+				rs = stmt.getResultSet();
+				while (rs.next()) {
+					sb.append(rs.getString(2)).append("\n");
+				}
+			}
+			rs.close();
+			rs = null;
+			compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
+				"4\n" +
+				"Another resultset\n" +
+				"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
+				"    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n");
+			sb.setLength(0);	// clear the output log buffer
+
+			qry = "debug SELECT 5;";
+			sb.append(qry).append("\n");
+			rs = stmt.executeQuery(qry);
+			while (rs.next()) {
+				sb.append(rs.getString(1)).append("\n");
+			}
+			rs.close();
+			rs = null;
+			compareExpectedOutput("Test_PlanExplainTraceDebugCmds", qry + "\n" + "5\n");
+			sb.setLength(0);	// clear the output log buffer
+		} catch (SQLException e) {
+			sb.append("FAILED: ");
+			while (e != null) {
+				sb.append(e.getMessage()).append("\n");
+				e = e.getNextException();
+			}
+		}
+
+		closeStmtResSet(stmt, rs);
+
+		compareExpectedOutput("Test_PlanExplainTraceDebugCmds",
+			"debug SELECT 5;\n" +
+			"FAILED: SQL debugging only supported in interactive mode in: \"debug\"\n" +
+			"Current transaction is aborted (please ROLLBACK)\n");
 	}
 
 	private void Test_PSgeneratedkeys() {
