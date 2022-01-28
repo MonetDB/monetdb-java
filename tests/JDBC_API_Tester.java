@@ -970,7 +970,7 @@ final public class JDBC_API_Tester {
 				"Resultset with 1 columns\n" +
 				"rel\n" +
 				"project (\n" +
-				"|  [ boolean(1) \"true\" ]\n" +
+				"|  [ boolean(1) \"true\" as \"%1\".\"%1\" ]\n" +
 				") [ tinyint(2) \"2\" ]\n");
 			rs.close();
 			rs = null;
