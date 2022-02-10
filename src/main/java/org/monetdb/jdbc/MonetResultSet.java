@@ -2064,8 +2064,8 @@ public class MonetResultSet
 				return Boolean.valueOf(val);
 			case Types.VARCHAR:
 			{
-				// The MonetDB types: inet, json, url and uuid are all mapped to Types.VARCHAR in MonetDriver.typeMap
-				// For these MonetDB types (except json, see comments below) we try to create objects of the corresponding class.
+				// The MonetDB types: inet, json, url, uuid and xml are all mapped to Types.VARCHAR in MonetDriver.typeMap
+				// For these MonetDB types (except json and xml, see comments below) we try to create objects of the corresponding class.
 				final String MonetDBType = types[columnIndex - 1];
 				switch (MonetDBType.length()) {
 				case 3:

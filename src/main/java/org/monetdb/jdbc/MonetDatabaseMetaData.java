@@ -2964,10 +2964,10 @@ public class MonetDatabaseMetaData
 			"cast(").append(MonetDriver.getSQLTypeMap("\"sqlname\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"\"digits\" AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
 			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','sec_interval','day_interval','month_interval') THEN ''''" +
-				" WHEN \"sqlname\" IN ('clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob') THEN \"sqlname\"||' '''" +
+				" WHEN \"sqlname\" IN ('clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob','xml') THEN \"sqlname\"||' '''" +
 				" ELSE NULL END AS varchar(16)) AS \"LITERAL_PREFIX\", " +
 			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','sec_interval','day_interval','month_interval'" +
-						",'clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob') THEN ''''" +
+						",'clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob','xml') THEN ''''" +
 				" ELSE NULL END AS varchar(2)) AS \"LITERAL_SUFFIX\", " +
 			"CASE WHEN \"sqlname\" IN ('char','varchar') THEN 'max length'" +
 				" WHEN \"sqlname\" = 'decimal' THEN 'precision, scale'" +
@@ -2975,8 +2975,8 @@ public class MonetDatabaseMetaData
 				" ELSE NULL END AS \"CREATE_PARAMS\", " +
 			"cast(CASE WHEN \"systemname\" = 'oid' THEN ").append(DatabaseMetaData.typeNoNulls)
 				.append(" ELSE ").append(DatabaseMetaData.typeNullable).append(" END AS smallint) AS \"NULLABLE\", " +
-			"CASE WHEN \"systemname\" IN ('str','json','url') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
-			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid') THEN ").append(DatabaseMetaData.typeSearchable)
+			"CASE WHEN \"systemname\" IN ('str','json','url','xml') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
+			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','xml') THEN ").append(DatabaseMetaData.typeSearchable)
 				.append(" ELSE ").append(DatabaseMetaData.typePredBasic).append(" END AS smallint) AS \"SEARCHABLE\", " +
 			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','real','double'" +
 				",'day_interval','month_interval','sec_interval') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
@@ -3261,8 +3261,10 @@ public class MonetDatabaseMetaData
 				" WHEN 'json' THEN 'java.lang.String'" +
 				" WHEN 'url' THEN 'org.monetdb.jdbc.types.URL'" +
 				" WHEN 'uuid' THEN 'java.lang.String'" +
+				// next UDT only when "CREATE TYPE xml EXTERNAL NAME xml;" is executed
+				" WHEN 'xml' THEN 'java.lang.String'" +
 				" ELSE 'java.lang.Object' END AS \"CLASS_NAME\", " +
-			"cast(CASE WHEN t.\"sqlname\" IN ('inet', 'json', 'url', 'uuid') THEN ").append(Types.JAVA_OBJECT)
+			"cast(CASE WHEN t.\"sqlname\" IN ('inet','json','url','uuid','xml') THEN ").append(Types.JAVA_OBJECT)
 				.append(" ELSE ").append(Types.STRUCT).append(" END AS int) AS \"DATA_TYPE\", " +
 			"t.\"systemname\" AS \"REMARKS\", " +
 			"cast(null as smallint) AS \"BASE_TYPE\" " +

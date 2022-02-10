@@ -352,7 +352,7 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 		typeMap.put("real", Integer.valueOf(Types.REAL));
 		typeMap.put("sec_interval", Integer.valueOf(Types.DECIMAL));
 		typeMap.put("smallint", Integer.valueOf(Types.SMALLINT));
-		typeMap.put("str", Integer.valueOf(Types.VARCHAR));	// MonetDB prepare <stmt> uses type 'str' (instead of varchar) for the schema, table and column metadata output
+		typeMap.put("str", Integer.valueOf(Types.VARCHAR));	// MonetDB prepare <stmt> uses type 'str' (instead of varchar) for the schema, table and column metadata output. DO NOT REMOVE this entry!
 		// typeMap.put("table", Integer.valueOf(Types.???));
 		typeMap.put("time", Integer.valueOf(Types.TIME));
 		typeMap.put("timestamp", Integer.valueOf(Types.TIMESTAMP));
@@ -362,7 +362,8 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 		typeMap.put("url", Integer.valueOf(Types.VARCHAR));
 		typeMap.put("uuid", Integer.valueOf(Types.VARCHAR));
 		typeMap.put("varchar", Integer.valueOf(Types.VARCHAR));
-		typeMap.put("wrd", Integer.valueOf(Types.BIGINT));  // keep it in for older MonetDB servers
+		typeMap.put("wrd", Integer.valueOf(Types.BIGINT));	// keep it in for old (pre Dec2016) MonetDB servers
+		typeMap.put("xml", Integer.valueOf(Types.VARCHAR));	// used when "CREATE TYPE xml EXTERNAL NAME xml;" is executed
 	}
 
 	/**

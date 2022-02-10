@@ -690,6 +690,14 @@ final public class JDBC_API_Tester {
 		}
 
 		try {
+			int response = stmt.executeUpdate("CREATE TYPE xml EXTERNAL NAME xml");
+			if (response != Statement.SUCCESS_NO_INFO)
+				sb.append("Creating type xml failed to return -2!! It returned: " + response + "\n");
+		} catch (SQLException e) {
+			sb.append("failed to create type xml: ").append(e.getMessage());
+		}
+
+		try {
 			DatabaseMetaData dbmd = con.getMetaData();
 
 			// inspect the catalog by use of dbmd functions
@@ -780,7 +788,8 @@ final public class JDBC_API_Tester {
 			"null	sys	inet	org.monetdb.jdbc.types.INET	2000	inet	null\n" +
 			"null	sys	json	java.lang.String	2000	json	null\n" +
 			"null	sys	url	org.monetdb.jdbc.types.URL	2000	url	null\n" +
-			"null	sys	uuid	java.lang.String	2000	uuid	null\n");
+			"null	sys	uuid	java.lang.String	2000	uuid	null\n" +
+			"null	sys	xml	java.lang.String	2000	xml	null\n");
 
 			int[] UDTtypes = { Types.STRUCT, Types.DISTINCT };
 			compareResultSet(dbmd.getUDTs(null, "sys", null, UDTtypes), "getUDTs(null, sys, null, UDTtypes",

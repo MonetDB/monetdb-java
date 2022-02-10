@@ -2336,9 +2336,13 @@ public class MonetPreparedStatement
 						}
 						castprefix = "uuid ";
 						break;
+					// case "xml":
+						// currently any string is accepted by MonetDB, so no validity check needed
+						// castprefix = "xml ";  also do NOT add a cast as MonetDB implicitly already converts a String to an xml String
+						// break;
 				}
 				if (castprefix != null) {
-					/* in specific cases prefix the string with: inet or json or url or uuid casting */
+					/* in specific cases prefix the string with: inet or json or url or uuid or xml casting */
 					setValue(parameterIndex, castprefix + MonetWrapper.sq(x));
 				} else {
 					setValue(parameterIndex, MonetWrapper.sq(x));
