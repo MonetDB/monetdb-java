@@ -616,7 +616,7 @@ final public class JDBC_API_Tester {
 
 		Statement stmt = null;
 		try {
-			// turn off auto commit
+			// turn on auto commit
 			con.setAutoCommit(true);
 			// >> false: we just disabled it
 			sb.append("6. true\t").append(con.getAutoCommit()).append("\n");
@@ -802,13 +802,21 @@ final public class JDBC_API_Tester {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
 
+		// cleanup created db objects
 		try {
 			int response = stmt.executeUpdate("DROP TABLE nopk_twoucs");
 			if (response != Statement.SUCCESS_NO_INFO)
 				sb.append("Dropping table nopk_twoucs failed to return -2!! It returned: " + response + "\n");
 		} catch (SQLException e) {
-			// this means we get what we expect
 			sb.append("failed to drop table: ").append(e.getMessage());
+		}
+
+		try {
+			int response = stmt.executeUpdate("DROP TYPE xml");
+			if (response != Statement.SUCCESS_NO_INFO)
+				sb.append("Dropping type xml failed to return -2!! It returned: " + response + "\n");
+		} catch (SQLException e) {
+			sb.append("failed to drop type: ").append(e.getMessage());
 		}
 
 		closeStmtResSet(stmt, null);
@@ -973,6 +981,7 @@ final public class JDBC_API_Tester {
 			compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry, "1\n");
 			sb.setLength(0);	// clear the output log buffer
 
+			// plan statements are supported via JDBC
 			qry = "plan SELECT 2;";
 			rs = stmt.executeQuery(qry);
 			compareResultSet(rs, qry,
@@ -985,6 +994,7 @@ final public class JDBC_API_Tester {
 			rs = null;
 			sb.setLength(0);	// clear the output log buffer
 
+			// explain statements are supported via JDBC
 			qry = "explain SELECT 3;";
 			rs = stmt.executeQuery(qry);
 			while (rs.next()) {
@@ -1001,6 +1011,7 @@ final public class JDBC_API_Tester {
 				"end user.main;\n");
 			sb.setLength(0);	// clear the output log buffer
 
+			// trace statements are supported via JDBC. Note that it returns two resultsets, one with the query result and next one with the trace result.
 			qry = "trace SELECT 4;";
 			rs = stmt.executeQuery(qry);
 			while (rs.next()) {
@@ -1022,6 +1033,7 @@ final public class JDBC_API_Tester {
 				"    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n");
 			sb.setLength(0);	// clear the output log buffer
 
+			// debug statements are NOT supported via JDBC driver, so the execution should throw an SQLException
 			qry = "debug SELECT 5;";
 			sb.append(qry).append("\n");
 			rs = stmt.executeQuery(qry);
