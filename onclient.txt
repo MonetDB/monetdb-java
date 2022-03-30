@@ -1,6 +1,6 @@
-COPY ... ON CLIENT support in the MonetDB JDBC driver and JdbcClient program.
+COPY ... ON CLIENT ... support in the MonetDB JDBC driver and JdbcClient program.
 
-MonetDB provides the nonstandard COPY INTO statement to perform bulk inserts and
+MonetDB provides the non-standard COPY INTO statement to perform bulk inserts and
 retrievals, see also
 https://www.monetdb.org/Documentation/ServerAdministration/LoadingBulkData/CSVBulkLoads
 https://www.monetdb.org/Documentation/ServerAdministration/ExportingBulkData
@@ -84,7 +84,7 @@ See also: https://www.monetdb.org/hg/monetdb-java/file/tip/src/main/java/org/mon
 
 If you use sendError() to refuse the upload, the COPY INTO statement will fail but
 the connection will remain usable. On the other hand, if your implementation of
-handleUpload throws an IO Exception, the connection will be closed because there
+handleUpload throws an IOException, the connection will be closed because there
 is currently no way to signal errors to the server once the transfer has begun.
 
 The interface for DownloadHandler is:
