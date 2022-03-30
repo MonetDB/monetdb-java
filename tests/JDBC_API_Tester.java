@@ -679,20 +679,33 @@ final public class JDBC_API_Tester {
 	private void Test_Dobjects() {
 		sb.setLength(0);	// clear the output log buffer
 
+		String tablename = "";
+		int response;
 		Statement stmt = null;
 		try {
 			stmt = con.createStatement();
-			int response = stmt.executeUpdate("CREATE TABLE nopk_twoucs (id INT NOT NULL UNIQUE, name VARCHAR(99) UNIQUE)");
+			tablename = "nopk_twoucs";
+			response = stmt.executeUpdate("CREATE TABLE nopk_twoucs (id INT NOT NULL UNIQUE, name VARCHAR(99) UNIQUE)");
 			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Creating table nopk_twoucs failed to return -2!! It returned: " + response + "\n");
+				sb.append("Creating table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
+
+			tablename = "tmp_nopk_twoucs";
+			response = stmt.executeUpdate("CREATE LOCAL TEMP TABLE tmp_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE)");
+			if (response != Statement.SUCCESS_NO_INFO)
+				sb.append("Creating table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
+
+			tablename = "tmp_pk_uc";
+			response = stmt.executeUpdate("CREATE LOCAL TEMP TABLE tmp_pk_uc (id1 INT NOT NULL PRIMARY KEY, name1 VARCHAR(99) UNIQUE)");
+			if (response != Statement.SUCCESS_NO_INFO)
+				sb.append("Creating table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
 		} catch (SQLException e) {
-			sb.append("failed to create test table nopk_twoucs: ").append(e.getMessage());
+			sb.append("failed to create test table ").append(tablename).append(": ").append(e.getMessage());
 		}
 
 		try {
-			int response = stmt.executeUpdate("CREATE TYPE xml EXTERNAL NAME xml");
+			response = stmt.executeUpdate("CREATE TYPE xml EXTERNAL NAME xml");
 			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Creating type xml failed to return -2!! It returned: " + response + "\n");
+				sb.append("Creating type xml failed to return -2!! It returned: ").append(response).append("\n");
 		} catch (SQLException e) {
 			sb.append("failed to create type xml: ").append(e.getMessage());
 		}
@@ -713,6 +726,8 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getTables(null, "tmp", null, null), "getTables(null, tmp, null, null)",	// schema tmp has 6 tables
 			"Resultset with 10 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"null	tmp	tmp_nopk_twoucs	LOCAL TEMPORARY TABLE	null	null	null	null	null	null\n" +
+			"null	tmp	tmp_pk_uc	LOCAL TEMPORARY TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	_columns	SYSTEM TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	_tables	SYSTEM TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	idxs	SYSTEM TABLE	null	null	null	null	null	null\n" +
@@ -736,6 +751,11 @@ final public class JDBC_API_Tester {
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME\n" +
 			"null	sys	table_types	table_type_id	1	table_types_table_type_id_pkey\n");
 
+			compareResultSet(dbmd.getPrimaryKeys(null, "tmp", "tmp_pk_uc"), "getPrimaryKeys(null, tmp, tmp_pk_uc)",
+			"Resultset with 6 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME\n" +
+			"null	tmp	tmp_pk_uc	id1	1	tmp_pk_uc_id1_pkey\n");
+
 			compareResultSet(dbmd.getExportedKeys(null, "sys", "table\\_types"), "getExportedKeys(null, sys, table\\_types)",
 			"Resultset with 14 columns\n" +
 			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n");
@@ -753,6 +773,12 @@ final public class JDBC_API_Tester {
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
 			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	3	0	null\n" +
 			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	3	0	null\n");
+
+			compareResultSet(dbmd.getIndexInfo(null, "tmp", "tmp_pk_uc", false, false), "getIndexInfo(null, tmp, tmp_pk_uc, false, false)",
+			"Resultset with 13 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
+			"null	tmp	tmp_pk_uc	false	null	tmp_pk_uc_id1_pkey	2	1	id1	null	0	0	null\n" +
+			"null	tmp	tmp_pk_uc	false	null	tmp_pk_uc_name1_unique	2	1	name1	null	0	0	null\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "function_languages", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, sys, function_languages, DatabaseMetaData.bestRowTransaction, true)",
@@ -772,6 +798,25 @@ final public class JDBC_API_Tester {
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"2	id	4	int	32	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_pk_uc", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, tmp, tmp_pk_uc, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"2	id1	4	int	32	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"2	id2	4	int	32	0	0	1\n" +
+			"2	name2	12	varchar	99	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
+						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"2	id2	4	int	32	0	0	1\n");
 
 			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table\\_types"), "getTablePrivileges(null, sys, table\\_types)",
 			"Resultset with 7 columns\n" +
@@ -804,17 +849,28 @@ final public class JDBC_API_Tester {
 
 		// cleanup created db objects
 		try {
-			int response = stmt.executeUpdate("DROP TABLE nopk_twoucs");
+			tablename = "nopk_twoucs";
+			response = stmt.executeUpdate("DROP TABLE " + tablename);
 			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Dropping table nopk_twoucs failed to return -2!! It returned: " + response + "\n");
+				sb.append("Dropping table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
+
+			tablename = "tmp_nopk_twoucs";
+			response = stmt.executeUpdate("DROP TABLE " + tablename);
+			if (response != Statement.SUCCESS_NO_INFO)
+				sb.append("Dropping table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
+
+			tablename = "tmp_pk_uc";
+			response = stmt.executeUpdate("DROP TABLE " + tablename);
+			if (response != Statement.SUCCESS_NO_INFO)
+				sb.append("Dropping table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
 		} catch (SQLException e) {
-			sb.append("failed to drop table: ").append(e.getMessage());
+			sb.append("failed to drop test table ").append(tablename).append(": ").append(e.getMessage());
 		}
 
 		try {
-			int response = stmt.executeUpdate("DROP TYPE xml");
+			response = stmt.executeUpdate("DROP TYPE xml");
 			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Dropping type xml failed to return -2!! It returned: " + response + "\n");
+				sb.append("Dropping type xml failed to return -2!! It returned: ").append(response).append("\n");
 		} catch (SQLException e) {
 			sb.append("failed to drop type: ").append(e.getMessage());
 		}

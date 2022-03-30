@@ -2395,7 +2395,6 @@ public class MonetDatabaseMetaData
 	 * @param catalog a catalog name; "" retrieves those without a catalog
 	 * @param schema a schema name; "" retrieves those without a schema
 	 * @param table a table name
-	 *   Note that our implementation allows this param to be null also (for efficiency as no extra LIKE '%' condition is added to be evaluated).
 	 * @param scope the scope of interest; use same values as SCOPE
 	 * @param nullable include columns that are nullable?
 	 * @return ResultSet each row is a column description
@@ -2410,7 +2409,9 @@ public class MonetDatabaseMetaData
 		final boolean nullable
 	) throws SQLException
 	{
-		// first find out if the table has a Primary Key, If it does, we should return only those columns
+		final String sysORtmp = (schema != null && "tmp".equals(schema)) ? "\"tmp\"" : "\"sys\"";
+
+		// first find out if the table has a Primary Key. If it does, we should return only those columns
 		boolean hasPK = false;
 		ResultSet pkey = null;
 		try {
@@ -2442,10 +2443,10 @@ public class MonetDatabaseMetaData
 			"cast(0 as int) AS \"BUFFER_LENGTH\", " +
 			"cast(c.\"type_scale\" AS smallint) AS \"DECIMAL_DIGITS\", " +
 			"cast(").append(DatabaseMetaData.bestRowNotPseudo).append(" AS smallint) AS \"PSEUDO_COLUMN\" " +
-		"FROM \"sys\".\"keys\" k " +
-		"JOIN \"sys\".\"objects\" o ON k.\"id\" = o.\"id\" " +
-		"JOIN \"sys\".\"columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-		"JOIN \"sys\".\"tables\" t ON k.\"table_id\" = t.\"id\" " +
+		"FROM ").append(sysORtmp).append(".\"keys\" k " +
+		"JOIN ").append(sysORtmp).append(".\"objects\" o ON k.\"id\" = o.\"id\" " +
+		"JOIN ").append(sysORtmp).append(".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
+		"JOIN ").append(sysORtmp).append(".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 		"WHERE k.\"type\" = ").append(hasPK ? "0" : "1");	// the primary key (type = 0) or else any unique key (type = 1)
 
@@ -2457,11 +2458,13 @@ public class MonetDatabaseMetaData
 			if (scope == DatabaseMetaData.bestRowSession
 			 || scope == DatabaseMetaData.bestRowTransaction
 			 || scope == DatabaseMetaData.bestRowTemporary) {
-				if (schema != null && !schema.equals("%")) {
-					query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
+				if (schema != null) {
+					// do not allow wildcard matching with LIKE, as the resultset does not include the schema info
+					query.append(" AND s.\"name\" = ").append(MonetWrapper.sq(schema));
 				}
-				if (table != null && !table.equals("%")) {
-					query.append(" AND t.\"name\" ").append(composeMatchPart(table));
+				if (table != null) {
+					// do not allow wildcard matching with LIKE, as the resultset does not include the table info
+					query.append(" AND t.\"name\" = ").append(MonetWrapper.sq(table));
 				}
 				if (!nullable) {
 					query.append(" AND c.\"null\" = false");
@@ -2560,6 +2563,7 @@ public class MonetDatabaseMetaData
 		final String table
 	) throws SQLException
 	{
+		final String sysORtmp = (schema != null && "tmp".equals(schema)) ? "\"tmp\"" : "\"sys\"";
 		final StringBuilder query = new StringBuilder(600);
 		query.append("SELECT cast(null AS char(1)) AS \"TABLE_CAT\", " +
 			"s.\"name\" AS \"TABLE_SCHEM\", " +
@@ -2567,9 +2571,9 @@ public class MonetDatabaseMetaData
 			"o.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(1 + o.\"nr\" AS smallint) AS \"KEY_SEQ\", " +
 			" k.\"name\" AS \"PK_NAME\" " +
-		"FROM \"sys\".\"keys\" k " +
-		"JOIN \"sys\".\"objects\" o ON k.\"id\" = o.\"id\" " +
-		"JOIN \"sys\".\"tables\" t ON k.\"table_id\" = t.\"id\" " +
+		"FROM ").append(sysORtmp).append(".\"keys\" k " +
+		"JOIN ").append(sysORtmp).append(".\"objects\" o ON k.\"id\" = o.\"id\" " +
+		"JOIN ").append(sysORtmp).append(".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 		"WHERE k.\"type\" = 0");	// only primary keys (type = 0)
 
@@ -3077,6 +3081,7 @@ public class MonetDatabaseMetaData
 			}
 		}
 
+		final String sysORtmp = (schema != null && "tmp".equals(schema)) ? "\"tmp\"" : "\"sys\"";
 		final StringBuilder query = new StringBuilder(1250);
 		query.append(
 		"SELECT cast(null AS char(1)) AS \"TABLE_CAT\", " +
@@ -3092,12 +3097,12 @@ public class MonetDatabaseMetaData
 			"cast(").append(table_row_count).append(" AS int) AS \"CARDINALITY\", " +
 			"cast(0 AS int) AS \"PAGES\", " +
 			"cast(null AS char(1)) AS \"FILTER_CONDITION\" " +
-		"FROM \"sys\".\"idxs\" i " +
-		"JOIN \"sys\".\"tables\" t ON i.\"table_id\" = t.\"id\" " +
+		"FROM ").append(sysORtmp).append(".\"idxs\" i " +
+		"JOIN ").append(sysORtmp).append(".\"_tables\" t ON i.\"table_id\" = t.\"id\" " +
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
-		"JOIN \"sys\".\"objects\" o ON i.\"id\" = o.\"id\" " +
-		"JOIN \"sys\".\"columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-		"LEFT OUTER JOIN \"sys\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) ");	// primary (0) and unique keys (1) only
+		"JOIN ").append(sysORtmp).append(".\"objects\" o ON i.\"id\" = o.\"id\" " +
+		"JOIN ").append(sysORtmp).append(".\"_columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
+		"LEFT OUTER JOIN ").append(sysORtmp).append(".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) ");	// primary (0) and unique keys (1) only
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
