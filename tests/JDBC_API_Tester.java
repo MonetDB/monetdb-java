@@ -699,7 +699,7 @@ final public class JDBC_API_Tester {
 			if (response != Statement.SUCCESS_NO_INFO)
 				sb.append("Creating table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
 		} catch (SQLException e) {
-			sb.append("failed to create test table ").append(tablename).append(": ").append(e.getMessage());
+			sb.append("failed to create test table ").append(tablename).append(": ").append(e.getMessage()).append("\n");
 		}
 
 		try {
@@ -707,7 +707,7 @@ final public class JDBC_API_Tester {
 			if (response != Statement.SUCCESS_NO_INFO)
 				sb.append("Creating type xml failed to return -2!! It returned: ").append(response).append("\n");
 		} catch (SQLException e) {
-			sb.append("failed to create type xml: ").append(e.getMessage());
+			sb.append("failed to create type xml: ").append(e.getMessage()).append("\n");
 		}
 
 		try {
@@ -864,7 +864,7 @@ final public class JDBC_API_Tester {
 			if (response != Statement.SUCCESS_NO_INFO)
 				sb.append("Dropping table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
 		} catch (SQLException e) {
-			sb.append("failed to drop test table ").append(tablename).append(": ").append(e.getMessage());
+			sb.append("failed to drop test table ").append(tablename).append(": ").append(e.getMessage()).append("\n");
 		}
 
 		try {
@@ -872,7 +872,7 @@ final public class JDBC_API_Tester {
 			if (response != Statement.SUCCESS_NO_INFO)
 				sb.append("Dropping type xml failed to return -2!! It returned: ").append(response).append("\n");
 		} catch (SQLException e) {
-			sb.append("failed to drop type: ").append(e.getMessage());
+			sb.append("failed to drop type: ").append(e.getMessage()).append("\n");
 		}
 
 		closeStmtResSet(stmt, null);
