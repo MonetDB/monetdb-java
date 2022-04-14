@@ -4005,8 +4005,9 @@ final public class JDBC_API_Tester {
 				sb.append("List TableTypes:\n");
 				while (rs2.next()) {
 					String tt = rs2.getString(1);
-					// post Oct2020 releases the STREAM TABLE type is removed, so filter it out for a stable output
-					if (!"STREAM TABLE".equals(tt))
+					// the STREAM TABLE type is REMOVED in post Oct2020 releases, so filter it out for a stable output on all releases
+					// the UNLOGGED TABLE type is ADDED in post Jan2022 releases, so filter it out for a stable output on all releases
+					if (! ("STREAM TABLE".equals(tt) || "UNLOGGED TABLE".equals(tt)) )
 						sb.append(tt).append("\n");
 				}
 				rs2.close();
