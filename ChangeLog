@@ -3,9 +3,9 @@
 
 * Wed Mar 30 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected DatabaseMetaData methods getPrimaryKeys(), getBestRowIdentifier()
-  and getIndexInfo() for temporary tables in schema tmp. They did not
-  return any rows when the tmp table had a primary or unique key or index.
-  Now they do return rows as expected.
+  and getIndexInfo() for local temporary tables located in schema tmp. They
+  did not return any rows when the temp table had a primary or unique key or
+  index. Now they do return rows as expected.
 
 * Thu Feb 10 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Added recognition of 'xml' type. Use default mapping to Types.VARCHAR for
