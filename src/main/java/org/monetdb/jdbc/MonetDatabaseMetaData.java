@@ -2409,8 +2409,6 @@ public class MonetDatabaseMetaData
 		final boolean nullable
 	) throws SQLException
 	{
-		final String sysORtmp = (schema != null && "tmp".equals(schema)) ? "\"tmp\"" : "\"sys\"";
-
 		// first find out if the table has a Primary Key. If it does, we should return only those columns
 		boolean hasPK = false;
 		ResultSet pkey = null;
@@ -2423,12 +2421,13 @@ public class MonetDatabaseMetaData
 			// ignore
 		} finally {
 			MonetConnection.closeResultsetStatement(pkey, null);
+			pkey = null;
 		}
 
 		// TODO: when there is No PK and there are multiple unique constraints, pick only the unique constraint which has a) the least number of columns and b) the smallest total(size in bytes)
 		// TODO: when there is No PK and No unique constraints, we potentially should return all columns of the table (else in SQuirreL no header is shown in the "Row IDs" tab)
 
-		final StringBuilder query = new StringBuilder(1500);
+		final StringBuilder query = new StringBuilder(3000);
 		query.append("SELECT ");
 		if (!hasPK) {
 			// Note: currently DISTINCT is needed to filter out possible duplicate column names when there are multiple unique constraints !!
@@ -2443,10 +2442,10 @@ public class MonetDatabaseMetaData
 			"cast(0 as int) AS \"BUFFER_LENGTH\", " +
 			"cast(c.\"type_scale\" AS smallint) AS \"DECIMAL_DIGITS\", " +
 			"cast(").append(DatabaseMetaData.bestRowNotPseudo).append(" AS smallint) AS \"PSEUDO_COLUMN\" " +
-		"FROM ").append(sysORtmp).append(".\"keys\" k " +
-		"JOIN ").append(sysORtmp).append(".\"objects\" o ON k.\"id\" = o.\"id\" " +
-		"JOIN ").append(sysORtmp).append(".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-		"JOIN ").append(sysORtmp).append(".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
+		"FROM \"sys\".\"keys\" k " +
+		"JOIN \"sys\".\"objects\" o ON k.\"id\" = o.\"id\" " +
+		"JOIN \"sys\".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
+		"JOIN \"sys\".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 		"WHERE k.\"type\" = ").append(hasPK ? "0" : "1");	// the primary key (type = 0) or else any unique key (type = 1)
 
@@ -2474,11 +2473,62 @@ public class MonetDatabaseMetaData
 			}
 		}
 
+		final boolean includetmp = (schema == null)
+					|| (schema != null && ("tmp".equals(schema) || schema.contains("%") || schema.contains("_")));
+		if (includetmp) {
+			// we must also include the primary key or unique constraint of local temporary tables which are stored in tmp.keys, tmp.objects, tmp._tables and tmp._columns
+			query.append(" UNION ALL ");
+			query.append("SELECT ");
+			if (!hasPK) {
+				// Note: currently DISTINCT is needed to filter out possible duplicate column names when there are multiple unique constraints !!
+				// TODO: when no PK and there are multiple unique constraints determine which one to select such that DISTINCT keyword is not needed anymore
+				query.append("DISTINCT ");
+			}
+			query.append("cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
+				"c.\"name\" AS \"COLUMN_NAME\", " +
+				"cast(").append(MonetDriver.getSQLTypeMap("c.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
+				"c.\"type\" AS \"TYPE_NAME\", " +
+				"c.\"type_digits\" AS \"COLUMN_SIZE\", " +
+				"cast(0 as int) AS \"BUFFER_LENGTH\", " +
+				"cast(c.\"type_scale\" AS smallint) AS \"DECIMAL_DIGITS\", " +
+				"cast(").append(DatabaseMetaData.bestRowNotPseudo).append(" AS smallint) AS \"PSEUDO_COLUMN\" " +
+			"FROM \"tmp\".\"keys\" k " +
+			"JOIN \"tmp\".\"objects\" o ON k.\"id\" = o.\"id\" " +
+			"JOIN \"tmp\".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
+			"JOIN \"tmp\".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
+			"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
+			"WHERE k.\"type\" = ").append(hasPK ? "0" : "1");	// the primary key (type = 0) or else any unique key (type = 1)
+
+			if (catalog != null && !catalog.isEmpty()) {
+				// non-empty catalog selection.
+				// as we do not support catalogs this always results in no rows returned
+				query.append(" AND 1=0");
+			} else {
+				if (scope == DatabaseMetaData.bestRowSession
+				 || scope == DatabaseMetaData.bestRowTransaction
+				 || scope == DatabaseMetaData.bestRowTemporary) {
+					if (schema != null) {
+						// do not allow wildcard matching with LIKE, as the resultset does not include the schema info
+						query.append(" AND s.\"name\" = ").append(MonetWrapper.sq(schema));
+					}
+					if (table != null) {
+						// do not allow wildcard matching with LIKE, as the resultset does not include the table info
+						query.append(" AND t.\"name\" = ").append(MonetWrapper.sq(table));
+					}
+					if (!nullable) {
+						query.append(" AND c.\"null\" = false");
+					}
+				} else {
+					query.append(" AND 1=0");
+				}
+			}
+		}
+
 		// was: query.append(" ORDER BY \"SCOPE\", o.\"nr\", \"COLUMN_NAME\"");
 		// But as of Jan2022 this ordering returns error: SELECT: with DISTINCT ORDER BY expressions must appear in select list
 		// so had to remove the o.\"nr\", part when there is No PKey. This means the columns are than ordered on names instead of creation order in their unique constraint definition
 		query.append(" ORDER BY \"SCOPE\", ");
-		if (hasPK)
+		if (hasPK && !includetmp)
 			query.append("o.\"nr\", ");
 		query.append("\"COLUMN_NAME\"");
 
@@ -2563,17 +2613,16 @@ public class MonetDatabaseMetaData
 		final String table
 	) throws SQLException
 	{
-		final String sysORtmp = (schema != null && "tmp".equals(schema)) ? "\"tmp\"" : "\"sys\"";
-		final StringBuilder query = new StringBuilder(600);
+		final StringBuilder query = new StringBuilder(1200);
 		query.append("SELECT cast(null AS char(1)) AS \"TABLE_CAT\", " +
 			"s.\"name\" AS \"TABLE_SCHEM\", " +
 			"t.\"name\" AS \"TABLE_NAME\", " +
 			"o.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(1 + o.\"nr\" AS smallint) AS \"KEY_SEQ\", " +
-			" k.\"name\" AS \"PK_NAME\" " +
-		"FROM ").append(sysORtmp).append(".\"keys\" k " +
-		"JOIN ").append(sysORtmp).append(".\"objects\" o ON k.\"id\" = o.\"id\" " +
-		"JOIN ").append(sysORtmp).append(".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
+			"k.\"name\" AS \"PK_NAME\" " +
+		"FROM \"sys\".\"keys\" k " +
+		"JOIN \"sys\".\"objects\" o ON k.\"id\" = o.\"id\" " +
+		"JOIN \"sys\".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 		"WHERE k.\"type\" = 0");	// only primary keys (type = 0)
 
@@ -2587,6 +2636,37 @@ public class MonetDatabaseMetaData
 			}
 			if (table != null && !table.equals("%")) {
 				query.append(" AND t.\"name\" ").append(composeMatchPart(table));
+			}
+		}
+
+		final boolean includetmp = (schema == null)
+					|| (schema != null && ("tmp".equals(schema) || schema.contains("%") || schema.contains("_")));
+		if (includetmp) {
+			// we must also include the keys of local temporary tables which are stored in tmp.keys, tmp.objects and tmp._tables
+			query.append(" UNION ALL ");
+			query.append("SELECT cast(null AS char(1)) AS \"TABLE_CAT\", " +
+				"s.\"name\" AS \"TABLE_SCHEM\", " +
+				"t.\"name\" AS \"TABLE_NAME\", " +
+				"o.\"name\" AS \"COLUMN_NAME\", " +
+				"cast(1 + o.\"nr\" AS smallint) AS \"KEY_SEQ\", " +
+				"k.\"name\" AS \"PK_NAME\" " +
+			"FROM \"tmp\".\"keys\" k " +
+			"JOIN \"tmp\".\"objects\" o ON k.\"id\" = o.\"id\" " +
+			"JOIN \"tmp\".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
+			"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
+			"WHERE k.\"type\" = 0");	// only primary keys (type = 0)
+
+			if (catalog != null && !catalog.isEmpty()) {
+				// non-empty catalog selection.
+				// as we do not support catalogs this always results in no rows returned
+				query.append(" AND 1=0");
+			} else {
+				if (schema != null && !schema.equals("%")) {
+					query.append(" AND s.\"name\" ").append(composeMatchPart(schema));
+				}
+				if (table != null && !table.equals("%")) {
+					query.append(" AND t.\"name\" ").append(composeMatchPart(table));
+				}
 			}
 		}
 
@@ -3081,8 +3161,7 @@ public class MonetDatabaseMetaData
 			}
 		}
 
-		final String sysORtmp = (schema != null && "tmp".equals(schema)) ? "\"tmp\"" : "\"sys\"";
-		final StringBuilder query = new StringBuilder(1250);
+		final StringBuilder query = new StringBuilder(2500);
 		query.append(
 		"SELECT cast(null AS char(1)) AS \"TABLE_CAT\", " +
 			"s.\"name\" AS \"TABLE_SCHEM\", " +
@@ -3097,12 +3176,12 @@ public class MonetDatabaseMetaData
 			"cast(").append(table_row_count).append(" AS int) AS \"CARDINALITY\", " +
 			"cast(0 AS int) AS \"PAGES\", " +
 			"cast(null AS char(1)) AS \"FILTER_CONDITION\" " +
-		"FROM ").append(sysORtmp).append(".\"idxs\" i " +
-		"JOIN ").append(sysORtmp).append(".\"_tables\" t ON i.\"table_id\" = t.\"id\" " +
+		"FROM \"sys\".\"idxs\" i " +
+		"JOIN \"sys\".\"_tables\" t ON i.\"table_id\" = t.\"id\" " +
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
-		"JOIN ").append(sysORtmp).append(".\"objects\" o ON i.\"id\" = o.\"id\" " +
-		"JOIN ").append(sysORtmp).append(".\"_columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-		"LEFT OUTER JOIN ").append(sysORtmp).append(".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) ");	// primary (0) and unique keys (1) only
+		"JOIN \"sys\".\"objects\" o ON i.\"id\" = o.\"id\" " +
+		"JOIN \"sys\".\"_columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
+		"LEFT OUTER JOIN \"sys\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) ");	// primary (0) and unique keys (1) only
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -3122,6 +3201,54 @@ public class MonetDatabaseMetaData
 			if (unique) {
 				query.append(needWhere ? "WHERE" : " AND")
 				.append(" k.\"name\" IS NOT NULL");
+			}
+		}
+
+		final boolean includetmp = (schema == null)
+					|| (schema != null && ("tmp".equals(schema) || schema.contains("%") || schema.contains("_")));
+		if (includetmp) {
+			// we must also include the indexes of local temporary tables which are stored in tmp.idxs, tmp._tables, tmp._columns, tmp.objects and tmp.keys
+			query.append(" UNION ALL ");
+			query.append(
+			"SELECT cast(null AS char(1)) AS \"TABLE_CAT\", " +
+				"s.\"name\" AS \"TABLE_SCHEM\", " +
+				"t.\"name\" AS \"TABLE_NAME\", " +
+				"CASE WHEN k.\"name\" IS NULL THEN true ELSE false END AS \"NON_UNIQUE\", " +
+				"cast(null AS char(1)) AS \"INDEX_QUALIFIER\", " +
+				"i.\"name\" AS \"INDEX_NAME\", " +
+				"CASE i.\"type\" WHEN 0 THEN ").append(DatabaseMetaData.tableIndexHashed).append(" ELSE ").append(DatabaseMetaData.tableIndexOther).append(" END AS \"TYPE\", " +
+				"cast(o.\"nr\" +1 AS smallint) AS \"ORDINAL_POSITION\", "+
+				"c.\"name\" AS \"COLUMN_NAME\", " +
+				"cast(null AS char(1)) AS \"ASC_OR_DESC\", " +	// sort sequence currently not supported in keys or indexes in MonetDB
+				"cast(").append(table_row_count).append(" AS int) AS \"CARDINALITY\", " +
+				"cast(0 AS int) AS \"PAGES\", " +
+				"cast(null AS char(1)) AS \"FILTER_CONDITION\" " +
+			"FROM \"tmp\".\"idxs\" i " +
+			"JOIN \"tmp\".\"_tables\" t ON i.\"table_id\" = t.\"id\" " +
+			"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
+			"JOIN \"tmp\".\"objects\" o ON i.\"id\" = o.\"id\" " +
+			"JOIN \"tmp\".\"_columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
+			"LEFT OUTER JOIN \"tmp\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) ");	// primary (0) and unique keys (1) only
+
+			if (catalog != null && !catalog.isEmpty()) {
+				// non-empty catalog selection.
+				// as we do not support catalogs this always results in no rows returned
+				query.append("WHERE 1=0");
+			} else {
+				boolean needWhere = true;
+				if (schema != null && !schema.equals("%")) {
+					query.append("WHERE s.\"name\" ").append(composeMatchPart(schema));
+					needWhere = false;
+				}
+				if (table != null && !table.equals("%")) {
+					query.append(needWhere ? "WHERE" : " AND")
+					.append(" t.\"name\" ").append(composeMatchPart(table));
+					needWhere = false;
+				}
+				if (unique) {
+					query.append(needWhere ? "WHERE" : " AND")
+					.append(" k.\"name\" IS NOT NULL");
+				}
 			}
 		}
 
