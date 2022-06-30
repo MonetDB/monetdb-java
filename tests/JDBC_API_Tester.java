@@ -5129,7 +5129,7 @@ final public class JDBC_API_Tester {
 	private void BugSetQueryTimeout_Bug_3357() {
 		sb.setLength(0);	// clear the output log buffer
 
-		int originalQueryTimeout = 1;
+		int originalQueryTimeout = 0;
 		Statement st = null;
 		try {
 			st = con.createStatement();
@@ -5138,16 +5138,20 @@ final public class JDBC_API_Tester {
 
 			testTimeout_3357(st, 123);
 			testTimeout_3357(st, 123456);
-			testTimeout_3357(st, 2134567890);
+			testTimeout_3357(st, 2147483);
+			testTimeout_3357(st, 2147484);
+			testTimeout_3357(st, Integer.MAX_VALUE);
 			testTimeout_3357(st, 0);
 			testTimeout_3357(st, 10);
+			testTimeout_3357(st, 1);
 			testTimeout_3357(st, -1);	// to generate an SQLException as negative timeouts are invalid
 		} catch (SQLException se) {
-			sb.append("\n SQLException: setQueryTimeout(timeout_value) throws: ").append(se).append("\n");
+			sb.append("SQLException: setQueryTimeout(timeout_value) throws: ").append(se).append("\n");
 		}
 
 		// restore originalQueryTimeout
 		try {
+			sb.append("Restore original QueryTimeout = ").append(originalQueryTimeout).append("\n");
 			testTimeout_3357(st, originalQueryTimeout);
 		} catch (SQLException se) {
 			sb.append("setQueryTimeout(timeout_value) throws: ").append(se).append("\n");
@@ -5158,11 +5162,14 @@ final public class JDBC_API_Tester {
 				"original getQueryTimeout = 0\n" +
 				"setQueryTimeout = 123. getQueryTimeout = 123\n" +
 				"setQueryTimeout = 123456. getQueryTimeout = 123456\n" +
-				"setQueryTimeout = 2134567890. getQueryTimeout = 2134567890\n" +
+				"setQueryTimeout = 2147483. getQueryTimeout = 2147483\n" +
+				"setQueryTimeout = 2147484. getQueryTimeout = 2147484\n" +
+				"setQueryTimeout = 2147483647. getQueryTimeout = 2147483647\n" +
 				"setQueryTimeout = 0. getQueryTimeout = 0\n" +
 				"setQueryTimeout = 10. getQueryTimeout = 10\n" +
-				"setQueryTimeout = -1. \n" +
-				" SQLException: setQueryTimeout(timeout_value) throws: java.sql.SQLException: Illegal timeout value: -1\n" +
+				"setQueryTimeout = 1. getQueryTimeout = 1\n" +
+				"setQueryTimeout = -1. SQLException: setQueryTimeout(timeout_value) throws: java.sql.SQLException: Illegal timeout value: -1\n" +
+				"Restore original QueryTimeout = 0\n" +
 				"setQueryTimeout = 0. getQueryTimeout = 0\n");
 	}
 

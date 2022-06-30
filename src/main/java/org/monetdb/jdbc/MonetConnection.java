@@ -1730,25 +1730,27 @@ public class MonetConnection
 	 * Utility method to call sys.setquerytimeout(int); procedure on the connected server.
 	 * It is called from: MonetConnection.isValid() and MonetStatement.internalExecute()
 	 */
-	void setQueryTimeout(final int millis) throws SQLException {
-		if (millis < 0)
-			throw new SQLException("query timeout milliseconds is less than zero", "M1M05");
+	void setQueryTimeout(final int seconds) throws SQLException {
+		if (seconds < 0)
+			throw new SQLException("query timeout seconds is less than zero", "M1M05");
 
 		checkNotClosed();
 		Statement st = null;
 		try {
 			final String callstmt;
-			// as of release Jun2020 (11.37.7) the function sys.settimeout(bigint) is deprecated and replaced by new sys.setquerytimeout(int)
+			final int msecs = (seconds <= 2147483) ? seconds * 1000 : seconds;	// prevent overflow of int
+
+			// as of release Jun2020 (11.37.7) the function sys.settimeout(msecs bigint) is deprecated and replaced by new sys.setquerytimeout(msecs int)
 			if ((getDatabaseMajorVersion() == 11) && (getDatabaseMinorVersion() < 37))
-				callstmt = "CALL sys.\"settimeout\"(" + millis + ")";
+				callstmt = "CALL sys.\"settimeout\"(" + msecs + ")";
 			else
-				callstmt = "CALL sys.\"setquerytimeout\"(" + millis + ")";
+				callstmt = "CALL sys.\"setquerytimeout\"(" + msecs + ")";
 			// for debug: System.out.println("Before: " + callstmt);
 			st = createStatement();
 			st.execute(callstmt);
 			// for debug: System.out.println("After : " + callstmt);
 
-			this.lastSetQueryTimeout = millis;
+			this.lastSetQueryTimeout = seconds;
 		}
 		/* do not catch SQLException here, as we want to know it when it fails */
 		finally {
