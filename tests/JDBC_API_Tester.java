@@ -327,7 +327,7 @@ final public class JDBC_API_Tester {
 				sb.append(" ");
 			}
 		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+			sb.append(" FAILED: ").append(e.getMessage()).append("\n");
 		}
 
 		compareExpectedOutput("Test_Cmanycon",
@@ -726,16 +726,19 @@ final public class JDBC_API_Tester {
 			// inspect the catalog by use of dbmd functions
 			compareResultSet(dbmd.getCatalogs(), "getCatalogs()",
 			"Resultset with 1 columns\n" +
-			"TABLE_CAT\n");
+			"TABLE_CAT\n" +
+			"char(1)\n");
 
 			compareResultSet(dbmd.getSchemas(null, "sys"), "getSchemas(null, sys)",
 			"Resultset with 2 columns\n" +
 			"TABLE_SCHEM	TABLE_CATALOG\n" +
+			"varchar(3)	char(1)\n" +
 			"sys	null\n");
 
 			compareResultSet(dbmd.getTables(null, "tmp", null, null), "getTables(null, tmp, null, null)",	// schema tmp has 6 system tables and 4 temporary test tables
 			"Resultset with 10 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"char(1)	varchar(3)	varchar(16)	varchar(22)	varchar	char(1)	char(1)	char(1)	char(1)	char(1)\n" +
 			"null	tmp	glbl_nopk_twoucs	GLOBAL TEMPORARY TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	glbl_pk_uc	GLOBAL TEMPORARY TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	tmp_nopk_twoucs	LOCAL TEMPORARY TABLE	null	null	null	null	null	null\n" +
@@ -750,56 +753,67 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getTables(null, "sys", "schemas", null), "getTables(null, sys, schemas, null)",
 			"Resultset with 10 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"char(1)	varchar(3)	varchar(7)	varchar(12)	varchar	char(1)	char(1)	char(1)	char(1)	char(1)\n" +
 			"null	sys	schemas	SYSTEM TABLE	null	null	null	null	null	null\n");
 
 			compareResultSet(dbmd.getColumns(null, "sys", "table\\_types", null), "getColumns(null, sys, table\\_types, null)",
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
+			"char(1)	varchar(3)	varchar(11)	varchar(15)	int	varchar(8)	int	int	int	int	int	varchar	varchar	int	int	int	int	varchar(2)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(2)\n" +
 			"null	sys	table_types	table_type_id	5	smallint	16	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
 			"null	sys	table_types	table_type_name	12	varchar	25	0	0	0	0	null	null	0	0	25	2	NO	null	null	null	null	NO	NO\n");
 
 			compareResultSet(dbmd.getPrimaryKeys(null, "sys", "table\\_types"), "getPrimaryKeys(null, sys, table\\_types)",
 			"Resultset with 6 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME\n" +
+			"char(1)	varchar(3)	varchar(11)	varchar(13)	smallint	varchar(30)\n" +
 			"null	sys	table_types	table_type_id	1	table_types_table_type_id_pkey\n");
 
 			compareResultSet(dbmd.getPrimaryKeys(null, "tmp", "tmp_pk_uc"), "getPrimaryKeys(null, tmp, tmp_pk_uc)",
 			"Resultset with 6 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME\n" +
+			"char(1)	varchar(3)	varchar(9)	varchar(3)	smallint	varchar(18)\n" +
 			"null	tmp	tmp_pk_uc	id1	1	tmp_pk_uc_id1_pkey\n");
 
 			compareResultSet(dbmd.getPrimaryKeys(null, "tmp", "glbl_pk_uc"), "getPrimaryKeys(null, tmp, glbl_pk_uc)",
 			"Resultset with 6 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME\n" +
+			"char(1)	varchar(3)	varchar(10)	varchar(3)	smallint	varchar(19)\n" +
 			"null	tmp	glbl_pk_uc	id1	1	glbl_pk_uc_id1_pkey\n");
 
 			compareResultSet(dbmd.getExportedKeys(null, "sys", "table\\_types"), "getExportedKeys(null, sys, table\\_types)",
 			"Resultset with 14 columns\n" +
-			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n");
+			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n" +
+			"char(1)	varchar	varchar	varchar	char(1)	varchar	varchar	varchar	smallint	smallint	smallint	varchar	varchar	smallint\n");
 
 			compareResultSet(dbmd.getCrossReference(null, "sys", "tables", null, "sys", "table\\_types"), "getCrossReference(null, sys, tables, null, sys, table\\_types)",
 			"Resultset with 14 columns\n" +
-			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n");
+			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n" +
+			"char(1)	varchar	varchar	varchar	char(1)	varchar	varchar	varchar	smallint	smallint	smallint	varchar	varchar	smallint\n");
 
 			compareResultSet(dbmd.getImportedKeys(null, "sys", "table\\_types"), "getImportedKeys(null, sys, table\\_types)",
 			"Resultset with 14 columns\n" +
-			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n");
+			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n" +
+			"char(1)	varchar	varchar	varchar	char(1)	varchar	varchar	varchar	smallint	smallint	smallint	varchar	varchar	smallint\n");
 
 			compareResultSet(dbmd.getIndexInfo(null, "sys", "key_types", false, false), "getIndexInfo(null, sys, key_types, false, false)",
 			"Resultset with 13 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
+			"char(1)	varchar(3)	varchar(9)	boolean	char(1)	varchar(30)	tinyint	smallint	varchar(13)	char(1)	int	int	char(1)\n" +
 			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	3	0	null\n" +
 			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	3	0	null\n");
 
 			compareResultSet(dbmd.getIndexInfo(null, "tmp", "tmp_pk_uc", false, false), "getIndexInfo(null, tmp, tmp_pk_uc, false, false)",
 			"Resultset with 13 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
+			"char(1)	varchar(3)	varchar(9)	boolean	char(1)	varchar(22)	tinyint	smallint	varchar(5)	char(1)	int	int	char(1)\n" +
 			"null	tmp	tmp_pk_uc	false	null	tmp_pk_uc_id1_pkey	2	1	id1	null	0	0	null\n" +
 			"null	tmp	tmp_pk_uc	false	null	tmp_pk_uc_name1_unique	2	1	name1	null	0	0	null\n");
 
 			compareResultSet(dbmd.getIndexInfo(null, "tmp", "glbl_pk_uc", false, false), "getIndexInfo(null, tmp, glbl_pk_uc, false, false)",
 			"Resultset with 13 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
+			"char(1)	varchar(3)	varchar(10)	boolean	char(1)	varchar(23)	tinyint	smallint	varchar(5)	char(1)	int	int	char(1)\n" +
 			"null	tmp	glbl_pk_uc	false	null	glbl_pk_uc_id1_pkey	2	1	id1	null	0	0	null\n" +
 			"null	tmp	glbl_pk_uc	false	null	glbl_pk_uc_name1_unique	2	1	name1	null	0	0	null\n");
 
@@ -807,12 +821,14 @@ final public class JDBC_API_Tester {
 						"getBestRowIdentifier(null, sys, function_languages, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(11)	int	varchar(8)	int	int	smallint	smallint\n" +
 			"2	language_id	5	smallint	16	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, sys, nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(4)	int	varchar(7)	int	int	smallint	smallint\n" +
 			"2	id	4	int	32	0	0	1\n" +
 			"2	name	12	varchar	99	0	0	1\n");
 
@@ -820,18 +836,21 @@ final public class JDBC_API_Tester {
 						"getBestRowIdentifier(null, sys, nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(2)	int	varchar(3)	int	int	smallint	smallint\n" +
 			"2	id	4	int	32	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_pk_uc", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, tmp_pk_uc, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
 			"2	id1	4	int	32	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(5)	int	varchar(7)	int	int	smallint	smallint\n" +
 			"2	id2	4	int	32	0	0	1\n" +
 			"2	name2	12	varchar	99	0	0	1\n");
 
@@ -839,18 +858,21 @@ final public class JDBC_API_Tester {
 						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
 			"2	id2	4	int	32	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_pk_uc", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, glbl_pk_uc, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
 			"2	id1	4	int	32	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, glbl_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(5)	int	varchar(7)	int	int	smallint	smallint\n" +
 			"2	id2	4	int	32	0	0	1\n" +
 			"2	name2	12	varchar	99	0	0	1\n");
 
@@ -858,20 +880,24 @@ final public class JDBC_API_Tester {
 						"getBestRowIdentifier(null, tmp, glbl_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
 			"2	id2	4	int	32	0	0	1\n");
 
 			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table\\_types"), "getTablePrivileges(null, sys, table\\_types)",
 			"Resultset with 7 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
+			"char(1)	varchar(3)	varchar(11)	varchar(7)	varchar(6)	varchar(6)	varchar(2)\n" +
 			"null	sys	table_types	monetdb	public	SELECT	NO\n");
 
 			compareResultSet(dbmd.getColumnPrivileges(null, "sys", "table\\_types", null), "getColumnPrivileges(null, sys, table\\_types, null)",
 			"Resultset with 8 columns\n" +
-			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n");
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
+			"char(1)	varchar	varchar	varchar	varchar	varchar	varchar	varchar\n");
 
 			compareResultSet(dbmd.getUDTs(null, "sys", null, null), "getUDTs(null, sys, null, null)",
 			"Resultset with 7 columns\n" +
 			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE\n" +
+			"char(1)	varchar(3)	varchar(4)	char(27)	int	varchar(4)	smallint\n" +
 			"null	sys	inet	org.monetdb.jdbc.types.INET	2000	inet	null\n" +
 			"null	sys	json	java.lang.String	2000	json	null\n" +
 			"null	sys	url	org.monetdb.jdbc.types.URL	2000	url	null\n" +
@@ -881,7 +907,8 @@ final public class JDBC_API_Tester {
 			int[] UDTtypes = { Types.STRUCT, Types.DISTINCT };
 			compareResultSet(dbmd.getUDTs(null, "sys", null, UDTtypes), "getUDTs(null, sys, null, UDTtypes",
 			"Resultset with 7 columns\n" +
-			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE\n");
+			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE\n" +
+			"char(1)	varchar	varchar	char(27)	int	varchar	smallint\n");
 
 			sb.setLength(0);	// clear the output log buffer
 		} catch (SQLException e) {
@@ -938,12 +965,41 @@ final public class JDBC_API_Tester {
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int columnCount = rsmd.getColumnCount();
 		sb.append("Resultset with ").append(columnCount).append(" columns\n");
+		// print result column header names
 		for (int col = 1; col <= columnCount; col++) {
 			if (col > 1)
 				sb.append("\t");
 			sb.append(rsmd.getColumnName(col));
 		}
 		sb.append("\n");
+		// print result column data type info
+		for (int col = 1; col <= columnCount; col++) {
+			if (col > 1)
+				sb.append("\t");
+			sb.append(rsmd.getColumnTypeName(col));
+			switch (rsmd.getColumnType(col)) {
+				case Types.CHAR:
+				case Types.VARCHAR:
+				case Types.CLOB:
+				case Types.BLOB:
+				case Types.DECIMAL:
+				case Types.NUMERIC:
+				{
+					int prec = rsmd.getPrecision(col);
+					if (prec != 0) {
+						sb.append('(').append(prec);
+						int scale = rsmd.getScale(col);
+						if (scale != 0) {
+							sb.append(',').append(scale);
+						}
+						sb.append(')');
+					}
+				}
+			}
+		}
+		sb.append("\n");
+
+		// print result rows data
 		while (rs.next()) {
 			for (int col = 1; col <= columnCount; col++) {
 				if (col > 1)
@@ -1095,6 +1151,7 @@ final public class JDBC_API_Tester {
 			compareResultSet(rs, qry,
 				"Resultset with 1 columns\n" +
 				"rel\n" +
+				"clob(37)\n" +
 				"project (\n" +
 				"|  [ boolean(1) \"true\" as \"%1\".\"%1\" ]\n" +
 				") [ tinyint(2) \"2\" ]\n");
@@ -5404,7 +5461,7 @@ final public class JDBC_API_Tester {
 			foundDifferences = true;
 			System.err.print("Test '");
 			System.err.print(testname);
-			if (!testname.endsWith(")"))
+			if (!testname.endsWith(")") && !testname.endsWith(";"))
 				System.err.print("()");
 			System.err.println("' produced different output!");
 			System.err.println("Expected:");
