@@ -1,6 +1,15 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Aug 24 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved DatabaseMetaData.getBestRowIdentifier(). When there are multiple
+  unique constraints and no pkey for a table it used to return the columns
+  of all the table unique constraints. Now it only returns the columns of
+  the first table unique constraint.
+  Also optimized the performance of getBestRowIdentifier(). It used to
+  send a separate query first to find out if the table had a pkey or not.
+  This extra query is now integrated so less queries are send to the server.
+
 * Wed Mar 30 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected DatabaseMetaData methods getPrimaryKeys(), getBestRowIdentifier()
   and getIndexInfo() for local temporary tables located in schema tmp. They

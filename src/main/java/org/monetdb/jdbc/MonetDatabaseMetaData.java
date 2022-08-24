@@ -2077,7 +2077,8 @@ public class MonetDatabaseMetaData
 	 *	<LI><B>SCOPE_CATALOG</B> String =&gt; catalog of table that is the scope of a reference attribute (null if DATA_TYPE isn't REF)
 	 *	<LI><B>SCOPE_SCHEMA</B> String =&gt; schema of table that is the scope of a reference attribute (null if the DATA_TYPE isn't REF)
 	 *	<LI><B>SCOPE_TABLE</B> String =&gt; table name that this the scope of a reference attribute (null if the DATA_TYPE isn't REF)
-	 *	<LI><B>SOURCE_DATA_TYPE</B> short =&gt; source type of a distinct type or user-generated Ref type, SQL type from java.sql.Types (null if DATA_TYPE isn't DISTINCT or user-generated REF)
+	 *	<LI><B>SOURCE_DATA_TYPE</B> short =&gt; source type of a distinct type or user-generated Ref type,
+	 *		SQL type from java.sql.Types (null if DATA_TYPE isn't DISTINCT or user-generated REF)
 	 *	<LI><B>IS_AUTOINCREMENT</B> String =&gt; Indicates whether this column is auto incremented
 	 *		<UL>
 	 *		<LI> YES --- if the column is auto incremented
@@ -2409,46 +2410,46 @@ public class MonetDatabaseMetaData
 		final boolean nullable
 	) throws SQLException
 	{
-		// first find out if the table has a Primary Key. If it does, we should return only those columns
-		boolean hasPK = false;
-		ResultSet pkey = null;
-		try {
-			pkey = getPrimaryKeys(catalog, schema, table);
-			if (pkey != null && pkey.next()) {
-				hasPK = true;
-			}
-		} catch (SQLException e) {
-			// ignore
-		} finally {
-			MonetConnection.closeResultsetStatement(pkey, null);
-			pkey = null;
-		}
+		/* determine if we need to include a query against the tmp.* tables also */
+		final boolean incltmpkey = (schema == null)
+					|| (schema != null && ("tmp".equals(schema) || schema.contains("%") || schema.contains("_")));
 
-		// TODO: when there is No PK and there are multiple unique constraints, pick only the unique constraint which has a) the least number of columns and b) the smallest total(size in bytes)
+		/* When there is a PK for the table we return the pkey columns
+		 * When there is No PK but there are multiple unique constraints, we need to pick one.
+		 * In the current implementation we return the first uc (lowest sys.keys.id).
+		 * Instead of the first (in case of multiple) we should potentially use the uc which has
+		 *  a) the least number of columns and
+		 *  b) the smallest total(size in bytes).
+		 * That's complex to built in SQL.
+		 */
 		// TODO: when there is No PK and No unique constraints, we potentially should return all columns of the table (else in SQuirreL no header is shown in the "Row IDs" tab)
 
-		final StringBuilder query = new StringBuilder(3000);
-		query.append("SELECT ");
-		if (!hasPK) {
-			// Note: currently DISTINCT is needed to filter out possible duplicate column names when there are multiple unique constraints !!
-			// TODO: when no PK and there are multiple unique constraints determine which one to select such that DISTINCT keyword is not needed anymore
-			query.append("DISTINCT ");
+		final StringBuilder query = new StringBuilder(2600);
+		query.append("with syskeys as (" +
+			// all pkeys
+			"SELECT \"id\", \"table_id\" FROM \"sys\".\"keys\" WHERE \"type\" = 0 " +
+			"UNION ALL " +
+			// and first unique constraint of a table when table has no pkey
+			"SELECT \"id\", \"table_id\" FROM \"sys\".\"keys\" WHERE \"type\" = 1 " +
+			"AND \"table_id\" NOT IN (select \"table_id\" from \"sys\".\"keys\" where \"type\" = 0) " +
+			"AND (\"table_id\", \"id\") IN (select \"table_id\", min(\"id\") from \"sys\".\"keys\" where \"type\" = 1 group by \"table_id\"))");
+		if (incltmpkey) {
+			// we must also include the primary key or unique constraint of local temporary tables which are stored in tmp.keys
+			query.append(", tmpkeys as (" +
+			"SELECT \"id\", \"table_id\" FROM \"tmp\".\"keys\" WHERE \"type\" = 0 " +
+			"UNION ALL " +
+			"SELECT \"id\", \"table_id\" FROM \"tmp\".\"keys\" WHERE \"type\" = 1 " +
+			"AND \"table_id\" NOT IN (select \"table_id\" from \"tmp\".\"keys\" where \"type\" = 0) " +
+			"AND (\"table_id\", \"id\") IN (select \"table_id\", min(\"id\") from \"tmp\".\"keys\" where \"type\" = 1 group by \"table_id\"))");
 		}
-		query.append("cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
-			"c.\"name\" AS \"COLUMN_NAME\", " +
-			"cast(").append(MonetDriver.getSQLTypeMap("c.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
-			"c.\"type\" AS \"TYPE_NAME\", " +
-			"c.\"type_digits\" AS \"COLUMN_SIZE\", " +
-			"cast(0 as int) AS \"BUFFER_LENGTH\", " +
-			"cast(c.\"type_scale\" AS smallint) AS \"DECIMAL_DIGITS\", " +
-			"cast(").append(DatabaseMetaData.bestRowNotPseudo).append(" AS smallint) AS \"PSEUDO_COLUMN\" " +
-		"FROM \"sys\".\"keys\" k " +
-		"JOIN \"sys\".\"objects\" o ON k.\"id\" = o.\"id\" " +
-		"JOIN \"sys\".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-		"JOIN \"sys\".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
-		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
-		"WHERE k.\"type\" = ").append(hasPK ? "0" : "1");	// the primary key (type = 0) or else any unique key (type = 1)
-
+		query.append(", cols as (" +
+			"SELECT c.\"name\", c.\"type\", c.\"type_digits\", c.\"type_scale\", o.\"nr\" " +
+			"FROM syskeys k " +
+			"JOIN \"sys\".\"objects\" o ON k.\"id\" = o.\"id\" " +
+			"JOIN \"sys\".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
+			"JOIN \"sys\".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
+			"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
+			"WHERE 1=1");
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
@@ -2472,33 +2473,17 @@ public class MonetDatabaseMetaData
 				query.append(" AND 1=0");
 			}
 		}
-
-		final boolean includetmp = (schema == null)
-					|| (schema != null && ("tmp".equals(schema) || schema.contains("%") || schema.contains("_")));
-		if (includetmp) {
-			// we must also include the primary key or unique constraint of local temporary tables which are stored in tmp.keys, tmp.objects, tmp._tables and tmp._columns
-			query.append(" UNION ALL ");
-			query.append("SELECT ");
-			if (!hasPK) {
-				// Note: currently DISTINCT is needed to filter out possible duplicate column names when there are multiple unique constraints !!
-				// TODO: when no PK and there are multiple unique constraints determine which one to select such that DISTINCT keyword is not needed anymore
-				query.append("DISTINCT ");
-			}
-			query.append("cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
-				"c.\"name\" AS \"COLUMN_NAME\", " +
-				"cast(").append(MonetDriver.getSQLTypeMap("c.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
-				"c.\"type\" AS \"TYPE_NAME\", " +
-				"c.\"type_digits\" AS \"COLUMN_SIZE\", " +
-				"cast(0 as int) AS \"BUFFER_LENGTH\", " +
-				"cast(c.\"type_scale\" AS smallint) AS \"DECIMAL_DIGITS\", " +
-				"cast(").append(DatabaseMetaData.bestRowNotPseudo).append(" AS smallint) AS \"PSEUDO_COLUMN\" " +
-			"FROM \"tmp\".\"keys\" k " +
+		if (incltmpkey) {
+			// we must also include the primary key or unique constraint of local temporary tables
+			// which are stored in tmp.keys, tmp.objects, tmp._tables and tmp._columns
+			query.append(" UNION ALL " +
+			"SELECT c.\"name\", c.\"type\", c.\"type_digits\", c.\"type_scale\", o.\"nr\" " +
+			"FROM tmpkeys k " +
 			"JOIN \"tmp\".\"objects\" o ON k.\"id\" = o.\"id\" " +
 			"JOIN \"tmp\".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
 			"JOIN \"tmp\".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
 			"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
-			"WHERE k.\"type\" = ").append(hasPK ? "0" : "1");	// the primary key (type = 0) or else any unique key (type = 1)
-
+			"WHERE 1=1");
 			if (catalog != null && !catalog.isEmpty()) {
 				// non-empty catalog selection.
 				// as we do not support catalogs this always results in no rows returned
@@ -2523,14 +2508,17 @@ public class MonetDatabaseMetaData
 				}
 			}
 		}
-
-		// was: query.append(" ORDER BY \"SCOPE\", o.\"nr\", \"COLUMN_NAME\"");
-		// But as of Jan2022 this ordering returns error: SELECT: with DISTINCT ORDER BY expressions must appear in select list
-		// so had to remove the o.\"nr\", part when there is No PKey. This means the columns are than ordered on names instead of creation order in their unique constraint definition
-		query.append(" ORDER BY \"SCOPE\", ");
-		if (hasPK && !includetmp)
-			query.append("o.\"nr\", ");
-		query.append("\"COLUMN_NAME\"");
+		query.append(") SELECT " +
+			"cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
+			"c.\"name\" AS \"COLUMN_NAME\", " +
+			"cast(").append(MonetDriver.getSQLTypeMap("c.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
+			"c.\"type\" AS \"TYPE_NAME\", " +
+			"c.\"type_digits\" AS \"COLUMN_SIZE\", " +
+			"cast(0 as int) AS \"BUFFER_LENGTH\", " +
+			"cast(c.\"type_scale\" AS smallint) AS \"DECIMAL_DIGITS\", " +
+			"cast(").append(DatabaseMetaData.bestRowNotPseudo).append(" AS smallint) AS \"PSEUDO_COLUMN\" " +
+			"FROM cols c " +
+			"ORDER BY \"SCOPE\", c.\"nr\", \"COLUMN_NAME\"");
 
 		return executeMetaDataQuery(query.toString());
 	}

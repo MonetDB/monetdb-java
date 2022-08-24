@@ -828,9 +828,8 @@ final public class JDBC_API_Tester {
 						"getBestRowIdentifier(null, sys, nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
-			"smallint	varchar(4)	int	varchar(7)	int	int	smallint	smallint\n" +
-			"2	id	4	int	32	0	0	1\n" +
-			"2	name	12	varchar	99	0	0	1\n");
+			"smallint	varchar(2)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id	4	int	32	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
 						"getBestRowIdentifier(null, sys, nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
@@ -850,9 +849,8 @@ final public class JDBC_API_Tester {
 						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
-			"smallint	varchar(5)	int	varchar(7)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n" +
-			"2	name2	12	varchar	99	0	0	1\n");
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id2	4	int	32	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
 						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
@@ -872,9 +870,8 @@ final public class JDBC_API_Tester {
 						"getBestRowIdentifier(null, tmp, glbl_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
-			"smallint	varchar(5)	int	varchar(7)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n" +
-			"2	name2	12	varchar	99	0	0	1\n");
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id2	4	int	32	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
 						"getBestRowIdentifier(null, tmp, glbl_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
