@@ -2420,11 +2420,11 @@ public class MonetDatabaseMetaData
 		 * Instead of the first (in case of multiple) we should potentially use the uc which has
 		 *  a) the least number of columns and
 		 *  b) the smallest total(size in bytes).
-		 * That's complex to built in SQL.
+		 * That's much more complex to do in SQL than the current implementation, which is fast and gives a correct result.
 		 */
-		// TODO: when there is No PK and No unique constraints, we potentially should return all columns of the table (else in SQuirreL no header is shown in the "Row IDs" tab)
 
-		final StringBuilder query = new StringBuilder(2600);
+		final StringBuilder query = new StringBuilder(3000);
+		// 1st cte: syskeys
 		query.append("with syskeys as (" +
 			// all pkeys
 			"SELECT \"id\", \"table_id\" FROM \"sys\".\"keys\" WHERE \"type\" = 0 " +
@@ -2435,6 +2435,7 @@ public class MonetDatabaseMetaData
 			"AND (\"table_id\", \"id\") IN (select \"table_id\", min(\"id\") from \"sys\".\"keys\" where \"type\" = 1 group by \"table_id\"))");
 		if (incltmpkey) {
 			// we must also include the primary key or unique constraint of local temporary tables which are stored in tmp.keys
+		// 2nd cte: tmpkeys
 			query.append(", tmpkeys as (" +
 			"SELECT \"id\", \"table_id\" FROM \"tmp\".\"keys\" WHERE \"type\" = 0 " +
 			"UNION ALL " +
@@ -2442,36 +2443,41 @@ public class MonetDatabaseMetaData
 			"AND \"table_id\" NOT IN (select \"table_id\" from \"tmp\".\"keys\" where \"type\" = 0) " +
 			"AND (\"table_id\", \"id\") IN (select \"table_id\", min(\"id\") from \"tmp\".\"keys\" where \"type\" = 1 group by \"table_id\"))");
 		}
-		query.append(", cols as (" +
-			"SELECT c.\"name\", c.\"type\", c.\"type_digits\", c.\"type_scale\", o.\"nr\" " +
-			"FROM syskeys k " +
-			"JOIN \"sys\".\"objects\" o ON k.\"id\" = o.\"id\" " +
-			"JOIN \"sys\".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-			"JOIN \"sys\".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
+		// 3rd cte: tableids
+		query.append(", tableids as (" +
+			"SELECT t.\"id\" " +
+			"FROM \"sys\".\"tables\" t " +
 			"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
-			"WHERE 1=1");
+			"WHERE t.\"type\" NOT IN (1, 11) ");	// exclude all VIEWs and SYSTEM VIEWs
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append(" AND 1=0");
+			query.append("AND 1=0");
 		} else {
 			if (scope == DatabaseMetaData.bestRowSession
 			 || scope == DatabaseMetaData.bestRowTransaction
 			 || scope == DatabaseMetaData.bestRowTemporary) {
 				if (schema != null) {
 					// do not allow wildcard matching with LIKE, as the resultset does not include the schema info
-					query.append(" AND s.\"name\" = ").append(MonetWrapper.sq(schema));
+					query.append("AND s.\"name\" = ").append(MonetWrapper.sq(schema));
 				}
 				if (table != null) {
 					// do not allow wildcard matching with LIKE, as the resultset does not include the table info
 					query.append(" AND t.\"name\" = ").append(MonetWrapper.sq(table));
 				}
-				if (!nullable) {
-					query.append(" AND c.\"null\" = false");
-				}
 			} else {
-				query.append(" AND 1=0");
+				query.append("AND 1=0");
 			}
+		}
+		// 4th cte: cols, this unions 2 (or 4 when incltmpkey == true) select queries
+		query.append("), cols as (" +
+			"SELECT c.\"name\", c.\"type\", c.\"type_digits\", c.\"type_scale\", o.\"nr\" " +
+			"FROM syskeys k " +
+			"JOIN tableids t ON k.\"table_id\" = t.\"id\" " +
+			"JOIN \"sys\".\"objects\" o ON k.\"id\" = o.\"id\" " +
+			"JOIN \"sys\".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\")");
+		if (!nullable) {
+			query.append(" WHERE c.\"null\" = false");
 		}
 		if (incltmpkey) {
 			// we must also include the primary key or unique constraint of local temporary tables
@@ -2479,35 +2485,34 @@ public class MonetDatabaseMetaData
 			query.append(" UNION ALL " +
 			"SELECT c.\"name\", c.\"type\", c.\"type_digits\", c.\"type_scale\", o.\"nr\" " +
 			"FROM tmpkeys k " +
+			"JOIN tableids t ON k.\"table_id\" = t.\"id\" " +
 			"JOIN \"tmp\".\"objects\" o ON k.\"id\" = o.\"id\" " +
-			"JOIN \"tmp\".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-			"JOIN \"tmp\".\"_tables\" t ON k.\"table_id\" = t.\"id\" " +
-			"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
-			"WHERE 1=1");
-			if (catalog != null && !catalog.isEmpty()) {
-				// non-empty catalog selection.
-				// as we do not support catalogs this always results in no rows returned
-				query.append(" AND 1=0");
-			} else {
-				if (scope == DatabaseMetaData.bestRowSession
-				 || scope == DatabaseMetaData.bestRowTransaction
-				 || scope == DatabaseMetaData.bestRowTemporary) {
-					if (schema != null) {
-						// do not allow wildcard matching with LIKE, as the resultset does not include the schema info
-						query.append(" AND s.\"name\" = ").append(MonetWrapper.sq(schema));
-					}
-					if (table != null) {
-						// do not allow wildcard matching with LIKE, as the resultset does not include the table info
-						query.append(" AND t.\"name\" = ").append(MonetWrapper.sq(table));
-					}
-					if (!nullable) {
-						query.append(" AND c.\"null\" = false");
-					}
-				} else {
-					query.append(" AND 1=0");
-				}
+			"JOIN \"tmp\".\"_columns\" c ON (k.\"table_id\" = c.\"table_id\" AND o.\"name\" = c.\"name\")");
+			if (!nullable) {
+				query.append(" WHERE c.\"null\" = false");
 			}
 		}
+		// when there is No PK and No unique constraints, we should return all columns of the table
+		// (else in SQuirreL no header is shown in the "Row IDs" tab)
+		query.append(" UNION ALL " +
+			"SELECT c.\"name\", c.\"type\", c.\"type_digits\", c.\"type_scale\", c.\"number\" " +
+			"FROM tableids t " +
+			"JOIN \"sys\".\"_columns\" c ON t.\"id\" = c.\"table_id\" " +
+			"WHERE t.\"id\" NOT IN (SELECT \"table_id\" FROM \"sys\".\"keys\" WHERE \"type\" in (0, 1))");
+		if (!nullable) {
+			query.append(" AND c.\"null\" = false");
+		}
+		if (incltmpkey) {
+			query.append(" UNION ALL " +
+			"SELECT c.\"name\", c.\"type\", c.\"type_digits\", c.\"type_scale\", c.\"number\" " +
+			"FROM tableids t " +
+			"JOIN \"tmp\".\"_columns\" c ON t.\"id\" = c.\"table_id\" " +
+			"WHERE t.\"id\" NOT IN (SELECT \"table_id\" FROM \"tmp\".\"keys\" WHERE \"type\" in (0, 1))");
+			if (!nullable) {
+				query.append(" AND c.\"null\" = false");
+			}
+		}
+		// the final select query
 		query.append(") SELECT " +
 			"cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
 			"c.\"name\" AS \"COLUMN_NAME\", " +

@@ -60,6 +60,7 @@ final public class JDBC_API_Tester {
 		jt.Test_Csavepoints();
 		jt.Test_Ctransaction();
 		jt.Test_Dobjects();
+		jt.Test_DBCmetadata();
 		jt.Test_FetchSize();
 		jt.Test_Int128();
 		jt.Test_PlanExplainTraceDebugCmds();
@@ -676,49 +677,44 @@ final public class JDBC_API_Tester {
 			"13. commit...failed as expected: COMMIT: not allowed in auto commit mode\n");
 	}
 
+	private void handleExecuteDDL(Statement stmt, String action, String objtype, String objname, String sql) {
+		try {
+			int response = stmt.executeUpdate(sql);
+			if (response != Statement.SUCCESS_NO_INFO)
+				sb.append(action).append(" ").append(objtype).append(" ").append(objname).append(" failed to return -2!! It returned: ").append(response).append("\n");
+		} catch (SQLException e) {
+			sb.append("Failed to ").append(action).append(" ").append(objtype).append(" ").append(objname).append(": ").append(e.getMessage()).append("\n");
+		}
+	}
+
 	private void Test_Dobjects() {
 		sb.setLength(0);	// clear the output log buffer
 
-		String tablename = "";
-		int response;
 		Statement stmt = null;
 		try {
 			stmt = con.createStatement();
-			tablename = "nopk_twoucs";
-			response = stmt.executeUpdate("CREATE TABLE nopk_twoucs (id INT NOT NULL UNIQUE, name VARCHAR(99) UNIQUE)");
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Creating table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
-
-			tablename = "tmp_nopk_twoucs";
-			response = stmt.executeUpdate("CREATE LOCAL TEMP TABLE tmp_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE)");
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Creating table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
-
-			tablename = "tmp_pk_uc";
-			response = stmt.executeUpdate("CREATE LOCAL TEMP TABLE tmp_pk_uc (id1 INT NOT NULL PRIMARY KEY, name1 VARCHAR(99) UNIQUE)");
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Creating table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
-
-			tablename = "glbl_nopk_twoucs";
-			response = stmt.executeUpdate("CREATE GLOBAL TEMP TABLE glbl_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE)");
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Creating table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
-
-			tablename = "glbl_pk_uc";
-			response = stmt.executeUpdate("CREATE GLOBAL TEMP TABLE glbl_pk_uc (id1 INT NOT NULL PRIMARY KEY, name1 VARCHAR(99) UNIQUE)");
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Creating table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
 		} catch (SQLException e) {
-			sb.append("failed to create test table ").append(tablename).append(": ").append(e.getMessage()).append("\n");
+			sb.append("failed to createStatement: ").append(e.getMessage()).append("\n");
 		}
 
-		try {
-			response = stmt.executeUpdate("CREATE TYPE xml EXTERNAL NAME xml");
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Creating type xml failed to return -2!! It returned: ").append(response).append("\n");
-		} catch (SQLException e) {
-			sb.append("failed to create type xml: ").append(e.getMessage()).append("\n");
-		}
+		String action = "Create";
+		final String objtype = "table";
+		handleExecuteDDL(stmt, action, objtype, "nopk_twoucs",
+			"CREATE TABLE nopk_twoucs (id INT NOT NULL UNIQUE, name VARCHAR(99) UNIQUE)");
+
+		handleExecuteDDL(stmt, action, objtype, "tmp_nopk_twoucs",
+			"CREATE LOCAL TEMP TABLE tmp_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE)");
+
+		handleExecuteDDL(stmt, action, objtype, "tmp_pk_uc",
+			"CREATE LOCAL TEMP TABLE tmp_pk_uc (id1 INT NOT NULL PRIMARY KEY, name1 VARCHAR(99) UNIQUE)");
+
+		handleExecuteDDL(stmt, action, objtype, "glbl_nopk_twoucs",
+			"CREATE GLOBAL TEMP TABLE glbl_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE)");
+
+		handleExecuteDDL(stmt, action, objtype, "glbl_pk_uc",
+			"CREATE GLOBAL TEMP TABLE glbl_pk_uc (id1 INT NOT NULL PRIMARY KEY, name1 VARCHAR(99) UNIQUE)");
+
+		handleExecuteDDL(stmt, action, "type", "xml", "CREATE TYPE xml EXTERNAL NAME xml");
 
 		try {
 			DatabaseMetaData dbmd = con.getMetaData();
@@ -914,42 +910,13 @@ final public class JDBC_API_Tester {
 		}
 
 		// cleanup created db objects
-		try {
-			tablename = "nopk_twoucs";
-			response = stmt.executeUpdate("DROP TABLE " + tablename);
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Dropping table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
-
-			tablename = "tmp_nopk_twoucs";
-			response = stmt.executeUpdate("DROP TABLE " + tablename);
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Dropping table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
-
-			tablename = "tmp_pk_uc";
-			response = stmt.executeUpdate("DROP TABLE " + tablename);
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Dropping table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
-
-			tablename = "glbl_nopk_twoucs";
-			response = stmt.executeUpdate("DROP TABLE " + tablename);
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Dropping table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
-
-			tablename = "glbl_pk_uc";
-			response = stmt.executeUpdate("DROP TABLE " + tablename);
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Dropping table ").append(tablename).append(" failed to return -2!! It returned: ").append(response).append("\n");
-		} catch (SQLException e) {
-			sb.append("failed to drop test table ").append(tablename).append(": ").append(e.getMessage()).append("\n");
-		}
-
-		try {
-			response = stmt.executeUpdate("DROP TYPE xml");
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append("Dropping type xml failed to return -2!! It returned: ").append(response).append("\n");
-		} catch (SQLException e) {
-			sb.append("failed to drop type: ").append(e.getMessage()).append("\n");
-		}
+		action = "Drop";
+		handleExecuteDDL(stmt, action, objtype, "nopk_twoucs", "DROP TABLE nopk_twoucs");
+		handleExecuteDDL(stmt, action, objtype, "tmp_nopk_twoucs", "DROP TABLE tmp_nopk_twoucs");
+		handleExecuteDDL(stmt, action, objtype, "tmp_pk_uc", "DROP TABLE tmp_pk_uc");
+		handleExecuteDDL(stmt, action, objtype, "glbl_nopk_twoucs", "DROP TABLE glbl_nopk_twoucs");
+		handleExecuteDDL(stmt, action, objtype, "glbl_pk_uc", "DROP TABLE glbl_pk_uc");
+		handleExecuteDDL(stmt, action, "type", "xml", "DROP TYPE xml");
 
 		closeStmtResSet(stmt, null);
 
@@ -1008,6 +975,385 @@ final public class JDBC_API_Tester {
 		rs.close();
 
 		compareExpectedOutput(methodnm, expected);
+	}
+
+	// same tests as done in clients/odbc/tests/ODBCmetadata.c
+	private void Test_DBCmetadata() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		DatabaseMetaData dbmd = null;
+		try {
+			stmt = con.createStatement();
+			dbmd = con.getMetaData();
+		} catch (SQLException e) {
+			sb.append("Failed to createStatement: ").append(e.getMessage()).append("\n");
+		}
+
+		String action = "Create";
+		handleExecuteDDL(stmt, action, "schema", "jdbctst", "CREATE SCHEMA jdbctst; SET SCHEMA jdbctst;");
+
+		String objtype = "table";
+		// create tables to populate data dictionary. Used for testing getTables(),
+		// getColumns(), getBestRowIdentifier(), getPrimaryKeys(),
+		// getExportedKeys(), getImportedKeys(), getCrossReference()
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk_uc",
+			"CREATE TABLE jdbctst.pk_uc (id1 INT NOT NULL PRIMARY KEY, name1 VARCHAR(99) UNIQUE);");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc",
+			"CREATE LOCAL TEMP TABLE tmp.tmp_pk_uc (id1 INT NOT NULL PRIMARY KEY, name1 VARCHAR(99) UNIQUE);");
+		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_pk_uc",
+			"CREATE GLOBAL TEMP TABLE tmp.glbl_pk_uc (id1 INT NOT NULL PRIMARY KEY, name1 VARCHAR(99) UNIQUE);");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs",
+			"CREATE TABLE jdbctst.nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE);");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_nopk_twoucs",
+			"CREATE LOCAL TEMP TABLE tmp.tmp_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE);");
+		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs",
+			"CREATE GLOBAL TEMP TABLE tmp.glbl_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE);");
+		/* next 3 tables copied from example in https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlforeignkeys-function?view=sql-server-ver15 */
+		handleExecuteDDL(stmt, action, objtype, "\"CUSTOMERS\"",
+			"CREATE TABLE \"CUSTOMERS\" (\"CUSTID\" INT PRIMARY KEY, \"NAME\" VARCHAR(60) NOT NULL, \"ADDRESS\" VARCHAR(90), \"PHONE\" VARCHAR(20));");
+		handleExecuteDDL(stmt, action, objtype, "\"ORDERS\"",
+			"CREATE TABLE \"ORDERS\" (\"ORDERID\" INT PRIMARY KEY, \"CUSTID\" INT NOT NULL REFERENCES \"CUSTOMERS\" (\"CUSTID\")" +
+			", \"OPENDATE\" DATE NOT NULL, \"SALESPERSON\" VARCHAR(60), \"STATUS\" VARCHAR(10) NOT NULL);");
+		handleExecuteDDL(stmt, action, objtype, "\"LINES\"",
+			"CREATE TABLE \"LINES\" (\"ORDERID\" INT NOT NULL REFERENCES \"ORDERS\" (\"ORDERID\"), \"LINES\" INT" +
+			", PRIMARY KEY (\"ORDERID\", \"LINES\"), \"PARTID\" INT NOT NULL, \"QUANTITY\" DECIMAL(9,3) NOT NULL);");
+		/* also test situation where one table has multiple fks to the same multi column pk */
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk2c",
+			"CREATE TABLE jdbctst.pk2c (pkc1 INT, pkc2 VARCHAR(99), name1 VARCHAR(99) UNIQUE, PRIMARY KEY (pkc2, pkc1));");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.fk2c",
+			"CREATE TABLE jdbctst.fk2c (fkc1 INT NOT NULL PRIMARY KEY, fkc2 VARCHAR(99), fkc3 INT" +
+			", FOREIGN KEY (fkc2, fkc1) REFERENCES jdbctst.pk2c (pkc2, pkc1) ON UPDATE CASCADE ON DELETE RESTRICT" +
+			", FOREIGN KEY (fkc2, fkc3) REFERENCES jdbctst.pk2c (pkc2, pkc1) ON UPDATE SET NULL ON DELETE NO ACTION);");
+
+		// create indexes to populate catalog. Used for testing getIndexInfo()
+		objtype = "index";
+		handleExecuteDDL(stmt, action, objtype, "pk_uc_i",
+			"CREATE INDEX pk_uc_i ON jdbctst.pk_uc (id1, name1);");
+		handleExecuteDDL(stmt, action, objtype, "tmp_pk_uc_i",
+			"CREATE INDEX tmp_pk_uc_i ON tmp.tmp_pk_uc (id1, name1);");
+		handleExecuteDDL(stmt, action, objtype, "glbl_pk_uc_i",
+			"CREATE INDEX glbl_pk_uc_i ON tmp.glbl_pk_uc (id1, name1);");
+		handleExecuteDDL(stmt, action, objtype, "nopk_twoucs_i",
+			"CREATE INDEX nopk_twoucs_i ON jdbctst.nopk_twoucs (id2, name2);");
+		handleExecuteDDL(stmt, action, objtype, "tmp_nopk_twoucs_i",
+			"CREATE INDEX tmp_nopk_twoucs_i ON tmp.tmp_nopk_twoucs (id2, name2);");
+		handleExecuteDDL(stmt, action, objtype, "glbl_nopk_twoucs_i",
+			"CREATE INDEX glbl_nopk_twoucs_i ON tmp.glbl_nopk_twoucs (id2, name2);");
+
+		// grant privileges to populate catalog. Used for testing getTablePrivileges() and getColumnPrivileges()
+		action = "grant";
+		objtype = "table";
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk_uc",
+			"GRANT SELECT ON TABLE jdbctst.pk_uc TO PUBLIC;");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk_uc",
+			"GRANT INSERT, UPDATE, DELETE ON TABLE jdbctst.pk_uc TO monetdb;");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs",
+			"GRANT SELECT (id2, name2), UPDATE (name2) ON TABLE jdbctst.nopk_twoucs TO monetdb;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc",
+			"GRANT INSERT, DELETE ON TABLE tmp.tmp_pk_uc TO monetdb;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc",
+			"GRANT SELECT (id1, name1), UPDATE (name1) ON TABLE tmp.tmp_pk_uc TO monetdb;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc ",
+			"GRANT INSERT, DELETE ON TABLE tmp.tmp_pk_uc  TO monetdb;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_pk_uc",
+			"GRANT SELECT (id1, name1), UPDATE (name1) ON TABLE tmp.glbl_pk_uc TO monetdb;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_nopk_twoucs",
+			"GRANT INSERT, DELETE ON TABLE tmp.tmp_nopk_twoucs TO monetdb;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_nopk_twoucs",
+			"GRANT SELECT (id2, name2), UPDATE (name2) ON TABLE tmp.tmp_nopk_twoucs TO monetdb;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs",
+			"GRANT DELETE, INSERT ON TABLE tmp.glbl_nopk_twoucs TO monetdb;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs",
+			"GRANT SELECT (id2, name2), UPDATE (name2) ON TABLE tmp.glbl_nopk_twoucs TO monetdb;");
+
+		// TODO add user procedures / functions to test getProcedures() and getProcedureColumns() more
+
+		// set COMMENT ON schema, tables, columns, indexes, procedures and functions to fetch (and test) data in the REMARKS result column
+		action = "comment on";
+		handleExecuteDDL(stmt, action, "schema", "jdbctst",
+			"COMMENT ON SCHEMA jdbctst IS 'jdbctst schema comment';");
+		objtype = "table";
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk_uc",
+			"COMMENT ON TABLE jdbctst.pk_uc IS 'jdbctst.pk_uc table comment';");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs",
+			"COMMENT ON TABLE jdbctst.nopk_twoucs IS 'jdbctst.nopk_twoucs table comment';");
+		objtype = "column";
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs.id2",
+			"COMMENT ON COLUMN jdbctst.nopk_twoucs.id2 IS 'jdbctst.nopk_twoucs.id2 column comment';");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs.name2",
+			"COMMENT ON COLUMN jdbctst.nopk_twoucs.name2 IS 'jdbctst.nopk_twoucs.name2 column comment';");
+		objtype = "index";
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk_uc_i",
+			"COMMENT ON INDEX jdbctst.pk_uc_i IS 'jdbctst.pk_uc_i index comment';");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs_i",
+			"COMMENT ON INDEX jdbctst.nopk_twoucs_i IS 'jdbctst.nopk_twoucs_i index comment';");
+		objtype = "procedure";
+		handleExecuteDDL(stmt, action, objtype, "sys.analyze()",
+			"COMMENT ON PROCEDURE sys.analyze() IS 'sys.analyze() procedure comment';");
+		objtype = "function";
+		handleExecuteDDL(stmt, action, objtype, "sys.sin(double)",
+			"COMMENT ON FUNCTION sys.sin(double) IS 'sys.sin(double) function comment';");
+		handleExecuteDDL(stmt, action, objtype, "sys.env()",
+			"COMMENT ON FUNCTION sys.env() IS 'sys.env() function comment';");
+		handleExecuteDDL(stmt, action, objtype, "sys.statistics()",
+			"COMMENT ON FUNCTION sys.statistics() IS 'sys.statistics() function comment';");
+
+		try {
+			// query the catalog by calling DatabaseMetaData methods
+			compareResultSet(dbmd.getCatalogs(), "getCatalogs()",
+			"Resultset with 1 columns\n" +
+			"TABLE_CAT\n" +
+			"char(1)\n");
+
+			compareResultSet(dbmd.getSchemas(null, "jdbctst"), "getSchemas(null, jdbctst)",
+			"Resultset with 2 columns\n" +
+			"TABLE_SCHEM	TABLE_CATALOG\n" +
+			"varchar(7)	char(1)\n" +
+			"jdbctst	null\n");
+
+			compareResultSet(dbmd.getTables(null, "jdbctst", null, null), "getTables(null, jdbctst, null, null)",
+			"Resultset with 10 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"char(1)	varchar(7)	varchar(11)	varchar(5)	varchar(33)	char(1)	char(1)	char(1)	char(1)	char(1)\n" +
+			"null	jdbctst	CUSTOMERS	TABLE	null	null	null	null	null	null\n" +
+			"null	jdbctst	LINES	TABLE	null	null	null	null	null	null\n" +
+			"null	jdbctst	ORDERS	TABLE	null	null	null	null	null	null\n" +
+			"null	jdbctst	fk2c	TABLE	null	null	null	null	null	null\n" +
+			"null	jdbctst	nopk_twoucs	TABLE	jdbctst.nopk_twoucs table comment	null	null	null	null	null\n" +
+			"null	jdbctst	pk2c	TABLE	null	null	null	null	null	null\n" +
+			"null	jdbctst	pk_uc	TABLE	jdbctst.pk_uc table comment	null	null	null	null	null\n");
+
+			compareResultSet(dbmd.getTables(null, "jdbctst", "schemas", null), "getTables(null, jdbctst, schemas, null)",
+			"Resultset with 10 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"char(1)	varchar	varchar	varchar	varchar	char(1)	char(1)	char(1)	char(1)	char(1)\n");
+
+			compareResultSet(dbmd.getColumns(null, "jdbctst", "pk\\_uc", null), "getColumns(null, jdbctst, pk\\_uc, null)",
+			"Resultset with 24 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
+			"char(1)	varchar(7)	varchar(5)	varchar(5)	int	varchar(7)	int	int	int	int	int	varchar	varchar	int	int	int	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(2)\n" +
+			"null	jdbctst	pk_uc	id1	4	int	32	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
+			"null	jdbctst	pk_uc	name1	12	varchar	99	0	0	0	1	null	null	0	0	99	2	YES	null	null	null	null	NO	NO\n");
+
+			compareResultSet(dbmd.getPrimaryKeys(null, "jdbctst", "pk\\_uc"), "getPrimaryKeys(null, jdbctst, pk\\_uc)",
+			"Resultset with 6 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME\n" +
+			"char(1)	varchar(7)	varchar(5)	varchar(3)	smallint	varchar(14)\n" +
+			"null	jdbctst	pk_uc	id1	1	pk_uc_id1_pkey\n");
+
+/* MvD: hier verder */
+			compareResultSet(dbmd.getPrimaryKeys(null, "tmp", "tmp_pk_uc"), "getPrimaryKeys(null, tmp, tmp_pk_uc)",
+			"Resultset with 6 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME\n" +
+			"char(1)	varchar(3)	varchar(9)	varchar(3)	smallint	varchar(18)\n" +
+			"null	tmp	tmp_pk_uc	id1	1	tmp_pk_uc_id1_pkey\n");
+
+			compareResultSet(dbmd.getPrimaryKeys(null, "tmp", "glbl_pk_uc"), "getPrimaryKeys(null, tmp, glbl_pk_uc)",
+			"Resultset with 6 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	KEY_SEQ	PK_NAME\n" +
+			"char(1)	varchar(3)	varchar(10)	varchar(3)	smallint	varchar(19)\n" +
+			"null	tmp	glbl_pk_uc	id1	1	glbl_pk_uc_id1_pkey\n");
+
+			compareResultSet(dbmd.getExportedKeys(null, "sys", "table\\_types"), "getExportedKeys(null, sys, table\\_types)",
+			"Resultset with 14 columns\n" +
+			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n" +
+			"char(1)	varchar	varchar	varchar	char(1)	varchar	varchar	varchar	smallint	smallint	smallint	varchar	varchar	smallint\n");
+
+			compareResultSet(dbmd.getCrossReference(null, "sys", "tables", null, "sys", "table\\_types"), "getCrossReference(null, sys, tables, null, sys, table\\_types)",
+			"Resultset with 14 columns\n" +
+			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n" +
+			"char(1)	varchar	varchar	varchar	char(1)	varchar	varchar	varchar	smallint	smallint	smallint	varchar	varchar	smallint\n");
+
+			compareResultSet(dbmd.getImportedKeys(null, "sys", "table\\_types"), "getImportedKeys(null, sys, table\\_types)",
+			"Resultset with 14 columns\n" +
+			"PKTABLE_CAT	PKTABLE_SCHEM	PKTABLE_NAME	PKCOLUMN_NAME	FKTABLE_CAT	FKTABLE_SCHEM	FKTABLE_NAME	FKCOLUMN_NAME	KEY_SEQ	UPDATE_RULE	DELETE_RULE	FK_NAME	PK_NAME	DEFERRABILITY\n" +
+			"char(1)	varchar	varchar	varchar	char(1)	varchar	varchar	varchar	smallint	smallint	smallint	varchar	varchar	smallint\n");
+
+			compareResultSet(dbmd.getIndexInfo(null, "sys", "key_types", false, false), "getIndexInfo(null, sys, key_types, false, false)",
+			"Resultset with 13 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
+			"char(1)	varchar(3)	varchar(9)	boolean	char(1)	varchar(30)	tinyint	smallint	varchar(13)	char(1)	int	int	char(1)\n" +
+			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	3	0	null\n" +
+			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	3	0	null\n");
+
+			compareResultSet(dbmd.getIndexInfo(null, "tmp", "tmp_pk_uc", false, false), "getIndexInfo(null, tmp, tmp_pk_uc, false, false)",
+			"Resultset with 13 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
+			"char(1)	varchar(3)	varchar(9)	boolean	char(1)	varchar(22)	tinyint	smallint	varchar(5)	char(1)	int	int	char(1)\n" +
+			"null	tmp	tmp_pk_uc	false	null	tmp_pk_uc_id1_pkey	2	1	id1	null	0	0	null\n" +
+			"null	tmp	tmp_pk_uc	false	null	tmp_pk_uc_name1_unique	2	1	name1	null	0	0	null\n" +
+			"null	tmp	tmp_pk_uc	true	null	tmp_pk_uc_i	2	1	id1	null	0	0	null\n" +
+			"null	tmp	tmp_pk_uc	true	null	tmp_pk_uc_i	2	2	name1	null	0	0	null\n");
+
+			compareResultSet(dbmd.getIndexInfo(null, "tmp", "glbl_pk_uc", false, false), "getIndexInfo(null, tmp, glbl_pk_uc, false, false)",
+			"Resultset with 13 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
+			"char(1)	varchar(3)	varchar(10)	boolean	char(1)	varchar(23)	tinyint	smallint	varchar(5)	char(1)	int	int	char(1)\n" +
+			"null	tmp	glbl_pk_uc	false	null	glbl_pk_uc_id1_pkey	2	1	id1	null	0	0	null\n" +
+			"null	tmp	glbl_pk_uc	false	null	glbl_pk_uc_name1_unique	2	1	name1	null	0	0	null\n" +
+			"null	tmp	glbl_pk_uc	true	null	glbl_pk_uc_i	2	1	id1	null	0	0	null\n" +
+			"null	tmp	glbl_pk_uc	true	null	glbl_pk_uc_i	2	2	name1	null	0	0	null\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "function_languages", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, sys, function_languages, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(11)	int	varchar(8)	int	int	smallint	smallint\n" +
+			"2	language_id	5	smallint	16	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "jdbctst", "nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, jdbctst, nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id2	4	int	32	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "jdbctst", "nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
+						"getBestRowIdentifier(null, jdbctst, nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id2	4	int	32	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_pk_uc", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, tmp, tmp_pk_uc, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id1	4	int	32	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id2	4	int	32	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
+						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id2	4	int	32	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_pk_uc", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, tmp, glbl_pk_uc, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id1	4	int	32	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, tmp, glbl_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id2	4	int	32	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
+						"getBestRowIdentifier(null, tmp, glbl_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(3)	int	varchar(3)	int	int	smallint	smallint\n" +
+			"2	id2	4	int	32	0	0	1\n");
+
+			// also test a table without pk or uc, it should return a row for each column
+			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "schemas", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, sys, schemas, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(13)	int	varchar(7)	int	int	smallint	smallint\n" +
+			"2	id	4	int	32	0	0	1\n" +
+			"2	name	12	varchar	1024	0	0	1\n" +
+			"2	authorization	4	int	32	0	0	1\n" +
+			"2	owner	4	int	32	0	0	1\n" +
+			"2	system	16	boolean	1	0	0	1\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "_tables", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, sys, _tables, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(13)	int	varchar(8)	int	int	smallint	smallint\n" +
+			"2	id	4	int	32	0	0	1\n" +
+			"2	name	12	varchar	1024	0	0	1\n" +
+			"2	schema_id	4	int	32	0	0	1\n" +
+			"2	query	12	varchar	1048576	0	0	1\n" +
+			"2	type	5	smallint	16	0	0	1\n" +
+			"2	system	16	boolean	1	0	0	1\n" +
+			"2	commit_action	5	smallint	16	0	0	1\n" +
+			"2	access	5	smallint	16	0	0	1\n");
+
+			// also test a view (without pk or uc of course), it should return no rows
+			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "tables", DatabaseMetaData.bestRowTransaction, true),
+						"getBestRowIdentifier(null, sys, tables, DatabaseMetaData.bestRowTransaction, true)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar	int	varchar	int	int	smallint	smallint\n");
+
+			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "table\\_types", DatabaseMetaData.bestRowTransaction, false),
+						"getBestRowIdentifier(null, sys, table\\_types, DatabaseMetaData.bestRowTransaction, false)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	varchar(13)	int	varchar(8)	int	int	smallint	smallint\n" +
+			"2	table_type_id	5	smallint	16	0	0	1\n");
+
+			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table\\_types"), "getTablePrivileges(null, sys, table\\_types)",
+			"Resultset with 7 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
+			"char(1)	varchar(3)	varchar(11)	varchar(7)	varchar(6)	varchar(6)	varchar(2)\n" +
+			"null	sys	table_types	monetdb	public	SELECT	NO\n");
+
+			compareResultSet(dbmd.getColumnPrivileges(null, "sys", "table\\_types", null), "getColumnPrivileges(null, sys, table\\_types, null)",
+			"Resultset with 8 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
+			"char(1)	varchar	varchar	varchar	varchar	varchar	varchar	varchar\n");
+
+			sb.setLength(0);	// clear the output log buffer
+		} catch (SQLException e) {
+			sb.setLength(0);	// clear the output log buffer
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		// cleanup created db objects
+		action = "Drop";
+		objtype = "index";
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk_uc_i", "DROP INDEX jdbctst.pk_uc_i;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc_i;", "DROP INDEX tmp.tmp_pk_uc_i;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_pk_uc_i", "DROP INDEX tmp.glbl_pk_uc_i;");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs_i", "DROP INDEX jdbctst.nopk_twoucs_i;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_nopk_twoucs_i", "DROP INDEX tmp.tmp_nopk_twoucs_i;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs_i", "DROP INDEX tmp.glbl_nopk_twoucs_i;");
+		objtype = "table";
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk_uc", "DROP TABLE jdbctst.pk_uc;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc", "DROP TABLE tmp.tmp_pk_uc;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_pk_uc", "DROP TABLE tmp.glbl_pk_uc;");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs", "DROP TABLE jdbctst.nopk_twoucs;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_nopk_twoucs", "DROP TABLE tmp.tmp_nopk_twoucs;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs", "DROP TABLE tmp.glbl_nopk_twoucs;");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.\"LINES\"", "DROP TABLE jdbctst.\"LINES\";");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.\"ORDERS\"", "DROP TABLE jdbctst.\"ORDERS\";");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.\"CUSTOMERS\"", "DROP TABLE jdbctst.\"CUSTOMERS\";");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.fk2c", "DROP TABLE jdbctst.fk2c;");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk2c", "DROP TABLE jdbctst.pk2c;");
+
+		// All tables in schema jdbctst should now be gone, else we missed some DROP statements
+		try {
+			compareResultSet(dbmd.getTables(null, "jdbctst", "%%", null), "getTables(null, jdbctst, '%%', null)",
+			"Resultset with 10 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"char(1)	varchar	varchar	varchar	varchar	char(1)	char(1)	char(1)	char(1)	char(1)\n");
+			sb.setLength(0);	// clear the output log buffer
+		} catch (SQLException e) {
+			sb.setLength(0);	// clear the output log buffer
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		handleExecuteDDL(stmt, action, "schema", "jdbctst", "SET SCHEMA sys; DROP SCHEMA jdbctst;");
+
+		closeStmtResSet(stmt, null);
+
+		compareExpectedOutput("Test_Dmetadata", "");
 	}
 
 	private void Test_FetchSize() {
