@@ -131,16 +131,21 @@ public final class BufferedMCLReader extends BufferedReader {
 	 * TODO(Wouter): should probably not have to be synchronized.
 	 */
 	final public synchronized String waitForPrompt() throws IOException {
-		final StringBuilder ret = new StringBuilder(128);
+		StringBuilder errmsgs = null;
 		String tmp;
 
 		while (lineType != LineType.PROMPT) {
 			tmp = readLine();
 			if (tmp == null)
 				throw new IOException("Connection to server lost!");
-			if (lineType == LineType.ERROR)
-				ret.append('\n').append(tmp.substring(1));
+			if (lineType == LineType.ERROR) {
+				if (errmsgs == null)
+					errmsgs = new StringBuilder(128);
+				errmsgs.append('\n').append(tmp.substring(1).trim());
+			}
 		}
-		return ret.length() == 0 ? null : ret.toString().trim();
+		if (errmsgs == null)
+			return null;
+		return errmsgs.toString();
 	}
 }
