@@ -141,11 +141,11 @@ public final class BufferedMCLReader extends BufferedReader {
 			if (lineType == LineType.ERROR) {
 				if (errmsgs == null)
 					errmsgs = new StringBuilder(128);
-				errmsgs.append('\n').append(tmp.substring(1).trim());
+				errmsgs.append('\n').append(tmp.substring(1));
 			}
 		}
 		if (errmsgs == null)
 			return null;
-		return errmsgs.toString();
+		return errmsgs.toString().trim();
 	}
 }
