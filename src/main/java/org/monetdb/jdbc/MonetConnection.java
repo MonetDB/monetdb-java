@@ -290,6 +290,7 @@ public class MonetConnection
 		final HandshakeOptions handshakeOptions = new HandshakeOptions();
 		handshakeOptions.set(Setting.TimeZone, offsetSeconds);
 		handshakeOptions.set(Setting.ReplySize, defaultFetchSize);
+//		handshakeOptions.set(Setting.SizeHeader, 1);
 		server.setHandshakeOptions(handshakeOptions);
 
 		// we're debugging here... uhm, should be off in real life
