@@ -210,6 +210,13 @@ public class MonetConnection
 		if (hash != null)
 			conn_props.setProperty("hash", hash);
 
+		String autocommit_prop = props.getProperty("autocommit");
+		boolean initial_autocommit = true;
+		if (autocommit_prop != null) {
+			initial_autocommit = Boolean.parseBoolean(autocommit_prop);
+			conn_props.setProperty("initial_autocommit", Boolean.toString(initial_autocommit));
+		}
+
 		final String fetchsize_prop = props.getProperty("fetchsize");
 		if (fetchsize_prop != null) {
 			try {
@@ -288,6 +295,7 @@ public class MonetConnection
 		int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
 		int offsetSeconds = offsetMillis / 1000;
 		final HandshakeOptions handshakeOptions = new HandshakeOptions();
+		handshakeOptions.set(Setting.AutoCommit, initial_autocommit ? 1 : 0);
 		handshakeOptions.set(Setting.TimeZone, offsetSeconds);
 		handshakeOptions.set(Setting.ReplySize, defaultFetchSize);
 //		handshakeOptions.set(Setting.SizeHeader, 1);
@@ -388,8 +396,9 @@ public class MonetConnection
 
 		// the following initialisers are only valid when the language is SQL...
 		if (lang == LANG_SQL) {
-			// enable auto commit
-			setAutoCommit(true);
+			if (handshakeOptions.mustSend(Setting.AutoCommit)) {
+				setAutoCommit(handshakeOptions.get(Setting.AutoCommit) != 0);
+			}
 
 			// set our time zone on the server, if we haven't already
 			if (handshakeOptions.mustSend(Setting.TimeZone)) {
@@ -1822,6 +1831,7 @@ public class MonetConnection
 			name.equals("hash") ||
 			name.equals("treat_blob_as_binary") ||
 			name.equals("treat_clob_as_varchar") ||
+			name.equals("autocommit") ||
 			name.equals("so_timeout") ||
 			name.equals("fetchsize");	// only supported by servers from version 11.41.1 onwards
 	}

@@ -195,7 +195,7 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 			return null;
 
 		final String[] boolean_choices = new String[] { "true", "false" };
-		final DriverPropertyInfo[] dpi = new DriverPropertyInfo[9];	// we currently support 9 connection properties
+		final DriverPropertyInfo[] dpi = new DriverPropertyInfo[10];	// we currently support 10 connection properties
 
 		DriverPropertyInfo prop = new DriverPropertyInfo("user", info != null ? info.getProperty("user") : null);
 		prop.required = true;
@@ -247,13 +247,11 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
 		dpi[8] = prop;
 
-/* next property is no longer supported in: new MonetConnection(props)
-		prop = new DriverPropertyInfo("follow_redirects", "true");
+		prop = new DriverPropertyInfo("autocommit", "true");
 		prop.required = false;
-		prop.description = "Whether redirects issued by the server should be followed";
+		prop.description = "Whether the connection should start in auto-commit mode";
 		prop.choices = boolean_choices;
 		dpi[9] = prop;
-*/
 
 		return dpi;
 	}

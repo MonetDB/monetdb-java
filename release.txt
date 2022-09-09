@@ -31,6 +31,7 @@ Supported connection properties are:
 	language=<sql or mal>              default is: sql
 	fetchsize=<nr of rows>             default is: 250; -1 means fetch everything at once
 	debug=true                         default is: false
+	autocommit=false                   default is: true
 	logfile=<name of logfile>
 	hash=<SHA512, SHA384, SHA256 or SHA1>
 
