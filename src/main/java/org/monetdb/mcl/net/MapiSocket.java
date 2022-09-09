@@ -562,7 +562,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 							} catch (NumberFormatException e) {
 								throw new MCLParseException("Invalid handshake level: " + chaltok[6]);
 							}
-							response += handshakeOptions.formatResponse(level);
+							response += handshakeOptions.formatHandshakeResponse(level);
 							break;
 						}
 					}

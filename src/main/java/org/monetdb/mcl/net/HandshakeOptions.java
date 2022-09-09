@@ -8,98 +8,96 @@
 
 package org.monetdb.mcl.net;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /** Keep track of MAPI handshake options.
  *
  * Recent server versions (from 2021) allow you to send configuration information during
  * the authentication handshake so no additional round trips are necessary
  * when that has completed.
  *
- * This class keeps track of the options to send, and whether they have already
- * been sent.
+ * This class keeps track of the values themselves, and also of whether or not they should still be sent.
  */
 final public class HandshakeOptions {
+	HashMap<Setting,Integer> options = new HashMap<>();
+	int handshakeLevel = 0;
 
-	// public Boolean autoCommit;
-	int replySize;
-	// public Integer ColumnarProtocol;
-	int timeZone;
-
-	boolean mustSendReplySize;
-	boolean mustSendTimeZone;
-
-	public int getReplySize() {
-		return replySize;
+	public void set(Setting setting, int value) {
+		options.put(setting, value);
 	}
 
-	public void setReplySize(int replySize) {
-		this.replySize = replySize;
-		this.mustSendReplySize = true;
+	public Integer get(Setting setting) {
+		return options.get(setting);
 	}
 
-	public boolean mustSendReplySize() {
-		return mustSendReplySize;
+	public boolean wasSentInHandshake(Setting setting) {
+		return setting.isSupported(this.handshakeLevel);
 	}
 
-	public void mustSendReplySize(boolean mustSendReplySize) {
-		this.mustSendReplySize = mustSendReplySize;
+	public boolean mustSend(Setting setting) {
+		if (wasSentInHandshake(setting)) {
+			return false;
+		}
+		Integer value = options.get(setting);
+		return value != null && value != setting.defaultValue;
 	}
 
-	public int getTimeZone() {
-		return timeZone;
-	}
-
-	public void setTimeZone(int timeZone) {
-		this.timeZone = timeZone;
-		this.mustSendTimeZone = true;
-	}
-
-	public boolean mustSendTimeZone() {
-		return mustSendTimeZone;
-	}
-
-	public void mustSendTimeZone(boolean mustSendTimeZone) {
-		this.mustSendTimeZone = mustSendTimeZone;
-	}
-
-	public String formatResponse(int serverLevel) {
+	public String formatHandshakeResponse(int serverLevel) {
 		StringBuilder opts = new StringBuilder(100);
-		if (mustSendReplySize()) {
-			formatOption(opts, Level.ReplySize, serverLevel, replySize);
-			mustSendReplySize(false);
+
+		for (Map.Entry<Setting, Integer> entry: options.entrySet()) {
+			Setting setting = entry.getKey();
+			Integer value = entry.getValue();
+			if (setting.isSupported(serverLevel)) {
+				if (opts.length() > 0) {
+					opts.append(",");
+				}
+				opts.append(setting.field);
+				opts.append("=");
+				opts.append(value);
+			}
 		}
-		if (mustSendTimeZone()) {
-			formatOption(opts, Level.TimeZone, serverLevel, timeZone);
-			mustSendTimeZone(false);
-		}
+
+		this.handshakeLevel = serverLevel;
 
 		return opts.toString();
 	}
 
-	private void formatOption(StringBuilder opts, Level level, int serverLevel, int value) {
-		if (!level.isSupported(serverLevel))
-			return;
-		if (opts.length() > 0) {
-			opts.append(",");
-		}
-		opts.append(level.field);
-		opts.append("=");
-		opts.append(value);
-	}
-
-	public enum Level {
-		ReplySize("reply_size", 2),
-		TimeZone("time_zone", 5);
+	public enum Setting {
+		AutoCommit("auto_commit", 1, 1),
+		ReplySize("reply_size", 2, 100),
+		SizeHeader("size_header", "sizeheader", 3, 0),
+		// ColumnarProtocol("columnar_protocol", 4),
+		TimeZone("time_zone", 5, 0),
+		;
 
 		private final int level;
 		private final String field;
+		private final String xcommand;
+		private final int defaultValue;
 
-		Level(String field, int level) {
+		Setting(String field, int level, int defaultValue) {
+			this(field, field, level, defaultValue);
+		}
+
+		Setting(String field, String xcommand, int level, int defaultValue) {
 			this.field = field;
+			this.xcommand = xcommand;
 			this.level = level;
+			this.defaultValue = defaultValue;
 		}
 
 		public boolean isSupported(int serverLevel) {
 			return this.level < serverLevel;
+		}
+
+		public String getXCommand() {
+			return xcommand;
+		}
+
+		public Integer getDefaultValue() {
+			return defaultValue;
 		}
 	}
 }

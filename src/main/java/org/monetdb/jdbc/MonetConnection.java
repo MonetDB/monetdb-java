@@ -37,6 +37,7 @@ import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
 import org.monetdb.mcl.io.LineType;
 import org.monetdb.mcl.net.HandshakeOptions;
+import org.monetdb.mcl.net.HandshakeOptions.Setting;
 import org.monetdb.mcl.net.MapiSocket;
 import org.monetdb.mcl.parser.HeaderLineParser;
 import org.monetdb.mcl.parser.MCLParseException;
@@ -287,8 +288,8 @@ public class MonetConnection
 		int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
 		int offsetSeconds = offsetMillis / 1000;
 		final HandshakeOptions handshakeOptions = new HandshakeOptions();
-		handshakeOptions.setTimeZone(offsetSeconds);
-		handshakeOptions.setReplySize(defaultFetchSize);
+		handshakeOptions.set(Setting.TimeZone, offsetSeconds);
+		handshakeOptions.set(Setting.ReplySize, defaultFetchSize);
 		server.setHandshakeOptions(handshakeOptions);
 
 		// we're debugging here... uhm, should be off in real life
@@ -370,11 +371,18 @@ public class MonetConnection
 			lang = LANG_UNKNOWN;
 		}
 
-		if (!handshakeOptions.mustSendReplySize()) {
-			// Initially, it had to be sent. If it no more needs to be sent now,
-			// it must have been sent during the auth challenge/response.
-			// Record the value it was set to.
-			this.curReplySize = handshakeOptions.getReplySize();
+		// The reply size is checked before every query and adjusted if
+		// necessary. Update our current belief of what the server is set to.
+		if (handshakeOptions.wasSentInHandshake(HandshakeOptions.Setting.ReplySize)) {
+			this.curReplySize = handshakeOptions.get(HandshakeOptions.Setting.ReplySize);
+		}
+
+		for (Setting setting : new Setting[] { Setting.SizeHeader }) {
+			if (handshakeOptions.mustSend(setting)) {
+				Integer value = handshakeOptions.get(setting); // guaranteed by mustSend to be non-null
+				String command = String.format("%s %d", setting.getXCommand(), value);
+				sendControlCommand(command);
+			}
 		}
 
 		// the following initialisers are only valid when the language is SQL...
@@ -383,10 +391,10 @@ public class MonetConnection
 			setAutoCommit(true);
 
 			// set our time zone on the server, if we haven't already
-			if (handshakeOptions.mustSendTimeZone()) {
+			if (handshakeOptions.mustSend(Setting.TimeZone)) {
 				final StringBuilder tz = new StringBuilder(64);
 				tz.append("SET TIME ZONE INTERVAL '");
-				int offsetMinutes = handshakeOptions.getTimeZone() / 60;
+				int offsetMinutes = handshakeOptions.get(Setting.TimeZone) / 60;
 				if (offsetMinutes < 0) {
 					tz.append('-');
 					offsetMinutes = -offsetMinutes; // make it positive
