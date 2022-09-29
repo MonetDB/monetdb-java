@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Sep 29 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Removed creation and distribution of monetdb-mcl-1.##.jre8.jar file.
+  Programmers who used this jar file should use monetdb-jdbc-3.#.jre8.jar file.
+
 * Wed Aug 24 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved DatabaseMetaData.getBestRowIdentifier(). When there are multiple
   unique constraints and no pkey for a table it used to return the columns
