@@ -2282,7 +2282,7 @@ public class MonetConnection
 				 * to allocate to store the entire result.  However, if
 				 * the user didn't set a cache size, as in this case, we
 				 * need to stick to our defaults. */
-				cacheSize = MonetConnection.DEF_FETCHSIZE;
+				cacheSize = defaultFetchSize;
 				cacheSizeSetExplicitly = false;
 			} else {
 				cacheSize = parent.cachesize;
