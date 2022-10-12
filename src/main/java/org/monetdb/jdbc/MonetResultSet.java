@@ -1902,7 +1902,7 @@ public class MonetResultSet
 						type = getClassForType(JdbcSQLTypes[column - 1]);
 					}
 					if (type != null) {
-						return type.getName();
+						return type.getCanonicalName();
 					}
 					throw new SQLException("column type mapping null: " + MonetDBType, "M0M03");
 				} catch (IndexOutOfBoundsException e) {
