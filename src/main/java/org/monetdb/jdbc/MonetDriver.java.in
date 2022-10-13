@@ -38,7 +38,7 @@ import java.util.Properties;
  *</pre>
  *
  * @author Fabian Groffen
- * @version @JDBC_MAJOR@.@JDBC_MINOR@ (@JDBC_VER_SUFFIX@) based on MCL v@MCL_MAJOR@.@MCL_MINOR@"
+ * @version @JDBC_MAJOR@.@JDBC_MINOR@ (@JDBC_VER_SUFFIX@)
  */
 public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.monetdb.jdbc.MonetDriver extends this class */
 	// the url kind will be jdbc:monetdb://<host>[:<port>]/<database>
@@ -318,7 +318,7 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 	 * @return the version string
 	 */
 	public static final String getDriverVersion() {
-		return "@JDBC_MAJOR@.@JDBC_MINOR@ (@JDBC_VER_SUFFIX@ based on MCL v@MCL_MAJOR@.@MCL_MINOR@)";
+		return "@JDBC_MAJOR@.@JDBC_MINOR@ (@JDBC_VER_SUFFIX@)";
 	}
 
 	/** A static Map containing the mapping between MonetDB types and Java SQL types */

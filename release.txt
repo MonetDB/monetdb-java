@@ -1,5 +1,5 @@
 RELEASE NOTES
-MonetDB JDBC driver version 3.2 (Liberica/MCL-1.21)
+MonetDB JDBC driver version 3.2 (Liberica)
 Release date: 2022-01-27
 
 The Java Database Connectivity (JDBC) API provides universal data access from
@@ -265,8 +265,8 @@ Notes and Tips for Java Programmers using MonetDB JDBC driver:
   See also the example Java JDBC program on:
   https://www.monetdb.org/Documentation/SQLreference/Programming/JDBC
 
-Warning:
- The current implementation of the MonetDB JDBC driver is *not*
+WARNING:
+ The current implementation of the MonetDB JDBC driver is *NOT*
  multi-thread safe. If your program uses multiple threads concurrently on
  the same Connection (so one MapiSocket), this may lead to incorrect behavior
  and results (due to race conditions).
@@ -276,4 +276,4 @@ Warning:
 Note: as of Febr 2021 (monetdb-jdbc-3.0.jre8.jar) we compile all
  the java sources to target: Java SE 8 (profile compact2), so
  you need a JRE/JDK JVM of version 8 or higher to use it.
- 
+
