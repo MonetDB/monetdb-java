@@ -99,6 +99,7 @@ final public class JDBC_API_Tester {
 		jt.BugResultSetMetaData_Bug_6183();
 		jt.BugSetQueryTimeout_Bug_3357();
 		jt.SQLcopyinto();
+		jt.DecimalPrecisionAndScale();
 		/* run next long running test (11 minutes) only before a new release */
 	/*	jt.Test_PSlargeamount(); */
 
@@ -5718,6 +5719,100 @@ final public class JDBC_API_Tester {
 		sb.append("CopyInto STDIN end\n");
 	}
 
+	private void DecimalPrecisionAndScale() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			stmt = con.createStatement();
+			rs = stmt.executeQuery(
+				"select" +
+				"  cast(123456789   as DECIMAL(18,0)) as dec1800" +
+				", cast(123456789.0 as DECIMAL(18,1)) as dec1801" +
+				", cast(123456789.0 as DECIMAL(18,2)) as dec1802" +
+				", cast(123456789.0 as DECIMAL(18,3)) as dec1803" +
+				", cast(123456789.0 as DECIMAL(18,4)) as dec1804" +
+				", cast(123456789.0 as DECIMAL(18,5)) as dec1805" +
+				", cast(123456789.0 as DECIMAL(18,6)) as dec1806" +
+				", cast(123456789.0 as DECIMAL(18,7)) as dec1807" +
+				", cast(123456789.0 as DECIMAL(18,8)) as dec1808" +
+				", cast(123456789.0 as DECIMAL(18,9)) as dec1809" +
+				", cast(12345678.9 as DECIMAL(18,10)) as dec1810" +
+				", cast(1234567.89 as DECIMAL(18,11)) as dec1811" +
+				", cast(123456.789 as DECIMAL(18,12)) as dec1812;");
+			if (rs != null) {
+				ResultSetMetaData rsmd = rs.getMetaData();
+				final int rscolcnt = rsmd.getColumnCount();
+				sb.append("Query has ").append(rscolcnt).append(" columns:\n");
+				sb.append("colnr\tlabel\ttypenm\tdisplaylength\tprecision\tscale\n");
+				for (int col = 1; col <= rscolcnt; col++) {
+					sb.append("col ").append(col);
+					sb.append("\t").append(rsmd.getColumnLabel(col));
+					sb.append("\t").append(rsmd.getColumnTypeName(col));
+					sb.append("\t").append(rsmd.getColumnDisplaySize(col));
+					sb.append("\t").append(rsmd.getPrecision(col));
+					sb.append("\t").append(rsmd.getScale(col));
+					sb.append("\n");
+				}
+				sb.append("Values\n");
+				while (rs.next()) {
+					sb.append("colnr\tasString\tasBigDecimal\n");
+					for (int col = 1; col <= rscolcnt; col++) {
+						sb.append("col ").append(col);
+						sb.append("\t").append(rs.getString(col));
+						sb.append("\t").append(rs.getBigDecimal(col));
+						sb.append("\n");
+					}
+					sb.append("\n");
+				}
+				rs.close();
+				rs = null;
+			}
+		} catch (SQLException se) {
+			sb.append("SQLException: ").append(se.getMessage()).append("\n");
+		} catch (Exception e) {
+			sb.append("Exception: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, rs);
+
+		// The returned precision (19 or 20) and scale (0) values are not optimal.
+		// This is because we only have the mapi passed on "length" value to determine the precision (and scale defaults to 0) instead of the "typesizes" values from mapi header.
+		// see src/main/java/org/monetdb/mcl/parser/HeaderLineParser.java
+		// The precision should be 18 and the scale should be from 0 to 12.
+		compareExpectedOutput("DecimalPrecisionAndScale()",
+				"Query has 13 columns:\n" +
+				"colnr	label	typenm	displaylength	precision	scale\n" +
+				"col 1	dec1800	decimal	19	19	0\n" +
+				"col 2	dec1801	decimal	20	20	0\n" +
+				"col 3	dec1802	decimal	20	20	0\n" +
+				"col 4	dec1803	decimal	20	20	0\n" +
+				"col 5	dec1804	decimal	20	20	0\n" +
+				"col 6	dec1805	decimal	20	20	0\n" +
+				"col 7	dec1806	decimal	20	20	0\n" +
+				"col 8	dec1807	decimal	20	20	0\n" +
+				"col 9	dec1808	decimal	20	20	0\n" +
+				"col 10	dec1809	decimal	20	20	0\n" +
+				"col 11	dec1810	decimal	20	20	0\n" +
+				"col 12	dec1811	decimal	20	20	0\n" +
+				"col 13	dec1812	decimal	20	20	0\n" +
+				"Values\n" +
+				"colnr	asString	asBigDecimal\n" +
+				"col 1	123456789	123456789\n" +
+				"col 2	123456789.0	123456789.0\n" +
+				"col 3	123456789.00	123456789.00\n" +
+				"col 4	123456789.000	123456789.000\n" +
+				"col 5	123456789.0000	123456789.0000\n" +
+				"col 6	123456789.00000	123456789.00000\n" +
+				"col 7	123456789.000000	123456789.000000\n" +
+				"col 8	123456789.0000000	123456789.0000000\n" +
+				"col 9	123456789.00000000	123456789.00000000\n" +
+				"col 10	123456789.000000000	123456789.000000000\n" +
+				"col 11	12345678.9000000000	12345678.9000000000\n" +
+				"col 12	1234567.89000000000	1234567.89000000000\n" +
+				"col 13	123456.789000000000	123456.789000000000\n" +
+				"\n");
+	}
 
 	// some private utility methods for showing table content and params meta data
 	private void showTblContents(String tblnm) {
