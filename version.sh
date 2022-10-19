@@ -7,7 +7,7 @@
 # Copyright 1997 - July 2008 CWI, August 2008 - 2022 MonetDB B.V.
 
 if [[ -z $1 ]] ; then
-	echo "Usage: $0 [-w] <(jdbc|mcl)> <(major|minor|suffix)=newversion> [...]"
+	echo "Usage: $0 [-w] jdbc <(major|minor|suffix)=newversion> [...]"
 	echo "where -w activates actual write of changes"
 	exit -1
 fi
@@ -36,10 +36,6 @@ case $1 in
 	jdbc)
 		TYPE=JDBC
 		FILES="monetdb-jdbc-XXX.jar"
-		;;
-	mcl)
-		TYPE=MCL
-		FILES="monetdb-mcl-XXX.jar"
 		;;
 	*)
 		echo "invalid type: $1"
