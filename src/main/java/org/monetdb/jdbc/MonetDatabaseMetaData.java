@@ -3882,7 +3882,8 @@ public class MonetDatabaseMetaData
 			"('password', 128, '', 'password for user name to login to MonetDB server')," +
 			"('language', 16, 'sql', 'language (sql or mal) used to parse commands in MonetDB server')," +
 			"('database', 1024, 'demo', 'name of database. It matches the dbfarm subdirectory name')," +
-			"('debug', 5, 'false', 'boolean flag true or false')," +
+			"('autocommit', 5, 'true', 'boolean flag true or false to turn autocommit on or off')," +
+			"('debug', 5, 'false', 'boolean flag true or false to turn debug logging on or off')," +
 			"('logfile', 1024, 'monet_######.log', 'name of logfile used when debug is enabled')," +
 			"('hash', 128, '', 'hash methods list to use in server connection. Supported are SHA512, SHA384, SHA256 and SHA1')," +
 			"('treat_blob_as_binary', 5, 'true', 'should blob columns be mapped to Types.VARBINARY instead of Types.BLOB in ResultSets and PreparedStatements')," +

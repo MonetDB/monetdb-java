@@ -214,7 +214,7 @@ public class MonetConnection
 		boolean initial_autocommit = true;
 		if (autocommit_prop != null) {
 			initial_autocommit = Boolean.parseBoolean(autocommit_prop);
-			conn_props.setProperty("initial_autocommit", Boolean.toString(initial_autocommit));
+			conn_props.setProperty("autocommit", Boolean.toString(initial_autocommit));
 		}
 
 		final String fetchsize_prop = props.getProperty("fetchsize");
@@ -300,6 +300,7 @@ public class MonetConnection
 		handshakeOptions.set(Setting.ReplySize, defaultFetchSize);
 //		handshakeOptions.set(Setting.SizeHeader, 1);
 		server.setHandshakeOptions(handshakeOptions);
+		autoCommit = initial_autocommit;
 
 		// we're debugging here... uhm, should be off in real life
 		if (debug) {
