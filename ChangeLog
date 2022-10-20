@@ -1,6 +1,13 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Oct 20 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved implementation of method ResultSetMetaData.getPrecision(). It
+  now returns more accurate values for columns of type DECIMAL, NUMERIC,
+  CHAR, VARCHAR, CLOB, JSON, URL and BLOB.
+- Improved implementation of method ResultSetMetaData.getScale(). It now
+  returns more accurate values for columns of type DECIMAL and NUMERIC.
+
 * Thu Sep 29 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Removed creation and distribution of monetdb-mcl-1.##.jre8.jar file.
   Programmers who used this jar file should use monetdb-jdbc-3.#.jre8.jar file.

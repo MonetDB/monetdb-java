@@ -22,6 +22,7 @@ public final class HeaderLineParser extends MCLParser {
 	public final static int LENGTH = 2;
 	public final static int TABLE  = 3;	// may include the schema name
 	public final static int TYPE   = 4;
+	public final static int TYPESIZES = 5;	// precision and scale
 
 	 /** The int values found while parsing.  Public, you may touch it. */
 	public final int intValues[];
@@ -42,7 +43,7 @@ public final class HeaderLineParser extends MCLParser {
 	 * given during construction is used for allocation of the backing array.
 	 *
 	 * @param source a String which should be parsed
-	 * @return the type of then parsed header line
+	 * @return the type of the parsed header line
 	 * @throws MCLParseException if an error occurs during parsing
 	 */
 	@Override
@@ -105,6 +106,15 @@ public final class HeaderLineParser extends MCLParser {
 				 && chrLine[++i] == 't' && chrLine[++i] == 'h') {
 					getIntValues(chrLine, 2, pos - 3);
 					type = LENGTH;
+				}
+				break;
+			case 9:
+				// System.out.println("In HeaderLineParser.parse() case 9: source line = " + source);
+				// source.regionMatches(pos + 1, "typesizes", 0, 9)
+				if (chrLine[ i ] == 't' && chrLine[++i] == 'y' && chrLine[++i] == 'p' && chrLine[++i] == 'e'
+				 && chrLine[++i] == 's' && chrLine[++i] == 'i' && chrLine[++i] == 'z' && chrLine[++i] == 'e' && chrLine[++i] == 's') {
+					getValues(chrLine, 2, pos - 3);	/* these contain precision and scale values (separated by a space), so read them as strings */
+					type = TYPESIZES;
 				}
 				break;
 			case 10:

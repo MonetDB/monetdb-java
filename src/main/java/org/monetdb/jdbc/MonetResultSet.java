@@ -1253,16 +1253,16 @@ public class MonetResultSet
 		return new rsmdw() {
 			private final String[] schemas = (header != null) ? header.getSchemaNames() : null;
 			private final String[] tables = (header != null) ? header.getTableNames() : null;
+			private final int[] lengths = (header != null) ? header.getColumnLengths() : null;
+			private final int[] precisions = (header != null) ? header.getColumnPrecisions() : null;
+			private final int[] scales = (header != null) ? header.getColumnScales() : null;
 			private final MonetConnection conn = (MonetConnection)getStatement().getConnection();
 
-			// for the methods: getPrecision(), getScale(), isNullable() and isAutoIncrement(), we use
-			// caches to store precision, scale, isNullable and isAutoincrement values for each resultset column
-			// so they do not need to queried and fetched from the server again and again.
+			// For the methods: isNullable() and isAutoIncrement(), we need to query the server.
+			// To do this efficiently we query many columns combined in one query and cache the results.
 			private final int array_size = columns.length + 1;  // add 1 as in JDBC columns start from 1 (array from 0).
 			private final boolean[] _is_queried = new boolean[array_size];
 			private final boolean[] _is_fetched = new boolean[array_size];
-			private final int[] _precision	= new int[array_size];
-			private final int[] _scale	= new int[array_size];
 			private final int[] _isNullable = new int[array_size];
 			private final boolean[] _isAutoincrement = new boolean[array_size];
 
@@ -1297,28 +1297,26 @@ public class MonetResultSet
 					return;
 
 				// apparently no data could be fetched for this resultset column, fall back to defaults
-				_precision[column] = 0;
-				_scale[column] = 0;
 				_isNullable[column] = columnNullableUnknown;
 				_isAutoincrement[column] = false;
 			}
 
 			/**
-			 * A private method to fetch the precision, scale, isNullable and isAutoincrement values
+			 * A private method to fetch the isNullable and isAutoincrement values
 			 * for many fully qualified columns combined in one SQL query to reduce the number of queries sent.
 			 * As fetching this meta information from the server per column is costly we combine the querying of
-			 * the precision, scale, isNullable and isAutoincrement values and cache it in internal arrays.
-			 * We also do this for many (up to 50) columns combined in one query to reduce
+			 * the isNullable and isAutoincrement values and cache it in internal arrays.
+			 * We also do this for many columns combined in one query to reduce
 			 * the number of queries needed for fetching this metadata for all resultset columns.
-			 * Many generic JDBC database tools (e.g. SQuirreL) request this meta data for each column of each resultset,
-			 * so these optimisations reduces the number of meta data queries significantly.
+			 * Many generic JDBC database tools (e.g. SQuirreL, DBeaver) request this meta data for each
+			 * column of each resultset, so these optimisations reduces the number of meta data queries significantly.
 			 */
 			private final void fetchManyColumnsInfo(final int column) throws SQLException {
 				// for debug: System.out.println("fetchManyColumnsInfo(" + column + ")");
 
-				// Most queries have less than 50 resultset columns
-				// So 50 is a good balance between speedup (up to 49x) and size of query sent to server
-				final int MAX_COLUMNS_PER_QUERY = 50;
+				// Most queries have less than 80 resultset columns
+				// So 80 is a good balance between speedup (up to 79x) and size of generated query sent to server
+				final int MAX_COLUMNS_PER_QUERY = 80;
 
 				final StringBuilder query = new StringBuilder(600 + (MAX_COLUMNS_PER_QUERY * 150));
 				/* next SQL query is a simplified version of query in MonetDatabaseMetaData.getColumns(), to fetch only the needed attributes of a column */
@@ -1326,8 +1324,6 @@ public class MonetResultSet
 					"s.\"name\" AS schnm, " +
 					"t.\"name\" AS tblnm, " +
 					"c.\"name\" AS colnm, " +
-					"c.\"type_digits\", " +
-					"c.\"type_scale\", " +
 					"cast(CASE c.\"null\" WHEN true THEN ").append(ResultSetMetaData.columnNullable)
 						.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls)
 						.append(" ELSE ").append(ResultSetMetaData.columnNullableUnknown)
@@ -1338,7 +1334,7 @@ public class MonetResultSet
 				"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 				"WHERE ");
 
-				/* combine the conditions for multiple (up to 50) columns into the WHERE-clause */
+				/* combine the conditions for multiple (up to 80) columns into the WHERE-clause */
 				String schName = null;
 				String tblName = null;
 				String colName = null;
@@ -1346,8 +1342,6 @@ public class MonetResultSet
 				for (int col = column; col < array_size && queriedcolcount < MAX_COLUMNS_PER_QUERY; col++) {
 					if (_is_fetched[col] != true) {
 						if (_is_queried[col] != true) {
-							_precision[col] = 0;
-							_scale[col] = 0;
 							_isNullable[col] = columnNullableUnknown;
 							_isAutoincrement[col] = false;
 							schName = getSchemaName(col);
@@ -1402,10 +1396,8 @@ public class MonetResultSet
 											if (schName != null && schName.equals(rsSchema)) {
 												// found matching entry
 												// for debug: System.out.println("Found match at [" + col + "] for " + schName + "." + tblName + "." + colName);
-												_precision[col] = rs.getInt(4);	// col 4 is "type_digits" (or "COLUMN_SIZE")
-												_scale[col] = rs.getInt(5);		// col 5 is "type_scale" (or "DECIMAL_DIGITS")
-												_isNullable[col] = rs.getInt(6);	// col 6 is nullable (or "NULLABLE")
-												_isAutoincrement[col] = rs.getBoolean(7); // col 7 is isautoincrement (or "IS_AUTOINCREMENT")
+												_isNullable[col] = rs.getInt(4);	// col 4 is nullable (or "NULLABLE")
+												_isAutoincrement[col] = rs.getBoolean(5); // col 5 is isautoincrement (or "IS_AUTOINCREMENT")
 												_is_fetched[col] = true;
 												queriedcolcount--;
 												// we found the match, exit the for-loop
@@ -1592,9 +1584,9 @@ public class MonetResultSet
 			@Override
 			public int getColumnDisplaySize(final int column) throws SQLException {
 				checkColumnIndexValidity(column);
-				if (header != null) {
+				if (lengths != null) {
 					try {
-						return header.getColumnLengths()[column - 1];
+						return lengths[column - 1];
 					} catch (IndexOutOfBoundsException e) {
 						throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 					}
@@ -1652,11 +1644,6 @@ public class MonetResultSet
 			 * For the ROWID datatype, this is the length in bytes.
 			 * 0 is returned for data types where the column size is not applicable.
 			 *
-			 * This method is currently very expensive for DECIMAL, NUMERIC
-			 * CHAR, VARCHAR, CLOB, BLOB, VARBINARY and BINARY result
-			 * column types as it needs to retrieve the information
-			 * from the database using an SQL meta data query.
-			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return precision
 			 * @throws SQLException if a database access error occurs
@@ -1678,35 +1665,62 @@ public class MonetResultSet
 					case Types.FLOAT:
 					case Types.DOUBLE:
 						return 15;
-
 					case Types.DECIMAL:
 					case Types.NUMERIC:
-						// these data types do not have a fixed precision, max precision however is 38
-						// we need to fetch the defined precision with an SQL query !
+						// these data types have a variable precision (max precision is 38)
+						if (precisions != null) {
+							try {
+								return precisions[column - 1];
+							} catch (IndexOutOfBoundsException e) {
+								throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+							}
+						}
+						return 18;
 					case Types.CHAR:
 					case Types.VARCHAR:
 					case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
 					case Types.CLOB:
+						// these data types have a variable length
+						if (precisions != null) {
+							try {
+								int prec = precisions[column - 1];
+								if (prec <= 0) {
+									// apparently no positive precision or max length could be fetched
+									// use columnDisplaySize() value as fallback
+									prec = getColumnDisplaySize(column);
+									precisions[column - 1] = prec;
+								}
+								return prec;
+							} catch (IndexOutOfBoundsException e) {
+								throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+							}
+						}
+						// apparently no precisions array is available
+						// use columnDisplaySize() value as alternative
+						return getColumnDisplaySize(column);
 					case Types.BINARY:
 					case Types.VARBINARY:
 					case Types.BLOB:
-						// these data types also do not have a fixed length
-						try {
-							if (_is_fetched[column] != true) {
-								fetchColumnInfo(column);
+						// these data types have a variable length
+						if (precisions != null) {
+							try {
+								int prec = precisions[column - 1];
+								if (prec <= 0) {
+									// apparently no positive precision or max length could be fetched
+									// use columnDisplaySize() value as fallback
+									// It expect number of bytes, not number of hex chars
+									prec = (getColumnDisplaySize(column) / 2) +1;
+									precisions[column - 1] = prec;
+								}
+								return prec;
+							} catch (IndexOutOfBoundsException e) {
+								throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 							}
-							if (_precision[column] == 0) {
-								// apparently no precision or max length could be fetched
-								// use columnDisplaySize() value as alternative
-								_precision[column] = getColumnDisplaySize(column);
-								if (tpe == Types.BLOB || tpe == Types.VARBINARY || tpe == Types.BINARY)
-									// These expect number of bytes, not number of hex chars
-									_precision[column] = (_precision[column] / 2) +1;
-							}
-							return _precision[column];
-						} catch (IndexOutOfBoundsException e) {
-							throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 						}
+						// apparently no precisions array is available
+						// use columnDisplaySize() value as alternative
+						// It expect number of bytes, not number of hex chars
+						return (getColumnDisplaySize(column) / 2) +1;
 					case Types.DATE:
 						return 10;	// 2020-10-08
 					case Types.TIME:
@@ -1730,10 +1744,6 @@ public class MonetResultSet
 			 * the decimal point.
 			 * 0 is returned for data types where the scale is not applicable.
 			 *
-			 * This method is currently very expensive for DECIMAL and NUMERIC
-			 * result column types as it needs to retrieve the information
-			 * from the database using an SQL meta data query.
-			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return scale
 			 * @throws SQLException if a database access error occurs
@@ -1744,30 +1754,40 @@ public class MonetResultSet
 					case Types.DECIMAL:
 					case Types.NUMERIC:
 					{
-						// special handling for: day_interval and sec_interval as these are mapped to these result types (see MonetDriver typemap)
-						// they appear to have a fixed scale (tested against Oct2020)
+						// these data types may have a variable scale, max scale is 38
+
+						// Special handling for: day_interval and sec_interval as they
+						// are mapped to these column types (see MonetDriver typemap)
+						// They appear to have a fixed scale (tested against Oct2020)
 						final String monettype = getColumnTypeName(column);
 						if ("day_interval".equals(monettype))
 							return 0;
 						if ("sec_interval".equals(monettype))
 							return 3;
 
-						// these data types may have a variable scale, max scale is 38
-						try {
-							if (_is_fetched[column] != true) {
-								fetchColumnInfo(column);
+						if (scales != null) {
+							try {
+								return scales[column - 1];
+							} catch (IndexOutOfBoundsException e) {
+								throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 							}
-							return _scale[column];
-						} catch (IndexOutOfBoundsException e) {
-							throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 						}
+						return 0;
 					}
 					case Types.TIME:
 					case Types.TIME_WITH_TIMEZONE:
 					case Types.TIMESTAMP:
 					case Types.TIMESTAMP_WITH_TIMEZONE:
+						if (scales != null) {
+							try {
+								return scales[column - 1];
+							} catch (IndexOutOfBoundsException e) {
+								throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+							}
+						}
 						// support microseconds, so scale 6
 						return 6;	// 21:51:34.399753
+
 					// All other types should return 0
 				//	case Types.BIGINT:
 				//	case Types.INTEGER:
@@ -1795,7 +1815,7 @@ public class MonetResultSet
 			 *
 			 * This method is currently very expensive as it needs to
 			 * retrieve the information from the database using an SQL
-			 * meta data query (for each column).
+			 * meta data query.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return the nullability status of the given column; one of

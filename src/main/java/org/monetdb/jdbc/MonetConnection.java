@@ -421,6 +421,9 @@ public class MonetConnection
 				tz.append(offsetMinutes).append("' HOUR TO MINUTE");
 				sendIndependentCommand(tz.toString());
 			}
+
+			// set sizeheader to 1 to enable sending "typesizes" info by the server (see mapi_set_size_header() in mapi.c)
+			sendControlCommand("sizeheader 1");
 		}
 
 		// we're absolutely not closed, since we're brand new
@@ -2199,8 +2202,11 @@ public class MonetConnection
 	 * Response look like:
 	 * <pre>
 	 * &amp;1 1 28 2 10
-	 * # name,     value # name
-	 * # varchar,  varchar # type
+	 * % sys.props,	sys.props # table_name
+	 * % name,	value # name
+	 * % varchar,	int # type
+	 * % 15,	3 # length
+	 * % 60 0,	32 0 # typesizes
 	 * </pre>
 	 * there the first line consists out of<br />
 	 * <tt>&amp;"qt" "id" "tc" "cc" "rc"</tt>.
@@ -2215,16 +2221,23 @@ public class MonetConnection
 		private int cacheSize;
 		/** The table ID of this result */
 		public final int id;
+
+		/** arrays for the resultset columns metadata */
 		/** The names of the columns in this result */
 		private String[] name;
 		/** The types of the columns in this result */
 		private String[] type;
 		/** The max string length for each column in this result */
 		private int[] columnLengths;
+		/** The precision for each column in this result */
+		private int[] colPrecisions;
+		/** The scale for each column in this result */
+		private int[] colScales;
 		/** The table for each column in this result */
 		private String[] tableNames;
 		/** The schema for each column in this result */
 		private String[] schemaNames;
+
 		/** The query sequence number */
 		private final int seqnr;
 		/** A List of result blocks (chunks of size fetchSize/cacheSize) */
@@ -2252,7 +2265,7 @@ public class MonetConnection
 		private static final int TYPES  = 1;
 		private static final int TABLES = 2;
 		private static final int LENS   = 3;
-
+		private static final int TYPESIZES = 4;
 
 		/**
 		 * Sole constructor, which requires a MonetConnection parent to
@@ -2275,7 +2288,7 @@ public class MonetConnection
 				final int seq)
 			throws SQLException
 		{
-			isSet = new boolean[4];
+			isSet = new boolean[5];
 			this.parent = parent;
 			if (parent.cachesize == 0) {
 				/* Below we have to calculate how many "chunks" we need
@@ -2321,15 +2334,22 @@ public class MonetConnection
 		 * @return a non-null String if the header cannot be parsed or
 		 *         is unknown
 		 */
-		// {{{ addLine
 		@Override
 		public String addLine(final String tmpLine, final LineType linetype) {
-			if (isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES]) {
+			// System.out.println("In ResultSetResponse.addLine(line, type: " + linetype + ") line: " + tmpLine);
+			if (linetype == LineType.RESULT ||
+			    (isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES] && isSet[TYPESIZES])) {
+				if (!isSet[TYPESIZES])
+					// this is needed to get proper output when processing a: DEBUG SQL-statement
+					isSet[TYPESIZES] = true;
 				return resultBlocks[0].addLine(tmpLine, linetype);
 			}
 
-			if (linetype != LineType.HEADER)
-				return "header expected, got: " + tmpLine;
+			if (linetype != LineType.HEADER) {
+				if (!isSet[TYPESIZES])
+					isSet[TYPESIZES] = true;
+				return "Header expected, got: " + tmpLine;
+			}
 
 			// depending on the name of the header, we continue
 			try {
@@ -2337,15 +2357,15 @@ public class MonetConnection
 					case HeaderLineParser.NAME:
 						name = hlp.values.clone();
 						isSet[NAMES] = true;
-					break;
+						break;
 					case HeaderLineParser.LENGTH:
 						columnLengths = hlp.intValues.clone();
 						isSet[LENS] = true;
-					break;
+						break;
 					case HeaderLineParser.TYPE:
 						type = hlp.values.clone();
 						isSet[TYPES] = true;
-					break;
+						break;
 					case HeaderLineParser.TABLE:
 					{
 						tableNames = hlp.values.clone();
@@ -2368,8 +2388,38 @@ public class MonetConnection
 							}
 						}
 						isSet[TABLES] = true;
+						break;
 					}
-					break;
+					case HeaderLineParser.TYPESIZES:
+					{
+						// System.out.println("In ResultSetResponse.addLine() case HeaderLineParser.TYPESIZES: values: " + hlp.values[0]);
+						final int array_size = hlp.values.length;
+						colPrecisions = new int[array_size];
+						colScales = new int[array_size];
+						// extract the precision and scale integer numbers from the string
+						for (int i = 0; i < array_size; i++) {
+							String ps = hlp.values[i];
+							if (ps != null) {
+								try {
+									int separator = ps.indexOf(' ');
+									if (separator > 0) {
+										colPrecisions[i] = Integer.parseInt(ps.substring(0, separator));
+										colScales[i] = Integer.parseInt(ps.substring(separator +1));
+									} else {
+										colPrecisions[i] = Integer.parseInt(ps);
+										colScales[i] = 0;
+									}
+								} catch (NumberFormatException nfe) {
+									return nfe.getMessage();
+								}
+							} else {
+								colPrecisions[i] = 1;
+								colScales[i] = 0;
+							}
+						}
+						isSet[TYPESIZES] = true;
+						break;
+					}
 				}
 			} catch (MCLParseException e) {
 				return e.getMessage();
@@ -2378,7 +2428,6 @@ public class MonetConnection
 			// all is well
 			return null;
 		}
-		// }}}
 
 		/**
 		 * Returns whether this ResultSetResponse needs more lines.
@@ -2387,11 +2436,10 @@ public class MonetConnection
 		 */
 		@Override
 		public boolean wantsMore() {
-			if (isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES]) {
+			if (isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES] && isSet[TYPESIZES]) {
 				return resultBlocks[0].wantsMore();
-			} else {
-				return true;
 			}
+			return true;
 		}
 
 		/**
@@ -2447,6 +2495,7 @@ public class MonetConnection
 			if (!isSet[TYPES])  err.append("type header missing\n");
 			if (!isSet[TABLES]) err.append("table name header missing\n");
 			if (!isSet[LENS])   err.append("column width header missing\n");
+			if (!isSet[TYPESIZES]) err.append("column precision and scale header missing\n");
 			if (err.length() > 0)
 				throw new SQLException(err.toString(), "M0M10");
 		}
@@ -2471,30 +2520,48 @@ public class MonetConnection
 		}
 
 		/**
-		 * Returns the tables of the columns
+		 * Returns the table names of the columns
 		 *
-		 * @return the tables of the columns
+		 * @return the table names of the columns
 		 */
 		String[] getTableNames() {
 			return tableNames;
 		}
 
 		/**
-		 * Returns the schemas of the columns
+		 * Returns the schema names of the columns
 		 *
-		 * @return the schemas of the columns
+		 * @return the schema names of the columns
 		 */
 		String[] getSchemaNames() {
 			return schemaNames;
 		}
 
 		/**
-		 * Returns the lengths of the columns
+		 * Returns the display lengths of the columns
 		 *
-		 * @return the lengths of the columns
+		 * @return the display lengths of the columns
 		 */
 		int[] getColumnLengths() {
 			return columnLengths;
+		}
+
+		/**
+		 * Returns the precisions of the columns
+		 *
+		 * @return the precisions of the columns, it can return null
+		 */
+		int[] getColumnPrecisions() {
+			return colPrecisions;
+		}
+
+		/**
+		 * Returns the scales of the columns (0 when scale is not applicable)
+		 *
+		 * @return the scales of the columns, it can return null
+		 */
+		int[] getColumnScales() {
+			return colScales;
 		}
 
 		/**
@@ -2637,6 +2704,8 @@ public class MonetConnection
 			name = null;
 			type = null;
 			columnLengths = null;
+			colPrecisions = null;
+			colScales = null;
 			tableNames = null;
 			schemaNames = null;
 			resultBlocks = null;
@@ -3212,7 +3281,7 @@ public class MonetConnection
 							}
 							break;
 						} // end of switch (linetype)
-					} // end of while (linetype != BufferedMCLReader.PROMPT)
+					} // end of while (linetype != LineType.PROMPT)
 				} // end of synchronized (server)
 
 				if (error != null) {
