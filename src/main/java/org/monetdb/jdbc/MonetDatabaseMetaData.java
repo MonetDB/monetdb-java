@@ -3437,15 +3437,6 @@ public class MonetDatabaseMetaData
 		return con;
 	}
 
-	/* I don't find these in the spec!?! */
-	public boolean rowChangesAreDetected(final int type) {
-		return false;
-	}
-
-	public boolean rowChangesAreVisible(final int type) {
-		return false;
-	}
-
 	//== 1.4 methods (JDBC 3)
 
 	/**
