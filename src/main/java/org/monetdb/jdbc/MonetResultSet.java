@@ -1276,7 +1276,7 @@ public class MonetResultSet
 			}
 
 			/**
-			 * A private method to fetch the precision, scale, isNullable and isAutoincrement values
+			 * A private method to fetch the isNullable and isAutoincrement values
 			 * combined for a specific column.
 			 * The fetched values are stored in the above array caches.
 			 */
@@ -1499,11 +1499,8 @@ public class MonetResultSet
 			/**
 			 * Indicates whether the designated column can be used in a
 			 * where clause.
-			 * It is unknown to me what kind ot columns they regard to,
-			 * as I think all columns are useable in a where clause.
-			 * Returning true for all here, for the time being.
-			 * Possible thought; maybe they want to know here if it's a
-			 * real column existing in a table or not...
+			 *
+			 * Returning true for all here, even for CLOB, BLOB.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return true
@@ -1650,8 +1647,7 @@ public class MonetResultSet
 			 */
 			@Override
 			public int getPrecision(final int column) throws SQLException {
-				final int tpe = getColumnType(column);
-				switch (tpe) {
+				switch (getColumnType(column)) {
 					case Types.BIGINT:
 						return 19;
 					case Types.INTEGER:
@@ -1846,7 +1842,7 @@ public class MonetResultSet
 			@Override
 			public String getCatalogName(final int column) throws SQLException {
 				checkColumnIndexValidity(column);
-				return null;	// MonetDB does NOT support catalogs
+				return null;	// MonetDB does NOT support catalog qualifiers
 
 			}
 
@@ -1932,8 +1928,10 @@ public class MonetResultSet
 
 			/**
 			 * Gets the designated column's suggested title for use in
-			 * printouts and displays. This is currently equal to
-			 * getColumnName().
+			 * printouts and displays. The suggested title is usually
+			 * specified by the SQL AS clause. If a SQL AS is not specified,
+			 * the value returned from getColumnLabel will be the same as
+			 * the value returned by the getColumnName method.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return the suggested column title
