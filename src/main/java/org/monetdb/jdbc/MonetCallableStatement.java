@@ -67,7 +67,7 @@ import java.util.Map;
  * @version 1.1
  */
 
-public class MonetCallableStatement
+public final class MonetCallableStatement
 	extends MonetPreparedStatement
 	implements CallableStatement
 {

@@ -24,7 +24,7 @@ import java.sql.Types;
  * @author Martin van Dinther
  * @version 1.0
  */
-public class MonetDatabaseMetaData
+public final class MonetDatabaseMetaData
 	extends MonetWrapper
 	implements DatabaseMetaData
 {
