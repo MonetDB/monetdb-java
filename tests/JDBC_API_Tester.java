@@ -2030,12 +2030,12 @@ final public class JDBC_API_Tester {
 			"rsmd. 6 columns:\n" +
 			"RCol 1\n" +
 			"  classname     java.lang.Short\n" +
-			"  displaysize   8\n" +
+			"  displaysize   3\n" +
 			"  label         intnull\n" +
 			"  name          intnull\n" +
 			"  type          -6\n" +
 			"  typename      tinyint\n" +
-			"  precision     8\n" +
+			"  precision     3\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
 			"  schemaname    \n" +
@@ -2051,12 +2051,12 @@ final public class JDBC_API_Tester {
 			"  writable      false\n" +
 			"RCol 2\n" +
 			"  classname     java.lang.Integer\n" +
-			"  displaysize   32\n" +
+			"  displaysize   10\n" +
 			"  label         myint\n" +
 			"  name          myint\n" +
 			"  type          4\n" +
 			"  typename      int\n" +
-			"  precision     32\n" +
+			"  precision     10\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
 			"  schemaname    \n" +
@@ -2072,12 +2072,12 @@ final public class JDBC_API_Tester {
 			"  writable      false\n" +
 			"RCol 3\n" +
 			"  classname     java.lang.Double\n" +
-			"  displaysize   53\n" +
+			"  displaysize   15\n" +
 			"  label         mydouble\n" +
 			"  name          mydouble\n" +
 			"  type          8\n" +
 			"  typename      double\n" +
-			"  precision     53\n" +
+			"  precision     15\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
 			"  schemaname    \n" +
@@ -2158,7 +2158,7 @@ final public class JDBC_API_Tester {
 			"Param 1\n" +
 			"  nullable  2 (UNKNOWN)\n" +
 			"  signed    true\n" +
-			"  precision 32\n" +
+			"  precision 10\n" +
 			"  scale     0\n" +
 			"  type      4\n" +
 			"  typename  int\n" +
@@ -2853,7 +2853,7 @@ final public class JDBC_API_Tester {
 			"Param 1\n" +
 			"  nullable  2 (UNKNOWN)\n" +
 			"  signed    true\n" +
-			"  precision 32\n" +
+			"  precision 10\n" +
 			"  scale     0\n" +
 			"  type      4\n" +
 			"  typename  int\n" +
@@ -2862,7 +2862,7 @@ final public class JDBC_API_Tester {
 			"Param 2\n" +
 			"  nullable  2 (UNKNOWN)\n" +
 			"  signed    true\n" +
-			"  precision 53\n" +
+			"  precision 15\n" +
 			"  scale     0\n" +
 			"  type      8\n" +
 			"  typename  double\n" +

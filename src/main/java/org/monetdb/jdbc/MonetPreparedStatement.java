@@ -376,7 +376,7 @@ public class MonetPreparedStatement
 				 * query call to pull the IS_AUTOINCREMENT value for this column.
 				 * See also ResultSetMetaData.isAutoIncrement()
 				 */
-				// For now we simply allways return false.
+				// For now we simply always return false.
 				return false;
 			}
 
@@ -384,7 +384,7 @@ public class MonetPreparedStatement
 			 * Indicates whether a column's case matters.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return false
+			 * @return true for all character string columns (except inet and uuid) else false
 			 */
 			@Override
 			public boolean isCaseSensitive(final int column) throws SQLException {
@@ -395,7 +395,7 @@ public class MonetPreparedStatement
 						return true;
 					case Types.VARCHAR:
 						final String monettype = getColumnTypeName(column);
-						if (monettype != null) {
+						if (monettype != null && monettype.length() == 4) {
 							// data of type inet or uuid is not case sensitive
 							if ("inet".equals(monettype)
 							 || "uuid".equals(monettype))
@@ -448,18 +448,19 @@ public class MonetPreparedStatement
 			public boolean isSigned(final int column) throws SQLException {
 				// we can hardcode this, based on the colum type
 				switch (getColumnType(column)) {
-					case Types.NUMERIC:
-					case Types.DECIMAL:
 					case Types.TINYINT:
 					case Types.SMALLINT:
 					case Types.INTEGER:
 					case Types.REAL:
 					case Types.FLOAT:
 					case Types.DOUBLE:
+					case Types.DECIMAL:
+					case Types.NUMERIC:
 						return true;
 					case Types.BIGINT:
 						final String monettype = getColumnTypeName(column);
-						if (monettype != null) {
+						if (monettype != null && monettype.length() == 3) {
+							// data of type oid or ptr is not signed
 							if ("oid".equals(monettype)
 							 || "ptr".equals(monettype))
 								return false;
@@ -467,10 +468,10 @@ public class MonetPreparedStatement
 						return true;
 				//	All other types should return false
 				//	case Types.BOOLEAN:
-				//	case Types.DATE:
-				//	case Types.TIME:
+				//	case Types.DATE:	// can year be negative?
+				//	case Types.TIME:	// can time be negative?
 				//	case Types.TIME_WITH_TIMEZONE:
-				//	case Types.TIMESTAMP:
+				//	case Types.TIMESTAMP:	// can year be negative?
 				//	case Types.TIMESTAMP_WITH_TIMEZONE:
 					default:
 						return false;
@@ -488,15 +489,11 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public int getColumnDisplaySize(final int column) throws SQLException {
-				try {
-					return digits[getColumnIdx(column)];
-				} catch (IndexOutOfBoundsException e) {
-					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
-				}
+				return getPrecision(column);
 			}
 
 			/**
-			 * Get the designated column's table's schema.
+			 * Get the designated column's schema name.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return schema name or "" if not applicable
@@ -527,10 +524,15 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Get the designated column's number of decimal digits.
-			 * This method is currently very expensive as it needs to
-			 * retrieve the information from the database using an SQL
-			 * query.
+			 * Get the designated column's specified column size.
+			 * For numeric data, this is the maximum precision.
+			 * For character data, this is the length in characters.
+			 * For datetime datatypes, this is the length in characters
+			 * of the String representation (assuming the maximum
+			 * allowed precision of the fractional seconds component).
+			 * For binary data, this is the length in bytes.
+			 * For the ROWID datatype, this is the length in bytes.
+			 * 0 is returned for data types where the column size is not applicable.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return precision
@@ -538,18 +540,70 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public int getPrecision(final int column) throws SQLException {
-				try {
-					return digits[getColumnIdx(column)];
-				} catch (IndexOutOfBoundsException e) {
-					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+				switch (getColumnType(column)) {
+					case Types.BIGINT:
+						return 19;
+					case Types.INTEGER:
+						return 10;
+					case Types.SMALLINT:
+						return 5;
+					case Types.TINYINT:
+						return 3;
+					case Types.REAL:
+						return 7;
+					case Types.FLOAT:
+					case Types.DOUBLE:
+						return 15;
+					case Types.DECIMAL:
+					case Types.NUMERIC:
+						// these data types have a variable precision (max precision is 38)
+						try {
+							return digits[getColumnIdx(column)];
+						} catch (IndexOutOfBoundsException e) {
+							throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+						}
+					case Types.CHAR:
+					case Types.VARCHAR:
+					case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+					case Types.CLOB:
+						// these data types have a variable length
+						try {
+							return digits[getColumnIdx(column)];
+						} catch (IndexOutOfBoundsException e) {
+							throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+						}
+					case Types.BINARY:
+					case Types.VARBINARY:
+					case Types.BLOB:
+						// these data types have a variable length
+						// It expect number of bytes, not number of hex chars
+						try {
+							return digits[getColumnIdx(column)];
+						} catch (IndexOutOfBoundsException e) {
+							throw MonetResultSet.newSQLInvalidColumnIndexException(column);
+						}
+					case Types.DATE:
+						return 10;	// 2020-10-08
+					case Types.TIME:
+						return 15;	// 21:51:34.399753
+					case Types.TIME_WITH_TIMEZONE:
+						return 21;	// 21:51:34.399753+02:00
+					case Types.TIMESTAMP:
+						return 26;	// 2020-10-08 21:51:34.399753
+					case Types.TIMESTAMP_WITH_TIMEZONE:
+						return 32;	// 2020-10-08 21:51:34.399753+02:00
+					case Types.BOOLEAN:
+						return 1;
+					default:
+						// All other types should return 0
+						return 0;
 				}
 			}
 
 			/**
 			 * Gets the designated column's number of digits to right of
-			 * the decimal point.  This method is currently very
-			 * expensive as it needs to retrieve the information from
-			 * the database using an SQL query.
+			 * the decimal point.
+			 * 0 is returned for data types where the scale is not applicable.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return scale
@@ -565,17 +619,19 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Indicates the nullability of values in the designated
-			 * column.  This method is currently very expensive as it
-			 * needs to retrieve the information from the database using
-			 * an SQL query.
+			 * Indicates the nullability of values in the designated column.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
-			 * @return nullability
+			 * @return columnNullableUnknown
 			 * @throws SQLException if a database access error occurs
 			 */
 			@Override
 			public int isNullable(final int column) throws SQLException {
+				/* TODO: This requires an expensive dbmd.getColumns(null, schema, table, column)
+				 * query call to pull the NULLABLE value for this column.
+				 * See also ResultSetMetaData.isNullable(()
+				 */
+				// For now we simply always return columnNullableUnknown.
 				return columnNullableUnknown;
 			}
 
@@ -589,7 +645,7 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public String getCatalogName(final int column) throws SQLException {
-				return null;	// MonetDB does NOT support catalogs
+				return null;	// MonetDB does NOT support catalog qualifiers
 			}
 
 			/**
@@ -646,21 +702,25 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public String getColumnClassName(final int column) throws SQLException {
-				final String typeName = getColumnTypeName(column);
+				final String MonetDBType = getColumnTypeName(column);
 				final Map<String,Class<?>> map = getConnection().getTypeMap();
 				final Class<?> c;
-				if (map.containsKey(typeName)) {
-					c = (Class)map.get(typeName);
+				if (map != null && map.containsKey(MonetDBType)) {
+					c = (Class)map.get(MonetDBType);
 				} else {
 					c = MonetResultSet.getClassForType(getColumnType(column));
 				}
-				return c.getName();
+				if (c != null)
+					return c.getCanonicalName();
+				throw new SQLException("column type mapping null: " + MonetDBType, "M0M03");
 			}
 
 			/**
 			 * Gets the designated column's suggested title for use in
-			 * printouts and displays. This is currently equal to
-			 * getColumnName().
+			 * printouts and displays. The suggested title is usually
+			 * specified by the SQL AS clause. If a SQL AS is not specified,
+			 * the value returned from getColumnLabel will be the same as
+			 * the value returned by the getColumnName method.
 			 *
 			 * @param column the first column is 1, the second is 2, ...
 			 * @return the suggested column title
@@ -674,16 +734,16 @@ public class MonetPreparedStatement
 			/**
 			 * Gets the designated column's name
 			 *
-			 * @param colnr column number, the first column is 1, the second is 2, ...
+			 * @param columnr the first column is 1, the second is 2, ...
 			 * @return the column name
 			 * @throws SQLException if there is no such column
 			 */
 			@Override
-			public String getColumnName(final int colnr) throws SQLException {
+			public String getColumnName(final int columnr) throws SQLException {
 				try {
-					return column[getColumnIdx(colnr)];
+					return column[getColumnIdx(columnr)];
 				} catch (IndexOutOfBoundsException e) {
-					throw MonetResultSet.newSQLInvalidColumnIndexException(colnr);
+					throw MonetResultSet.newSQLInvalidColumnIndexException(columnr);
 				}
 			}
 
@@ -778,18 +838,19 @@ public class MonetPreparedStatement
 			public boolean isSigned(final int param) throws SQLException {
 				// we can hardcode this, based on the colum type
 				switch (getParameterType(param)) {
-					case Types.NUMERIC:
-					case Types.DECIMAL:
 					case Types.TINYINT:
 					case Types.SMALLINT:
 					case Types.INTEGER:
 					case Types.REAL:
 					case Types.FLOAT:
 					case Types.DOUBLE:
+					case Types.DECIMAL:
+					case Types.NUMERIC:
 						return true;
 					case Types.BIGINT:
 						final String monettype = getParameterTypeName(param);
-						if (monettype != null) {
+						if (monettype != null && monettype.length() == 3) {
+							// data of type oid or ptr is not signed
 							if ("oid".equals(monettype)
 							 || "ptr".equals(monettype))
 								return false;
@@ -797,10 +858,10 @@ public class MonetPreparedStatement
 						return true;
 				//	All other types should return false
 				//	case Types.BOOLEAN:
-				//	case Types.DATE:
-				//	case Types.TIME:
+				//	case Types.DATE:	// can year be negative?
+				//	case Types.TIME:	// can time be negative?
 				//	case Types.TIME_WITH_TIMEZONE:
-				//	case Types.TIMESTAMP:
+				//	case Types.TIMESTAMP:	// can year be negative?
 				//	case Types.TIMESTAMP_WITH_TIMEZONE:
 					default:
 						return false;
@@ -808,8 +869,17 @@ public class MonetPreparedStatement
 			}
 
 			/**
-			 * Retrieves the designated parameter's number of decimal
-			 * digits.
+			 * Retrieves the designated parameter's specified column size.
+			 * The returned value represents the maximum column size for
+			 * the given parameter.
+			 * For numeric data, this is the maximum precision.
+			 * For character data, this is the length in characters.
+			 * For datetime datatypes, this is the length in characters
+			 * of the String representation (assuming the maximum allowed
+			 * precision of the fractional seconds component).
+			 * For binary data, this is the length in bytes.
+			 * For the ROWID datatype, this is the length in bytes.
+			 * 0 is returned for data types where the column size is not applicable.
 			 *
 			 * @param param the first parameter is 1, the second is 2, ...
 			 * @return precision
@@ -817,16 +887,70 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public int getPrecision(final int param) throws SQLException {
-				try {
-					return digits[getParamIdx(param)];
-				} catch (IndexOutOfBoundsException e) {
-					throw newSQLInvalidParameterIndexException(param);
+				switch (getParameterType(param)) {
+					case Types.BIGINT:
+						return 19;
+					case Types.INTEGER:
+						return 10;
+					case Types.SMALLINT:
+						return 5;
+					case Types.TINYINT:
+						return 3;
+					case Types.REAL:
+						return 7;
+					case Types.FLOAT:
+					case Types.DOUBLE:
+						return 15;
+					case Types.DECIMAL:
+					case Types.NUMERIC:
+						// these data types have a variable precision (max precision is 38)
+						try {
+							return digits[getParamIdx(param)];
+						} catch (IndexOutOfBoundsException e) {
+							throw newSQLInvalidParameterIndexException(param);
+						}
+					case Types.CHAR:
+					case Types.VARCHAR:
+					case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+					case Types.CLOB:
+						// these data types have a variable length
+						try {
+							return digits[getParamIdx(param)];
+						} catch (IndexOutOfBoundsException e) {
+							throw newSQLInvalidParameterIndexException(param);
+						}
+					case Types.BINARY:
+					case Types.VARBINARY:
+					case Types.BLOB:
+						// these data types have a variable length
+						// It expect number of bytes, not number of hex chars
+						try {
+							return digits[getParamIdx(param)];
+						} catch (IndexOutOfBoundsException e) {
+							throw newSQLInvalidParameterIndexException(param);
+						}
+					case Types.DATE:
+						return 10;	// 2020-10-08
+					case Types.TIME:
+						return 15;	// 21:51:34.399753
+					case Types.TIME_WITH_TIMEZONE:
+						return 21;	// 21:51:34.399753+02:00
+					case Types.TIMESTAMP:
+						return 26;	// 2020-10-08 21:51:34.399753
+					case Types.TIMESTAMP_WITH_TIMEZONE:
+						return 32;	// 2020-10-08 21:51:34.399753+02:00
+					case Types.BOOLEAN:
+						return 1;
+					default:
+						// All other types should return 0
+						return 0;
 				}
 			}
 
 			/**
 			 * Retrieves the designated parameter's number of digits to
 			 * right of the decimal point.
+			 * 0 is returned for data types where the scale is not applicable.
 			 *
 			 * @param param the first parameter is 1, the second is 2, ...
 			 * @return scale
@@ -891,15 +1015,17 @@ public class MonetPreparedStatement
 			 */
 			@Override
 			public String getParameterClassName(final int param) throws SQLException {
-				final String typeName = getParameterTypeName(param);
+				final String MonetDBType = getParameterTypeName(param);
 				final Map<String,Class<?>> map = getConnection().getTypeMap();
 				final Class<?> c;
-				if (map.containsKey(typeName)) {
-					c = (Class)map.get(typeName);
+				if (map != null && map.containsKey(MonetDBType)) {
+					c = (Class)map.get(MonetDBType);
 				} else {
 					c = MonetResultSet.getClassForType(getParameterType(param));
 				}
-				return c.getName();
+				if (c != null)
+					return c.getCanonicalName();
+				throw new SQLException("column type mapping null: " + MonetDBType, "M0M03");
 			}
 
 			/**

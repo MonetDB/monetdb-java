@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Oct 27 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected PreparedStatement methods getMetaData().getColumnDisplaySize(),
+  getMetaData().getPrecision() and getParameterMetaData().getPrecision().
+
 * Thu Oct 20 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved implementation of method ResultSetMetaData.getPrecision(). It
   now returns more accurate values for columns of type DECIMAL, NUMERIC,
