@@ -36,8 +36,7 @@ import java.util.concurrent.Executor;
 import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
 import org.monetdb.mcl.io.LineType;
-import org.monetdb.mcl.net.HandshakeOptions;
-import org.monetdb.mcl.net.HandshakeOptions.Setting;
+import org.monetdb.mcl.net.HandshakeOption;
 import org.monetdb.mcl.net.MapiSocket;
 import org.monetdb.mcl.parser.HeaderLineParser;
 import org.monetdb.mcl.parser.MCLParseException;
@@ -166,7 +165,12 @@ public class MonetConnection
 	MonetConnection(final Properties props)
 		throws SQLException, IllegalArgumentException
 	{
-	// for debug: System.out.println("New connection object. Received properties are: " + props.toString());
+		HandshakeOption.AutoCommit autoCommitSetting = new HandshakeOption.AutoCommit(true);
+		HandshakeOption.ReplySize replySizeSetting = new HandshakeOption.ReplySize(DEF_FETCHSIZE);
+		HandshakeOption.SizeHeader sizeHeaderSetting = new HandshakeOption.SizeHeader(true);
+		HandshakeOption.TimeZone timeZoneSetting = new HandshakeOption.TimeZone(0);
+
+		// for debug: System.out.println("New connection object. Received properties are: " + props.toString());
 		// get supported property values from the props argument.
 		// When a value is found add it to the internal conn_props list for use by getClientInfo().
 		this.hostname = props.getProperty("host");
@@ -211,10 +215,10 @@ public class MonetConnection
 			conn_props.setProperty("hash", hash);
 
 		String autocommit_prop = props.getProperty("autocommit");
-		boolean initial_autocommit = true;
 		if (autocommit_prop != null) {
-			initial_autocommit = Boolean.parseBoolean(autocommit_prop);
-			conn_props.setProperty("autocommit", Boolean.toString(initial_autocommit));
+			boolean ac = Boolean.parseBoolean(autocommit_prop);
+			autoCommitSetting.set(ac);
+			conn_props.setProperty("autocommit", Boolean.toString(ac));
 		}
 
 		final String fetchsize_prop = props.getProperty("fetchsize");
@@ -222,7 +226,7 @@ public class MonetConnection
 			try {
 				int fetchsize = Integer.parseInt(fetchsize_prop);
 				if (fetchsize > 0 || fetchsize == -1) {
-					this.defaultFetchSize = fetchsize;
+					replySizeSetting.set(fetchsize);
 					conn_props.setProperty("fetchsize", fetchsize_prop);
 				} else {
 					addWarning("Fetch size must either be positive or -1. Value " + fetchsize + " ignored", "M1M05");
@@ -291,16 +295,18 @@ public class MonetConnection
 			server.setDatabase(database);
 		server.setLanguage(language);
 
+		// calculate our time zone offset
 		final Calendar cal = Calendar.getInstance();
 		int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
 		int offsetSeconds = offsetMillis / 1000;
-		final HandshakeOptions handshakeOptions = new HandshakeOptions();
-		handshakeOptions.set(Setting.AutoCommit, initial_autocommit ? 1 : 0);
-		handshakeOptions.set(Setting.TimeZone, offsetSeconds);
-		handshakeOptions.set(Setting.ReplySize, defaultFetchSize);
-//		handshakeOptions.set(Setting.SizeHeader, 1);
-		server.setHandshakeOptions(handshakeOptions);
-		autoCommit = initial_autocommit;
+		timeZoneSetting.set(offsetSeconds);
+
+		server.setHandshakeOptions(new HandshakeOption[] {
+				autoCommitSetting,
+				replySizeSetting,
+				sizeHeaderSetting,
+				timeZoneSetting,
+		});
 
 		// we're debugging here... uhm, should be off in real life
 		if (debug) {
@@ -381,50 +387,21 @@ public class MonetConnection
 			lang = LANG_UNKNOWN;
 		}
 
-		// The reply size is checked before every query and adjusted if
-		// necessary. Update our current belief of what the server is set to.
-		if (handshakeOptions.wasSentInHandshake(HandshakeOptions.Setting.ReplySize)) {
-			this.curReplySize = handshakeOptions.get(HandshakeOptions.Setting.ReplySize);
+		// Now take care of any handshake options not handled during the handshake
+		if (replySizeSetting.isSent()) {
+			this.curReplySize = replySizeSetting.get();
 		}
-
-		for (Setting setting : new Setting[] { Setting.SizeHeader }) {
-			if (handshakeOptions.mustSend(setting)) {
-				Integer value = handshakeOptions.get(setting); // guaranteed by mustSend to be non-null
-				String command = String.format("%s %d", setting.getXCommand(), value);
-				sendControlCommand(command);
-			}
-		}
-
-		// the following initialisers are only valid when the language is SQL...
+		this.defaultFetchSize = replySizeSetting.get();
 		if (lang == LANG_SQL) {
-			if (handshakeOptions.mustSend(Setting.AutoCommit)) {
-				setAutoCommit(handshakeOptions.get(Setting.AutoCommit) != 0);
+			if (autoCommitSetting.mustSend(autoCommit)) {
+				setAutoCommit(autoCommitSetting.get());
 			}
-
-			// set our time zone on the server, if we haven't already
-			if (handshakeOptions.mustSend(Setting.TimeZone)) {
-				final StringBuilder tz = new StringBuilder(64);
-				tz.append("SET TIME ZONE INTERVAL '");
-				int offsetMinutes = handshakeOptions.get(Setting.TimeZone) / 60;
-				if (offsetMinutes < 0) {
-					tz.append('-');
-					offsetMinutes = -offsetMinutes; // make it positive
-				} else {
-					tz.append('+');
-				}
-				int offsetHours = offsetMinutes / 60;
-				if (offsetHours < 10)
-					tz.append('0');
-				tz.append(offsetHours).append(':');
-				offsetMinutes -= offsetHours * 60;
-				if (offsetMinutes < 10)
-					tz.append('0');
-				tz.append(offsetMinutes).append("' HOUR TO MINUTE");
-				sendIndependentCommand(tz.toString());
+			if (sizeHeaderSetting.mustSend(false)) {
+				sendControlCommand("sizeheader 1");
 			}
-
-			// set sizeheader to 1 to enable sending "typesizes" info by the server (see mapi_set_size_header() in mapi.c)
-			sendControlCommand("sizeheader 1");
+			if (timeZoneSetting.mustSend(0)) {
+				setTimezone(timeZoneSetting.get());
+			}
 		}
 
 		// we're absolutely not closed, since we're brand new
@@ -1737,6 +1714,27 @@ public class MonetConnection
 	 */
 	public DownloadHandler getDownloadHandler() {
 		return downloadHandler;
+	}
+
+	public void setTimezone(int offsetSeconds) throws SQLException {
+		final StringBuilder tz = new StringBuilder(64);
+		tz.append("SET TIME ZONE INTERVAL '");
+		int offsetMinutes = offsetSeconds / 60;
+		if (offsetMinutes < 0) {
+			tz.append('-');
+			offsetMinutes = -offsetMinutes; // make it positive
+		} else {
+			tz.append('+');
+		}
+		int offsetHours = offsetMinutes / 60;
+		if (offsetHours < 10)
+			tz.append('0');
+		tz.append(offsetHours).append(':');
+		offsetMinutes -= offsetHours * 60;
+		if (offsetMinutes < 10)
+			tz.append('0');
+		tz.append(offsetMinutes).append("' HOUR TO MINUTE");
+		sendIndependentCommand(tz.toString());
 	}
 
 	/**

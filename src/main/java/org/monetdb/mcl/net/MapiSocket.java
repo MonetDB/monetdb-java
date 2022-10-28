@@ -125,7 +125,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	private final byte[] blklen = new byte[2];
 
 	/** Options that can be sent during the auth handshake if the server supports it */
-	private HandshakeOptions handshakeOptions;
+	private HandshakeOption[] handshakeOptions;
 
 	/**
 	 * Constructs a new MapiSocket.
@@ -562,7 +562,21 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 							} catch (NumberFormatException e) {
 								throw new MCLParseException("Invalid handshake level: " + chaltok[6]);
 							}
-							response += handshakeOptions.formatHandshakeResponse(level);
+							boolean first = true;
+							for (HandshakeOption opt: handshakeOptions) {
+								if (opt.getLevel() < level) {
+									// server supports it
+									if (first) {
+										first = false;
+									} else {
+										response += ",";
+									}
+									String key = opt.getFieldName();
+									long value = opt.numericValue();
+									response += opt.getFieldName() + "=" + value;
+									opt.setSent(true);
+								}
+							}
 							break;
 						}
 					}
@@ -718,12 +732,8 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			log.flush();
 	}
 
-	public void setHandshakeOptions(HandshakeOptions handshakeOptions) {
+	public void setHandshakeOptions(HandshakeOption[] handshakeOptions) {
 		this.handshakeOptions = handshakeOptions;
-	}
-
-	public HandshakeOptions getHandshakeOptions() {
-		return handshakeOptions;
 	}
 
 	/**
