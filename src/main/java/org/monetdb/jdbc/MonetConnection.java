@@ -395,12 +395,19 @@ public class MonetConnection
 		if (lang == LANG_SQL) {
 			if (autoCommitSetting.mustSend(autoCommit)) {
 				setAutoCommit(autoCommitSetting.get());
+			} else {
+				// update bookkeeping
+				autoCommit = autoCommitSetting.get();
 			}
 			if (sizeHeaderSetting.mustSend(false)) {
 				sendControlCommand("sizeheader 1");
+			} else {
+				// no bookkeeping to update
 			}
 			if (timeZoneSetting.mustSend(0)) {
 				setTimezone(timeZoneSetting.get());
+			} else {
+				// no bookkeeping to update
 			}
 		}
 
