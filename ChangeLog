@@ -16,6 +16,9 @@
 - Removed creation and distribution of monetdb-mcl-1.##.jre8.jar file.
   Programmers who used this jar file should use monetdb-jdbc-3.#.jre8.jar file.
 
+* Fri Sep 09 2022 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Add autocommit=true/false option to the JDBC URL. The default remains 'true'.
+
 * Wed Aug 24 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved DatabaseMetaData.getBestRowIdentifier(). When there are multiple
   unique constraints and no pkey for a table it used to return the columns
