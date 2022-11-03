@@ -74,6 +74,8 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2022 MonetDB B.V.
         <include name="JDBC_API_Tester.class" />
         <include name="OnClientTester.class" />
         <include name="OnClientTester$*.class" />
+        <include name="ConnectionTests.class" />
+        <include name="ConnectionTests$*.class" />
       </fileset>
     </jar>
   </target>
