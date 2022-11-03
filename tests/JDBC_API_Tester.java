@@ -1115,6 +1115,16 @@ final public class JDBC_API_Tester {
 			"varchar(1024)	char(1)\n" +
 			"jdbctst	null\n");
 
+			compareResultSet(dbmd.getSchemas(null, ""), "getSchemas(null, emptystring)",
+			"Resultset with 2 columns\n" +
+			"TABLE_SCHEM	TABLE_CATALOG\n" +
+			"varchar(1024)	char(1)\n");
+
+			compareResultSet(dbmd.getSchemas("%", "%%"), "getSchemas(%, %%)",
+			"Resultset with 2 columns\n" +
+			"TABLE_SCHEM	TABLE_CATALOG\n" +
+			"varchar(1024)	char(1)\n");
+
 			compareResultSet(dbmd.getTables(null, "jdbctst", null, null), "getTables(null, jdbctst, null, null)",
 			"Resultset with 10 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +

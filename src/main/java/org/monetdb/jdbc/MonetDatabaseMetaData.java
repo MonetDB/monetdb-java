@@ -4240,11 +4240,17 @@ public final class MonetDatabaseMetaData
 		if (in == null)
 			return "IS NULL";
 
+		final int len = in.length();
+		if (len == 0)
+			return "= ''";
+
+		if (in.equals("%") || in.equals("%%"))
+			return "LIKE '%'";
+
 		// Scan input string for SQL wildcard characters: % and _
 		// When they are all prefixed by a backslash then the backslash is removed (to allow usage of = comparator)
 		// else it needs to be interpreted as a wildcard and we need to use LIKE instead of = comparator.
 		// A backslash can be escaped by using two backslashes.
-		final int len = in.length();
 		final StringBuilder sb = new StringBuilder(len);
 		boolean removed_bs = false;
 		boolean use_like = false;
@@ -4296,7 +4302,7 @@ public final class MonetDatabaseMetaData
 		if (removed_bs) {
 		// for debug: System.out.println("input: " + in + " changed into: " + "= " + MonetWrapper.sq(sb.toString()));
 			// we found only escaped wildcard character(s),
-			// use the edited string without the ecapes before the wildcard character(s) so an equals match can be done (its is faster than LIKE)
+			// use the edited string without the ecapes before the wildcard character(s) so an equals match can be done (which is faster than LIKE)
 			return "= " + MonetWrapper.sq(sb.toString());
 		}
 		// for debug: System.out.println("input: " + in + " changed into: " + "= " + MonetWrapper.sq(in));
