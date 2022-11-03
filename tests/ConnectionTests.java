@@ -160,6 +160,8 @@ public class ConnectionTests {
 	}
 
 	public class Failure extends Exception {
+		private static final long serialVersionUID = 1L;
+
 		public Failure(String msg) {
 			super(msg);
 		}
