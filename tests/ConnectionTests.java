@@ -77,6 +77,8 @@ public class ConnectionTests {
 		tester.withProp("autocommit", "false").checkAutoCommit(false);
 
 		tester.testTimeZone();
+
+		tester.cleanup();
 	}
 
 	Connection connect() throws SQLException {
@@ -156,6 +158,13 @@ public class ConnectionTests {
 				String msg = String.format("Expected suffix '%s', got timestamp '%s'", suffix, s);
 				throw new Failure(msg);
 			}
+		}
+	}
+
+	private void cleanup() throws SQLException {
+		try (Connection conn = connect(); Statement stmt = conn.createStatement()) {
+			stmt.execute("DROP TABLE IF EXISTS connectiontests");
+			stmt.execute("DROP TABLE IF EXISTS connectiontests_ts");
 		}
 	}
 
