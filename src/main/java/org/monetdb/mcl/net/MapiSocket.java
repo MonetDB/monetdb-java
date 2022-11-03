@@ -571,9 +571,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 									} else {
 										response += ",";
 									}
-									String key = opt.getFieldName();
-									long value = opt.numericValue();
-									response += opt.getFieldName() + "=" + value;
+									response += opt.getFieldName() + "=" + opt.numericValue();
 									opt.setSent(true);
 								}
 							}
