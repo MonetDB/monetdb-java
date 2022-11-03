@@ -3035,9 +3035,11 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public ResultSet getTypeInfo() throws SQLException {
-		final StringBuilder query = new StringBuilder(2300);
-		query.append("SELECT \"sqlname\" AS \"TYPE_NAME\", " +
-			// TODO map 'day_interval' to 'interval day' (or 'interval day to second'), 'month_interval' to 'interval month' (or 'interval year to month'), 'sec_interval' to 'interval second'
+		final StringBuilder query = new StringBuilder(3200);
+		query.append("SELECT CASE \"sqlname\" WHEN 'day_interval' THEN 'interval day'" +
+				" WHEN 'month_interval' THEN 'interval month'" +
+				" WHEN 'sec_interval' THEN 'interval second'" +
+				" ELSE \"sqlname\" END AS \"TYPE_NAME\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("\"sqlname\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"\"digits\" AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
 			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','sec_interval','day_interval','month_interval') THEN ''''" +
@@ -3059,7 +3061,7 @@ public final class MonetDatabaseMetaData
 				",'day_interval','month_interval','sec_interval') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
 			"CASE \"sqlname\" WHEN 'decimal' THEN true ELSE false END AS \"FIXED_PREC_SCALE\", " +
 			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint') THEN true ELSE false END AS \"AUTO_INCREMENT\", " +
-			"\"systemname\" AS \"LOCAL_TYPE_NAME\", " +
+			"CASE WHEN \"sqlname\" IN ('sec_interval','day_interval','month_interval') THEN \"sqlname\" ELSE \"systemname\" END AS \"LOCAL_TYPE_NAME\", " +
 			"cast(0 AS smallint) AS \"MINIMUM_SCALE\", " +
 			"cast(CASE WHEN \"sqlname\" = 'decimal' THEN (CASE \"systemname\" WHEN 'int' THEN 9 WHEN 'lng' THEN 18 WHEN 'sht' THEN 4 WHEN 'hge' THEN 38 WHEN 'bte' THEN 2 ELSE 0 END)" +
 				" WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz','sec_interval') THEN 6 ELSE 0 END AS smallint) AS \"MAXIMUM_SCALE\", " +
@@ -3069,6 +3071,7 @@ public final class MonetDatabaseMetaData
 		"FROM \"sys\".\"types\" " +
 		"ORDER BY \"DATA_TYPE\", \"sqlname\", \"id\"");
 
+		/* if (query.length() >= 3200) System.err.println("getTypeInfo(), extend query default size to: " + query.length()); */
 		return executeMetaDataQuery(query.toString());
 	}
 

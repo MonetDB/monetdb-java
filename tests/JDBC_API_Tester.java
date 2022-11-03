@@ -63,6 +63,7 @@ final public class JDBC_API_Tester {
 		jt.Test_DBCmetadata();
 		jt.Test_FetchSize();
 		jt.Test_Int128();
+		jt.Test_Interval_Types();
 		jt.Test_PlanExplainTraceDebugCmds();
 		jt.Test_PSgeneratedkeys();
 		jt.Test_PSgetObject();
@@ -1482,6 +1483,84 @@ final public class JDBC_API_Tester {
 			"Expecting 123456789012345678909876543210987654321, got 123456789012345678909876543210987654321\n" +
 			"Expecting 1234567890123456789.9876543210987654321, got 1234567890123456789.9876543210987654321\n" +
 			"SUCCESS\n");
+	}
+
+	private void Test_Interval_Types() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		ResultSet rs = null;
+		PreparedStatement pstmt = null;
+		try {
+			stmt = con.createStatement();
+			stmt.executeUpdate("create table Test_Interval_Types (c1 interval day, c2 interval month, c3 interval second)");
+			rs = stmt.executeQuery("select * from Test_Interval_Types");
+			if (rs != null) {
+				sb.append("Showing query ResultSetMetaData\n");
+				ResultSetMetaData rsmd = rs.getMetaData();
+				int colCount = rsmd.getColumnCount();
+				for (int col = 1; col <= colCount; col++) {
+					sb.append("ColumnName: ").append(rsmd.getColumnName(col))
+					.append("\tColumnTypeName: ").append(rsmd.getColumnTypeName(col))
+					.append("\tPrecision: ").append(rsmd.getPrecision(col))
+					.append("\tScale: ").append(rsmd.getScale(col))
+					.append("\tColumnDisplaySize: ").append(rsmd.getColumnDisplaySize(col))
+					.append("\tColumnType: ").append(rsmd.getColumnType(col))
+					.append("\tColumnClassName: ").append(rsmd.getColumnClassName(col))
+					.append("\n");
+				}
+				rs.close();
+				rs = null;
+			}
+			pstmt = con.prepareStatement("select * from Test_Interval_Types where c1 = ? or c2 = ? or c3 = ?");
+			if (pstmt != null) {
+				sb.append("Showing prepared query ResultSetMetaData\n");
+				ResultSetMetaData rsmd = pstmt.getMetaData();
+				int colCount = rsmd.getColumnCount();
+				for (int col = 1; col <= colCount; col++) {
+					sb.append("ColumnName: ").append(rsmd.getColumnName(col))
+					.append("\tColumnTypeName: ").append(rsmd.getColumnTypeName(col))
+					.append("\tPrecision: ").append(rsmd.getPrecision(col))
+					.append("\tScale: ").append(rsmd.getScale(col))
+					.append("\tColumnDisplaySize: ").append(rsmd.getColumnDisplaySize(col))
+					.append("\tColumnType: ").append(rsmd.getColumnType(col))
+					.append("\tColumnClassName: ").append(rsmd.getColumnClassName(col))
+					.append("\n");
+				}
+				sb.append("Showing prepared query ParameterMetaData\n");
+				ParameterMetaData pmd = pstmt.getParameterMetaData();
+				int paramCount = pmd.getParameterCount();
+				for (int param = 1; param <= paramCount; param++) {
+					sb.append("ParameterTypeName: ").append(pmd.getParameterTypeName(param))
+					.append("\tPrecision: ").append(pmd.getPrecision(param))
+					.append("\tScale: ").append(pmd.getScale(param))
+					.append("\tParameterType: ").append(pmd.getParameterType(param))
+					.append("\tParameterClassName: ").append(pmd.getParameterClassName(param))
+					.append("\n");
+				}
+				pstmt.close();
+				pstmt = null;
+			}
+			stmt.executeUpdate("drop table Test_Interval_Types");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(pstmt, null);
+		closeStmtResSet(stmt, rs);
+
+		compareExpectedOutput("Test_Interval_Types",
+			"Showing query ResultSetMetaData\n" +
+			"ColumnName: c1	ColumnTypeName: interval day	Precision: 4	Scale: 0	ColumnDisplaySize: 5	ColumnType: 2	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c2	ColumnTypeName: interval month	Precision: 10	Scale: 0	ColumnDisplaySize: 1	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
+			"ColumnName: c3	ColumnTypeName: interval second	Precision: 13	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"Showing prepared query ResultSetMetaData\n" +
+			"ColumnName: c1	ColumnTypeName: interval day	Precision: 4	Scale: 0	ColumnDisplaySize: 4	ColumnType: 2	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c2	ColumnTypeName: interval month	Precision: 10	Scale: 0	ColumnDisplaySize: 10	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
+			"ColumnName: c3	ColumnTypeName: interval second	Precision: 13	Scale: 0	ColumnDisplaySize: 13	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"Showing prepared query ParameterMetaData\n" +
+			"ParameterTypeName: interval day	Precision: 4	Scale: 0	ParameterType: 2	ParameterClassName: java.math.BigDecimal\n" +
+			"ParameterTypeName: interval month	Precision: 10	Scale: 0	ParameterType: 4	ParameterClassName: java.lang.Integer\n" +
+			"ParameterTypeName: interval second	Precision: 13	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n");
 	}
 
 	private void Test_PlanExplainTraceDebugCmds() {
@@ -5904,13 +5983,41 @@ final public class JDBC_API_Tester {
 	}
 
 	private void compareExpectedOutput(String testname, String expected) {
-		if (!expected.equals(sb.toString())) {
+		final String produced = sb.toString();
+		if (!expected.equals(produced)) {
 			foundDifferences = true;
 			System.err.print("Test '");
 			System.err.print(testname);
 			if (!testname.endsWith(")") && !testname.endsWith(";"))
 				System.err.print("()");
 			System.err.println("' produced different output!");
+			int expLen = expected.length();
+			int prodLen = produced.length();
+			int max_pos = expLen;
+			if (prodLen > max_pos)
+				max_pos = prodLen;
+			int line = 1;
+			int rowpos = 0;
+			for (int pos = 0; pos < max_pos; pos++) {
+				char a = (pos < expLen ? expected.charAt(pos) : '~');
+				char b = (pos < prodLen ? produced.charAt(pos) : '~');
+				if (a == '\n') {
+					line++;
+					rowpos = 0;
+				}
+				rowpos++;
+				if (a != b) {
+					if (pos + 30 < expLen)
+						expLen = pos + 30;
+					if (pos + 30 < prodLen)
+						prodLen = pos + 30;
+					System.err.println("Difference found at line " + line + " position " + rowpos
+						+ ": Expected \"" + expected.substring(pos < expLen ? pos : expLen-1, expLen-1)
+						+ "\" but gotten \"" + produced.substring(pos < prodLen ? pos : prodLen-1, prodLen-1) + "\"");
+					pos = max_pos;
+				}
+			}
+			System.err.println();
 			System.err.println("Expected:");
 			System.err.println(expected);
 			System.err.println("Gotten:");

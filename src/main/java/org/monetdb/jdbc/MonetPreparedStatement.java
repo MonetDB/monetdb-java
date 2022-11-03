@@ -775,7 +775,19 @@ public class MonetPreparedStatement
 			@Override
 			public String getColumnTypeName(final int column) throws SQLException {
 				try {
-					return monetdbType[getColumnIdx(column)];
+					final String monettype = monetdbType[getColumnIdx(column)];
+					if (monettype.endsWith("_interval")) {
+						/* convert the interval type names to valid SQL data type names,
+						 * such that generic applications can use them in create table statements
+						 */
+						if ("day_interval".equals(monettype))
+							return "interval day";
+						if ("month_interval".equals(monettype))
+							return "interval month";
+						if ("sec_interval".equals(monettype))
+							return "interval second";
+					}
+					return monettype;
 				} catch (IndexOutOfBoundsException e) {
 					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
@@ -994,7 +1006,18 @@ public class MonetPreparedStatement
 			@Override
 			public String getParameterTypeName(final int param) throws SQLException {
 				try {
-					return monetdbType[getParamIdx(param)];
+					final String monettype = monetdbType[getParamIdx(param)];
+					if (monettype.endsWith("_interval")) {
+						/* convert the interval type names to valid SQL data type names
+						 */
+						if ("day_interval".equals(monettype))
+							return "interval day";
+						if ("month_interval".equals(monettype))
+							return "interval month";
+						if ("sec_interval".equals(monettype))
+							return "interval second";
+					}
+					return monettype;
 				} catch (IndexOutOfBoundsException e) {
 					throw newSQLInvalidParameterIndexException(param);
 				}

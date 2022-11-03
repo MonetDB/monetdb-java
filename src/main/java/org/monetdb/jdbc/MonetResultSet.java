@@ -1752,13 +1752,13 @@ public class MonetResultSet
 					{
 						// these data types may have a variable scale, max scale is 38
 
-						// Special handling for: day_interval and sec_interval as they
-						// are mapped to these column types (see MonetDriver typemap)
+						// Special handling for: day_interval and sec_interval as they are
+						// mapped to Types.NUMERIC and Types.DECIMAL types (see MonetDriver typeMap)
 						// They appear to have a fixed scale (tested against Oct2020)
 						final String monettype = getColumnTypeName(column);
-						if ("day_interval".equals(monettype))
+						if ("interval day".equals(monettype))
 							return 0;
-						if ("sec_interval".equals(monettype))
+						if ("interval second".equals(monettype))
 							return 3;
 
 						if (scales != null) {
@@ -1989,7 +1989,19 @@ public class MonetResultSet
 			public String getColumnTypeName(final int column) throws SQLException {
 				checkColumnIndexValidity(column);
 				try {
-					return types[column - 1];
+					final String monettype = types[column - 1];
+					if (monettype.endsWith("_interval")) {
+						/* convert the interval type names to valid SQL data type names,
+						 * such that generic applications can use them in create table statements
+						 */
+						if ("day_interval".equals(monettype))
+							return "interval day";
+						if ("month_interval".equals(monettype))
+							return "interval month";
+						if ("sec_interval".equals(monettype))
+							return "interval second";
+					}
+					return monettype;
 				} catch (IndexOutOfBoundsException e) {
 					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}

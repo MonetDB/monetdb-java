@@ -1,6 +1,17 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Nov  3 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected returned SQL TypeName values for the MonetDB interval types:
+  'day_interval', 'month_interval' and 'sec_interval'.  Those MonetDB
+  type names can not be used in CREATE TABLE statements. Instead
+  one has to use SQL type names: 'interval day', 'interval month' or
+  'interval second'. The JDBC driver now returns those SQL type names.
+  This applies to methods: DatabaseMetaData.getTypeInfo() for the output
+  column TYPE_NAME (the output column LOCAL_TYPE_NAME now returns
+  the original type name), ResultSetMetaData.getColumnTypeName() and
+  ParameterMetaData.getParameterTypeName().
+
 * Thu Oct 27 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected PreparedStatement methods getMetaData().getColumnDisplaySize(),
   getMetaData().getPrecision() and getParameterMetaData().getPrecision().
