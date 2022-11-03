@@ -2093,9 +2093,6 @@ public class MonetPreparedStatement
 			setBlob(parameterIndex, (Blob)x);
 		} else if (x instanceof MonetClob || x instanceof Clob) {
 			setClob(parameterIndex, (Clob)x);
-		} else if (x instanceof Struct) {
-			// I have no idea how to do this...
-			throw newSQLFeatureNotSupportedException("setObject() with object of type Struct");
 		} else if (x instanceof Ref) {
 			setRef(parameterIndex, (Ref)x);
 		} else if (x instanceof java.net.URL) {
@@ -2108,7 +2105,7 @@ public class MonetPreparedStatement
 			setNClob(parameterIndex, (NClob)x);
 		} else if (x instanceof SQLXML) {
 			setSQLXML(parameterIndex, (SQLXML)x);
-		} else if (x instanceof SQLData) { // not in JDBC4.1???
+		} else if (x instanceof SQLData) {
 			final SQLData sx = (SQLData)x;
 			final int paramnr = parameterIndex;
 			final String sqltype = sx.getSQLTypeName();
@@ -2253,8 +2250,11 @@ public class MonetPreparedStatement
 				}
 			};
 			sx.writeSQL(out);
+		} else if (x instanceof Struct) {
+			// I have no idea how to do this...
+			throw newSQLFeatureNotSupportedException("setObject() with object of type Struct");
 		} else {	// java Class
-			throw newSQLFeatureNotSupportedException("setObject() with object of type Class " + x.getClass().getName());
+			throw newSQLFeatureNotSupportedException("setObject() with object of type Class " + x.getClass().getCanonicalName());
 		}
 	}
 
