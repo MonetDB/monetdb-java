@@ -301,7 +301,7 @@ public class MonetConnection
 		int offsetSeconds = offsetMillis / 1000;
 		timeZoneSetting.set(offsetSeconds);
 
-		server.setHandshakeOptions(new HandshakeOption[] {
+		server.setHandshakeOptions(new HandshakeOption<?>[] {
 				autoCommitSetting,
 				replySizeSetting,
 				sizeHeaderSetting,
