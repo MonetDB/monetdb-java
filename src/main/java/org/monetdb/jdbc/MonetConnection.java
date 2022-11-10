@@ -1991,7 +1991,7 @@ public class MonetConnection
 	 */
 	boolean privilege_codesTableExists() {
 		if (!queriedPrivilege_codesTable) {
-			hasPrivilege_codesTable = existsSysTable("privilege_codes");
+			querySysTable();
 			queriedPrivilege_codesTable = true;	// set flag, so the querying is done only at first invocation.
 		}
 		return hasPrivilege_codesTable;
@@ -2008,7 +2008,7 @@ public class MonetConnection
 	 */
 	boolean commentsTableExists() {
 		if (!queriedCommentsTable) {
-			hasCommentsTable = existsSysTable("comments");
+			querySysTable();
 			queriedCommentsTable = true;	// set flag, so the querying is done only at first invocation.
 		}
 		return hasCommentsTable;
@@ -2018,18 +2018,27 @@ public class MonetConnection
 	/**
 	 * Internal utility method to query the server to find out if it has a specific system table sys.<tablename>.
 	 */
-	private boolean existsSysTable(final String tablename) {
-		boolean exists = false;
+	private void querySysTable() {
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
 			stmt = createStatement();
 			if (stmt != null) {
-				rs = stmt.executeQuery("SELECT id FROM sys._tables WHERE name = '"
-							+ tablename
-							+ "' AND schema_id IN (SELECT id FROM sys.schemas WHERE name = 'sys')");
+				rs = stmt.executeQuery("SELECT name FROM sys._tables WHERE name in ('privilege_codes', 'comments')"
+							+ " AND schema_id IN (SELECT id FROM sys.schemas WHERE name = 'sys')");
 				if (rs != null) {
-					exists = rs.next(); // if a row is available it exists, else not
+					while (rs.next()) {
+						String name = rs.getString(1);
+						// for debug: System.out.println("querySysTable() retrieved name: " + name);
+						if ("comments".equals(name)) {
+							hasCommentsTable = true;
+							queriedCommentsTable = true;
+						} else
+						if ("privilege_codes".equals(name)) {
+							hasPrivilege_codesTable = true;
+							queriedPrivilege_codesTable = true;
+						}
+					}
 				}
 			}
 		} catch (SQLException se) {
@@ -2037,8 +2046,6 @@ public class MonetConnection
 		} finally {
 			closeResultsetStatement(rs, stmt);
 		}
-		// for debug: System.out.println("testTableExists(" + tablename + ") returns: " + exists);
-		return exists;
 	}
 
 	/**
