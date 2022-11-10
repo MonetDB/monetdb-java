@@ -111,10 +111,16 @@ final public class JDBC_API_Tester {
 
 		ConnectionTests.runTests(con_URL);
 
-		OnClientTester oct = new OnClientTester(con_URL, 0);
-		int failures = oct.runTests();
-		if (failures > 0)
-			System.exit(-1);
+		// invoke running OnClientTester only on Sept2022 (11.45) or older servers
+		DatabaseMetaData dbmd = jt.con.getMetaData();
+		int dbmsMajorVersion = dbmd.getDatabaseMajorVersion();
+		int dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
+		if (dbmsMajorVersion == 11 && dbmsMinorVersion <= 45) {
+			OnClientTester oct = new OnClientTester(con_URL, 0);
+			int failures = oct.runTests();
+			if (failures > 0)
+				System.exit(-1);
+		}
 	}
 
 	private void Test_Cautocommit(String arg0) {
