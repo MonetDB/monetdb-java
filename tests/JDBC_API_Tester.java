@@ -111,11 +111,11 @@ final public class JDBC_API_Tester {
 
 		ConnectionTests.runTests(con_URL);
 
-		// invoke running OnClientTester only on Sept2022 (11.45) or older servers
+		// invoke running OnClientTester only on Jan2022 (11.43) or older servers
 		DatabaseMetaData dbmd = jt.con.getMetaData();
 		int dbmsMajorVersion = dbmd.getDatabaseMajorVersion();
 		int dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
-		if (dbmsMajorVersion == 11 && dbmsMinorVersion <= 45) {
+		if (dbmsMajorVersion == 11 && dbmsMinorVersion <= 43) {
 			OnClientTester oct = new OnClientTester(con_URL, 0);
 			int failures = oct.runTests();
 			if (failures > 0)
@@ -1065,7 +1065,7 @@ final public class JDBC_API_Tester {
 		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc",
 			"GRANT SELECT (id1, name1), UPDATE (name1) ON TABLE tmp.tmp_pk_uc TO monetdb;");
 		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc ",
-			"GRANT INSERT, DELETE ON TABLE tmp.tmp_pk_uc  TO monetdb;");
+			"GRANT INSERT, DELETE ON TABLE tmp.tmp_pk_uc TO monetdb;");
 		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_pk_uc",
 			"GRANT SELECT (id1, name1), UPDATE (name1) ON TABLE tmp.glbl_pk_uc TO monetdb;");
 		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_nopk_twoucs",
@@ -1356,6 +1356,12 @@ final public class JDBC_API_Tester {
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.\"CUSTOMERS\"", "DROP TABLE jdbctst.\"CUSTOMERS\";");
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.fk2c", "DROP TABLE jdbctst.fk2c;");
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk2c", "DROP TABLE jdbctst.pk2c;");
+		objtype = "procedure";
+		handleExecuteDDL(stmt, action, objtype, "sys.analyze()", "COMMENT ON PROCEDURE sys.analyze() IS NULL;");
+		objtype = "function";
+		handleExecuteDDL(stmt, action, objtype, "sys.sin(double)", "COMMENT ON FUNCTION sys.sin(double) IS NULL;");
+		handleExecuteDDL(stmt, action, objtype, "sys.env()", "COMMENT ON FUNCTION sys.env() IS NULL;");
+		handleExecuteDDL(stmt, action, objtype, "sys.statistics()", "COMMENT ON FUNCTION sys.statistics() IS NULL;");
 
 		// All tables in schema jdbctst should now be gone, else we missed some DROP statements
 		try {
@@ -1547,11 +1553,17 @@ final public class JDBC_API_Tester {
 				pstmt.close();
 				pstmt = null;
 			}
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		// cleanup
+		closeStmtResSet(pstmt, null);
+		try {
 			stmt.executeUpdate("drop table Test_Interval_Types");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
-		closeStmtResSet(pstmt, null);
 		closeStmtResSet(stmt, rs);
 
 		compareExpectedOutput("Test_Interval_Types",
