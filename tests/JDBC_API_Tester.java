@@ -94,6 +94,9 @@ final public class JDBC_API_Tester {
 		jt.BugExecuteUpdate_Bug_3350();
 		jt.Bug_IsValid_Timeout_Bug_6782(con_URL);
 		jt.Bug_LargeQueries_6571_6693(con_URL);
+		jt.Bug_PrepStmtManyParams_7337(250);	// this works as expected
+		jt.Bug_PrepStmtManyParams_7337(251);	// this fails with: resultBlocks[1] should have been fetched by now
+		jt.Bug_PrepStmtManyParams_7337(480);	// this fails with: resultBlocks[1] should have been fetched by now
 		jt.Bug_PrepStmtSetObject_CLOB_6349();
 		jt.Bug_PrepStmtSetString_6382();
 		jt.Bug_PrepStmt_With_Errors_Jira292();
@@ -5691,6 +5694,134 @@ final public class JDBC_API_Tester {
 		if (rs != null)
 			rs.close();
 		sb.append("getQueryTimeout = ").append(st.getQueryTimeout()).append("\n");
+	}
+
+	private void Bug_PrepStmtManyParams_7337(int nrParams) {
+		sb.setLength(0);	// clear the output log buffer
+
+		// TODO: when nrParams is 251 or higher it fails to work as expected, see at the end.
+		final int NR_COLUMNS = nrParams;
+		final StringBuilder sql = new StringBuilder(100 + (NR_COLUMNS * 25));
+
+		Statement stmt = null;
+		PreparedStatement pstmt = null;
+		try {
+			int col;
+
+			// construct the Create Table SQL text
+			sql.append("CREATE TABLE t7337 (ID BIGINT AUTO_INCREMENT PRIMARY KEY, ");
+			for (col = 1; col <= NR_COLUMNS; col++) {
+				sql.append("column").append(col).append(" VARCHAR(256),");
+			}
+			sql.append("column").append(col).append(" TIMESTAMP);");
+
+			sb.append("1. create table with ").append(NR_COLUMNS+2).append(" columns, sql has length: ").append(sql.length()).append("\n");
+			stmt = con.createStatement();
+			int ret = stmt.executeUpdate(sql.toString());
+			sb.append("2. table created. ret = ").append(ret).append("\n");
+			stmt.close();
+			stmt = null;
+
+			// construct the Insert Into Table SQL text, first without any parameter makers
+			sql.setLength(0);	// clear the sql buffer
+			sql.append("INSERT INTO t7337 \n(");
+			for (col = 1; col <= NR_COLUMNS; col++) {
+				sql.append("column").append(col).append(",");
+			}
+			sql.append("column").append(col).append(" ) VALUES \n(");
+			int posFirstPart = sql.length();
+			for (col = 1; col <= NR_COLUMNS; col++) {
+				sql.append("'someTextHere',");
+			}
+			sql.append("'2022-11-11');");
+
+			sb.append("3. prepare insert statement (no params), sql has length: ").append(sql.length()).append("\n");
+			pstmt = con.prepareStatement(sql.toString());
+			if (pstmt != null) {
+				ParameterMetaData pmd = pstmt.getParameterMetaData();
+				sb.append("   pmd. ").append(pmd.getParameterCount()).append(" parameters\n");
+				sb.append("4. execute prepared insert\n");
+				int inserted = pstmt.executeUpdate();
+				sb.append("5. first execute returned: ").append(inserted).append("\n");
+				// do it one more time
+				inserted = pstmt.executeUpdate();
+				sb.append("5. second execute returned: ").append(inserted).append("\n");
+				sb.append("6. inserted data committed\n");
+				pstmt.close();
+				pstmt = null;
+			}
+
+			// construct the Insert Into Table SQL text, now with parameter makers
+			sql.setLength(posFirstPart);	// clear the sql part after the: VALUES (
+			for (col = 1; col <= NR_COLUMNS; col++) {
+				sql.append("?,");
+			}
+			sql.append("'2022-11-16');");
+
+			sb.append("7. prepare insert statement (with params), sql has length: ").append(sql.length()).append("\n");
+			pstmt = con.prepareStatement(sql.toString());	// this fails when nr of parameter markers > 250
+			if (pstmt != null) {
+				ParameterMetaData pmd = pstmt.getParameterMetaData();
+				sb.append("   pmd. ").append(pmd.getParameterCount()).append(" parameters\n");
+				sb.append("8. bind parameters\n");
+				for (col = 1; col <= NR_COLUMNS; col++) {
+					pstmt.setString(col, "someMoreText");
+				}
+				sb.append("9. execute prepared insert with parameters\n");
+				int inserted = pstmt.executeUpdate();
+				sb.append("10. first execute returned: ").append(inserted).append("\n");
+				// do it one more time
+				inserted = pstmt.executeUpdate();
+				sb.append("10. second execute returned: ").append(inserted).append("\n");
+				sb.append("11. inserted data committed\n");
+				pstmt.close();
+				pstmt = null;
+			}
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+//			sb.append("sql: ").append(sql.toString()).append("\n");
+		}
+		closeStmtResSet(pstmt, null);
+
+		// cleanup table
+		try {
+			stmt = con.createStatement();
+			stmt.executeUpdate("DROP TABLE IF EXISTS t7337;");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, null);
+
+		// TODO: when nrParams is 251 or higher it generates an error: resultBlocks[1] should have been fetched by now, see below
+		compareExpectedOutput("Bug_PrepStmtManyParams_7337(" + (NR_COLUMNS) + ")",
+			(NR_COLUMNS <= 250) ?	// it works as expected when the nr of parameter markers is less than or equal to 250
+			"1. create table with " + (NR_COLUMNS+2) + " columns, sql has length: " + ((NR_COLUMNS * 23) -29) + "\n" +
+			"2. table created. ret = -2\n" +
+			"3. prepare insert statement (no params), sql has length: " + ((NR_COLUMNS * 25) -53) + "\n" +
+			"   pmd. 0 parameters\n" +
+			"4. execute prepared insert\n" +
+			"5. first execute returned: 1\n" +
+			"5. second execute returned: 1\n" +
+			"6. inserted data committed\n" +
+			"7. prepare insert statement (with params), sql has length: " + ((NR_COLUMNS * 12) -53) + "\n" +
+			"   pmd. " + (NR_COLUMNS) + " parameters\n" +
+			"8. bind parameters\n" +
+			"9. execute prepared insert with parameters\n" +
+			"10. first execute returned: 1\n" +
+			"10. second execute returned: 1\n" +
+			"11. inserted data committed\n"
+			:	// it fails when the nr of parameter markers is more than 250
+			"1. create table with " + (NR_COLUMNS+2) + " columns, sql has length: " + ((NR_COLUMNS * 23) -29) + "\n" +
+			"2. table created. ret = -2\n" +
+			"3. prepare insert statement (no params), sql has length: " + ((NR_COLUMNS * 25) -53) + "\n" +
+			"   pmd. 0 parameters\n" +
+			"4. execute prepared insert\n" +
+			"5. first execute returned: 1\n" +
+			"5. second execute returned: 1\n" +
+			"6. inserted data committed\n" +
+			"7. prepare insert statement (with params), sql has length: " + ((NR_COLUMNS * 12) -53) + "\n" +
+			"FAILED: resultBlocks[1] should have been fetched by now\n"
+			);
 	}
 
 	/**
