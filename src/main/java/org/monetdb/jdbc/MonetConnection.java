@@ -2341,7 +2341,7 @@ public class MonetConnection
 		/**
 		 * Parses the given string and changes the value of the matching
 		 * header appropriately, or passes it on to the underlying
-		 * DataResponse.
+		 * DataBlockResponse.
 		 *
 		 * @param tmpLine the string that contains the header
 		 * @return a non-null String if the header cannot be parsed or
@@ -2361,7 +2361,7 @@ public class MonetConnection
 			if (linetype != LineType.HEADER) {
 				if (!isSet[TYPESIZES])
 					isSet[TYPESIZES] = true;
-				return "Header expected, got: " + tmpLine;
+				return "Header expected, got " + linetype + " line: " + tmpLine;
 			}
 
 			// depending on the name of the header, we continue
@@ -2788,7 +2788,7 @@ public class MonetConnection
 		@Override
 		public String addLine(final String line, final LineType linetype) {
 			if (linetype != LineType.RESULT)
-				return "protocol violation: unexpected line in data block: " + line;
+				return "protocol violation: unexpected " + linetype + " line in data block: " + line;
 			// add to the backing array
 			data[++pos] = line;
 
