@@ -41,6 +41,8 @@ final public class JDBC_API_Tester {
 	StringBuilder sb;	// buffer to collect the test output
 	final static int sbInitLen = 3712;
 	Connection con;	// main connection shared by all tests
+	int dbmsMajorVersion;
+	int dbmsMinorVersion;
 	boolean foundDifferences = false;
 
 	public static void main(String[] args) throws Exception {
@@ -50,6 +52,9 @@ final public class JDBC_API_Tester {
 		jt.sb = new StringBuilder(sbInitLen);
 		jt.con = DriverManager.getConnection(con_URL);
 		// we are now connected
+		DatabaseMetaData dbmd = jt.con.getMetaData();
+		jt.dbmsMajorVersion = dbmd.getDatabaseMajorVersion();
+		jt.dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
 
 		// run the tests
 		jt.Test_Cautocommit(con_URL);
@@ -114,11 +119,8 @@ final public class JDBC_API_Tester {
 
 		ConnectionTests.runTests(con_URL);
 
-		// invoke running OnClientTester only on Jan2022 (11.43) or older servers
-		DatabaseMetaData dbmd = jt.con.getMetaData();
-		int dbmsMajorVersion = dbmd.getDatabaseMajorVersion();
-		int dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
-		if (dbmsMajorVersion == 11 && dbmsMinorVersion <= 43) {
+		// invoke running OnClientTester only on Oct2020 (11.39) or older servers
+		if (jt.dbmsMajorVersion == 11 && jt.dbmsMinorVersion <= 39) {
 			OnClientTester oct = new OnClientTester(con_URL, 0);
 			int failures = oct.runTests();
 			if (failures > 0)
@@ -1590,6 +1592,8 @@ final public class JDBC_API_Tester {
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
+			boolean isPreJan2022 = (dbmsMajorVersion == 11 && dbmsMinorVersion <= 41);
+
 			stmt = con.createStatement();
 			String qry = "SELECT 1;";
 			rs = stmt.executeQuery(qry);
@@ -1605,12 +1609,20 @@ final public class JDBC_API_Tester {
 			qry = "plan SELECT 2;";
 			rs = stmt.executeQuery(qry);
 			compareResultSet(rs, qry,
+				! isPreJan2022 ?
 				"Resultset with 1 columns\n" +
 				"rel\n" +
 				"clob(37)\n" +
 				"project (\n" +
 				"|  [ boolean(1) \"true\" as \"%1\".\"%1\" ]\n" +
-				") [ tinyint(2) \"2\" ]\n");
+				") [ tinyint(2) \"2\" ]\n"
+				:
+				"Resultset with 1 columns\n" +
+				"rel\n" +
+				"clob(21)\n" +
+				"project (\n" +
+				"|  [ boolean \"true\" ]\n" +
+				") [ tinyint \"2\" ]\n");
 			rs.close();
 			rs = null;
 			sb.setLength(0);	// clear the output log buffer
@@ -1648,10 +1660,16 @@ final public class JDBC_API_Tester {
 			rs.close();
 			rs = null;
 			compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
+				! isPreJan2022 ?
 				"4\n" +
 				"Another resultset\n" +
 				"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
-				"    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n");
+				"    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
+				:
+				"4\n" +
+				"Another resultset\n" +
+				"X_0=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
+				"X_1=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n");
 			sb.setLength(0);	// clear the output log buffer
 
 			// debug statements are NOT supported via JDBC driver, so the execution should throw an SQLException
@@ -6142,28 +6160,31 @@ final public class JDBC_API_Tester {
 			System.err.println("' produced different output!");
 			int expLen = expected.length();
 			int prodLen = produced.length();
-			int max_pos = expLen;
-			if (prodLen > max_pos)
-				max_pos = prodLen;
-			int line = 1;
-			int rowpos = 0;
-			for (int pos = 0; pos < max_pos; pos++) {
-				char a = (pos < expLen ? expected.charAt(pos) : '~');
-				char b = (pos < prodLen ? produced.charAt(pos) : '~');
-				if (a == '\n') {
-					line++;
-					rowpos = 0;
-				}
-				rowpos++;
-				if (a != b) {
-					if (pos + 30 < expLen)
-						expLen = pos + 30;
-					if (pos + 30 < prodLen)
-						prodLen = pos + 30;
-					System.err.println("Difference found at line " + line + " position " + rowpos
-						+ ": Expected \"" + expected.substring(pos < expLen ? pos : expLen-1, expLen-1)
-						+ "\" but gotten \"" + produced.substring(pos < prodLen ? pos : prodLen-1, prodLen-1) + "\"");
-					pos = max_pos;
+			if (expLen > 0 && prodLen > 0) {
+				int max_pos = expLen;
+				if (prodLen > max_pos)
+					max_pos = prodLen;
+				int line = 1;
+				int rowpos = 0;
+				for (int pos = 0; pos < max_pos; pos++) {
+					char a = (pos < expLen ? expected.charAt(pos) : '~');
+					char b = (pos < prodLen ? produced.charAt(pos) : '~');
+					if (a == '\n') {
+						line++;
+						rowpos = 0;
+					} else {
+						rowpos++;
+					}
+					if (a != b) {
+						if (pos + 40 < expLen)
+							expLen = pos + 40;
+						if (pos + 40 < prodLen)
+							prodLen = pos + 40;
+						System.err.println("Difference found at line " + line + " position " + rowpos
+							+ ". Expected:\n\"" + expected.substring(pos < expLen ? pos : expLen-1, expLen-1)
+							+ "\"\nbut gotten:\n\"" + produced.substring(pos < prodLen ? pos : prodLen-1, prodLen-1) + "\"");
+						pos = max_pos;
+					}
 				}
 			}
 			System.err.println();
