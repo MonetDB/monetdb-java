@@ -99,9 +99,7 @@ final public class JDBC_API_Tester {
 		jt.BugExecuteUpdate_Bug_3350();
 		jt.Bug_IsValid_Timeout_Bug_6782(con_URL);
 		jt.Bug_LargeQueries_6571_6693(con_URL);
-		jt.Bug_PrepStmtManyParams_7337(250);	// this works as expected
-		jt.Bug_PrepStmtManyParams_7337(251);	// this fails with: resultBlocks[1] should have been fetched by now
-		jt.Bug_PrepStmtManyParams_7337(480);	// this fails with: resultBlocks[1] should have been fetched by now
+		jt.Bug_PrepStmtManyParams_7337(480);
 		jt.Bug_PrepStmtSetObject_CLOB_6349();
 		jt.Bug_PrepStmtSetString_6382();
 		jt.Bug_PrepStmt_With_Errors_Jira292();
@@ -5717,7 +5715,6 @@ final public class JDBC_API_Tester {
 	private void Bug_PrepStmtManyParams_7337(int nrParams) {
 		sb.setLength(0);	// clear the output log buffer
 
-		// TODO: when nrParams is 251 or higher it fails to work as expected, see at the end.
 		final int NR_COLUMNS = nrParams;
 		final StringBuilder sql = new StringBuilder(100 + (NR_COLUMNS * 25));
 
@@ -5777,7 +5774,7 @@ final public class JDBC_API_Tester {
 			sql.append("'2022-11-16');");
 
 			sb.append("7. prepare insert statement (with params), sql has length: ").append(sql.length()).append("\n");
-			pstmt = con.prepareStatement(sql.toString());	// this fails when nr of parameter markers > 250
+			pstmt = con.prepareStatement(sql.toString());
 			if (pstmt != null) {
 				ParameterMetaData pmd = pstmt.getParameterMetaData();
 				sb.append("   pmd. ").append(pmd.getParameterCount()).append(" parameters\n");
@@ -5797,7 +5794,6 @@ final public class JDBC_API_Tester {
 			}
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-//			sb.append("sql: ").append(sql.toString()).append("\n");
 		}
 		closeStmtResSet(pstmt, null);
 
@@ -5810,9 +5806,7 @@ final public class JDBC_API_Tester {
 		}
 		closeStmtResSet(stmt, null);
 
-		// TODO: when nrParams is 251 or higher it generates an error: resultBlocks[1] should have been fetched by now, see below
 		compareExpectedOutput("Bug_PrepStmtManyParams_7337(" + (NR_COLUMNS) + ")",
-			(NR_COLUMNS <= 250) ?	// it works as expected when the nr of parameter markers is less than or equal to 250
 			"1. create table with " + (NR_COLUMNS+2) + " columns, sql has length: " + ((NR_COLUMNS * 23) -29) + "\n" +
 			"2. table created. ret = -2\n" +
 			"3. prepare insert statement (no params), sql has length: " + ((NR_COLUMNS * 25) -53) + "\n" +
@@ -5827,19 +5821,7 @@ final public class JDBC_API_Tester {
 			"9. execute prepared insert with parameters\n" +
 			"10. first execute returned: 1\n" +
 			"10. second execute returned: 1\n" +
-			"11. inserted data committed\n"
-			:	// it fails when the nr of parameter markers is more than 250
-			"1. create table with " + (NR_COLUMNS+2) + " columns, sql has length: " + ((NR_COLUMNS * 23) -29) + "\n" +
-			"2. table created. ret = -2\n" +
-			"3. prepare insert statement (no params), sql has length: " + ((NR_COLUMNS * 25) -53) + "\n" +
-			"   pmd. 0 parameters\n" +
-			"4. execute prepared insert\n" +
-			"5. first execute returned: 1\n" +
-			"5. second execute returned: 1\n" +
-			"6. inserted data committed\n" +
-			"7. prepare insert statement (with params), sql has length: " + ((NR_COLUMNS * 12) -53) + "\n" +
-			"FAILED: resultBlocks[1] should have been fetched by now\n"
-			);
+			"11. inserted data committed\n");
 	}
 
 	/**

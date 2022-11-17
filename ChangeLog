@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Nov 17 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Fixed an invalid error issue when a PreparedStatement had more than 250
+  parameters. See also  https://github.com/MonetDB/MonetDB/issues/7337
+
 * Thu Nov  3 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected returned SQL TypeName values for the MonetDB interval types:
   'day_interval', 'month_interval' and 'sec_interval'.  Those MonetDB

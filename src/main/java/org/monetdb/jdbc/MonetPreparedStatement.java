@@ -122,6 +122,26 @@ public class MonetPreparedStatement
 			resultSetHoldability
 		);
 
+		if (prepareQuery == null)
+			throw new SQLException("Missing SQL statement", "M1M05");
+
+		// Count the number of parameter markers (question marks) in the SQL string.
+		int countParamMarkers = 0;
+		int pos = prepareQuery.indexOf('?');
+		while (pos >= 0) {
+			countParamMarkers++;
+			pos = prepareQuery.indexOf('?', pos+1);
+		}
+		// When it is larger than the current fetchsize, increase it
+		// so all the parameters can be read into one DataBlockResponse.
+		// see also: https://github.com/MonetDB/MonetDB/issues/7337
+		int currentFetchSize = super.getFetchSize();
+		if (currentFetchSize == 0)
+			currentFetchSize = 250;	// 250 is the DEF_FETCHSIZE, see MonetConnection.java
+		if (countParamMarkers > currentFetchSize) {
+			super.setFetchSize(countParamMarkers);
+		}
+
 		if (!super.execute("PREPARE " + prepareQuery))
 			throw new SQLException("Unexpected server response", "M0M10");
 
