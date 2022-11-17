@@ -138,6 +138,9 @@ public class MonetStatement
 	 */
 	@Override
 	public void addBatch(final String sql) throws SQLException {
+		if (sql == null || sql.isEmpty())
+			throw new SQLException("Missing SQL statement", "M1M05");
+
 		if (batch == null) {
 			// create the ArrayList at first time use
 			batch = new ArrayList<String>();
@@ -437,6 +440,9 @@ public class MonetStatement
 			lastResponseList.close();
 			lastResponseList = null;
 		}
+
+		if (sql == null || sql.isEmpty())
+			throw new SQLException("Missing SQL statement", "M1M05");
 
 		if (queryTimeout != connection.lastSetQueryTimeout) {
 			// set requested/changed queryTimeout on the server side first
@@ -1285,6 +1291,8 @@ public class MonetStatement
 			final BatchUpdateException e)
 		throws BatchUpdateException
 	{
+		if (batch.length() == 0)
+			return false;
 		try {
 			long count = -1;
 			boolean hasResultSet = internalExecute(batch.toString());

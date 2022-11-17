@@ -770,6 +770,10 @@ public class MonetConnection
 		throws SQLException
 	{
 		checkNotClosed();
+
+		if (sql == null || sql.isEmpty())
+			throw new SQLException("Missing SQL statement", "M1M05");
+
 		try {
 			final CallableStatement ret = new MonetCallableStatement(
 				this,
@@ -875,6 +879,10 @@ public class MonetConnection
 		throws SQLException
 	{
 		checkNotClosed();
+
+		if (sql == null || sql.isEmpty())
+			throw new SQLException("Missing SQL statement", "M1M05");
+
 		try {
 			final PreparedStatement ret = new MonetPreparedStatement(
 				this,

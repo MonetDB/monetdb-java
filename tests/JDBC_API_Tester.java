@@ -66,6 +66,7 @@ final public class JDBC_API_Tester {
 		jt.Test_Ctransaction();
 		jt.Test_Dobjects();
 		jt.Test_DBCmetadata();
+		jt.Test_EmptySql();
 		jt.Test_FetchSize();
 		jt.Test_Int128();
 		jt.Test_Interval_Types();
@@ -1383,6 +1384,142 @@ final public class JDBC_API_Tester {
 		closeStmtResSet(stmt, null);
 
 		compareExpectedOutput("Test_Dmetadata", "");
+	}
+
+	private void Test_EmptySql() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		try {
+			stmt = con.createStatement();
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		try {
+			stmt.execute(null);
+			sb.append("Failed to check null parameter!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			stmt.execute("");
+			sb.append("Failed to check empty sql string!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+
+		try {
+			int ret = stmt.executeUpdate(null);
+			sb.append("Failed to check null parameter!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			int ret = stmt.executeUpdate("");
+			sb.append("Failed to check empty sql string!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			long ret = stmt.executeLargeUpdate(null);
+			sb.append("Failed to check null parameter!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			long ret = stmt.executeLargeUpdate("");
+			sb.append("Failed to check empty sql string!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			stmt.addBatch(null);
+			sb.append("Failed to check null parameter!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			stmt.addBatch("");
+			sb.append("Failed to check empty sql string!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+
+		ResultSet rs = null;
+		try {
+			rs = stmt.executeQuery(null);
+			sb.append("Failed to check null parameter!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			rs = stmt.executeQuery("");
+			sb.append("Failed to check empty sql string!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, rs);
+
+		PreparedStatement pstmt = null;
+		try {
+			pstmt = con.prepareStatement(null);
+			sb.append("Failed to check null parameter!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			pstmt = con.prepareStatement("");
+			sb.append("Failed to check empty sql string!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			pstmt = con.prepareStatement(null, Statement.RETURN_GENERATED_KEYS);
+			sb.append("Failed to check null parameter!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			pstmt = con.prepareStatement("", Statement.RETURN_GENERATED_KEYS);
+			sb.append("Failed to check empty sql string!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(pstmt, null);
+
+		CallableStatement cstmt = null;
+		try {
+			pstmt = con.prepareCall(null);
+			sb.append("Failed to check null parameter!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		try {
+			pstmt = con.prepareCall("");
+			sb.append("Failed to check empty sql string!\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(cstmt, null);
+
+		compareExpectedOutput("Test_EmptySql",
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n" +
+			"Missing SQL statement\n");
 	}
 
 	private void Test_FetchSize() {
