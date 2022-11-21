@@ -538,7 +538,8 @@ public final class OnClientTester {
 	private void test_ServerStopsReading() throws SQLException, Failure {
 		initTest("test_ServerStopsReading");
 		prepare();
-		MyUploadHandler handler = new MyUploadHandler(100);
+		long n = 2 * 1024 * 1024 / 10;
+		MyUploadHandler handler = new MyUploadHandler(n);
 		conn.setUploadHandler(handler);
 		update("COPY 10 RECORDS INTO foo FROM 'banana' ON CLIENT");
 		assertEq("cancellation callback called", true, handler.isCancelled());
