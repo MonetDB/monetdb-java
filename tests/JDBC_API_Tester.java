@@ -6008,7 +6008,7 @@ final public class JDBC_API_Tester {
 
 			// construct the Insert Into Table SQL text, now with parameter makers
 			sql.setLength(posFirstPart);	// clear the sql part after the: VALUES (
-			for (col = 1; col <= NR_COLUMNS; col++) {
+			for (col = 1; col <= nrParams; col++) {
 				sql.append("?,");
 			}
 			sql.append("'2022-11-16');");
@@ -6019,7 +6019,7 @@ final public class JDBC_API_Tester {
 				ParameterMetaData pmd = pstmt.getParameterMetaData();
 				sb.append("   pmd. ").append(pmd.getParameterCount()).append(" parameters\n");
 				sb.append("8. bind parameters\n");
-				for (col = 1; col <= NR_COLUMNS; col++) {
+				for (col = 1; col <= nrParams; col++) {
 					pstmt.setString(col, "someMoreText");
 				}
 				sb.append("9. execute prepared insert with parameters\n");
@@ -6046,7 +6046,7 @@ final public class JDBC_API_Tester {
 		}
 		closeStmtResSet(stmt, null);
 
-		compareExpectedOutput("Bug_PrepStmtManyParams_7337(" + (NR_COLUMNS) + ")",
+		compareExpectedOutput("Bug_PrepStmtManyParams_7337(" + (nrParams) + ")",
 			"1. create table with " + (NR_COLUMNS+2) + " columns, sql has length: " + ((NR_COLUMNS * 23) -29) + "\n" +
 			"2. table created. ret = -2\n" +
 			"3. prepare insert statement (no params), sql has length: " + ((NR_COLUMNS * 25) -53) + "\n" +
@@ -6055,8 +6055,8 @@ final public class JDBC_API_Tester {
 			"5. first execute returned: 1\n" +
 			"5. second execute returned: 1\n" +
 			"6. inserted data committed\n" +
-			"7. prepare insert statement (with params), sql has length: " + ((NR_COLUMNS * 12) -53) + "\n" +
-			"   pmd. " + (NR_COLUMNS) + " parameters\n" +
+			"7. prepare insert statement (with params), sql has length: " + ((nrParams * 12) -53) + "\n" +
+			"   pmd. " + (nrParams) + " parameters\n" +
 			"8. bind parameters\n" +
 			"9. execute prepared insert with parameters\n" +
 			"10. first execute returned: 1\n" +
