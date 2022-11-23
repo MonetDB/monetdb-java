@@ -85,6 +85,7 @@ final public class JDBC_API_Tester {
 		jt.Test_CallableStmt();
 		jt.Test_Rbooleans();
 		jt.Test_Rmetadata();
+		jt.Test_RfetchManyColumnsInfo();
 		jt.Test_Rpositioning();
 		jt.Test_Rsqldata();
 		jt.Test_Rtimedate();
@@ -108,6 +109,7 @@ final public class JDBC_API_Tester {
 		jt.BugSetQueryTimeout_Bug_3357();
 		jt.SQLcopyinto();
 		jt.DecimalPrecisionAndScale();
+
 		/* run next long running test (11 minutes) only before a new release */
 	/*	jt.Test_PSlargeamount(); */
 
@@ -3485,6 +3487,107 @@ final public class JDBC_API_Tester {
 			"7.	java.lang.String is an instance of java.lang.String\n" +
 			"7.	java.lang.String is an instance of java.lang.String\n" +
 			"0. true	true\n");
+	}
+
+	private void Test_RfetchManyColumnsInfo() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			final int NR_COLUMNS = 180;
+			final StringBuilder sql = new StringBuilder(50 + (NR_COLUMNS * 12));
+
+			sql.append("CREATE TABLE Test_RfetchManyColumnsInfo (");
+			for (int col = 1; col <= NR_COLUMNS; col++) {
+				sql.append("col").append(col).append(" int");
+				sql.append((col < NR_COLUMNS) ? ", " : ")");
+			}
+
+			stmt = con.createStatement();
+			stmt.executeUpdate(sql.toString());
+
+			// add 1 row (all NULLs)
+			int inserted = stmt.executeUpdate("INSERT INTO Test_RfetchManyColumnsInfo (col1) VALUES (1)");
+			if (inserted != 1)
+				sb.append("Expected 1 row inserted, but got: ").append(inserted).append("\n");
+
+			rs = stmt.executeQuery("SELECT * FROM Test_RfetchManyColumnsInfo");
+			rs.next();
+			ResultSetMetaData rsmd = rs.getMetaData();
+			sb.append(rsmd.getColumnCount()).append(" columns start at columnCount\n");
+			// do pulling of the metadata info in reverse order to test optimizing logic
+			// in ResultSetMetaData.fetchManyColumnsInfo() to choose a lower start_col iteratively
+			for (int col = rsmd.getColumnCount(); col >= 1; col--) {
+				// sb.append(col).append(",");
+				rsmd.getColumnClassName(col);
+				rsmd.getColumnDisplaySize(col);
+				rsmd.getColumnLabel(col);
+				rsmd.getColumnName(col);
+				rsmd.getColumnType(col);
+				rsmd.getColumnTypeName(col);
+				rsmd.getPrecision(col);
+				rsmd.getScale(col);
+				rsmd.getCatalogName(col);
+				rsmd.getSchemaName(col);
+				rsmd.getTableName(col);
+				rsmd.isAutoIncrement(col);
+				rsmd.isCaseSensitive(col);
+				rsmd.isCurrency(col);
+				rsmd.isDefinitelyWritable(col);
+				if (rsmd.isNullable(col) != ResultSetMetaData.columnNullable)
+					sb.append(col).append(" wrong isNullable()").append(rsmd.isNullable(col)).append("\n");
+				rsmd.isReadOnly(col);
+				rsmd.isSearchable(col);
+				rsmd.isSigned(col);
+				rsmd.isWritable(col);
+			}
+			rs.close();
+
+			rs = stmt.executeQuery("SELECT * FROM Test_RfetchManyColumnsInfo");
+			rs.next();
+			rsmd = rs.getMetaData();
+			sb.append(rsmd.getColumnCount()).append(" columns start at 1\n");
+			for (int col = 1; col <= rsmd.getColumnCount(); col++) {
+				// sb.append(col).append(",");
+				rsmd.getColumnClassName(col);
+				rsmd.getColumnDisplaySize(col);
+				rsmd.getColumnLabel(col);
+				rsmd.getColumnName(col);
+				rsmd.getColumnType(col);
+				rsmd.getColumnTypeName(col);
+				rsmd.getPrecision(col);
+				rsmd.getScale(col);
+				rsmd.getCatalogName(col);
+				rsmd.getSchemaName(col);
+				rsmd.getTableName(col);
+				rsmd.isAutoIncrement(col);
+				rsmd.isCaseSensitive(col);
+				rsmd.isCurrency(col);
+				rsmd.isDefinitelyWritable(col);
+				if (rsmd.isNullable(col) != ResultSetMetaData.columnNullable)
+					sb.append(col).append(" wrong isNullable()").append(rsmd.isNullable(col)).append("\n");
+				rsmd.isReadOnly(col);
+				rsmd.isSearchable(col);
+				rsmd.isSigned(col);
+				rsmd.isWritable(col);
+			}
+			rs.close();
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		// cleanup table
+		try {
+			stmt.executeUpdate("DROP TABLE IF EXISTS Test_RfetchManyColumnsInfo;");
+		} catch (SQLException e) {
+			sb.append("FAILED to drop: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, rs);
+
+		compareExpectedOutput("Test_RfetchManyColumnsInfo",
+			"180 columns start at columnCount\n" +
+			"180 columns start at 1\n");
 	}
 
 	private void Test_Rpositioning() {

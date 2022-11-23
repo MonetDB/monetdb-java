@@ -1265,6 +1265,7 @@ public class MonetResultSet
 			private final boolean[] _is_fetched = new boolean[array_size];
 			private final int[] _isNullable = new int[array_size];
 			private final boolean[] _isAutoincrement = new boolean[array_size];
+			private int nextUpperbound = array_size;
 
 			/**
 			 * A private utility method to check validity of column index number
@@ -1283,14 +1284,9 @@ public class MonetResultSet
 			private final void fetchColumnInfo(final int column) throws SQLException {
 				// for debug: System.out.println("fetchColumnInfo(" + column + ")");
 				checkColumnIndexValidity(column);
-
 				if (_is_fetched[column] != true) {
-					// fetch column info for multiple columns combined in one go, starting at 1
-					fetchManyColumnsInfo(1);
-					if (_is_fetched[column] != true) {
-						// fetch info for column x if it was not fetched by the previous call
-						fetchManyColumnsInfo(column);
-					}
+					// fetch column info for multiple columns combined in one go
+					fetchManyColumnsInfo(column);
 				}
 
 				if (_is_fetched[column])
@@ -1318,7 +1314,22 @@ public class MonetResultSet
 				// So 80 is a good balance between speedup (up to 79x) and size of generated query sent to server
 				final int MAX_COLUMNS_PER_QUERY = 80;
 
-				final StringBuilder query = new StringBuilder(600 + (MAX_COLUMNS_PER_QUERY * 150));
+				// Determine the optimal startcol to make use of fetching up to 80 columns in one query.
+				int startcol = column;
+				if ((startcol > 1) && (startcol + MAX_COLUMNS_PER_QUERY >= nextUpperbound)) {
+					// we can fetch info from more columns in one query if we start with a lower startcol
+					startcol = nextUpperbound - MAX_COLUMNS_PER_QUERY;
+					if (startcol < 1) {
+						startcol = 1;
+					} else
+					if (startcol > column) {
+						startcol = column;
+					}
+					nextUpperbound = startcol;	// next time this nextUpperbound value will be used
+					// for debug: System.out.println("fetchManyColumnsInfo(" + column + ")" + (startcol != column ? " changed into startcol: " + startcol : "") + " nextUpperbound: " + nextUpperbound);
+				}
+
+				final StringBuilder query = new StringBuilder(410 + (MAX_COLUMNS_PER_QUERY * 150));
 				/* next SQL query is a simplified version of query in MonetDatabaseMetaData.getColumns(), to fetch only the needed attributes of a column */
 				query.append("SELECT " +
 					"s.\"name\" AS schnm, " +
@@ -1339,7 +1350,7 @@ public class MonetResultSet
 				String tblName = null;
 				String colName = null;
 				int queriedcolcount = 0;
-				for (int col = column; col < array_size && queriedcolcount < MAX_COLUMNS_PER_QUERY; col++) {
+				for (int col = startcol; col < array_size && queriedcolcount < MAX_COLUMNS_PER_QUERY; col++) {
 					if (_is_fetched[col] != true) {
 						if (_is_queried[col] != true) {
 							_isNullable[col] = columnNullableUnknown;
@@ -1416,7 +1427,7 @@ public class MonetResultSet
 				if (queriedcolcount != 0) {
 					// not all queried columns have resulted in a returned data row.
 					// make sure we do not match those columns again next run
-					for (int col = column; col < array_size; col++) {
+					for (int col = startcol; col < array_size; col++) {
 						if (_is_fetched[col] != true && _is_queried[col]) {
 							_is_fetched[col] = true;
 							// for debug: System.out.println("Found NO match at [" + col + "] for " + getSchemaName(col) + "." + getTableName(col) + "." + getColumnName(col));
