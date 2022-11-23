@@ -297,8 +297,8 @@ public class MonetConnection
 
 		// calculate our time zone offset
 		final Calendar cal = Calendar.getInstance();
-		int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
-		int offsetSeconds = offsetMillis / 1000;
+		final int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
+		final int offsetSeconds = offsetMillis / 1000;
 		timeZoneSetting.set(offsetSeconds);
 
 		server.setHandshakeOptions(new HandshakeOption<?>[] {
@@ -533,7 +533,7 @@ public class MonetConnection
 	 * constants: ResultSet.HOLD_CURSORS_OVER_COMMIT or
 	 * ResultSet.CLOSE_CURSORS_AT_COMMIT
 	 *
-	 * @return a new Statement      object that will generate ResultSet
+	 * @return a new Statement object that will generate ResultSet
 	 * objects with the given type, concurrency, and holdability
 	 * @throws SQLException if a database access error occurs or the
 	 * given parameters are not ResultSet constants indicating type,
@@ -570,7 +570,7 @@ public class MonetConnection
 	 */
 	@Override
 	public String getCatalog() {
-		// MonetDB does NOT support catalogs
+		// MonetDB does NOT support catalog names or qualifiers
 		return null;
 	}
 
@@ -1104,7 +1104,7 @@ public class MonetConnection
 	 */
 	@Override
 	public void setCatalog(final String catalog) {
-		// silently ignore this request as MonetDB does not support catalogs
+		// silently ignore this request as MonetDB does not support catalog names
 	}
 
 	/**
@@ -1207,7 +1207,7 @@ public class MonetConnection
 	 * mapping of SQL structured types and distinct types.
 	 *
 	 * @param map the java.util.Map object to install as the replacement for
-	 *        this Connection  object's default type map
+	 *        this Connection object's default type map
 	 */
 	@Override
 	public void setTypeMap(final Map<String, Class<?>> map) {
@@ -1827,32 +1827,33 @@ public class MonetConnection
 		return sb.toString();
 	}
 
+	/**
+	 * Utility method to validate if property name is supported.
+	 * If not supported a warning is added to this Connection.
+	 * @return valid true or false
+	 */
 	private boolean checkValidProperty(String name, String context) {
-		if (isValidProperty(name))
+		// supported MonetDB connection properties.
+		// See also MonetDatabaseMetaData.getClientInfoProperties()
+		if (name.equals("host")
+		 || name.equals("port")
+		 || name.equals("user")
+		 || name.equals("password")
+		 || name.equals("language")
+		 || name.equals("database")
+		 || name.equals("debug")
+		 || name.equals("logfile")
+		 || name.equals("hash")
+		 || name.equals("treat_blob_as_binary")
+		 || name.equals("treat_clob_as_varchar")
+		 || name.equals("autocommit")
+		 || name.equals("so_timeout")
+		 || name.equals("fetchsize"))	// only supported by servers from version 11.41.1 onwards
 			return true;
+
 		addWarning(context + ": '" + name + "' is not a recognised property", "01M07");
 		return false;
 	}
-
-	// supported MonetDB connection properties.
-	// See also MonetDatabaseMetaData.getClientInfoProperties()
-	private boolean isValidProperty(String name) {
-		return  name.equals("host") ||
-			name.equals("port") ||
-			name.equals("user") ||
-			name.equals("password") ||
-			name.equals("language") ||
-			name.equals("database") ||
-			name.equals("debug") ||
-			name.equals("logfile") ||
-			name.equals("hash") ||
-			name.equals("treat_blob_as_binary") ||
-			name.equals("treat_clob_as_varchar") ||
-			name.equals("autocommit") ||
-			name.equals("so_timeout") ||
-			name.equals("fetchsize");	// only supported by servers from version 11.41.1 onwards
-	}
-
 
 	// Internal caches for 3 static mserver environment values, so they aren't queried from mserver again and again
 	private String env_current_user;
