@@ -104,6 +104,7 @@ public class MonetStatement
 
 		this.connection = connection;
 		this.queryTimeout = connection.lastSetQueryTimeout;
+		this.fetchSize = connection.getDefaultFetchSize();
 
 		this.resultSetType = resultSetType;
 		this.resultSetConcurrency = resultSetConcurrency;
@@ -621,10 +622,9 @@ public class MonetStatement
 
 	/**
 	 * Retrieves the number of result set rows that is the default fetch size
-	 * for ResultSet objects generated from this Statement object. If this
-	 * Statement object has not set a fetch size by calling the method
-	 * setFetchSize, or the method setFetchSize was called as such to let
-	 * the driver ignore the hint, 0 is returned.
+	 * for ResultSet objects generated from this Statement object.
+	 * If this Statement object has not set a fetch size by calling the
+	 * method setFetchSize, the return value is implementation-specific.
 	 *
 	 * @return the default fetch size for result sets generated from this
 	 *         Statement object
@@ -948,7 +948,7 @@ public class MonetStatement
 	/**
 	 * Gives the JDBC driver a hint as to the number of rows that should be
 	 * fetched from the database when more rows are needed. The number of rows
-	 * specified affects only result sets created using this statement. If the
+	 * specified affects only ResultSet created using this Statement. If the
 	 * value specified is zero, then the hint is ignored.
 	 *
 	 * @param rows the number of rows to fetch

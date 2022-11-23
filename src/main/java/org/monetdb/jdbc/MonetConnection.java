@@ -2175,6 +2175,15 @@ public class MonetConnection
 	private static int seqCounter = 0;
 
 	/**
+	 * returns default fetchSize as set at connection moment
+	 *
+	 * @return defaultFetchSize
+	 */
+	protected int getDefaultFetchSize() {
+		return defaultFetchSize;
+	}
+
+	/**
 	 * A Response is a message sent by the server to indicate some
 	 * action has taken place, and possible results of that action.
 	 */

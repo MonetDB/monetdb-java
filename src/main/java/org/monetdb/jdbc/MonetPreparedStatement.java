@@ -136,8 +136,9 @@ public class MonetPreparedStatement
 		// so all the parameters can be read into one DataBlockResponse.
 		// see also: https://github.com/MonetDB/MonetDB/issues/7337
 		int currentFetchSize = super.getFetchSize();
-		if (currentFetchSize == 0)
-			currentFetchSize = 250;	// 250 is the DEF_FETCHSIZE, see MonetConnection.java
+		if (currentFetchSize == 0) {
+			currentFetchSize = connection.getDefaultFetchSize();
+		}
 		if (countParamMarkers > currentFetchSize) {
 			super.setFetchSize(countParamMarkers);
 		}

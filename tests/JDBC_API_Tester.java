@@ -1549,7 +1549,7 @@ final public class JDBC_API_Tester {
 		closeStmtResSet(stmt, rs);
 
 		compareExpectedOutput("Test_FetchSize",
-			"Statement fetch size before set: 0\n" +
+			"Statement fetch size before set: 250\n" +
 			"ResultSet fetch size before set: 250\n" +
 			"Statement fetch size after set: 40\n" +
 			"ResultSet fetch size after set: 16384\n");
