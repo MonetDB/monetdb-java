@@ -96,8 +96,8 @@ public final class JMonetDB {
 		// build the hostname
 		String host = copts.getOption("host").getArgument();
 		String sport = copts.getOption("port").getArgument();
-		int pos;
-		if ((pos = host.indexOf(":")) != -1) {
+		int pos = host.indexOf(':');
+		if (pos != -1) {
 			sport = host.substring(pos + 1);
 			host = host.substring(0, pos);
 		}

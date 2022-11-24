@@ -343,7 +343,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				if (tmp != null) {
 					final String args[] = tmp.split("&");
 					for (int i = 0; i < args.length; i++) {
-						int pos = args[i].indexOf("=");
+						int pos = args[i].indexOf('=');
 						if (pos > 0) {
 							tmp = args[i].substring(0, pos);
 							switch (tmp) {

@@ -284,7 +284,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 
 		// build the hostname
 		String host = copts.getOption("host").getArgument();
-		if (host.indexOf(":") == -1) {
+		if (host.indexOf(':') == -1) {
 			host = host + ":" + copts.getOption("port").getArgument();
 		}
 
@@ -963,7 +963,7 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 					String obj_nm = object;
 					int len;
 					boolean found = false;
-					final int dot = object.indexOf(".");
+					final int dot = object.indexOf('.');
 					if (dot > 0) {
 						// use specified schema
 						schema = object.substring(0, dot);

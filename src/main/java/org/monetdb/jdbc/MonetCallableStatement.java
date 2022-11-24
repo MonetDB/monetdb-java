@@ -112,7 +112,7 @@ public final class MonetCallableStatement
 		if (query == null)
 			return null;
 
-		final int firstAccOpen = query.indexOf("{");
+		final int firstAccOpen = query.indexOf('{');
 		if (firstAccOpen == -1)
 			// nothing to remove
 			return query;
