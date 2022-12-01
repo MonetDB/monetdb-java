@@ -1006,6 +1006,10 @@ final public class JDBC_API_Tester {
 			sb.append("Failed to createStatement: ").append(e.getMessage()).append("\n");
 		}
 
+		/* servers before Jan2022 (11.45) have a problem (server crash and db corruption)
+		   with indexes created on temp tables, so conditionally execute those commands and tests */
+		boolean testCreateDropIndexOnTmpTables = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 43);
+
 		String action = "Create";
 		handleExecuteDDL(stmt, action, "schema", "jdbctst", "CREATE SCHEMA jdbctst; SET SCHEMA jdbctst;");
 
@@ -1046,16 +1050,18 @@ final public class JDBC_API_Tester {
 		objtype = "index";
 		handleExecuteDDL(stmt, action, objtype, "pk_uc_i",
 			"CREATE INDEX pk_uc_i ON jdbctst.pk_uc (id1, name1);");
-		handleExecuteDDL(stmt, action, objtype, "tmp_pk_uc_i",
-			"CREATE INDEX tmp_pk_uc_i ON tmp.tmp_pk_uc (id1, name1);");
-		handleExecuteDDL(stmt, action, objtype, "glbl_pk_uc_i",
-			"CREATE INDEX glbl_pk_uc_i ON tmp.glbl_pk_uc (id1, name1);");
 		handleExecuteDDL(stmt, action, objtype, "nopk_twoucs_i",
 			"CREATE INDEX nopk_twoucs_i ON jdbctst.nopk_twoucs (id2, name2);");
-		handleExecuteDDL(stmt, action, objtype, "tmp_nopk_twoucs_i",
-			"CREATE INDEX tmp_nopk_twoucs_i ON tmp.tmp_nopk_twoucs (id2, name2);");
-		handleExecuteDDL(stmt, action, objtype, "glbl_nopk_twoucs_i",
-			"CREATE INDEX glbl_nopk_twoucs_i ON tmp.glbl_nopk_twoucs (id2, name2);");
+		if (testCreateDropIndexOnTmpTables) {
+			handleExecuteDDL(stmt, action, objtype, "tmp_pk_uc_i",
+				"CREATE INDEX tmp_pk_uc_i ON tmp.tmp_pk_uc (id1, name1);");
+			handleExecuteDDL(stmt, action, objtype, "glbl_pk_uc_i",
+				"CREATE INDEX glbl_pk_uc_i ON tmp.glbl_pk_uc (id1, name1);");
+			handleExecuteDDL(stmt, action, objtype, "tmp_nopk_twoucs_i",
+				"CREATE INDEX tmp_nopk_twoucs_i ON tmp.tmp_nopk_twoucs (id2, name2);");
+			handleExecuteDDL(stmt, action, objtype, "glbl_nopk_twoucs_i",
+				"CREATE INDEX glbl_nopk_twoucs_i ON tmp.glbl_nopk_twoucs (id2, name2);");
+		}
 
 		// grant privileges to populate catalog. Used for testing getTablePrivileges() and getColumnPrivileges()
 		action = "grant";
@@ -1203,6 +1209,7 @@ final public class JDBC_API_Tester {
 			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	3	0	null\n" +
 			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	3	0	null\n");
 
+			if (testCreateDropIndexOnTmpTables) {
 			compareResultSet(dbmd.getIndexInfo(null, "tmp", "tmp_pk_uc", false, false), "getIndexInfo(null, tmp, tmp_pk_uc, false, false)",
 			"Resultset with 13 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
@@ -1211,7 +1218,9 @@ final public class JDBC_API_Tester {
 			"null	tmp	tmp_pk_uc	false	null	tmp_pk_uc_name1_unique	2	1	name1	null	0	0	null\n" +
 			"null	tmp	tmp_pk_uc	true	null	tmp_pk_uc_i	2	1	id1	null	0	0	null\n" +
 			"null	tmp	tmp_pk_uc	true	null	tmp_pk_uc_i	2	2	name1	null	0	0	null\n");
+			}
 
+			if (testCreateDropIndexOnTmpTables) {
 			compareResultSet(dbmd.getIndexInfo(null, "tmp", "glbl_pk_uc", false, false), "getIndexInfo(null, tmp, glbl_pk_uc, false, false)",
 			"Resultset with 13 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
@@ -1220,6 +1229,7 @@ final public class JDBC_API_Tester {
 			"null	tmp	glbl_pk_uc	false	null	glbl_pk_uc_name1_unique	2	1	name1	null	0	0	null\n" +
 			"null	tmp	glbl_pk_uc	true	null	glbl_pk_uc_i	2	1	id1	null	0	0	null\n" +
 			"null	tmp	glbl_pk_uc	true	null	glbl_pk_uc_i	2	2	name1	null	0	0	null\n");
+			}
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "function_languages", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, sys, function_languages, DatabaseMetaData.bestRowTransaction, true)",
@@ -1345,11 +1355,13 @@ final public class JDBC_API_Tester {
 		action = "Drop";
 		objtype = "index";
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk_uc_i", "DROP INDEX jdbctst.pk_uc_i;");
-		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc_i;", "DROP INDEX tmp.tmp_pk_uc_i;");
-		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_pk_uc_i", "DROP INDEX tmp.glbl_pk_uc_i;");
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs_i", "DROP INDEX jdbctst.nopk_twoucs_i;");
-		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_nopk_twoucs_i", "DROP INDEX tmp.tmp_nopk_twoucs_i;");
-		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs_i", "DROP INDEX tmp.glbl_nopk_twoucs_i;");
+		if (testCreateDropIndexOnTmpTables) {
+			handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc_i;", "DROP INDEX tmp.tmp_pk_uc_i;");
+			handleExecuteDDL(stmt, action, objtype, "tmp.glbl_pk_uc_i", "DROP INDEX tmp.glbl_pk_uc_i;");
+			handleExecuteDDL(stmt, action, objtype, "tmp.tmp_nopk_twoucs_i", "DROP INDEX tmp.tmp_nopk_twoucs_i;");
+			handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs_i", "DROP INDEX tmp.glbl_nopk_twoucs_i;");
+		}
 		objtype = "table";
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk_uc", "DROP TABLE jdbctst.pk_uc;");
 		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_pk_uc", "DROP TABLE tmp.tmp_pk_uc;");
@@ -1385,7 +1397,7 @@ final public class JDBC_API_Tester {
 
 		closeStmtResSet(stmt, null);
 
-		compareExpectedOutput("Test_Dmetadata", "");
+		compareExpectedOutput("Test_DBCmetadata", "");
 	}
 
 	private void Test_EmptySql() {
