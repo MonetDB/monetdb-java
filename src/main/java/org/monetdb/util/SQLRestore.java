@@ -51,7 +51,8 @@ public final class SQLRestore {
 		public void run() {
 			try {
 				while (true) {
-					final String line = _is.readLine();
+					_is.advance();
+					final String line = _is.getLine();
 					if (line == null)
 						break;
 					final LineType result = _is.getLineType();

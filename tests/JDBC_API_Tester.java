@@ -6172,7 +6172,7 @@ final public class JDBC_API_Tester {
 			org.monetdb.mcl.io.BufferedMCLReader mclIn = server.getReader();
 			org.monetdb.mcl.io.BufferedMCLWriter mclOut = server.getWriter();
 
-			String error = mclIn.waitForPrompt();
+			String error = mclIn.discardRemainder();
 			if (error != null)
 				sb.append("Received start error: ").append(error).append("\n");
 
@@ -6190,13 +6190,13 @@ final public class JDBC_API_Tester {
 			}
 			mclOut.writeLine(""); // need this one for synchronisation over flush()
 
-			error = mclIn.waitForPrompt();
+			error = mclIn.discardRemainder();
 			if (error != null)
 				sb.append("Received error: ").append(error).append("\n");
 
 			mclOut.writeLine(""); // need this one for synchronisation over flush()
 
-			error = mclIn.waitForPrompt();
+			error = mclIn.discardRemainder();
 			if (error != null)
 				sb.append("Received finish error: ").append(error).append("\n");
 

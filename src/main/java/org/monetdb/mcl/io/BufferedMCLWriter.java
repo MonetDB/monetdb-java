@@ -98,6 +98,6 @@ public final class BufferedMCLWriter extends BufferedWriter {
 
 		// reset reader state, last line isn't valid any more now
 		if (reader != null)
-			reader.setLineType(null);
+			reader.resetLineType();
 	}
 }

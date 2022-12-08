@@ -7,7 +7,6 @@
  */
 
 import java.sql.*;
-import java.io.*;
 import java.util.*;
 import org.monetdb.mcl.net.MapiSocket;
 import org.monetdb.mcl.io.BufferedMCLReader;
@@ -102,7 +101,7 @@ public class SQLcopyinto {
 			BufferedMCLReader mclIn = server.getReader();
 			BufferedMCLWriter mclOut = server.getWriter();
 
-			String error = mclIn.waitForPrompt();
+			String error = mclIn.discardRemainder();
 			if (error != null)
 				System.err.println("Received start error: " + error);
 
@@ -120,12 +119,12 @@ public class SQLcopyinto {
 			}
 
 			mclOut.writeLine(""); // need this one for synchronisation over flush()
-			error = mclIn.waitForPrompt();
+			error = mclIn.discardRemainder();
 			if (error != null)
 				System.err.println("Received error: " + error);
 
 			mclOut.writeLine(""); // need this one for synchronisation over flush()
-			error = mclIn.waitForPrompt();
+			error = mclIn.discardRemainder();
 			if (error != null)
 				System.err.println("Received finish error: " + error);
 

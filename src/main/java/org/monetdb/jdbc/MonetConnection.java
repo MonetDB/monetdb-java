@@ -343,7 +343,7 @@ public class MonetConnection
 			in = server.getReader();
 			out = server.getWriter();
 
-			final String error = in.waitForPrompt();
+			final String error = in.discardRemainder();
 			if (error != null)
 				throw new SQLNonTransientConnectionException((error.length() > 6) ? error.substring(6) : error, "08001");
 		} catch (java.net.UnknownHostException e) {
@@ -2138,7 +2138,7 @@ public class MonetConnection
 					out.writeLine(queryTempl[0] + command + queryTempl[1]);
 				else
 					out.writeLine(commandTempl[0] + command + commandTempl[1]);
-				final String error = in.waitForPrompt();
+				final String error = in.discardRemainder();
 				if (error != null)
 					throw new SQLException(error.substring(6), error.substring(0, 5));
 			} catch (SocketTimeoutException e) {
@@ -3131,7 +3131,7 @@ public class MonetConnection
 					// have the prompt it is possible (and most likely) that we
 					// already have the prompt and do not have to skip any
 					// lines.  Ignore errors from previous result sets.
-					in.waitForPrompt();
+					in.discardRemainder();
 
 					// {{{ set reply size
 					/**
@@ -3158,16 +3158,15 @@ public class MonetConnection
 					out.writeLine(templ[0] + query + templ[1]);
 
 					// go for new results
-					String tmpLine = in.readLine();
-					LineType linetype = in.getLineType();
+					in.advance();
 					Response res = null;
-					while (linetype != LineType.PROMPT) {
+					while (in.getLineType() != LineType.PROMPT) {
 						// each response should start with a start of header (or error)
-						switch (linetype) {
+						switch (in.getLineType()) {
 						case SOHEADER:
 							// make the response object, and fill it
 							try {
-								switch (sohp.parse(tmpLine)) {
+								switch (sohp.parse(in.getLine())) {
 								case StartOfHeaderParser.Q_PARSE:
 									throw new MCLParseException("Q_PARSE header not allowed here", 1);
 								case StartOfHeaderParser.Q_TABLE:
@@ -3228,31 +3227,29 @@ public class MonetConnection
 								final int offset = e.getErrorOffset();
 								error = "M0M10!error while parsing start of header:\n" +
 									e.getMessage() +
-									" found: '" + tmpLine.charAt(offset) +
-									"' in: \"" + tmpLine +
+									" found: '" + in.getLine().charAt(offset) +
+									"' in: \"" + in.getLine() +
 									"\" at pos: " + offset;
 								// flush all the rest
-								in.waitForPrompt();
-								linetype = in.getLineType();
+								in.discardRemainder();
 								break;
 							}
 
 							// immediately handle errors after parsing the header (res may be null)
 							if (error != null) {
-								in.waitForPrompt();
-								linetype = in.getLineType();
+								in.discardRemainder();
 								break;
 							}
 
 							// here we have a res object, which we can start filling
 							while (res.wantsMore()) {
-								error = res.addLine(in.readLine(), in.getLineType());
+								in.advance();
+								error = res.addLine(in.getLine(), in.getLineType());
 								if (error != null) {
 									// right, some protocol violation,
 									// skip the rest of the result
 									error = "M0M10!" + error;
-									in.waitForPrompt();
-									linetype = in.getLineType();
+									in.discardRemainder();
 									break;
 								}
 							}
@@ -3266,21 +3263,20 @@ public class MonetConnection
 
 							// read the next line (can be prompt, new result, error, etc.)
 							// before we start the loop over
-							tmpLine = in.readLine();
-							linetype = in.getLineType();
+							in.advance();
 							break;
 						case INFO:
-							addWarning(tmpLine.substring(1), "01000");
+							addWarning(in.getLine().substring(1), "01000");
 							// read the next line (can be prompt, new result, error, etc.)
 							// before we start the loop over
-							tmpLine = in.readLine();
-							linetype = in.getLineType();
+							in.advance();
 							break;
 						case FILETRANSFER:
 							// Consume the command
-							final String transferCommand = in.readLine();
+							in.advance();
+							final String transferCommand = in.getLine();
 							// Consume the fake prompt inserted by MapiSocket.
-							in.readLine();
+							in.advance();
 							// Handle the request
 							if (transferCommand != null)
 								error = handleTransfer(transferCommand);
@@ -3289,27 +3285,21 @@ public class MonetConnection
 							// Then prepare for the next iteration
 							if (error != null) {
 								out.writeLine(error + "\n");
-								error = in.waitForPrompt();
+								error = in.discardRemainder();
 							} else {
-								tmpLine = in.readLine();
+								in.advance();
 							}
-							linetype = in.getLineType();
 							break;
-						default:	// Yeah... in Java this is correct!
+						default:
 							// we have something we don't expect/understand, let's make it an error message
-							tmpLine = "!M0M10!protocol violation, unexpected " + linetype + " line: " + tmpLine;
-							// don't break; fall through...
+							String msg = "M0M10!protocol violation, unexpected " + in.getLineType() + " line: " + in.getLine();
+							error = in.discardRemainder(msg);
+							break;
 						case ERROR:
 							// read everything till the prompt (should be
 							// error) we don't know if we ignore some
 							// garbage here... but the log should reveal that
-							error = in.waitForPrompt();
-							linetype = in.getLineType();
-							if (error != null) {
-								error = tmpLine.substring(1) + "\n" + error;
-							} else {
-								error = tmpLine.substring(1);
-							}
+							error = in.discardRemainder(in.getLine().substring(1));
 							break;
 						} // end of switch (linetype)
 					} // end of while (linetype != LineType.PROMPT)

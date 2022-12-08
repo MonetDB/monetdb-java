@@ -218,9 +218,9 @@ public class Control {
 
 		mout.writeLine(database + " " + command + "\n");
 		ArrayList<String> l = new ArrayList<String>();
-		String tmpLine = min.readLine();
-		LineType linetype = min.getLineType();
-		switch (linetype) {
+		min.advance();
+		String tmpLine = min.getLine();
+		switch (min.getLineType()) {
 		case ERROR:
 			throw new MerovingianException(tmpLine.substring(6));
 		case RESULT:
@@ -231,18 +231,16 @@ public class Control {
 			throw new MerovingianException("unexpected line: " + tmpLine);
 		}
 
-		boolean hasPrompt = false;
-		while (!hasPrompt) {
-			tmpLine = min.readLine();
-			linetype = min.getLineType();
 
-			switch (linetype) {
-			case PROMPT:
-				hasPrompt = true;
-				break;
+		lineloop:
+		while (true) {
+			min.advance();
+			switch (min.getLineType()) {
+				case PROMPT:
+				break lineloop;
 			case RESULT:
 				l.add(tmpLine.substring(1));
-				break;
+				continue lineloop;
 			default:
 				throw new MerovingianException("unexpected line: " + tmpLine);
 			}

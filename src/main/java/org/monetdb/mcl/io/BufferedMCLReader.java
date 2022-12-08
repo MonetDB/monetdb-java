@@ -40,9 +40,10 @@ import java.io.UnsupportedEncodingException;
  * @see org.monetdb.mcl.net.MapiSocket
  * @see org.monetdb.mcl.io.BufferedMCLWriter
  */
-public final class BufferedMCLReader extends BufferedReader {
+public final class BufferedMCLReader /* extends BufferedReader */ {
 
-	/** The type of the last line read */
+	private final BufferedReader inner;
+	private String current = null;
 	private LineType lineType = LineType.UNKNOWN;
 
 	/**
@@ -52,7 +53,7 @@ public final class BufferedMCLReader extends BufferedReader {
 	 * @param in A Reader
 	 */
 	public BufferedMCLReader(final Reader in) {
-		super(in);
+		inner = new BufferedReader(in);
 	}
 
 	/**
@@ -66,47 +67,37 @@ public final class BufferedMCLReader extends BufferedReader {
 	public BufferedMCLReader(final InputStream in, final String enc)
 		throws UnsupportedEncodingException
 	{
-		super(new java.io.InputStreamReader(in, enc));
+		this(new java.io.InputStreamReader(in, enc));
 	}
 
-	/**
-	 * Read a line of text.  A line is considered to be terminated by
-	 * any one of a line feed ('\n'), a carriage return ('\r'), or a
-	 * carriage return followed immediately by a linefeed.  Before this
-	 * method returns, it sets the linetype to any of the in MCL
-	 * recognised line types.
-	 *
-	 * Warning: until the server properly prefixes all of its error
-	 * messages with SQLSTATE codes, this method prefixes all errors it
-	 * sees without sqlstate with the generic data exception code (22000).
-	 *
-	 * @return A String containing the contents of the line, not
-	 *         including any line-termination characters, or null if the
-	 *         end of the stream has been reached
-	 * @throws IOException If an I/O error occurs
-	 */
-	@Override
-	public String readLine() throws IOException {
-		String r = super.readLine();
-		setLineType(r);
-		if (lineType == LineType.ERROR && r != null && !r.matches("^![0-9A-Z]{5}!.+")) {
-			r = "!22000!" + r.substring(1);
+	public void advance() throws IOException {
+		if (lineType == LineType.PROMPT)
+			return;
+
+		current = inner.readLine();
+		lineType = LineType.classify(current);
+		if (lineType == LineType.ERROR && current != null && !current.matches("^![0-9A-Z]{5}!.+")) {
+			current = "!22000!" + current.substring(1);
 		}
-		return r;
 	}
 
 	/**
-	 * Sets the linetype to the type of the string given.  If the string
-	 * is null, lineType is set to UNKNOWN.
-	 *
-	 * @param line the string to examine
+	 * Resets the linetype to UNKNOWN.
 	 */
-	public void setLineType(final String line) {
-		lineType = LineType.classify(line);
+	public void resetLineType() {
+		lineType = LineType.UNKNOWN;
 	}
 
 	/**
-	 * getLineType returns the type of the last line read.
+	 * Return the current line, or null if we're at the end or before the beginning.
+	 * @return the current line or null
+	 */
+	public String getLine() {
+		return current;
+	}
+
+	/**
+	 * getLineType returns the type of the current line.
 	 *
 	 * @return Linetype representing the kind of line this is, one of the
 	 *         following enums: UNKNOWN, HEADER, ERROR, RESULT,
@@ -117,35 +108,52 @@ public final class BufferedMCLReader extends BufferedReader {
 	}
 
 	/**
-	 * Reads up till the MonetDB prompt, indicating the server is ready
-	 * for a new command.  All read data is discarded.  If the last line
-	 * read by readLine() was a prompt, this method will immediately return.
-	 *
-	 * If there are errors present in the lines that are read, then they
-	 * are put in one string and returned <b>after</b> the prompt has
-	 * been found. If no errors are present, null will be returned.
+	 * Discard the remainder of the response but collect any further error messages.
 	 *
 	 * @return a string containing error messages, or null if there aren't any
 	 * @throws IOException if an IO exception occurs while talking to the server
 	 *
 	 * TODO(Wouter): should probably not have to be synchronized.
 	 */
-	final public synchronized String waitForPrompt() throws IOException {
-		StringBuilder errmsgs = null;
-		String tmp;
 
+
+	final public synchronized String discardRemainder() throws IOException {
+		return discard(null);
+	}
+
+	final public synchronized String discardRemainder(String error) throws IOException {
+		final StringBuilder sb;
+
+		if (error != null) {
+			sb = makeErrorBuffer();
+			sb.append(error);
+		} else {
+			sb = null;
+		}
+		return discard(sb);
+	}
+
+	final synchronized String discard(StringBuilder errmsgs) throws IOException {
 		while (lineType != LineType.PROMPT) {
-			tmp = readLine();
-			if (tmp == null)
+			advance();
+			if (getLine() == null)
 				throw new IOException("Connection to server lost!");
-			if (lineType == LineType.ERROR) {
+			if (getLineType() == LineType.ERROR) {
 				if (errmsgs == null)
 					errmsgs = new StringBuilder(128);
-				errmsgs.append('\n').append(tmp.substring(1));
+				errmsgs.append('\n').append(getLine().substring(1));
 			}
 		}
 		if (errmsgs == null)
 			return null;
 		return errmsgs.toString().trim();
+	}
+
+	private final StringBuilder makeErrorBuffer() {
+		return new StringBuilder(128);
+	}
+
+	public void close() throws IOException {
+		inner.close();
 	}
 }

@@ -287,30 +287,30 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			}
 		}
 
-		final String c = reader.readLine();
-		reader.waitForPrompt();
+		reader.advance();
+		final String c = reader.getLine();
+		reader.discardRemainder();
 		writer.writeLine(getChallengeResponse(c, user, pass, language, database, hash));
 
 		// read monetdb mserver response till prompt
 		final ArrayList<String> redirects = new ArrayList<String>();
 		final List<String> warns = new ArrayList<String>();
 		String err = "", tmp;
-		LineType lineType;
 		do {
-			tmp = reader.readLine();
+			reader.advance();
+			tmp = reader.getLine();
 			if (tmp == null)
 				throw new IOException("Read from " +
 						con.getInetAddress().getHostName() + ":" +
 						con.getPort() + ": End of stream reached");
-			lineType = reader.getLineType();
-			if (lineType == LineType.ERROR) {
+			if (reader.getLineType() == LineType.ERROR) {
 				err += "\n" + tmp.substring(7);
-			} else if (lineType == LineType.INFO) {
+			} else if (reader.getLineType() == LineType.INFO) {
 				warns.add(tmp.substring(1));
-			} else if (lineType == LineType.REDIRECT) {
+			} else if (reader.getLineType() == LineType.REDIRECT) {
 				redirects.add(tmp.substring(1));
 			}
-		} while (lineType != LineType.PROMPT);
+		} while (reader.getLineType() != LineType.PROMPT);
 
 		if (err.length() > 0) {
 			close();
