@@ -1589,9 +1589,8 @@ public class MonetConnection
 			st = createStatement();
 			if (st != null) {
 				rs = st.executeQuery("SELECT CURRENT_SCHEMA");
-				if (rs != null) {
-					if (rs.next())
-						cur_schema = rs.getString(1);
+				if (rs != null && rs.next()) {
+					cur_schema = rs.getString(1);
 				}
 			}
 		// do not catch any Exception, just let it propagate
@@ -1855,15 +1854,17 @@ public class MonetConnection
 		return false;
 	}
 
-	// Internal caches for 3 static mserver environment values, so they aren't queried from mserver again and again
+	// Internal caches for 4 static mserver5 environment values
 	private String env_current_user;
 	private String env_monet_version;
+	private String env_raw_strings;	// Note: this is only supported from Jun2020 (11.37) servers
 	private int maxConnections;
 
 	/**
-	 * Utility method to fetch 3 mserver environment values combined in one query for efficiency.
-	 * We currently fetch the env values of: current_user, monet_version and max_clients.
+	 * Utility method to fetch 4 mserver5 environment values combined in one query for efficiency.
+	 * We fetch the env values of: current_user, monet_version, max_clients and raw_strings.
 	 * We cache them such that we do not need to query the server again and again.
+	 * Note: raw_strings is available in sys.env() result set since release Jun2020 (11.37)
 	 */
 	private synchronized void getEnvValues() throws SQLException {
 		Statement st = null;
@@ -1873,7 +1874,7 @@ public class MonetConnection
 			if (st != null) {
 				rs = st.executeQuery(
 					"SELECT \"name\", \"value\" FROM \"sys\".\"env\"()" +
-					" WHERE \"name\" IN ('monet_version', 'max_clients')" +
+					" WHERE \"name\" IN ('monet_version', 'max_clients', 'raw_strings')" +
 					" UNION SELECT 'current_user' as \"name\", current_user as \"value\"");
 				if (rs != null) {
 					while (rs.next()) {
@@ -1884,6 +1885,9 @@ public class MonetConnection
 						} else
 						if ("monet_version".equals(prop)) {
 							env_monet_version = value;
+						} else
+						if ("raw_strings".equals(prop)) {
+							env_raw_strings = value;
 						} else
 						if ("max_clients".equals(prop) && value != null) {
 							try {
@@ -1901,7 +1905,7 @@ public class MonetConnection
 		} finally {
 			closeResultsetStatement(rs, st);
 		}
-		// for debug: System.out.println("Read: env_current_user: " + env_current_user + "  env_monet_version: " + env_monet_version + "  env_max_clients: " + maxConnections);
+		// for debug: System.out.println("Read: env_current_user: " + env_current_user + "  env_monet_version: " + env_monet_version + "  env_max_clients: " + maxConnections + "  env_raw_strings: " + env_raw_strings);
 	}
 
 	/**
@@ -1923,6 +1927,29 @@ public class MonetConnection
 		if (maxConnections == 0)
 			getEnvValues();
 		return maxConnections;
+	}
+
+ 	/**
+	 * @return whether the server is started with raw_strings processing enabled.
+	 * By default this is false (so C-style strings processing is used).
+	 * When a server is started with option: –set raw_strings=true
+	 * then this will return true, else false.
+	 * This startup option is supported only by servers since Jun2020 (11.37) onwards.
+	 */
+	boolean inRawStringsMode() throws SQLException {
+		if (env_raw_strings == null) {
+			getEnvValues();
+			if (env_raw_strings == null) {
+				/* older servers (pre Jun2020 (11.37)) do not
+				 * return this in the sys.env() view and did
+				 * not yet support raw_strings.
+				 * So set it to: false. */
+				env_raw_strings = "false";
+			}
+		}
+		if ("true".equals(env_raw_strings))
+			return true;
+		return false;
 	}
 
 	/**
