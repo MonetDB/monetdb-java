@@ -1,6 +1,11 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Dec  8 2022 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Internal method waitForPrompt() of class BufferedMCLReader has been
+  renamed to discardRemainder(). The example program SQLcopyinto.java
+  which uses this method, has been updated.
+
 * Thu Nov 17 2022 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Fixed an invalid error issue when a PreparedStatement had more than 250
   parameters. See also  https://github.com/MonetDB/MonetDB/issues/7337
