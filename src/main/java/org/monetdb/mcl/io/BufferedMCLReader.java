@@ -15,10 +15,8 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 
 /**
- * Read text from a character-input stream, buffering characters so as
- * to provide a means for efficient reading of characters, arrays and
- * lines.  This class is based on the BufferedReader class, and provides
- * extra functionality useful for MCL.
+ * Read text from a character-input stream, buffering characters so as to
+ * provide a means for efficient reading of characters, arrays and lines.
  *
  * The BufferedMCLReader is typically used as layer inbetween an
  * InputStream and a specific interpreter of the data.
@@ -40,7 +38,7 @@ import java.io.UnsupportedEncodingException;
  * @see org.monetdb.mcl.net.MapiSocket
  * @see org.monetdb.mcl.io.BufferedMCLWriter
  */
-public final class BufferedMCLReader /* extends BufferedReader */ {
+public final class BufferedMCLReader {
 
 	private final BufferedReader inner;
 	private String current = null;
@@ -112,16 +110,18 @@ public final class BufferedMCLReader /* extends BufferedReader */ {
 	 *
 	 * @return a string containing error messages, or null if there aren't any
 	 * @throws IOException if an IO exception occurs while talking to the server
-	 *
-	 * TODO(Wouter): should probably not have to be synchronized.
 	 */
-
-
-	final public synchronized String discardRemainder() throws IOException {
+	final public String discardRemainder() throws IOException {
 		return discard(null);
 	}
 
-	final public synchronized String discardRemainder(String error) throws IOException {
+	/**
+	 * Discard the remainder of the response but collect any further error messages.
+	 *
+	 * @return a string containing error messages, or null if there aren't any
+	 * @throws IOException if an IO exception occurs while talking to the server
+	 */
+	final public String discardRemainder(String error) throws IOException {
 		final StringBuilder sb;
 
 		if (error != null) {
@@ -133,6 +133,14 @@ public final class BufferedMCLReader /* extends BufferedReader */ {
 		return discard(sb);
 	}
 
+	/**
+	 * Discard the remainder of the response but collect any further error messages.
+	 *
+	 * @return a string containing error messages, or null if there aren't any
+	 * @throws IOException if an IO exception occurs while talking to the server
+	 *
+	 * TODO(Wouter): should probably not have to be synchronized.
+	 */
 	final synchronized String discard(StringBuilder errmsgs) throws IOException {
 		while (lineType != LineType.PROMPT) {
 			advance();

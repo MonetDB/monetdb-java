@@ -2791,7 +2791,7 @@ public class MonetConnection
 
 		/**
 		 * addLine adds a String of data to this object's data array.
-		 * Note that an IndexOutOfBoundsException can be thrown when an
+		 * Note that an ArrayIndexOutOfBoundsException can be thrown when an
 		 * attempt is made to add more than the original construction size
 		 * specified.
 		 *
@@ -3257,7 +3257,7 @@ public class MonetConnection
 								// right, some protocol violation,
 								// skip the rest of the result
 								error = "M0M10!" + error;
-								in.discardRemainder();
+								in.discardRemainder(error);
 								break;
 							}
 
