@@ -2467,10 +2467,7 @@ public class MonetConnection
 		 */
 		@Override
 		public boolean wantsMore() {
-			if (isSet[LENS] && isSet[TYPES] && isSet[TABLES] && isSet[NAMES] && isSet[TYPESIZES]) {
-				return resultBlocks[0].wantsMore();
-			}
-			return true;
+			return resultBlocks[0].wantsMore();
 		}
 
 		/**
@@ -3241,29 +3238,36 @@ public class MonetConnection
 								break;
 							}
 
-							// here we have a res object, which we can start filling
-							while (res.wantsMore()) {
-								in.advance();
+							// advance to the line after the header
+							in.advance();
+
+							// stuff all header lines into the res
+							while (error == null && in.getLineType() == LineType.HEADER) {
 								error = res.addLine(in.getLine(), in.getLineType());
-								if (error != null) {
-									// right, some protocol violation,
-									// skip the rest of the result
-									error = "M0M10!" + error;
-									in.discardRemainder();
-									break;
-								}
+								in.advance();
 							}
-							if (error != null)
+
+							// then feed it more lines until it is satisfied
+							while (error == null && res.wantsMore()) {
+								error = res.addLine(in.getLine(), in.getLineType());
+								in.advance();
+							}
+
+							if (error != null) {
+								// right, some protocol violation,
+								// skip the rest of the result
+								error = "M0M10!" + error;
+								in.discardRemainder();
 								break;
+							}
 
 							// it is of no use to store DataBlockResponses, you never want to
 							// retrieve them directly anyway
 							if (!(res instanceof DataBlockResponse))
 								responses.add(res);
 
-							// read the next line (can be prompt, new result, error, etc.)
-							// before we start the loop over
-							in.advance();
+							// We have already advanced 'in' to the next line in the response
+							// so we're ready to start the next iteration of the loop.
 							break;
 						case INFO:
 							addWarning(in.getLine().substring(1), "01000");
