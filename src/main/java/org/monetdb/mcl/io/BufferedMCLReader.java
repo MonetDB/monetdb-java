@@ -15,24 +15,20 @@ import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 
 /**
- * Read text from a character-input stream, buffering characters so as to
- * provide a means for efficient reading of characters, arrays and lines.
+ * Helper class to read and classify the lines of a query response.
  *
- * The BufferedMCLReader is typically used as layer inbetween an
- * InputStream and a specific interpreter of the data.
- * <pre>
- *                         / Response
- * BufferedMCLReader ---o &lt;- Tuple
- *                         \ DataBlock
- * </pre>
- * Because the BufferedMCLReader provides an efficient way to access the
- * data from the stream in a linewise fashion, whereby each line is
- * identified as a certain type, consumers can easily decide how to
- * parse each retrieved line.  The line parsers from
- * org.monetdb.mcl.parser are well suited to work with the lines
- * outputted by the BufferedMCLReader.
- * This class is client-oriented, as it doesn't take into account the
- * messages as the server receives them.
+ * This class wraps and buffers the Reader on which the responses come in.
+ * Use {@link #getLine()} to get the current line, {@link #getLineType()}
+ * to get its {@link LineType} and {@link #advance()} to proceed to the
+ * next line.
+ *
+ * Initially, the line type is set to {@link LineType.UNKNOWN} and the line
+ * is set to null. When the end of the result set has been reached the line type
+ * will remain {@link LineType.PROMPT} and the line will again be null.
+ *
+ * To start reading the next response, call {@link #resetLineType()}. This
+ * is usually done automatically by the accompanying {@link BufferedMCLWriter}
+ * whenever a new request is sent to the server.
  *
  * @author Fabian Groffen
  * @see org.monetdb.mcl.net.MapiSocket
@@ -68,6 +64,13 @@ public final class BufferedMCLReader {
 		this(new java.io.InputStreamReader(in, enc));
 	}
 
+	/**
+	 * Proceed to the next line of the response.
+	 * 
+	 * Set line type to PROMPT and line to null if the end of the response
+	 * has been reached.
+	 * @throws IOException
+	 */
 	public void advance() throws IOException {
 		if (lineType == LineType.PROMPT)
 			return;
@@ -80,7 +83,7 @@ public final class BufferedMCLReader {
 	}
 
 	/**
-	 * Resets the linetype to UNKNOWN.
+	 * Reset the linetype to UNKNOWN.
 	 */
 	public void resetLineType() {
 		lineType = LineType.UNKNOWN;
@@ -118,6 +121,7 @@ public final class BufferedMCLReader {
 	/**
 	 * Discard the remainder of the response but collect any further error messages.
 	 *
+	 * @param error A string containing earlier error messages to include in the error report.
 	 * @return a string containing error messages, or null if there aren't any
 	 * @throws IOException if an IO exception occurs while talking to the server
 	 */
@@ -136,6 +140,7 @@ public final class BufferedMCLReader {
 	/**
 	 * Discard the remainder of the response but collect any further error messages.
 	 *
+	 * @param error A StringBuilder containing earlier error messages to include in the error report.
 	 * @return a string containing error messages, or null if there aren't any
 	 * @throws IOException if an IO exception occurs while talking to the server
 	 *
@@ -161,6 +166,10 @@ public final class BufferedMCLReader {
 		return new StringBuilder(128);
 	}
 
+	/**
+	 * Close the wrapped Reader.
+	 * @throws IOException
+	 */
 	public void close() throws IOException {
 		inner.close();
 	}
