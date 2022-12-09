@@ -3318,6 +3318,7 @@ public class MonetConnection
 								out.writeLine(error + "\n");
 								error = in.discardRemainder();
 							} else {
+								in.resetLineType();
 								in.advance();
 							}
 							break;
