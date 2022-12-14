@@ -1932,7 +1932,7 @@ public class MonetConnection
  	/**
 	 * @return whether the server is started with raw_strings processing enabled.
 	 * By default this is false (so C-style strings processing is used).
-	 * When a server is started with option: –set raw_strings=true
+	 * When a server is started with option: --set raw_strings=true
 	 * then this will return true, else false.
 	 * This startup option is supported only by servers since Jun2020 (11.37) onwards.
 	 */
