@@ -22,9 +22,9 @@ import java.io.UnsupportedEncodingException;
  * to get its {@link LineType} and {@link #advance()} to proceed to the
  * next line.
  *
- * Initially, the line type is set to {@link LineType.UNKNOWN} and the line
+ * Initially, the line type is set to LineType.UNKNOWN and the line
  * is set to null. When the end of the result set has been reached the line type
- * will remain {@link LineType.PROMPT} and the line will again be null.
+ * will remain LineType.PROMPT and the line will again be null.
  *
  * To start reading the next response, call {@link #resetLineType()}. This
  * is usually done automatically by the accompanying {@link BufferedMCLWriter}
@@ -140,7 +140,7 @@ public final class BufferedMCLReader {
 	/**
 	 * Discard the remainder of the response but collect any further error messages.
 	 *
-	 * @param error A StringBuilder containing earlier error messages to include in the error report.
+	 * @param errmsgs An optional StringBuilder object containing earlier error messages to include in the error report.
 	 * @return a string containing error messages, or null if there aren't any
 	 * @throws IOException if an IO exception occurs while talking to the server
 	 *

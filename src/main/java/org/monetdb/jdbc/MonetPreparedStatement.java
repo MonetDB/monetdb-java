@@ -2917,6 +2917,7 @@ public class MonetPreparedStatement
 			paramValues[parameterIndex] = "NULL";
 	}
 
+	private StringBuilder execStmt;	// created once, re-used multiple times so much less objects are created and gc-ed
 	/**
 	 * Constructs an "exec ##(paramval, ...)" statement string for the current parameter values.
 	 * Mind that the JDBC specs allow 'reuse' of a value for a parameter over multiple executes.
@@ -2924,7 +2925,6 @@ public class MonetPreparedStatement
 	 * @return the "exec ##(...)" string
 	 * @throws SQLException if not all parameters are set with a value
 	 */
-	private StringBuilder execStmt;	// created once, re-used multiple times so much less objects are created and gc-ed
 	private final String transform() throws SQLException {
 		if (execStmt == null)
 			// first time use, create it once

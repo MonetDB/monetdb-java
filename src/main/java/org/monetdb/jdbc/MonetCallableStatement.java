@@ -105,7 +105,7 @@ public final class MonetCallableStatement
 	}
 
 	/** parse call query string on
-	 *  { [?=] call <procedure-name> [(<arg1>,<arg2>, ...)] }
+	 *  { [?=] call &lt;procedure-name&gt; [(&lt;arg1&gt;,&lt;arg2&gt;, ...)] }
 	 * and remove the JDBC escapes pairs: { and }
 	 */
 	final private static String removeEscapes(final String query) {

@@ -383,6 +383,7 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 		return Types.OTHER;
 	}
 
+	private static String TypeMapppingSQL;	// cache to optimise getSQLTypeMap()
 	/**
 	 * Returns a String usable in an SQL statement to map the server types
 	 * to values of java.sql.Types using the global static type map.
@@ -393,7 +394,6 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 	 *               in the SQL CASE statement
 	 * @return a SQL CASE statement
 	 */
-	private static String TypeMapppingSQL;	// cache to optimise getSQLTypeMap()
 	static final String getSQLTypeMap(final String column) {
 		if (TypeMapppingSQL == null) {
 			// first time, compose TypeMappping SQL string

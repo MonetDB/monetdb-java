@@ -2052,7 +2052,7 @@ public class MonetConnection
 
 
 	/**
-	 * Internal utility method to query the server to find out if it has a specific system table sys.<tablename>.
+	 * Internal utility method to query the server to find out if it has a specific system tables.
 	 */
 	private void querySysTable() {
 		Statement stmt = null;
@@ -2267,7 +2267,7 @@ public class MonetConnection
 	 * % 60 0,	32 0 # typesizes
 	 * </pre>
 	 * there the first line consists out of<br />
-	 * <tt>&amp;"qt" "id" "tc" "cc" "rc"</tt>.
+	 * <samp>&amp;"qt" "id" "tc" "cc" "rc"</samp>.
 	 */
 	// {{{ ResultSetResponse class implementation
 	final class ResultSetResponse implements Response {
@@ -2905,7 +2905,7 @@ public class MonetConnection
 	 * response keeps a count field that represents the affected rows
 	 * and a field that contains the last inserted auto-generated ID, or
 	 * -1 if not applicable.<br />
-	 * <tt>&amp;2 0 -1</tt>
+	 * <samp>&amp;2 0 -1</samp>
 	 */
 	// {{{ UpdateResponse class implementation
 	final static class UpdateResponse implements Response {
@@ -2949,7 +2949,7 @@ public class MonetConnection
 	 * defined by JDBC, which is currently in MonetDB's case alwats
 	 * SUCCESS_NO_INFO.  Note that this state is not sent by the
 	 * server.<br />
-	 * <tt>&amp;3</tt>
+	 * <samp>&amp;3</samp>
 	 */
 	// {{{ SchemaResponse class implementation
 	class SchemaResponse implements Response {
@@ -2982,7 +2982,7 @@ public class MonetConnection
 	/**
 	 * The AutoCommitResponse represents a transaction message.  It
 	 * stores (a change in) the server side auto commit mode.<br />
-	 * <tt>&amp;4 (t|f)</tt>
+	 * <samp>&amp;4 (t|f)</samp>
 	 */
 	// {{{ AutoCommitResponse class implementation
 	private final class AutoCommitResponse extends SchemaResponse {
