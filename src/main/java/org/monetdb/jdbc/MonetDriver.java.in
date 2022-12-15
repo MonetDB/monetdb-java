@@ -302,12 +302,19 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 
 
 	/**
-	 * utility methods called by MonetDatabaseMetaData methods
+	 * Get MonetDB JDBC Driver major version number
+	 * method called by MonetDatabaseMetaData methods
+	 * @return MonetDB JDBC Driver major version number
 	 */
 	static final int getDriverMajorVersion() {
 		return @JDBC_MAJOR@;
 	}
 
+	/**
+	 * Get MonetDB JDBC Driver minor version number
+	 * method called by MonetDatabaseMetaData methods
+	 * @return MonetDB JDBC Driver minor version number
+	 */
 	static final int getDriverMinorVersion() {
 		return @JDBC_MINOR@;
 	}

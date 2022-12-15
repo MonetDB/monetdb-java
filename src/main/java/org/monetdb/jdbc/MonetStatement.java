@@ -1476,8 +1476,8 @@ public class MonetStatement
 	 * there were no warnings (or clearWarnings was called) this warning will
 	 * be the first, otherwise this warning will get appended to the current
 	 * warning.
-	 *
 	 * @param reason the warning message
+	 * @param sqlstate the SQLState code (5 characters)
 	 */
 	private void addWarning(final String reason, final String sqlstate) {
 		SQLWarning warng = new SQLWarning(reason, sqlstate);

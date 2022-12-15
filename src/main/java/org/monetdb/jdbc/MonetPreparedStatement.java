@@ -314,6 +314,10 @@ public class MonetPreparedStatement
 	/**
 	 * Returns the index (0..size-1) in the backing arrays for the given
 	 * resultset column number or an SQLException when not found
+	 *
+	 * @param colnr the output column number
+	 * @return the internal column array index number
+	 * @throws SQLException if column number can not be found in the internal array
 	 */
 	private final int getColumnIdx(final int colnr) throws SQLException {
 		int curcol = 0;
@@ -330,6 +334,10 @@ public class MonetPreparedStatement
 	/**
 	 * Returns the index (0..size-1) in the backing arrays for the given
 	 * parameter number or an SQLException when not found
+	 *
+	 * @param paramnr the parameter number
+	 * @return the internal column array index number
+	 * @throws SQLException if parameter number can not be found in the internal array
 	 */
 	private final int getParamIdx(final int paramnr) throws SQLException {
 		int curparam = 0;

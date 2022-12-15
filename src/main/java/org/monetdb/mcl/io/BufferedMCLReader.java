@@ -69,7 +69,7 @@ public final class BufferedMCLReader {
 	 * 
 	 * Set line type to PROMPT and line to null if the end of the response
 	 * has been reached.
-	 * @throws IOException
+	 * @throws IOException if exception occurred during reading
 	 */
 	public void advance() throws IOException {
 		if (lineType == LineType.PROMPT)
@@ -168,7 +168,7 @@ public final class BufferedMCLReader {
 
 	/**
 	 * Close the wrapped Reader.
-	 * @throws IOException
+	 * @throws IOException if an IO exception occurs while talking to the server
 	 */
 	public void close() throws IOException {
 		inner.close();

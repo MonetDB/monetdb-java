@@ -78,16 +78,18 @@ public final class SQLRestore {
 		}
 
 		/**
-		 * @return whether the server has responded with an error. Any
-		 *         error is regarded as fatal.
+		 * Check whether the server has responded with an error.
+		 * Any error is regarded as fatal.
+		 * @return whether the server has responded with an error
 		 */
 		public boolean inErrorState() {
 			return _errorState.get();
 		}
 
 		/**
-		 * @return the error message if inErrorState() is true. Behaviour is
-		 *		not defined if called before inErrorState is true.
+		 * Get error message if inErrorState() is true.
+		 * Behaviour is not defined if called before inErrorState is true.
+		 * @return the error message
 		 */
 		public String getErrorMessage() {
 			return _errorMessage;

@@ -432,6 +432,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	 * @param database the database to connect to
 	 * @param hash the hash method(s) to use, or NULL for all supported hashes
 	 * @return the response string for the server
+	 * @throws MCLParseException when parsing failed
+	 * @throws MCLException if an MCL related error occurs
+	 * @throws IOException when IO exception occurred
 	 */
 	private String getChallengeResponse(
 			final String chalstr,
@@ -730,6 +733,11 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 			log.flush();
 	}
 
+	/**
+	 * Set the HandshakeOptions
+	 *
+	 * @param handshakeOptions the options array
+	 */
 	public void setHandshakeOptions(HandshakeOption<?>[] handshakeOptions) {
 		this.handshakeOptions = handshakeOptions;
 	}
@@ -762,6 +770,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		/**
 		 * Constructs this BlockOutputStream, backed by the given
 		 * OutputStream.  A BufferedOutputStream is internally used.
+		 * @param out an OutputStream
 		 */
 		public BlockOutputStream(final OutputStream out) {
 			// always use a buffered stream, even though we know how
@@ -882,6 +891,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		/**
 		 * Constructs this BlockInputStream, backed by the given
 		 * InputStream.  A BufferedInputStream is internally used.
+		 * @param in an InputStream
 		 */
 		public BlockInputStream(final InputStream in) {
 			// always use a buffered stream, even though we know how
@@ -926,7 +936,10 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		 * our blocks.  Maybe it does speed up on slower links, then
 		 * consider this method a quick bug fix/workaround.
 		 *
+		 * @param b a byte array to store read bytes
+		 * @param len number of bytes to read
 		 * @return false if reading the block failed due to EOF
+		 * @throws IOException if an IO error occurs while reading
 		 */
 		private boolean _read(final byte[] b, int len) throws IOException {
 			int s;
@@ -978,6 +991,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		 *
 		 * If the stream is not positioned correctly, hell will break
 		 * loose.
+		 *
+		 * @return blockLen
+		 * @throws IOException if an IO error occurs while reading
 		 */
 		private int readBlock() throws IOException {
 			// read next two bytes (short)
@@ -1102,6 +1118,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 		/**
 		 * For internal use
+		 * @return new Raw object
 		 */
 		Raw getRaw() {
 			return new Raw();
@@ -1253,7 +1270,10 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		private byte[] promptBuffer;
 		private Runnable cancellationCallback = null;
 
-		/** Create an UploadStream with the given chunk size */
+		/**
+		 * Create an UploadStream with the given chunk size
+		 * @param chunkSize chunk size for the upload stream
+		 */
 		UploadStream(final int chunkSize) {
 			super(toMonet);
 			if (chunkSize <= 0) {

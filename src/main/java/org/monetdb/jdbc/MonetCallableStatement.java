@@ -79,6 +79,7 @@ public final class MonetCallableStatement
 	 * @param connection the connection that created this Statement
 	 * @param resultSetType type of {@link java.sql.ResultSet} to produce
 	 * @param resultSetConcurrency concurrency of ResultSet to produce
+	 * @param resultSetHoldability holdability of ResultSet to produce
 	 * @param callQuery - an SQL CALL statement that may contain one or more '?' parameter placeholders.
 	 *	Typically this statement is specified using JDBC call escape syntax:
 	 *	{ call procedure_name [(?,?, ...)] }
@@ -107,6 +108,9 @@ public final class MonetCallableStatement
 	/** parse call query string on
 	 *  { [?=] call &lt;procedure-name&gt; [(&lt;arg1&gt;,&lt;arg2&gt;, ...)] }
 	 * and remove the JDBC escapes pairs: { and }
+	 *
+	 * @param query the SQL call statement
+	 * @return query without the escape characters: { and }
 	 */
 	final private static String removeEscapes(final String query) {
 		if (query == null)
@@ -147,9 +151,13 @@ public final class MonetCallableStatement
 		return buf.toString();
 	}
 
-	/** utility method to convert a parameter name to an int (which represents the parameter index)
-	 *  this will only succeed for strings like: "1", "2", "3", etc
-	 *  throws SQLException if it cannot convert the string to an integer number
+	/**
+	 * utility method to convert a parameter name to an int (which represents the parameter index)
+	 * this will only succeed for strings like: "1", "2", "3", etc
+	 *
+	 * @param parameterName the name (a number value) of the parameter
+	 * @return the converted index number
+	 * @throws SQLException if it cannot convert the string to an integer number
 	 */
 	final private int nameToIndex(final String parameterName) throws SQLException {
 		if (parameterName == null)

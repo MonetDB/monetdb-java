@@ -1708,7 +1708,9 @@ public class MonetConnection
 	}
 
 	/**
-	 * @return the currently registerered {@link UploadHandler}, or null
+	 * Get the currently registerered {@link UploadHandler}, or null
+	 *
+	 * @return the currently registerered UploadHandler, or null
 	 */
 	public UploadHandler getUploadHandler() {
 		return uploadHandler;
@@ -1724,13 +1726,21 @@ public class MonetConnection
 	}
 
 	/**
-	 * @return the currently registerered {@link DownloadHandler} handler, or null
+	 * Get the currently registerered {@link DownloadHandler} handler, or null
+	 *
+	 * @return the currently registerered DownloadHandler handler, or null
 	 */
 	public DownloadHandler getDownloadHandler() {
 		return downloadHandler;
 	}
 
-	public void setTimezone(int offsetSeconds) throws SQLException {
+	/**
+	 * Local helper method to set the time zone for this connection
+	 *
+	 * @param offsetSeconds Time Zone offset in seconds, can be negative or zero
+	 * @throws SQLException if an IO exception or a database error occurs
+	 */
+	private void setTimezone(int offsetSeconds) throws SQLException {
 		final StringBuilder tz = new StringBuilder(64);
 		tz.append("SET TIME ZONE INTERVAL '");
 		int offsetMinutes = offsetSeconds / 60;
@@ -1752,8 +1762,10 @@ public class MonetConnection
 	}
 
 	/**
-	 * Local helper method to test whether the Connection object is closed
-	 * When closed it throws an SQLException
+	 * Local helper method to check whether the Connection object is closed
+	 * and throw an SQLExecption if it is closed.
+	 *
+	 * @throws SQLException if this connection is closed
 	 */
 	private void checkNotClosed() throws SQLException {
 		if (closed)
@@ -1761,8 +1773,12 @@ public class MonetConnection
 	}
 
 	/**
-	 * Utility method to call sys.setquerytimeout(int); procedure on the connected server.
+	 * Utility method to call sys.setquerytimeout(int); procedure on the connected server
+	 * or sys.settimeout(int); procedure on older servers which do not support the new procedure.
 	 * It is called from: MonetConnection.isValid() and MonetStatement.internalExecute()
+	 *
+	 * @param seconds the time out time in seconds
+	 * @throws SQLException if an IO exception or a database error occurs
 	 */
 	void setQueryTimeout(final int seconds) throws SQLException {
 		if (seconds < 0)
@@ -1774,7 +1790,8 @@ public class MonetConnection
 			final String callstmt;
 			final int msecs = (seconds <= 2147483) ? seconds * 1000 : seconds;	// prevent overflow of int
 
-			// as of release Jun2020 (11.37.7) the function sys.settimeout(msecs bigint) is deprecated and replaced by new sys.setquerytimeout(msecs int)
+			// as of release Jun2020 (11.37.7) the function sys.settimeout(msecs bigint)
+			// is deprecated and replaced by new sys.setquerytimeout(msecs int)
 			if ((getDatabaseMajorVersion() == 11) && (getDatabaseMinorVersion() < 37))
 				callstmt = "CALL sys.\"settimeout\"(" + msecs + ")";
 			else
@@ -1793,28 +1810,31 @@ public class MonetConnection
 	}
 
 	/**
-	 * @return whether the JDBC BLOB type should be mapped to VARBINARY type.
 	 * This allows generic JDBC programs to fetch Blob data via getBytes()
 	 * instead of getBlob() and Blob.getBinaryStream() to reduce overhead.
 	 * It is called from: MonetResultSet and MonetPreparedStatement
+	 *
+	 * @return whether the JDBC BLOB type should be mapped to VARBINARY type.
 	 */
 	boolean mapBlobAsVarBinary() {
 		return treatBlobAsVarBinary;
 	}
 
 	/**
-	 * @return whether the JDBC CLOB type should be mapped to VARCHAR type.
 	 * This allows generic JDBC programs to fetch Clob data via getString()
 	 * instead of getClob() and Clob.getCharacterStream() to reduce overhead.
 	 * It is called from: MonetResultSet and MonetPreparedStatement
+	 *
+	 * @return whether the JDBC CLOB type should be mapped to VARCHAR type.
 	 */
 	boolean mapClobAsVarChar() {
 		return treatClobAsVarChar;
 	}
 
 	/**
-	 * @return the MonetDB JDBC Connection URL (without user name and password).
 	 * It is called from: getURL()in MonetDatabaseMetaData
+	 *
+	 * @return the MonetDB JDBC Connection URL (without user name and password).
 	 */
 	String getJDBCURL() {
 		final StringBuilder sb = new StringBuilder(128);
@@ -1827,8 +1847,11 @@ public class MonetConnection
 	}
 
 	/**
-	 * Utility method to validate if property name is supported.
-	 * If not supported a warning is added to this Connection.
+	 * Utility method to check if connection property name is supported.
+	 * If it is not supported a warning is added to this Connection.
+	 *
+	 * @param name the connection property name to check
+	 * @param context the method name from where this is called
 	 * @return valid true or false
 	 */
 	private boolean checkValidProperty(String name, String context) {
@@ -1865,6 +1888,8 @@ public class MonetConnection
 	 * We fetch the env values of: current_user, monet_version, max_clients and raw_strings.
 	 * We cache them such that we do not need to query the server again and again.
 	 * Note: raw_strings is available in sys.env() result set since release Jun2020 (11.37)
+	 *
+	 * @throws SQLException if execution of query failed
 	 */
 	private synchronized void getEnvValues() throws SQLException {
 		Statement st = null;
@@ -1909,8 +1934,11 @@ public class MonetConnection
 	}
 
 	/**
-	 * @return the current User Name.
+	 * Get user login name from the server.
 	 * It is called from: MonetDatabaseMetaData
+	 *
+	 * @return the current User Name for this comnection
+	 * @throws SQLException if fetching user name failed
 	 */
 	String getUserName() throws SQLException {
 		if (env_current_user == null)
@@ -1919,9 +1947,12 @@ public class MonetConnection
 	}
 
 	/**
-	 * @return the maximum number of active connections possible at one time;
-	 * a result of zero means that there is no limit or the limit is not known
+	 * Get the maximum number of allowed connections from the server.
 	 * It is called from: MonetDatabaseMetaData
+	 * A result of zero means that there is no limit or the limit is not known
+	 *
+	 * @return the maximum number of active connections possible at one time
+	 * @throws SQLException if fetching maximum connections failed
 	 */
 	int getMaxConnections() throws SQLException {
 		if (maxConnections == 0)
@@ -1930,11 +1961,14 @@ public class MonetConnection
 	}
 
  	/**
-	 * @return whether the server is started with raw_strings processing enabled.
+	 * Get whether the server is started with raw_strings turned on.
 	 * By default this is false (so C-style strings processing is used).
 	 * When a server is started with option: --set raw_strings=true
 	 * then this will return true, else false.
 	 * This startup option is supported only by servers since Jun2020 (11.37) onwards.
+	 *
+	 * @return whether the server is started with raw_strings processing enabled.
+	 * @throws SQLException if fetching raw_strings setting failed
 	 */
 	boolean inRawStringsMode() throws SQLException {
 		if (env_raw_strings == null) {
@@ -1953,8 +1987,11 @@ public class MonetConnection
 	}
 
 	/**
-	 * @return the MonetDB Database Server version string.
+	 * Get the product version of the connected MonetDB Database Server.
 	 * It is called from: MonetDatabaseMetaData
+	 *
+	 * @return the MonetDB Database Server version string.
+	 * @throws SQLException if fetching MonetDB server version string failed
 	 */
 	String getDatabaseProductVersion() throws SQLException {
 		if (env_monet_version == null)
@@ -1967,9 +2004,12 @@ public class MonetConnection
 
 	private int databaseMajorVersion;
 	/**
-	 * @return the MonetDB Database Server major version number.
+	 * Get the major product version of the connected MonetDB Database Server.
 	 * The number is extracted from the env_monet_version the first time and cached for next calls.
 	 * It is called from: MonetDatabaseMetaData and MonetConnection
+	 *
+	 * @return the MonetDB Database Server major version number.
+	 * @throws SQLException if fetching MonetDB server version string failed
 	 */
 	int getDatabaseMajorVersion() throws SQLException {
 		if (databaseMajorVersion == 0) {
@@ -1990,9 +2030,12 @@ public class MonetConnection
 
 	private int databaseMinorVersion;
 	/**
-	 * @return the MonetDB Database Server minor version number.
+	 * Get the minor product version of the connected MonetDB Database Server.
 	 * The number is extracted from the env_monet_version the first time and cached for next calls.
 	 * It is called from: MonetDatabaseMetaData and MonetConnection
+	 *
+	 * @return the MonetDB Database Server minor version number.
+	 * @throws SQLException if fetching MonetDB server version string failed
 	 */
 	int getDatabaseMinorVersion() throws SQLException {
 		if (databaseMinorVersion == 0) {
@@ -2024,6 +2067,8 @@ public class MonetConnection
 	 * the system table sys.privilege_codes (which is new as of Jul2017 release).
 	 * The result is cached and reused, so that we only test the query once per connection.
 	 * This method is used by methods from MonetDatabaseMetaData.
+	 *
+	 * @return whether the system table sys.privilege_codes exist in the connected server.
 	 */
 	boolean privilege_codesTableExists() {
 		if (!queriedPrivilege_codesTable) {
@@ -2041,6 +2086,8 @@ public class MonetConnection
 	 * the system table sys.comments (which is new as of Mar2018 release).
 	 * The result is cached and reused, so that we only test the query once per connection.
 	 * This method is used by methods from MonetDatabaseMetaData.
+	 *
+	 * @return whether the system table sys.comments exist in the connected server.
 	 */
 	boolean commentsTableExists() {
 		if (!queriedCommentsTable) {
@@ -2178,12 +2225,13 @@ public class MonetConnection
 	}
 
 	/**
-	 * Adds a warning to the pile of warnings this Connection object
-	 * has.  If there were no warnings (or clearWarnings was called)
-	 * this warning will be the first, otherwise this warning will get
+	 * Adds a warning to the pile of warnings this Connection object has.
+	 * If there were no warnings (or clearWarnings was called) this
+	 * warning will be the first, otherwise this warning will get
 	 * appended to the current warning.
 	 *
 	 * @param reason the warning message
+	 * @param sqlstate the SQLState code (5 characters)
 	 */
 	private final void addWarning(final String reason, final String sqlstate) {
 		final SQLWarning warng = new SQLWarning(reason, sqlstate);
@@ -2344,7 +2392,6 @@ public class MonetConnection
 				final int rowcount,
 				final MonetConnection.ResponseList parent,
 				final int seq)
-			throws SQLException
 		{
 			isSet = new boolean[5];
 			this.parent = parent;
@@ -3023,9 +3070,7 @@ public class MonetConnection
 		private int curResponse;
 
 		/**
-		 * Main constructor.  The query argument can either be a String
-		 * or List.  An SQLException is thrown if another object
-		 * instance is supplied.
+		 * Main constructor.
 		 *
 		 * @param cachesize overall cachesize to use
 		 * @param maxrows maximum number of rows to allow in the set
@@ -3036,8 +3081,8 @@ public class MonetConnection
 			final int cachesize,
 			final long maxrows,
 			final int rstype,
-			final int rsconcur
-		) throws SQLException {
+			final int rsconcur)
+		{
 			this.cachesize = cachesize;
 			this.maxrows = maxrows;
 			this.rstype = rstype;
@@ -3053,7 +3098,7 @@ public class MonetConnection
 		 *
 		 * @return the next Response available or null
 		 */
-		Response getNextResponse() throws SQLException {
+		Response getNextResponse() {
 			if (rstype == ResultSet.TYPE_FORWARD_ONLY) {
 				// free resources if we're running forward only
 				if (curResponse >= 0 && curResponse < responses.size()) {
@@ -3116,6 +3161,7 @@ public class MonetConnection
 		/**
 		 * Returns whether this ResponseList has still unclosed
 		 * Responses.
+		 * @return whether there are unclosed Responses
 		 */
 		boolean hasUnclosedResponses() {
 			for (Response r : responses) {
@@ -3130,6 +3176,7 @@ public class MonetConnection
 		 * stores the Responses resulting from this query in this
 		 * ResponseList.
 		 *
+		 * @param query the SQL query to execute
 		 * @throws SQLException if a database error occurs
 		 */
 		void processQuery(final String query) throws SQLException {
@@ -3432,7 +3479,6 @@ public class MonetConnection
 	 *
 	 * An example implementation can be found at ../util/FileTransferHandler.java
 	 */
-
 	public interface UploadHandler {
 		/**
 		 * Called if the server sends a request to read file data.
@@ -3554,6 +3600,7 @@ public class MonetConnection
 		}
 
 		/**
+		 * Tell whether data or an error has been sent.
 		 * @return true if data or an error has been sent.
 		 */
 		public boolean hasBeenUsed() {
@@ -3561,6 +3608,7 @@ public class MonetConnection
 		}
 
 		/**
+		 * Get the error string.
 		 * @return the error that was sent, if any
 		 */
 		public String getError() {
@@ -3736,6 +3784,7 @@ public class MonetConnection
 		}
 
 		/**
+		 * Tell whether data has been received or an error has been sent.
 		 * @return true if data has been received or an error has been sent.
 		 */
 		public boolean hasBeenUsed() {
@@ -3743,6 +3792,7 @@ public class MonetConnection
 		}
 
 		/**
+		 * Get the error string.
 		 * @return the error that was sent, if any
 		 */
 		public String getError() {

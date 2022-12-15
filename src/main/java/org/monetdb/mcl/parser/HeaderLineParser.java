@@ -11,8 +11,7 @@ package org.monetdb.mcl.parser;
 
 /**
  * The HeaderLineParser is a generic MCLParser that extracts values from
- * a metadata header in the MCL protocol either as string or integer
- * values.
+ * a metadata header in the MCL protocol either as string or integer values.
  *
  * @author Fabian Groffen
  */
@@ -218,6 +217,7 @@ public final class HeaderLineParser extends MCLParser {
 	 * @param chrLine a character array holding the input data
 	 * @param start where the relevant data starts
 	 * @param stop where the relevant data stops
+	 * @throws MCLParseException if an error occurs during parsing
 	 */
 	private final void getIntValues(final char[] chrLine, final int start, final int stop) throws MCLParseException {
 		int elem = 0;

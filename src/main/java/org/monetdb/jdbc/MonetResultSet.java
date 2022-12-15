@@ -4054,6 +4054,7 @@ public class MonetResultSet
 	 * warning.
 	 *
 	 * @param reason the warning message
+	 * @param sqlstate the SQLState code (5 characters)
 	 */
 	private void addWarning(final String reason, final String sqlstate) {
 		SQLWarning warng = new SQLWarning(reason, sqlstate);
@@ -4067,6 +4068,8 @@ public class MonetResultSet
 	/**
 	 * Local helper method to test whether the ResultSet object is closed
 	 * When closed it throws an SQLException
+	 *
+	 * @throws SQLException if this ResultSet is closed
 	 */
 	private void checkNotClosed() throws SQLException {
 		if (isClosed())

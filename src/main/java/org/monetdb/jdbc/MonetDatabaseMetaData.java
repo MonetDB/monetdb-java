@@ -4209,6 +4209,10 @@ public final class MonetDatabaseMetaData
 	 * Internal utility method to create a Statement object, execute a query and return the ResulSet object which allows scrolling.
 	 * As the Statement object is created internally (the caller does not see it and thus can not close it),
 	 * we set it to close (and free server resources) when the ResultSet object is closed by the caller.
+	 *
+	 * @param query the SQL query to execute
+	 * @return a scrollable ResulSet or null when query failed to be executed
+	 * @throws SQLException if a database access error occurs
 	 */
 	private final ResultSet executeMetaDataQuery(final String query) throws SQLException {
 		final Statement stmt = con.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY);

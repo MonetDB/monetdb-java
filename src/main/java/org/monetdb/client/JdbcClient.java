@@ -847,6 +847,9 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 	 * or describe a specific table or view by printing the CREATE DDL statement
 	 * See also showCommands()
 	 * These commands are almost the same as in mclient program
+	 *
+	 * @param dcommand the command starting with \d
+	 * @param scolonterm whether a ';' makes this query part complete
 	 */
 	private static void processDescribeCmd(final String dcommand, final boolean scolonterm)
 	{
