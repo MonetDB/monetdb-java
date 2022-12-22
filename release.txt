@@ -116,15 +116,20 @@ Currently implemented JDBC 4.2 interfaces include:
     - executeUpdate with column indices or names
     - setMaxFieldSize
     - setCursorName
-    - setEscapeProcessing on
+    - setEscapeProcessing on for Sep2022 (11.45) or older servers
+    - setEscapeProcessing off for Sep2022 (11.45) or older servers
 
   * java.sql.PreparedStatement
     The next methods are NOT useable/supported:
     - setArray
-    - setAsciiStream, setBinaryStream, setUnicodeStream
+    - setAsciiStream
+    - setBinaryStream
     - setBlob
     - setNClob
-    - setRef, setRowId, setSQLXML
+    - setRef
+    - setRowId
+    - setSQLXML
+    - setUnicodeStream (note: this method is Deprecated)
 
   * java.sql.ParameterMetaData
 
@@ -136,6 +141,15 @@ Currently implemented JDBC 4.2 interfaces include:
       because output parameters in stored procedures are not supported by MonetDB
     - wasNull() method because output parameters in stored procedures are
       not supported by MonetDB
+    - setArray
+    - setAsciiStream
+    - setBinaryStream
+    - setBlob
+    - setNClob
+    - setRef
+    - setRowId
+    - setSQLXML
+    - setUnicodeStream (note: this method is Deprecated)
 
   * java.sql.ResultSet
     The next methods are NOT useable/supported:

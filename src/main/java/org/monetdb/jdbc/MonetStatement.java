@@ -900,23 +900,30 @@ public class MonetStatement
 	/**
 	 * Sets escape processing on or off. If escape scanning is on (the
 	 * default), the driver will do escape substitution before sending
-	 * the SQL statement to the database. Note: Since prepared
-	 * statements have usually been parsed prior to making this call,
-	 * disabling escape processing for PreparedStatements objects will
-	 * have no effect.
+	 * the SQL statement to the database.
+	 * Note: Since prepared statements have usually been parsed prior to
+	 * making this call, disabling escape processing for
+	 * PreparedStatements objects will have no effect.
 	 *
-	 * The MonetDB JDBC driver implements no escape processing at all in
-	 * its current implementation because it is too expensive, and in
-	 * general should not be necessary given SQL standards compliance.
-	 * In this sense, this driver will ignore any call to this function.
+	 * The MonetDB JDBC driver does not implement scanning and conditional
+	 * removal of escape sequences. Newer MonetDB servers (post 11.45)
+	 * have the capability to parse and handle JDBC/ODBC escape sequences
+	 * but you can not disable it.
 	 *
 	 * @param enable true to enable escape processing; false to disable it
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
 	public void setEscapeProcessing(final boolean enable) throws SQLException {
-		if (enable)
-			addWarning("setEscapeProcessing: JDBC escape syntax is not supported by this driver", "01M22");
+		// MonetDB releases Sep2022 (11.45) and older do not support JDBC escape processing in the server or driver
+		if ((connection.getDatabaseMajorVersion() == 11) && (connection.getDatabaseMinorVersion() <= 45)) {
+			if (enable)
+				addWarning("setEscapeProcessing(true): JDBC escape syntax is not supported by this driver or server", "01M22");
+		} else {
+			// For newer servers (post 11.45) it is not possible to turn it off
+			if (! enable)
+				addWarning("setEscapeProcessing(false): Cannot disable JDBC escape processing.", "M1M05");
+		}
 	}
 
 	/**
