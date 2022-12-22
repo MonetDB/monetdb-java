@@ -125,26 +125,25 @@ public class MonetPreparedStatement
 		if (prepareQuery == null)
 			throw new SQLException("Missing SQL statement", "M1M05");
 
-		// Count the number of parameter markers (question marks) in the SQL string.
-		int countParamMarkers = 0;
-		int pos = prepareQuery.indexOf('?');
-		while (pos >= 0) {
-			countParamMarkers++;
-			pos = prepareQuery.indexOf('?', pos+1);
-		}
-		// When it is larger than the current fetchsize, increase it
-		// so all the parameters can be read into one DataBlockResponse.
-		// see also: https://github.com/MonetDB/MonetDB/issues/7337
-		int currentFetchSize = super.getFetchSize();
-		if (currentFetchSize == 0) {
-			currentFetchSize = connection.getDefaultFetchSize();
-		}
-		if (countParamMarkers > currentFetchSize) {
-			super.setFetchSize(countParamMarkers);
-		}
+		/**
+		 * For a PREPARE statement the server sends back a result set
+		 * with info on all the parameters and/or result columns of a
+		 * parameterized query. This result set however needs to be
+		 * read in one DataBlockResponse due to protocol limitations.
+		 * This requires the fetchSize needs to be set large enough
+		 * to retrieve all rows in one go, else we get eror:
+		 * <pre>resultBlocks[1] should have been fetched by now</pre>
+		 * See also: https://github.com/MonetDB/MonetDB/issues/7337
+		 */
+		final int originalFetchSize = getFetchSize();
+		// increase the fetchSize temporarily before sending the PREPARE statement
+		// we can not use -1 (unlimited), so use a high value.
+		setFetchSize(50*1000);
 
 		if (!super.execute("PREPARE " + prepareQuery))
 			throw new SQLException("Unexpected server response", "M0M10");
+
+		setFetchSize(originalFetchSize);
 
 		sqlStatement = prepareQuery;
 		// cheat a bit to get the ID and the number of columns

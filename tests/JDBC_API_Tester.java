@@ -5970,10 +5970,11 @@ final public class JDBC_API_Tester {
 		final int NR_COLUMNS = nrParams;
 		final StringBuilder sql = new StringBuilder(100 + (NR_COLUMNS * 25));
 
+		int col;
 		Statement stmt = null;
-		PreparedStatement pstmt = null;
 		try {
-			int col;
+			stmt = con.createStatement();
+			sb.append("0. fetch size of new statement: ").append(stmt.getFetchSize()).append("\n");
 
 			// construct the Create Table SQL text
 			sql.append("CREATE TABLE t7337 (ID BIGINT AUTO_INCREMENT PRIMARY KEY, ");
@@ -5983,12 +5984,18 @@ final public class JDBC_API_Tester {
 			sql.append("column").append(col).append(" TIMESTAMP);");
 
 			sb.append("1. create table with ").append(NR_COLUMNS+2).append(" columns, sql has length: ").append(sql.length()).append("\n");
-			stmt = con.createStatement();
 			int ret = stmt.executeUpdate(sql.toString());
 			sb.append("2. table created. ret = ").append(ret).append("\n");
 			stmt.close();
 			stmt = null;
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, null);
 
+		// test: PREPARE INSERT INTO with many parameters
+		PreparedStatement pstmt = null;
+		try {
 			// construct the Insert Into Table SQL text, first without any parameter makers
 			sql.setLength(0);	// clear the sql buffer
 			sql.append("INSERT INTO t7337 \n(");
@@ -6005,6 +6012,7 @@ final public class JDBC_API_Tester {
 			sb.append("3. prepare insert statement (no params), sql has length: ").append(sql.length()).append("\n");
 			pstmt = con.prepareStatement(sql.toString());
 			if (pstmt != null) {
+				sb.append("   fetch size after prepare 1: ").append(pstmt.getFetchSize()).append("\n");
 				ParameterMetaData pmd = pstmt.getParameterMetaData();
 				sb.append("   pmd. ").append(pmd.getParameterCount()).append(" parameters\n");
 				sb.append("4. execute prepared insert\n");
@@ -6028,6 +6036,7 @@ final public class JDBC_API_Tester {
 			sb.append("7. prepare insert statement (with params), sql has length: ").append(sql.length()).append("\n");
 			pstmt = con.prepareStatement(sql.toString());
 			if (pstmt != null) {
+				sb.append("   fetch size after prepare 2: ").append(pstmt.getFetchSize()).append("\n");
 				ParameterMetaData pmd = pstmt.getParameterMetaData();
 				sb.append("   pmd. ").append(pmd.getParameterCount()).append(" parameters\n");
 				sb.append("8. bind parameters\n");
@@ -6049,31 +6058,157 @@ final public class JDBC_API_Tester {
 		}
 		closeStmtResSet(pstmt, null);
 
-		// cleanup table
-		try {
-			stmt = con.createStatement();
-			stmt.executeUpdate("DROP TABLE IF EXISTS t7337;");
-		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-		}
-		closeStmtResSet(stmt, null);
-
-		compareExpectedOutput("Bug_PrepStmtManyParams_7337(" + (nrParams) + ")",
+		compareExpectedOutput("Bug_PrepStmtManyParams_7337(" + nrParams + ")",
+			"0. fetch size of new statement: 250\n" +
 			"1. create table with " + (NR_COLUMNS+2) + " columns, sql has length: " + ((NR_COLUMNS * 23) -29) + "\n" +
 			"2. table created. ret = -2\n" +
 			"3. prepare insert statement (no params), sql has length: " + ((NR_COLUMNS * 25) -53) + "\n" +
+			"   fetch size after prepare 1: 250\n" +
 			"   pmd. 0 parameters\n" +
 			"4. execute prepared insert\n" +
 			"5. first execute returned: 1\n" +
 			"5. second execute returned: 1\n" +
 			"6. inserted data committed\n" +
 			"7. prepare insert statement (with params), sql has length: " + ((nrParams * 12) -53) + "\n" +
-			"   pmd. " + (nrParams) + " parameters\n" +
+			"   fetch size after prepare 2: 250\n" +
+			"   pmd. " + nrParams + " parameters\n" +
 			"8. bind parameters\n" +
 			"9. execute prepared insert with parameters\n" +
 			"10. first execute returned: 1\n" +
 			"10. second execute returned: 1\n" +
 			"11. inserted data committed\n");
+
+		// test also: PREPARE SELECT * FROM .. without and with many parameters
+		sb.setLength(0);	// clear the output log buffer
+		ResultSet rs = null;
+		try {
+			// construct the Select SQL text, first without any parameter makers
+			sql.setLength(0);	// clear the sql buffer
+			sql.append("SELECT * FROM t7337");
+
+			sb.append("12. prepare select statement (no params), sql has length: ").append(sql.length()).append("\n");
+			pstmt = con.prepareStatement(sql.toString());
+			if (pstmt != null) {
+				sb.append("   fetch size after prepare 3: ").append(pstmt.getFetchSize()).append("\n");
+				ParameterMetaData pmd = pstmt.getParameterMetaData();
+				sb.append("   pmd. ").append(pmd.getParameterCount()).append(" parameters\n");
+				ResultSetMetaData rsmd = pstmt.getMetaData();
+				sb.append("   rsmd. ").append(rsmd.getColumnCount()).append(" result columns\n");
+				sb.append("13. execute prepared select\n");
+				rs = pstmt.executeQuery();
+				if (rs != null) {
+					rsmd = rs.getMetaData();
+					sb.append("14. first query execute succeeded. it has ").append(rsmd.getColumnCount()).append(" result columns\n");
+					rs.close();
+					rs = null;
+				} else {
+					sb.append("14. first query execute failed to return a result\n");
+				}
+				// do it one more time
+				rs = pstmt.executeQuery();
+				if (rs != null) {
+					rsmd = rs.getMetaData();
+					sb.append("15. second query execute succeeded. it has ").append(rsmd.getColumnCount()).append(" result columns\n");
+					rs.close();
+					rs = null;
+				} else {
+					sb.append("15. second query execute failed to return a result\n");
+				}
+				pstmt.close();
+				pstmt = null;
+			}
+
+			// add the WHERE part with many parameter makers
+			sql.append(" WHERE ");
+			for (col = 1; col <= NR_COLUMNS; col++) {
+				sql.append("column").append(col).append(" = ? AND ");
+			}
+			sql.append("column").append(col).append(" = '2022-11-16'");
+
+			sb.append("16. prepare select statement (with params), sql has length: ").append(sql.length()).append("\n");
+			pstmt = con.prepareStatement(sql.toString());
+			if (pstmt != null) {
+				sb.append("   fetch size after prepare 4: ").append(pstmt.getFetchSize()).append("\n");
+				ParameterMetaData pmd = pstmt.getParameterMetaData();
+				sb.append("   pmd. ").append(pmd.getParameterCount()).append(" parameters\n");
+				ResultSetMetaData rsmd = pstmt.getMetaData();
+				sb.append("   rsmd. ").append(rsmd.getColumnCount()).append(" result columns\n");
+				sb.append("17. bind parameters\n");
+				for (col = 1; col <= nrParams; col++) {
+					pstmt.setString(col, "someMoreText");
+				}
+				sb.append("18. execute prepared select\n");
+				rs = pstmt.executeQuery();
+				if (rs != null) {
+					rsmd = rs.getMetaData();
+					sb.append("19. first query execute succeeded. it has ")
+					  .append(rsmd.getColumnCount()).append(" result columns and ");
+					int rows = 0;
+					while (rs.next())
+						rows++;
+					sb.append(rows).append(" rows\n");
+					rs.close();
+					rs = null;
+				} else {
+					sb.append("19. first query execute failed to return a result\n");
+				}
+				// do it one more time
+				sb.append("20. bind parameters\n");
+				for (col = 1; col <= nrParams; col++) {
+					pstmt.setString(col, "someMoreText");
+				}
+				sb.append("21. execute prepared select again\n");
+				rs = pstmt.executeQuery();
+				if (rs != null) {
+					rsmd = rs.getMetaData();
+					sb.append("22. second query execute succeeded. it has ")
+					  .append(rsmd.getColumnCount()).append(" result columns and ");
+					int rows = 0;
+					while (rs.next())
+						rows++;
+					sb.append(rows).append(" rows\n");
+					rs.close();
+					rs = null;
+				} else {
+					sb.append("22. second query execute failed to return a result\n");
+				}
+				pstmt.close();
+				pstmt = null;
+			}
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(pstmt, rs);
+
+		// cleanup table
+		try {
+			stmt = con.createStatement();
+			stmt.executeUpdate("DROP TABLE IF EXISTS t7337;");
+			stmt.close();
+			stmt = null;
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+		closeStmtResSet(stmt, null);
+
+		compareExpectedOutput("Bug_PrepStmtManyParams_7337(" + nrParams + ")",
+			"12. prepare select statement (no params), sql has length: 19\n" +
+			"   fetch size after prepare 3: 250\n" +
+			"   pmd. 0 parameters\n" +
+			"   rsmd. " + (NR_COLUMNS+2) + " result columns\n" +
+			"13. execute prepared select\n" +
+			"14. first query execute succeeded. it has " + (NR_COLUMNS+2) + " result columns\n" +
+			"15. second query execute succeeded. it has " + (NR_COLUMNS+2) + " result columns\n" +
+			"16. prepare select statement (with params), sql has length: " + ((NR_COLUMNS * 18) -58) + "\n" +
+			"   fetch size after prepare 4: 250\n" +
+			"   pmd. " + nrParams + " parameters\n" +
+			"   rsmd. " + (NR_COLUMNS+2) + " result columns\n" +
+			"17. bind parameters\n" +
+			"18. execute prepared select\n" +
+			"19. first query execute succeeded. it has " + (NR_COLUMNS+2) + " result columns and 2 rows\n" +
+			"20. bind parameters\n" +
+			"21. execute prepared select again\n" +
+			"22. second query execute succeeded. it has " + (NR_COLUMNS+2) + " result columns and 2 rows\n");
 	}
 
 	/**
