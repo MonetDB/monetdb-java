@@ -13,7 +13,7 @@ Following SQLStates are MonetDB JDBC driver specific:
 01M21 cursors not supported
 01M22 JDBC escape syntax not supported
 01M23 field size limitation not supported
-01M24 query time out not supported
+01M24 query time out not supported (not used/needed anymore)
 
 08M01 opening logfile failed
 08M26 invalid URI
