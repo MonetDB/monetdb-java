@@ -30,7 +30,7 @@ import org.monetdb.jdbc.types.URL;
  * This speeds up testing considerably as the overhead of starting a JVM and
  * loading the java test program class and MonetDB JDBC driver is now reduced
  * to only one time instead of 40+ times.
- * Also all output is no longer send to system out/err but collected in a StringBuilder.
+ * Also all output is no longer send to system out/err but collected in a global StringBuilder.
  * The contents of it is compared with the expected output at the end of each test.
  * Only when it deviates the output is sent to system err, see compareExpectedOutput().
  *
@@ -89,6 +89,7 @@ final public class JDBC_API_Tester {
 		jt.Test_Rpositioning();
 		jt.Test_Rsqldata();
 		jt.Test_Rtimedate();
+		jt.Test_RSgetMetaData();
 		jt.Test_Sbatching();
 		jt.Test_Smoreresults();
 		jt.Test_Wrapper();
@@ -3501,6 +3502,204 @@ final public class JDBC_API_Tester {
 			"0. true	true\n");
 	}
 
+	private void Test_RSgetMetaData() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			con.setAutoCommit(false);
+			// >> false: auto commit should be off now
+			sb.append("0. false\t").append(con.getAutoCommit()).append("\n");
+
+			stmt = con.createStatement();
+			stmt.executeUpdate("CREATE TABLE Test_RSmetadata ( myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob )");
+
+			// all NULLs
+			stmt.executeUpdate("INSERT INTO Test_RSmetadata VALUES (NULL, NULL, NULL, NULL, NULL)");
+			// all filled in
+			stmt.executeUpdate("INSERT INTO Test_RSmetadata VALUES (2 , 3.0, true, 'A string', 'bla bla bla')");
+
+			rs = stmt.executeQuery("SELECT * FROM Test_RSmetadata");
+
+			sb.append("0. ").append(rs.getMetaData().getColumnCount()).append(" columns:\n");
+			for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
+				sb.append("Colnr ").append(col).append(".\n");
+				sb.append("\tclassname     ").append(rs.getMetaData().getColumnClassName(col)).append("\n");
+				sb.append("\tdisplaysize   ").append(rs.getMetaData().getColumnDisplaySize(col)).append("\n");
+				sb.append("\tlabel         ").append(rs.getMetaData().getColumnLabel(col)).append("\n");
+				sb.append("\tname          ").append(rs.getMetaData().getColumnName(col)).append("\n");
+				sb.append("\ttype          ").append(rs.getMetaData().getColumnType(col)).append("\n");
+				sb.append("\ttypename      ").append(rs.getMetaData().getColumnTypeName(col)).append("\n");
+				sb.append("\tprecision     ").append(rs.getMetaData().getPrecision(col)).append("\n");
+				sb.append("\tscale         ").append(rs.getMetaData().getScale(col)).append("\n");
+				sb.append("\tcatalogname   ").append(rs.getMetaData().getCatalogName(col)).append("\n");
+				sb.append("\tschemaname    ").append(rs.getMetaData().getSchemaName(col)).append("\n");
+				sb.append("\ttablename     ").append(rs.getMetaData().getTableName(col)).append("\n");
+				sb.append("\tautoincrement ").append(rs.getMetaData().isAutoIncrement(col)).append("\n");
+				sb.append("\tcasesensitive ").append(rs.getMetaData().isCaseSensitive(col)).append("\n");
+				sb.append("\tcurrency      ").append(rs.getMetaData().isCurrency(col)).append("\n");
+				sb.append("\tdefwritable   ").append(rs.getMetaData().isDefinitelyWritable(col)).append("\n");
+				sb.append("\tnullable      ").append(rs.getMetaData().isNullable(col)).append("\n");
+				sb.append("\treadonly      ").append(rs.getMetaData().isReadOnly(col)).append("\n");
+				sb.append("\tsearchable    ").append(rs.getMetaData().isSearchable(col)).append("\n");
+				sb.append("\tsigned        ").append(rs.getMetaData().isSigned(col)).append("\n");
+				sb.append("\twritable      ").append(rs.getMetaData().isWritable(col)).append("\n");
+			}
+
+			for (int i = 6; rs.next(); i++) {
+				for (int col = 1; col <= rs.getMetaData().getColumnCount(); col++) {
+					Object obj = rs.getObject(col);
+					String type = rs.getMetaData().getColumnClassName(col);
+					String isInstance = "(null)";
+					if (obj != null && type != null) {
+						try {
+							Class<?> c = Class.forName(type);
+							if (c.isInstance(obj)) {
+								isInstance = (obj.getClass().getName() + " is an instance of " + type);
+							} else {
+								isInstance = (obj.getClass().getName() + " is NOT an instance of " + type);
+							}
+						} catch (ClassNotFoundException e) {
+							isInstance = "No such class: " + type;
+						}
+					}
+					sb.append(i).append(".\t").append(isInstance).append("\n");
+				}
+			}
+			rs.close();
+
+			con.rollback();
+			con.setAutoCommit(true);
+			// >> true: auto commit was just switched on
+			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(stmt, rs);
+
+		compareExpectedOutput("Test_RSgetMetaData",
+			"0. false	false\n" +
+			"0. 5 columns:\n" +
+			"Colnr 1.\n" +
+			"	classname     java.lang.Integer\n" +
+			"	displaysize   1\n" +
+			"	label         myint\n" +
+			"	name          myint\n" +
+			"	type          4\n" +
+			"	typename      int\n" +
+			"	precision     10\n" +
+			"	scale         0\n" +
+			"	catalogname   null\n" +
+			"	schemaname    sys\n" +
+			"	tablename     test_rsmetadata\n" +
+			"	autoincrement false\n" +
+			"	casesensitive false\n" +
+			"	currency      false\n" +
+			"	defwritable   false\n" +
+			"	nullable      1\n" +
+			"	readonly      true\n" +
+			"	searchable    true\n" +
+			"	signed        true\n" +
+			"	writable      false\n" +
+			"Colnr 2.\n" +
+			"	classname     java.lang.Double\n" +
+			"	displaysize   24\n" +
+			"	label         mydouble\n" +
+			"	name          mydouble\n" +
+			"	type          8\n" +
+			"	typename      double\n" +
+			"	precision     15\n" +
+			"	scale         0\n" +
+			"	catalogname   null\n" +
+			"	schemaname    sys\n" +
+			"	tablename     test_rsmetadata\n" +
+			"	autoincrement false\n" +
+			"	casesensitive false\n" +
+			"	currency      false\n" +
+			"	defwritable   false\n" +
+			"	nullable      1\n" +
+			"	readonly      true\n" +
+			"	searchable    true\n" +
+			"	signed        true\n" +
+			"	writable      false\n" +
+			"Colnr 3.\n" +
+			"	classname     java.lang.Boolean\n" +
+			"	displaysize   5\n" +
+			"	label         mybool\n" +
+			"	name          mybool\n" +
+			"	type          16\n" +
+			"	typename      boolean\n" +
+			"	precision     1\n" +
+			"	scale         0\n" +
+			"	catalogname   null\n" +
+			"	schemaname    sys\n" +
+			"	tablename     test_rsmetadata\n" +
+			"	autoincrement false\n" +
+			"	casesensitive false\n" +
+			"	currency      false\n" +
+			"	defwritable   false\n" +
+			"	nullable      1\n" +
+			"	readonly      true\n" +
+			"	searchable    true\n" +
+			"	signed        false\n" +
+			"	writable      false\n" +
+			"Colnr 4.\n" +
+			"	classname     java.lang.String\n" +
+			"	displaysize   8\n" +
+			"	label         myvarchar\n" +
+			"	name          myvarchar\n" +
+			"	type          12\n" +
+			"	typename      varchar\n" +
+			"	precision     15\n" +
+			"	scale         0\n" +
+			"	catalogname   null\n" +
+			"	schemaname    sys\n" +
+			"	tablename     test_rsmetadata\n" +
+			"	autoincrement false\n" +
+			"	casesensitive true\n" +
+			"	currency      false\n" +
+			"	defwritable   false\n" +
+			"	nullable      1\n" +
+			"	readonly      true\n" +
+			"	searchable    true\n" +
+			"	signed        false\n" +
+			"	writable      false\n" +
+			"Colnr 5.\n" +
+			"	classname     java.lang.String\n" +
+			"	displaysize   11\n" +
+			"	label         myclob\n" +
+			"	name          myclob\n" +
+			"	type          12\n" +
+			"	typename      clob\n" +
+			"	precision     11\n" +
+			"	scale         0\n" +
+			"	catalogname   null\n" +
+			"	schemaname    sys\n" +
+			"	tablename     test_rsmetadata\n" +
+			"	autoincrement false\n" +
+			"	casesensitive true\n" +
+			"	currency      false\n" +
+			"	defwritable   false\n" +
+			"	nullable      1\n" +
+			"	readonly      true\n" +
+			"	searchable    true\n" +
+			"	signed        false\n" +
+			"	writable      false\n" +
+			"6.	(null)\n" +
+			"6.	(null)\n" +
+			"6.	(null)\n" +
+			"6.	(null)\n" +
+			"6.	(null)\n" +
+			"7.	java.lang.Integer is an instance of java.lang.Integer\n" +
+			"7.	java.lang.Double is an instance of java.lang.Double\n" +
+			"7.	java.lang.Boolean is an instance of java.lang.Boolean\n" +
+			"7.	java.lang.String is an instance of java.lang.String\n" +
+			"7.	java.lang.String is an instance of java.lang.String\n" +
+			"0. true	true\n");
+	}
+
 	private void Test_RfetchManyColumnsInfo() {
 		sb.setLength(0);	// clear the output log buffer
 
@@ -4195,7 +4394,7 @@ final public class JDBC_API_Tester {
 			ResultSetMetaData rsmd = rs.getMetaData();
 			checkIsWrapperFor("ResultSetMetaData", rsmd, jdbc_pkg, "ResultSetMetaData");
 			checkIsWrapperFor("ResultSetMetaData", rsmd, monetdb_jdbc_pkg, "MonetResultSet");
-			checkIsWrapperFor("ResultSetMetaData", rsmd, monetdb_jdbc_pkg, "MonetResultSet$rsmdw");  // it is a private class of MonetResultSet
+			checkIsWrapperFor("ResultSetMetaData", rsmd, monetdb_jdbc_pkg, "MonetResultSetMetaData");
 			checkIsWrapperFor("ResultSetMetaData", rsmd, jdbc_pkg, "Statement");
 			checkIsWrapperFor("ResultSetMetaData", rsmd, monetdb_jdbc_pkg, "MonetStatement");
 
@@ -4253,7 +4452,7 @@ final public class JDBC_API_Tester {
 				"ResultSet. isWrapperFor(MonetStatement) returns: false\n" +
 				"ResultSetMetaData. isWrapperFor(ResultSetMetaData) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
 				"ResultSetMetaData. isWrapperFor(MonetResultSet) returns: false\n" +
-				"ResultSetMetaData. isWrapperFor(MonetResultSet$rsmdw) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
+				"ResultSetMetaData. isWrapperFor(MonetResultSetMetaData) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
 				"ResultSetMetaData. isWrapperFor(Statement) returns: false\n" +
 				"ResultSetMetaData. isWrapperFor(MonetStatement) returns: false\n" +
 				"Statement. isWrapperFor(Statement) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
