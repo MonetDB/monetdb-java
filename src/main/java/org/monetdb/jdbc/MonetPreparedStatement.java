@@ -736,7 +736,7 @@ public class MonetPreparedStatement
 				if (map != null && map.containsKey(MonetDBType)) {
 					c = (Class)map.get(MonetDBType);
 				} else {
-					c = MonetResultSet.getClassForType(getColumnType(column));
+					c = MonetDriver.getClassForType(getColumnType(column));
 				}
 				if (c != null)
 					return c.getCanonicalName();
@@ -1072,7 +1072,7 @@ public class MonetPreparedStatement
 				if (map != null && map.containsKey(MonetDBType)) {
 					c = (Class)map.get(MonetDBType);
 				} else {
-					c = MonetResultSet.getClassForType(getParameterType(param));
+					c = MonetDriver.getClassForType(getParameterType(param));
 				}
 				if (c != null)
 					return c.getCanonicalName();

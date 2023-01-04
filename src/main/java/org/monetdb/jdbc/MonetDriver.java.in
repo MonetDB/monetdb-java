@@ -390,6 +390,62 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 		return Types.OTHER;
 	}
 
+	/**
+	 * Returns the Class object for a given java.sql.Types value.
+	 *
+	 * @param type a value from java.sql.Types
+	 * @return a Class object from which an instance would be returned
+	 */
+	static final Class<?> getClassForType(final int type) {
+		/**
+		 * This switch returns the types as objects according to table B-3 from
+		 * Oracle's JDBC specification 4.1
+		 */
+		switch(type) {
+			case Types.CHAR:
+			case Types.VARCHAR:
+			case Types.LONGVARCHAR:
+				return String.class;
+			case Types.NUMERIC:
+			case Types.DECIMAL:
+				return java.math.BigDecimal.class;
+			case Types.BOOLEAN:
+				return Boolean.class;
+			case Types.TINYINT:
+			case Types.SMALLINT:
+				return Short.class;
+			case Types.INTEGER:
+				return Integer.class;
+			case Types.BIGINT:
+				return Long.class;
+			case Types.REAL:
+				return Float.class;
+			case Types.FLOAT:
+			case Types.DOUBLE:
+				return Double.class;
+			case Types.BINARY:      // MonetDB currently does not support these
+			case Types.VARBINARY:   // see treat_blob_as_binary property
+			case Types.LONGVARBINARY:
+				return byte[].class;
+			case Types.DATE:
+				return java.sql.Date.class;
+			case Types.TIME:
+			case Types.TIME_WITH_TIMEZONE:
+				return java.sql.Time.class;
+			case Types.TIMESTAMP:
+			case Types.TIMESTAMP_WITH_TIMEZONE:
+				return java.sql.Timestamp.class;
+			case Types.CLOB:
+				return java.sql.Clob.class;
+			case Types.BLOB:
+				return java.sql.Blob.class;
+
+			// all the rest are currently not implemented and used
+			default:
+				return String.class;
+		}
+	}
+
 	private static String TypeMapppingSQL;	// cache to optimise getSQLTypeMap()
 	/**
 	 * Returns a String usable in an SQL statement to map the server types

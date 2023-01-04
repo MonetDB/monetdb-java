@@ -1257,62 +1257,6 @@ public class MonetResultSet
 	}
 
 	/**
-	 * Returns the Class object for a given java.sql.Types value.
-	 *
-	 * @param type a value from java.sql.Types
-	 * @return a Class object from which an instance would be returned
-	 */
-	static final Class<?> getClassForType(final int type) {
-		/**
-		 * This switch returns the types as objects according to table B-3 from
-		 * Oracle's JDBC specification 4.1
-		 */
-		switch(type) {
-			case Types.CHAR:
-			case Types.VARCHAR:
-			case Types.LONGVARCHAR:
-				return String.class;
-			case Types.NUMERIC:
-			case Types.DECIMAL:
-				return BigDecimal.class;
-			case Types.BOOLEAN:
-				return Boolean.class;
-			case Types.TINYINT:
-			case Types.SMALLINT:
-				return Short.class;
-			case Types.INTEGER:
-				return Integer.class;
-			case Types.BIGINT:
-				return Long.class;
-			case Types.REAL:
-				return Float.class;
-			case Types.FLOAT:
-			case Types.DOUBLE:
-				return Double.class;
-			case Types.BINARY:      // MonetDB currently does not support these
-			case Types.VARBINARY:   // see treat_blob_as_binary property
-			case Types.LONGVARBINARY:
-				return byte[].class;
-			case Types.DATE:
-				return java.sql.Date.class;
-			case Types.TIME:
-			case Types.TIME_WITH_TIMEZONE:
-				return Time.class;
-			case Types.TIMESTAMP:
-			case Types.TIMESTAMP_WITH_TIMEZONE:
-				return Timestamp.class;
-			case Types.CLOB:
-				return Clob.class;
-			case Types.BLOB:
-				return Blob.class;
-
-			// all the rest are currently not implemented and used
-			default:
-				return String.class;
-		}
-	}
-
-	/**
 	 * Gets the value of the designated column in the current row of this
 	 * ResultSet object as an Object in the Java programming language.
 	 *
@@ -1534,7 +1478,7 @@ public class MonetResultSet
 		}
 		if (type == null) {
 			// fallback to the standard SQL type Class mappings
-			type = getClassForType(JdbcSQLTypes[columnIndex - 1]);
+			type = MonetDriver.getClassForType(JdbcSQLTypes[columnIndex - 1]);
 		}
 
 		if (type == null || type == String.class) {

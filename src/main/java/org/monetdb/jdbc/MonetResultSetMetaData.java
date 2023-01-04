@@ -8,10 +8,9 @@
 
 package org.monetdb.jdbc;
 
-import java.sql.SQLException;
 import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Map;
 
 /**
  *<pre>
@@ -698,14 +697,14 @@ public final class MonetResultSetMetaData
 			final String MonetDBType = types[column - 1];
 			Class<?> type = null;
 			if (conn != null) {
-				final Map<String,Class<?>> map = conn.getTypeMap();
+				final java.util.Map<String,Class<?>> map = conn.getTypeMap();
 				if (map != null && map.containsKey(MonetDBType)) {
 					type = (Class)map.get(MonetDBType);
 				}
 			}
 			if (type == null) {
 				// fallback to the standard SQL type Class mappings
-				type = MonetResultSet.getClassForType(JdbcSQLTypes[column - 1]);
+				type = MonetDriver.getClassForType(JdbcSQLTypes[column - 1]);
 			}
 			if (type != null) {
 				return type.getCanonicalName();
