@@ -30,8 +30,8 @@ public final class MonetResultSetMetaData
 	/** The parental Connection object */
 	private final MonetConnection conn;
 
-	/** A ResultSetResponse object to retrieve resultset metadata from */
-	private final MonetConnection.ResultSetResponse header;
+	/** The number of columns, it can be zero !! */
+	private final int colCount;
 
 	/** The schema names of the columns in this ResultSet */
 	private final String[] schemas;
@@ -87,7 +87,6 @@ public final class MonetResultSetMetaData
 			throw new IllegalArgumentException("Header may not be null!");
 		}
 		this.conn = connection;
-		this.header = header;
 		schemas = header.getSchemaNames();
 		tables = header.getTableNames();
 		columns = header.getNames();
@@ -96,6 +95,7 @@ public final class MonetResultSetMetaData
 		precisions = header.getColumnPrecisions();
 		scales = header.getColumnScales();
 
+		colCount = columns.length;
 		if (columns.length != tables.length || columns.length != types.length ) {
 			throw new IllegalArgumentException("Inconsistent Header metadata");
 		}
@@ -116,7 +116,86 @@ public final class MonetResultSetMetaData
 		}
 
 		// initialize structures for storing columns info on nullability and autoincrement
-		array_size = columns.length + 1;  // add 1 as in JDBC columns start from 1 (array from 0).
+		array_size = colCount + 1;  // add 1 as in JDBC columns start from 1 (array from 0).
+		_is_queried = new boolean[array_size];
+		_is_fetched = new boolean[array_size];
+		_isNullable = new int[array_size];
+		_isAutoincrement = new boolean[array_size];
+		nextUpperbound = array_size;
+	}
+
+	/**
+	 * Alternative constructor backed by the given connection and metadata arrays.
+	 * It is used by MonetPreparedStatement.
+	 *
+	 * @param connection the parent connection
+	 * @param colCount the number of result columns, it can be zero !!
+	 * @param schemas the schema names
+	 * @param tables the table names
+	 * @param columns the column names
+	 * @param types the MonetDB type names
+	 * @param jdbcTypes the JDBC SQL type codes
+	 * @param lengths the maximum display length for each column
+	 * @param precisions the precision for each column
+	 * @param scales the scale for each column
+	 * @throws IllegalArgumentException if called with null for one of the arguments
+	 */
+	MonetResultSetMetaData(
+		final MonetConnection connection,
+		final int colcount,
+		final String[] schemas,
+		final String[] tables,
+		final String[] columns,
+		final String[] types,
+		final int[] jdbcTypes,
+		final int[] lengths,
+		final int[] precisions,
+		final int[] scales)
+		throws IllegalArgumentException
+	{
+		if (connection == null) {
+			throw new IllegalArgumentException("Connection may not be null!");
+		}
+		if (schemas == null) {
+			throw new IllegalArgumentException("Schemas may not be null!");
+		}
+		if (tables == null) {
+			throw new IllegalArgumentException("Tables may not be null!");
+		}
+		if (columns == null) {
+			throw new IllegalArgumentException("Columns may not be null!");
+		}
+		if (types == null) {
+			throw new IllegalArgumentException("MonetDB Types may not be null!");
+		}
+		if (jdbcTypes == null) {
+			throw new IllegalArgumentException("JDBC Types may not be null!");
+		}
+		if (lengths == null) {
+			throw new IllegalArgumentException("Lengths may not be null!");
+		}
+		if (precisions == null) {
+			throw new IllegalArgumentException("Precisions may not be null!");
+		}
+		if (scales == null) {
+			throw new IllegalArgumentException("Scales may not be null!");
+		}
+		if (columns.length != tables.length || columns.length != types.length ) {
+			throw new IllegalArgumentException("Inconsistent Header metadata");
+		}
+		this.conn = connection;
+		this.colCount = colcount;
+		this.schemas = schemas;
+		this.tables = tables;
+		this.columns = columns;
+		this.lengths = lengths;
+		this.types = types;
+		this.JdbcSQLTypes = jdbcTypes;
+		this.precisions = precisions;
+		this.scales = scales;
+
+		// initialize structures for storing columns info on nullability and autoincrement
+		array_size = colCount + 1;  // add 1 as in JDBC columns start from 1 (array from 0).
 		_is_queried = new boolean[array_size];
 		_is_fetched = new boolean[array_size];
 		_isNullable = new int[array_size];
@@ -131,8 +210,8 @@ public final class MonetResultSetMetaData
 	 */
 	@Override
 	public int getColumnCount() {
-		// for debug: System.out.println("In rsmd.getColumnCount() = " + columns.length + ". this rsmd object = " + this.toString());
-		return columns.length;
+		// for debug: System.out.println("In rsmd.getColumnCount() = " + colCount + ". this rsmd object = " + this.toString());
+		return colCount;
 	}
 
 	/**
@@ -469,7 +548,7 @@ public final class MonetResultSetMetaData
 	 * 0 is returned for data types where the column size is not applicable.
 	 *
 	 * @param column the first column is 1, the second is 2, ...
-	 * @return precision
+	 * @return maximum precision or length in characters
 	 * @throws SQLException if there is no such column
 	 */
 	@Override
@@ -723,7 +802,7 @@ public final class MonetResultSetMetaData
 	 * @throws SQLDataException when invalid column index number
 	 */
 	private final void checkColumnIndexValidity(final int column) throws java.sql.SQLDataException {
-		if (column < 1 || column > columns.length)
+		if (column < 1 || column > colCount)
 			throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 	}
 

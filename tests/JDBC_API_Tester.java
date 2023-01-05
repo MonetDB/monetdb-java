@@ -1729,7 +1729,7 @@ final public class JDBC_API_Tester {
 			"Showing prepared query ResultSetMetaData\n" +
 			"ColumnName: c1	ColumnTypeName: interval day	Precision: 4	Scale: 0	ColumnDisplaySize: 4	ColumnType: 2	ColumnClassName: java.math.BigDecimal\n" +
 			"ColumnName: c2	ColumnTypeName: interval month	Precision: 10	Scale: 0	ColumnDisplaySize: 10	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
-			"ColumnName: c3	ColumnTypeName: interval second	Precision: 13	Scale: 0	ColumnDisplaySize: 13	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c3	ColumnTypeName: interval second	Precision: 13	Scale: 3	ColumnDisplaySize: 13	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
 			"Showing prepared query ParameterMetaData\n" +
 			"ParameterTypeName: interval day	Precision: 4	Scale: 0	ParameterType: 2	ParameterClassName: java.math.BigDecimal\n" +
 			"ParameterTypeName: interval month	Precision: 10	Scale: 0	ParameterType: 4	ParameterClassName: java.lang.Integer\n" +
@@ -2373,7 +2373,7 @@ final public class JDBC_API_Tester {
 			"  writable      false\n" +
 			"RCol 4\n" +
 			"  classname     java.lang.Boolean\n" +
-			"  displaysize   1\n" +
+			"  displaysize   5\n" +
 			"  label         mybool\n" +
 			"  name          mybool\n" +
 			"  type          16\n" +
@@ -4426,7 +4426,7 @@ final public class JDBC_API_Tester {
 			ResultSetMetaData psrsmd = pstmt.getMetaData();
 			checkIsWrapperFor("PrepStmt ResultSetMetaData", psrsmd, jdbc_pkg, "ResultSetMetaData");
 			checkIsWrapperFor("PrepStmt ResultSetMetaData", psrsmd, monetdb_jdbc_pkg, "MonetPreparedStatement");
-			checkIsWrapperFor("PrepStmt ResultSetMetaData", psrsmd, monetdb_jdbc_pkg, "MonetPreparedStatement$rsmdw");  // it is a private class of MonetPreparedStatement
+			checkIsWrapperFor("PrepStmt ResultSetMetaData", psrsmd, monetdb_jdbc_pkg, "MonetResultSetMetaData");
 			checkIsWrapperFor("PrepStmt ResultSetMetaData", psrsmd, jdbc_pkg, "Connection");
 			checkIsWrapperFor("PrepStmt ResultSetMetaData", psrsmd, monetdb_jdbc_pkg, "MonetConnection");
 
@@ -4472,7 +4472,7 @@ final public class JDBC_API_Tester {
 				"ParameterMetaData. isWrapperFor(MonetConnection) returns: false\n" +
 				"PrepStmt ResultSetMetaData. isWrapperFor(ResultSetMetaData) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
 				"PrepStmt ResultSetMetaData. isWrapperFor(MonetPreparedStatement) returns: false\n" +
-				"PrepStmt ResultSetMetaData. isWrapperFor(MonetPreparedStatement$rsmdw) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
+				"PrepStmt ResultSetMetaData. isWrapperFor(MonetResultSetMetaData) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
 				"PrepStmt ResultSetMetaData. isWrapperFor(Connection) returns: false\n" +
 				"PrepStmt ResultSetMetaData. isWrapperFor(MonetConnection) returns: false\n");
 	}
