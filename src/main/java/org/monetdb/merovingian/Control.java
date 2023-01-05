@@ -3,7 +3,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2022 MonetDB B.V.
+ * Copyright 1997 - July 2008 CWI, August 2008 - 2023 MonetDB B.V.
  */
 
 package org.monetdb.merovingian;
@@ -73,7 +73,7 @@ public class Control {
 	
 	/**
 	 * Sets the socket timeout.
-	 * 
+	 *
 	 * @param timeout (in milliseconds) Use -1 to unset timeout (and use default)
 	 */
 	public void setSoTimeout(int timeout) {
@@ -256,8 +256,8 @@ public class Control {
 		sendCommand(database, "start", false);
 	}
 
-	public boolean isStopped(String database) 
-		throws MerovingianException, IOException 
+	public boolean isStopped(String database)
+		throws MerovingianException, IOException
 	{
 		switch (getStatus(database).getState()) {
 		case SABdbInactive:
