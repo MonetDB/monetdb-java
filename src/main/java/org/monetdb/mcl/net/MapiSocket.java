@@ -263,6 +263,24 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 		return connect(host, port, user, pass, true);
 	}
 
+	/**
+	 * Connects to the given host and port, logging in as the given
+	 * user.  If followRedirect is false, a RedirectionException is
+	 * thrown when a redirect is encountered.
+	 *
+	 * @param host the hostname, or null for the loopback address
+	 * @param port the port number (must be between 0 and 65535, inclusive)
+	 * @param user the username
+	 * @param pass the password
+	 * @param makeConnection whether a new socket connection needs to be created
+	 * @return A List with informational (warning) messages. If this
+	 *		list is empty; then there are no warnings.
+	 * @throws IOException if an I/O error occurs when creating the socket
+	 * @throws SocketException - if there is an error in the underlying protocol, such as a TCP error.
+	 * @throws UnknownHostException if the IP address of the host could not be determined
+	 * @throws MCLParseException if bogus data is received
+	 * @throws MCLException if an MCL related error occurs
+	 */
 	private List<String> connect(final String host, final int port, final String user, final String pass, final boolean makeConnection)
 		throws IOException, SocketException, UnknownHostException, MCLParseException, MCLException
 	{
@@ -1236,20 +1254,6 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 	 */
 	public DownloadStream downloadStream(boolean prependCr) {
 		return new DownloadStream(fromMonet.getRaw(), toMonet, prependCr);
-	}
-
-	/**
-	 * Destructor called by garbage collector before destroying this
-	 * object tries to disconnect the MonetDB connection if it has not
-	 * been disconnected already.
-	 *
-	 * @deprecated (since="9")
-	 */
-	@Override
-	@Deprecated
-	protected void finalize() throws Throwable {
-		close();
-		super.finalize();
 	}
 
 
