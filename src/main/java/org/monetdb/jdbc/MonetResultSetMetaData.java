@@ -51,7 +51,8 @@ final class MonetResultSetMetaData
 	/** The scales of the columns in this ResultSet */
 	private final int[] scales;
 
-	/* For the methods: isNullable() and isAutoIncrement(), we need to query the server.
+	/**
+	 * For the methods: isNullable() and isAutoIncrement(), we need to query the server.
 	 * To do this efficiently we query many columns combined in one SELECT
 	 * query and cache the results in following arrays.
 	 */
@@ -129,7 +130,7 @@ final class MonetResultSetMetaData
 	 * It is used by MonetPreparedStatement.
 	 *
 	 * @param connection the parent connection
-	 * @param colCount the number of result columns, it can be zero !!
+	 * @param colcount the number of result columns, it can be zero !!
 	 * @param schemas the schema names
 	 * @param tables the table names
 	 * @param columns the column names
@@ -799,7 +800,7 @@ final class MonetResultSetMetaData
 	 * A private utility method to check validity of column index number
 	 *
 	 * @param column the first column is 1, the second is 2, ...
-	 * @throws SQLDataException when invalid column index number
+	 * @throws java.sql.SQLDataException when invalid column index number
 	 */
 	private final void checkColumnIndexValidity(final int column) throws java.sql.SQLDataException {
 		if (column < 1 || column > colCount)

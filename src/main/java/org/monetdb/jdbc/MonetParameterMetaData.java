@@ -48,7 +48,7 @@ final class MonetParameterMetaData
 	 * It is used by MonetPreparedStatement.
 	 *
 	 * @param connection the parent connection
-	 * @param paramCount the number of parameters, it can be zero !!
+	 * @param paramcount the number of parameters, it can be zero !!
 	 * @param types the MonetDB type names
 	 * @param jdbcTypes the JDBC SQL type codes
 	 * @param precisions the precision for each parameter
