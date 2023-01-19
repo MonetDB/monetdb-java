@@ -23,7 +23,7 @@ import java.sql.Types;
  * @author Martin van Dinther
  * @version 1.0
  */
-public final class MonetResultSetMetaData
+final class MonetResultSetMetaData
 	extends MonetWrapper
 	implements ResultSetMetaData
 {
