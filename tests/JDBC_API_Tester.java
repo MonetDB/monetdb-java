@@ -4419,7 +4419,7 @@ final public class JDBC_API_Tester {
 			ParameterMetaData pmd = pstmt.getParameterMetaData();
 			checkIsWrapperFor("ParameterMetaData", pmd, jdbc_pkg, "ParameterMetaData");
 			checkIsWrapperFor("ParameterMetaData", pmd, monetdb_jdbc_pkg, "MonetPreparedStatement");
-			checkIsWrapperFor("ParameterMetaData", pmd, monetdb_jdbc_pkg, "MonetPreparedStatement$pmdw");  // it is a private class of MonetPreparedStatement
+			checkIsWrapperFor("ParameterMetaData", pmd, monetdb_jdbc_pkg, "MonetParameterMetaData");
 			checkIsWrapperFor("ParameterMetaData", pmd, jdbc_pkg, "Connection");
 			checkIsWrapperFor("ParameterMetaData", pmd, monetdb_jdbc_pkg, "MonetConnection");
 
@@ -4467,7 +4467,7 @@ final public class JDBC_API_Tester {
 				"PreparedStatement. isWrapperFor(MonetConnection) returns: false\n" +
 				"ParameterMetaData. isWrapperFor(ParameterMetaData) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
 				"ParameterMetaData. isWrapperFor(MonetPreparedStatement) returns: false\n" +
-				"ParameterMetaData. isWrapperFor(MonetPreparedStatement$pmdw) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
+				"ParameterMetaData. isWrapperFor(MonetParameterMetaData) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
 				"ParameterMetaData. isWrapperFor(Connection) returns: false\n" +
 				"ParameterMetaData. isWrapperFor(MonetConnection) returns: false\n" +
 				"PrepStmt ResultSetMetaData. isWrapperFor(ResultSetMetaData) returns: true	Called unwrap(). Returned object is not null, so oke\n" +
