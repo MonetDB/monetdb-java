@@ -289,7 +289,8 @@ public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.Jdbc
 		}
 
 		// build the extra arguments of the JDBC connect string
-		String attr = "?";
+		// increase the fetchsize from the default 250 to 10000
+		String attr = "?fetchsize=10000&";
 		CmdLineOpts.OptionContainer oc = copts.getOption("language");
 		final String lang = oc.getArgument();
 		if (oc.isPresent())
