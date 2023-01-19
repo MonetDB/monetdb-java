@@ -705,7 +705,6 @@ public class MonetConnection
 	@Override
 	public String nativeSQL(final String sql) {
 		/* there is currently no way to get the native MonetDB rewritten SQL string back, so just return the original string */
-		/* in future we may replace/remove the escape sequences { <escape-type> ...} before sending it to the server */
 		return sql;
 	}
 
@@ -1981,9 +1980,7 @@ public class MonetConnection
 				env_raw_strings = "false";
 			}
 		}
-		if ("true".equals(env_raw_strings))
-			return true;
-		return false;
+		return "true".equals(env_raw_strings);
 	}
 
 	/**
