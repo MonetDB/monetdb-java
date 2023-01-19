@@ -3384,22 +3384,19 @@ public final class MonetDatabaseMetaData
 			"s.\"name\" AS \"TYPE_SCHEM\", " +
 			"t.\"sqlname\" AS \"TYPE_NAME\", " +
 			"CASE t.\"sqlname\"" +
-				// next 4 UDTs are standard
-				" WHEN 'inet' THEN 'org.monetdb.jdbc.types.INET'" +
-				" WHEN 'json' THEN 'java.lang.String'" +
-				" WHEN 'url' THEN 'org.monetdb.jdbc.types.URL'" +
-				" WHEN 'uuid' THEN 'java.lang.String'" +
 				// next UDT only when "CREATE TYPE xml EXTERNAL NAME xml;" is executed
 				" WHEN 'xml' THEN 'java.lang.String'" +
 				" ELSE 'java.lang.Object' END AS \"CLASS_NAME\", " +
-			"cast(CASE WHEN t.\"sqlname\" IN ('inet','json','url','uuid','xml') THEN ").append(Types.JAVA_OBJECT)
+			"cast(CASE WHEN t.\"sqlname\" = 'xml' THEN ").append(Types.JAVA_OBJECT)
 				.append(" ELSE ").append(Types.STRUCT).append(" END AS int) AS \"DATA_TYPE\", " +
 			"t.\"systemname\" AS \"REMARKS\", " +
 			"cast(null as smallint) AS \"BASE_TYPE\" " +
 		"FROM \"sys\".\"types\" t " +
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
-		// exclude the built-in types (I assume they always have id <= 99 and eclass < 15)
-		"WHERE t.\"id\" > 99 AND t.\"eclass\" >= 15");
+		// exclude the built-in types (I assume they always have id <= 99 and eclass < 18)
+		"WHERE t.\"id\" > 99" +
+		" AND t.\"eclass\" >= 18" +
+		" AND t.\"sqlname\" NOT IN ('inet','json','url','uuid')");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.

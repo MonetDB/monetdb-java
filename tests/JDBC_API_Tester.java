@@ -907,18 +907,14 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getUDTs(null, "sys", null, null), "getUDTs(null, sys, null, null)",
 			"Resultset with 7 columns\n" +
 			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE\n" +
-			"char(1)	varchar(1024)	varchar(1024)	char(27)	int	varchar(256)	smallint\n" +
-			"null	sys	inet	org.monetdb.jdbc.types.INET	2000	inet	null\n" +
-			"null	sys	json	java.lang.String	2000	json	null\n" +
-			"null	sys	url	org.monetdb.jdbc.types.URL	2000	url	null\n" +
-			"null	sys	uuid	java.lang.String	2000	uuid	null\n" +
+			"char(1)	varchar(1024)	varchar(1024)	char(16)	int	varchar(256)	smallint\n" +
 			"null	sys	xml	java.lang.String	2000	xml	null\n");
 
 			int[] UDTtypes = { Types.STRUCT, Types.DISTINCT };
 			compareResultSet(dbmd.getUDTs(null, "sys", null, UDTtypes), "getUDTs(null, sys, null, UDTtypes",
 			"Resultset with 7 columns\n" +
 			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE\n" +
-			"char(1)	varchar(1024)	varchar(1024)	char(27)	int	varchar(256)	smallint\n");
+			"char(1)	varchar(1024)	varchar(1024)	char(16)	int	varchar(256)	smallint\n");
 
 			sb.setLength(0);	// clear the output log buffer
 		} catch (SQLException e) {
