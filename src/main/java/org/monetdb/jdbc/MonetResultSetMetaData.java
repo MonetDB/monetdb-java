@@ -520,7 +520,7 @@ final class MonetResultSetMetaData
 		checkColumnIndexValidity(column);
 		try {
 			final String monettype = types[column - 1];
-			if (monettype.endsWith("_interval")) {
+			if (monettype != null && monettype.endsWith("_interval")) {
 				/* convert the interval type names to valid SQL data type names,
 				 * such that generic applications can use them in create table statements
 				 */

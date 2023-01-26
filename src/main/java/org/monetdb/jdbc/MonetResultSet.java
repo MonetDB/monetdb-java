@@ -1247,12 +1247,38 @@ public class MonetResultSet
 	 * columns.
 	 *
 	 * @return the description of this ResultSet object's columns
+	 * @throws SQLException if a database access error occurs or this method is called on a closed result set
 	 */
 	@Override
 	public ResultSetMetaData getMetaData() throws SQLException {
 		if (rsmd == null) {
 			// first use, construct it once and reuse it for all next calls
-			rsmd = new MonetResultSetMetaData((MonetConnection) getStatement().getConnection(), header);
+			if (header != null) {
+				rsmd = new MonetResultSetMetaData((MonetConnection) getStatement().getConnection(), header);
+			} else {
+				// this will be a MonetVirtualResultSet object, see MonetStatement.getGeneratedKeys()
+				// create arrays for storing the result columns meta data to pass to the constructor
+				final int array_size = 1;
+				final String[] schemas = new String[array_size];
+				final String[] tables = new String[array_size];
+				final String[] columns = new String[array_size];
+				final String[] types = new String[array_size];
+				final int[] jdbcTypes = new int[array_size];
+				final int[] lengths = new int[array_size];
+				final int[] precisions = new int[array_size];
+				final int[] scales = new int[array_size];
+				// fill the arrays with the getGeneratedKeys() resultset columns metadata. It only has 1 column.
+				schemas[0] = null;
+				tables[0] = null;
+				columns[0] = "GENERATED_KEY";
+				types[0] = "bigint";
+				jdbcTypes[0] = Types.BIGINT;
+				lengths[0] = 20;
+				precisions[0] = 19;
+				scales[0] = 0;
+				rsmd = new MonetResultSetMetaData((MonetConnection) getStatement().getConnection(), 1,
+					schemas, tables, columns, types, jdbcTypes, lengths, precisions, scales);
+			}
 		}
 		return rsmd;
 	}

@@ -91,6 +91,7 @@ final public class JDBC_API_Tester {
 		jt.Test_Rtimedate();
 		jt.Test_RSgetMetaData();
 		jt.Test_Sbatching();
+		jt.Test_SgeneratedKeys();
 		jt.Test_Smoreresults();
 		jt.Test_Wrapper();
 		jt.bogus_auto_generated_keys();
@@ -4316,6 +4317,46 @@ final public class JDBC_API_Tester {
 			"7. checking table count...7000 passed\n" +
 			"8. drop table...passed\n" +
 			"0. true	true\n");
+	}
+
+	private void Test_SgeneratedKeys() {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		ResultSet rsk = null;
+		try {
+			stmt = con.createStatement();
+			// test getGeneratedKeys
+			rsk = stmt.getGeneratedKeys();
+			// test meta data retrieval of this MonetVirtualResultSet.
+			// It used to fail with: Exception in thread "main" java.lang.IllegalArgumentException: Header may not be null!
+			final ResultSetMetaData rsmd = rsk.getMetaData();
+			sb.append("rsmd has ").append(rsmd.getColumnCount()).append(" columns\n");
+			for (int col = 1; col <= rsmd.getColumnCount(); col++) {
+				sb.append("ColumnName: ").append(rsmd.getColumnName(col))
+				.append(" ColumnTypeName: ").append(rsmd.getColumnTypeName(col))
+				.append(" Precision: ").append(rsmd.getPrecision(col))
+				.append(" Scale: ").append(rsmd.getScale(col))
+				.append(" ColumnDisplaySize: ").append(rsmd.getColumnDisplaySize(col))
+				.append(" ColumnType: ").append(rsmd.getColumnType(col))
+				.append(" ColumnClassName: ").append(rsmd.getColumnClassName(col))
+				.append(" isNullable: ").append(rsmd.isNullable(col))
+				.append(" isAutoIncrement: ").append(rsmd.isAutoIncrement(col))
+				.append("\n");
+			}
+			rsk.close();
+			rsk = null;
+			stmt.close();
+			stmt = null;
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(stmt, rsk);
+
+		compareExpectedOutput("Test_SgeneratedKeys",
+				"rsmd has 1 columns\n" +
+				"ColumnName: GENERATED_KEY ColumnTypeName: bigint Precision: 19 Scale: 0 ColumnDisplaySize: 20 ColumnType: -5 ColumnClassName: java.lang.Long isNullable: 2 isAutoIncrement: false\n");
 	}
 
 	private void Test_Smoreresults() {
