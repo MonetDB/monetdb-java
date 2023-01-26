@@ -392,7 +392,15 @@ final class MonetResultSetMetaData
 		checkColumnIndexValidity(column);
 		if (lengths != null) {
 			try {
-				return lengths[column - 1];
+				int len = lengths[column - 1];
+				if (len == 0) {
+					final String monettype = getColumnTypeName(column);
+					// in case of inet it always has 0 as length. we need to correct it.
+					if (monettype != null && "inet".equals(monettype)) {
+						len = 18;	// 128.127.126.125/24
+					}
+				}
+				return len;
 			} catch (IndexOutOfBoundsException e) {
 				throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 			}
