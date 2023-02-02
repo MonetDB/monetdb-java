@@ -77,6 +77,7 @@ final public class JDBC_API_Tester {
 		jt.Test_PSlargeresponse(con_URL);
 		jt.Test_PSmanycon(con_URL);
 		jt.Test_PSmetadata();
+		jt.Test_PSsetBytes();
 		jt.Test_PSsomeamount();
 		jt.Test_PSsqldata();
 		jt.Test_PStimedate();
@@ -2442,6 +2443,122 @@ final public class JDBC_API_Tester {
 			"  classname java.lang.Integer\n" +
 			"  mode      1 (IN)\n" +
 			"0. true\ttrue\n");
+	}
+
+	private void Test_PSsetBytes() {
+		sb.setLength(0);	// clear the output log buffer
+
+		PreparedStatement pstmt = null;
+		ResultSet rs = null;
+		try {
+			sb.append("1 Create table\n");
+			pstmt = con.prepareStatement("create table t7346(col1 clob, col2 blob)");
+			sb.append("  pstmt has ")
+			.append(pstmt.getMetaData().getColumnCount())
+			.append(" result columns and ")
+			.append(pstmt.getParameterMetaData().getParameterCount())
+			.append(" parameters\n");
+			pstmt.execute();
+			pstmt.close();
+
+			sb.append("2 Prepare Insert data\n");
+			pstmt = con.prepareStatement("insert into t7346 (col1,col2) values(?,?)");
+			sb.append("  pstmt has ")
+			.append(pstmt.getMetaData().getColumnCount())
+			.append(" result columns and ")
+			.append(pstmt.getParameterMetaData().getParameterCount())
+			.append(" parameters\n");
+			String val = "0123456789abcdef";
+			pstmt.setString(1, val);
+			pstmt.setBytes(2, val.getBytes());
+			sb.append("3 Insert data row 1\n");
+			pstmt.execute();
+			val += "~!@#$%^&*()_+`1-=][{}\\|';:,<.>/?";
+			pstmt.setString(1, val);
+			pstmt.setBytes(2, val.getBytes());
+			sb.append("4 Insert data row 2\n");
+			pstmt.execute();
+			val = "\u00e0\u004f\u00d0\u0020\u00ea\u003a\u0069\u0010\u00a2\u00d8\u0008\u0001\u002b\u0030\u0030\u009d\u129d";
+			pstmt.setString(1, val);
+			pstmt.setBytes(2, val.getBytes());
+			sb.append("4 Insert data row 3\n");
+			pstmt.execute();
+			pstmt.close();
+
+			sb.append("5 Prepare Select data\n");
+			pstmt = con.prepareStatement("select col1, length(col1) as len_col1, col2, length(col2) as len_col2 from t7346");
+			sb.append("  pstmt has ")
+			.append(pstmt.getMetaData().getColumnCount())
+			.append(" result columns and ")
+			.append(pstmt.getParameterMetaData().getParameterCount())
+			.append(" parameters\n");
+			sb.append("6 Execute Select\n");
+			rs = pstmt.executeQuery();
+			if (rs != null) {
+				sb.append("  rs has ")
+				.append(rs.getMetaData().getColumnCount())
+				.append(" result columns\n");
+				sb.append("7 Show data rows\n");
+				for (int c = 1; c <= rs.getMetaData().getColumnCount(); c++) {
+					if (c > 1)
+						sb.append("\t");
+					sb.append(rs.getMetaData().getColumnName(c));
+				}
+				sb.append("\n");
+				while (rs.next()) {
+					sb.append(rs.getString("col1")).append("\t")
+					.append(rs.getInt("len_col1")).append("\t")
+					.append(rs.getString("col2")).append("\t")
+					.append(rs.getInt("len_col2")).append("\n");
+				}
+				rs.close();
+				rs = null;
+			}
+			pstmt.close();
+			pstmt = null;
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(pstmt, rs);
+
+		// cleanup created test table
+		try {
+			sb.append("8 Drop table\n");
+			pstmt = con.prepareStatement("drop table if exists t7346");
+			sb.append("  pstmt has ")
+			.append(pstmt.getMetaData().getColumnCount())
+			.append(" result columns and ")
+			.append(pstmt.getParameterMetaData().getParameterCount())
+			.append(" parameters\n");
+			pstmt.execute();
+			pstmt.close();
+			pstmt = null;
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(pstmt, rs);
+
+		compareExpectedOutput("Test_PSsetBytes",
+			"1 Create table\n" +
+			"  pstmt has 0 result columns and 0 parameters\n" +
+			"2 Prepare Insert data\n" +
+			"  pstmt has 0 result columns and 2 parameters\n" +
+			"3 Insert data row 1\n" +
+			"4 Insert data row 2\n" +
+			"4 Insert data row 3\n" +
+			"5 Prepare Select data\n" +
+			"  pstmt has 4 result columns and 0 parameters\n" +
+			"6 Execute Select\n" +
+			"  rs has 4 result columns\n" +
+			"7 Show data rows\n" +
+			"col1	len_col1	col2	len_col2\n" +
+			"0123456789abcdef	16	30313233343536373839616263646566	16\n" +
+			"0123456789abcdef~!@#$%^&*()_+`1-=][{}|';:,<.>/?	47	303132333435363738396162636465667E21402324255E262A28295F2B60312D3D5D5B7B7D5C7C273B3A2C3C2E3E2F3F	48\n" +
+			"àOÐ ê:i¢Ø+00Âኝ	17	C3A04FC39020C3AA3A6910C2A2C39808012B3030C29DE18A9D	25\n" +
+			"8 Drop table\n" +
+			"  pstmt has 0 result columns and 0 parameters\n");
 	}
 
 	private void Test_PSsomeamount() {
