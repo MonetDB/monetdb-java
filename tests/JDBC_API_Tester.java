@@ -2508,6 +2508,7 @@ final public class JDBC_API_Tester {
 				while (rs.next()) {
 					sb.append(rs.getString("col1")).append("\t")
 					.append(rs.getInt("len_col1")).append("\t")
+					.append(byteArrayToHexStr(rs.getBytes("col2"))).append("\t")
 					.append(rs.getString("col2")).append("\t")
 					.append(rs.getInt("len_col2")).append("\n");
 				}
@@ -2554,11 +2555,26 @@ final public class JDBC_API_Tester {
 			"  rs has 4 result columns\n" +
 			"7 Show data rows\n" +
 			"col1	len_col1	col2	len_col2\n" +
-			"0123456789abcdef	16	30313233343536373839616263646566	16\n" +
-			"0123456789abcdef~!@#$%^&*()_+`1-=][{}|';:,<.>/?	47	303132333435363738396162636465667E21402324255E262A28295F2B60312D3D5D5B7B7D5C7C273B3A2C3C2E3E2F3F	48\n" +
-			"àOÐ ê:i¢Ø+00Âኝ	17	C3A04FC39020C3AA3A6910C2A2C39808012B3030C29DE18A9D	25\n" +
+			"0123456789abcdef	16	30313233343536373839616263646566	30313233343536373839616263646566	16\n" +
+			"0123456789abcdef~!@#$%^&*()_+`1-=][{}|';:,<.>/?	47	303132333435363738396162636465667E21402324255E262A28295F2B60312D3D5D5B7B7D5C7C273B3A2C3C2E3E2F3F	303132333435363738396162636465667E21402324255E262A28295F2B60312D3D5D5B7B7D5C7C273B3A2C3C2E3E2F3F	48\n" +
+			"àOÐ ê:i¢Ø+00Âኝ	17	C3A04FC39020C3AA3A6910C2A2C39808012B3030C29DE18A9D	C3A04FC39020C3AA3A6910C2A2C39808012B3030C29DE18A9D	25\n" +
 			"8 Drop table\n" +
 			"  pstmt has 0 result columns and 0 parameters\n");
+	}
+
+	static final char[] HEXES = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+	private String byteArrayToHexStr(final byte[] bytes) {
+		if (bytes == null)
+			return null;
+		final int len = bytes.length;
+		final StringBuilder buf = new StringBuilder(len * 2);
+		// convert the bytes into hex codes
+		for (int i = 0; i < len; i++) {
+			byte b = bytes[i];
+			buf.append(HEXES[(b & 0xF0) >> 4])
+			   .append(HEXES[(b & 0x0F)]);
+		}
+		return buf.toString();
 	}
 
 	private void Test_PSsomeamount() {
