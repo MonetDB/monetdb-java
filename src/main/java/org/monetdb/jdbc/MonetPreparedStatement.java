@@ -764,7 +764,7 @@ public class MonetPreparedStatement
 		setValue(parameterIndex, Byte.toString(x));
 	}
 
-	static final String HEXES = "0123456789ABCDEF";
+	static final char[] HEXES = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 	/**
 	 * Sets the designated parameter to the given Java array of bytes. The
 	 * driver converts this to an SQL VARBINARY or LONGVARBINARY (depending
@@ -787,8 +787,9 @@ public class MonetPreparedStatement
 		hex.append("blob '");	// add a casting prefix
 		// convert the bytes into hex codes
 		for (int i = 0; i < len; i++) {
-			hex.append(HEXES.charAt((x[i] & 0xF0) >> 4))
-			   .append(HEXES.charAt((x[i] & 0x0F)));
+			byte b = x[i];
+			hex.append(HEXES[(b & 0xF0) >> 4])
+			   .append(HEXES[(b & 0x0F)]);
 		}
 		hex.append("'");	// end of hex string value
 		setValue(parameterIndex, hex.toString());
