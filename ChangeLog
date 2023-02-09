@@ -1,6 +1,11 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Feb  9 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected DatabaseMetaData.getSQLKeywords() output. It used to return
+  all MonetDB SQL keywords, but now it excludes the SQL:2003 keywords
+  as defined by the Java JDBC API specification.
+
 * Thu Jan 19 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected DatabaseMetaData.getUDTs() output. It used to return rows
   for system types: inet, json, url and uuid. However those are not User
