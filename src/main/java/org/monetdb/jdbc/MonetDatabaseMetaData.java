@@ -3862,10 +3862,13 @@ public final class MonetDatabaseMetaData
 	 * vendor functions using the stored procedure escape syntax.
 	 *
 	 * @return true if so; false otherwise
+	 * @throws SQLException if a database error occurs
 	 */
 	@Override
-	public boolean supportsStoredFunctionsUsingCallSyntax() {
-		return false;
+	public boolean supportsStoredFunctionsUsingCallSyntax() throws SQLException {
+		if ((getDatabaseMajorVersion() == 11) && (getDatabaseMinorVersion() <= 45))
+			return false;
+		return true;
 	}
 
 	/**
