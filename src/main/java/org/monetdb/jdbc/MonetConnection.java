@@ -2055,6 +2055,25 @@ public class MonetConnection
 		return databaseMinorVersion;
 	}
 
+	/**
+	 * Get whether the MonetDB SQL parser supports ODBC/JDBC escape sequence syntax.
+	 * See also: https://docs.oracle.com/javadb/10.6.2.1/ref/rrefjdbc1020262.html
+	 * It does when the server version is 11.46 or higher.
+	 * This method is called from: MonetDatabaseMetaData and MonetCallableStatement.
+	 *
+	 * @return true when the server supports ODBC/JDBC escape sequence syntax else false.
+	 */
+	boolean supportsEscapeSequenceSyntax() {
+		try {
+			if ((getDatabaseMajorVersion() == 11) && (getDatabaseMinorVersion() <= 45))
+				// older servers do not support it
+				return false;
+		} catch (SQLException e) {
+			return false;
+		}
+		return true;
+	}
+
 
 	// Internal cache for determining if system table sys.privilege_codes (new as of Jul2017 release) exists on connected server
 	private boolean queriedPrivilege_codesTable = false;

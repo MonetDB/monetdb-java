@@ -30,6 +30,10 @@ public final class MonetDatabaseMetaData
 {
 	private final MonetConnection con;
 
+	/**
+	 * Constructor
+	 * @param parent the parent MonetConnection object.
+	 */
 	public MonetDatabaseMetaData(final MonetConnection parent) {
 		con = parent;
 	}
@@ -3865,13 +3869,10 @@ public final class MonetDatabaseMetaData
 	 * vendor functions using the stored procedure escape syntax.
 	 *
 	 * @return true if so; false otherwise
-	 * @throws SQLException if a database error occurs
 	 */
 	@Override
-	public boolean supportsStoredFunctionsUsingCallSyntax() throws SQLException {
-		if ((getDatabaseMajorVersion() == 11) && (getDatabaseMinorVersion() <= 45))
-			return false;
-		return true;
+	public boolean supportsStoredFunctionsUsingCallSyntax() {
+		return con.supportsEscapeSequenceSyntax();
 	}
 
 	/**
