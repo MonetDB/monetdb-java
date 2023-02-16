@@ -204,7 +204,7 @@ final class MonetParameterMetaData
 				}
 			case Types.CHAR:
 			case Types.VARCHAR:
-			case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+		/*	case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR */
 			case Types.CLOB:
 				// these data types have a variable length
 				try {
@@ -214,9 +214,10 @@ final class MonetParameterMetaData
 				}
 			case Types.BINARY:
 			case Types.VARBINARY:
+		/*	case Types.LONGVARBINARY: // MonetDB doesn't use type LONGVARBINARY */
 			case Types.BLOB:
 				// these data types have a variable length
-				// It expect number of bytes, not number of hex chars
+				// It expects number of bytes, not number of hex chars
 				try {
 					return precisions[param];
 				} catch (IndexOutOfBoundsException e) {

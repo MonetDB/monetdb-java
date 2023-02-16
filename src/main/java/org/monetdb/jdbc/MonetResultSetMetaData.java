@@ -260,7 +260,7 @@ final class MonetResultSetMetaData
 	public boolean isCaseSensitive(final int column) throws SQLException {
 		switch (getColumnType(column)) {
 			case Types.CHAR:
-			case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+		/*	case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR */
 			case Types.CLOB:
 				return true;
 			case Types.VARCHAR:
@@ -589,7 +589,7 @@ final class MonetResultSetMetaData
 				return 18;
 			case Types.CHAR:
 			case Types.VARCHAR:
-			case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+		/*	case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR */
 			case Types.CLOB:
 				// these data types have a variable length
 				if (precisions != null) {
@@ -611,6 +611,7 @@ final class MonetResultSetMetaData
 				return getColumnDisplaySize(column);
 			case Types.BINARY:
 			case Types.VARBINARY:
+		/*	case Types.LONGVARBINARY: // MonetDB doesn't use type LONGVARBINARY */
 			case Types.BLOB:
 				// these data types have a variable length
 				if (precisions != null) {
@@ -709,10 +710,11 @@ final class MonetResultSetMetaData
 		//	case Types.DOUBLE:
 		//	case Types.CHAR:
 		//	case Types.VARCHAR:
-		//	case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+		//	case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR
 		//	case Types.CLOB:
 		//	case Types.BINARY:
 		//	case Types.VARBINARY:
+		//	case Types.LONGVARBINARY: // MonetDB doesn't use type LONGVARBINARY
 		//	case Types.BLOB:
 		//	case Types.DATE:
 		//	case Types.BOOLEAN:

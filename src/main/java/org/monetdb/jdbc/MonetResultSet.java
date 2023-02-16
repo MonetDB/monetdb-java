@@ -437,7 +437,7 @@ public class MonetResultSet
 					return blob.getBinaryStream();
 				case Types.BINARY:
 				case Types.VARBINARY:
-				case Types.LONGVARBINARY:
+			/*	case Types.LONGVARBINARY: // MonetDB doesn't use type LONGVARBINARY */
 					final byte[] bte = getBytes(columnIndex);
 					if (bte == null)
 						return null;
@@ -792,7 +792,7 @@ public class MonetResultSet
 				case Types.BOOLEAN:
 				case Types.CHAR:
 				case Types.VARCHAR:
-				case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+			/*	case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR */
 				case Types.CLOB:
 					// check if string value equals "true" (case insensitive) or not
 					return Boolean.parseBoolean(val);
@@ -910,7 +910,7 @@ public class MonetResultSet
 				case Types.BLOB:
 				case Types.BINARY:
 				case Types.VARBINARY:
-				case Types.LONGVARBINARY:
+			/*	case Types.LONGVARBINARY: // MonetDB doesn't use type LONGVARBINARY */
 					return MonetBlob.hexStrToByteArray(val);
 				default:
 					throw new SQLException("Cannot operate on type: " + types[columnIndex - 1], "M1M05");
@@ -1416,7 +1416,7 @@ public class MonetResultSet
 				return val;
 			}
 			case Types.CHAR:
-			case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR, it's here for completeness
+		/*	case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR */
 				return val;
 			case Types.CLOB:
 				return new MonetClob(val);
@@ -1432,7 +1432,7 @@ public class MonetResultSet
 				return getTimestamp(columnIndex, null);
 			case Types.BINARY:
 			case Types.VARBINARY:
-			case Types.LONGVARBINARY: // MonetDB doesn't use type LONGVARBINARY, it's here for completeness
+		/*	case Types.LONGVARBINARY: // MonetDB doesn't use type LONGVARBINARY */
 				return getBytes(columnIndex);
 			case Types.OTHER:
 			default:
@@ -1993,7 +1993,7 @@ public class MonetResultSet
 			// so we attempt to parse it as the caller thinks it is.
 			if (JdbcType == Types.CHAR ||
 			    JdbcType == Types.VARCHAR ||
-			    JdbcType == Types.LONGVARCHAR ||
+			/*  JdbcType == Types.LONGVARCHAR ||  // MonetDB doesn't use type LONGVARCHAR */
 			    JdbcType == Types.CLOB)
 			{
 				JdbcType = type;

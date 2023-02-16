@@ -404,7 +404,7 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 		switch(type) {
 			case Types.CHAR:
 			case Types.VARCHAR:
-			case Types.LONGVARCHAR:
+		/*	case Types.LONGVARCHAR: // MonetDB doesn't use type LONGVARCHAR */
 				return String.class;
 			case Types.NUMERIC:
 			case Types.DECIMAL:
@@ -425,7 +425,7 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 				return Double.class;
 			case Types.BINARY:      // MonetDB currently does not support these
 			case Types.VARBINARY:   // see treat_blob_as_binary property
-			case Types.LONGVARBINARY:
+		/*	case Types.LONGVARBINARY: // MonetDB doesn't use type LONGVARBINARY */
 				return byte[].class;
 			case Types.DATE:
 				return java.sql.Date.class;
