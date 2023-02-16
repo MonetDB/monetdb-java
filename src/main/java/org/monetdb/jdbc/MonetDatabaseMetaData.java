@@ -433,7 +433,8 @@ public final class MonetDatabaseMetaData
 	}
 
 	// SQL query parts shared by four get<Type>Functions() below
-	private static final String FunctionsSelect = "SELECT DISTINCT CASE WHEN \"language\" > 0 THEN s.\"name\"||'.'||f.\"name\" ELSE f.\"name\" END FROM \"sys\".\"functions\" f JOIN \"sys\".\"schemas\" s ON f.\"schema_id\" = s.\"id\" WHERE ";
+	private static final String FunctionsSelect = "SELECT DISTINCT CASE WHEN f.\"language\" > 0 THEN s.\"name\"||'.'||f.\"name\" ELSE f.\"name\" END" +
+					" FROM \"sys\".\"functions\" f JOIN \"sys\".\"schemas\" s ON f.\"schema_id\" = s.\"id\" WHERE ";
 	private static final String FunctionsWhere = "(f.\"id\" IN (SELECT \"func_id\" FROM \"sys\".\"args\" WHERE \"number\" = 1 AND \"name\" = 'arg_1' AND \"type\" IN ";
 	// Scalar functions sql_max(x,y), sql_min(x,y), greatest(x,y) and least(x,y) are defined in sys.args for type 'any' and usable as num, str and timedate functions.
 	private static final String OrFunctionsMaxMin = " OR f.\"name\" IN ('sql_max','sql_min','least','greatest')";
@@ -471,11 +472,12 @@ public final class MonetDatabaseMetaData
 	@Override
 	public String getSystemFunctions() {
 		final String wherePart =
-			"f.\"name\" IN ('columnsize','debug','get_value_for','hash','hashsize','heapsize'" +
-			",'ifthenelse','imprintsize','isaurl','isauuid','isnull','masterclock','mastertick'" +
+			"f.\"name\" IN ('columnsize','database','debug','get_value_for','hash','hashsize','heapsize'" +
+			",'ifnull','ifthenelse','imprintsize','isaurl','isauuid','isnull','masterclock','mastertick'" +
 			",'newurl','next_value_for','password_hash','replicaclock','replicatick','uuid')" +
 			// add functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION ALL SELECT * FROM (VALUES('cast'),('coalesce'),('convert'),('nullif')) as sf";
+			// ToDo: from release 11.47.1 we also support function: ifnull, but only with odbc escape notation, so {fn ifnull(null, 2)}. Related issue: 6933.
 		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + FunctionsOrderBy1);
 	}
 
@@ -489,6 +491,7 @@ public final class MonetDatabaseMetaData
 			// add time date functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'extract'" +
 			" UNION SELECT 'now'";
+			// ToDo: from release 11.47.1 we also support functions: dayname and monthname, but only with odbc escape notation, so {fn dayname(current_date)}. Related issue: 7300.
 		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + OrFunctionsMaxMin + unionPart + FunctionsOrderBy1);
 	}
 
