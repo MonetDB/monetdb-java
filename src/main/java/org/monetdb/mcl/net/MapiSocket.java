@@ -422,6 +422,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 				} else if (u.getScheme().equals("merovingian")) {
 					// reuse this connection to inline connect to the
 					// right database that Merovingian proxies for us
+					reader.resetLineType();
 					warns.addAll(connect(host, port, user, pass, false));
 				} else {
 					throw new MCLException("unsupported scheme in redirect: " + suri);
