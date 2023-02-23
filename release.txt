@@ -107,6 +107,19 @@ Currently implemented JDBC 4.2 interfaces include:
           else but "fully serializable" transactions.
 
   * java.sql.DatabaseMetaData
+    NOTE: the column SPECIFIC_NAME as returned by getProcedures,
+    getProcedureColumns, getFunctions and getFunctionColumns contains
+    the internal id of the procedure or function. Use it for overloaded
+    procedure and function names to match the proper columns info as
+    returned by getProcedureColumns or getFunctionColumns to a specifc
+    procedure or function name as returned by getProcedures or getFunctions.
+    For example, getProcedures(null, "sys", "analyze") will return 4 rows
+    as there exists 4 overloaded system procedures called analyze, with
+    different (from 0 to 3) parameters. When calling
+    getProcedureColumns(null, "sys", "analyze", "%") you will get all the
+    6 (0+1+2+3) parameters of the 4 system procedures combined. So you will
+    need to use the value of column SPECIFIC_NAME to properly match the right
+    parameters to a specific procedure.
 
   * java.sql.Statement
     The next methods/options are NOT useable/supported:
@@ -202,6 +215,7 @@ The following java.sql.* interfaces are NOT implemented:
   * java.sql.SQLType
   * java.sql.SQLXML
   * java.sql.Struct
+
 
 
 Since release 3.2 (monetdb-jdbc-3.2.jre8.jar), the MonetDB JDBC driver has
