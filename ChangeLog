@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Feb 23 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Compiled and released new jar files: monetdb-jdbc-3.3.jre8.jar and
+  jdbcclient.jre8.jar
+
 * Thu Feb  9 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected DatabaseMetaData.getSQLKeywords() output. It used to return
   all MonetDB SQL keywords, but now it excludes the SQL:2003 keywords
