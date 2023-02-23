@@ -1,9 +1,9 @@
 COPY ... ON CLIENT ... support in the MonetDB JDBC driver and JdbcClient program.
 
 MonetDB provides the non-standard COPY INTO statement to perform bulk inserts and
-retrievals, see also
-https://www.monetdb.org/Documentation/ServerAdministration/LoadingBulkData/CSVBulkLoads
-https://www.monetdb.org/Documentation/ServerAdministration/ExportingBulkData
+retrievals, see also:
+https://www.monetdb.org/documentation/user-guide/sql-manual/data-loading/copy-from/
+https://www.monetdb.org/documentation/user-guide/sql-manual/data-loading/export_data/
 
 By default, COPY INTO accesses files on the server but it also has a mode to
 access files on the client.  This is supported by the command line tool
@@ -16,11 +16,10 @@ of file transfers.  If you execute, for example,
 
 the server will send a request for file 'data.csv' to the JDBC driver.
 By default, the JDBC driver will refuse with an error message:
-
 	'No file upload handler has been registered with the JDBC driver'
 
 or in JdbcClient:
-	'Error [22000] data.csv: No file upload handler has been registered with the JDBC driver'
+	'Error [42000] when opening data.csv: ON CLIENT: No file upload handler has been registered with the JDBC driver'
 
 This is for security reasons.  However, you can register a callback to handle
 these requests from the server:
@@ -63,29 +62,31 @@ which signature looks like this:
 In your implementation of handleUpload(), you can use the 'handle' object to
 communicate with the server, for example:
 
-- handle.getStream() to obtain a stream object to which you can write.
+- PrintStream handle.getStream() to obtain a stream object to which you can write.
   This is useful if you want to generate the data on the fly.
 
 - void uploadFrom(InputStream stream) to have the JDBC driver read data from the
   stream and send it to the server as-is.  For text mode uploads this means the
   text must be UTF-8 encoded.
 
-- handle.uploadFrom(Reader reader) to have the JDBC driver read text from the given
+- void handle.uploadFrom(Reader reader) to have the JDBC driver read text from the given
   Reader and upload it.
 
-- handle.uploadFrom(BufferedReader reader, long linesToSkip) to have the JDBC
+- void handle.uploadFrom(BufferedReader reader, long linesToSkip) to have the JDBC
   driver read from the given BufferedReader and upload the text, skipping the first
   'linesToSkip' lines. Typically you would use the value passed to handleUpload in
   parameter 'linesToSkip'.
 
-- handle.sendError(String errorMessage) to refuse the upload.
+- void handle.sendError(String errorMessage) to refuse the upload.
 
-See also: https://www.monetdb.org/hg/monetdb-java/file/tip/src/main/java/org/monetdb/jdbc/MonetConnection.java#l3344
+See also:
+ https://www.monetdb.org/hg/monetdb-java/file/tip/src/main/java/org/monetdb/jdbc/MonetConnection.java#l3546
 
 If you use sendError() to refuse the upload, the COPY INTO statement will fail but
 the connection will remain usable. On the other hand, if your implementation of
 handleUpload throws an IOException, the connection will be closed because there
 is currently no way to signal errors to the server once the transfer has begun.
+
 
 The interface for DownloadHandler is:
 
@@ -104,6 +105,7 @@ The interface for DownloadHandler is:
 		void handleDownload(Download handle, String name, boolean textMode) throws IOException;
 	}
 
+
 Class org.monetdb.util.FileTransferHandler provides a default implementation
 of both MonetConnection.UploadHandler and MonetConnection.DownloadHandler for
 reading from and writing to local csv files.
@@ -111,4 +113,6 @@ You pass the FileTransferHandler constructor a directory name and a Charset to
 specify the encoding used for the data in the csv files.
 FileTransferHandler class is intended for situations where you do not need to
 generate or transform data while uploading or downloading to a file.
+See also:
+ https://www.monetdb.org/hg/monetdb-java/file/tip/src/main/java/org/monetdb/util/FileTransferHandler.java#l29
 
