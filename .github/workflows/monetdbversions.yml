@@ -1,0 +1,49 @@
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+name: Test with various MonetDB versions
+
+on: [push]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        monetdbversion:
+          - "monetdb/dev-builds:Sep2022"
+          - "monetdb/dev-builds:Jan2022"
+          - "monetdb/dev-builds:default"
+
+    services:
+      monetdb_container:
+        image: ${{ matrix.monetdbversion }}
+        env:
+          MDB_DAEMON_PASS: monetdb
+          MDB_DB_ADMIN_PASS: monetdb
+        ports:
+          - 50000:50000
+
+    steps:
+    - uses: actions/checkout@v2
+
+    - name: Set up JDK
+      uses: actions/setup-java@v3
+      with:
+        java-version: 8
+        distribution: liberica
+
+    - name: Build
+      run: make
+
+    - name: Create jar symlink
+      run: ln -s monetdb-jdbc*.jar monetdb-jdbc.jar
+      working-directory: jars
+
+    - name: Run JDBC_API_Tester
+      run: java -cp jars/monetdb-jdbc.jar:jars/jdbctests.jar JDBC_API_Tester 'jdbc:monetdb://localhost:50000/monetdb?user=monetdb&password=monetdb'
+
+    - name: Run OnClientTester
+      run: java -cp jars/monetdb-jdbc.jar:jars/jdbctests.jar OnClientTester 'jdbc:monetdb://localhost:50000/monetdb?user=monetdb&password=monetdb' -v
