@@ -225,6 +225,11 @@ public final class OnClientTester {
 		} catch (SQLException e) {
 			System.err.println("Failed to connect using JDBC URL: " + jdbcUrl);
 			System.err.println(e);
+			Throwable t = e;
+			while (t.getCause() != null) {
+				t = t.getCause();
+				System.err.println("Caused by: " + t);
+			}
 		}
 		return false;
 	}
