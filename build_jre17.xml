@@ -39,12 +39,15 @@ Copyright 1997 - July 2008 CWI, August 2008 - 2023 MonetDB B.V.
   <!--
   Update: cross-compile for JVM 8 (=1.8), profile compact2
   2020-02-12, martin.van.dinther@monetdbsolutions.com
+
+  Update: cross-compile for JVM 17, profile compact2
+  2023-03-08, martin.van.dinther@monetdbsolutions.com
   -->
 
-  <property name="jvm.version" value="8" />
-  <property name="jre.version" value="jre8" />
-  <property name="javac.flags" value="-source 8" />
-  <property name="javac.flags" value="-target 8" />
+  <property name="jvm.version" value="17" />
+  <property name="jre.version" value="jre17" />
+  <property name="javac.flags" value="-source 17" />
+  <property name="javac.flags" value="-target 17" />
   <property name="javac.flags" value="-profile compact2" />
   <property name="javac.flags" value="-Xlint" />
 
