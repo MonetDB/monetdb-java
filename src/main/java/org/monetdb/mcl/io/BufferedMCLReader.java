@@ -12,7 +12,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.Reader;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
 
 /**
  * Helper class to read and classify the lines of a query response.
@@ -55,13 +55,10 @@ public final class BufferedMCLReader {
 	 * default-sized input buffer, from an InputStream.
 	 *
 	 * @param in An InputStream
-	 * @param enc Encoding
-	 * @throws UnsupportedEncodingException If encoding is not supported
+	 * @param cs A Charset
 	 */
-	public BufferedMCLReader(final InputStream in, final String enc)
-		throws UnsupportedEncodingException
-	{
-		this(new java.io.InputStreamReader(in, enc));
+	public BufferedMCLReader(final InputStream in, final Charset cs) {
+		this(new java.io.InputStreamReader(in, cs));
 	}
 
 	/**

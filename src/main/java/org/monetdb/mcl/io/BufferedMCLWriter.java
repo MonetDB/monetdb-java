@@ -11,8 +11,8 @@ package org.monetdb.mcl.io;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.nio.charset.Charset;
 
 /**
  * Write text to a character-output stream, buffering characters so as
@@ -53,13 +53,10 @@ public final class BufferedMCLWriter extends BufferedWriter {
 	 * default-sized output buffer, from an OutputStream.
 	 *
 	 * @param in An OutputStream
-	 * @param enc Encoding
-	 * @throws UnsupportedEncodingException If encoding is not supported
+	 * @param cs A Charset
 	 */
-	public BufferedMCLWriter(final OutputStream in, final String enc)
-		throws UnsupportedEncodingException
-	{
-		super(new java.io.OutputStreamWriter(in, enc));
+	public BufferedMCLWriter(final OutputStream in, final Charset cs) {
+		super(new java.io.OutputStreamWriter(in, cs));
 	}
 
 	/**

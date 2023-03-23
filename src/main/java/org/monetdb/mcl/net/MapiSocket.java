@@ -16,7 +16,6 @@ import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.net.Socket;
 import java.net.SocketException;
@@ -296,13 +295,9 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 
 			fromMonet = new BlockInputStream(con.getInputStream());
 			toMonet = new BlockOutputStream(con.getOutputStream());
-			try {
-				reader = new BufferedMCLReader(fromMonet, "UTF-8");
-				writer = new BufferedMCLWriter(toMonet, "UTF-8");
-				writer.registerReader(reader);
-			} catch (UnsupportedEncodingException e) {
-				throw new MCLException(e.toString());
-			}
+			reader = new BufferedMCLReader(fromMonet, StandardCharsets.UTF_8);
+			writer = new BufferedMCLWriter(toMonet, StandardCharsets.UTF_8);
+			writer.registerReader(reader);
 		}
 
 		reader.advance();
