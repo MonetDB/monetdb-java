@@ -146,7 +146,7 @@ public class MonetConnection
 	private boolean treatClobAsVarChar = true;	// turned on by default for optimal performance (from JDBC Driver release 3.0 onwards)
 
 	/** The last set query timeout on the server as used by Statement, PreparedStatement and CallableStatement */
-	protected int lastSetQueryTimeout;	// 0 means no timeout, which is the default on the server
+	protected int lastSetQueryTimeout = 0;	// 0 means no timeout, which is the default on the server
 
 	/** A cache to reduce the number of DatabaseMetaData objects created by getMetaData() to maximum 1 per connection */
 	private DatabaseMetaData dbmd;
@@ -1787,14 +1787,13 @@ public class MonetConnection
 		Statement st = null;
 		try {
 			final String callstmt;
-			final int msecs = (seconds <= 2147483) ? seconds * 1000 : seconds;	// prevent overflow of int
 
-			// as of release Jun2020 (11.37.7) the function sys.settimeout(msecs bigint)
-			// is deprecated and replaced by new sys.setquerytimeout(msecs int)
+			// as of release Jun2020 (11.37.7) the function sys.settimeout(secs bigint)
+			// is deprecated and replaced by new sys.setquerytimeout(secs int)
 			if ((getDatabaseMajorVersion() == 11) && (getDatabaseMinorVersion() < 37))
-				callstmt = "CALL sys.\"settimeout\"(" + msecs + ")";
+				callstmt = "CALL sys.\"settimeout\"(" + seconds + ")";
 			else
-				callstmt = "CALL sys.\"setquerytimeout\"(" + msecs + ")";
+				callstmt = "CALL sys.\"setquerytimeout\"(" + seconds + ")";
 			// for debug: System.out.println("Before: " + callstmt);
 			st = createStatement();
 			st.execute(callstmt);
