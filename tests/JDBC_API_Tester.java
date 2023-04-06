@@ -6293,7 +6293,7 @@ final public class JDBC_API_Tester {
 			testTimeout_3357(st, Integer.MAX_VALUE);
 			testTimeout_3357(st, 0);
 			testTimeout_3357(st, 10);
-			testTimeout_3357(st, 1);
+			testTimeout_3357(st, 4);
 			testTimeout_3357(st, -1);	// to generate an SQLException as negative timeouts are invalid
 		} catch (SQLException se) {
 			sb.append("SQLException: setQueryTimeout(timeout_value) throws: ").append(se).append("\n");
@@ -6317,7 +6317,7 @@ final public class JDBC_API_Tester {
 				"setQueryTimeout = 2147483647. getQueryTimeout = 2147483647\n" +
 				"setQueryTimeout = 0. getQueryTimeout = 0\n" +
 				"setQueryTimeout = 10. getQueryTimeout = 10\n" +
-				"setQueryTimeout = 1. getQueryTimeout = 1\n" +
+				"setQueryTimeout = 4. getQueryTimeout = 4\n" +
 				"setQueryTimeout = -1. SQLException: setQueryTimeout(timeout_value) throws: java.sql.SQLException: Illegal timeout value: -1\n" +
 				"Restore original QueryTimeout = 0\n" +
 				"setQueryTimeout = 0. getQueryTimeout = 0\n");
