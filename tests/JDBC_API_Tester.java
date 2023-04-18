@@ -1740,7 +1740,7 @@ final public class JDBC_API_Tester {
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
-			boolean isPreJan2022 = (dbmsMajorVersion == 11 && dbmsMinorVersion <= 41);
+			final boolean isPreJan2022 = (dbmsMajorVersion == 11 && dbmsMinorVersion <= 41);
 
 			stmt = con.createStatement();
 			String qry = "SELECT 1;";
@@ -1841,10 +1841,15 @@ final public class JDBC_API_Tester {
 
 		closeStmtResSet(stmt, rs);
 
+		final boolean isSep2022orOlder = (dbmsMajorVersion == 11 && dbmsMinorVersion <= 45);
 		compareExpectedOutput("Test_PlanExplainTraceDebugCmds",
+			isSep2022orOlder ?
 			"debug SELECT 5;\n" +
 			"FAILED: SQL debugging only supported in interactive mode in: \"debug\"\n" +
-			"Current transaction is aborted (please ROLLBACK)\n");
+			"Current transaction is aborted (please ROLLBACK)\n"
+			:
+			"debug SELECT 5;\n" +
+			"FAILED: syntax error in: \"debug\"\n");
 	}
 
 	private void Test_PSgeneratedkeys() {
