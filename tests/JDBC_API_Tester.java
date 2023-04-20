@@ -1821,15 +1821,16 @@ final public class JDBC_API_Tester {
 			sb.setLength(0);	// clear the output log buffer
 
 			// debug statements are NOT supported via JDBC driver, so the execution should throw an SQLException
+			// Note: as of release 11.47 (Jun2023) the debug statement is not supported anymore, error msg: syntax error in: "debug"
 			qry = "debug SELECT 5;";
 			sb.append(qry).append("\n");
-			rs = stmt.executeQuery(qry);
+			rs = stmt.executeQuery(qry);	// this should throw an SQLException
 			while (rs.next()) {
 				sb.append(rs.getString(1)).append("\n");
 			}
 			rs.close();
 			rs = null;
-			compareExpectedOutput("Test_PlanExplainTraceDebugCmds", qry + "\n" + "5\n");
+			compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry, qry + "\n5\n");
 			sb.setLength(0);	// clear the output log buffer
 		} catch (SQLException e) {
 			sb.append("FAILED: ");
@@ -1837,19 +1838,18 @@ final public class JDBC_API_Tester {
 				sb.append(e.getMessage()).append("\n");
 				e = e.getNextException();
 			}
+
+			final boolean isPreJun2023 = (dbmsMajorVersion == 11 && dbmsMinorVersion <= 45);
+			// From Jun2023 we skip the comparison as it gives a different error msg on power8 platform: syntax error, unexpected IDENT in: "debug"
+			if (isPreJun2023) {
+				compareExpectedOutput("Test_PlanExplainTraceDebugCmds",
+					"debug SELECT 5;\n" +
+					"FAILED: SQL debugging only supported in interactive mode in: \"debug\"\n" +
+					"Current transaction is aborted (please ROLLBACK)\n");
+			}
 		}
 
 		closeStmtResSet(stmt, rs);
-
-		final boolean isSep2022orOlder = (dbmsMajorVersion == 11 && dbmsMinorVersion <= 45);
-		compareExpectedOutput("Test_PlanExplainTraceDebugCmds",
-			isSep2022orOlder ?
-			"debug SELECT 5;\n" +
-			"FAILED: SQL debugging only supported in interactive mode in: \"debug\"\n" +
-			"Current transaction is aborted (please ROLLBACK)\n"
-			:
-			"debug SELECT 5;\n" +
-			"FAILED: syntax error in: \"debug\"\n");
 	}
 
 	private void Test_PSgeneratedkeys() {
