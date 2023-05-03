@@ -408,7 +408,7 @@ public final class MonetDatabaseMetaData
 	 * @return a String of query result values concatenated into one string, and values separated by comma's
 	 */
 	private String getConcatenatedStringFromQuery(final String query) {
-		final StringBuilder sb = new StringBuilder(1024);
+		final StringBuilder sb = new StringBuilder(1200);
 		Statement st = null;
 		ResultSet rs = null;
 		try {
@@ -432,7 +432,7 @@ public final class MonetDatabaseMetaData
 		} finally {
 			MonetConnection.closeResultsetStatement(rs, st);
 		}
-		// for debug: System.out.println("SQL (len " + query.length() + "): " + query + "\nResult string: " + sb.toString());
+		// for debug: System.out.println("SQL (len " + query.length() + "): " + query + "\nResult string(len " + sb.length() + "): " + sb.toString());
 		return sb.toString();
 	}
 
@@ -464,8 +464,9 @@ public final class MonetDatabaseMetaData
 			// exclude sql functions: get_value_for, next_value_for, restart
 			" AND \"mod\" <> 'sql')" +
 			// include specific functions code(int) and space(int) which belong to the 'str' module
-			" OR \"mod\" = 'str'" +
-			// include 3 specific json functions, md5(), ms_stuff() and udf reverse() which all accept a string arg
+			// include functions (difference, editdistance, editdistance2, levenshtein, qgramnormalize, similarity, soundex) which since Jun2023 are in the 'txtsim' module
+			" OR (\"mod\" IN ('str','txtsim') AND \"type\" = 1)" +
+			// include 3 specific json functions and md5(), ms_stuff() and udf reverse() which all accept a string arg
 			" OR f.\"name\" IN ('isarray','isobject','isvalid','md5','ms_stuff','reverse')";
 		final String unionPart =
 			// add functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
