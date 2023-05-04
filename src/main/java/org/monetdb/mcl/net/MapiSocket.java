@@ -1123,7 +1123,7 @@ public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.Map
 					readPos += t;
 					readBlock();
 				} else {
-					readPos += skip;
+					readPos += (int)skip;
 					break;
 				}
 			}
