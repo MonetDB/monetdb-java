@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Jun 22 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected DatabaseMetaData method getClientProperties().
+  It used to return connection properties instead of client info properties.
+
 * Thu May  4 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected DatabaseMetaData method getStringFunctions() when connected
   to Jun2023 server. It now includes the string functions from the new

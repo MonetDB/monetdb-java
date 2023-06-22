@@ -3911,25 +3911,13 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public ResultSet getClientInfoProperties() throws SQLException {
-		// for a list of connection properties see also MonetConnection.java constructor MonetConnection(Properties props)
+		// MonetDB currently does not support any client properties, so return an empty ResultSet
 		final String query =
-			"SELECT * FROM (VALUES " +
-			"('autocommit', cast(5 as int), 'true', 'boolean flag true or false to turn autocommit on or off')," +
-			"('database', 1024, 'demo', 'name of database. It matches the dbfarm subdirectory name')," +
-			"('debug', 5, 'false', 'boolean flag true or false to turn debug logging on or off')," +
-			"('fetchsize', 11, '250', 'number of result rows to fetch per round trip')," +		// only supported by servers from version 11.41.1 onwards
-			"('hash', 128, '', 'hash methods list to use in server connection. Supported are SHA512, SHA384, SHA256 and SHA1')," +
-			"('host', 1024, 'localhost', 'DSN or IP-address of machine running MonetDB')," +
-			"('language', 16, 'sql', 'language (sql or mal) used to parse commands in MonetDB server')," +
-			"('logfile', 1024, 'monet_######.log', 'name of logfile used when debug is enabled')," +
-			"('password', 128, '', 'password for user name to login to MonetDB server')," +
-			"('port', 5, '50000', 'communication port number of MonetDB server process')," +
-			"('so_timeout', 10, '0', 'timeout (in milliseconds) of communication socket. 0 means no timeout is set')," +
-			"('treat_blob_as_binary', 5, 'true', 'should blob columns be mapped to Types.VARBINARY instead of Types.BLOB in ResultSets and PreparedStatements')," +
-			"('treat_clob_as_varchar', 5, 'true', 'should clob columns be mapped to Types.VARCHAR instead of Types.CLOB in ResultSets and PreparedStatements')," +
-			"('user', 1024, '', 'user name to login to MonetDB server')" +
-			") AS t(\"NAME\", \"MAX_LEN\", \"DEFAULT_VALUE\", \"DESCRIPTION\")" +
-			" ORDER BY \"NAME\"";
+		"SELECT cast(null as varchar(64)) AS \"NAME\", " +
+			"cast(0 as int) AS \"MAX_LEN\", " +
+			"cast(null as varchar(128)) AS \"DEFAULT_VALUE\", " +
+			"cast(null as varchar(128)) AS \"DESCRIPTION\" " +
+		"WHERE 1=0";
 
 		return executeMetaDataQuery(query);
 	}

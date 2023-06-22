@@ -1344,6 +1344,36 @@ final public class JDBC_API_Tester {
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
 			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	varchar(1024)	varchar(1024)	varchar(40)	varchar(3)\n");
 
+			compareResultSet(dbmd.getClientInfoProperties(), "getClientInfoProperties()",
+			"Resultset with 4 columns\n" +
+			"NAME	MAX_LEN	DEFAULT_VALUE	DESCRIPTION\n" +
+			"varchar(64)	int	varchar(128)	varchar(128)\n");
+
+			compareResultSet(dbmd.getSuperTables(null, "jdbctst", "pk_uc"), "getSuperTypes(null, jdbctst, pk_uc)",
+			"Resultset with 4 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	SUPERTABLE_NAME\n" +
+			"char(1)	char	char	char\n");
+
+			compareResultSet(dbmd.getPseudoColumns(null, "jdbctst", "pk_uc", "%"), "getPseudoColumns(null, jdbctst, pk_uc, %)",
+			"Resultset with 12 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	COLUMN_SIZE	DECIMAL_DIGITS	NUM_PREC_RADIX	COLUMN_USAGE	REMARKS	CHAR_OCTET_LENGTH	IS_NULLABLE\n" +
+			"char(1)	char	char	char	int	int	int	int	char	char	int	char\n");
+
+			compareResultSet(dbmd.getVersionColumns(null, "jdbctst", "pk_uc"), "getVersionColumns(null, jdbctst, pk_uc)",
+			"Resultset with 8 columns\n" +
+			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
+			"smallint	char(1)	int	char(1)	int	int	smallint	smallint\n");
+
+			compareResultSet(dbmd.getSuperTypes(null, "sys", "xml"), "getSuperTypes(null, sys, xml)",
+			"Resultset with 6 columns\n" +
+			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SUPERTYPE_CAT	SUPERTYPE_SCHEM	SUPERTYPE_NAME\n" +
+			"char(1)	char	char	char(1)	char	char\n");
+
+			compareResultSet(dbmd.getAttributes(null, "sys", "xml", "%"), "getAttributes(null, sys, xml, %)",
+			"Resultset with 21 columns\n" +
+			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	ATTR_NAME	DATA_TYPE	ATTR_TYPE_NAME	ATTR_SIZE	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	ATTR_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE\n" +
+			"char(1)	char	char	char	int	char	int	int	int	int	char	char	int	int	int	int	char(3)	char	char	char	smallint\n");
+
 			sb.setLength(0);	// clear the output log buffer
 		} catch (SQLException e) {
 			sb.setLength(0);	// clear the output log buffer
