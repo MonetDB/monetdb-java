@@ -3436,8 +3436,8 @@ public final class MonetDatabaseMetaData
 				// next UDT only when "CREATE TYPE xml EXTERNAL NAME xml;" is executed
 				" WHEN 'xml' THEN 'java.lang.String'" +
 				" ELSE 'java.lang.Object' END AS \"CLASS_NAME\", " +
-			"cast(CASE WHEN t.\"sqlname\" = 'xml' THEN ").append(Types.JAVA_OBJECT)
-				.append(" ELSE ").append(Types.STRUCT).append(" END AS int) AS \"DATA_TYPE\", " +
+			"cast(CASE WHEN t.\"sqlname\" = 'xml' THEN " + Types.JAVA_OBJECT +
+				" ELSE " + Types.STRUCT + " END AS int) AS \"DATA_TYPE\", " +
 			"t.\"systemname\" AS \"REMARKS\", " +
 			"cast(null as smallint) AS \"BASE_TYPE\" " +
 		"FROM \"sys\".\"types\" t " +

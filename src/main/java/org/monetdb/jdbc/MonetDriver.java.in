@@ -464,7 +464,7 @@ public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.
 			for (Entry<String, Integer> entry : typeMap.entrySet()) {
 				val.append(" WHEN '").append(entry.getKey()).append("' THEN ").append(entry.getValue().toString());
 			}
-			val.append(" ELSE ").append(Types.OTHER).append(" END");
+			val.append(" ELSE " + Types.OTHER + " END");
 			// as the typeMap is static, cache this SQL part for all next calls
 			TypeMapppingSQL = val.toString();
 		}
