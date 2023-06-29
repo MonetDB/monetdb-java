@@ -291,7 +291,7 @@ final class MonetParameterMetaData
 		checkParameterIndexValidity(param);
 		try {
 			final String monettype = monetdbTypes[param];
-			if (monettype.endsWith("_interval")) {
+			if (monettype != null && monettype.endsWith("_interval")) {
 				/* convert the interval type names to valid SQL data type names */
 				if ("day_interval".equals(monettype))
 					return "interval day";
