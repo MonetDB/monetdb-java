@@ -881,10 +881,10 @@ final class MonetResultSetMetaData
 			"s.\"name\" AS schnm, " +
 			"t.\"name\" AS tblnm, " +
 			"c.\"name\" AS colnm, " +
-			"cast(CASE c.\"null\" WHEN true THEN ").append(ResultSetMetaData.columnNullable)
-				.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls)
-				.append(" ELSE ").append(ResultSetMetaData.columnNullableUnknown)
-				.append(" END AS int) AS nullable, ").append(
+			"cast(CASE c.\"null\" WHEN true THEN " + ResultSetMetaData.columnNullable +
+				" WHEN false THEN " + ResultSetMetaData.columnNoNulls +
+				" ELSE " + ResultSetMetaData.columnNullableUnknown +
+				" END AS int) AS nullable, " +
 			"cast(CASE WHEN c.\"default\" IS NOT NULL AND c.\"default\" LIKE 'next value for %' THEN true ELSE false END AS boolean) AS isautoincrement " +
 		"FROM \"sys\".\"columns\" c " +
 		"JOIN \"sys\".\"tables\" t ON c.\"table_id\" = t.\"id\" " +

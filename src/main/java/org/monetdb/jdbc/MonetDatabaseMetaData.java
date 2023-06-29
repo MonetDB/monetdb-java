@@ -1699,10 +1699,11 @@ public final class MonetDatabaseMetaData
 			"cast(null as char(1)) AS \"Field6\", ")
 			.append(useCommentsTable ? "COALESCE(cm.\"remark\", cast(f.\"func\" as varchar(9999)))" : "cast(f.\"func\" as varchar(9999))").append(" AS \"REMARKS\", " +
 			// in MonetDB procedures have no return value by design.
-			"cast(").append(DatabaseMetaData.procedureNoResult).append(" AS smallint) AS \"PROCEDURE_TYPE\", " +
+			"cast(" + DatabaseMetaData.procedureNoResult + " AS smallint) AS \"PROCEDURE_TYPE\", " +
 			// only the id value uniquely identifies a procedure. Include it to be able to differentiate between multiple overloaded procedures with the same name
 			"cast(f.\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
-		"FROM \"sys\".\"functions\" f JOIN \"sys\".\"schemas\" s ON f.\"schema_id\" = s.\"id\" ");
+		"FROM \"sys\".\"functions\" f " +
+		"JOIN \"sys\".\"schemas\" s ON f.\"schema_id\" = s.\"id\" ");
 		if (useCommentsTable) {
 			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON f.\"id\" = cm.\"id\" ");
 		}
@@ -1808,9 +1809,9 @@ public final class MonetDatabaseMetaData
 			"f.\"name\" AS \"PROCEDURE_NAME\", " +
 			"a.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(CASE a.\"inout\"" +
-				" WHEN 0 THEN (CASE a.\"number\" WHEN 0 THEN ").append(DatabaseMetaData.procedureColumnReturn).append(" ELSE ").append(DatabaseMetaData.procedureColumnOut).append(" END)" +
-				" WHEN 1 THEN ").append(DatabaseMetaData.procedureColumnIn)
-				.append(" ELSE ").append(DatabaseMetaData.procedureColumnUnknown).append(" END AS smallint) AS \"COLUMN_TYPE\", " +
+				" WHEN 0 THEN (CASE a.\"number\" WHEN 0 THEN " + DatabaseMetaData.procedureColumnReturn + " ELSE " + DatabaseMetaData.procedureColumnOut + " END)" +
+				" WHEN 1 THEN " + DatabaseMetaData.procedureColumnIn +
+				" ELSE " + DatabaseMetaData.procedureColumnUnknown + " END AS smallint) AS \"COLUMN_TYPE\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("a.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"a.\"type\" AS \"TYPE_NAME\", " +
 			"CASE a.\"type\" WHEN 'tinyint' THEN 3 WHEN 'smallint' THEN 5 WHEN 'int' THEN 10 WHEN 'bigint' THEN 19" +
@@ -1821,6 +1822,7 @@ public final class MonetDatabaseMetaData
 				"'time','timetz','timestamp','timestamptz','day_interval','month_interval','sec_interval') THEN a.\"type_scale\" ELSE NULL END AS smallint) AS \"SCALE\", " +
 			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric','day_interval','month_interval','sec_interval') THEN 10" +
 				" WHEN a.\"type\" IN ('real','float','double') THEN 2 ELSE NULL END AS smallint) AS \"RADIX\", " +
+			// mvd: do not remove next append. The String above is same as used by getFunctionColumns, so shared in class file.
 			"cast(").append(DatabaseMetaData.procedureNullableUnknown).append(" AS smallint) AS \"NULLABLE\", " +
 			"cast(null as char(1)) AS \"REMARKS\", " +
 			"cast(null as char(1)) AS \"COLUMN_DEF\", " +
@@ -2177,10 +2179,10 @@ public final class MonetDatabaseMetaData
 			"cast(CASE WHEN c.\"type\" IN ('decimal','numeric','day_interval','month_interval','sec_interval') THEN 10 " +
 				"WHEN c.\"type\" IN ('int','smallint','tinyint','bigint','hugeint','float','real','double','oid','wrd') THEN 2 " +
 				"ELSE 0 END AS int) AS \"NUM_PREC_RADIX\", " +
-			"cast(CASE c.\"null\" WHEN true THEN ").append(ResultSetMetaData.columnNullable)
-				.append(" WHEN false THEN ").append(ResultSetMetaData.columnNoNulls)
-				.append(" ELSE ").append(ResultSetMetaData.columnNullableUnknown)
-				.append(" END AS int) AS \"NULLABLE\", ")
+			"cast(CASE c.\"null\" WHEN true THEN " + ResultSetMetaData.columnNullable +
+				" WHEN false THEN " + ResultSetMetaData.columnNoNulls +
+				" ELSE " + ResultSetMetaData.columnNullableUnknown +
+				" END AS int) AS \"NULLABLE\", ")
 			.append(useCommentsTable ? "cm.\"remark\"" : "cast(null AS varchar(9999))").append(" AS \"REMARKS\", " +
 			"c.\"default\" AS \"COLUMN_DEF\", " +
 			"cast(0 as int) AS \"SQL_DATA_TYPE\", " +
@@ -2495,25 +2497,25 @@ public final class MonetDatabaseMetaData
 			"SELECT t.\"id\" " +
 			"FROM \"sys\".\"tables\" t " +
 			"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
-			"WHERE t.\"type\" NOT IN (1, 11) ");	// exclude all VIEWs and SYSTEM VIEWs
+			"WHERE t.\"type\" NOT IN (1, 11)");	// exclude all VIEWs and SYSTEM VIEWs
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
 			// as we do not support catalogs this always results in no rows returned
-			query.append("AND 1=0");
+			query.append(" AND 1=0");
 		} else {
 			if (scope == DatabaseMetaData.bestRowSession
 			 || scope == DatabaseMetaData.bestRowTransaction
 			 || scope == DatabaseMetaData.bestRowTemporary) {
 				if (schema != null) {
 					// do not allow wildcard matching with LIKE, as the resultset does not include the schema info
-					query.append("AND s.\"name\" = ").append(MonetWrapper.sq(schema));
+					query.append(" AND s.\"name\" = ").append(MonetWrapper.sq(schema));
 				}
 				if (table != null) {
 					// do not allow wildcard matching with LIKE, as the resultset does not include the table info
 					query.append(" AND t.\"name\" = ").append(MonetWrapper.sq(table));
 				}
 			} else {
-				query.append("AND 1=0");
+				query.append(" AND 1=0");
 			}
 		}
 		// 4th cte: cols, this unions 2 (or 4 when incltmpkey == true) select queries
@@ -2561,14 +2563,14 @@ public final class MonetDatabaseMetaData
 		}
 		// the final select query
 		query.append(") SELECT " +
-			"cast(").append(DatabaseMetaData.bestRowSession).append(" AS smallint) AS \"SCOPE\", " +
+			"cast(" + DatabaseMetaData.bestRowSession + " AS smallint) AS \"SCOPE\", " +
 			"c.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("c.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"c.\"type\" AS \"TYPE_NAME\", " +
 			"c.\"type_digits\" AS \"COLUMN_SIZE\", " +
 			"cast(0 as int) AS \"BUFFER_LENGTH\", " +
 			"cast(c.\"type_scale\" AS smallint) AS \"DECIMAL_DIGITS\", " +
-			"cast(").append(DatabaseMetaData.bestRowNotPseudo).append(" AS smallint) AS \"PSEUDO_COLUMN\" " +
+			"cast(" + DatabaseMetaData.bestRowNotPseudo + " AS smallint) AS \"PSEUDO_COLUMN\" " +
 			"FROM cols c " +
 			"ORDER BY \"SCOPE\", c.\"nr\", \"COLUMN_NAME\"");
 
@@ -3099,11 +3101,11 @@ public final class MonetDatabaseMetaData
 				" WHEN \"sqlname\" = 'decimal' THEN 'precision, scale'" +
 				" WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz','sec_interval') THEN 'precision'" +
 				" ELSE NULL END AS \"CREATE_PARAMS\", " +
-			"cast(CASE WHEN \"systemname\" = 'oid' THEN ").append(DatabaseMetaData.typeNoNulls)
-				.append(" ELSE ").append(DatabaseMetaData.typeNullable).append(" END AS smallint) AS \"NULLABLE\", " +
+			"cast(CASE WHEN \"systemname\" = 'oid' THEN " + DatabaseMetaData.typeNoNulls +
+				" ELSE " + DatabaseMetaData.typeNullable + " END AS smallint) AS \"NULLABLE\", " +
 			"CASE WHEN \"systemname\" IN ('str','json','url','xml') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
-			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','xml') THEN ").append(DatabaseMetaData.typeSearchable)
-				.append(" ELSE ").append(DatabaseMetaData.typePredBasic).append(" END AS smallint) AS \"SEARCHABLE\", " +
+			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','xml') THEN " + DatabaseMetaData.typeSearchable +
+				" ELSE " + DatabaseMetaData.typePredBasic + " END AS smallint) AS \"SEARCHABLE\", " +
 			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','real','double'" +
 				",'day_interval','month_interval','sec_interval') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
 			"CASE \"sqlname\" WHEN 'decimal' THEN true ELSE false END AS \"FIXED_PREC_SCALE\", " +
@@ -3212,7 +3214,7 @@ public final class MonetDatabaseMetaData
 			"CASE WHEN k.\"name\" IS NULL THEN true ELSE false END AS \"NON_UNIQUE\", " +
 			"cast(null AS char(1)) AS \"INDEX_QUALIFIER\", " +
 			"i.\"name\" AS \"INDEX_NAME\", " +
-			"CASE i.\"type\" WHEN 0 THEN ").append(DatabaseMetaData.tableIndexHashed).append(" ELSE ").append(DatabaseMetaData.tableIndexOther).append(" END AS \"TYPE\", " +
+			"CASE i.\"type\" WHEN 0 THEN " + DatabaseMetaData.tableIndexHashed + " ELSE " + DatabaseMetaData.tableIndexOther + " END AS \"TYPE\", " +
 			"cast(o.\"nr\" +1 AS smallint) AS \"ORDINAL_POSITION\", "+
 			"c.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(null AS char(1)) AS \"ASC_OR_DESC\", " +	// sort sequence currently not supported in keys or indexes in MonetDB
@@ -3259,7 +3261,7 @@ public final class MonetDatabaseMetaData
 				"CASE WHEN k.\"name\" IS NULL THEN true ELSE false END AS \"NON_UNIQUE\", " +
 				"cast(null AS char(1)) AS \"INDEX_QUALIFIER\", " +
 				"i.\"name\" AS \"INDEX_NAME\", " +
-				"CASE i.\"type\" WHEN 0 THEN ").append(DatabaseMetaData.tableIndexHashed).append(" ELSE ").append(DatabaseMetaData.tableIndexOther).append(" END AS \"TYPE\", " +
+				"CASE i.\"type\" WHEN 0 THEN " + DatabaseMetaData.tableIndexHashed + " ELSE " + DatabaseMetaData.tableIndexOther + " END AS \"TYPE\", " +
 				"cast(o.\"nr\" +1 AS smallint) AS \"ORDINAL_POSITION\", "+
 				"c.\"name\" AS \"COLUMN_NAME\", " +
 				"cast(null AS char(1)) AS \"ASC_OR_DESC\", " +	// sort sequence currently not supported in keys or indexes in MonetDB
@@ -3977,15 +3979,15 @@ public final class MonetDatabaseMetaData
 			"s.\"name\" AS \"FUNCTION_SCHEM\", " +
 			"f.\"name\" AS \"FUNCTION_NAME\", ")
 			.append(useCommentsTable ? "COALESCE(cm.\"remark\", cast(f.\"func\" as varchar(9999)))" : "cast(f.\"func\" as varchar(9999))").append(" AS \"REMARKS\", " +
-			"CASE WHEN f.\"type\" IN (1,2,3,4,6) THEN ").append(DatabaseMetaData.functionNoTable)
-			.append(" WHEN f.\"type\" IN (5,7) THEN ").append(DatabaseMetaData.functionReturnsTable)
-			.append(" ELSE ").append(DatabaseMetaData.functionResultUnknown).append(" END AS \"FUNCTION_TYPE\", " +
+			"CASE WHEN f.\"type\" IN (1,2,3,4,6) THEN " + DatabaseMetaData.functionNoTable +
+			" WHEN f.\"type\" IN (5,7) THEN " + DatabaseMetaData.functionReturnsTable +
+			" ELSE " + DatabaseMetaData.functionResultUnknown + " END AS \"FUNCTION_TYPE\", " +
 			// only the id value uniquely identifies a function. Include it to be able to differentiate between multiple overloaded functions with the same name
 			"cast(f.\"id\" as varchar(10)) AS \"SPECIFIC_NAME\" " +
 		"FROM \"sys\".\"functions\" f " +
 		"JOIN \"sys\".\"schemas\" s ON f.\"schema_id\" = s.\"id\" ");
 		if (useCommentsTable) {
-			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON (f.\"id\" = cm.\"id\") ");
+			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON f.\"id\" = cm.\"id\" ");
 		}
 		// only functions, so exclude procedures (type = 2). Those will to be returned via getProcedures()
 		query.append("WHERE f.\"type\" <> 2");
@@ -4081,10 +4083,9 @@ public final class MonetDatabaseMetaData
 			"f.\"name\" AS \"FUNCTION_NAME\", " +
 			"a.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(CASE a.\"inout\"" +
-				" WHEN 0 THEN (CASE a.\"number\" WHEN 0 THEN ")
-				.append(DatabaseMetaData.functionReturn).append(" ELSE ").append(DatabaseMetaData.functionColumnOut).append(" END)" +
-				" WHEN 1 THEN ").append(DatabaseMetaData.functionColumnIn)
-				.append(" ELSE ").append(DatabaseMetaData.functionColumnUnknown).append(" END AS smallint) AS \"COLUMN_TYPE\", " +
+				" WHEN 0 THEN (CASE a.\"number\" WHEN 0 THEN " + DatabaseMetaData.functionReturn + " ELSE " + DatabaseMetaData.functionColumnOut + " END)" +
+				" WHEN 1 THEN " + DatabaseMetaData.functionColumnIn +
+				" ELSE " + DatabaseMetaData.functionColumnUnknown + " END AS smallint) AS \"COLUMN_TYPE\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("a.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"a.\"type\" AS \"TYPE_NAME\", " +
 			"CASE a.\"type\" WHEN 'tinyint' THEN 3 WHEN 'smallint' THEN 5 WHEN 'int' THEN 10 WHEN 'bigint' THEN 19" +
@@ -4095,6 +4096,7 @@ public final class MonetDatabaseMetaData
 				"'time','timetz','timestamp','timestamptz','day_interval','month_interval','sec_interval') THEN a.\"type_scale\" ELSE NULL END AS smallint) AS \"SCALE\", " +
 			"cast(CASE WHEN a.\"type\" IN ('tinyint','smallint','int','bigint','hugeint','oid','wrd','decimal','numeric','day_interval','month_interval','sec_interval') THEN 10" +
 				" WHEN a.\"type\" IN ('real','float','double') THEN 2 ELSE NULL END AS smallint) AS \"RADIX\", " +
+			// mvd: do not remove next append. The String above is same as used by getProcedureColumns, so shared in class file.
 			"cast(").append(DatabaseMetaData.functionNullableUnknown).append(" AS smallint) AS \"NULLABLE\", " +
 			"cast(null as char(1)) AS \"REMARKS\", " +
 			"cast(CASE WHEN a.\"type\" IN ('char','varchar','clob') THEN a.\"type_digits\" ELSE NULL END as int) AS \"CHAR_OCTET_LENGTH\", " +
