@@ -875,7 +875,7 @@ final class MonetResultSetMetaData
 			// for debug: System.out.println("fetchManyColumnsInfo(" + column + ")" + (startcol != column ? " changed into startcol: " + startcol : "") + " nextUpperbound: " + nextUpperbound);
 		}
 
-		final StringBuilder query = new StringBuilder(410 + (MAX_COLUMNS_PER_QUERY * 150));
+		final StringBuilder query = new StringBuilder(410 + (java.lang.Math.min(MAX_COLUMNS_PER_QUERY, colCount) * 150));
 		/* next SQL query is a simplified version of query in MonetDatabaseMetaData.getColumns(), to fetch only the needed attributes of a column */
 		query.append("SELECT " +
 			"s.\"name\" AS schnm, " +
