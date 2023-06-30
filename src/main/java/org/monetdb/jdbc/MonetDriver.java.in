@@ -34,7 +34,7 @@ import java.util.Properties;
  * This Driver supports MonetDB database URLs. MonetDB URLs are defined as:
  * <code>jdbc:monetdb://&lt;host&gt;[:&lt;port&gt;]/&lt;database&gt;</code>
  * where [:&lt;port&gt;] denotes that a port is optional. If not
- * given the default (@JDBC_DEF_PORT@) will be used.
+ * given, port 50000 will be used.
  *</pre>
  *
  * @author Fabian Groffen
@@ -101,7 +101,7 @@ public final class MonetDriver implements Driver {
 
 		final Properties props = new Properties();
 		// set the optional properties and their defaults here
-		props.put("port", "@JDBC_DEF_PORT@");
+		props.put("port", "50000");
 		props.put("debug", "false");
 		props.put("language", "sql");	// mal, sql, <future>
 		props.put("so_timeout", "0");
