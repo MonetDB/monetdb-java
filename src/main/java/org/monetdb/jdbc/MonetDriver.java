@@ -158,7 +158,8 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public int getMajorVersion() {
-		return @JDBC_MAJOR@;
+		// defer to the static version of this method
+		return getDriverMajorVersion();
 	}
 
 	/**
@@ -168,7 +169,8 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public int getMinorVersion() {
-		return @JDBC_MINOR@;
+		// defer to the static version of this method
+		return getDriverMinorVersion();
 	}
 
 	/**
@@ -306,7 +308,8 @@ public final class MonetDriver implements Driver {
 	 * @return MonetDB JDBC Driver major version number
 	 */
 	static final int getDriverMajorVersion() {
-		return @JDBC_MAJOR@;
+		// defer to the generated MonetVersion class
+		return MonetVersion.majorVersion;
 	}
 
 	/**
@@ -315,7 +318,8 @@ public final class MonetDriver implements Driver {
 	 * @return MonetDB JDBC Driver minor version number
 	 */
 	static final int getDriverMinorVersion() {
-		return @JDBC_MINOR@;
+		// defer to the generated MonetVersion class
+		return MonetVersion.minorVersion;
 	}
 
 	/**
@@ -324,7 +328,7 @@ public final class MonetDriver implements Driver {
 	 * @return the version string
 	 */
 	public static final String getDriverVersion() {
-		return "@JDBC_MAJOR@.@JDBC_MINOR@ (@JDBC_VER_SUFFIX@)";
+		return MonetVersion.driverVersion;
 	}
 
 	/** A static Map containing the mapping between MonetDB types and Java SQL types */
