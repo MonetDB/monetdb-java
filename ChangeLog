@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Jul  5 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected implementation of Connection methods getClientInfo() and
+  setClientInfo(). They used to get/set Connection properties instead
+  of Client Info properties which was a incorrect. MonetDB does not
+  support Client Info properties.
+
 * Thu Jun 22 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected DatabaseMetaData method getClientProperties().
   It used to return connection properties instead of client info properties.

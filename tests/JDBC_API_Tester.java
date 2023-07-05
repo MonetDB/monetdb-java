@@ -110,7 +110,7 @@ final public class JDBC_API_Tester {
 		jt.Bug_PrepStmt_With_Errors_Jira292();
 		jt.BugResultSetMetaData_Bug_6183();
 		jt.BugSetQueryTimeout_Bug_3357();
-		jt.SQLcopyinto();
+		jt.SQLcopyinto(con_URL);
 		jt.DecimalPrecisionAndScale();
 
 		/* run next long running test (11 minutes) only before a new release */
@@ -6622,7 +6622,7 @@ final public class JDBC_API_Tester {
 	 *
 	 * @author Fabian Groffen, Martin van Dinther
 	 */
-	private void SQLcopyinto() {
+	private void SQLcopyinto(final String conn_URL) {
 		sb.setLength(0);	// clear the output log buffer
 
 		final String tablenm = "exampleSQLCopyInto";
@@ -6632,7 +6632,7 @@ final public class JDBC_API_Tester {
 			stmt = con.createStatement();
 			stmt.execute("CREATE TABLE IF NOT EXISTS " + tablenm + " (id int, val varchar(24))");
 
-			fillTableUsingCopyIntoSTDIN(tablenm);
+			fillTableUsingCopyIntoSTDIN(conn_URL, tablenm);
 
 			// check content of the table populated via COPY INTO ... FROM STDIN
 			sb.append("Listing uploaded data:\n");
@@ -6682,24 +6682,24 @@ final public class JDBC_API_Tester {
 				"SQLcopyinto completed\n");
 	}
 
-	private void fillTableUsingCopyIntoSTDIN(String tablenm) throws Exception {
+	private void fillTableUsingCopyIntoSTDIN(final String conn_URL, final String tablenm) throws Exception {
 		sb.append("CopyInto STDIN begin\n");
 
 		org.monetdb.mcl.net.MapiSocket server = new org.monetdb.mcl.net.MapiSocket();
 		try {
 			server.setLanguage("sql");
 
-			// extract from MonetConnection object the used connection properties
-			String host = con.getClientInfo("host");
-			int port = Integer.parseInt(con.getClientInfo("port"));
-			String login = con.getClientInfo("user");
-			String passw = con.getClientInfo("password");
+			// extract from conn_URL the used connection properties
+			String host = extractFromJDBCURL(conn_URL, "host");
+			int port = Integer.parseInt(extractFromJDBCURL(conn_URL, "port"));
+			String login = extractFromJDBCURL(conn_URL, "user");
+			String passw = extractFromJDBCURL(conn_URL, "password");
+			String database = extractFromJDBCURL(conn_URL, "database");
+			// sb.append("conn_URL: " + conn_URL + "\n");
+			// sb.append("host: " + host + " port: " + port + " dbname: " + database + " login: " + login + " passwd: " + passw + "\n");
 
-			String database = con.getClientInfo("database");
-			server.setDatabase(database);
-
-			// sb.append("host: " + host + " port: " + port + " login: " + login + " passwd: " + passw + "\n");
 			sb.append("Before connecting to MonetDB server via MapiSocket\n");
+			server.setDatabase(database);
 			List<String> warning = server.connect(host, port, login, passw);
 			if (warning != null) {
 				for (Iterator<String> it = warning.iterator(); it.hasNext(); ) {
@@ -6748,6 +6748,56 @@ final public class JDBC_API_Tester {
 		}
 
 		sb.append("CopyInto STDIN end\n");
+	}
+
+	private String extractFromJDBCURL(String conn_URL, String prop) {
+		// URL="jdbc:monetdb://${HOST}:${MAPIPORT}/${DBNAME}?user=$(USER)&password=$(PWD)&${JDBC_EXTRA_ARGS}"
+		// URL example: jdbc:monetdb://localhost:35145/mTests_sql_jdbc_tests?user=monetdb&password=monetdb
+		final String pre = "jdbc:monetdb://";
+		final int pre_len = pre.length();
+		int start = 0, end = 0;
+		if ("host".equals(prop)) {
+			start = conn_URL.indexOf(pre);
+			if (start >= 0) {
+				start += pre_len;
+				end = conn_URL.indexOf(':', start);
+			}
+		} else
+		if ("port".equals(prop)) {
+			start = conn_URL.indexOf(':', pre_len);
+			if (start >= 0) {
+				start += 1;
+				end = conn_URL.indexOf('/', start);
+			}
+		} else
+		if ("database".equals(prop)) {
+			start = conn_URL.indexOf('/', pre_len + 1);
+			if (start >= 0) {
+				start += 1;
+				end = conn_URL.indexOf('?', start);
+			}
+		} else
+		if ("user".equals(prop)) {
+			start = conn_URL.indexOf("user=", pre_len);
+			if (start >= 0) {
+				start += 5;
+				end = conn_URL.indexOf('&', start);
+			}
+		} else
+		if ("password".equals(prop)) {
+			start = conn_URL.indexOf("password=", pre_len);
+			if (start >= 0) {
+				start += 9;
+				end = conn_URL.indexOf('&', start);
+			}
+		}
+		if (start >= pre_len) {
+			if (end < 0)
+				end = conn_URL.length();
+			if (end > start)
+				return conn_URL.substring(start, end);
+		}
+		return "";
 	}
 
 	private void DecimalPrecisionAndScale() {

@@ -74,9 +74,6 @@ public class MonetConnection
 	extends MonetWrapper
 	implements Connection, AutoCloseable
 {
-	/** the successful processed input properties */
-	private final Properties conn_props = new Properties();
-
 	/** The hostname to connect to */
 	private final String hostname;
 	/** The port to connect on the host to */
@@ -172,10 +169,7 @@ public class MonetConnection
 
 		// for debug: System.out.println("New connection object. Received properties are: " + props.toString());
 		// get supported property values from the props argument.
-		// When a value is found add it to the internal conn_props list for use by getClientInfo().
 		this.hostname = props.getProperty("host");
-		if (this.hostname != null)
-			conn_props.setProperty("host", this.hostname);
 
 		final String port_prop = props.getProperty("port");
 		if (port_prop != null) {
@@ -184,41 +178,25 @@ public class MonetConnection
 			} catch (NumberFormatException e) {
 				addWarning("Unable to parse port number from: " + port_prop, "M1M05");
 			}
-			conn_props.setProperty("port", Integer.toString(this.port));
 		}
 
 		this.database = props.getProperty("database");
-		if (this.database != null)
-			conn_props.setProperty("database", this.database);
-
 		this.username = props.getProperty("user");
-		if (this.username != null)
-			conn_props.setProperty("user", this.username);
-
 		this.password = props.getProperty("password");
-		if (this.password != null)
-			conn_props.setProperty("password", this.password);
-
 		String language = props.getProperty("language");
-		if (language != null)
-			conn_props.setProperty("language", language);
 
 		boolean debug = false;
 		String debug_prop = props.getProperty("debug");
 		if (debug_prop != null) {
 			debug = Boolean.parseBoolean(debug_prop);
-			conn_props.setProperty("debug", Boolean.toString(debug));
 		}
 
 		final String hash = props.getProperty("hash");
-		if (hash != null)
-			conn_props.setProperty("hash", hash);
 
 		String autocommit_prop = props.getProperty("autocommit");
 		if (autocommit_prop != null) {
 			boolean ac = Boolean.parseBoolean(autocommit_prop);
 			autoCommitSetting.set(ac);
-			conn_props.setProperty("autocommit", Boolean.toString(ac));
 		}
 
 		final String fetchsize_prop = props.getProperty("fetchsize");
@@ -227,7 +205,6 @@ public class MonetConnection
 				int fetchsize = Integer.parseInt(fetchsize_prop);
 				if (fetchsize > 0 || fetchsize == -1) {
 					replySizeSetting.set(fetchsize);
-					conn_props.setProperty("fetchsize", fetchsize_prop);
 				} else {
 					addWarning("Fetch size must either be positive or -1. Value " + fetchsize + " ignored", "M1M05");
 				}
@@ -239,7 +216,6 @@ public class MonetConnection
 		final String treatBlobAsVarBinary_prop = props.getProperty("treat_blob_as_binary");
 		if (treatBlobAsVarBinary_prop != null) {
 			treatBlobAsVarBinary = Boolean.parseBoolean(treatBlobAsVarBinary_prop);
-			conn_props.setProperty("treat_blob_as_binary", Boolean.toString(treatBlobAsVarBinary));
 			if (treatBlobAsVarBinary)
 				typeMap.put("blob", Byte[].class);
 		}
@@ -247,7 +223,6 @@ public class MonetConnection
 		final String treatClobAsVarChar_prop = props.getProperty("treat_clob_as_varchar");
 		if (treatClobAsVarChar_prop != null) {
 			treatClobAsVarChar = Boolean.parseBoolean(treatClobAsVarChar_prop);
-			conn_props.setProperty("treat_clob_as_varchar", Boolean.toString(treatClobAsVarChar));
 			if (treatClobAsVarChar)
 				typeMap.put("clob", String.class);
 		}
@@ -264,7 +239,6 @@ public class MonetConnection
 			} catch (NumberFormatException e) {
 				addWarning("Unable to parse socket timeout number from: " + so_timeout_prop, "M1M05");
 			}
-			conn_props.setProperty("so_timeout", Integer.toString(sockTimeout));
 		}
 
 		// check mandatory input arguments
@@ -283,7 +257,7 @@ public class MonetConnection
 			addWarning("No language specified, defaulting to 'sql'", "M1M05");
 		}
 
-		// warn about unrecognized settings
+		// warn about unrecognized property names
 		for (Entry<Object,Object> e: props.entrySet()) {
 			checkValidProperty(e.getKey().toString(), "MonetConnection");
 		}
@@ -1431,10 +1405,8 @@ public class MonetConnection
 	 */
 	@Override
 	public String getClientInfo(final String name) throws SQLException {
-		if (name == null || name.isEmpty())
-			return null;
-		checkNotClosed();
-		return conn_props.getProperty(name);
+		// MonetDB doesn't support any Client Info Properties yet
+		return null;
 	}
 
 	/**
@@ -1451,9 +1423,8 @@ public class MonetConnection
 	 */
 	@Override
 	public Properties getClientInfo() throws SQLException {
-		checkNotClosed();
-		// return a clone of the connection properties object
-		return new Properties(conn_props);
+		// MonetDB doesn't support any Client Info Properties yet
+		return new Properties();
 	}
 
 	/**
@@ -1494,20 +1465,8 @@ public class MonetConnection
 	 */
 	@Override
 	public void setClientInfo(final String name, final String value) throws SQLClientInfoException {
-		if (name == null || name.isEmpty()) {
-			addWarning("setClientInfo: missing property name", "01M07");
-			return;
-		}
-		// If the value is null, the current value of the specified property is cleared.
-		if (value == null) {
-			if (conn_props.containsKey(name))
-				conn_props.remove(name);
-			return;
-		}
-		// only set value for supported property names, warn about the others
-		if (checkValidProperty(name, "setClientInfo")) {
-			conn_props.setProperty(name, value);
-		}
+		// MonetDB doesn't support any Client Info Properties yet
+		addWarning("setClientInfo: client info property name not recognized", "01M07");
 	}
 
 	/**
@@ -1854,7 +1813,7 @@ public class MonetConnection
 	 */
 	private boolean checkValidProperty(String name, String context) {
 		// supported MonetDB connection properties.
-		// See also MonetDatabaseMetaData.getClientInfoProperties()
+		// See also MonetDriver.connect()
 		if (name.equals("host")
 		 || name.equals("port")
 		 || name.equals("user")
@@ -1871,7 +1830,7 @@ public class MonetConnection
 		 || name.equals("fetchsize"))	// only supported by servers from version 11.41.1 onwards
 			return true;
 
-		addWarning(context + ": '" + name + "' is not a recognised property", "01M07");
+		addWarning(context + " property name '" + name + "' is not recognized", "01M07");
 		return false;
 	}
 
