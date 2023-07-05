@@ -63,6 +63,8 @@
 	  </includes>
 	  <source>8</source>
 	  <target>8</target>
+	  <showDeprecation>true</showDeprecation>
+	  <showWarnings>true</showWarnings>
 	</configuration>
       </plugin>
       <plugin>
