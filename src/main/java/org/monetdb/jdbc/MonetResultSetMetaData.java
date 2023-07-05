@@ -394,9 +394,9 @@ final class MonetResultSetMetaData
 			try {
 				int len = lengths[column - 1];
 				if (len == 0) {
-					final String monettype = getColumnTypeName(column);
+					final String monettype = types[column - 1];
 					// in case of inet it always has 0 as length. we need to correct it.
-					if (monettype != null && "inet".equals(monettype)) {
+					if ("inet".equals(monettype)) {
 						len = 18;	// 128.127.126.125/24
 					}
 				}
@@ -671,10 +671,10 @@ final class MonetResultSetMetaData
 				// Special handling for: day_interval and sec_interval as they are
 				// mapped to Types.NUMERIC and Types.DECIMAL types (see MonetDriver typeMap)
 				// They appear to have a fixed scale (tested against Oct2020)
-				final String monettype = getColumnTypeName(column);
-				if ("interval day".equals(monettype))
+				final String monettype = types[column - 1];
+				if ("day_interval".equals(monettype))
 					return 0;
-				if ("interval second".equals(monettype))
+				if ("sec_interval".equals(monettype))
 					return 3;
 
 				if (scales != null) {
