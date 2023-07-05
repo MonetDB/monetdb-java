@@ -132,7 +132,7 @@ Currently implemented JDBC 4.2 interfaces include:
     - setCursorName
     The next methods will add an SQLWarning:
     - setEscapeProcessing(true)  for Sep2022 (11.45) and older servers
-    - setEscapeProcessing(false) for ???2023 (11.47) and newer servers
+    - setEscapeProcessing(false) for Jun2023 (11.47) and newer servers
 
   * java.sql.PreparedStatement
     The next methods are NOT useable/supported:
