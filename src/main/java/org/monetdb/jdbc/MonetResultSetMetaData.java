@@ -264,12 +264,14 @@ final class MonetResultSetMetaData
 			case Types.CLOB:
 				return true;
 			case Types.VARCHAR:
-				final String monettype = getColumnTypeName(column);
-				if (monettype != null && monettype.length() == 4) {
+				try {
+					final String monettype = types[column - 1];
 					// data of type inet or uuid is not case sensitive
 					if ("inet".equals(monettype)
 					 || "uuid".equals(monettype))
 						return false;
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 				return true;
 		}
@@ -358,12 +360,14 @@ final class MonetResultSetMetaData
 			case Types.NUMERIC:
 				return true;
 			case Types.BIGINT:
-				final String monettype = getColumnTypeName(column);
-				if (monettype != null && monettype.length() == 3) {
+				try {
+					final String monettype = types[column - 1];
 					// data of type oid or ptr is not signed
 					if ("oid".equals(monettype)
 					 || "ptr".equals(monettype))
 						return false;
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 				return true;
 		//	All other types should return false
@@ -667,22 +671,21 @@ final class MonetResultSetMetaData
 			case Types.NUMERIC:
 			{
 				// these data types may have a variable scale, max scale is 38
+				try {
+					// Special handling for: day_interval and sec_interval as they are
+					// mapped to Types.NUMERIC and Types.DECIMAL types (see MonetDriver typeMap)
+					// They appear to have a fixed scale (tested against Oct2020)
+					final String monettype = types[column - 1];
+					if ("day_interval".equals(monettype))
+						return 0;
+					if ("sec_interval".equals(monettype))
+						return 3;
 
-				// Special handling for: day_interval and sec_interval as they are
-				// mapped to Types.NUMERIC and Types.DECIMAL types (see MonetDriver typeMap)
-				// They appear to have a fixed scale (tested against Oct2020)
-				final String monettype = types[column - 1];
-				if ("day_interval".equals(monettype))
-					return 0;
-				if ("sec_interval".equals(monettype))
-					return 3;
-
-				if (scales != null) {
-					try {
+					if (scales != null) {
 						return scales[column - 1];
-					} catch (IndexOutOfBoundsException e) {
-						throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 					}
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 				return 0;
 			}
