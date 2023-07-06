@@ -1,6 +1,14 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Jul  6 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Removed code to support old MonetDB servers Oct2014 or older. Those
+  old servers did not yet have the system tables: sys.keywords and
+  sys.table_types which are introduced in Jul2015 release. Those system
+  tables are used by MonetDatabaseMetaData methods: getSQLKeywords(),
+  getTableTypes() and getTables(). These 3 methods will now fail when
+  used with those very old MonetDB servers.
+
 * Wed Jul  5 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected implementation of Connection methods getClientInfo() and
   setClientInfo(). They used to get/set Connection properties instead

@@ -336,7 +336,7 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public String getSQLKeywords() {
-		final String keywords = getConcatenatedStringFromQuery(
+		return getConcatenatedStringFromQuery(
 			"SELECT \"keyword\" FROM \"sys\".\"keywords\" " +
 			// exclude all SQL:2003 keywords
 			"WHERE \"keyword\" NOT IN (" +
@@ -376,30 +376,6 @@ public final class MonetDatabaseMetaData
 			"'VALUE','VALUES','VARCHAR','VARYING','VAR_POP','VAR_SAMP'," +
 			"'WHEN','WHENEVER','WHERE','WIDTH_BUCKET','WINDOW','WITH','WITHIN','WITHOUT','YEAR'" +
 			") ORDER BY 1");
-
-		/* An old MonetDB server (pre Jul2015 release) will not have a table sys.keywords and return an empty String */
-		return (keywords.isEmpty()) ?
-			/* for old servers return static list (as returned in clients/odbc/driver/SQLGetInfo.c case SQL_KEYWORDS:) */
-			"ADMIN,AFTER,AGGREGATE,ALWAYS,ASYMMETRIC,ATOMIC," +
-			"AUTO_INCREMENT,BEFORE,BIGINT,BIGSERIAL,BINARY,BLOB," +
-			"CALL,CHAIN,CLOB,COMMITTED,COPY,CORR,CUME_DIST," +
-			"CURRENT_ROLE,CYCLE,DATABASE,DELIMITERS,DENSE_RANK," +
-			"DO,EACH,ELSEIF,ENCRYPTED,EVERY,EXCLUDE,FOLLOWING," +
-			"FUNCTION,GENERATED,IF,ILIKE,INCREMENT,LAG,LEAD," +
-			"LIMIT,LOCALTIME,LOCALTIMESTAMP,LOCKED,MAXVALUE," +
-			"MEDIAN,MEDIUMINT,MERGE,MINVALUE,NEW,NOCYCLE," +
-			"NOMAXVALUE,NOMINVALUE,NOW,OFFSET,OLD,OTHERS,OVER," +
-			"PARTITION,PERCENT_RANK,PLAN,PRECEDING,PROD,QUANTILE," +
-			"RANGE,RANK,RECORDS,REFERENCING,REMOTE,RENAME," +
-			"REPEATABLE,REPLICA,RESTART,RETURN,RETURNS," +
-			"ROW_NUMBER,ROWS,SAMPLE,SAVEPOINT,SCHEMA,SEQUENCE," +
-			"SERIAL,SERIALIZABLE,SIMPLE,START,STATEMENT,STDIN," +
-			"STDOUT,STREAM,STRING,SYMMETRIC,TIES,TINYINT,TRIGGER," +
-			"UNBOUNDED,UNCOMMITTED,UNENCRYPTED,WHILE,XMLAGG," +
-			"XMLATTRIBUTES,XMLCOMMENT,XMLCONCAT,XMLDOCUMENT," +
-			"XMLELEMENT,XMLFOREST,XMLNAMESPACES,XMLPARSE,XMLPI," +
-			"XMLQUERY,XMLSCHEMA,XMLTEXT,XMLVALIDATE"
-			: keywords;
 	}
 
 	/**
@@ -1904,46 +1880,22 @@ public final class MonetDatabaseMetaData
 		final String types[]
 	) throws SQLException
 	{
-		// as of Jul2015 release the sys.tables.type values (0 through 6) is extended with new values 10, 11, 20, and 30 (for system and temp tables/views).
-		// as of Jul2015 release we also have a new table: sys.table_types with names for the new table types
-		// for correct behavior we need to know if the server is using the old (pre Jul2015) or new sys.tables.type values
-		final boolean preJul2015 = ("11.19.15".compareTo(getDatabaseProductVersion()) >= 0);
-		// for debug: System.out.println("getDatabaseProductVersion() is " + getDatabaseProductVersion() + "  preJul2015 is " + preJul2015);
-
 		final boolean useCommentsTable = con.commentsTableExists();
 		final StringBuilder query = new StringBuilder(1600);
-		if (preJul2015 && types != null && types.length > 0) {
-			// we need to filter on the constructed "TABLE_TYPE" expression, this is only possible when we use a subquery in the FROM
-			query.append("SELECT * FROM (");
-		}
 		query.append("SELECT cast(null as char(1)) AS \"TABLE_CAT\", " +
 			"s.\"name\" AS \"TABLE_SCHEM\", " +
-			"t.\"name\" AS \"TABLE_NAME\", ");
-		if (preJul2015) {
-			query.append(
-				"CASE WHEN t.\"system\" = true AND t.\"type\" IN (0, 10) AND t.\"temporary\" = 0 THEN 'SYSTEM TABLE' " +
-				"WHEN t.\"system\" = true AND t.\"type\" IN (1, 11) AND t.\"temporary\" = 0 THEN 'SYSTEM VIEW' " +
-				"WHEN t.\"system\" = false AND t.\"type\" = 0 AND t.\"temporary\" = 0 THEN 'TABLE' " +
-				"WHEN t.\"system\" = false AND t.\"type\" = 1 AND t.\"temporary\" = 0 THEN 'VIEW' " +
-				"WHEN t.\"system\" = true AND t.\"type\" IN (0, 20) AND t.\"temporary\" = 1 THEN 'SYSTEM SESSION TABLE' " +
-				"WHEN t.\"system\" = true AND t.\"type\" IN (1, 21) AND t.\"temporary\" = 1 THEN 'SYSTEM SESSION VIEW' " +
-				"WHEN t.\"system\" = false AND t.\"type\" IN (0, 30) AND t.\"temporary\" = 1 THEN 'SESSION TABLE' " +
-				"WHEN t.\"system\" = false AND t.\"type\" IN (1, 31) AND t.\"temporary\" = 1 THEN 'SESSION VIEW' " +
-				"END AS \"TABLE_TYPE\", ");
-		} else {
-			query.append("tt.\"table_type_name\" AS \"TABLE_TYPE\", ");
-		}
-		query.append(useCommentsTable ? "COALESCE(cm.\"remark\", t.\"query\")" : "t.\"query\"").append(" AS \"REMARKS\", " +
+			"t.\"name\" AS \"TABLE_NAME\", " +
+			"tt.\"table_type_name\" AS \"TABLE_TYPE\", ")
+		.append(useCommentsTable ? "COALESCE(cm.\"remark\", t.\"query\")" : "t.\"query\"")
+		.append(" AS \"REMARKS\", " +
 			"cast(null as char(1)) AS \"TYPE_CAT\", " +
 			"cast(null as char(1)) AS \"TYPE_SCHEM\", " +
 			"cast(null as char(1)) AS \"TYPE_NAME\", " +
 			"cast(null as char(1)) AS \"SELF_REFERENCING_COL_NAME\", " +
 			"cast(null as char(1)) AS \"REF_GENERATION\" " +
-			"FROM \"sys\".\"tables\" t ");
-		if (!preJul2015) {
-			query.append("JOIN \"sys\".\"table_types\" tt ON t.\"type\" = tt.\"table_type_id\" ");
-		}
-		query.append("JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" ");
+			"FROM \"sys\".\"tables\" t " +
+			"JOIN \"sys\".\"table_types\" tt ON t.\"type\" = tt.\"table_type_id\" " +
+			"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" ");
 		if (useCommentsTable) {
 			query.append("LEFT OUTER JOIN \"sys\".\"comments\" cm ON t.\"id\" = cm.\"id\" ");
 		}
@@ -1967,19 +1919,14 @@ public final class MonetDatabaseMetaData
 		}
 
 		if (types != null && types.length > 0) {
-			if (preJul2015) {
-				query.append(") AS \"getTables\" WHERE \"TABLE_TYPE\" IN (");
-			} else {
-				query.append(needWhere ? "WHERE" : " AND")
-				.append(" tt.\"table_type_name\" IN (");
-			}
+			query.append(needWhere ? "WHERE" : " AND").append(" tt.\"table_type_name\" IN (");
 			for (int i = 0; i < types.length; i++) {
 				if (i > 0) {
-					query.append(", ");
+					query.append(',');
 				}
-				query.append("'").append(types[i]).append("'");
+				query.append('\'').append(types[i]).append('\'');
 			}
-			query.append(")");
+			query.append(')');
 		}
 
 		query.append(" ORDER BY \"TABLE_TYPE\", \"TABLE_SCHEM\", \"TABLE_NAME\"");
@@ -2068,21 +2015,7 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public ResultSet getTableTypes() throws SQLException {
-		// as of Jul2015 release we have a new table: sys.table_types with more table types
-		String query = "SELECT \"table_type_name\" AS \"TABLE_TYPE\" FROM \"sys\".\"table_types\" ORDER BY 1";
-
-		// For old (pre jul2015) servers fall back to old behavior.
-		if ("11.19.15".compareTo(getDatabaseProductVersion()) >= 0)
-			query = "SELECT 'SESSION TABLE' AS \"TABLE_TYPE\" UNION ALL " +
-				"SELECT 'SESSION VIEW' UNION ALL " +
-				"SELECT 'SYSTEM SESSION TABLE' UNION ALL " +
-				"SELECT 'SYSTEM SESSION VIEW' UNION ALL " +
-				"SELECT 'SYSTEM TABLE' UNION ALL " +
-				"SELECT 'SYSTEM VIEW' UNION ALL " +
-				"SELECT 'TABLE' UNION ALL " +
-				"SELECT 'VIEW' ORDER BY 1";
-
-		return executeMetaDataQuery(query);
+		return executeMetaDataQuery("SELECT \"table_type_name\" AS \"TABLE_TYPE\" FROM \"sys\".\"table_types\" ORDER BY 1");
 	}
 
 	/**
@@ -3464,11 +3397,11 @@ public final class MonetDatabaseMetaData
 			query.append(") AS getUDTs WHERE \"DATA_TYPE\" IN (");
 			for (int i = 0; i < types.length; i++) {
 				if (i > 0) {
-					query.append(", ");
+					query.append(',');
 				}
 				query.append(types[i]);
 			}
-			query.append(")");
+			query.append(')');
 		}
 
 		query.append(" ORDER BY \"DATA_TYPE\", \"TYPE_SCHEM\", \"TYPE_NAME\"");
