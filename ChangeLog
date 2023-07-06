@@ -2,6 +2,18 @@
 # This file is updated with Maddlog
 
 * Thu Jul  6 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Removed deprecated nl.cwi.monetdb.*.* classes and package.
+  Those classes were marked deprecated on 12 Nov 2020 from
+  release 3.0 (released on 17 Feb 2021) onwards. It includes:
+   nl.cwi.monetdb.client.JdbcClient.class
+   nl.cwi.monetdb.jdbc.MonetDriver.class
+   nl.cwi.monetdb.jdbc.types.INET.class
+   nl.cwi.monetdb.jdbc.types.URL.class
+   nl.cwi.monetdb.mcl.net.MapiSocket.class
+  These classes are now removed permanently.
+  Use the  org.monetdb.*  equivalents instead.
+
+* Thu Jul  6 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Removed code to support old MonetDB servers Oct2014 or older. Those
   old servers did not yet have the system tables: sys.keywords and
   sys.table_types which are introduced in Jul2015 release. Those system

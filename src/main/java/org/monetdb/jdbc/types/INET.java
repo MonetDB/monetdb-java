@@ -26,7 +26,7 @@ import java.sql.SQLException;
  * This is probably meaningful only and only if the netmask is 32.
  * The getNetmaskBits() method can be used to retrieve the subnet bits.
  */
-public class INET implements java.sql.SQLData {	/* cannot (yet) be final as nl.cwi.monetdb.jdbc.types.INET extends this class */
+public final class INET implements java.sql.SQLData {
 	private String inet;
 
 	@Override

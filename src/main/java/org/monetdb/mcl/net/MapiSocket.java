@@ -80,11 +80,11 @@ import org.monetdb.mcl.parser.MCLParseException;
  * geared towards the format of the data.
  *
  * @author Fabian Groffen
- * @version 4.2
+ * @version 4.3
  * @see org.monetdb.mcl.io.BufferedMCLReader
  * @see org.monetdb.mcl.io.BufferedMCLWriter
  */
-public class MapiSocket {	/* cannot (yet) be final as nl.cwi.monetdb.mcl.net.MapiSocket extends this class */
+public final class MapiSocket {
 	/** The TCP Socket to mserver */
 	private Socket con;
 	/** The TCP Socket timeout in milliseconds. Default is 0 meaning the timeout is disabled (i.e., timeout of infinity) */

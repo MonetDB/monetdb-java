@@ -14,7 +14,7 @@ import java.sql.SQLException;
  * The URL class represents the URL datatype in MonetDB.
  * It represents an URL, that is, a well-formed string conforming to RFC2396.
  */
-public class URL implements java.sql.SQLData {	/* cannot (yet) be final as nl.cwi.monetdb.jdbc.types.URL extends this class */
+public final class URL implements java.sql.SQLData {
 	private String url;
 
 	@Override

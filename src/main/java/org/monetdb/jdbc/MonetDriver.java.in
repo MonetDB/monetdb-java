@@ -40,7 +40,7 @@ import java.util.Properties;
  * @author Fabian Groffen
  * @version @JDBC_MAJOR@.@JDBC_MINOR@ (@JDBC_VER_SUFFIX@)
  */
-public class MonetDriver implements Driver {	/* cannot (yet) be final as nl.cwi.monetdb.jdbc.MonetDriver extends this class */
+public final class MonetDriver implements Driver {
 	// the url kind will be jdbc:monetdb://<host>[:<port>]/<database>
 	// Chapter 9.2.1 from Sun JDBC 3.0 specification
 	/** The prefix of a MonetDB url */

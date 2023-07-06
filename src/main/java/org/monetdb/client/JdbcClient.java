@@ -48,10 +48,10 @@ import java.util.List;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 1.7
+ * @version 1.8
  */
 
-public class JdbcClient {	/* cannot (yet) be final as nl.cwi.monetdb.client.JdbcClient extends this class */
+public final class JdbcClient {
 
 	private static Connection con;
 	private static DatabaseMetaData dbmd;
