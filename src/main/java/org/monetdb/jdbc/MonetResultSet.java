@@ -2463,9 +2463,11 @@ public class MonetResultSet
 			}
 			lastReadWasNull = false;
 			try {
-				return new URL(val);
-			} catch (java.net.MalformedURLException e) {
-				throw new SQLException(e.getMessage(), "M1M05");
+				// Note: as of Java version 20 java.net.URL(String) constructor is deprecated.
+				// https://docs.oracle.com/en/java/javase/20/docs/api/java.base/java/net/URL.html#%3Cinit%3E(java.lang.String)
+				return new java.net.URI(val).toURL();
+			} catch (java.net.URISyntaxException | java.net.MalformedURLException e) {
+				throw new SQLException(e.getMessage(), "22M30");
 			}
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);

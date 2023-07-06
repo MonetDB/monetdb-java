@@ -1887,8 +1887,10 @@ public class MonetPreparedStatement
 						try {
 							// also check if x represents a valid url string to prevent
 							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
-							java.net.URL url_obj = new java.net.URL(x);
-						} catch (java.net.MalformedURLException mue) {
+							// Note: as of Java version 20 java.net.URL(String) constructor is deprecated.
+							// https://docs.oracle.com/en/java/javase/20/docs/api/java.base/java/net/URL.html#%3Cinit%3E(java.lang.String)
+							java.net.URL url_obj = new java.net.URI(x).toURL();
+						} catch (java.net.URISyntaxException | java.net.MalformedURLException mue) {
 							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + mue.getMessage(), "22M30");
 						}
 						castprefix = "url ";

@@ -3245,8 +3245,8 @@ final public class JDBC_API_Tester {
 			cstmt.setDouble(2, 3.02);
 			cstmt.setString(4, "Tree");
 			try {
-				cstmt.setURL(6, new java.net.URL("https://www.monetdb.org/"));
-			} catch (java.net.MalformedURLException mfue) {
+				cstmt.setURL(6, new java.net.URI("https://www.monetdb.org/").toURL());
+			} catch (java.net.URISyntaxException | java.net.MalformedURLException mfue) {
 				sb.append("Invalid URL: ").append(mfue.getMessage()).append("\n");
 			}
 			cstmt.execute();
@@ -5776,8 +5776,8 @@ final public class JDBC_API_Tester {
 			pstmt.setObject(3, "[3.1415E-06]");
 			pstmt.setNull(4, 0);
 			try {
-				pstmt.setURL(5, new java.net.URL("https://www.cwi.nl/"));
-			} catch (java.net.MalformedURLException mfe) {
+				pstmt.setURL(5, new java.net.URI("https://www.cwi.nl/").toURL());
+			} catch (java.net.URISyntaxException | java.net.MalformedURLException mfe) {
 				sb.append(mfe).append("\n");
 			}
 			sb.append("Inserting row ").append(row).append("\n");
