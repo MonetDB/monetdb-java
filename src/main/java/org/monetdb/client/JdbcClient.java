@@ -26,6 +26,7 @@ import java.io.InputStreamReader;
 import java.io.File;
 import java.io.PrintWriter;
 import java.net.HttpURLConnection;
+import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.sql.Connection;
@@ -580,42 +581,46 @@ public final class JdbcClient {
 	 */
 	static BufferedReader getReader(final String uri) throws Exception {
 		BufferedReader ret = null;
-		URL u = null;
 
-		// Try and parse as URL first
-		try {
-			u = new URL(uri);
-		} catch (java.net.MalformedURLException e) {
-			// no URL, try as file
+		if (uri.contains(":")) {
+			// Try and parse as URL
 			try {
-				ret = new BufferedReader(new java.io.FileReader(uri));
-			} catch (java.io.FileNotFoundException fnfe) {
-				// the message is descriptive enough, adds "(No such file
-				// or directory)" itself.
-				throw new Exception(fnfe.getMessage());
+				// Note: as of Java version 20 java.net.URL(String) constructor is deprecated.
+				// https://docs.oracle.com/en/java/javase/20/docs/api/java.base/java/net/URL.html#%3Cinit%3E(java.lang.String)
+				final URI u = new java.net.URI(uri);
+				// the URL must start with a scheme such as: "http:" or "https:" else u.toURL() errors
+				if (u.isAbsolute()) {
+					final URL url = u.toURL();
+					HttpURLConnection.setFollowRedirects(true);
+					final HttpURLConnection con = (HttpURLConnection)url.openConnection();
+					con.setRequestMethod("GET");
+					final String ct = con.getContentType();
+					if ("application/x-gzip".equals(ct)) {
+						// open gzip stream
+						ret = new BufferedReader(new InputStreamReader(
+							new java.util.zip.GZIPInputStream(con.getInputStream())));
+					} else {
+						// text/plain otherwise just attempt to read as is
+						ret = new BufferedReader(new InputStreamReader(con.getInputStream()));
+					}
+				}
+			} catch (IOException e) {
+				// failed to open the url
+				throw new Exception("No such http host/file: " + e.getMessage());
+			} catch (Exception e) {
+				// this is an exception that comes from deep ...
+				throw new Exception("Invalid URL: " + uri + "\n" + e.getMessage());
 			}
 		}
 
 		if (ret == null) {
+			// uri doesn't contain a ":" or is not an URL, so probably a file name
 			try {
-				HttpURLConnection.setFollowRedirects(true);
-				final HttpURLConnection con = (HttpURLConnection)u.openConnection();
-				con.setRequestMethod("GET");
-				final String ct = con.getContentType();
-				if ("application/x-gzip".equals(ct)) {
-					// open gzip stream
-					ret = new BufferedReader(new InputStreamReader(
-							new java.util.zip.GZIPInputStream(con.getInputStream())));
-				} else {
-					// text/plain otherwise just attempt to read as is
-					ret = new BufferedReader(new InputStreamReader(con.getInputStream()));
-				}
-			} catch (IOException e) {
-				// failed to open the url
-				throw new Exception("No such host/file: " + e.getMessage());
-			} catch (Exception e) {
-				// this is an exception that comes from deep ...
-				throw new Exception("Invalid URL: " + e.getMessage());
+				ret = new BufferedReader(new java.io.FileReader(uri));
+			} catch (java.io.FileNotFoundException fnfe) {
+				// the message is descriptive enough,
+				// adds "(No such file or directory)" itself.
+				throw new Exception(fnfe.getMessage());
 			}
 		}
 
