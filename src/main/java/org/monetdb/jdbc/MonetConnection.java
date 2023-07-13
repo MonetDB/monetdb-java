@@ -1585,9 +1585,15 @@ public class MonetConnection
 			return;
 		if (executor == null)
 			throw new SQLException("executor is null", "M1M05");
-		// this is really the simplest thing to do, it destroys
-		// everything (in particular the server connection)
-		close();
+
+		executor.execute(new Runnable() {
+			@Override
+			public void run() {
+				// this is really the simplest thing to do, it destroys
+				// everything (in particular the server connection)
+				close();
+			}
+		});
 	}
 
 	/**
