@@ -581,40 +581,39 @@ public final class JdbcClient {
 	 */
 	static BufferedReader getReader(final String uri) throws Exception {
 		BufferedReader ret = null;
+		URI u = null;
 
-		if (uri.contains(":")) {
-			// Try and parse as URL
-			try {
-				// Note: as of Java version 20 java.net.URL(String) constructor is deprecated.
-				// https://docs.oracle.com/en/java/javase/20/docs/api/java.base/java/net/URL.html#%3Cinit%3E(java.lang.String)
-				final URI u = new java.net.URI(uri);
-				// the URL must start with a scheme such as: "http:" or "https:" else u.toURL() errors
-				if (u.isAbsolute()) {
-					final URL url = u.toURL();
-					HttpURLConnection.setFollowRedirects(true);
-					final HttpURLConnection con = (HttpURLConnection)url.openConnection();
-					con.setRequestMethod("GET");
-					final String ct = con.getContentType();
-					if ("application/x-gzip".equals(ct)) {
-						// open gzip stream
-						ret = new BufferedReader(new InputStreamReader(
-							new java.util.zip.GZIPInputStream(con.getInputStream())));
-					} else {
-						// text/plain otherwise just attempt to read as is
-						ret = new BufferedReader(new InputStreamReader(con.getInputStream()));
-					}
+		// Try and parse as URL
+		try {
+			// Note: as of Java version 20 java.net.URL(String) constructor is deprecated.
+			// https://docs.oracle.com/en/java/javase/20/docs/api/java.base/java/net/URL.html#%3Cinit%3E(java.lang.String)
+			u = new java.net.URI(uri);
+			// the URL must start with a scheme such as: "http://" or "https://" else u.toURL() errors
+			if (u != null && u.isAbsolute()) {
+				final URL url = u.toURL();
+				HttpURLConnection.setFollowRedirects(true);
+				final HttpURLConnection con = (HttpURLConnection)url.openConnection();
+				con.setRequestMethod("GET");
+				final String ct = con.getContentType();
+				if ("application/x-gzip".equals(ct)) {
+					// open gzip stream
+					ret = new BufferedReader(new InputStreamReader(
+						new java.util.zip.GZIPInputStream(con.getInputStream())));
+				} else {
+					// text/plain otherwise just attempt to read as is
+					ret = new BufferedReader(new InputStreamReader(con.getInputStream()));
 				}
-			} catch (IOException e) {
-				// failed to open the url
-				throw new Exception("No such http host/file: " + e.getMessage());
-			} catch (Exception e) {
-				// this is an exception that comes from deep ...
-				throw new Exception("Invalid URL: " + uri + "\n" + e.getMessage());
 			}
+		} catch (IOException e) {
+			// failed to open/read the url
+			throw new Exception("Failed to open/read http URL: " + e.getMessage());
+		} catch (Exception e) {
+			if (u != null)
+				throw new Exception("Invalid http URL: " + uri + "\n" + e.getMessage());
 		}
 
 		if (ret == null) {
-			// uri doesn't contain a ":" or is not an URL, so probably a file name
+			// uri is not a valid URI/URL, so probably a file name
 			try {
 				ret = new BufferedReader(new java.io.FileReader(uri));
 			} catch (java.io.FileNotFoundException fnfe) {
