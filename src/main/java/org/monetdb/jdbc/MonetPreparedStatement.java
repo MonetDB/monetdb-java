@@ -18,6 +18,7 @@ import java.nio.CharBuffer;
 import java.sql.Array;
 import java.sql.Blob;
 import java.sql.Clob;
+import java.sql.Date;
 import java.sql.NClob;
 import java.sql.ParameterMetaData;
 import java.sql.PreparedStatement;
@@ -962,7 +963,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setDate(final int parameterIndex, final java.sql.Date x)
+	public void setDate(final int parameterIndex, final Date x)
 		throws SQLException
 	{
 		setDate(parameterIndex, x, null);
@@ -983,7 +984,7 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setDate(final int parameterIndex, final java.sql.Date x, final Calendar cal)
+	public void setDate(final int parameterIndex, final Date x, final Calendar cal)
 		throws SQLException
 	{
 		if (x == null) {
@@ -1442,7 +1443,7 @@ public class MonetPreparedStatement
 				default:
 					throw new SQLException("Conversion not allowed", "M1M05");
 			}
-		} else if (x instanceof java.sql.Date ||
+		} else if (x instanceof Date ||
 				x instanceof Timestamp ||
 				x instanceof Time ||
 				x instanceof Calendar ||
@@ -1450,16 +1451,14 @@ public class MonetPreparedStatement
 		{
 			switch (targetSqlType) {
 				case Types.DATE:
-					if (x instanceof java.sql.Date) {
-						setDate(parameterIndex, (java.sql.Date)x);
+					if (x instanceof Date) {
+						setDate(parameterIndex, (Date)x);
 					} else if (x instanceof Timestamp) {
-						setDate(parameterIndex, new java.sql.Date(((Timestamp)x).getTime()));
+						setDate(parameterIndex, new Date(((Timestamp)x).getTime()));
 					} else if (x instanceof java.util.Date) {
-						setDate(parameterIndex, new java.sql.Date(
-									((java.util.Date)x).getTime()));
+						setDate(parameterIndex, new Date(((java.util.Date)x).getTime()));
 					} else if (x instanceof Calendar) {
-						setDate(parameterIndex, new java.sql.Date(
-									((Calendar)x).getTimeInMillis()));
+						setDate(parameterIndex, new Date(((Calendar)x).getTimeInMillis()));
 					} else {
 						throw new SQLException("Conversion not allowed", "M1M05");
 					}
@@ -1471,11 +1470,9 @@ public class MonetPreparedStatement
 					} else if (x instanceof Timestamp) {
 						setTime(parameterIndex, new Time(((Timestamp)x).getTime()));
 					} else if (x instanceof java.util.Date) {
-						setTime(parameterIndex, new java.sql.Time(
-									((java.util.Date)x).getTime()));
+						setTime(parameterIndex, new Time(((java.util.Date)x).getTime()));
 					} else if (x instanceof Calendar) {
-						setTime(parameterIndex, new java.sql.Time(
-									((Calendar)x).getTimeInMillis()));
+						setTime(parameterIndex, new Time(((Calendar)x).getTimeInMillis()));
 					} else {
 						throw new SQLException("Conversion not allowed", "M1M05");
 					}
@@ -1484,14 +1481,12 @@ public class MonetPreparedStatement
 				case Types.TIMESTAMP_WITH_TIMEZONE:
 					if (x instanceof Timestamp) {
 						setTimestamp(parameterIndex, (Timestamp)x);
-					} else if (x instanceof java.sql.Date) {
-						setTimestamp(parameterIndex, new Timestamp(((java.sql.Date)x).getTime()));
+					} else if (x instanceof Date) {
+						setTimestamp(parameterIndex, new Timestamp(((Date)x).getTime()));
 					} else if (x instanceof java.util.Date) {
-						setTimestamp(parameterIndex, new java.sql.Timestamp(
-									((java.util.Date)x).getTime()));
+						setTimestamp(parameterIndex, new Timestamp(((java.util.Date)x).getTime()));
 					} else if (x instanceof Calendar) {
-						setTimestamp(parameterIndex, new java.sql.Timestamp(
-									((Calendar)x).getTimeInMillis()));
+						setTimestamp(parameterIndex, new Timestamp(((Calendar)x).getTimeInMillis()));
 					} else {
 						throw new SQLException("Conversion not allowed", "M1M05");
 					}
@@ -1583,12 +1578,12 @@ public class MonetPreparedStatement
 				}
 
 				@Override
-				public void writeDate(java.sql.Date x) throws SQLException {
+				public void writeDate(Date x) throws SQLException {
 					setDate(paramnr, x);
 				}
 
 				@Override
-				public void writeTime(java.sql.Time x) throws SQLException {
+				public void writeTime(Time x) throws SQLException {
 					setTime(paramnr, x);
 				}
 
@@ -1963,7 +1958,7 @@ public class MonetPreparedStatement
 					// check if the string represents a valid calendar date or time or timestamp to prevent
 					// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
 					if (paramJdbcType == Types.DATE) {
-						java.sql.Date datum = java.sql.Date.valueOf(x);
+						Date datum = Date.valueOf(x);
 					} else
 					if (paramJdbcType == Types.TIME || paramJdbcType == Types.TIME_WITH_TIMEZONE) {
 						Time tijdstip = Time.valueOf(x);

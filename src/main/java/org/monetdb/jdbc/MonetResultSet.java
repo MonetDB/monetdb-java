@@ -19,6 +19,7 @@ import java.sql.Blob;
 import java.sql.Clob;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.NClob;
 import java.sql.Ref;
 import java.sql.ResultSet;
@@ -1323,7 +1324,7 @@ public class MonetResultSet
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
 
-		switch(JdbcType) {
+		switch (JdbcType) {
 			case Types.TINYINT:
 			case Types.SMALLINT:
 				try {
@@ -1526,7 +1527,7 @@ public class MonetResultSet
 			return Double.valueOf(getDouble(columnIndex));
 		} else if (type == byte[].class) {
 			return getBytes(columnIndex);
-		} else if (type == java.sql.Date.class) {
+		} else if (type == Date.class) {
 			return getDate(columnIndex, null);
 		} else if (type == Time.class) {
 			return getTime(columnIndex, null);
@@ -1607,12 +1608,12 @@ public class MonetResultSet
 				}
 
 				@Override
-				public java.sql.Date readDate() throws SQLException {
+				public Date readDate() throws SQLException {
 					return getDate(colnum, null);
 				}
 
 				@Override
-				public java.sql.Time readTime() throws SQLException {
+				public Time readTime() throws SQLException {
 					return getTime(colnum, null);
 				}
 
@@ -2026,7 +2027,7 @@ public class MonetResultSet
 
 		java.util.Date pdate = null;
 		final java.text.ParsePosition ppos = new java.text.ParsePosition(0);
-		switch(JdbcType) {
+		switch (JdbcType) {
 			case Types.DATE:
 				if (dateFormat == null) {
 					// first time usage, create and keep the dateFormat object for next usage
@@ -2167,7 +2168,7 @@ public class MonetResultSet
 	 * @see #getDate(int col, Calendar cal)
 	 */
 	@Override
-	public java.sql.Date getDate(final int columnIndex) throws SQLException {
+	public Date getDate(final int columnIndex) throws SQLException {
 		return getDate(columnIndex, null);
 	}
 
@@ -2184,7 +2185,7 @@ public class MonetResultSet
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public java.sql.Date getDate(final int columnIndex, Calendar cal)
+	public Date getDate(final int columnIndex, Calendar cal)
 		throws SQLException
 	{
 		checkNotClosed();
@@ -2199,7 +2200,7 @@ public class MonetResultSet
 				// try to convert string directly to a Date object
 				// Note: the string must be in JDBC date escape format: yyyy-[m]m-[d]d
 				try {
-					return java.sql.Date.valueOf(val);
+					return Date.valueOf(val);
 				} catch (IllegalArgumentException iae) {
 					// this happens if string doesn't match the format, such as for years < 1000 (including negative years)
 					// in those cases just continue and use slower getJavaDate(cal, columnIndex, Types.DATE) method
@@ -2208,7 +2209,7 @@ public class MonetResultSet
 			}
 			if (getJavaDate(cal, columnIndex, Types.DATE) == -1)
 				return null;
-			return new java.sql.Date(cal.getTimeInMillis());
+			return new Date(cal.getTimeInMillis());
 		} catch (IndexOutOfBoundsException e) {
 			throw newSQLInvalidColumnIndexException(columnIndex);
 		}
@@ -2224,7 +2225,7 @@ public class MonetResultSet
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public java.sql.Date getDate(final String columnLabel) throws SQLException {
+	public Date getDate(final String columnLabel) throws SQLException {
 		return getDate(findColumn(columnLabel), null);
 	}
 
@@ -2241,7 +2242,7 @@ public class MonetResultSet
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public java.sql.Date getDate(final String columnLabel, final Calendar cal)
+	public Date getDate(final String columnLabel, final Calendar cal)
 		throws SQLException
 	{
 		return getDate(findColumn(columnLabel), cal);
@@ -2989,12 +2990,12 @@ public class MonetResultSet
 	}
 
 	@Override
-	public void updateDate(int columnIndex, java.sql.Date x) throws SQLException {
+	public void updateDate(int columnIndex, Date x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateDate");
 	}
 
 	@Override
-	public void updateDate(String columnLabel, java.sql.Date x) throws SQLException {
+	public void updateDate(String columnLabel, Date x) throws SQLException {
 		throw newSQLFeatureNotSupportedException("updateDate");
 	}
 
