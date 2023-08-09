@@ -170,7 +170,6 @@ Currently implemented JDBC 4.2 interfaces include:
     - getAsciiStream, getUnicodeStream
     - getNClob
     - getRef, getRowId, getSQLXML
-    - getObject(column, Class<T> type)
     - moveToCurrentRow, moveToInsertRow,
     - All methods related to updateable result sets such as:
       updateArray ... updateTimestamp, cancelRowUpdates,

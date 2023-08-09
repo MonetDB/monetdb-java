@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Aug  9 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Implemented ResultSet methods:
+   <T> T getObject(int columnIndex, Class<T> type)
+   <T> T getObject(String columnLabel, Class<T> type)
+  They used to throw an SQLFeatureNotSupportedException.
+
 * Thu Jul  6 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Removed deprecated nl.cwi.monetdb.*.* classes and package.
   Those classes were marked deprecated on 12 Nov 2020 from

@@ -3190,8 +3190,6 @@ public class MonetResultSet
 	 *         null or another error occurs. The getCause() method of
 	 *         the exception may provide a more detailed exception, for
 	 *         example, if a conversion error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public <T> T getObject(final int columnIndex, final Class<T> type) throws SQLException {
@@ -3199,7 +3197,89 @@ public class MonetResultSet
 		if (type == null)
 			throw new SQLException("type is null", "M1M05");
 
-		throw newSQLFeatureNotSupportedException("getObject(column, Class<T> type)");
+		final String val;
+		try {
+			val = tlp.values[columnIndex - 1];
+			if (val == null) {
+				lastReadWasNull = true;
+				return null;
+			}
+			lastReadWasNull = false;
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		}
+
+		if (type == String.class) {
+			return type.cast(val);
+		}
+		if (type == Integer.class) {
+			return type.cast(Integer.valueOf(getInt(columnIndex)));
+		}
+		if (type == Long.class) {
+			return type.cast(Long.valueOf(getLong(columnIndex)));
+		}
+		if (type == Short.class) {
+			return type.cast(Short.valueOf(getShort(columnIndex)));
+		}
+		if (type == Double.class) {
+			return type.cast(Double.valueOf(getDouble(columnIndex)));
+		}
+		if (type == Float.class) {
+			return type.cast(Float.valueOf(getFloat(columnIndex)));
+		}
+		if (type == BigDecimal.class) {
+			return type.cast(getBigDecimal(columnIndex));
+		}
+		if (type == Boolean.class) {
+			return type.cast(Boolean.valueOf(getBoolean(columnIndex)));
+		}
+		if (type == byte[].class) {
+			return type.cast(getBytes(columnIndex));
+		}
+		if (type == Blob.class || type == MonetBlob.class) {
+			return type.cast(getBlob(columnIndex));
+		}
+		if (type == Clob.class || type == MonetClob.class) {
+			return type.cast(getClob(columnIndex));
+		}
+		if (type == URL.class) {
+			return type.cast(getURL(columnIndex));
+		}
+		if (type == Date.class) {
+			return type.cast(getDate(columnIndex, null));
+		}
+		if (type == Time.class) {
+			return type.cast(getTime(columnIndex, null));
+		}
+		if (type == Timestamp.class) {
+			return type.cast(getTimestamp(columnIndex, null));
+		}
+		if (type == java.util.Date.class) {
+		        final Timestamp timestamp = getTimestamp(columnIndex, null);
+		        return type.cast(new java.util.Date(timestamp.getTime()));
+		}
+		if (type == Calendar.class) {
+			final Calendar cal = Calendar.getInstance();
+			getJavaDate(cal, columnIndex, Types.TIMESTAMP);
+			return type.cast(cal);
+		}
+		if (type == java.util.UUID.class) {
+			try {
+				return type.cast(java.util.UUID.fromString(val));
+			} catch (IllegalArgumentException exc) {
+				throw new SQLException("conversion to java.util.UUID object failed: " + exc.getMessage(), "M1M05");
+			}
+		}
+		if (type == java.net.InetAddress.class) {
+			final int slash = val.indexOf('/');
+			try {
+				return type.cast(java.net.InetAddress.getByName(slash < 0 ? val : val.substring(0, slash)));
+			} catch (java.net.UnknownHostException exc) {
+				throw new SQLException("conversion to java.net.InetAddress object failed: " + exc.getMessage(), "M1M05");
+			}
+		}
+
+		throw new SQLException("conversion to '" + type.getName() + "' is not supported", "M1M05");
 	}
 
 	/**
@@ -3219,8 +3299,6 @@ public class MonetResultSet
 	 *         null or another error occurs. The getCause() method of
 	 *         the exception may provide a more detailed exception, for
 	 *         example, if a conversion error occurs
-	 * @throws SQLFeatureNotSupportedException the JDBC driver does
-	 *         not support this method
 	 */
 	@Override
 	public <T> T getObject(final String columnLabel, final Class<T> type) throws SQLException {
