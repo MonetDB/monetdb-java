@@ -31,7 +31,7 @@ jobs:
 
     services:
       monetdb_container:
-        image: monetdb/dev-builds:Sep2022
+        image: monetdb/dev-builds:Jun2023
         env:
           MDB_DAEMON_PASS: monetdb
           MDB_DB_ADMIN_PASS: monetdb
@@ -39,7 +39,7 @@ jobs:
           - 50000:50000
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up JDK
       uses: actions/setup-java@v3
