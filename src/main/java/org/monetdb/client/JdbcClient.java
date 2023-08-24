@@ -827,9 +827,9 @@ public final class JdbcClient {
 			out.println("\\dp      list available user procedures in current schema");
 			out.println("\\ds      list available user sequences in current schema");
 			out.println("\\dn      list available user schemas");
-			out.println("\\dS      list available system tables and views in sys/tmp schema");
+			out.println("\\dS      list available system tables and views in sys/tmp/information_schema schema");
 			out.println("\\dSt     list available system tables in sys/tmp schema");
-			out.println("\\dSv     list available system views in sys/logging schema");
+			out.println("\\dSv     list available system views in sys/information_schema/logging schema");
 			out.println("\\dSf     list available system functions in current schema");
 			out.println("\\dSp     list available system procedures in current schema");
 			out.println("\\dSn     list available system schemas");
@@ -882,13 +882,13 @@ public final class JdbcClient {
 				}
 			} else
 			if (command.equals("dS") || command.equals("dSt") || command.equals("dSv") || command.equals("dtS") || command.equals("dvS")) {
-				// list available system tables and/or views in sys/tmp/logging schema
+				// list available system tables and/or views in sys/tmp/information_schema/logging schema
 				boolean tablesOnly = command.contains("t");
 				boolean viewsOnly = command.contains("v");
 				String curSchema = con.getSchema();
-				// only schemas: sys, tmp and logging contain system tables and views.
-				if (!("sys".equals(curSchema) || "tmp".equals(curSchema) || "logging".equals(curSchema)))
-					// when currently in another schema, default to the sys tables/views else nothing will be listed
+				// only schemas: sys, tmp, information_schema and logging contain system tables and/or system views.
+				if (!("sys".equals(curSchema) || "tmp".equals(curSchema) || "information_schema".equals(curSchema) || "logging".equals(curSchema)))
+					// when currently in another schema, default to the sys schema else nothing will be listed
 					curSchema = "sys";
 				rs = dbmd.getTables(null, curSchema, null, null);
 				while (rs.next()) {
