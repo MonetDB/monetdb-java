@@ -25,14 +25,14 @@ import java.util.Set;
  * a) validate system tables data integrity in system schemas: sys and tmp
  *    this includes violations of:
  *		primary key uniqueness
- *		primary key column(s) not null
+ *		primary key column(s) not null and when varchar not empty string
  *		unique constraint uniqueness
  *		foreign key referential integrity
- *		column not null
+ *		column not null and some varchar columns not empty string
  *		column maximum length for char/varchar/clob/blob/json/url columns which have max length &gt; 0
  * b) validate user schema tables &amp; columns data integrity based on available meta data from system tables &amp; system views
  *		primary key uniqueness
- *	TODO primary key column(s) not null
+ *	TODO: primary key column(s) not null
  *		unique constraint uniqueness
  *		foreign key referential integrity
  *		column not null
@@ -42,7 +42,7 @@ import java.util.Set;
  *		col char/varchar/clob/blob/json/url minimum length (some columns may not be empty, so length &gt;= 1)
  *		col with sequence (serial/bigserial/autoincrement) in range (0/1/min_value .. max_value)
  *		col value is valid in domain (date/time/timestamp/json/inet/url/uuid/...)
- *		col in list checks (some columns may have only certain values which are not stored in a table or view (eg as fk))
+ *		col in list-of-values checks (some columns may have only certain values which are not stored in a table or view (eg as fk))
 		SELECT * FROM sys.table_partitions WHERE "type" NOT IN (5,6,9,10);	-- 5=By Column Range (1+4), 6=By Expression Range (2+4), 9=By Column Value (1+8), 10=By Expression Value (2+8), see sql_catalog.h #define PARTITION_*.   Note table_partitions is introduced in Apr2019  "33"
  *		col conditional checks (column is not null when other column is (not) null)
 		-- i.e.: either column_id or expression in sys.table_partitions must be populated
@@ -536,13 +536,28 @@ public final class MDBvalidator {
 				if (multicolumn) {
 					String[] cols = col.split(", ");
 					for (int c = 0; c < cols.length; c++) {
+						final String colx = cols[c];
 						if (c > 0) {
 							isNullCond.append(" OR ");
 						}
-						isNullCond.append(cols[c]).append(" IS NULL");
+						isNullCond.append(colx).append(" IS NULL");
+
+						/* for some sys/tmp columns also check for empty strings */
+						if (colx.endsWith("name") || colx.endsWith("keyword")
+						 || "schema".equals(colx) || "table".equals(colx) || "column".equals(colx) || "func".equals(colx) || "mod".equals(colx) || "statement".equals(colx)
+						 || ("type".equals(colx) && ("_columns".equals(tbl) || "args".equals(tbl) || "storage()".equals(tbl) || "storagemodelinput".equals(tbl)))) {
+							isNullCond.append(" OR ").append(colx).append(" = ''");
+						}
 					}
 				} else {
 					isNullCond.append(col).append(" IS NULL");
+
+					/* for some sys/tmp columns also check for empty strings */
+					if (col.endsWith("name") || col.endsWith("keyword")
+					 || "schema".equals(col) || "table".equals(col) || "column".equals(col) || "func".equals(col) || "mod".equals(col) || "statement".equals(col)
+					 || ("type".equals(col) && ("_columns".equals(tbl) || "args".equals(tbl) || "storage()".equals(tbl) || "storagemodelinput".equals(tbl)))) {
+						isNullCond.append(" OR ").append(col).append(" = ''");
+					}
 				}
 				// reuse the StringBuilder by cleaning it partial
 				sb.setLength(qry_len);
