@@ -1,6 +1,8 @@
 # This workflow will build a Java project with Maven
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
+# Note: Oracle JDK is only supported for JDK 17 and later
+
 name: Test with various JDK versions
 
 on: [push]
@@ -21,6 +23,8 @@ jobs:
           - 17
           - 21
         exclude:
+          - distribution: oracle
+            java_version: 8
           - distribution: oracle
             java_version: 11
 
