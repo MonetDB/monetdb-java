@@ -18,16 +18,11 @@ jobs:
         java_version:
           - 8
           - 11
-          - 14
           - 17
-          - 19
+          - 21
         exclude:
           - distribution: oracle
-            java_version: 8
-          - distribution: oracle
             java_version: 11
-          - distribution: oracle
-            java_version: 14
 
     services:
       monetdb_container:
