@@ -453,13 +453,24 @@ public final class MonetDatabaseMetaData
 	@Override
 	public String getSystemFunctions() {
 		final String wherePart =
-			"f.\"name\" IN ('columnsize','database','debug','get_value_for','hash','hashsize','heapsize'" +
-			",'ifnull','ifthenelse','imprintsize','isaurl','isauuid','isnull','masterclock','mastertick'" +
-			",'newurl','next_value_for','password_hash','replicaclock','replicatick','uuid')" +
+			"f.\"name\" IN ('columnsize','current_sessionid','database','debug'" +
+			",'get_value_for','greatest','hash','hashsize','heapsize'" +
+			",'ifthenelse','imprintsize','isaurl','isauuid','isnull','least'" +
+			",'masterclock','mastertick'" +		// wlc/wlr functions
+			",'newurl','next_value_for','password_hash'" +
+			",'replicaclock','replicatick'" +	// wlc/wlr functions
+			",'sql_max','sql_min','uuid')";
+		String unionPart =
 			// add functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
-			" UNION ALL SELECT * FROM (VALUES('cast'),('coalesce'),('convert'),('nullif')) as sf";
-			// ToDo: from release 11.47.1 we also support function: ifnull, but only with odbc escape notation, so {fn ifnull(null, 2)}. Related issue: 6933.
-		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + FunctionsOrderBy1);
+			" UNION SELECT * FROM (VALUES('cast'),('coalesce'),('convert'),('ifnull'),('nullif')) as sf";
+		try {
+			// from release 11.47.1 we support function: ifnull, but only with odbc escape notation, so {fn ifnull(null, 2)}. See issue: 6933.
+			// from release 11.49.1 we support function: ifnull also without odbc escape notation.
+			if ((con.getDatabaseMajorVersion() == 11) && (con.getDatabaseMinorVersion() <= 45))
+				// release 11.45 (Sep2022) or older did not support function: ifnull.
+				unionPart = unionPart.replace(",('ifnull')", "");
+		} catch (SQLException e) { /* ignore */	}
+		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + unionPart + FunctionsOrderBy1);
 	}
 
 	@Override

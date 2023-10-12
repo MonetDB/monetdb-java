@@ -1,6 +1,11 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Oct 12 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved DatabaseMetaData.getSystemFunctions(). It now also returns
+  functions: current_sessionid, greatest, ifnull, least, sql_max, sql_min.
+  Function ifnull will only be returned for servers Jun2023 (11.47 or higher).
+
 * Wed Aug  9 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Implemented ResultSet methods:
    <T> T getObject(int columnIndex, Class<T> type)
