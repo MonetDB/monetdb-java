@@ -5852,6 +5852,8 @@ final public class JDBC_API_Tester {
 		closeStmtResSet(pstmt, null);
 
 		compareExpectedOutput("Bug_PrepStmtSetString_6382",
+			/* servers Jun2023 (11.47) and older stored JSON string values as provided */
+			(dbmsMajorVersion == 11 && dbmsMinorVersion <= 47) ?
 				"0. true	true\n" +
 				"1. Creating table PrepStmtSetString_6382\n" +
 				"2. Insert row 1, 2, 3, 4, 5\n" +
@@ -5914,6 +5916,44 @@ final public class JDBC_API_Tester {
 				"        {\"id\": \"About\", \"label\": \"About Adobe CVG Viewer...\"}\n" +
 				"    ]\n" +
 				"}}]	b39dc76e-4faf-4fd9-bc1e-17df48acf764	https://en.wikipedia.org/wiki/IP_address	223.255.255.255\n" +
+				"row 11	11	row 11	null	ff125769-b63c-4c3c-859f-5b84a9349e24	https://en.wikipedia.org/wiki/IP_address	223.234.245.255\n" +
+				"Cleanup TABLE PrepStmtSetString_6382\n"
+			: /* for servers 11.48 and higher, JSON string values are stored in optimized form (without whitespace characters) */
+				"0. true	true\n" +
+				"1. Creating table PrepStmtSetString_6382\n" +
+				"2. Insert row 1, 2, 3, 4, 5\n" +
+				"Creating a prepared statement with 6 parameters and inserting rows using setInt(), setString(), setNull(), setNString(), setURL(), setObject().\n" +
+				"Prepared Statement has 6 parameters:\n" +
+				" Parameter 1 type is: int. JDBC SQL type: 4\n" +
+				" Parameter 2 type is: varchar. JDBC SQL type: 12\n" +
+				" Parameter 3 type is: json. JDBC SQL type: 12\n" +
+				" Parameter 4 type is: uuid. JDBC SQL type: 12\n" +
+				" Parameter 5 type is: url. JDBC SQL type: 12\n" +
+				" Parameter 6 type is: inet. JDBC SQL type: 12\n" +
+				"Inserting row 6\n" +
+				"Inserted 1 row\n" +
+				"Inserting row 7\n" +
+				"Inserted 1 row\n" +
+				"Inserting row 8\n" +
+				"Inserted 1 row\n" +
+				"Inserting row 9\n" +
+				"Inserted 1 row\n" +
+				"Inserting row 10\n" +
+				"Inserted 1 row\n" +
+				"Inserting row 11\n" +
+				"Inserted 1 row\n" +
+				"List contents of TABLE PrepStmtSetString_6382 after 11 rows inserted\n" +
+				"Query has 6 output columns.\n" +
+				"row 1	1	row 1	{}	34c8deb5-e608-406b-beda-6a951f73d455	https://www.monetdb.org/	128.0.0.1\n" +
+				"row 2	2	row 2	[]	null	null	null\n" +
+				"row 3	3	row 3	\"abc\"	null	null	null\n" +
+				"row 4	4	row 4	true	null	null	null\n" +
+				"row 5	5	row 5	-0.123	null	null	null\n" +
+				"row 6	6	row 6	{\"menu\":{\"id\":\"file\",\"value\":\"File\",\"popup\":{\"menuitem\":[{\"value\":\"New\",\"onclick\":\"CreateNewDoc()\"},{\"value\":\"Open\",\"onclick\":\"OpenDoc()\"},{\"value\":\"Close\",\"onclick\":\"CloseDoc()\"}]}}}	null	null	null\n" +
+				"row 7	7	row 7	null	4a148b7d-8d47-4e1e-a21e-09a71abf2215	null	null\n" +
+				"row 8	8	row 8	[3.1415E-06]	null	https://www.cwi.nl/	null\n" +
+				"row 9	9	row 9	[3.1415E-06]	null	null	127.255.255.255\n" +
+				"row 10	10	row 10	[{\"menu\":{\"header\":\"SVG Viewer\",\"items\":[{\"id\":\"Open\"},{\"id\":\"OpenNew\",\"label\":\"Open New\"},null,{\"id\":\"ZoomIn\",\"label\":\"Zoom In\"},{\"id\":\"ZoomOut\",\"label\":\"Zoom Out\"},{\"id\":\"OriginalView\",\"label\":\"Original View\"},null,{\"id\":\"Quality\"},{\"id\":\"Pause\"},{\"id\":\"Mute\"},null,{\"id\":\"Help\"},{\"id\":\"About\",\"label\":\"About Adobe CVG Viewer...\"}]}}]	b39dc76e-4faf-4fd9-bc1e-17df48acf764	https://en.wikipedia.org/wiki/IP_address	223.255.255.255\n" +
 				"row 11	11	row 11	null	ff125769-b63c-4c3c-859f-5b84a9349e24	https://en.wikipedia.org/wiki/IP_address	223.234.245.255\n" +
 				"Cleanup TABLE PrepStmtSetString_6382\n");
 	}
