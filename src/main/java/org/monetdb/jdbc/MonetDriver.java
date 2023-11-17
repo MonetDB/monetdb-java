@@ -42,8 +42,6 @@ import java.util.Properties;
 public final class MonetDriver implements Driver {
 	// the url kind will be jdbc:monetdb://<host>[:<port>]/<database>
 	// Chapter 9.2.1 from Sun JDBC 3.0 specification
-	/** The prefix of a MonetDB url */
-	static final String MONETURL = "jdbc:monetdb://";
 
 	// initialize this class: register it at the DriverManager
 	// Chapter 9.2 from Sun JDBC 3.0 specification
@@ -67,7 +65,7 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public boolean acceptsURL(final String url) {
-		return url != null && url.startsWith(MONETURL);
+		return url != null && url.startsWith("jdbc:monetdb://");
 	}
 
 	/**

@@ -1801,7 +1801,7 @@ public class MonetConnection
 	 */
 	String getJDBCURL() {
 		final StringBuilder sb = new StringBuilder(128);
-		sb.append(MonetDriver.MONETURL).append(hostname)
+		sb.append("jdbc:monetdb://").append(hostname)
 			.append(':').append(port)
 			.append('/').append(database);
 		if (lang == LANG_MAL)
