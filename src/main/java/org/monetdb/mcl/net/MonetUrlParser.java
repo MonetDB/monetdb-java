@@ -16,6 +16,16 @@ public class MonetUrlParser {
     public MonetUrlParser(Properties props, String url) throws URISyntaxException {
         this.props = props;
         this.urlText = url;
+        // we want to accept monetdb:// but the Java URI parser rejects that.
+        switch (url) {
+            case "monetdb:-":
+            case "monetdbs:-":
+                throw new URISyntaxException(url, "invalid MonetDB URL");
+            case "monetdb://":
+            case "monetdbs://":
+                url += "-";
+                break;
+        }
         this.url = new URI(url);
     }
 
@@ -124,31 +134,27 @@ public class MonetUrlParser {
             }
             host = "";
             remainder = "";
-        } else if (authority.startsWith("[")) {
-            // IPv6
-            pos = authority.indexOf(']');
-            if (pos < 0)
-                throw new URISyntaxException(urlText, "unmatched '['");
-            host = authority.substring(1, pos);
-            remainder = authority.substring(pos + 1);
-        } else if ((pos = authority.indexOf(':')) >= 0){
-            host = authority.substring(0, pos);
-            remainder = authority.substring(pos);
-        } else {
-            host = authority;
+        } else if (authority.equals("-")) {
+            host = "";
             remainder = "";
+        } else {
+            if (authority.startsWith("[")) {
+                // IPv6
+                pos = authority.indexOf(']');
+                if (pos < 0)
+                    throw new URISyntaxException(urlText, "unmatched '['");
+                host = authority.substring(1, pos);
+                remainder = authority.substring(pos + 1);
+            } else if ((pos = authority.indexOf(':')) >= 0) {
+                host = authority.substring(0, pos);
+                remainder = authority.substring(pos);
+            } else {
+                host = authority;
+                remainder = "";
+            }
         }
-        switch (host) {
-            case "localhost":
-                set(Parameter.HOST, "");
-                break;
-            case "localhost.":
-                set(Parameter.HOST, "localhost");
-                break;
-            default:
-                set(Parameter.HOST, host);
-                break;
-        }
+        host = unwrapLocalhost(host);
+        set(Parameter.HOST, host);
 
         if (remainder.isEmpty()) {
             // do nothing
@@ -204,6 +210,30 @@ public class MonetUrlParser {
                 set(key, percentDecode(key, value));
             }
         }
+    }
+
+    public static String wrapLocalhost(String host) {
+        switch (host) {
+            case "localhost":
+                host = "localhost.";
+                break;
+            case "":
+                host = "localhost";
+                break;
+        }
+        return host;
+    }
+
+    public static String unwrapLocalhost(String host) {
+        switch (host) {
+            case "localhost":
+                host = "";
+                break;
+            case "localhost.":
+                host = "localhost";
+                break;
+        }
+        return host;
     }
 
 

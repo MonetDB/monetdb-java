@@ -672,8 +672,8 @@ REJECT monetdb:
 REJECT monetdbs:
 REJECT monetdb:/
 REJECT monetdbs:/
-REJECT monetdb://
-REJECT monetdbs://
+ACCEPT monetdb://
+ACCEPT monetdbs://
 ACCEPT monetdb:///
 ACCEPT monetdbs:///
 ```
