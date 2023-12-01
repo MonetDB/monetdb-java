@@ -28,6 +28,9 @@ public class Target {
     private String hash = "";
     private boolean debug = false;
     private String logfile = "";
+    private int soTimeout = 0;
+    private boolean treatClobAsVarchar = true;
+    private boolean treatBlobAsBinary = true;
 
     private boolean userWasSet = false;
     private boolean passwordWasSet = false;
@@ -102,8 +105,13 @@ public class Target {
             case HASH: setHash((String)value); break;
             case DEBUG: setDebug((boolean)value); break;
             case LOGFILE: setLogfile((String)value); break;
+
+            case SO_TIMEOUT: setSoTimeout((int)value); break;
+            case CLOB_AS_VARCHAR: setTreatClobAsVarchar((boolean)value); break;
+            case BLOB_AS_BINARY: setTreatBlobAsBinary((boolean)value); break;
+
             default:
-                throw new IllegalStateException("unreachable -- missing case");
+                throw new IllegalStateException("unreachable -- missing case: " + parm.name);
         }
     }
 
@@ -138,6 +146,9 @@ public class Target {
             case HASH: return hash;
             case DEBUG: return debug;
             case LOGFILE: return logfile;
+            case SO_TIMEOUT: return soTimeout;
+            case CLOB_AS_VARCHAR: return treatClobAsVarchar;
+            case BLOB_AS_BINARY: return treatBlobAsBinary;
             default:
                 throw new IllegalStateException("unreachable -- missing case");
         }
@@ -340,6 +351,31 @@ public class Target {
         this.logfile = logfile;
     }
 
+    public int getSoTimeout() {
+        return soTimeout;
+    }
+
+
+    public void setSoTimeout(int soTimeout) {
+        this.soTimeout = soTimeout;
+    }
+
+    public void setTreatClobAsVarchar(boolean treatClobAsVarchar) {
+        this.treatClobAsVarchar = treatClobAsVarchar;
+    }
+
+    public boolean isTreatClobAsVarchar() {
+        return treatClobAsVarchar;
+    }
+
+    public boolean isTreatBlobAsBinary() {
+        return treatBlobAsBinary;
+    }
+
+    public void setTreatBlobAsBinary(boolean treatBlobAsBinary) {
+        this.treatBlobAsBinary = treatBlobAsBinary;
+    }
+
     public Validated validate() throws ValidationError {
         return new Validated();
     }
@@ -517,6 +553,18 @@ public class Target {
 
         public String getLogfile() {
             return logfile;
+        }
+
+        public int getSoTimeout() {
+            return soTimeout;
+        }
+
+        public boolean isTreatClobAsVarchar() {
+            return treatClobAsVarchar;
+        }
+
+        public boolean isTreatBlobAsBinary() {
+            return treatBlobAsBinary;
         }
 
         public boolean connectScan() {

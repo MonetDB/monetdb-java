@@ -29,6 +29,9 @@ public enum Parameter {
     DEBUG("debug", ParameterType.Bool, false, "specific to jdbc", false),
     LOGFILE("logfile", ParameterType.Str, "", "specific to jdbc", false),
 
+    SO_TIMEOUT("so_timeout", ParameterType.Int, 0, "abort if network I/O does not complete in this many milliseconds", false),
+    CLOB_AS_VARCHAR("treat_clob_as_varchar", ParameterType.Bool, true, "return CLOB/TEXT data as type VARCHAR instead of type CLOB", false),
+    BLOB_AS_BINARY("treat_blob_as_binary", ParameterType.Bool, true, "return BLOB data as type BINARY instead of type BLOB", false),
     ;
 
     public final String name;
@@ -71,6 +74,9 @@ public enum Parameter {
             case "hash": return HASH;
             case "debug": return DEBUG;
             case "logfile": return LOGFILE;
+            case "so_timeout": return SO_TIMEOUT;
+            case "treat_clob_as_varchar": return CLOB_AS_VARCHAR;
+            case "treat_blob_as_binary": return BLOB_AS_BINARY;
             default: return null;
         }
     }

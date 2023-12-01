@@ -21,6 +21,7 @@ public class UrlTester {
 
     public static void main(String[] args) throws Exception {
         checkDefaults();
+        checkParameters();
 
         int exitcode;
         UrlTester tester = new UrlTester();
@@ -29,6 +30,7 @@ public class UrlTester {
             exitcode = tester.run();
         System.exit(exitcode);
     }
+
 
     private static void checkDefaults() {
         Target target = new Target();
@@ -39,8 +41,17 @@ public class UrlTester {
                 continue;
             Object actual = target.getObject(parm);
             if (!expected.equals(actual)) {
-                System.err.println("Default for " + parm.name + " expected to be <" + expected + "> but is <" + actual + ">");
-                System.exit(1);
+                throw new RuntimeException("Default for " + parm.name + " expected to be <" + expected + "> but is <" + actual + ">");
+            }
+        }
+    }
+
+    private static void checkParameters() {
+        for (Parameter parm: Parameter.values()) {
+            Parameter found = Parameter.forName(parm.name);
+            if (parm != found) {
+                String foundStr = found != null ? found.name : "null";
+                throw new RuntimeException("Looking up <" + parm.name + ">, found <" + foundStr);
             }
         }
     }
