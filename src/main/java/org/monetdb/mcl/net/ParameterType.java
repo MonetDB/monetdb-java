@@ -8,7 +8,7 @@ public enum ParameterType {
 
     public Object parse(String name, String value) throws ValidationError {
         if (value == null)
-            throw new NullPointerException();
+            return null;
 
         try {
             switch (this) {

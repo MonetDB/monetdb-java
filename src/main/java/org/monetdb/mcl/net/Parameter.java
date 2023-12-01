@@ -1,6 +1,8 @@
 package org.monetdb.mcl.net;
 
 
+import java.util.Calendar;
+
 public enum Parameter {
     TLS("tls", ParameterType.Bool, false, "secure the connection using TLS", true),
     HOST("host", ParameterType.Str, "", "IP number, domain name or one of the special values `localhost` and `localhost.`", true),
@@ -17,7 +19,7 @@ public enum Parameter {
     USER("user", ParameterType.Str, "", "user name to authenticate as", false),
     PASSWORD("password", ParameterType.Str, "", "password to authenticate with", false),
     LANGUAGE("language", ParameterType.Str, "sql", "for example, \"sql\", \"mal\", \"msql\", \"profiler\"", false),
-    AUTOCOMMIT("autocommit", ParameterType.Bool, false, "initial value of autocommit", false),
+    AUTOCOMMIT("autocommit", ParameterType.Bool, true, "initial value of autocommit", false),
     SCHEMA("schema", ParameterType.Str, "", "initial schema", false),
     TIMEZONE("timezone", ParameterType.Int, null, "client time zone as minutes east of UTC", false),
     BINARY("binary", ParameterType.Str, "on", "whether to use binary result set format (number or bool)", false),
@@ -31,7 +33,7 @@ public enum Parameter {
 
     public final String name;
     public final ParameterType type;
-    public final Object defaultValue;
+    private final Object defaultValue;
     public final String description;
     public final boolean isCore;
 
@@ -77,5 +79,17 @@ public enum Parameter {
         if (Parameter.forName(name) != null)
             return false;
         return name.contains("_");
+    }
+
+    public Object getDefault() {
+        switch (this) {
+            case TIMEZONE:
+                Calendar cal = Calendar.getInstance();
+                int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
+                int offsetSeconds = offsetMillis / 1000;
+                return (Integer)offsetSeconds;
+            default:
+                return defaultValue;
+        }
     }
 }

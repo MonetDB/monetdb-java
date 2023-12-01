@@ -598,13 +598,10 @@ EXPECT replysize=600
 ```
 
 ```test
-NOT jdbc
 SET replysize=200
 SET fetchsize=300
 EXPECT replysize=300
 ```
-
-
 
 Rule: parsing a URL sets all of tls, host, port and database
 even if left out of the URL
@@ -778,6 +775,10 @@ ACCEPT monetdb://[::1]:12345/foo
 EXPECT connect_unix=
 EXPECT connect_tcp=::1
 EXPECT database=foo
+```
+
+```test
+REJECT monetdb://[::1]banana/foo
 ```
 
 Bad percent escapes:

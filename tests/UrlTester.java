@@ -2,7 +2,6 @@ import org.monetdb.mcl.net.*;
 
 import java.io.*;
 import java.net.URISyntaxException;
-import java.util.Properties;
 
 public class UrlTester {
     String filename = null;
@@ -10,8 +9,8 @@ public class UrlTester {
     BufferedReader reader = null;
     int lineno = 0;
     int testCount = 0;
-    Properties props = null;
-    Target validated = null;
+    Target target = null;
+    Target.Validated validated = null;
 
     public UrlTester() {
     }
@@ -21,12 +20,29 @@ public class UrlTester {
     }
 
     public static void main(String[] args) throws Exception {
+        checkDefaults();
+
         int exitcode;
         UrlTester tester = new UrlTester();
         exitcode = tester.parseArgs(args);
         if (exitcode == 0)
             exitcode = tester.run();
         System.exit(exitcode);
+    }
+
+    private static void checkDefaults() {
+        Target target = new Target();
+
+        for (Parameter parm: Parameter.values()) {
+            Object expected = parm.getDefault();
+            if (expected == null)
+                continue;
+            Object actual = target.getObject(parm);
+            if (!expected.equals(actual)) {
+                System.err.println("Default for " + parm.name + " expected to be <" + expected + "> but is <" + actual + ">");
+                System.exit(1);
+            }
+        }
     }
 
     private int parseArgs(String[] args) {
@@ -107,18 +123,18 @@ public class UrlTester {
 
     private void processLine(String line) throws Failure {
         line = line.replaceFirst("\\s+$", ""); // remove trailing
-        if (props == null && line.equals("```test")) {
+        if (target == null && line.equals("```test")) {
             if (verbose >= 2) {
                 if (testCount > 0) {
                     System.out.println();
                 }
                 System.out.println("\u25B6 " + filename + ":" + lineno);
             }
-            props = Target.defaultProperties();
+            target = new Target();
             testCount++;
             return;
         }
-        if (props != null) {
+        if (target != null) {
             if (line.equals("```")) {
                 stopProcessing();
                 return;
@@ -128,7 +144,7 @@ public class UrlTester {
     }
 
     private void stopProcessing() {
-        props = null;
+        target = null;
         validated = null;
     }
 
@@ -205,7 +221,11 @@ public class UrlTester {
         String key = splitKey(rest);
         String value = splitValue(rest);
 
-        props.put(key, value);
+        try {
+            target.setString(key, value);
+        } catch (ValidationError e) {
+            throw new Failure(e.getMessage());
+        }
     }
 
     private void handleParse(String rest, Boolean shouldSucceed) throws Failure {
@@ -214,14 +234,17 @@ public class UrlTester {
 
         validated = null;
         try {
-            MonetUrlParser.parse(props, rest);
+            target.barrier();
+            MonetUrlParser.parse(target, rest);
         } catch (URISyntaxException e) {
             parseError = e;
+        } catch (ValidationError e) {
+            validationError = e;
         }
 
-        if (parseError == null) {
+        if (parseError == null && validationError == null) {
             try {
-                validated = new Target(props);
+                tryValidate();
             } catch (ValidationError e) {
                 validationError = e;
             }
@@ -269,63 +292,14 @@ public class UrlTester {
         throw new Failure("Expected " + key + "=<" + expectedString + ">, found <" + actual + ">");
     }
 
-    private Target tryValidate() throws ValidationError {
+    private Target.Validated tryValidate() throws ValidationError {
         if (validated == null)
-            validated = new Target(props);
+            validated = target.validate();
         return validated;
     }
 
     private Object extract(String key) throws ValidationError, Failure {
         switch (key) {
-            case "tls":
-                return Target.validateBoolean(props, Parameter.TLS);
-            case "host":
-                return Target.validateString(props, Parameter.HOST);
-            case "port":
-                return Target.validateInt(props, Parameter.PORT);
-            case "database":
-                return Target.validateString(props, Parameter.DATABASE);
-            case "tableschema":
-                return Target.validateString(props, Parameter.TABLESCHEMA);
-            case "table":
-                return Target.validateString(props, Parameter.TABLE);
-            case "sock":
-                return Target.validateString(props, Parameter.SOCK);
-            case "sockdir":
-                return Target.validateString(props, Parameter.SOCKDIR);
-            case "cert":
-                return Target.validateString(props, Parameter.CERT);
-            case "certhash":
-                return Target.validateString(props, Parameter.CERTHASH);
-            case "clientkey":
-                return Target.validateString(props, Parameter.CLIENTKEY);
-            case "clientcert":
-                return Target.validateString(props, Parameter.CLIENTCERT);
-            case "user":
-                return Target.validateString(props, Parameter.USER);
-            case "password":
-                return Target.validateString(props, Parameter.PASSWORD);
-            case "language":
-                return Target.validateString(props, Parameter.LANGUAGE);
-            case "autocommit":
-                return Target.validateBoolean(props, Parameter.AUTOCOMMIT);
-            case "schema":
-                return Target.validateString(props, Parameter.SCHEMA);
-            case "timezone":
-                return Target.validateInt(props, Parameter.TIMEZONE);
-            case "binary":
-                return Target.validateString(props, Parameter.BINARY);
-            case "replysize":
-                return Target.validateInt(props, Parameter.REPLYSIZE);
-            case "fetchsize":
-                return Target.validateInt(props, Parameter.FETCHSIZE);
-            case "hash":
-                return Target.validateString(props, Parameter.HASH);
-            case "debug":
-                return Target.validateBoolean(props, Parameter.DEBUG);
-            case "logfile":
-                return Target.validateString(props, Parameter.LOGFILE);
-
             case "valid":
                 try {
                     tryValidate();
@@ -361,7 +335,11 @@ public class UrlTester {
                 return tryValidate().connectClientCert();
 
             default:
-                throw new Failure("Unknown attribute: " + key);
+                Parameter parm = Parameter.forName(key);
+                if (parm != null)
+                    return target.getObject(parm);
+                else
+                    throw new Failure("Unknown attribute: " + key);
         }
     }
 
