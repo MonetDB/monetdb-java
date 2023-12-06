@@ -190,6 +190,13 @@ public final class JdbcClient {
 				"statements read.  Batching can greatly speedup the " +
 				"process of restoring a database dump.");
 
+//	This  file can contain defaults for the flags user, password, language,
+//	database, save_history, format, host, port, and width.  For example, an
+
+		copts.addIgnored("save_history");
+		copts.addIgnored("format");
+		copts.addIgnored("width");
+
 		// we store user and password in separate variables in order to
 		// be able to properly act on them like forgetting the password
 		// from the user's file if the user supplies a username on the
@@ -325,11 +332,9 @@ public final class JdbcClient {
 			// make sure the driver class is loaded (and thus register itself with the DriverManager)
 			Class.forName("org.monetdb.jdbc.MonetDriver");
 
-			con = DriverManager.getConnection(
-					"jdbc:monetdb://" + host + "/" + database + attr,
-					user,
-					pass
-			);
+			String url = "jdbc:monetdb://" + host + "/" + database + attr;
+			System.err.println(url);
+			con = DriverManager.getConnection(url, user, pass);
 			SQLWarning warn = con.getWarnings();
 			while (warn != null) {
 				System.err.println("Connection warning: " + warn.getMessage());
