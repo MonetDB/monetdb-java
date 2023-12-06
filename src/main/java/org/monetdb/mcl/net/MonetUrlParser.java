@@ -27,31 +27,24 @@ public class MonetUrlParser {
     }
 
     public static void parse(Target target, String url) throws URISyntaxException, ValidationError {
-        boolean modern = true;
-        if (url.startsWith("mapi:")) {
-            modern = false;
-            url = url.substring(5);
-            if (url.equals("monetdb://")) {
-                // deal with peculiarity of Java's URI parser
-                url = "monetdb:///";
-            }
+        if (url.equals("monetdb://")) {
+            // deal with peculiarity of Java's URI parser
+            url = "monetdb:///";
         }
 
         target.barrier();
-        try {
-            MonetUrlParser parser = new MonetUrlParser(target, url);
-            if (modern) {
-                parser.parseModern();
-            } else {
+        if (url.startsWith("mapi:")) {
+            try {
+                MonetUrlParser parser = new MonetUrlParser(target, url.substring(5));
                 parser.parseClassic();
+            } catch (URISyntaxException e) {
+                URISyntaxException exc = new URISyntaxException(e.getInput(), e.getReason(), -1);
+                exc.setStackTrace(e.getStackTrace());
+                throw exc;
             }
-        } catch (URISyntaxException e) {
-            int idx = e.getIndex();
-            if (idx >= 0 && !modern) {
-                // "mapi:"
-                idx += 5;
-            }
-            throw new URISyntaxException(e.getInput(), e.getReason(), idx);
+        } else {
+            MonetUrlParser parser = new MonetUrlParser(target, url);
+            parser.parseModern();
         }
         target.barrier();
     }
@@ -89,7 +82,6 @@ public class MonetUrlParser {
         String host;
         String remainder;
         int pos;
-        String raw = url.getRawSchemeSpecificPart();
         if (authority == null) {
             if (!url.getRawSchemeSpecificPart().startsWith("//")) {
                 throw new URISyntaxException(urlText, "expected //");
@@ -173,22 +165,48 @@ public class MonetUrlParser {
     }
 
     private void parseClassic() throws URISyntaxException, ValidationError {
-        String scheme = url.getScheme();
-        if (scheme == null) throw new URISyntaxException(urlText, "URL scheme must be mapi:monetdb:// or mapi:merovingian://");
-        switch (scheme) {
-            case "monetdb":
-                clearBasic();
-                break;
-            case "merovingian":
-                throw new IllegalStateException("mapi:merovingian: not supported yet");
-            default:
-                throw new URISyntaxException(urlText, "URL scheme must be mapi:monetdb:// or mapi:merovingian://");
-        }
-
         if (!url.getRawSchemeSpecificPart().startsWith("//")) {
             throw new URISyntaxException(urlText, "expected //");
         }
 
+        String scheme = url.getScheme();
+        if (scheme == null)
+            scheme = "";
+        switch (scheme) {
+            case "monetdb":
+                parseClassicAuthorityAndPath();
+                break;
+            case "merovingian":
+                String authority = url.getRawAuthority();
+                // authority must be "proxy" ignore authority and path
+                boolean valid = urlText.startsWith("merovingian://proxy?") || urlText.equals("merovingian://proxy");
+                if (!valid)
+                    throw new URISyntaxException(urlText, "with mapi:merovingian:, only //proxy is supported");
+                break;
+            default:
+                throw new URISyntaxException(urlText, "URL scheme must be mapi:monetdb:// or mapi:merovingian://");
+        }
+
+        final String query = url.getRawQuery();
+        if (query != null) {
+            final String args[] = query.split("&");
+            for (int i = 0; i < args.length; i++) {
+                String arg = args[i];
+                if (arg.startsWith("language=")) {
+                    String language = arg.substring(9);
+                    target.setString(Parameter.LANGUAGE, language);
+                } else if (arg.startsWith("database=")) {
+                    String database = arg.substring(9);
+                    target.setString(Parameter.DATABASE, database);
+                } else {
+                    // ignore
+                }
+            }
+        }
+    }
+
+    private void parseClassicAuthorityAndPath() throws URISyntaxException, ValidationError {
+        clearBasic();
         String authority = url.getRawAuthority();
         String host;
         String portStr;
@@ -220,15 +238,12 @@ public class MonetUrlParser {
         }
 
         String path = url.getRawPath();
-        boolean isUnix;
         if (host.isEmpty() && portStr.isEmpty()) {
             // socket
-            isUnix = true;
             target.clear(Parameter.HOST);
             target.setString(Parameter.SOCK, path != null ? path : "");
         } else {
             // tcp
-            isUnix = false;
             target.clear(Parameter.SOCK);
             target.setString(Parameter.HOST, host);
             if (path == null || path.isEmpty()) {
@@ -240,29 +255,12 @@ public class MonetUrlParser {
                 target.setString(Parameter.DATABASE, database);
             }
         }
-
-        final String query = url.getRawQuery();
-        if (query != null) {
-            final String args[] = query.split("&");
-            for (int i = 0; i < args.length; i++) {
-                String arg = args[i];
-                if (arg.startsWith("language=")) {
-                    String language = arg.substring(9);
-                    target.setString(Parameter.LANGUAGE, language);
-                } else if (arg.startsWith("database=")) {
-                    String database = arg.substring(9);
-                    target.setString(Parameter.DATABASE, database);
-                } else {
-                    // ignore
-                }
-            }
-        }
     }
 
     private void clearBasic() {
+        target.clear(Parameter.TLS);
         target.clear(Parameter.HOST);
         target.clear(Parameter.PORT);
-        target.clear(Parameter.SOCK);
         target.clear(Parameter.DATABASE);
     }
 }

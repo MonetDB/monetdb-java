@@ -1457,6 +1457,40 @@ EXPECT language=sql
 ACCEPT mapi:monetdb://localhost:12345/db?_l%61nguage=mal
 ```
 
+
+## Merovingian URLs
+
+These occur in redirects.
+Leave host, port and database are not cleared the way the are
+for `monetdb:`, `monetdbs:` and `mapi:monetdb:` URLs.
+
+```test
+SET host=banana
+SET port=123
+SET tls=on
+SET sock=/tmp/sock
+SET database=dummy
+PARSE mapi:merovingian://proxy
+EXPECT host=banana
+EXPECT port=123
+EXPECT tls=on
+EXPECT sock=/tmp/sock
+EXPECT database=dummy
+PARSE mapi:merovingian://proxy?
+EXPECT host=banana
+EXPECT port=123
+EXPECT tls=on
+EXPECT sock=/tmp/sock
+EXPECT database=dummy
+PARSE mapi:merovingian://proxy?database=yeah&unknown=unknown
+EXPECT host=banana
+EXPECT port=123
+EXPECT tls=on
+EXPECT sock=/tmp/sock
+EXPECT database=yeah
+```
+
+
 # lalala Java
 
 ```test

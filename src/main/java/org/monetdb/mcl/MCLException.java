@@ -15,7 +15,11 @@ package org.monetdb.mcl;
 public final class MCLException extends Exception {
 	private static final long serialVersionUID = 1L;
 
-	public MCLException(String e) {
-		super(e);
+	public MCLException(String message) {
+		super(message);
+	}
+
+	public MCLException(String message, Exception cause) {
+		super(message, cause);
 	}
 }

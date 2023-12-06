@@ -35,6 +35,7 @@ public class Target {
     private boolean userWasSet = false;
     private boolean passwordWasSet = false;
     protected static final Target defaults = new Target();
+    private Validated validated = null;
 
     private static Pattern namePattern = Pattern.compile("^[a-zzA-Z_][-a-zA-Z0-9_.]*$");
     private static Pattern hashPattern = Pattern.compile("^sha256:[0-9a-fA-F:]*$");
@@ -171,6 +172,7 @@ public class Target {
 
     public void setTls(boolean tls) {
         this.tls = tls;
+        validated = null;
     }
 
     public String getHost() {
@@ -179,6 +181,7 @@ public class Target {
 
     public void setHost(String host) {
         this.host = host;
+        validated = null;
     }
 
     public int getPort() {
@@ -187,6 +190,7 @@ public class Target {
 
     public void setPort(int port) {
         this.port = port;
+        validated = null;
     }
 
     public String getDatabase() {
@@ -195,6 +199,7 @@ public class Target {
 
     public void setDatabase(String database) {
         this.database = database;
+        validated = null;
     }
 
     public String getTableschema() {
@@ -203,6 +208,7 @@ public class Target {
 
     public void setTableschema(String tableschema) {
         this.tableschema = tableschema;
+        validated = null;
     }
 
     public String getTable() {
@@ -211,6 +217,7 @@ public class Target {
 
     public void setTable(String table) {
         this.table = table;
+        validated = null;
     }
 
     public String getSock() {
@@ -219,6 +226,7 @@ public class Target {
 
     public void setSock(String sock) {
         this.sock = sock;
+        validated = null;
     }
 
     public String getSockdir() {
@@ -227,6 +235,7 @@ public class Target {
 
     public void setSockdir(String sockdir) {
         this.sockdir = sockdir;
+        validated = null;
     }
 
     public String getCert() {
@@ -235,6 +244,7 @@ public class Target {
 
     public void setCert(String cert) {
         this.cert = cert;
+        validated = null;
     }
 
     public String getCerthash() {
@@ -243,6 +253,7 @@ public class Target {
 
     public void setCerthash(String certhash) {
         this.certhash = certhash;
+        validated = null;
     }
 
     public String getClientkey() {
@@ -251,6 +262,7 @@ public class Target {
 
     public void setClientkey(String clientkey) {
         this.clientkey = clientkey;
+        validated = null;
     }
 
     public String getClientcert() {
@@ -259,6 +271,7 @@ public class Target {
 
     public void setClientcert(String clientcert) {
         this.clientcert = clientcert;
+        validated = null;
     }
 
     public String getUser() {
@@ -268,6 +281,7 @@ public class Target {
     public void setUser(String user) {
         this.user = user;
         this.userWasSet = true;
+        validated = null;
     }
 
     public String getPassword() {
@@ -277,6 +291,7 @@ public class Target {
     public void setPassword(String password) {
         this.password = password;
         this.passwordWasSet = true;
+        validated = null;
     }
 
     public String getLanguage() {
@@ -285,6 +300,7 @@ public class Target {
 
     public void setLanguage(String language) {
         this.language = language;
+        validated = null;
     }
 
     public boolean isAutocommit() {
@@ -293,6 +309,7 @@ public class Target {
 
     public void setAutocommit(boolean autocommit) {
         this.autocommit = autocommit;
+        validated = null;
     }
 
     public String getSchema() {
@@ -301,6 +318,7 @@ public class Target {
 
     public void setSchema(String schema) {
         this.schema = schema;
+        validated = null;
     }
 
     public int getTimezone() {
@@ -309,6 +327,7 @@ public class Target {
 
     public void setTimezone(int timezone) {
         this.timezone = timezone;
+        validated = null;
     }
 
     public String getBinary() {
@@ -317,6 +336,7 @@ public class Target {
 
     public void setBinary(String binary) {
         this.binary = binary;
+        validated = null;
     }
 
     public int getReplysize() {
@@ -325,6 +345,7 @@ public class Target {
 
     public void setReplysize(int replysize) {
         this.replysize = replysize;
+        validated = null;
     }
 
     public String getHash() {
@@ -333,6 +354,7 @@ public class Target {
 
     public void setHash(String hash) {
         this.hash = hash;
+        validated = null;
     }
 
     public boolean isDebug() {
@@ -341,6 +363,7 @@ public class Target {
 
     public void setDebug(boolean debug) {
         this.debug = debug;
+        validated = null;
     }
 
     public String getLogfile() {
@@ -349,6 +372,7 @@ public class Target {
 
     public void setLogfile(String logfile) {
         this.logfile = logfile;
+        validated = null;
     }
 
     public int getSoTimeout() {
@@ -358,10 +382,12 @@ public class Target {
 
     public void setSoTimeout(int soTimeout) {
         this.soTimeout = soTimeout;
+        validated = null;
     }
 
     public void setTreatClobAsVarchar(boolean treatClobAsVarchar) {
         this.treatClobAsVarchar = treatClobAsVarchar;
+        validated = null;
     }
 
     public boolean isTreatClobAsVarchar() {
@@ -374,10 +400,23 @@ public class Target {
 
     public void setTreatBlobAsBinary(boolean treatBlobAsBinary) {
         this.treatBlobAsBinary = treatBlobAsBinary;
+        validated = null;
     }
 
     public Validated validate() throws ValidationError {
-        return new Validated();
+        if (validated == null)
+            validated = new Validated();
+        return validated;
+    }
+
+    public String buildUrl() {
+        final StringBuilder sb = new StringBuilder(128);
+        sb.append("jdbc:monetdb://").append(host)
+                .append(':').append(port)
+                .append('/').append(database);
+        if (!language.equals("sql"))
+            sb.append("?language=").append(language);
+        return sb.toString();
     }
 
     public class Validated {
@@ -457,6 +496,10 @@ public class Target {
             // 9. If **clientcert** is set, **clientkey** must also be set.
             if (!clientcert.isEmpty() && clientkey.isEmpty())
                 throw new ValidationError("clientcert= is only valid in combination with clientkey=");
+
+            // JDBC specific
+            if (soTimeout < 0)
+                throw new ValidationError("so_timeout= must not be negative");
         }
 
         public boolean getTls() {

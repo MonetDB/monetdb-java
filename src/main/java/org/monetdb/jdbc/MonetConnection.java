@@ -25,7 +25,6 @@ import java.sql.SQLWarning;
 import java.sql.Savepoint;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -36,8 +35,8 @@ import java.util.concurrent.Executor;
 import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
 import org.monetdb.mcl.io.LineType;
-import org.monetdb.mcl.net.HandshakeOption;
 import org.monetdb.mcl.net.MapiSocket;
+import org.monetdb.mcl.net.Target;
 import org.monetdb.mcl.parser.HeaderLineParser;
 import org.monetdb.mcl.parser.MCLParseException;
 import org.monetdb.mcl.parser.StartOfHeaderParser;
@@ -74,17 +73,8 @@ public class MonetConnection
 	extends MonetWrapper
 	implements Connection, AutoCloseable
 {
-	/** The hostname to connect to */
-	private final String hostname;
-	/** The port to connect on the host to */
-	private int port;
-	/** The database to use (currently not used) */
-	private final String database;
-	/** The username to use when authenticating */
-	private final String username;
-	/** The password to use when authenticating */
-	private final String password;
-
+	/** All connection parameters */
+	Target target;
 	/** A connection to mserver5 using a TCP socket */
 	private final MapiSocket server;
 	/** The Reader from the server */
@@ -120,6 +110,9 @@ public class MonetConnection
 
 	/** The number of results we receive from the server at once */
 	private int curReplySize = 100;	// server default
+	private boolean sizeHeaderEnabled = false; // used during handshake
+	private boolean timeZoneSet = false; // used during handshake
+
 
 	/** A template to apply to each query (like pre and post fixes), filled in constructor */
 	// note: it is made public to the package as queryTempl[2] is used from MonetStatement
@@ -137,11 +130,6 @@ public class MonetConnection
 	/** The language which is used */
 	private final int lang;
 
-	/** Whether or not BLOB is mapped to Types.VARBINARY instead of Types.BLOB within this connection */
-	private boolean treatBlobAsVarBinary = true;	// turned on by default for optimal performance (from JDBC Driver release 3.0 onwards)
-	/** Whether or not CLOB is mapped to Types.VARCHAR instead of Types.CLOB within this connection */
-	private boolean treatClobAsVarChar = true;	// turned on by default for optimal performance (from JDBC Driver release 3.0 onwards)
-
 	/** The last set query timeout on the server as used by Statement, PreparedStatement and CallableStatement */
 	protected int lastSetQueryTimeout = 0;	// 0 means no timeout, which is the default on the server
 
@@ -155,137 +143,23 @@ public class MonetConnection
 	 * createStatement() call.  This constructor is only accessible to
 	 * classes from the jdbc package.
 	 *
-	 * @param props a Property hashtable holding the properties needed for connecting
+	 * @param target a Target object holding the connection parameters
 	 * @throws SQLException if a database error occurs
 	 * @throws IllegalArgumentException is one of the arguments is null or empty
 	 */
-	MonetConnection(final Properties props)
+	MonetConnection(Target target)
 		throws SQLException, IllegalArgumentException
 	{
-		HandshakeOption.AutoCommit autoCommitSetting = new HandshakeOption.AutoCommit(true);
-		HandshakeOption.ReplySize replySizeSetting = new HandshakeOption.ReplySize(DEF_FETCHSIZE);
-		HandshakeOption.SizeHeader sizeHeaderSetting = new HandshakeOption.SizeHeader(true);
-		HandshakeOption.TimeZone timeZoneSetting = new HandshakeOption.TimeZone(0);
-
-		// for debug: System.out.println("New connection object. Received properties are: " + props.toString());
-		// get supported property values from the props argument.
-		this.hostname = props.getProperty("host");
-
-		final String port_prop = props.getProperty("port");
-		if (port_prop != null) {
-			try {
-				this.port = Integer.parseInt(port_prop);
-			} catch (NumberFormatException e) {
-				addWarning("Unable to parse port number from: " + port_prop, "M1M05");
-			}
-		}
-
-		this.database = props.getProperty("database");
-		this.username = props.getProperty("user");
-		this.password = props.getProperty("password");
-		String language = props.getProperty("language");
-
-		boolean debug = false;
-		String debug_prop = props.getProperty("debug");
-		if (debug_prop != null) {
-			debug = Boolean.parseBoolean(debug_prop);
-		}
-
-		final String hash = props.getProperty("hash");
-
-		String autocommit_prop = props.getProperty("autocommit");
-		if (autocommit_prop != null) {
-			boolean ac = Boolean.parseBoolean(autocommit_prop);
-			autoCommitSetting.set(ac);
-		}
-
-		final String fetchsize_prop = props.getProperty("fetchsize");
-		if (fetchsize_prop != null) {
-			try {
-				int fetchsize = Integer.parseInt(fetchsize_prop);
-				if (fetchsize > 0 || fetchsize == -1) {
-					replySizeSetting.set(fetchsize);
-				} else {
-					addWarning("Fetch size must either be positive or -1. Value " + fetchsize + " ignored", "M1M05");
-				}
-			} catch (NumberFormatException e) {
-				addWarning("Unable to parse fetch size number from: " + fetchsize_prop, "M1M05");
-			}
-		}
-
-		final String treatBlobAsVarBinary_prop = props.getProperty("treat_blob_as_binary");
-		if (treatBlobAsVarBinary_prop != null) {
-			treatBlobAsVarBinary = Boolean.parseBoolean(treatBlobAsVarBinary_prop);
-			if (treatBlobAsVarBinary)
-				typeMap.put("blob", Byte[].class);
-		}
-
-		final String treatClobAsVarChar_prop = props.getProperty("treat_clob_as_varchar");
-		if (treatClobAsVarChar_prop != null) {
-			treatClobAsVarChar = Boolean.parseBoolean(treatClobAsVarChar_prop);
-			if (treatClobAsVarChar)
-				typeMap.put("clob", String.class);
-		}
-
-		int sockTimeout = 0;
-		final String so_timeout_prop = props.getProperty("so_timeout");
-		if (so_timeout_prop != null) {
-			try {
-				sockTimeout = Integer.parseInt(so_timeout_prop);
-				if (sockTimeout < 0) {
-					addWarning("Negative socket timeout not allowed. Value ignored", "M1M05");
-					sockTimeout = 0;
-				}
-			} catch (NumberFormatException e) {
-				addWarning("Unable to parse socket timeout number from: " + so_timeout_prop, "M1M05");
-			}
-		}
-
-		// check mandatory input arguments
-		if (hostname == null || hostname.isEmpty())
-			throw new IllegalArgumentException("Missing or empty host name");
-		if (port <= 0 || port > 65535)
-			throw new IllegalArgumentException("Invalid port number: " + port
-					+ ". It should not be " + (port < 0 ? "negative" : (port > 65535 ? "larger than 65535" : "0")));
-		if (username == null || username.isEmpty())
-			throw new IllegalArgumentException("Missing or empty user name");
-		if (password == null || password.isEmpty())
-			throw new IllegalArgumentException("Missing or empty password");
-		if (language == null || language.isEmpty()) {
-			// fallback to default language: sql
-			language = "sql";
-			addWarning("No language specified, defaulting to 'sql'", "M1M05");
-		}
-
-		// warn about unrecognized property names
-		for (Entry<Object,Object> e: props.entrySet()) {
-			checkValidProperty(e.getKey().toString(), "MonetConnection");
-		}
-
+		this.target = target;
 		server = new MapiSocket();
-		if (hash != null)
-			server.setHash(hash);
-		if (database != null)
-			server.setDatabase(database);
-		server.setLanguage(language);
-
-		// calculate our time zone offset
-		final Calendar cal = Calendar.getInstance();
-		final int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
-		final int offsetSeconds = offsetMillis / 1000;
-		timeZoneSetting.set(offsetSeconds);
-
-		server.setHandshakeOptions(new HandshakeOption<?>[] {
-				autoCommitSetting,
-				replySizeSetting,
-				sizeHeaderSetting,
-				timeZoneSetting,
-		});
 
 		// we're debugging here... uhm, should be off in real life
-		if (debug) {
+		if (target.isDebug()) {
 			try {
-				final String fname = props.getProperty("logfile", "monet_" + System.currentTimeMillis() + ".log");
+				String fname = target.getLogfile();
+				if (fname == null)
+					fname = "monet_" + System.currentTimeMillis() + ".log";
+
 				File f = new File(fname);
 
 				int ext = fname.lastIndexOf('.');
@@ -304,15 +178,36 @@ public class MonetConnection
 			}
 		}
 
+		SqlOptionsCallback callback = null;
+		switch (target.getLanguage()) {
+			case "sql":
+				lang = LANG_SQL;
+				queryTempl[0] = "s";		// pre
+				queryTempl[1] = "\n;";		// post
+				queryTempl[2] = "\n;\n";	// separator
+				commandTempl[0] = "X";		// pre
+				commandTempl[1] = "";		// post
+				callback = new SqlOptionsCallback();
+				break;
+			case "mal":
+				lang = LANG_MAL;
+				queryTempl[0] = "";		// pre
+				queryTempl[1] = ";\n";		// post
+				queryTempl[2] = ";\n";		// separator
+				commandTempl[0] = "";		// pre
+				commandTempl[1] = "";		// post
+				break;
+			default:
+				lang = LANG_UNKNOWN;
+				break;
+		}
+
 		try {
-			final java.util.List<String> warnings = server.connect(hostname, port, username, password);
+
+			final java.util.List<String> warnings = server.connect(target, callback);
 			for (String warning : warnings) {
 				addWarning(warning, "01M02");
 			}
-
-			// apply NetworkTimeout value from legacy (pre 4.1) driver
-			// so_timeout calls
-			server.setSoTimeout(sockTimeout);
 
 			in = server.getReader();
 			out = server.getWriter();
@@ -320,10 +215,8 @@ public class MonetConnection
 			final String error = in.discardRemainder();
 			if (error != null)
 				throw new SQLNonTransientConnectionException((error.length() > 6) ? error.substring(6) : error, "08001");
-		} catch (java.net.UnknownHostException e) {
-			throw new SQLNonTransientConnectionException("Unknown Host (" + hostname + "): " + e.getMessage(), "08006");
 		} catch (IOException e) {
-			throw new SQLNonTransientConnectionException("Unable to connect (" + hostname + ":" + port + "): " + e.getMessage(), "08006");
+			throw new SQLNonTransientConnectionException("Cannot connect: " + e.getMessage(), "08006");
 		} catch (MCLParseException e) {
 			throw new SQLNonTransientConnectionException(e.getMessage(), "08001");
 		} catch (org.monetdb.mcl.MCLException e) {
@@ -335,53 +228,17 @@ public class MonetConnection
 			throw sqle;
 		}
 
-		// we seem to have managed to log in, let's store the
-		// language used and language specific query templates
-		if ("sql".equals(language)) {
-			lang = LANG_SQL;
-
-			queryTempl[0] = "s";		// pre
-			queryTempl[1] = "\n;";		// post
-			queryTempl[2] = "\n;\n";	// separator
-
-			commandTempl[0] = "X";		// pre
-			commandTempl[1] = "";		// post
-			//commandTempl[2] = "\nX";	// separator (is not used)
-		} else if ("mal".equals(language)) {
-			lang = LANG_MAL;
-
-			queryTempl[0] = "";		// pre
-			queryTempl[1] = ";\n";		// post
-			queryTempl[2] = ";\n";		// separator
-
-			commandTempl[0] = "";		// pre
-			commandTempl[1] = "";		// post
-			//commandTempl[2] = "";		// separator (is not used)
-		} else {
-			lang = LANG_UNKNOWN;
-		}
-
 		// Now take care of any handshake options not handled during the handshake
-		if (replySizeSetting.isSent()) {
-			this.curReplySize = replySizeSetting.get();
-		}
-		this.defaultFetchSize = replySizeSetting.get();
+		curReplySize = defaultFetchSize;
 		if (lang == LANG_SQL) {
-			if (autoCommitSetting.mustSend(autoCommit)) {
-				setAutoCommit(autoCommitSetting.get());
-			} else {
-				// update bookkeeping
-				autoCommit = autoCommitSetting.get();
+			if (autoCommit != target.isAutocommit()) {
+				setAutoCommit(target.isAutocommit());
 			}
-			if (sizeHeaderSetting.mustSend(false)) {
+			if (!sizeHeaderEnabled) {
 				sendControlCommand("sizeheader 1");
-			} else {
-				// no bookkeeping to update
 			}
-			if (timeZoneSetting.mustSend(0)) {
-				setTimezone(timeZoneSetting.get());
-			} else {
-				// no bookkeeping to update
+			if (!timeZoneSet) {
+				setTimezone(target.getTimezone());
 			}
 		}
 
@@ -1780,7 +1637,7 @@ public class MonetConnection
 	 * @return whether the JDBC BLOB type should be mapped to VARBINARY type.
 	 */
 	boolean mapBlobAsVarBinary() {
-		return treatBlobAsVarBinary;
+		return target.isTreatBlobAsBinary();
 	}
 
 	/**
@@ -1791,7 +1648,7 @@ public class MonetConnection
 	 * @return whether the JDBC CLOB type should be mapped to VARCHAR type.
 	 */
 	boolean mapClobAsVarChar() {
-		return treatClobAsVarChar;
+		return target.isTreatClobAsVarchar();
 	}
 
 	/**
@@ -1800,13 +1657,7 @@ public class MonetConnection
 	 * @return the MonetDB JDBC Connection URL (without user name and password).
 	 */
 	String getJDBCURL() {
-		final StringBuilder sb = new StringBuilder(128);
-		sb.append("jdbc:monetdb://").append(hostname)
-			.append(':').append(port)
-			.append('/').append(database);
-		if (lang == LANG_MAL)
-			sb.append("?language=mal");
-		return sb.toString();
+		return target.buildUrl();
 	}
 
 	/**
@@ -3885,6 +3736,50 @@ public class MonetConnection
 			}
 			crPending = false;
 			super.close();
+		}
+	}
+
+	public static enum SqlOption {
+		Autocommit(1, "auto_commit"),
+		ReplySize(2, "reply_size"),
+		SizeHeader(3, "size_header"),
+		// NOTE: 4 has been omitted on purpose
+		TimeZone(5, "time_zone"),
+		;
+		final int level;
+		final String field;
+
+		SqlOption(int level, String field) {
+			this.level = level;
+			this.field = field;
+		}
+	}
+
+
+	private class SqlOptionsCallback extends MapiSocket.OptionsCallback {
+		private int level;
+		@Override
+		public void addOptions(String lang, int level) {
+			if (!lang.equals("sql"))
+				return;
+			this.level = level;
+
+			// Try to add options and record that this happened if it succeeds.
+			if (contribute(SqlOption.Autocommit, target.isAutocommit() ? 1 : 0))
+				autoCommit = target.isAutocommit();
+			if (contribute(SqlOption.ReplySize, target.getReplysize()))
+				defaultFetchSize = target.getReplysize();
+			if (contribute(SqlOption.SizeHeader, 1))
+				sizeHeaderEnabled = true;
+			if (contribute(SqlOption.TimeZone, target.getTimezone()))
+				timeZoneSet = true;
+		}
+
+		private boolean contribute(SqlOption opt, int value) {
+			if (this.level <= opt.level)
+				return false;
+			contribute(opt.field, value);
+			return true;
 		}
 	}
 }
