@@ -70,7 +70,11 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public boolean acceptsURL(final String url) {
-		return url != null && url.startsWith("jdbc:monetdb://");
+        if (url == null)
+			return false;
+        if (url.startsWith("jdbc:monetdb:") || url.startsWith("jdbc:monetdbs:"))
+			return true;
+        return false;
 	}
 
 	/**
@@ -105,6 +109,7 @@ public final class MonetDriver implements Driver {
 		Target target = new Target();
 
 		try {
+			// If properties are given, add those first
 			if (info != null) {
 				for (String key : info.stringPropertyNames()) {
 					String value = info.getProperty(key);
@@ -113,7 +118,13 @@ public final class MonetDriver implements Driver {
 					target.setString(key, value);
 				}
 			}
-			MonetUrlParser.parse(target, url.substring(5));
+
+			// If url is exactly "jdbc:monetdb:", use just the properties.
+			// This is different from, say, jdbc:monetdb://, because the
+			// latter will clear preexisting host, port, TLS and database settings.
+			// Useful in combination with Target.toProperties().
+			if (!url.equals("jdbc:monetdb:"))
+				MonetUrlParser.parse(target, url.substring(5));
 		} catch (ValidationError | URISyntaxException e) {
 			throw new SQLException(e.getMessage());
 		}
