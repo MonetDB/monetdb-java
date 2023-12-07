@@ -1476,46 +1476,32 @@ EXPECT port=123
 EXPECT tls=on
 EXPECT sock=/tmp/sock
 EXPECT database=dummy
+```
+
+```test
+SET host=banana
+SET port=123
+SET tls=on
+SET sock=/tmp/sock
+SET database=dummy
 PARSE mapi:merovingian://proxy?
 EXPECT host=banana
 EXPECT port=123
 EXPECT tls=on
 EXPECT sock=/tmp/sock
 EXPECT database=dummy
+```
+
+```test
+SET host=banana
+SET port=123
+SET tls=on
+SET sock=/tmp/sock
+SET database=dummy
 PARSE mapi:merovingian://proxy?database=yeah&unknown=unknown
 EXPECT host=banana
 EXPECT port=123
 EXPECT tls=on
 EXPECT sock=/tmp/sock
 EXPECT database=yeah
-```
-
-
-# lalala Java
-
-```test
-ONLY jdbc
-EXPECT so_timeout=0
-SET so_timeout=42
-EXPECT so_timeout=42
-ACCEPT monetdb://?so_timeout=99
-EXPECT so_timeout=99
-```
-
-```test
-ONLY jdbc
-EXPECT treat_clob_as_varchar=true
-SET treat_clob_as_varchar=off
-EXPECT treat_clob_as_varchar=false
-ACCEPT monetdb://?treat_clob_as_varchar=yes
-EXPECT treat_clob_as_varchar=on
-```
-
-```test
-ONLY jdbc
-EXPECT treat_blob_as_binary=true
-SET treat_blob_as_binary=off
-EXPECT treat_blob_as_binary=false
-ACCEPT monetdb://?treat_blob_as_binary=yes
-EXPECT treat_blob_as_binary=on
 ```

@@ -48,6 +48,9 @@ final public class JDBC_API_Tester {
 	public static void main(String[] args) throws Exception {
 		String con_URL = args[0];
 
+		// Test this before trying to connect
+		UrlTester.runAllTests();
+
 		JDBC_API_Tester jt = new JDBC_API_Tester();
 		jt.sb = new StringBuilder(sbInitLen);
 		jt.con = DriverManager.getConnection(con_URL);

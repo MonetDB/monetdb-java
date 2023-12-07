@@ -2,40 +2,107 @@ import org.monetdb.mcl.net.*;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 
 public class UrlTester {
-    String filename = null;
-    int verbose = 0;
-    BufferedReader reader = null;
+    final String filename;
+    final int verbose;
+    final BufferedReader reader;
     int lineno = 0;
     int testCount = 0;
     Target target = null;
     Target.Validated validated = null;
 
-    public UrlTester() {
-    }
-
-    public UrlTester(String filename) {
+    public UrlTester(String filename, BufferedReader reader, int verbose) {
         this.filename = filename;
+        this.verbose = verbose;
+        this.reader = reader;
     }
 
-    public static void main(String[] args) throws Exception {
-        checkDefaults();
-        checkParameters();
-
-        int exitcode;
-        UrlTester tester = new UrlTester();
-        exitcode = tester.parseArgs(args);
-        if (exitcode == 0)
-            exitcode = tester.run();
-        System.exit(exitcode);
+    public UrlTester(String filename, int verbose) throws IOException {
+        this.filename = filename;
+        this.verbose = verbose;
+        this.reader = new BufferedReader(new FileReader(filename));
     }
 
+    public static void main(String[] args) throws IOException {
+        ArrayList<String> filenames = new ArrayList<>();
+        int verbose = 0;
+        for (String arg : args) {
+            switch (arg) {
+                case "-vvv":
+                    verbose++;
+                case "-vv":
+                    verbose++;
+                case "-v":
+                    verbose++;
+                    break;
+                case "-h":
+                case "--help":
+                    exitUsage(null);
+                    break;
+                default:
+                    if (!arg.startsWith("-")) {
+                        filenames.add(arg);
+                    } else {
+                        exitUsage("Unexpected argument: " + arg);
+                    }
+                    break;
+            }
+        }
 
-    private static void checkDefaults() {
+        runUnitTests();
+
+        try {
+            if (filenames.isEmpty()) {
+                runAllTests();
+            } else {
+                for (String filename : filenames) {
+                    new UrlTester(filename, verbose).run();
+                }
+            }
+        } catch (Failure e) {
+            System.err.println("Test failed: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    private static void exitUsage(String message) {
+        if (message != null) {
+            System.err.println(message);
+        }
+        System.err.println("Usage: UrlTester OPTIONS [FILENAME..]");
+        System.err.println("Options:");
+        System.err.println("   -v        Be more verbose");
+        System.err.println("   -h --help Show this help");
+        int status = message == null ? 0 : 1;
+        System.exit(status);
+    }
+
+    public static UrlTester forResource(String resourceName, int verbose) throws FileNotFoundException {
+        InputStream stream = UrlTester.class.getResourceAsStream(resourceName);
+        if (stream == null) {
+            throw new FileNotFoundException("Resource " + resourceName);
+        }
+        BufferedReader reader = new BufferedReader(new InputStreamReader(stream));
+        return new UrlTester(resourceName, reader, verbose);
+    }
+
+    public static void runAllTests() throws IOException, Failure {
+        runUnitTests();
+        UrlTester.forResource("/tests.md", 0).run();
+        UrlTester.forResource("/javaspecific.md", 0).run();
+    }
+
+    public static void runUnitTests() {
+        testDefaults();
+        testParameters();
+    }
+
+    private static void testDefaults() {
         Target target = new Target();
 
-        for (Parameter parm: Parameter.values()) {
+        for (Parameter parm : Parameter.values()) {
             Object expected = parm.getDefault();
             if (expected == null)
                 continue;
@@ -46,8 +113,8 @@ public class UrlTester {
         }
     }
 
-    private static void checkParameters() {
-        for (Parameter parm: Parameter.values()) {
+    private static void testParameters() {
+        for (Parameter parm : Parameter.values()) {
             Parameter found = Parameter.forName(parm.name);
             if (parm != found) {
                 String foundStr = found != null ? found.name : "null";
@@ -56,66 +123,16 @@ public class UrlTester {
         }
     }
 
-    private int parseArgs(String[] args) {
-        for (int i = 0; i < args.length; i++) {
-            String arg = args[i];
-            if (arg.startsWith("-")) {
-                int result = handleFlags(arg);
-                if (result != 0)
-                    return result;
-            } else if (filename == null) {
-                filename = arg;
-            } else {
-                System.err.println("Unexpected argument: " + arg);
-                return 1;
-            }
-        }
-        return 0;
-    }
-
-    private int run() throws IOException {
-        if (filename != null) {
-            reader = new BufferedReader(new FileReader(filename));
-        } else {
-            String resourceName = "/tests.md";
-            InputStream stream = this.getClass().getResourceAsStream(resourceName);
-            if (stream == null) {
-                System.err.println("Resource " + resourceName + " not found");
-                return 1;
-            }
-            reader = new BufferedReader(new InputStreamReader(stream));
-            filename = "tests/tests.md";
-        }
-
+    public void run() throws Failure, IOException {
         try {
             processFile();
         } catch (Failure e) {
-            System.err.println("" + filename + ":" + lineno + ": " + e.getMessage());
-            return 1;
-        }
-        return 0;
-    }
-
-    private int handleFlags(String arg) {
-        if (!arg.startsWith("-") || arg.equals("-")) {
-            System.err.println("Invalid flag: " + arg);
-        }
-        String a = arg.substring(1);
-
-        while (!a.isEmpty()) {
-            char letter = a.charAt(0);
-            a = a.substring(1);
-            switch (letter) {
-                case 'v':
-                    verbose++;
-                    break;
-                default:
-                    System.err.println("Unexpected flag " + letter + " in " + arg);
-                    return -1;
+            if (e.getFilename() == null) {
+                e.setFilename(filename);
+                e.setLineno(lineno);
+                throw e;
             }
         }
-
-        return 0;
     }
 
     private void processFile() throws IOException, Failure {
@@ -198,7 +215,7 @@ public class UrlTester {
 
     private void handleOnly(boolean mustBePresent, String rest) throws Failure {
         boolean found = false;
-        for (String part: rest.split("\\s+")) {
+        for (String part : rest.split("\\s+")) {
             if (part.equals("jdbc")) {
                 found = true;
                 break;
@@ -329,10 +346,14 @@ public class UrlTester {
                 return tryValidate().connectTcp();
             case "connect_tls_verify":
                 switch (tryValidate().connectVerify()) {
-                    case None: return "";
-                    case Cert: return "cert";
-                    case Hash: return "hash";
-                    case System: return "system";
+                    case None:
+                        return "";
+                    case Cert:
+                        return "cert";
+                    case Hash:
+                        return "hash";
+                    case System:
+                        return "system";
                     default:
                         throw new IllegalStateException("unreachable");
                 }
@@ -354,9 +375,40 @@ public class UrlTester {
         }
     }
 
-    private class Failure extends Exception {
+    public static class Failure extends Exception {
+        private String filename = null;
+        private int lineno = -1;
+
         public Failure(String message) {
             super(message);
+        }
+
+        @Override
+        public String getMessage() {
+            StringBuilder buffer = new StringBuilder();
+            if (filename != null) {
+                buffer.append(filename).append(":");
+                if (lineno >= 0)
+                    buffer.append(lineno).append(":");
+            }
+            buffer.append(super.getMessage());
+            return buffer.toString();
+        }
+
+        public String getFilename() {
+            return filename;
+        }
+
+        public void setFilename(String filename) {
+            this.filename = filename;
+        }
+
+        public int getLineno() {
+            return lineno;
+        }
+
+        public void setLineno(int lineno) {
+            this.lineno = lineno;
         }
     }
 }
