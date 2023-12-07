@@ -345,7 +345,7 @@ public final class MapiSocket {
 		con = sock;
 	}
 
-	private Socket wrapTLS(Socket sock, Target.Validated validated) throws MCLException {
+	private Socket wrapTLS(Socket sock, Target.Validated validated) throws IOException {
 		if (validated.getTls())
 			return SecureSocket.wrap(validated, sock);
 		return sock;
