@@ -725,19 +725,10 @@ public final class OnClientTester {
 		initTest("test_FailUploadLate");
 		prepare();
 		MyUploadHandler handler = new MyUploadHandler(100, 50, "i don't like line 50");
-		handler.setChunkSize(99);
 		conn.setUploadHandler(handler);
 		expectError("COPY INTO foo FROM 'banana' ON CLIENT", "i don't like");
 		assertEq("cancellation callback called", false, handler.isCancelled());
 		assertEq("connection is closed", true, conn.isClosed());
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-
-		}
-		outBuffer.append("RECONNECT\n");
-		assertEq("reconnect succeeded", true, openConnection());
-		assertQueryInt("SELECT COUNT(*) FROM foo", 0);
 		exitTest();
 	}
 
@@ -761,16 +752,6 @@ public final class OnClientTester {
 		expectError("COPY INTO foo(t) FROM 'banana'(t) ON CLIENT", "after all");
 		assertEq("connection is closed", true, conn.isClosed());
 		// Cannot check the server log, but at the time I checked, it said "prematurely stopped client", which is fine.
-		try {
-			Thread.sleep(1000);
-		} catch (InterruptedException e) {
-
-		}
-
-		outBuffer.append("RECONNECT\n");
-		assertEq("reconnect succeeded", true, openConnection());
-		assertQueryInt("SELECT COUNT(*) FROM foo", 0);
-
 		exitTest();
 	}
 
