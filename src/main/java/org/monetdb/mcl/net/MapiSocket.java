@@ -347,7 +347,7 @@ public final class MapiSocket {
 
 	private Socket wrapTLS(Socket sock, Target.Validated validated) throws MCLException {
 		if (validated.getTls())
-			throw new MCLException("TLS connections (monetdbs://) are not supported yet");
+			return SecureSocket.wrap(validated, sock);
 		return sock;
 	}
 

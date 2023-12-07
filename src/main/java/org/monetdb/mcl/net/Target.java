@@ -660,4 +660,11 @@ public class Target {
             return clientcert.isEmpty() ? clientkey : clientcert;
         }
     }
+
+    public enum Verify {
+        None,
+        Cert,
+        Hash,
+        System;
+    }
 }
