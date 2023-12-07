@@ -1,7 +1,5 @@
 package org.monetdb.mcl.net;
 
-import java.util.Calendar;
-import java.util.Properties;
 import java.util.regex.Pattern;
 
 public class Target {
@@ -24,7 +22,7 @@ public class Target {
     private String schema = "";
     private int timezone;
     private String binary = "on";
-    private int replysize = 200;
+    private int replySize = 200;
     private String hash = "";
     private boolean debug = false;
     private String logfile = "";
@@ -101,8 +99,8 @@ public class Target {
             case SCHEMA: setSchema((String)value); break;
             case TIMEZONE: setTimezone((int)value); break;
             case BINARY: setBinary((String)value); break;
-            case REPLYSIZE: setReplysize((int)value); break;
-            case FETCHSIZE: setReplysize((int)value); break;
+            case REPLYSIZE: setReplySize((int)value); break;
+            case FETCHSIZE: setReplySize((int)value); break;
             case HASH: setHash((String)value); break;
             case DEBUG: setDebug((boolean)value); break;
             case LOGFILE: setLogfile((String)value); break;
@@ -142,8 +140,8 @@ public class Target {
             case SCHEMA: return schema;
             case TIMEZONE: return timezone;
             case BINARY: return binary;
-            case REPLYSIZE: return replysize;
-            case FETCHSIZE: return replysize;
+            case REPLYSIZE: return replySize;
+            case FETCHSIZE: return replySize;
             case HASH: return hash;
             case DEBUG: return debug;
             case LOGFILE: return logfile;
@@ -339,12 +337,12 @@ public class Target {
         validated = null;
     }
 
-    public int getReplysize() {
-        return replysize;
+    public int getReplySize() {
+        return replySize;
     }
 
-    public void setReplysize(int replysize) {
-        this.replysize = replysize;
+    public void setReplySize(int replySize) {
+        this.replySize = replySize;
         validated = null;
     }
 
@@ -582,8 +580,8 @@ public class Target {
             return nbinary;
         }
 
-        public int getReplysize() {
-            return replysize;
+        public int getReplySize() {
+            return replySize;
         }
 
         public String getHash() {

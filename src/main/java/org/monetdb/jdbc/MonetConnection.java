@@ -3767,8 +3767,8 @@ public class MonetConnection
 			// Try to add options and record that this happened if it succeeds.
 			if (contribute(SqlOption.Autocommit, target.isAutocommit() ? 1 : 0))
 				autoCommit = target.isAutocommit();
-			if (contribute(SqlOption.ReplySize, target.getReplysize()))
-				defaultFetchSize = target.getReplysize();
+			if (contribute(SqlOption.ReplySize, target.getReplySize()))
+				defaultFetchSize = target.getReplySize();
 			if (contribute(SqlOption.SizeHeader, 1))
 				sizeHeaderEnabled = true;
 			if (contribute(SqlOption.TimeZone, target.getTimezone()))
