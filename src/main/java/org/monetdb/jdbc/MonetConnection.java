@@ -41,6 +41,8 @@ import org.monetdb.mcl.parser.HeaderLineParser;
 import org.monetdb.mcl.parser.MCLParseException;
 import org.monetdb.mcl.parser.StartOfHeaderParser;
 
+import javax.net.ssl.SSLException;
+
 /**
  *<pre>
  * A {@link Connection} suitable for the MonetDB database.
@@ -215,8 +217,10 @@ public class MonetConnection
 			final String error = in.discardRemainder();
 			if (error != null)
 				throw new SQLNonTransientConnectionException((error.length() > 6) ? error.substring(6) : error, "08001");
+		} catch (SSLException e) {
+			throw new SQLNonTransientConnectionException("Cannot establish secure connection: " + e.getMessage(), e);
 		} catch (IOException e) {
-			throw new SQLNonTransientConnectionException("Cannot connect: " + e.getMessage(), "08006");
+			throw new SQLNonTransientConnectionException("Cannot connect: " + e.getMessage(), "08006", e);
 		} catch (MCLParseException e) {
 			throw new SQLNonTransientConnectionException(e.getMessage(), "08001");
 		} catch (org.monetdb.mcl.MCLException e) {

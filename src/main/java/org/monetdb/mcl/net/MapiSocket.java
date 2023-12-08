@@ -346,10 +346,11 @@ public final class MapiSocket {
 	}
 
 	private Socket wrapTLS(Socket sock, Target.Validated validated) throws IOException {
-		if (validated.getTls())
-			return SecureSocket.wrap(validated, sock);
-		return sock;
-	}
+        if (validated.getTls())
+            return SecureSocket.wrap(validated, sock);
+        else
+            return sock;
+    }
 
 	private boolean handshake(Target.Validated validated, OptionsCallback callback, ArrayList<String> warnings) throws IOException, MCLException {
 		String challenge = reader.getLine();
