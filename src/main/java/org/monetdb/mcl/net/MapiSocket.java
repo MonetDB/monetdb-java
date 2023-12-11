@@ -86,6 +86,7 @@ import org.monetdb.mcl.parser.MCLParseException;
  * @see org.monetdb.mcl.io.BufferedMCLWriter
  */
 public final class MapiSocket {
+	public static final byte[] NUL_BYTES = new byte[]{ 0, 0, 0, 0, 0, 0, 0, 0, };
 	private static final String[][] KNOWN_ALGORITHMS = new String[][] {
 			{"SHA512", "SHA-512"},
 			{"SHA384", "SHA-384"},
@@ -348,8 +349,18 @@ public final class MapiSocket {
 	private Socket wrapTLS(Socket sock, Target.Validated validated) throws IOException {
         if (validated.getTls())
             return SecureSocket.wrap(validated, sock);
-        else
-            return sock;
+        else {
+			// Send an even number of NUL bytes.
+			// We expect the server to speak MAPI and in that case, it's a NOP.
+			// If we're accidentally connecting to a TLS server, the bytes are
+			// invalid as a Client Hello message and most TLS implementations
+			// drop the connection.
+			// This is nice because otherwise we would hang, as the TLS server
+			// is waiting for us to send a TLS CLient Hello, and we are waiting
+			// for a MAPI server to send a server challenge.
+			sock.getOutputStream().write(NUL_BYTES);
+		}
+        return sock;
     }
 
 	private boolean handshake(Target.Validated validated, OptionsCallback callback, ArrayList<String> warnings) throws IOException, MCLException {

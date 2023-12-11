@@ -131,7 +131,7 @@ public class TLSTester {
 //        test_connect_client_auth1();
 //        test_connect_client_auth2();
         test_fail_tls_to_plain();
-//        test_fail_plain_to_tls();
+        test_fail_plain_to_tls();
 //        test_connect_server_name();
 //        test_connect_alpn_mapi9();
         test_connect_trusted();
@@ -193,7 +193,7 @@ public class TLSTester {
     }
 
     private void test_fail_plain_to_tls() throws IOException, SQLException {
-        attempt("fail_plain_to_tls", "server1").with(Parameter.TLS, false).expectFailure("asdf");
+        attempt("fail_plain_to_tls", "server1").with(Parameter.TLS, false).expectFailure("Cannot connect");
     }
 
     private void test_connect_server_name() throws IOException, SQLException {
