@@ -9,7 +9,9 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.stream.Collectors;
 
 public class TLSTester {
     int verbose = 0;
@@ -19,6 +21,7 @@ public class TLSTester {
     boolean enableTrusted = false;
     File tempDir = null;
     final HashMap<String, File> fileCache = new HashMap<>();
+    private HashSet<String> preparedButNotRun = new HashSet<>();
 
     public TLSTester(String[] args) {
         for (int i = 0; i < args.length; i++) {
@@ -133,9 +136,15 @@ public class TLSTester {
         test_fail_tls_to_plain();
         test_fail_plain_to_tls();
         test_connect_server_name();
-//        test_connect_alpn_mapi9();
+        test_connect_alpn_mapi9();
         test_connect_trusted();
         test_refuse_trusted_wrong_host();
+
+        // did we forget to call expectSucceed and expectFailure somewhere?
+        if (!preparedButNotRun.isEmpty()) {
+            String names = String.join(", ", preparedButNotRun);
+            throw new RuntimeException("Not all tests called expectSuccess/expectFailure: " + names);
+        }
     }
 
     private void test_connect_plain() throws IOException, SQLException {
@@ -202,24 +211,27 @@ public class TLSTester {
     }
 
     private void test_connect_alpn_mapi9() throws IOException, SQLException {
-        attempt("connect_alpn_mapi9", "");
+        attempt("connect_alpn_mapi9", "alpn_mapi9")
+                .withFile(Parameter.CERT, "/ca1.crt")
+                .expectSuccess();
     }
 
     private void test_connect_trusted() throws IOException, SQLException {
-        attempt("connect_trusted", "alpn_mapi9")
+        attempt("connect_trusted", null)
                 .with(Parameter.HOST, "monetdb.ergates.nl")
                 .with(Parameter.PORT, 50000)
                 .expectSuccess();
     }
 
     private void test_refuse_trusted_wrong_host() throws IOException, SQLException {
-        attempt("connect_trusted", null)
+        attempt("test_refuse_trusted_wrong_host", null)
                 .with(Parameter.HOST, "monetdbxyz.ergates.nl")
                 .with(Parameter.PORT, 50000)
                 .expectFailure("No subject alternative DNS name");
     }
 
     private Attempt attempt(String testName, String portName) throws IOException {
+        preparedButNotRun.add(testName);
         return new Attempt(testName, portName);
     }
 
@@ -268,6 +280,7 @@ public class TLSTester {
         }
 
         public void expectSuccess() throws SQLException {
+            preparedButNotRun.remove(testName);
             if (disabled)
                 return;
             try {

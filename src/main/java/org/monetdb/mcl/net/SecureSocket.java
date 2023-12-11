@@ -3,17 +3,18 @@ package org.monetdb.mcl.net;
 import javax.net.ssl.*;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.Socket;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
-import java.util.List;
 
 public class SecureSocket {
     private static final String[] ENABLED_PROTOCOLS = {"TLSv1.3"};
-    final String[] APPLICATION_PROTOCOLS = {"mapi/9"};
+    private static final String[] APPLICATION_PROTOCOLS = {"mapi/9"};
 
     public static Socket wrap(Target.Validated validated, Socket inner) throws IOException {
         Target.Verify verify = validated.connectVerify();
@@ -43,17 +44,26 @@ public class SecureSocket {
 
     private static SSLSocket wrapSocket(Socket inner, Target.Validated validated, SSLSocketFactory socketFactory, boolean checkName) throws IOException {
         SSLSocket sock = (SSLSocket) socketFactory.createSocket(inner, validated.connectTcp(), validated.connectPort(), true);
-
         sock.setUseClientMode(true);
-        sock.setEnabledProtocols(ENABLED_PROTOCOLS);
+        SSLParameters parameters = sock.getSSLParameters();
+
+        parameters.setProtocols(ENABLED_PROTOCOLS);
+
+        parameters.setServerNames(Collections.singletonList(new SNIHostName(validated.connectTcp())));
 
         if (checkName) {
-            SSLParameters parameters = sock.getSSLParameters();
-            SNIServerName serverName = new SNIHostName(validated.connectTcp());
-            parameters.setServerNames(Collections.singletonList(serverName));
             parameters.setEndpointIdentificationAlgorithm("HTTPS");
-            sock.setSSLParameters(parameters);
         }
+
+        // Unfortunately, SSLParameters.setApplicationProtocols is only available
+        // since language level 9 and currently we're on 8.
+        // Still call it if it happens to be available.
+        try {
+            Method setApplicationProtocols = SSLParameters.class.getMethod("setApplicationProtocols", String[].class);
+            setApplicationProtocols.invoke(parameters, (Object) APPLICATION_PROTOCOLS);
+        } catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException ignored) {}
+
+        sock.setSSLParameters(parameters);
         sock.startHandshake();
         return sock;
     }
