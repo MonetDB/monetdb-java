@@ -8,6 +8,8 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
+import java.util.Collections;
+import java.util.List;
 
 public class SecureSocket {
     private static final String[] ENABLED_PROTOCOLS = {"TLSv1.3"};
@@ -16,30 +18,27 @@ public class SecureSocket {
     public static Socket wrap(Target.Validated validated, Socket inner) throws IOException {
         Target.Verify verify = validated.connectVerify();
         SSLSocketFactory socketFactory;
+        boolean checkName = true;
         try {
             switch (verify) {
                 case System:
                     socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
-                    return wrapSocket(inner, validated, socketFactory, true);
+                    break;
                 case Cert:
-                        KeyStore keyStore = keyStoreForCert(validated.getCert());
-                        socketFactory = certBasedSocketFactory(keyStore);
-                    return wrapSocket(inner, validated, socketFactory, true);
+                    KeyStore keyStore = keyStoreForCert(validated.getCert());
+                    socketFactory = certBasedSocketFactory(keyStore);
+                    break;
                 case Hash:
-                    return wrapHash(validated, inner);
+                    socketFactory = hashBasedSocketFactory(validated.connectCertHashDigits());
+                    checkName = false;
+                    break;
                 default:
                     throw new RuntimeException("unreachable: unexpected verification strategy " + verify.name());
             }
+            return wrapSocket(inner, validated, socketFactory, checkName);
         } catch (CertificateException e) {
             throw new SSLException(e.getMessage(), e);
         }
-    }
-
-    private static Socket wrapHash(Target.Validated validated, Socket inner) throws IOException, CertificateException {
-        SSLSocketFactory socketFactory = hashBasedSocketFactory(validated.connectCertHashDigits());
-        SSLSocket sock = wrapSocket(inner, validated, socketFactory, false);
-
-        return sock;
     }
 
     private static SSLSocket wrapSocket(Socket inner, Target.Validated validated, SSLSocketFactory socketFactory, boolean checkName) throws IOException {
@@ -50,6 +49,8 @@ public class SecureSocket {
 
         if (checkName) {
             SSLParameters parameters = sock.getSSLParameters();
+            SNIServerName serverName = new SNIHostName(validated.connectTcp());
+            parameters.setServerNames(Collections.singletonList(serverName));
             parameters.setEndpointIdentificationAlgorithm("HTTPS");
             sock.setSSLParameters(parameters);
         }

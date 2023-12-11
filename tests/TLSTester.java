@@ -132,7 +132,7 @@ public class TLSTester {
 //        test_connect_client_auth2();
         test_fail_tls_to_plain();
         test_fail_plain_to_tls();
-//        test_connect_server_name();
+        test_connect_server_name();
 //        test_connect_alpn_mapi9();
         test_connect_trusted();
         test_refuse_trusted_wrong_host();
