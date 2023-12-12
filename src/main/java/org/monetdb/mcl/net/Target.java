@@ -22,7 +22,7 @@ public class Target {
     private String schema = "";
     private int timezone;
     private String binary = "on";
-    private int replySize = 200;
+    private int replySize = 250;
     private String hash = "";
     private boolean debug = false;
     private String logfile = "";

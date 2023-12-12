@@ -23,7 +23,7 @@ public enum Parameter {
     SCHEMA("schema", ParameterType.Str, "", "initial schema", false),
     TIMEZONE("timezone", ParameterType.Int, null, "client time zone as minutes east of UTC", false),
     BINARY("binary", ParameterType.Str, "on", "whether to use binary result set format (number or bool)", false),
-    REPLYSIZE("replysize", ParameterType.Int, 200, "rows beyond this limit are retrieved on demand, <1 means unlimited", false),
+    REPLYSIZE("replysize", ParameterType.Int, 250, "rows beyond this limit are retrieved on demand, <1 means unlimited", false),
     FETCHSIZE("fetchsize", ParameterType.Int, null, "alias for replysize, specific to jdbc", false),
     HASH("hash", ParameterType.Str, "", "specific to jdbc", false),
     DEBUG("debug", ParameterType.Bool, false, "specific to jdbc", false),
