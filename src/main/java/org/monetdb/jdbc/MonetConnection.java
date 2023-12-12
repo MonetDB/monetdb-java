@@ -1248,6 +1248,10 @@ public class MonetConnection
 		return isValid;
 	}
 
+	public Properties getConnectionProperties() {
+		return target.getProperties();
+	}
+
 	/**
 	 * Returns the value of the client info property specified by name.
 	 * This method may return null if the specified client info property

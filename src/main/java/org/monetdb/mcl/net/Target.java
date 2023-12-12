@@ -467,6 +467,21 @@ public class Target {
         return sb.toString();
     }
 
+    public Properties getProperties() {
+        Properties props = new Properties();
+        for (Parameter parm: Parameter.values()) {
+            Object defaultValue = parm.getDefault();
+            if (defaultValue == null || defaultValue.equals(getObject(parm)))
+                continue;
+            String value = getString(parm);
+            if (parm == Parameter.HOST)
+                value = packHost(host);
+            props.setProperty(parm.name, value);
+        }
+
+        return props;
+    }
+
     public class Validated {
 
         private final int nbinary;
