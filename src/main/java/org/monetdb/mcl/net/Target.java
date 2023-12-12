@@ -1,5 +1,7 @@
 package org.monetdb.mcl.net;
 
+import java.net.URISyntaxException;
+import java.util.Properties;
 import java.util.regex.Pattern;
 
 public class Target {
@@ -40,6 +42,12 @@ public class Target {
 
     public Target() {
         this.timezone = (int)Parameter.TIMEZONE.getDefault();
+    }
+
+    public Target(String url, Properties props) throws URISyntaxException, ValidationError {
+        this();
+        setProperties(props);
+        parseUrl(url);
     }
 
     public void barrier() {
@@ -87,6 +95,28 @@ public class Target {
 
     public void clear(Parameter parm) {
         assign(parm, parm.getDefault());
+    }
+
+    public void setProperties(Properties props) throws ValidationError {
+        if (props != null) {
+            for (String key : props.stringPropertyNames()) {
+                String value = props.getProperty(key);
+                if (key.equals(Parameter.HOST.name))
+                    value = Target.unpackHost(value);
+                setString(key, value);
+            }
+        }
+    }
+
+    public void parseUrl(String url) throws URISyntaxException, ValidationError {
+        if (url == null)
+            return;
+        if (url.startsWith("jdbc:"))
+            url = url.substring(5);
+        if (url.equals("monetdb:")) {
+            return;
+        }
+        MonetUrlParser.parse(this, url);
     }
 
     private void assign(Parameter parm, Object value) {

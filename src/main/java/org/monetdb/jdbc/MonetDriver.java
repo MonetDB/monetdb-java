@@ -106,31 +106,12 @@ public final class MonetDriver implements Driver {
 		if (!acceptsURL(url))
 			return null;
 
-		Target target = new Target();
-
 		try {
-			// If properties are given, add those first
-			if (info != null) {
-				for (String key : info.stringPropertyNames()) {
-					String value = info.getProperty(key);
-					if (key.equals(Parameter.HOST.name))
-						value = Target.unpackHost(value);
-					target.setString(key, value);
-				}
-			}
-
-			// If url is exactly "jdbc:monetdb:", use just the properties.
-			// This is different from, say, jdbc:monetdb://, because the
-			// latter will clear preexisting host, port, TLS and database settings.
-			// Useful in combination with Target.toProperties().
-			if (!url.equals("jdbc:monetdb:"))
-				MonetUrlParser.parse(target, url.substring(5));
+			Target target = new Target(url, info);
+			return new MonetConnection(target);
 		} catch (ValidationError | URISyntaxException e) {
 			throw new SQLException(e.getMessage());
 		}
-
-        // finally return the Connection object as requested
-		return new MonetConnection(target);
 	}
 
 	/**
