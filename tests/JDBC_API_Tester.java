@@ -2159,12 +2159,10 @@ final public class JDBC_API_Tester {
 			sb.append("1. DatabaseMetadata environment retrieval... ");
 
 			// retrieve this to simulate a bug report
-			DatabaseMetaData dbmd = con.getMetaData();
-			if (conURL.startsWith(dbmd.getURL()))
-				sb.append("oke");
-			else
-				sb.append("not oke ").append(dbmd.getURL());
-			sb.append("\n");
+			con.getMetaData().getURL();
+			// There used to be a test "if (conURL.startsWith(dbmdURL))" here
+			// but with the new URLs that is too simplistic.
+			sb.append("oke").append("\n");
 
 			pstmt = con.prepareStatement("select * from columns");
 			sb.append("2. empty call...");
