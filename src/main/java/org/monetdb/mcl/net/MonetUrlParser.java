@@ -4,6 +4,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLDecoder;
+import java.net.URLEncoder;
 
 public class MonetUrlParser {
     private final Target target;
@@ -49,13 +50,21 @@ public class MonetUrlParser {
         target.barrier();
     }
 
-    private static String percentDecode(String context, String text) throws URISyntaxException {
+    public static String percentDecode(String context, String text) throws URISyntaxException {
         try {
             return URLDecoder.decode(text, "UTF-8");
         } catch (UnsupportedEncodingException e) {
             throw new IllegalStateException("should be unreachable: UTF-8 unknown??", e);
         } catch (IllegalArgumentException e) {
             throw new URISyntaxException(text, context + ": invalid percent escape");
+        }
+    }
+
+    public static String percentEncode(String text) {
+        try {
+            return URLEncoder.encode(text, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
         }
     }
 

@@ -409,11 +409,31 @@ public class Target {
 
     public String buildUrl() {
         final StringBuilder sb = new StringBuilder(128);
-        sb.append("jdbc:monetdb://").append(host)
-                .append(':').append(port)
-                .append('/').append(database);
-        if (!language.equals("sql"))
-            sb.append("?language=").append(language);
+        sb.append("jdbc:");
+        sb.append(tls ? "monetdbs": "monetdb");
+        sb.append("://");
+        sb.append(packHost(host));
+        if (!Parameter.PORT.getDefault().equals(port)) {
+            sb.append(':');
+            sb.append(port);
+        }
+        sb.append('/').append(database);
+        String sep = "?";
+        for (Parameter parm: Parameter.values()) {
+            if (parm.isCore || parm == Parameter.USER || parm == Parameter.PASSWORD)
+                continue;
+            Object defaultValue = parm.getDefault();
+            if (defaultValue == null)
+                continue;
+            Object value = getObject(parm);
+            if (value.equals(defaultValue))
+                continue;
+            sb.append(sep).append(parm.name).append('=');
+            String raw = getString(parm);
+            String encoded = MonetUrlParser.percentEncode(raw);
+            sb.append(encoded);
+            sep = "&";
+        }
         return sb.toString();
     }
 
