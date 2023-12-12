@@ -12,13 +12,11 @@ import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
+import java.sql.Date;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Iterator;
-import java.util.List;
-import java.util.TimeZone;
+import java.util.*;
 
+import org.monetdb.jdbc.MonetConnection;
 import org.monetdb.jdbc.types.INET;
 import org.monetdb.jdbc.types.URL;
 
@@ -6728,20 +6726,11 @@ final public class JDBC_API_Tester {
 
 		org.monetdb.mcl.net.MapiSocket server = new org.monetdb.mcl.net.MapiSocket();
 		try {
-			server.setLanguage("sql");
-
-			// extract from conn_URL the used connection properties
-			String host = extractFromJDBCURL(conn_URL, "host");
-			int port = Integer.parseInt(extractFromJDBCURL(conn_URL, "port"));
-			String login = extractFromJDBCURL(conn_URL, "user");
-			String passw = extractFromJDBCURL(conn_URL, "password");
-			String database = extractFromJDBCURL(conn_URL, "database");
-			// sb.append("conn_URL: " + conn_URL + "\n");
-			// sb.append("host: " + host + " port: " + port + " dbname: " + database + " login: " + login + " passwd: " + passw + "\n");
+			MonetConnection mcon = (MonetConnection) con;
+			Properties props = mcon.getConnectionProperties();
 
 			sb.append("Before connecting to MonetDB server via MapiSocket\n");
-			server.setDatabase(database);
-			List<String> warning = server.connect(host, port, login, passw);
+			List<String> warning = server.connect("jdbc:monetdb:", props);
 			if (warning != null) {
 				for (Iterator<String> it = warning.iterator(); it.hasNext(); ) {
 					sb.append("Warning: ").append(it.next().toString()).append("\n");
