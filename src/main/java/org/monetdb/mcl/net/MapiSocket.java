@@ -21,12 +21,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import org.monetdb.mcl.MCLException;
@@ -261,6 +256,10 @@ public final class MapiSocket {
 		target.setUser(user);
 		target.setPassword(pass);
 		return connect(target, null);
+	}
+
+	public List<String> connect(String url, Properties props) throws URISyntaxException, ValidationError, MCLException, MCLParseException, IOException {
+		return connect(new Target(url, props), null);
 	}
 
 	public List<String> connect(Target target, OptionsCallback callback) throws MCLException, MCLParseException, IOException {
@@ -694,7 +693,6 @@ public final class MapiSocket {
 	public boolean isDebug() {
 		return target.isDebug();
 	}
-
 
 	/**
 	 * Inner class that is used to write data on a normal stream as a
