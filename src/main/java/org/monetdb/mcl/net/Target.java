@@ -60,6 +60,17 @@ public class Target {
         }
     }
 
+    public static String unpackHost(String host) {
+        switch (host) {
+            case "localhost.":
+                return "localhost";
+            case "localhost":
+                return "";
+            default:
+                return host;
+        }
+    }
+
     public void setString(String key, String value) throws ValidationError {
         Parameter parm = Parameter.forName(key);
         if (parm != null)
@@ -150,17 +161,6 @@ public class Target {
             case BLOB_AS_BINARY: return treatBlobAsBinary;
             default:
                 throw new IllegalStateException("unreachable -- missing case");
-        }
-    }
-
-    public static String unpackHost(String host) {
-        switch (host) {
-            case "localhost.":
-                return "localhost";
-            case "localhost":
-                return "";
-            default:
-                return host;
         }
     }
 
