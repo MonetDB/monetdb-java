@@ -8,19 +8,11 @@
 
 package org.monetdb.jdbc;
 
-import org.monetdb.mcl.net.MonetUrlParser;
-import org.monetdb.mcl.net.Parameter;
 import org.monetdb.mcl.net.Target;
 import org.monetdb.mcl.net.ValidationError;
 
 import java.net.URISyntaxException;
-import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.DriverPropertyInfo;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.Types;
+import java.sql.*;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -70,11 +62,9 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public boolean acceptsURL(final String url) {
-        if (url == null)
+		if (url == null)
 			return false;
-        if (url.startsWith("jdbc:monetdb:") || url.startsWith("jdbc:monetdbs:"))
-			return true;
-        return false;
+		return url.startsWith("jdbc:monetdb:") || url.startsWith("jdbc:monetdbs:");
 	}
 
 	/**

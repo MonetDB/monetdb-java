@@ -22,7 +22,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import org.monetdb.mcl.MCLException;
 import org.monetdb.mcl.io.BufferedMCLReader;
@@ -81,7 +80,12 @@ import org.monetdb.mcl.parser.MCLParseException;
  * @see org.monetdb.mcl.io.BufferedMCLWriter
  */
 public final class MapiSocket {
-	public static final byte[] NUL_BYTES = new byte[]{ 0, 0, 0, 0, 0, 0, 0, 0, };
+	/* an even number of NUL bytes used during the handshake */
+	private static final byte[] NUL_BYTES = new byte[]{ 0, 0, 0, 0, 0, 0, 0, 0, };
+
+	/* A mapping between hash algorithm names as used in the MAPI
+	 * protocol, and the names by which the Java runtime knows them.
+	 */
 	private static final String[][] KNOWN_ALGORITHMS = new String[][] {
 			{"SHA512", "SHA-512"},
 			{"SHA384", "SHA-384"},
@@ -262,6 +266,26 @@ public final class MapiSocket {
 		return connect(new Target(url, props), null);
 	}
 
+		/**
+	 * Connect according to the settings in the 'target' parameter.
+	 * If followRedirect is false, a RedirectionException is
+	 * thrown when a redirect is encountered.
+	 * 
+	 * Some settings, such as the initial reply size, can already be configured
+	 * during the handshake, saving a command round-trip later on.
+	 * To do so, create and pass a subclass of {@link MapiSocket.OptionsCallback}.
+	 * 
+	 * @param target the connection settings
+	 * @param callback will be called if the server allows options to be set during the
+	 * initial handshake
+	 * @return A List with informational (warning) messages. If this
+	 *		list is empty; then there are no warnings.
+	 * @throws IOException if an I/O error occurs when creating the socket
+	 * @throws SocketException - if there is an error in the underlying protocol, such as a TCP error.
+	 * @throws UnknownHostException if the IP address of the host could not be determined
+	 * @throws MCLParseException if bogus data is received
+	 * @throws MCLException if an MCL related error occurs
+	 */
 	public List<String> connect(Target target, OptionsCallback callback) throws MCLException, MCLParseException, IOException {
 		// get rid of any earlier connection state, including the existing target
 		close();
@@ -521,7 +545,7 @@ public final class MapiSocket {
             }
             return digest;
         }
-		String algoNames = algos.stream().collect(Collectors.joining());
+		String algoNames = String.join(",", algos);
 		throw new MCLException("No supported hash algorithm: " + algoNames);
 	}
 
@@ -1448,9 +1472,35 @@ public final class MapiSocket {
 		}
 	}
 
+	/**
+	 * Callback used during the initial MAPI handshake.
+	 * 
+	 * Newer MonetDB versions allow setting some options during the handshake.
+	 * The options are language-specific and each has a 'level'. The server
+	 * advertises up to which level options are supported for a given language
+	 * and for each language/option combination, {@link addOptions} will be invoked.
+	 * It should call {@link contribute} for each option it wants to set.
+	 * 
+	 * At the time of writing, only the 'sql' language supports options,
+	 * they are listed in enum mapi_handshake_options_levels in mapi.h.
+	 */
 	public static abstract class OptionsCallback {
 		private StringBuilder buffer;
 
+		/**
+		 * Callback called for each language/level combination supported by the
+		 * server. May call {@link contribute} for options with a level STRICTLY
+		 * LOWER than the level passed as a parameter.
+		 * @param lang language advertised by the server
+		 * @param level one higher than the maximum supported option
+		 */
+		public abstract void addOptions(String lang, int level);
+
+		/**
+		 * Pass option=value during the handshake
+		 * @param field
+		 * @param value
+		 */
 		protected void contribute(String field, int value) {
 			if (buffer.length() > 0)
 				buffer.append(',');
@@ -1459,7 +1509,6 @@ public final class MapiSocket {
 			buffer.append(value);
 		}
 
-		public abstract void addOptions(String lang, int level);
 
 		void setBuffer(StringBuilder buf) {
 			buffer = buf;

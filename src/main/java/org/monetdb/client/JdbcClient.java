@@ -192,9 +192,6 @@ public final class JdbcClient {
 				"statements read.  Batching can greatly speedup the " +
 				"process of restoring a database dump.");
 
-//	This  file can contain defaults for the flags user, password, language,
-//	database, save_history, format, host, port, and width.  For example, an
-
 		copts.addIgnored("save_history");
 		copts.addIgnored("format");
 		copts.addIgnored("width");

@@ -75,7 +75,7 @@ public class MonetConnection
 	extends MonetWrapper
 	implements Connection, AutoCloseable
 {
-	/** All connection parameters */
+	/* All connection parameters */
 	Target target;
 	/** A connection to mserver5 using a TCP socket */
 	private final MapiSocket server;
@@ -139,13 +139,11 @@ public class MonetConnection
 	private DatabaseMetaData dbmd;
 
 	/**
-	 * Constructor of a Connection for MonetDB. At this moment the
-	 * current implementation limits itself to storing the given host,
-	 * database, username and password for later use by the
-	 * createStatement() call.  This constructor is only accessible to
+	 * Constructor of a Connection for MonetDB.
+	 * This constructor is only accessible to
 	 * classes from the jdbc package.
 	 *
-	 * @param target a Target object holding the connection parameters
+	 * @param target a {@link Target} object containing all connection parameters
 	 * @throws SQLException if a database error occurs
 	 * @throws IllegalArgumentException is one of the arguments is null or empty
 	 */
@@ -184,20 +182,20 @@ public class MonetConnection
 		switch (target.getLanguage()) {
 			case "sql":
 				lang = LANG_SQL;
-				queryTempl[0] = "s";		// pre
-				queryTempl[1] = "\n;";		// post
-				queryTempl[2] = "\n;\n";	// separator
-				commandTempl[0] = "X";		// pre
-				commandTempl[1] = "";		// post
+				queryTempl[0] = "s";        // pre
+				queryTempl[1] = "\n;";      // post
+				queryTempl[2] = "\n;\n";    // separator
+				commandTempl[0] = "X";      // pre
+				commandTempl[1] = "";       // post
 				callback = new SqlOptionsCallback();
 				break;
 			case "mal":
 				lang = LANG_MAL;
-				queryTempl[0] = "";		// pre
-				queryTempl[1] = ";\n";		// post
-				queryTempl[2] = ";\n";		// separator
-				commandTempl[0] = "";		// pre
-				commandTempl[1] = "";		// post
+				queryTempl[0] = "";         // pre
+				queryTempl[1] = ";\n";      // post
+				queryTempl[2] = ";\n";      // separator
+				commandTempl[0] = "";       // pre
+				commandTempl[1] = "";       // post
 				break;
 			default:
 				lang = LANG_UNKNOWN;
@@ -1247,6 +1245,15 @@ public class MonetConnection
 		}
 		return isValid;
 	}
+
+	/**
+	 * Construct a Properties object holding all connection parameters such
+	 * as host, port, TLS configuration, autocommit, etc.
+	 * Passing this to {@link DriverManager.getConnection()} together
+	 * with the URL "jdbc:monetdb:" will create a new connection identical to
+	 * the current one.
+	 * @return
+	 */
 
 	public Properties getConnectionProperties() {
 		return target.getProperties();
@@ -3747,7 +3754,8 @@ public class MonetConnection
 		}
 	}
 
-	public static enum SqlOption {
+	/* encode knowledge of currently available handshake options as an enum. */
+	enum SqlOption {
 		Autocommit(1, "auto_commit"),
 		ReplySize(2, "reply_size"),
 		SizeHeader(3, "size_header"),
@@ -3766,6 +3774,7 @@ public class MonetConnection
 
 	private class SqlOptionsCallback extends MapiSocket.OptionsCallback {
 		private int level;
+
 		@Override
 		public void addOptions(String lang, int level) {
 			if (!lang.equals("sql"))
@@ -3784,7 +3793,7 @@ public class MonetConnection
 		}
 
 		private boolean contribute(SqlOption opt, int value) {
-			if (this.level <= opt.level)
+			if (opt.level >= this.level)
 				return false;
 			contribute(opt.field, value);
 			return true;
