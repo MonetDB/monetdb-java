@@ -2897,7 +2897,7 @@ public class MonetConnection
 		@Override
 		public void close() {
 			// feed all rows to the garbage collector
-            Arrays.fill(data, null);
+			Arrays.fill(data, null);
 		}
 
 		/**

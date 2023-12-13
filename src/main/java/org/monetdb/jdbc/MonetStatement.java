@@ -1571,7 +1571,7 @@ final class MonetVirtualResultSet extends MonetResultSet {
 		if (row < 1 || row > tupleCount)
 			return false;
 
-        System.arraycopy(results[row - 1], 0, tlp.values, 0, results[row - 1].length);
+		System.arraycopy(results[row - 1], 0, tlp.values, 0, results[row - 1].length);
 
 		return true;
 	}
