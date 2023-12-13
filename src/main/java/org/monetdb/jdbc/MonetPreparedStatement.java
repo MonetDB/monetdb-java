@@ -944,7 +944,13 @@ public class MonetPreparedStatement
 		// simply serialise the Reader data into a large buffer
 		final CharBuffer buf = CharBuffer.allocate((int)length); // have to down cast
 		try {
-			reader.read(buf);
+			long foo = 0;
+			while (foo < length) {
+				int n = reader.read(buf);
+				if (n < 0)
+					throw new SQLException("Stream ended unexpectedly at position " + foo + " out of " + length);
+				foo += n;
+			}
 			// We have to rewind the buffer, because otherwise toString() returns "".
 			buf.rewind();
 			setString(parameterIndex, buf.toString());
