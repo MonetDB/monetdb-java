@@ -774,9 +774,9 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getColumns(null, "sys", "table\\_types", null), "getColumns(null, sys, table\\_types, null)",
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
-			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	int	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
 			"null	sys	table_types	table_type_id	5	smallint	16	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
-			"null	sys	table_types	table_type_name	12	varchar	25	0	0	0	0	null	null	0	0	25	2	NO	null	null	null	null	NO	NO\n");
+			"null	sys	table_types	table_type_name	12	varchar	25	0	0	0	0	null	null	0	0	100	2	NO	null	null	null	null	NO	NO\n");
 
 			compareResultSet(dbmd.getPrimaryKeys(null, "sys", "table\\_types"), "getPrimaryKeys(null, sys, table\\_types)",
 			"Resultset with 6 columns\n" +
@@ -1028,6 +1028,8 @@ final public class JDBC_API_Tester {
 			"CREATE LOCAL TEMP TABLE tmp.tmp_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE);");
 		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs",
 			"CREATE GLOBAL TEMP TABLE tmp.glbl_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE);");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tlargechar",
+			"CREATE TEMP TABLE tlargechar (c1 varchar(2147483647), c2 char(2147483646), c3 clob(2147483645), c4 json(2147483644), c5 url(2147483643)) ON COMMIT PRESERVE ROWS;");
 		/* next 3 tables copied from example in https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlforeignkeys-function?view=sql-server-ver15 */
 		handleExecuteDDL(stmt, action, objtype, "\"CUSTOMERS\"",
 			"CREATE TABLE \"CUSTOMERS\" (\"CUSTID\" INT PRIMARY KEY, \"NAME\" VARCHAR(60) NOT NULL, \"ADDRESS\" VARCHAR(90), \"PHONE\" VARCHAR(20));");
@@ -1155,6 +1157,12 @@ final public class JDBC_API_Tester {
 			"null	jdbctst	pk2c	TABLE	null	null	null	null	null	null\n" +
 			"null	jdbctst	pk_uc	TABLE	jdbctst.pk_uc table comment	null	null	null	null	null\n");
 
+			compareResultSet(dbmd.getTables(null, "tmp", "tlargechar", null), "getTables(null, tmp, tlargechar, null)",
+			"Resultset with 10 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(25)	varchar(1048576)	char(1)	char(1)	char(1)	char(1)	char(1)\n" +
+			"null	tmp	tlargechar	LOCAL TEMPORARY TABLE	null	null	null	null	null	null\n");
+
 			compareResultSet(dbmd.getTables(null, "jdbctst", "schemas", null), "getTables(null, jdbctst, schemas, null)",
 			"Resultset with 10 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
@@ -1163,9 +1171,19 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getColumns(null, "jdbctst", "pk\\_uc", null), "getColumns(null, jdbctst, pk\\_uc, null)",
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
-			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	int	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
 			"null	jdbctst	pk_uc	id1	4	int	32	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
-			"null	jdbctst	pk_uc	name1	12	varchar	99	0	0	0	1	null	null	0	0	99	2	YES	null	null	null	null	NO	NO\n");
+			"null	jdbctst	pk_uc	name1	12	varchar	99	0	0	0	1	null	null	0	0	396	2	YES	null	null	null	null	NO	NO\n");
+
+			compareResultSet(dbmd.getColumns(null, "tmp", "tlargechar", null), "getColumns(null, tmp, tlargechar, null)",
+			"Resultset with 24 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
+			"null	tmp	tlargechar	c1	12	varchar	2147483647	0	0	0	1	null	null	0	0	8589934588	1	YES	null	null	null	null	NO	NO\n" +
+			"null	tmp	tlargechar	c2	1	char	2147483646	0	0	0	1	null	null	0	0	8589934584	2	YES	null	null	null	null	NO	NO\n" +
+			"null	tmp	tlargechar	c3	2005	clob	2147483645	0	0	0	1	null	null	0	0	8589934580	3	YES	null	null	null	null	NO	NO\n" +
+			"null	tmp	tlargechar	c4	12	json	2147483644	0	0	0	1	null	null	0	0	8589934576	4	YES	null	null	null	null	NO	NO\n" +
+			"null	tmp	tlargechar	c5	12	url	2147483643	0	0	0	1	null	null	0	0	8589934572	5	YES	null	null	null	null	NO	NO\n");
 
 			compareResultSet(dbmd.getPrimaryKeys(null, "jdbctst", "pk\\_uc"), "getPrimaryKeys(null, jdbctst, pk\\_uc)",
 			"Resultset with 6 columns\n" +
@@ -1398,6 +1416,7 @@ final public class JDBC_API_Tester {
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs", "DROP TABLE jdbctst.nopk_twoucs;");
 		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_nopk_twoucs", "DROP TABLE tmp.tmp_nopk_twoucs;");
 		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs", "DROP TABLE tmp.glbl_nopk_twoucs;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tlargechar", "DROP TABLE tmp.tlargechar;");
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.\"LINES\"", "DROP TABLE jdbctst.\"LINES\";");
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.\"ORDERS\"", "DROP TABLE jdbctst.\"ORDERS\";");
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.\"CUSTOMERS\"", "DROP TABLE jdbctst.\"CUSTOMERS\";");
