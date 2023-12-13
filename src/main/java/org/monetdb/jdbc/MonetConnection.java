@@ -24,13 +24,8 @@ import java.sql.SQLNonTransientConnectionException;
 import java.sql.SQLWarning;
 import java.sql.Savepoint;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.Map.Entry;
-import java.util.Properties;
-import java.util.WeakHashMap;
 import java.util.concurrent.Executor;
 
 import org.monetdb.mcl.io.BufferedMCLReader;
@@ -2902,8 +2897,7 @@ public class MonetConnection
 		@Override
 		public void close() {
 			// feed all rows to the garbage collector
-			for (int i = 0; i < data.length; i++)
-				data[i] = null;
+            Arrays.fill(data, null);
 		}
 
 		/**
