@@ -689,7 +689,7 @@ public class MonetStatement
 	 */
 	@Override
 	public int getMaxFieldSize() {
-		return 2*1024*1024*1024 - 2;	// MonetDB supports null terminated strings of max 2GB, see function: int UTF8_strlen()
+		return 0x7ffffffe;	// MonetDB supports null terminated strings of max 2GB, see function: int UTF8_strlen()
 	}
 
 	/**
