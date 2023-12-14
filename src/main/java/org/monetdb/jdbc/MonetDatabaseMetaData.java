@@ -1815,7 +1815,7 @@ public final class MonetDatabaseMetaData
 			"cast(null as char(1)) AS \"COLUMN_DEF\", " +
 			"cast(0 as int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 as int) AS \"SQL_DATETIME_SUB\", " +
-			"cast(CASE WHEN a.\"type\" IN ('varchar','clob','char','json','url','xml') THEN 4 * a.\"type_digits\" WHEN a.\"type\" = 'blob' THEN a.\"type_digits\" ELSE NULL END as bigint) AS \"CHAR_OCTET_LENGTH\", " +
+			"cast(CASE WHEN a.\"type\" IN ('varchar','clob','char','json','url','xml') THEN 4 * cast(a.\"type_digits\" as bigint) WHEN a.\"type\" = 'blob' THEN a.\"type_digits\" ELSE NULL END as bigint) AS \"CHAR_OCTET_LENGTH\", " +
 			// in MonetDB procedures have no return value by design. The arguments in sys.args are numbered from 0 so we must add 1 to comply with the API specification.
 			"cast(a.\"number\" + 1 as int) AS \"ORDINAL_POSITION\", " +
 			"cast('' as varchar(3)) AS \"IS_NULLABLE\", " +
@@ -2131,7 +2131,7 @@ public final class MonetDatabaseMetaData
 			"c.\"default\" AS \"COLUMN_DEF\", " +
 			"cast(0 as int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 as int) AS \"SQL_DATETIME_SUB\", " +
-			"cast(CASE WHEN c.\"type\" IN ('varchar','clob','char','json','url','xml') THEN 4 * c.\"type_digits\" ELSE NULL END as bigint) AS \"CHAR_OCTET_LENGTH\", " +
+			"cast(CASE WHEN c.\"type\" IN ('varchar','clob','char','json','url','xml') THEN 4 * cast(c.\"type_digits\" as bigint) ELSE NULL END as bigint) AS \"CHAR_OCTET_LENGTH\", " +
 			"cast(c.\"number\" + 1 as int) AS \"ORDINAL_POSITION\", " +
 			"cast(CASE c.\"null\" WHEN true THEN 'YES' WHEN false THEN 'NO' ELSE '' END AS varchar(3)) AS \"IS_NULLABLE\", " +
 			"cast(null AS char(1)) AS \"SCOPE_CATALOG\", " +
@@ -4046,7 +4046,7 @@ public final class MonetDatabaseMetaData
 			// mvd: do not remove next append. The String above is same as used by getProcedureColumns, so shared in class file.
 			"cast(").append(DatabaseMetaData.functionNullableUnknown).append(" AS smallint) AS \"NULLABLE\", " +
 			"cast(null as char(1)) AS \"REMARKS\", " +
-			"cast(CASE WHEN a.\"type\" IN ('varchar','clob','char','json','url','xml') THEN 4 * a.\"type_digits\" WHEN a.\"type\" = 'blob' THEN a.\"type_digits\" ELSE NULL END as bigint) AS \"CHAR_OCTET_LENGTH\", " +
+			"cast(CASE WHEN a.\"type\" IN ('varchar','clob','char','json','url','xml') THEN 4 * cast(a.\"type_digits\" as bigint) WHEN a.\"type\" = 'blob' THEN a.\"type_digits\" ELSE NULL END as bigint) AS \"CHAR_OCTET_LENGTH\", " +
 			"cast(a.\"number\" as int) AS \"ORDINAL_POSITION\", " +
 			"cast('' as varchar(3)) AS \"IS_NULLABLE\", " +
 			// the specific name contains the function id, in order to be able to match the args to the correct overloaded function name
