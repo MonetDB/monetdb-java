@@ -433,11 +433,13 @@ public final class MonetDriver implements Driver {
 			case Types.DATE:
 				return java.sql.Date.class;
 			case Types.TIME:
-			case Types.TIME_WITH_TIMEZONE:
 				return java.sql.Time.class;
+			case Types.TIME_WITH_TIMEZONE:
+				return java.time.OffsetTime.class;
 			case Types.TIMESTAMP:
-			case Types.TIMESTAMP_WITH_TIMEZONE:
 				return java.sql.Timestamp.class;
+			case Types.TIMESTAMP_WITH_TIMEZONE:
+				return java.time.OffsetDateTime.class;
 			case Types.CLOB:
 				return java.sql.Clob.class;
 			case Types.BLOB:
