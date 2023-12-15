@@ -112,7 +112,12 @@ public final class MapiSocket {
 	/** protocol version of the connection */
 	private int version;
 
-	/** Whether we should follow redirects */
+	/** Whether we should follow redirects.
+	 * Not sure why this needs to be separate
+	 * from 'ttl' but someone someday explicitly documented setTtl
+	 * with 'to disable completely, use followRedirects' so
+	 * apparently there is a use case.
+	 */
 	private boolean followRedirects = true;
 	/** How many redirections do we follow until we're fed up with it? */
 	private int ttl = 10;
@@ -316,7 +321,7 @@ public final class MapiSocket {
 				if (!ok)
 					close();
 			}
-		} while (attempts++ < this.ttl);
+		} while (followRedirects && attempts++ < this.ttl);
 		throw new MCLException("max redirect count exceeded");
 	}
 
