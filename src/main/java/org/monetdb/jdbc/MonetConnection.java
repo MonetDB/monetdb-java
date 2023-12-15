@@ -112,9 +112,6 @@ public class MonetConnection
 
 	/** The number of results we receive from the server at once */
 	private int curReplySize = 100;	// server default
-	private boolean sizeHeaderEnabled = false; // used during handshake
-	private boolean timeZoneSet = false; // used during handshake
-
 
 	/** A template to apply to each query (like pre and post fixes), filled in constructor */
 	// note: it is made public to the package as queryTempl[2] is used from MonetStatement
@@ -236,10 +233,10 @@ public class MonetConnection
 			if (autoCommit != target.isAutocommit()) {
 				setAutoCommit(target.isAutocommit());
 			}
-			if (!sizeHeaderEnabled) {
+			if (!callback.sizeHeaderEnabled) {
 				sendControlCommand("sizeheader 1");
 			}
-			if (!timeZoneSet) {
+			if (!callback.timeZoneSet) {
 				setTimezone(target.getTimezone());
 			}
 		}
@@ -3774,6 +3771,9 @@ public class MonetConnection
 
 	private class SqlOptionsCallback extends MapiSocket.OptionsCallback {
 		private int level;
+		boolean sizeHeaderEnabled = false; // used during handshake
+		boolean timeZoneSet = false; // used during handshake
+
 
 		@Override
 		public void addOptions(String lang, int level) {
