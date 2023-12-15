@@ -503,8 +503,7 @@ public final class MapiSocket {
 		return response.toString();
 	}
 
-	// challengePart, passwordHashPart, supportedHashesPart, target.getPassword()
-	private String hashPassword(String salt, String password, String passwordAlgo, String configuredHashes, String serverSupportedAlgos) throws MCLException {
+	private String hashPassword(StringBuilder responseBuffer, String salt, String password, String passwordAlgo, String configuredHashes, String serverSupportedAlgos) throws MCLException {
 		// First determine which hash algorithms we can choose from for the challenge response.
 		// This defaults to whatever the server offers but may be restricted by the user.
 		Set<String> algoSet  = new HashSet<>(Arrays.asList(serverSupportedAlgos.split(",")));
@@ -1508,8 +1507,8 @@ public final class MapiSocket {
 	 * Newer MonetDB versions allow setting some options during the handshake.
 	 * The options are language-specific and each has a 'level'. The server
 	 * advertises up to which level options are supported for a given language
-	 * and for each language/option combination, {@link addOptions} will be invoked.
-	 * It should call {@link contribute} for each option it wants to set.
+	 * and for each language/option combination, {@link #addOptions} will be invoked.
+	 * It should call {@link #contribute} for each option it wants to set.
 	 * 
 	 * At the time of writing, only the 'sql' language supports options,
 	 * they are listed in enum mapi_handshake_options_levels in mapi.h.
@@ -1519,7 +1518,7 @@ public final class MapiSocket {
 
 		/**
 		 * Callback called for each language/level combination supported by the
-		 * server. May call {@link contribute} for options with a level STRICTLY
+		 * server. May call {@link #contribute} for options with a level STRICTLY
 		 * LOWER than the level passed as a parameter.
 		 * @param lang language advertised by the server
 		 * @param level one higher than the maximum supported option
