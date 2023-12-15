@@ -460,7 +460,7 @@ public final class MapiSocket {
 		String parts[] = challengeLine.split(":");
 		if (parts.length < 3)
 			throw new MCLException("Invalid challenge: expect at least 3 fields");
-		String challengePart = parts[0];
+		String saltPart = parts[0];
 		String serverTypePart = parts[1];
 		String versionPart = parts[2];
 		int version;
@@ -484,8 +484,6 @@ public final class MapiSocket {
 		} else {
 			userResponse = target.getUser();
 		}
-		String passwordResponse = hashPassword(challengePart, password, passwordHashPart, validated.getHash(), serverHashesPart);
-
 		String optionsResponse = handleOptions(callback, optionsPart);
 
 		// Response looks like this:
@@ -495,7 +493,8 @@ public final class MapiSocket {
 		StringBuilder response = new StringBuilder(80);
 		response.append("BIG:");
 		response.append(userResponse).append(":");
-		response.append(passwordResponse).append(":");
+		hashPassword(response, saltPart, password, passwordHashPart, validated.getHash(), serverHashesPart);
+		response.append(":");
 		response.append(validated.getLanguage()).append(":");
 		response.append(validated.getDatabase()).append(":");
 		response.append("FILETRANS:");
@@ -505,32 +504,53 @@ public final class MapiSocket {
 	}
 
 	// challengePart, passwordHashPart, supportedHashesPart, target.getPassword()
-	private String hashPassword(String challenge, String password, String passwordAlgo, String configuredHashes, String serverSupportedAlgos) throws MCLException {
-		int maxHashLength = 512;
-
-		StringBuilder output = new StringBuilder(10 + maxHashLength / 4);
-		MessageDigest passwordDigest = pickBestAlgorithm(Collections.singleton(passwordAlgo), output);
-
+	private String hashPassword(String salt, String password, String passwordAlgo, String configuredHashes, String serverSupportedAlgos) throws MCLException {
+		// First determine which hash algorithms we can choose from for the challenge response.
+		// This defaults to whatever the server offers but may be restricted by the user.
 		Set<String> algoSet  = new HashSet<>(Arrays.asList(serverSupportedAlgos.split(",")));
 		if (!configuredHashes.isEmpty()) {
-			Set<String> keep = new HashSet<>(Arrays.asList(configuredHashes.toUpperCase().split("[, ]")));
-			algoSet.retainAll(keep);
+			String[] allowedList = configuredHashes.toUpperCase().split("[, ]");
+			Set<String> allowedSet = new HashSet<>(Arrays.asList(allowedList));
+			algoSet.retainAll(allowedSet);
 			if (algoSet.isEmpty()) {
-				throw new MCLException("None of the hash algorithms <" + configuredHashes + "> are supported, server only supports <" + serverSupportedAlgos + ">");
+				throw new MCLException("None of the hash algorithms in <" + configuredHashes + "> are supported, server only supports <" + serverSupportedAlgos + ">");
 			}
 		}
-		MessageDigest challengeDigest = pickBestAlgorithm(algoSet, null);
 
-		// First we use the password algo to hash the password.
-		// Then we use the challenge algo to hash the combination of the resulting hash digits and the challenge.
-		StringBuilder intermediate = new StringBuilder(maxHashLength / 4 + challenge.length());
+		int maxHashDigits = 512 / 4;
+
+		// We'll collect the result in the responseBuffer.
+		// It will start with '{' HASHNAME '}' followed by hexdigits
+		responseBuffer.append('{');
+
+		// This is where we accumulate what will eventually be hashed into the hexdigits above.
+		// It consists of the hexadecimal pre-hash of the password,
+		// followed by the salt from the server
+		StringBuilder intermediate = new StringBuilder(maxHashDigits + salt.length());
+
+		MessageDigest passwordDigest = pickBestAlgorithm(Collections.singleton(passwordAlgo), null);
+		// Here's the password..
 		hexhash(intermediate, passwordDigest, password);
-		intermediate.append(challenge);
-		hexhash(output, challengeDigest, intermediate.toString());
-		return output.toString();
+		// .. and here's the salt
+		intermediate.append(salt);
+
+		MessageDigest responseDigest = pickBestAlgorithm(algoSet, responseBuffer);
+		responseBuffer.append('}');
+		// pickBestAlgorithm has appended HASHNAME, buffer now contains '{' HASHNAME '}'
+		hexhash(responseBuffer, responseDigest, intermediate.toString());
+		// response buffer now contains '{' HASHNAME '}' HEX_DIGITS_OF_INTERMEDIATE_BUFFER
+
+		return responseBuffer.toString();
 	}
 
-	private MessageDigest pickBestAlgorithm(Set<String> algos, StringBuilder appendPrefixHere) throws MCLException {
+	/**
+	 * Pick the most preferred digest algorithm and return a MessageDigest instance for that.
+	 * @param algos the MAPI names of permitted algorithms
+	 * @param appendMapiName if not null, append MAPI name of chose algorithm here
+	 * @return instance of the chosen digester
+	 * @throws MCLException if none of the options is supported
+	 */
+	private MessageDigest pickBestAlgorithm(Set<String> algos, StringBuilder appendMapiName) throws MCLException {
 		for (String[] choice: KNOWN_ALGORITHMS) {
             String mapiName = choice[0];
             String algoName = choice[1];
@@ -543,10 +563,8 @@ public final class MapiSocket {
                 continue;
             }
             // we found a match
-            if (appendPrefixHere != null) {
-                appendPrefixHere.append('{');
-                appendPrefixHere.append(mapiName);
-                appendPrefixHere.append('}');
+            if (appendMapiName != null) {
+                appendMapiName.append(mapiName);
             }
             return digest;
         }
@@ -554,6 +572,13 @@ public final class MapiSocket {
 		throw new MCLException("No supported hash algorithm: " + algoNames);
 	}
 
+	/**
+	 * Hash the text into the digest and append the hexadecimal form of the
+	 * resulting digest to buffer.
+	 * @param buffer where the hex digits are appended
+	 * @param digest where the hex digits come from after the text has been digested
+	 * @param text text to digest
+	 */
 	private void hexhash(StringBuilder buffer, MessageDigest digest, String text) {
 		byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
 		digest.update(bytes);
