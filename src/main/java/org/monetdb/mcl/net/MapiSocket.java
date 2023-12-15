@@ -506,9 +506,9 @@ public final class MapiSocket {
 		StringBuilder output = new StringBuilder(10 + maxHashLength / 4);
 		MessageDigest passwordDigest = pickBestAlgorithm(Collections.singleton(passwordAlgo), output);
 
-		Set<String> algoSet  = new HashSet(Arrays.asList(serverSupportedAlgos.split(",")));
+		Set<String> algoSet  = new HashSet<>(Arrays.asList(serverSupportedAlgos.split(",")));
 		if (!configuredHashes.isEmpty()) {
-			Set<String> keep = new HashSet(Arrays.asList(configuredHashes.toUpperCase().split("[, ]")));
+			Set<String> keep = new HashSet<>(Arrays.asList(configuredHashes.toUpperCase().split("[, ]")));
 			algoSet.retainAll(keep);
 			if (algoSet.isEmpty()) {
 				throw new MCLException("None of the hash algorithms <" + configuredHashes + "> are supported, server only supports <" + serverSupportedAlgos + ">");
