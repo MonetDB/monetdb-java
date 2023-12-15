@@ -23,6 +23,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
 
+import javax.net.ssl.SSLException;
+
 import org.monetdb.mcl.MCLException;
 import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
@@ -356,22 +358,29 @@ public final class MapiSocket {
 			throw new MCLException("Unix domain sockets are not supported, only TCP");
 		}
 		int port = validated.connectPort();
-		Socket sock = new Socket(tcpHost, port);
-		sock.setSoTimeout(validated.getSoTimeout());
-		sock.setTcpNoDelay(true);
-		sock.setKeepAlive(true);
+		Socket sock = null;
+		try {
+			sock = new Socket(tcpHost, port);
+			sock.setSoTimeout(validated.getSoTimeout());
+			sock.setTcpNoDelay(true);
+			sock.setKeepAlive(true);
 
-		sock = wrapTLS(sock, validated);
+			sock = wrapTLS(sock, validated);
 
-		fromMonet = new BlockInputStream(sock.getInputStream());
-		toMonet = new BlockOutputStream(sock.getOutputStream());
-		reader = new BufferedMCLReader(fromMonet, StandardCharsets.UTF_8);
-		writer = new BufferedMCLWriter(toMonet, StandardCharsets.UTF_8);
-		writer.registerReader(reader);
-		reader.advance();
+			fromMonet = new BlockInputStream(sock.getInputStream());
+			toMonet = new BlockOutputStream(sock.getOutputStream());
+			reader = new BufferedMCLReader(fromMonet, StandardCharsets.UTF_8);
+			writer = new BufferedMCLWriter(toMonet, StandardCharsets.UTF_8);
+			writer.registerReader(reader);
+			reader.advance();
 
-		// Only assign to sock when everything went ok so far
-		con = sock;
+			// Only assign to sock when everything went ok so far
+			con = sock;
+		} catch (SSLException e) {
+			throw new MCLException("SSL error: " + e.getMessage(), e);
+		} catch (IOException e) {
+			throw new MCLException("Could not connect to " + tcpHost + ":" + port + ": " + e.getMessage(), e);
+		}
 	}
 
 	private Socket wrapTLS(Socket sock, Target.Validated validated) throws IOException {

@@ -38,7 +38,7 @@ public class SecureSocket {
 			}
 			return wrapSocket(inner, validated, socketFactory, checkName);
 		} catch (CertificateException e) {
-			throw new SSLException(e.getMessage(), e);
+			throw new SSLException("TLS certificate rejected", e);
 		}
 	}
 
