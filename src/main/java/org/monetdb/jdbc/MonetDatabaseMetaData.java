@@ -1932,12 +1932,26 @@ public final class MonetDatabaseMetaData
 		if (types != null && types.length > 0) {
 			query.append(needWhere ? "WHERE" : " AND").append(" tt.\"table_type_name\" IN (");
 			for (int i = 0; i < types.length; i++) {
+				String tabletype = types[i];
+				/* Some JDBC applications use different table type names.
+				 * Replace some SQL synonyms to valid MonetDB
+				 * table type names as defined in sys.table_types */
+				if ("BASE TABLE".equals(tabletype)) {
+					tabletype = "TABLE";
+				} else
+				if ("GLOBAL TEMPORARY".equals(tabletype)) {
+					tabletype = "GLOBAL TEMPORARY TABLE";
+				} else
+				if ("LOCAL TEMPORARY".equals(tabletype)) {
+					tabletype = "LOCAL TEMPORARY TABLE";
+				}
 				if (i > 0) {
 					query.append(',');
 				}
-				query.append('\'').append(types[i]).append('\'');
+				query.append('\'').append(tabletype).append('\'');
 			}
 			query.append(')');
+			// for debug: System.out.println("SQL (len " + query.length() + "): " + query);
 		}
 
 		query.append(" ORDER BY \"TABLE_TYPE\", \"TABLE_SCHEM\", \"TABLE_NAME\"");

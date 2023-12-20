@@ -1157,7 +1157,8 @@ final public class JDBC_API_Tester {
 			"null	jdbctst	pk2c	TABLE	null	null	null	null	null	null\n" +
 			"null	jdbctst	pk_uc	TABLE	jdbctst.pk_uc table comment	null	null	null	null	null\n");
 
-			compareResultSet(dbmd.getTables(null, "tmp", "tlargechar", null), "getTables(null, tmp, tlargechar, null)",
+			String tabletypes[] = {"BASE TABLE", "LOCAL TEMPORARY", "GLOBAL TEMPORARY"};
+			compareResultSet(dbmd.getTables(null, "tmp", "tlargechar", tabletypes), "getTables(null, tmp, tlargechar, tabletypes)",
 			"Resultset with 10 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
 			"char(1)	varchar(1024)	varchar(1024)	varchar(25)	varchar(1048576)	char(1)	char(1)	char(1)	char(1)	char(1)\n" +

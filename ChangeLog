@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Dec 20 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Enhanced DatabaseMetaData.getTables() method by adding support for SQL
+  table type names: 'BASE TABLE', 'GLOBAL TEMPORARY' and 'LOCAL TEMPORARY'
+  in parameter types[].  These are SQL synonyms of MonetDB table type names:
+  'TABLE', 'GLOBAL TEMPORARY TABLE' and 'LOCAL TEMPORARY TABLE'.
+
 * Thu Dec 14 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - In ResultSet.getObject() method added support for retrieving
   TIMESTAMP WITH TIME ZONE data as java.time.OffsetDateTime object
