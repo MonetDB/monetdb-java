@@ -736,7 +736,9 @@ public final class JdbcClient {
 						} else if (command.equals("\\vsgi_noheader")) {	// used only for internal automated testing
 							MDBvalidator.validateSqlGeomTablesIntegrity(con, false);
 						} else if (command.startsWith("\\vsi ")) {
-							String schema_nm = command.substring(5);
+							String schema_nm = command.substring(5).trim();
+							if (schema_nm.endsWith(";"))
+								schema_nm = schema_nm.substring(0, schema_nm.length() - 1);
 							MDBvalidator.validateSchemaIntegrity(con, schema_nm, true);
 						} else if (command.startsWith("\\vsi_noheader ")) {	// used only for internal automated testing
 							String schema_nm = command.substring(14);
