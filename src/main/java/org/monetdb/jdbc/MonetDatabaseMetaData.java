@@ -181,7 +181,7 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public String getDriverVersion() {
-		return MonetDriver.getDriverVersion();
+		return MonetVersion.driverVersion;
 	}
 
 	/**
@@ -191,7 +191,7 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public int getDriverMajorVersion() {
-		return MonetDriver.getDriverMajorVersion();
+		return MonetVersion.majorVersion;
 	}
 
 	/**
@@ -201,7 +201,7 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public int getDriverMinorVersion() {
-		return MonetDriver.getDriverMinorVersion();
+		return MonetVersion.minorVersion;
 	}
 
 	/**

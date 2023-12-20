@@ -158,8 +158,7 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public int getMajorVersion() {
-		// defer to the static version of this method
-		return getDriverMajorVersion();
+		return MonetVersion.majorVersion;
 	}
 
 	/**
@@ -169,8 +168,7 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public int getMinorVersion() {
-		// defer to the static version of this method
-		return getDriverMinorVersion();
+		return MonetVersion.minorVersion;
 	}
 
 	/**
@@ -301,26 +299,6 @@ public final class MonetDriver implements Driver {
 
 	//== end methods of interface driver
 
-
-	/**
-	 * Get MonetDB JDBC Driver major version number
-	 * method called by MonetDatabaseMetaData methods
-	 * @return MonetDB JDBC Driver major version number
-	 */
-	static final int getDriverMajorVersion() {
-		// defer to the generated MonetVersion class
-		return MonetVersion.majorVersion;
-	}
-
-	/**
-	 * Get MonetDB JDBC Driver minor version number
-	 * method called by MonetDatabaseMetaData methods
-	 * @return MonetDB JDBC Driver minor version number
-	 */
-	static final int getDriverMinorVersion() {
-		// defer to the generated MonetVersion class
-		return MonetVersion.minorVersion;
-	}
 
 	/**
 	 * Returns a touched up identifying version string of this driver.
