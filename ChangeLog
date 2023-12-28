@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Dec 28 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- In ResultSet.getObject(column, Class<T> type) and
+  ResultSet.getObject(column, Map<String,Class<?>>) methods added support
+  to return objects for classes: java.time.LocalDate, java.time.LocalDateTime
+  and java.time.LocalTime.
+
 * Wed Dec 20 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Enhanced DatabaseMetaData.getTables() method by adding support for SQL
   table type names: 'BASE TABLE', 'GLOBAL TEMPORARY' and 'LOCAL TEMPORARY'

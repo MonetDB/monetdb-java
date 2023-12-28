@@ -39,7 +39,7 @@ import org.monetdb.jdbc.types.URL;
  */
 final public class JDBC_API_Tester {
 	StringBuilder sb;	// buffer to collect the test output
-	final static int sbInitLen = 3712;
+	final static int sbInitLen = 5224;
 	Connection con;	// main connection shared by all tests
 	int dbmsMajorVersion;
 	int dbmsMinorVersion;
@@ -4296,12 +4296,15 @@ final public class JDBC_API_Tester {
 			"1. ts 2004-04-24 11:43:53.123000 to ts: 2004-04-24 11:43:53.123\n" +
 			"1. ts 2004-04-24 11:43:53.123000 to tm: 11:43:53\n" +
 			"1. ts 2004-04-24 11:43:53.123000 to dt: 2004-04-24\n" +
+			"1. ts 2004-04-24 11:43:53.123000 to LocalDateTime: 2004-04-24T11:43:53.123\n" +
 			"2. t 11:43:53 to ts: 1970-01-01 11:43:53.0\n" +
 			"2. t 11:43:53 to tm: 11:43:53\n" +
 			"2. t 11:43:53 to dt: 1970-01-01\n" +
+			"2. t 11:43:53 to LocalTime: 11:43:53\n" +
 			"3. d 2004-04-24 to ts: 2004-04-24 00:00:00.0\n" +
 			"3. d 2004-04-24 to tm: 00:00:00\n" +
 			"3. d 2004-04-24 to dt: 2004-04-24\n" +
+			"3. d 2004-04-24 to LocalDate: 2004-04-24\n" +
 			"4. vc 2004-04-24 11:43:53.654321 to ts: 2004-04-24 11:43:53.654321\n" +
 			"4. vc 2004-04-24 11:43:53.654321 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 5 found: '-' in '2004-04-24 11:43:53.654321'\n" +
 			"4. vc 2004-04-24 11:43:53.654321 to dt: 2004-04-24\n" +
@@ -4314,21 +4317,27 @@ final public class JDBC_API_Tester {
 			"11. ts 904-04-24 11:43:53.567000 to ts: 0904-04-24 11:43:53.567\n" +
 			"11. ts 904-04-24 11:43:53.567000 to tm: 11:43:53\n" +
 			"11. ts 904-04-24 11:43:53.567000 to dt: 0904-04-24\n" +
+			"11. ts 904-04-24 11:43:53.567000 to LocalDateTime: rs.getObject(colnm, class<T>): Failed to convert to LocalDateTime: Text '904-04-24T11:43:53.567000' could not be parsed at index 0\n" +
 			"12. ts 74-04-24 11:43:53.567000 to ts: 0074-04-24 11:43:53.567\n" +
 			"12. ts 74-04-24 11:43:53.567000 to tm: 11:43:53\n" +
 			"12. ts 74-04-24 11:43:53.567000 to dt: 0074-04-24\n" +
+			"12. ts 74-04-24 11:43:53.567000 to LocalDateTime: rs.getObject(colnm, class<T>): Failed to convert to LocalDateTime: Text '74-04-24T11:43:53.567000' could not be parsed at index 0\n" +
 			"13. ts 4-04-24 11:43:53.567000 to ts: 0004-04-24 11:43:53.567\n" +
 			"13. ts 4-04-24 11:43:53.567000 to tm: 11:43:53\n" +
 			"13. ts 4-04-24 11:43:53.567000 to dt: 0004-04-24\n" +
+			"13. ts 4-04-24 11:43:53.567000 to LocalDateTime: rs.getObject(colnm, class<T>): Failed to convert to LocalDateTime: Text '4-04-24T11:43:53.567000' could not be parsed at index 0\n" +
 			"14. d 904-04-24 to ts: 0904-04-24 00:00:00.0\n" +
 			"14. d 904-04-24 to tm: 00:00:00\n" +
 			"14. d 904-04-24 to dt: 0904-04-24\n" +
+			"14. d 904-04-24 to LocalDate: rs.getObject(colnm, class<T>): Failed to convert to LocalDate: Text '904-04-24' could not be parsed at index 0\n" +
 			"15. d 74-04-24 to ts: 0074-04-24 00:00:00.0\n" +
 			"15. d 74-04-24 to tm: 00:00:00\n" +
 			"15. d 74-04-24 to dt: 0074-04-24\n" +
+			"15. d 74-04-24 to LocalDate: rs.getObject(colnm, class<T>): Failed to convert to LocalDate: Text '74-04-24' could not be parsed at index 0\n" +
 			"16. d 4-04-24 to ts: 0004-04-24 00:00:00.0\n" +
 			"16. d 4-04-24 to tm: 00:00:00\n" +
 			"16. d 4-04-24 to dt: 0004-04-24\n" +
+			"16. d 4-04-24 to LocalDate: rs.getObject(colnm, class<T>): Failed to convert to LocalDate: Text '4-04-24' could not be parsed at index 0\n" +
 			"17. vc 904-04-24 11:43:53.567 to ts: 0904-04-24 11:43:53.567\n" +
 			"17. vc 904-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 4 found: '-' in '904-04-24 11:43:53.567'\n" +
 			"17. vc 904-04-24 11:43:53.567 to dt: 0904-04-24\n" +
@@ -4341,15 +4350,19 @@ final public class JDBC_API_Tester {
 			"21. ts -4-04-24 11:43:53.567000 to ts: 0004-04-24 11:43:53.567\n" +
 			"21. ts -4-04-24 11:43:53.567000 to tm: 11:43:53\n" +
 			"21. ts -4-04-24 11:43:53.567000 to dt: 0004-04-24\n" +
+			"21. ts -4-04-24 11:43:53.567000 to LocalDateTime: rs.getObject(colnm, class<T>): Failed to convert to LocalDateTime: Text '-4-04-24T11:43:53.567000' could not be parsed at index 1\n" +
 			"22. ts -2004-04-24 11:43:53.567000 to ts: 2004-04-24 11:43:53.567\n" +
 			"22. ts -2004-04-24 11:43:53.567000 to tm: 11:43:53\n" +
 			"22. ts -2004-04-24 11:43:53.567000 to dt: 2004-04-24\n" +
+			"22. ts -2004-04-24 11:43:53.567000 to LocalDateTime: -2004-04-24T11:43:53.567\n" +
 			"23. d -4-04-24 to ts: 0004-04-24 00:00:00.0\n" +
 			"23. d -4-04-24 to tm: 00:00:00\n" +
 			"23. d -4-04-24 to dt: 0004-04-24\n" +
+			"23. d -4-04-24 to LocalDate: rs.getObject(colnm, class<T>): Failed to convert to LocalDate: Text '-4-04-24' could not be parsed at index 1\n" +
 			"24. d -3004-04-24 to ts: 3004-04-24 00:00:00.0\n" +
 			"24. d -3004-04-24 to tm: 00:00:00\n" +
 			"24. d -3004-04-24 to dt: 3004-04-24\n" +
+			"24. d -3004-04-24 to LocalDate: -3004-04-24\n" +
 			"25. vc -2004-04-24 11:43:53.654321 to ts: 2004-04-24 11:43:53.654321\n" +
 			"25. vc -2004-04-24 11:43:53.654321 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 6 found: '-' in '-2004-04-24 11:43:53.654321'\n" +
 			"25. vc -2004-04-24 11:43:53.654321 to dt: 2004-04-24\n" +
@@ -4391,6 +4404,25 @@ final public class JDBC_API_Tester {
 			sb.append(data).append("dt: ").append(rs.getDate(colnm)).append("\n");
 		} catch (SQLException e) {
 			sb.append("rs.getDate(colnm) failed with error: ").append(e.getMessage()).append("\n");
+		}
+		readWarnings(rs.getWarnings());
+		rs.clearWarnings();
+
+		// getObject(colnm, class<T>) may raise a conversion error
+		try {
+			switch(colnm) {
+			case "d":
+				sb.append(data).append("LocalDate: ").append(rs.getObject(colnm, java.time.LocalDate.class)).append("\n");
+				break;
+			case "ts":
+				sb.append(data).append("LocalDateTime: ").append(rs.getObject(colnm, java.time.LocalDateTime.class)).append("\n");
+				break;
+			case "t":
+				sb.append(data).append("LocalTime: ").append(rs.getObject(colnm, java.time.LocalTime.class)).append("\n");
+				break;
+			}
+		} catch (SQLException e) {
+			sb.append("rs.getObject(colnm, class<T>): ").append(e.getMessage()).append("\n");
 		}
 		readWarnings(rs.getWarnings());
 		rs.clearWarnings();
