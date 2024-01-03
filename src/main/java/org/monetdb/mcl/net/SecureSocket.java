@@ -16,6 +16,18 @@ public class SecureSocket {
 	private static final String[] ENABLED_PROTOCOLS = {"TLSv1.3"};
 	private static final String[] APPLICATION_PROTOCOLS = {"mapi/9"};
 
+	// Cache for the default SSL factory. It must load all trust roots
+	// so it's worthwhile to cache.
+	// Only access this through #getDefaultSocketFactory()
+	private static SSLSocketFactory vanillaFactory = null;
+
+	private static synchronized SSLSocketFactory getDefaultSocketFactory() {
+		if (vanillaFactory == null) {
+			vanillaFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+		}
+		return vanillaFactory;
+	}
+
 	public static Socket wrap(Target.Validated validated, Socket inner) throws IOException {
 		Target.Verify verify = validated.connectVerify();
 		SSLSocketFactory socketFactory;
@@ -23,7 +35,7 @@ public class SecureSocket {
 		try {
 			switch (verify) {
 				case System:
-					socketFactory = (SSLSocketFactory) SSLSocketFactory.getDefault();
+					socketFactory = getDefaultSocketFactory();
 					break;
 				case Cert:
 					KeyStore keyStore = keyStoreForCert(validated.getCert());
