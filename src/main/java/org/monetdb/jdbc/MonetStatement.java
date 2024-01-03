@@ -689,7 +689,7 @@ public class MonetStatement
 	 */
 	@Override
 	public int getMaxFieldSize() {
-		return 2*1024*1024*1024 - 2;	// MonetDB supports null terminated strings of max 2GB, see function: int UTF8_strlen()
+		return 0x7ffffffe;	// MonetDB supports null terminated strings of max 2GB, see function: int UTF8_strlen()
 	}
 
 	/**
@@ -1571,9 +1571,7 @@ final class MonetVirtualResultSet extends MonetResultSet {
 		if (row < 1 || row > tupleCount)
 			return false;
 
-		for (int i = 0; i < results[row - 1].length; i++) {
-			tlp.values[i] = results[row - 1][i];
-		}
+        System.arraycopy(results[row - 1], 0, tlp.values, 0, results[row - 1].length);
 
 		return true;
 	}

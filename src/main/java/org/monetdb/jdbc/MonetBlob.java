@@ -299,8 +299,8 @@ public final class MonetBlob implements Blob {
 		try {
 			offset--;
 			/* transactions? what are you talking about? */
-			for (int i = (int)pos; i < len; i++)
-				buf[i] = bytes[offset + i];
+            if (len - (int) pos >= 0)
+                System.arraycopy(bytes, offset + (int) pos, buf, (int) pos, len - (int) pos);
 		} catch (IndexOutOfBoundsException e) {
 			throw new SQLException(e.getMessage(), "M0M10");
 		}

@@ -1067,7 +1067,7 @@ public final class MapiSocket {
 			if (isDebug())
 				log("RX ", new String(block, readPos, 1, StandardCharsets.UTF_8), true);
 
-			return (int)block[readPos++];
+			return block[readPos++] & 0xFF;
 		}
 
 		@Override
@@ -1453,7 +1453,7 @@ public final class MapiSocket {
 			final byte[] buf = { 0 };
 			final int nread = read(buf, 0, 1);
 			if (nread == 1)
-				return buf[0];
+				return buf[0] & 0xFF;
 			else
 				return -1;
 		}

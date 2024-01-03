@@ -112,7 +112,7 @@ public final class TupleLineParser extends MCLParser {
 							if (fieldHasEscape) {
 								if (uesc == null) {
 									// first time use, create it with enough capacity, minimum 1024
-									uesc = new StringBuilder(fieldlen > 1024 ? fieldlen : 1024);
+									uesc = new StringBuilder(Math.max(fieldlen, 1024));
 								} else {
 									// reuse the StringBuilder by cleaning it
 									uesc.setLength(0);
