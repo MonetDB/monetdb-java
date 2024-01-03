@@ -388,13 +388,18 @@ public final class MapiSocket {
             return SecureSocket.wrap(validated, sock);
         else {
 			// Send an even number of NUL bytes.
-			// We expect the server to speak MAPI and in that case, it's a NOP.
-			// If we're accidentally connecting to a TLS server, the bytes are
-			// invalid as a Client Hello message and most TLS implementations
-			// drop the connection.
-			// This is nice because otherwise we would hang, as the TLS server
-			// is waiting for us to send a TLS CLient Hello, and we are waiting
-			// for a MAPI server to send a server challenge.
+			// We expect the server to speak the MAPI protocol and in MAPI,
+			// NUL NUL is a no-op.
+			// However, if we're accidentally connecting to a TLS-protected
+			// server, that server expects a TLS 'Client Hello' message and
+			// the NULs will hopefully force an error.
+			// The error is useful because otherwise we end up in a deadlock:
+			// - the MAPI client is waiting for the server to send a MAPI challenge,
+			// - the TLS server is waiting fot the client to send a Client Hello.
+			// Unfortunately, the number of NULs needed to force an error
+			// varies between implementations. Some TLS servers abort after
+			// the first NUL, others need lots of them.
+			// For now we standardize on 8.
 			sock.getOutputStream().write(NUL_BYTES);
 		}
         return sock;
