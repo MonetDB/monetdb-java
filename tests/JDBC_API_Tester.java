@@ -3059,6 +3059,8 @@ final public class JDBC_API_Tester {
 				.append(rs.getString("t")).append(" | ")
 			//	.append(rs.getString("tz"))	-- this values changes when summer or wintertime changes so no stable output
 				.append("\n");
+				rs.getString("tsz");
+				rs.getString("tz");
 
 				tsz.setTimeZone(TimeZone.getDefault());
 				tz.setTimeZone(tsz.getTimeZone());
@@ -3084,9 +3086,12 @@ final public class JDBC_API_Tester {
 
 				sb.append("getObject:\n")
 				.append(rs.getObject("ts")).append(" | ")
-				.append(rs.getObject("tsz")).append(" | ")
+			//	.append(rs.getObject("tsz")).append(" | ")	-- this value changes on different time zones, so no stable output
 				.append(rs.getObject("t")).append(" | ")
-				.append(rs.getObject("tz")).append("\n");
+			//	.append(rs.getObject("tz"))	-- this value changes on different time zones, so no stable output
+				.append("\n");
+				rs.getObject("tsz");
+				rs.getObject("tz");
 
 				SQLWarning w = rs.getWarnings();
 				while (w != null) {
@@ -3127,7 +3132,8 @@ final public class JDBC_API_Tester {
 			"Africa/Windhoek:\n" +
 			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
 			"getObject:\n" +
-			"1970-01-01 00:00:00.0 | 1970-01-01T01:00+01:00 | 00:00:00 | 01:00+01:00\n" +
+// old output		"1970-01-01 00:00:00.0 | 1970-01-01T01:00+01:00 | 00:00:00 | 01:00+01:00\n" +
+			"1970-01-01 00:00:00.0 | 00:00:00 | \n" +
 			"retrieved row (String):\n" +
 // old output		"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
 			"1970-01-01 00:00:00.000000 | 00:00:00 | \n" +
@@ -3138,7 +3144,8 @@ final public class JDBC_API_Tester {
 			"Africa/Windhoek:\n" +
 			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
 			"getObject:\n" +
-			"1970-01-01 00:00:00.0 | 1970-01-01T01:00+01:00 | 00:00:00 | 01:00+01:00\n" +
+// old output		"1970-01-01 00:00:00.0 | 1970-01-01T01:00+01:00 | 00:00:00 | 01:00+01:00\n" +
+			"1970-01-01 00:00:00.0 | 00:00:00 | \n" +
 			"retrieved row (String):\n" +
 // old output		"1969-12-31 16:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 16:00:00 | 01:00:00+01:00\n" +
 			"1969-12-31 16:00:00.000000 | 16:00:00 | \n" +
@@ -3149,7 +3156,8 @@ final public class JDBC_API_Tester {
 			"Africa/Windhoek:\n" +
 			"1969-12-31 14:00:00.0 | 1970-01-01 00:00:00.0 | 14:00:00 | 00:00:00\n" +
 			"getObject:\n" +
-			"1969-12-31 16:00:00.0 | 1970-01-01T01:00+01:00 | 16:00:00 | 01:00+01:00\n" +
+// old output		"1969-12-31 16:00:00.0 | 1970-01-01T01:00+01:00 | 16:00:00 | 01:00+01:00\n" +
+			"1969-12-31 16:00:00.0 | 16:00:00 | \n" +
 			"retrieved row (String):\n" +
 // old output		"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
 			"1970-01-01 00:00:00.000000 | 00:00:00 | \n" +
@@ -3160,7 +3168,8 @@ final public class JDBC_API_Tester {
 			"Africa/Windhoek:\n" +
 			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
 			"getObject:\n" +
-			"1970-01-01 00:00:00.0 | 1970-01-01T01:00+01:00 | 00:00:00 | 01:00+01:00\n" +
+// old output		"1970-01-01 00:00:00.0 | 1970-01-01T01:00+01:00 | 00:00:00 | 01:00+01:00\n" +
+			"1970-01-01 00:00:00.0 | 00:00:00 | \n" +
 			"0. true	true\n");
 	}
 
