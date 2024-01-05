@@ -26,6 +26,7 @@ public enum ParameterType {
 	 * Convert a string to a boolean, accepting true/false/yes/no/on/off.
 	 * 
 	 * Uppercase is also accepted.
+	 *
 	 * @param value text to be parsed
 	 * @return boolean interpretation of the text
 	 */
@@ -55,7 +56,8 @@ public enum ParameterType {
 
 	/**
 	 * Convert text into an Object of the appropriate type
-	 * @param name name of the setting for use in error messages
+	 *
+	 * @param name  name of the setting for use in error messages
 	 * @param value text to be converted
 	 * @return Object representation of the text
 	 * @throws ValidationError if the text cannot be converted
@@ -84,6 +86,7 @@ public enum ParameterType {
 
 	/**
 	 * Represent the object as a string.
+	 *
 	 * @param value, must be of the appropriate type
 	 * @return textual representation
 	 */

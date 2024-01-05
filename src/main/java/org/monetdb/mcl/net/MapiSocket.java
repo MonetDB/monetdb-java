@@ -83,7 +83,7 @@ import org.monetdb.mcl.parser.MCLParseException;
  */
 public final class MapiSocket {
 	/* an even number of NUL bytes used during the handshake */
-	private static final byte[] NUL_BYTES = new byte[]{ 0, 0, 0, 0, 0, 0, 0, 0, };
+	private static final byte[] NUL_BYTES = new byte[]{ 0, 0, 0, 0, 0, 0, 0, 0 };
 
 	/* A mapping between hash algorithm names as used in the MAPI
 	 * protocol, and the names by which the Java runtime knows them.
@@ -273,15 +273,15 @@ public final class MapiSocket {
 		return connect(new Target(url, props), null);
 	}
 
-		/**
+	/**
 	 * Connect according to the settings in the 'target' parameter.
 	 * If followRedirect is false, a RedirectionException is
 	 * thrown when a redirect is encountered.
-	 * 
+	 *
 	 * Some settings, such as the initial reply size, can already be configured
 	 * during the handshake, saving a command round-trip later on.
 	 * To do so, create and pass a subclass of {@link MapiSocket.OptionsCallback}.
-	 * 
+	 *
 	 * @param target the connection settings
 	 * @param callback will be called if the server allows options to be set during the
 	 * initial handshake
@@ -461,17 +461,14 @@ public final class MapiSocket {
 		return false;   // we need another go
 	}
 
-	private String challengeResponse(
-			Target.Validated validated, final String challengeLine,
-			OptionsCallback callback
-	) throws MCLException {
+	private String challengeResponse(Target.Validated validated, final String challengeLine, OptionsCallback callback) throws MCLException {
 		// The challengeLine looks like this:
 		//
 		// 45IYyVyRnbgEnK92ad:merovingian:9:RIPEMD160,SHA512,SHA384,SHA256,SHA224,SHA1:LIT:SHA512:
 		// WgHIibSyH:mserver:9:RIPEMD160,SHA512,SHA384,SHA256,SHA224,SHA1:LIT:SHA512:sql=6:BINARY=1:
 		// 0         1       2 3                                          4   5      6     7
 
-		String parts[] = challengeLine.split(":");
+		String[] parts = challengeLine.split(":");
 		if (parts.length < 3)
 			throw new MCLException("Invalid challenge: expect at least 3 fields");
 		String saltPart = parts[0];
@@ -520,7 +517,7 @@ public final class MapiSocket {
 	private String hashPassword(StringBuilder responseBuffer, String salt, String password, String passwordAlgo, String configuredHashes, String serverSupportedAlgos) throws MCLException {
 		// First determine which hash algorithms we can choose from for the challenge response.
 		// This defaults to whatever the server offers but may be restricted by the user.
-		Set<String> algoSet  = new HashSet<>(Arrays.asList(serverSupportedAlgos.split(",")));
+		Set<String> algoSet = new HashSet<>(Arrays.asList(serverSupportedAlgos.split(",")));
 		if (!configuredHashes.isEmpty()) {
 			String[] allowedList = configuredHashes.toUpperCase().split("[, ]");
 			Set<String> allowedSet = new HashSet<>(Arrays.asList(allowedList));
@@ -558,13 +555,14 @@ public final class MapiSocket {
 
 	/**
 	 * Pick the most preferred digest algorithm and return a MessageDigest instance for that.
-	 * @param algos the MAPI names of permitted algorithms
+	 *
+	 * @param algos          the MAPI names of permitted algorithms
 	 * @param appendMapiName if not null, append MAPI name of chose algorithm here
 	 * @return instance of the chosen digester
 	 * @throws MCLException if none of the options is supported
 	 */
 	private MessageDigest pickBestAlgorithm(Set<String> algos, StringBuilder appendMapiName) throws MCLException {
-		for (String[] choice: KNOWN_ALGORITHMS) {
+		for (String[] choice : KNOWN_ALGORITHMS) {
 			String mapiName = choice[0];
 			String algoName = choice[1];
 			MessageDigest digest;
@@ -588,15 +586,16 @@ public final class MapiSocket {
 	/**
 	 * Hash the text into the digest and append the hexadecimal form of the
 	 * resulting digest to buffer.
+	 *
 	 * @param buffer where the hex digits are appended
 	 * @param digest where the hex digits come from after the text has been digested
-	 * @param text text to digest
+	 * @param text   text to digest
 	 */
 	private void hexhash(StringBuilder buffer, MessageDigest digest, String text) {
 		byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
 		digest.update(bytes);
 		byte[] output = digest.digest();
-		for (byte b: output) {
+		for (byte b : output) {
 			int hi = (b & 0xF0) >> 4;
 			int lo = b & 0x0F;
 			buffer.append(HEXDIGITS[hi]);
@@ -610,7 +609,7 @@ public final class MapiSocket {
 
 		StringBuilder buffer = new StringBuilder();
 		callback.setBuffer(buffer);
-		for (String optlevel: optionsPart.split(",")) {
+		for (String optlevel : optionsPart.split(",")) {
 			int eqindex = optlevel.indexOf('=');
 			if (eqindex < 0)
 				throw new MCLException("Invalid options part in server challenge: " + optionsPart);

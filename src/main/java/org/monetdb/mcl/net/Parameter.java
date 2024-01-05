@@ -115,6 +115,7 @@ public enum Parameter {
 	 * The ground rule is that if we encounter an unknown setting
 	 * without an underscore in the name, it is an error. If it has
 	 * an underscore in its name, it can be ignored.
+	 *
 	 * @param name the name of the setting to check
 	 * @return true if it can safely be ignored
 	 */
@@ -128,6 +129,7 @@ public enum Parameter {
 	 * Return a default value for the given setting, as an Object of the appropriate type.
 	 * Note that the value returned for TIMEZONE may change if the system time zone
 	 * is changed or if Daylight Saving Time starts or ends.
+	 *
 	 * @return
 	 */
 	public Object getDefault() {

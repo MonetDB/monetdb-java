@@ -1245,6 +1245,7 @@ public class MonetConnection
 	 * Passing this to {@link DriverManager.getConnection()} together
 	 * with the URL "jdbc:monetdb:" will create a new connection identical to
 	 * the current one.
+	 *
 	 * @return
 	 */
 

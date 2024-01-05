@@ -1,4 +1,3 @@
-
 # Java-specific tests
 
 Test settings that are only in monetdb-java.
