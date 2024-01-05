@@ -100,7 +100,10 @@ public final class BufferedMCLReader {
 	 * @return the current line or null
 	 */
 	public String getLine(int start) {
-		return getLine().substring(start);
+		String line = getLine();
+		if (line != null)
+			line = line.substring(start);
+		return line;
 	}
 
 	/**
