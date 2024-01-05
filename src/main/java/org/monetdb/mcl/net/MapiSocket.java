@@ -347,9 +347,9 @@ public final class MapiSocket {
 			throw e;
 		} catch (ValidationError e) {
 			close();
-            throw new MCLException(e.getMessage());
-        }
-    }
+			throw new MCLException(e.getMessage());
+		}
+	}
 
 	private void connectSocket(Target.Validated validated) throws MCLException, IOException {
 		// This method performs steps 2-6 of the procedure outlined in the URL spec
@@ -384,9 +384,9 @@ public final class MapiSocket {
 	}
 
 	private Socket wrapTLS(Socket sock, Target.Validated validated) throws IOException {
-        if (validated.getTls())
-            return SecureSocket.wrap(validated, sock);
-        else {
+		if (validated.getTls())
+			return SecureSocket.wrap(validated, sock);
+		else {
 			// Send an even number of NUL bytes.
 			// We expect the server to speak the MAPI protocol and in MAPI,
 			// NUL NUL is a no-op.
@@ -402,8 +402,8 @@ public final class MapiSocket {
 			// For now we standardize on 8.
 			sock.getOutputStream().write(NUL_BYTES);
 		}
-        return sock;
-    }
+		return sock;
+	}
 
 	private boolean handshake(Target.Validated validated, OptionsCallback callback, ArrayList<String> warnings) throws IOException, MCLException {
 		String challenge = reader.getLine();
@@ -449,17 +449,17 @@ public final class MapiSocket {
 		} catch (URISyntaxException | ValidationError e) {
 			throw new MCLException("While processing redirect " + redirect + ": " + e.getMessage(), e);
 		}
-        if (redirect.startsWith("mapi:merovingian://proxy")) {
+		if (redirect.startsWith("mapi:merovingian://proxy")) {
 			// The reader is stuck at LineType.PROMPT but actually the
 			// next challenge is already there.
-            reader.resetLineType();
+			reader.resetLineType();
 			reader.advance();
-        } else {
-            close();
-        }
+		} else {
+			close();
+		}
 
-        return false;   // we need another go
-    }
+		return false;   // we need another go
+	}
 
 	private String challengeResponse(
 			Target.Validated validated, final String challengeLine,
@@ -565,22 +565,22 @@ public final class MapiSocket {
 	 */
 	private MessageDigest pickBestAlgorithm(Set<String> algos, StringBuilder appendMapiName) throws MCLException {
 		for (String[] choice: KNOWN_ALGORITHMS) {
-            String mapiName = choice[0];
-            String algoName = choice[1];
-            MessageDigest digest;
-            if (!algos.contains(mapiName))
-                continue;
-            try {
-                digest = MessageDigest.getInstance(algoName);
-            } catch (NoSuchAlgorithmException e) {
-                continue;
-            }
-            // we found a match
-            if (appendMapiName != null) {
-                appendMapiName.append(mapiName);
-            }
-            return digest;
-        }
+			String mapiName = choice[0];
+			String algoName = choice[1];
+			MessageDigest digest;
+			if (!algos.contains(mapiName))
+				continue;
+			try {
+				digest = MessageDigest.getInstance(algoName);
+			} catch (NoSuchAlgorithmException e) {
+				continue;
+			}
+			// we found a match
+			if (appendMapiName != null) {
+				appendMapiName.append(mapiName);
+			}
+			return digest;
+		}
 		String algoNames = String.join(",", algos);
 		throw new MCLException("No supported hash algorithm: " + algoNames);
 	}
@@ -610,22 +610,22 @@ public final class MapiSocket {
 
 		StringBuilder buffer = new StringBuilder();
 		callback.setBuffer(buffer);
-        for (String optlevel: optionsPart.split(",")) {
-            int eqindex = optlevel.indexOf('=');
-            if (eqindex < 0)
-                throw new MCLException("Invalid options part in server challenge: " + optionsPart);
-            String lang = optlevel.substring(0, eqindex);
-            int level;
-            try {
-                level = Integer.parseInt(optlevel.substring(eqindex + 1));
-            } catch (NumberFormatException e) {
-                throw new MCLException("Invalid option level in server challenge: " + optlevel);
-            }
-            callback.addOptions(lang, level);
-        }
+		for (String optlevel: optionsPart.split(",")) {
+			int eqindex = optlevel.indexOf('=');
+			if (eqindex < 0)
+				throw new MCLException("Invalid options part in server challenge: " + optionsPart);
+			String lang = optlevel.substring(0, eqindex);
+			int level;
+			try {
+				level = Integer.parseInt(optlevel.substring(eqindex + 1));
+			} catch (NumberFormatException e) {
+				throw new MCLException("Invalid option level in server challenge: " + optlevel);
+			}
+			callback.addOptions(lang, level);
+		}
 
 		return buffer.toString();
-    }
+	}
 
 	/**
 	 * Returns an InputStream that reads from this open connection on

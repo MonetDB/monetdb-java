@@ -96,9 +96,9 @@ public final class CmdLineOpts {
 					option.addArgument(prop.getProperty(key));
 				} else if (!ignoredInFile.contains(key)) {
 					// ignore unknown options (it used to throw an OptionsException)
-                    System.out.println("Info: Ignoring unknown/unsupported option (in " + file.getAbsolutePath() + "): " + key);
-                }
-            }
+					System.out.println("Info: Ignoring unknown/unsupported option (in " + file.getAbsolutePath() + "): " + key);
+				}
+			}
 		} catch (java.io.IOException e) {
 			throw new OptionsException("File IO Exception: " + e);
 		}
