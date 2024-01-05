@@ -387,19 +387,17 @@ public final class MapiSocket {
 		if (validated.getTls())
 			return SecureSocket.wrap(validated, sock);
 		else {
-			// Send an even number of NUL bytes.
-			// We expect the server to speak the MAPI protocol and in MAPI,
-			// NUL NUL is a no-op.
-			// However, if we're accidentally connecting to a TLS-protected
-			// server, that server expects a TLS 'Client Hello' message and
-			// the NULs will hopefully force an error.
-			// The error is useful because otherwise we end up in a deadlock:
-			// - the MAPI client is waiting for the server to send a MAPI challenge,
-			// - the TLS server is waiting fot the client to send a Client Hello.
-			// Unfortunately, the number of NULs needed to force an error
-			// varies between implementations. Some TLS servers abort after
-			// the first NUL, others need lots of them.
-			// For now we standardize on 8.
+			// Send an even number of NUL bytes to avoid a deadlock if
+			// we're accidentally connecting to a TLS-protected server.
+			// The cause of the deadlock is that we speak MAPI and we wait
+			// for the server to send a MAPI challenge.
+			// However, if the server is trying to set up TLS, it will be
+			// waiting for us to send a TLS 'Client Hello' packet.
+			// Hence, deadlock.
+			// NUL NUL is a no-op in MAPI and will hopefully force an error
+			// in the TLS server. This does not always work, some
+			// TLS implementations abort on the first NUL, some need more NULs
+			// than we are prepared to send here. 8 seems to be a good number.
 			sock.getOutputStream().write(NUL_BYTES);
 		}
 		return sock;
@@ -531,7 +529,6 @@ public final class MapiSocket {
 
 		// We'll collect the result in the responseBuffer.
 		// It will start with '{' HASHNAME '}' followed by hexdigits
-		responseBuffer.append('{');
 
 		// This is where we accumulate what will eventually be hashed into the hexdigits above.
 		// It consists of the hexadecimal pre-hash of the password,
@@ -544,7 +541,9 @@ public final class MapiSocket {
 		// .. and here's the salt
 		intermediate.append(salt);
 
+		responseBuffer.append('{');
 		MessageDigest responseDigest = pickBestAlgorithm(algoSet, responseBuffer);
+		// the call above has appended the HASHNAME, now add '}'
 		responseBuffer.append('}');
 		// pickBestAlgorithm has appended HASHNAME, buffer now contains '{' HASHNAME '}'
 		hexhash(responseBuffer, responseDigest, intermediate.toString());
@@ -557,7 +556,7 @@ public final class MapiSocket {
 	 * Pick the most preferred digest algorithm and return a MessageDigest instance for that.
 	 *
 	 * @param algos          the MAPI names of permitted algorithms
-	 * @param appendMapiName if not null, append MAPI name of chose algorithm here
+	 * @param appendMapiName if not null, append MAPI name of chose algorithm to this buffer
 	 * @return instance of the chosen digester
 	 * @throws MCLException if none of the options is supported
 	 */
@@ -584,7 +583,7 @@ public final class MapiSocket {
 	}
 
 	/**
-	 * Hash the text into the digest and append the hexadecimal form of the
+	 * Hash the text into the MessageDigest and append the hexadecimal form of the
 	 * resulting digest to buffer.
 	 *
 	 * @param buffer where the hex digits are appended
@@ -1516,13 +1515,14 @@ public final class MapiSocket {
 
 	/**
 	 * Callback used during the initial MAPI handshake.
-	 * 
+	 *
 	 * Newer MonetDB versions allow setting some options during the handshake.
 	 * The options are language-specific and each has a 'level'. The server
-	 * advertises up to which level options are supported for a given language
-	 * and for each language/option combination, {@link #addOptions} will be invoked.
-	 * It should call {@link #contribute} for each option it wants to set.
-	 * 
+	 * advertises up to which level options are supported for a given language.
+	 * For each language/option combination, {@link #addOptions} will be invoked
+	 * during the handshake. This method should call {@link #contribute} for each
+	 * option it wants to set.
+	 *
 	 * At the time of writing, only the 'sql' language supports options,
 	 * they are listed in enum mapi_handshake_options_levels in mapi.h.
 	 */
