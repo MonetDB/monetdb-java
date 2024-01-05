@@ -1,9 +1,13 @@
 /*
+ * SPDX-License-Identifier: MPL-2.0
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2023 MonetDB B.V.
+ * Copyright 2024 MonetDB Foundation;
+ * Copyright August 2008 - 2023 MonetDB B.V.;
+ * Copyright 1997 - July 2008 CWI.
  */
 
 package org.monetdb.jdbc;
@@ -181,7 +185,7 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public String getDriverVersion() {
-		return MonetDriver.getDriverVersion();
+		return MonetVersion.driverVersion;
 	}
 
 	/**
@@ -191,7 +195,7 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public int getDriverMajorVersion() {
-		return MonetDriver.getDriverMajorVersion();
+		return MonetVersion.majorVersion;
 	}
 
 	/**
@@ -201,7 +205,7 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public int getDriverMinorVersion() {
-		return MonetDriver.getDriverMinorVersion();
+		return MonetVersion.minorVersion;
 	}
 
 	/**
@@ -1815,7 +1819,7 @@ public final class MonetDatabaseMetaData
 			"cast(null as char(1)) AS \"COLUMN_DEF\", " +
 			"cast(0 as int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 as int) AS \"SQL_DATETIME_SUB\", " +
-			"cast(CASE WHEN a.\"type\" IN ('char','varchar','clob') THEN a.\"type_digits\" ELSE NULL END as int) AS \"CHAR_OCTET_LENGTH\", " +
+			"cast(CASE WHEN a.\"type\" IN ('varchar','clob','char','json','url','xml') THEN 4 * cast(a.\"type_digits\" as bigint) WHEN a.\"type\" = 'blob' THEN a.\"type_digits\" ELSE NULL END as bigint) AS \"CHAR_OCTET_LENGTH\", " +
 			// in MonetDB procedures have no return value by design. The arguments in sys.args are numbered from 0 so we must add 1 to comply with the API specification.
 			"cast(a.\"number\" + 1 as int) AS \"ORDINAL_POSITION\", " +
 			"cast('' as varchar(3)) AS \"IS_NULLABLE\", " +
@@ -1930,14 +1934,36 @@ public final class MonetDatabaseMetaData
 		}
 
 		if (types != null && types.length > 0) {
+			boolean foundType = false;
 			query.append(needWhere ? "WHERE" : " AND").append(" tt.\"table_type_name\" IN (");
 			for (int i = 0; i < types.length; i++) {
-				if (i > 0) {
-					query.append(',');
+				String tabletype = types[i];
+				if (tabletype != null && !tabletype.isEmpty()) {
+					/* Some JDBC applications use different table type names.
+					 * Replace some SQL synonyms to valid MonetDB
+					 * table type names as defined in sys.table_types */
+					if ("BASE TABLE".equals(tabletype)) {
+						tabletype = "TABLE";
+					} else
+					if ("GLOBAL TEMPORARY".equals(tabletype)) {
+						tabletype = "GLOBAL TEMPORARY TABLE";
+					} else
+					if ("LOCAL TEMPORARY".equals(tabletype)) {
+						tabletype = "LOCAL TEMPORARY TABLE";
+					}
+					if (foundType) {
+						query.append(',');
+					}
+					query.append('\'').append(tabletype).append('\'');
+					foundType = true;
 				}
-				query.append('\'').append(types[i]).append('\'');
+			}
+			if (!foundType) {
+				// we need to have at least one literal in the SQL IN-list else we get a syntax error
+				query.append("''");
 			}
 			query.append(')');
+			// for debug: System.out.println("SQL (len " + query.length() + "): " + query);
 		}
 
 		query.append(" ORDER BY \"TABLE_TYPE\", \"TABLE_SCHEM\", \"TABLE_NAME\"");
@@ -2131,7 +2157,7 @@ public final class MonetDatabaseMetaData
 			"c.\"default\" AS \"COLUMN_DEF\", " +
 			"cast(0 as int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 as int) AS \"SQL_DATETIME_SUB\", " +
-			"cast(CASE WHEN c.\"type\" IN ('char','varchar','clob') THEN c.\"type_digits\" ELSE NULL END as int) AS \"CHAR_OCTET_LENGTH\", " +
+			"cast(CASE WHEN c.\"type\" IN ('varchar','clob','char','json','url','xml') THEN 4 * cast(c.\"type_digits\" as bigint) ELSE NULL END as bigint) AS \"CHAR_OCTET_LENGTH\", " +
 			"cast(c.\"number\" + 1 as int) AS \"ORDINAL_POSITION\", " +
 			"cast(CASE c.\"null\" WHEN true THEN 'YES' WHEN false THEN 'NO' ELSE '' END AS varchar(3)) AS \"IS_NULLABLE\", " +
 			"cast(null AS char(1)) AS \"SCOPE_CATALOG\", " +
@@ -3034,7 +3060,9 @@ public final class MonetDatabaseMetaData
 				" WHEN 'sec_interval' THEN 'interval second'" +
 				" ELSE \"sqlname\" END AS \"TYPE_NAME\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("\"sqlname\"")).append(" AS int) AS \"DATA_TYPE\", " +
-			"\"digits\" AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
+			"cast(CASE WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz') THEN \"digits\" -1" +
+				" WHEN \"sqlname\" IN ('sec_interval','day_interval') THEN 3" +
+				" WHEN \"sqlname\" = 'month_interval' THEN 0 ELSE \"digits\" END AS int) AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
 			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','sec_interval','day_interval','month_interval') THEN ''''" +
 				" WHEN \"sqlname\" IN ('clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob','xml') THEN \"sqlname\"||' '''" +
 				" ELSE NULL END AS varchar(16)) AS \"LITERAL_PREFIX\", " +
@@ -3043,7 +3071,7 @@ public final class MonetDatabaseMetaData
 				" ELSE NULL END AS varchar(2)) AS \"LITERAL_SUFFIX\", " +
 			"CASE WHEN \"sqlname\" IN ('char','varchar') THEN 'max length'" +
 				" WHEN \"sqlname\" = 'decimal' THEN 'precision, scale'" +
-				" WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz','sec_interval') THEN 'precision'" +
+				" WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz') THEN 'precision'" +
 				" ELSE NULL END AS \"CREATE_PARAMS\", " +
 			"cast(CASE WHEN \"systemname\" = 'oid' THEN " + DatabaseMetaData.typeNoNulls +
 				" ELSE " + DatabaseMetaData.typeNullable + " END AS smallint) AS \"NULLABLE\", " +
@@ -3057,7 +3085,8 @@ public final class MonetDatabaseMetaData
 			"CASE WHEN \"sqlname\" IN ('sec_interval','day_interval','month_interval') THEN \"sqlname\" ELSE \"systemname\" END AS \"LOCAL_TYPE_NAME\", " +
 			"cast(0 AS smallint) AS \"MINIMUM_SCALE\", " +
 			"cast(CASE WHEN \"sqlname\" = 'decimal' THEN (CASE \"systemname\" WHEN 'int' THEN 9 WHEN 'lng' THEN 18 WHEN 'sht' THEN 4 WHEN 'hge' THEN 38 WHEN 'bte' THEN 2 ELSE 0 END)" +
-				" WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz','sec_interval') THEN 6 ELSE 0 END AS smallint) AS \"MAXIMUM_SCALE\", " +
+				" WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz') THEN 6" +
+				" WHEN \"sqlname\" IN ('day_interval','sec_interval') THEN 3 ELSE 0 END AS smallint) AS \"MAXIMUM_SCALE\", " +
 			"cast(0 AS int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 AS int) AS \"SQL_DATETIME_SUB\", " +
 			"cast(CASE WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz','sec_interval') THEN 10 ELSE \"radix\" END AS int) AS \"NUM_PREC_RADIX\" " +
@@ -4043,7 +4072,7 @@ public final class MonetDatabaseMetaData
 			// mvd: do not remove next append. The String above is same as used by getProcedureColumns, so shared in class file.
 			"cast(").append(DatabaseMetaData.functionNullableUnknown).append(" AS smallint) AS \"NULLABLE\", " +
 			"cast(null as char(1)) AS \"REMARKS\", " +
-			"cast(CASE WHEN a.\"type\" IN ('char','varchar','clob') THEN a.\"type_digits\" ELSE NULL END as int) AS \"CHAR_OCTET_LENGTH\", " +
+			"cast(CASE WHEN a.\"type\" IN ('varchar','clob','char','json','url','xml') THEN 4 * cast(a.\"type_digits\" as bigint) WHEN a.\"type\" = 'blob' THEN a.\"type_digits\" ELSE NULL END as bigint) AS \"CHAR_OCTET_LENGTH\", " +
 			"cast(a.\"number\" as int) AS \"ORDINAL_POSITION\", " +
 			"cast('' as varchar(3)) AS \"IS_NULLABLE\", " +
 			// the specific name contains the function id, in order to be able to match the args to the correct overloaded function name

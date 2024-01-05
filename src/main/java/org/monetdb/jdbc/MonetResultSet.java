@@ -1,9 +1,13 @@
 /*
+ * SPDX-License-Identifier: MPL-2.0
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2023 MonetDB B.V.
+ * Copyright 2024 MonetDB Foundation;
+ * Copyright August 2008 - 2023 MonetDB B.V.;
+ * Copyright 1997 - July 2008 CWI.
  */
 
 package org.monetdb.jdbc;
@@ -38,6 +42,12 @@ import java.sql.Time;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.OffsetDateTime;
+import java.time.OffsetTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Calendar;
 import java.util.Map;
 import java.util.TimeZone;
@@ -1426,11 +1436,13 @@ public class MonetResultSet
 			case Types.DATE:
 				return getDate(columnIndex, null);
 			case Types.TIME:
-			case Types.TIME_WITH_TIMEZONE:
 				return getTime(columnIndex, null);
+			case Types.TIME_WITH_TIMEZONE:
+				return getOffsetTime(columnIndex);
 			case Types.TIMESTAMP:
-			case Types.TIMESTAMP_WITH_TIMEZONE:
 				return getTimestamp(columnIndex, null);
+			case Types.TIMESTAMP_WITH_TIMEZONE:
+				return getOffsetDateTime(columnIndex);
 			case Types.BINARY:
 			case Types.VARBINARY:
 		/*	case Types.LONGVARBINARY: // MonetDB doesn't use type LONGVARBINARY */
@@ -1511,33 +1523,62 @@ public class MonetResultSet
 
 		if (type == null || type == String.class) {
 			return val;
-		} else if (type == BigDecimal.class) {
+		}
+		if (type == BigDecimal.class) {
 			return getBigDecimal(columnIndex);
-		} else if (type == Boolean.class) {
+		}
+		if (type == Boolean.class) {
 			return Boolean.valueOf(getBoolean(columnIndex));
-		} else if (type == Short.class) {
-			return Short.valueOf(getShort(columnIndex));
-		} else if (type == Integer.class) {
+		}
+		if (type == Integer.class) {
 			return Integer.valueOf(getInt(columnIndex));
-		} else if (type == Long.class) {
+		}
+		if (type == Long.class) {
 			return Long.valueOf(getLong(columnIndex));
-		} else if (type == Float.class) {
-			return Float.valueOf(getFloat(columnIndex));
-		} else if (type == Double.class) {
+		}
+		if (type == Short.class) {
+			return Short.valueOf(getShort(columnIndex));
+		}
+		if (type == Double.class) {
 			return Double.valueOf(getDouble(columnIndex));
-		} else if (type == byte[].class) {
-			return getBytes(columnIndex);
-		} else if (type == Date.class) {
+		}
+		if (type == Float.class) {
+			return Float.valueOf(getFloat(columnIndex));
+		}
+		if (type == Date.class) {
 			return getDate(columnIndex, null);
-		} else if (type == Time.class) {
+		}
+		if (type == Time.class) {
 			return getTime(columnIndex, null);
-		} else if (type == Timestamp.class) {
+		}
+		if (type == Timestamp.class) {
 			return getTimestamp(columnIndex, null);
-		} else if (type == Clob.class) {
+		}
+		if (type == LocalDate.class) {
+			return getLocalDate(columnIndex);
+		}
+		if (type == LocalDateTime.class) {
+			return getLocalDateTime(columnIndex);
+		}
+		if (type == LocalTime.class) {
+			return getLocalTime(columnIndex);
+		}
+		if (type == OffsetDateTime.class) {
+			return getOffsetDateTime(columnIndex);
+		}
+		if (type == OffsetTime.class) {
+			return getOffsetTime(columnIndex);
+		}
+		if (type == Clob.class) {
 			return getClob(columnIndex);
-		} else if (type == Blob.class) {
+		}
+		if (type == Blob.class) {
 			return getBlob(columnIndex);
-		} else if (classImplementsSQLData(type)) {
+		}
+		if (type == byte[].class) {
+			return getBytes(columnIndex);
+		}
+		if (classImplementsSQLData(type)) {
 			final SQLData x;
 			try {
 				final java.lang.reflect.Constructor<? extends SQLData> ctor =
@@ -1694,9 +1735,8 @@ public class MonetResultSet
 			};
 			x.readSQL(input, MonetDBtype);
 			return x;
-		} else {
-			return val;
 		}
+		return val;
 	}
 
 	/**
@@ -3254,6 +3294,21 @@ public class MonetResultSet
 		if (type == Timestamp.class) {
 			return type.cast(getTimestamp(columnIndex, null));
 		}
+		if (type == LocalDate.class) {
+			return type.cast(getLocalDate(columnIndex));
+		}
+		if (type == LocalDateTime.class) {
+			return type.cast(getLocalDateTime(columnIndex));
+		}
+		if (type == LocalTime.class) {
+			return type.cast(getLocalTime(columnIndex));
+		}
+		if (type == OffsetDateTime.class) {
+			return type.cast(getOffsetDateTime(columnIndex));
+		}
+		if (type == OffsetTime.class) {
+			return type.cast(getOffsetTime(columnIndex));
+		}
 		if (type == java.util.Date.class) {
 		        final Timestamp timestamp = getTimestamp(columnIndex, null);
 		        return type.cast(new java.util.Date(timestamp.getTime()));
@@ -3359,6 +3414,163 @@ public class MonetResultSet
 	private void checkNotClosed() throws SQLException {
 		if (isClosed())
 			throw new SQLException("ResultSet is closed", "M1M20");
+	}
+
+	/**
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object and will convert to LocalDate.
+	 * If the conversion is not supported a SQLException is thrown.
+	 *
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return LocalDate object or null
+	 * @throws SQLException if conversion is not supported
+	 */
+	private LocalDate getLocalDate(final int columnIndex) throws SQLException {
+		final String val;
+		try {
+			val = tlp.values[columnIndex - 1];
+			if (val == null) {
+				lastReadWasNull = true;
+				return null;
+			}
+			lastReadWasNull = false;
+
+			// Note: ISO_LOCAL_DATE format requires the year to have 4 (or more) digits else parse will fail
+			// This means years -999 to 999 will fail to parse. They should have been zero padded, so -0999 to 0999.
+			return LocalDate.parse(val, DateTimeFormatter.ISO_LOCAL_DATE);
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		} catch (java.time.format.DateTimeParseException e) {
+			throw new SQLException("Failed to convert to LocalDate: " + e.getMessage(), "22M33");
+		}
+	}
+
+	/**
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object and will convert to LocalDateTime.
+	 * If the conversion is not supported a SQLException is thrown.
+	 *
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return LocalDateTime object or null
+	 * @throws SQLException if conversion is not supported
+	 */
+	private LocalDateTime getLocalDateTime(final int columnIndex) throws SQLException {
+		final String val;
+		try {
+			val = tlp.values[columnIndex - 1];
+			if (val == null) {
+				lastReadWasNull = true;
+				return null;
+			}
+			lastReadWasNull = false;
+
+			// ISO_LOCAL_DATE_TIME format expects a 'T' instead of a space between date and time parts
+			// replace the space between date and time parts with 'T'
+			String val_new = val;
+			final int space = val.indexOf(' ', 4);
+			if (space > 4 && space < 16) {
+				val_new = val.substring(0, space) + "T" + val.substring(space + 1);
+				// System.out.println("getLocalDateTime() changed " + val + " into " + val_new);
+			}
+
+			// Note: ISO_LOCAL_DATE_TIME format requires the year to have 4 (or more) digits else parse will fail
+			// This means years -999 to 999 will fail to parse. They should have been zero padded, so -0999 to 0999.
+			return LocalDateTime.parse(val_new, DateTimeFormatter.ISO_LOCAL_DATE_TIME);
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		} catch (java.time.format.DateTimeParseException e) {
+			throw new SQLException("Failed to convert to LocalDateTime: " + e.getMessage(), "22M35");
+		}
+	}
+
+	/**
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object and will convert to LocalTime.
+	 * If the conversion is not supported a SQLException is thrown.
+	 *
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return LocalTime object or null
+	 * @throws SQLException if conversion is not supported
+	 */
+	private LocalTime getLocalTime(final int columnIndex) throws SQLException {
+		final String val;
+		try {
+			val = tlp.values[columnIndex - 1];
+			if (val == null) {
+				lastReadWasNull = true;
+				return null;
+			}
+			lastReadWasNull = false;
+			return LocalTime.parse(val, DateTimeFormatter.ISO_LOCAL_TIME);
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		} catch (java.time.format.DateTimeParseException e) {
+			throw new SQLException("Failed to convert to LocalTime: " + e.getMessage(), "22M34");
+		}
+	}
+
+	/**
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object and will convert to OffsetDateTime.
+	 * If the conversion is not supported a SQLException is thrown.
+	 *
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return OffsetDateTime object or null
+	 * @throws SQLException if conversion is not supported
+	 */
+	private OffsetDateTime getOffsetDateTime(final int columnIndex) throws SQLException {
+		final String val;
+		try {
+			val = tlp.values[columnIndex - 1];
+			if (val == null) {
+				lastReadWasNull = true;
+				return null;
+			}
+			lastReadWasNull = false;
+
+			// ISO_OFFSET_DATE_TIME format expects a 'T' instead of a space between date and time parts
+			// replace the space between date and time parts with 'T'
+			String val_new = val;
+			final int space = val.indexOf(' ', 4);
+			if (space > 4 && space < 16) {
+				val_new = val.substring(0, space) + "T" + val.substring(space + 1);
+				// System.out.println("getOffsetDateTime() changed " + val + " into " + val_new);
+			}
+
+			// Note: ISO_OFFSET_DATE_TIME format requires the year to have 4 (or more) digits else parse will fail
+			// This means years -999 to 999 will fail to parse. They should have been zero padded, so -0999 to 0999.
+			return OffsetDateTime.parse(val_new, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		} catch (java.time.format.DateTimeParseException e) {
+			throw new SQLException("Failed to convert to OffsetDateTime: " + e.getMessage(), "22M37");
+		}
+	}
+
+	/**
+	 * Retrieves the value of the designated column in the current row
+	 * of this ResultSet object and will convert to OffsetTime.
+	 * If the conversion is not supported a SQLException is thrown.
+	 *
+	 * @param columnIndex the first column is 1, the second is 2, ...
+	 * @return OffsetTime object or null
+	 * @throws SQLException if conversion is not supported
+	 */
+	private OffsetTime getOffsetTime(final int columnIndex) throws SQLException {
+		final String val;
+		try {
+			val = tlp.values[columnIndex - 1];
+			if (val == null) {
+				lastReadWasNull = true;
+				return null;
+			}
+			lastReadWasNull = false;
+			return OffsetTime.parse(val, DateTimeFormatter.ISO_TIME);
+		} catch (IndexOutOfBoundsException e) {
+			throw newSQLInvalidColumnIndexException(columnIndex);
+		} catch (java.time.format.DateTimeParseException e) {
+			throw new SQLException("Failed to convert to OffsetTime: " + e.getMessage(), "22M36");
+		}
 	}
 
 	/**

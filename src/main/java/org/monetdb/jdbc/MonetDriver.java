@@ -1,9 +1,13 @@
 /*
+ * SPDX-License-Identifier: MPL-2.0
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2023 MonetDB B.V.
+ * Copyright 2024 MonetDB Foundation;
+ * Copyright August 2008 - 2023 MonetDB B.V.;
+ * Copyright 1997 - July 2008 CWI.
  */
 
 package org.monetdb.jdbc;
@@ -111,8 +115,7 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public int getMajorVersion() {
-		// defer to the static version of this method
-		return getDriverMajorVersion();
+		return MonetVersion.majorVersion;
 	}
 
 	/**
@@ -122,8 +125,7 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public int getMinorVersion() {
-		// defer to the static version of this method
-		return getDriverMinorVersion();
+		return MonetVersion.minorVersion;
 	}
 
 	/**
@@ -256,26 +258,6 @@ public final class MonetDriver implements Driver {
 
 
 	/**
-	 * Get MonetDB JDBC Driver major version number
-	 * method called by MonetDatabaseMetaData methods
-	 * @return MonetDB JDBC Driver major version number
-	 */
-	static final int getDriverMajorVersion() {
-		// defer to the generated MonetVersion class
-		return MonetVersion.majorVersion;
-	}
-
-	/**
-	 * Get MonetDB JDBC Driver minor version number
-	 * method called by MonetDatabaseMetaData methods
-	 * @return MonetDB JDBC Driver minor version number
-	 */
-	static final int getDriverMinorVersion() {
-		// defer to the generated MonetVersion class
-		return MonetVersion.minorVersion;
-	}
-
-	/**
 	 * Returns a touched up identifying version string of this driver.
 	 * It is made public as it is called from  org/monetdb/client/JdbcClient.java
 	 * @return the version string
@@ -386,11 +368,13 @@ public final class MonetDriver implements Driver {
 			case Types.DATE:
 				return java.sql.Date.class;
 			case Types.TIME:
-			case Types.TIME_WITH_TIMEZONE:
 				return java.sql.Time.class;
+			case Types.TIME_WITH_TIMEZONE:
+				return java.time.OffsetTime.class;
 			case Types.TIMESTAMP:
-			case Types.TIMESTAMP_WITH_TIMEZONE:
 				return java.sql.Timestamp.class;
+			case Types.TIMESTAMP_WITH_TIMEZONE:
+				return java.time.OffsetDateTime.class;
 			case Types.CLOB:
 				return java.sql.Clob.class;
 			case Types.BLOB:

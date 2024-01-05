@@ -27,6 +27,11 @@ Following SQLStates are MonetDB JDBC driver specific:
 22M30 invalid URL format
 22M31 invalid UUID format
 22M32 invalid JSON format
+22M33 invalid Date format
+22M34 invalid Time format
+22M35 invalid Timestamp format
+22M36 invalid Time with time zone format
+22M37 invalid Timestamp with time zone format
 
 2BM37 dependent objects still exist
 2DM30 autocommit mode active

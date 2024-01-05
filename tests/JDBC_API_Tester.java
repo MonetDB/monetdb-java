@@ -1,9 +1,13 @@
 /*
+ * SPDX-License-Identifier: MPL-2.0
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2023 MonetDB B.V.
+ * Copyright 2024 MonetDB Foundation;
+ * Copyright August 2008 - 2023 MonetDB B.V.;
+ * Copyright 1997 - July 2008 CWI.
  */
 
 import java.sql.*;
@@ -37,7 +41,7 @@ import org.monetdb.jdbc.types.URL;
  */
 final public class JDBC_API_Tester {
 	StringBuilder sb;	// buffer to collect the test output
-	final static int sbInitLen = 3712;
+	final static int sbInitLen = 5224;
 	Connection con;	// main connection shared by all tests
 	int dbmsMajorVersion;
 	int dbmsMinorVersion;
@@ -775,9 +779,9 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getColumns(null, "sys", "table\\_types", null), "getColumns(null, sys, table\\_types, null)",
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
-			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	int	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
 			"null	sys	table_types	table_type_id	5	smallint	16	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
-			"null	sys	table_types	table_type_name	12	varchar	25	0	0	0	0	null	null	0	0	25	2	NO	null	null	null	null	NO	NO\n");
+			"null	sys	table_types	table_type_name	12	varchar	25	0	0	0	0	null	null	0	0	100	2	NO	null	null	null	null	NO	NO\n");
 
 			compareResultSet(dbmd.getPrimaryKeys(null, "sys", "table\\_types"), "getPrimaryKeys(null, sys, table\\_types)",
 			"Resultset with 6 columns\n" +
@@ -1029,6 +1033,8 @@ final public class JDBC_API_Tester {
 			"CREATE LOCAL TEMP TABLE tmp.tmp_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE);");
 		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs",
 			"CREATE GLOBAL TEMP TABLE tmp.glbl_nopk_twoucs (id2 INT NOT NULL UNIQUE, name2 VARCHAR(99) UNIQUE);");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tlargechar",
+			"CREATE TEMP TABLE tlargechar (c1 varchar(2147483647), c2 char(2147483646), c3 clob(2147483645), c4 json(2147483644), c5 url(2147483643)) ON COMMIT PRESERVE ROWS;");
 		/* next 3 tables copied from example in https://docs.microsoft.com/en-us/sql/odbc/reference/syntax/sqlforeignkeys-function?view=sql-server-ver15 */
 		handleExecuteDDL(stmt, action, objtype, "\"CUSTOMERS\"",
 			"CREATE TABLE \"CUSTOMERS\" (\"CUSTID\" INT PRIMARY KEY, \"NAME\" VARCHAR(60) NOT NULL, \"ADDRESS\" VARCHAR(90), \"PHONE\" VARCHAR(20));");
@@ -1156,6 +1162,19 @@ final public class JDBC_API_Tester {
 			"null	jdbctst	pk2c	TABLE	null	null	null	null	null	null\n" +
 			"null	jdbctst	pk_uc	TABLE	jdbctst.pk_uc table comment	null	null	null	null	null\n");
 
+			String tabletypes[] = {"BASE TABLE", "LOCAL TEMPORARY", "GLOBAL TEMPORARY"};
+			compareResultSet(dbmd.getTables(null, "tmp", "tlargechar", tabletypes), "getTables(null, tmp, tlargechar, tabletypes)",
+			"Resultset with 10 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(25)	varchar(1048576)	char(1)	char(1)	char(1)	char(1)	char(1)\n" +
+			"null	tmp	tlargechar	LOCAL TEMPORARY TABLE	null	null	null	null	null	null\n");
+
+			String badtabletypes[] = {null, "", null, ""};
+			compareResultSet(dbmd.getTables(null, "tmp", "tlargechar", badtabletypes), "getTables(null, tmp, tlargechar, badtabletypes)",
+			"Resultset with 10 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(25)	varchar(1048576)	char(1)	char(1)	char(1)	char(1)	char(1)\n");
+
 			compareResultSet(dbmd.getTables(null, "jdbctst", "schemas", null), "getTables(null, jdbctst, schemas, null)",
 			"Resultset with 10 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +
@@ -1164,9 +1183,19 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getColumns(null, "jdbctst", "pk\\_uc", null), "getColumns(null, jdbctst, pk\\_uc, null)",
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
-			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	int	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
 			"null	jdbctst	pk_uc	id1	4	int	32	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
-			"null	jdbctst	pk_uc	name1	12	varchar	99	0	0	0	1	null	null	0	0	99	2	YES	null	null	null	null	NO	NO\n");
+			"null	jdbctst	pk_uc	name1	12	varchar	99	0	0	0	1	null	null	0	0	396	2	YES	null	null	null	null	NO	NO\n");
+
+			compareResultSet(dbmd.getColumns(null, "tmp", "tlargechar", null), "getColumns(null, tmp, tlargechar, null)",
+			"Resultset with 24 columns\n" +
+			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
+			"null	tmp	tlargechar	c1	12	varchar	2147483647	0	0	0	1	null	null	0	0	8589934588	1	YES	null	null	null	null	NO	NO\n" +
+			"null	tmp	tlargechar	c2	1	char	2147483646	0	0	0	1	null	null	0	0	8589934584	2	YES	null	null	null	null	NO	NO\n" +
+			"null	tmp	tlargechar	c3	2005	clob	2147483645	0	0	0	1	null	null	0	0	8589934580	3	YES	null	null	null	null	NO	NO\n" +
+			"null	tmp	tlargechar	c4	12	json	2147483644	0	0	0	1	null	null	0	0	8589934576	4	YES	null	null	null	null	NO	NO\n" +
+			"null	tmp	tlargechar	c5	12	url	2147483643	0	0	0	1	null	null	0	0	8589934572	5	YES	null	null	null	null	NO	NO\n");
 
 			compareResultSet(dbmd.getPrimaryKeys(null, "jdbctst", "pk\\_uc"), "getPrimaryKeys(null, jdbctst, pk\\_uc)",
 			"Resultset with 6 columns\n" +
@@ -1399,6 +1428,7 @@ final public class JDBC_API_Tester {
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.nopk_twoucs", "DROP TABLE jdbctst.nopk_twoucs;");
 		handleExecuteDDL(stmt, action, objtype, "tmp.tmp_nopk_twoucs", "DROP TABLE tmp.tmp_nopk_twoucs;");
 		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs", "DROP TABLE tmp.glbl_nopk_twoucs;");
+		handleExecuteDDL(stmt, action, objtype, "tmp.tlargechar", "DROP TABLE tmp.tlargechar;");
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.\"LINES\"", "DROP TABLE jdbctst.\"LINES\";");
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.\"ORDERS\"", "DROP TABLE jdbctst.\"ORDERS\";");
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.\"CUSTOMERS\"", "DROP TABLE jdbctst.\"CUSTOMERS\";");
@@ -3028,6 +3058,8 @@ final public class JDBC_API_Tester {
 				.append(rs.getString("t")).append(" | ")
 			//	.append(rs.getString("tz"))	-- this values changes when summer or wintertime changes so no stable output
 				.append("\n");
+				rs.getString("tsz");
+				rs.getString("tz");
 
 				tsz.setTimeZone(TimeZone.getDefault());
 				tz.setTimeZone(tsz.getTimeZone());
@@ -3050,6 +3082,15 @@ final public class JDBC_API_Tester {
 				.append(rs.getTimestamp("tsz", c)).append(" | ")
 				.append(rs.getTime("t", c)).append(" | ")
 				.append(rs.getTime("tz", c)).append("\n");
+
+				sb.append("getObject:\n")
+				.append(rs.getObject("ts")).append(" | ")
+			//	.append(rs.getObject("tsz")).append(" | ")	-- this value changes on different time zones, so no stable output
+				.append(rs.getObject("t")).append(" | ")
+			//	.append(rs.getObject("tz"))	-- this value changes on different time zones, so no stable output
+				.append("\n");
+				rs.getObject("tsz");
+				rs.getObject("tz");
 
 				SQLWarning w = rs.getWarnings();
 				while (w != null) {
@@ -3089,6 +3130,9 @@ final public class JDBC_API_Tester {
 			"1970-01-01 08:00:00.0 | 1970-01-01 00:00:00.0 | 08:00:00 | 00:00:00\n" +
 			"Africa/Windhoek:\n" +
 			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
+			"getObject:\n" +
+// old output		"1970-01-01 00:00:00.0 | 1970-01-01T01:00+01:00 | 00:00:00 | 01:00+01:00\n" +
+			"1970-01-01 00:00:00.0 | 00:00:00 | \n" +
 			"retrieved row (String):\n" +
 // old output		"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
 			"1970-01-01 00:00:00.000000 | 00:00:00 | \n" +
@@ -3098,6 +3142,9 @@ final public class JDBC_API_Tester {
 			"1970-01-01 08:00:00.0 | 1970-01-01 00:00:00.0 | 08:00:00 | 00:00:00\n" +
 			"Africa/Windhoek:\n" +
 			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
+			"getObject:\n" +
+// old output		"1970-01-01 00:00:00.0 | 1970-01-01T01:00+01:00 | 00:00:00 | 01:00+01:00\n" +
+			"1970-01-01 00:00:00.0 | 00:00:00 | \n" +
 			"retrieved row (String):\n" +
 // old output		"1969-12-31 16:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 16:00:00 | 01:00:00+01:00\n" +
 			"1969-12-31 16:00:00.000000 | 16:00:00 | \n" +
@@ -3107,6 +3154,9 @@ final public class JDBC_API_Tester {
 			"1970-01-01 00:00:00.0 | 1970-01-01 00:00:00.0 | 00:00:00 | 00:00:00\n" +
 			"Africa/Windhoek:\n" +
 			"1969-12-31 14:00:00.0 | 1970-01-01 00:00:00.0 | 14:00:00 | 00:00:00\n" +
+			"getObject:\n" +
+// old output		"1969-12-31 16:00:00.0 | 1970-01-01T01:00+01:00 | 16:00:00 | 01:00+01:00\n" +
+			"1969-12-31 16:00:00.0 | 16:00:00 | \n" +
 			"retrieved row (String):\n" +
 // old output		"1970-01-01 00:00:00.000000 | 1970-01-01 01:00:00.000000+01:00 | 00:00:00 | 01:00:00+01:00\n" +
 			"1970-01-01 00:00:00.000000 | 00:00:00 | \n" +
@@ -3116,6 +3166,9 @@ final public class JDBC_API_Tester {
 			"1970-01-01 08:00:00.0 | 1970-01-01 00:00:00.0 | 08:00:00 | 00:00:00\n" +
 			"Africa/Windhoek:\n" +
 			"1969-12-31 22:00:00.0 | 1970-01-01 00:00:00.0 | 22:00:00 | 00:00:00\n" +
+			"getObject:\n" +
+// old output		"1970-01-01 00:00:00.0 | 1970-01-01T01:00+01:00 | 00:00:00 | 01:00+01:00\n" +
+			"1970-01-01 00:00:00.0 | 00:00:00 | \n" +
 			"0. true	true\n");
 	}
 
@@ -4261,12 +4314,15 @@ final public class JDBC_API_Tester {
 			"1. ts 2004-04-24 11:43:53.123000 to ts: 2004-04-24 11:43:53.123\n" +
 			"1. ts 2004-04-24 11:43:53.123000 to tm: 11:43:53\n" +
 			"1. ts 2004-04-24 11:43:53.123000 to dt: 2004-04-24\n" +
+			"1. ts 2004-04-24 11:43:53.123000 to LocalDateTime: 2004-04-24T11:43:53.123\n" +
 			"2. t 11:43:53 to ts: 1970-01-01 11:43:53.0\n" +
 			"2. t 11:43:53 to tm: 11:43:53\n" +
 			"2. t 11:43:53 to dt: 1970-01-01\n" +
+			"2. t 11:43:53 to LocalTime: 11:43:53\n" +
 			"3. d 2004-04-24 to ts: 2004-04-24 00:00:00.0\n" +
 			"3. d 2004-04-24 to tm: 00:00:00\n" +
 			"3. d 2004-04-24 to dt: 2004-04-24\n" +
+			"3. d 2004-04-24 to LocalDate: 2004-04-24\n" +
 			"4. vc 2004-04-24 11:43:53.654321 to ts: 2004-04-24 11:43:53.654321\n" +
 			"4. vc 2004-04-24 11:43:53.654321 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 5 found: '-' in '2004-04-24 11:43:53.654321'\n" +
 			"4. vc 2004-04-24 11:43:53.654321 to dt: 2004-04-24\n" +
@@ -4279,21 +4335,27 @@ final public class JDBC_API_Tester {
 			"11. ts 904-04-24 11:43:53.567000 to ts: 0904-04-24 11:43:53.567\n" +
 			"11. ts 904-04-24 11:43:53.567000 to tm: 11:43:53\n" +
 			"11. ts 904-04-24 11:43:53.567000 to dt: 0904-04-24\n" +
+			"11. ts 904-04-24 11:43:53.567000 to LocalDateTime: rs.getObject(colnm, class<T>): Failed to convert to LocalDateTime: Text '904-04-24T11:43:53.567000' could not be parsed at index 0\n" +
 			"12. ts 74-04-24 11:43:53.567000 to ts: 0074-04-24 11:43:53.567\n" +
 			"12. ts 74-04-24 11:43:53.567000 to tm: 11:43:53\n" +
 			"12. ts 74-04-24 11:43:53.567000 to dt: 0074-04-24\n" +
+			"12. ts 74-04-24 11:43:53.567000 to LocalDateTime: rs.getObject(colnm, class<T>): Failed to convert to LocalDateTime: Text '74-04-24T11:43:53.567000' could not be parsed at index 0\n" +
 			"13. ts 4-04-24 11:43:53.567000 to ts: 0004-04-24 11:43:53.567\n" +
 			"13. ts 4-04-24 11:43:53.567000 to tm: 11:43:53\n" +
 			"13. ts 4-04-24 11:43:53.567000 to dt: 0004-04-24\n" +
+			"13. ts 4-04-24 11:43:53.567000 to LocalDateTime: rs.getObject(colnm, class<T>): Failed to convert to LocalDateTime: Text '4-04-24T11:43:53.567000' could not be parsed at index 0\n" +
 			"14. d 904-04-24 to ts: 0904-04-24 00:00:00.0\n" +
 			"14. d 904-04-24 to tm: 00:00:00\n" +
 			"14. d 904-04-24 to dt: 0904-04-24\n" +
+			"14. d 904-04-24 to LocalDate: rs.getObject(colnm, class<T>): Failed to convert to LocalDate: Text '904-04-24' could not be parsed at index 0\n" +
 			"15. d 74-04-24 to ts: 0074-04-24 00:00:00.0\n" +
 			"15. d 74-04-24 to tm: 00:00:00\n" +
 			"15. d 74-04-24 to dt: 0074-04-24\n" +
+			"15. d 74-04-24 to LocalDate: rs.getObject(colnm, class<T>): Failed to convert to LocalDate: Text '74-04-24' could not be parsed at index 0\n" +
 			"16. d 4-04-24 to ts: 0004-04-24 00:00:00.0\n" +
 			"16. d 4-04-24 to tm: 00:00:00\n" +
 			"16. d 4-04-24 to dt: 0004-04-24\n" +
+			"16. d 4-04-24 to LocalDate: rs.getObject(colnm, class<T>): Failed to convert to LocalDate: Text '4-04-24' could not be parsed at index 0\n" +
 			"17. vc 904-04-24 11:43:53.567 to ts: 0904-04-24 11:43:53.567\n" +
 			"17. vc 904-04-24 11:43:53.567 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 4 found: '-' in '904-04-24 11:43:53.567'\n" +
 			"17. vc 904-04-24 11:43:53.567 to dt: 0904-04-24\n" +
@@ -4306,15 +4368,19 @@ final public class JDBC_API_Tester {
 			"21. ts -4-04-24 11:43:53.567000 to ts: 0004-04-24 11:43:53.567\n" +
 			"21. ts -4-04-24 11:43:53.567000 to tm: 11:43:53\n" +
 			"21. ts -4-04-24 11:43:53.567000 to dt: 0004-04-24\n" +
+			"21. ts -4-04-24 11:43:53.567000 to LocalDateTime: rs.getObject(colnm, class<T>): Failed to convert to LocalDateTime: Text '-4-04-24T11:43:53.567000' could not be parsed at index 1\n" +
 			"22. ts -2004-04-24 11:43:53.567000 to ts: 2004-04-24 11:43:53.567\n" +
 			"22. ts -2004-04-24 11:43:53.567000 to tm: 11:43:53\n" +
 			"22. ts -2004-04-24 11:43:53.567000 to dt: 2004-04-24\n" +
+			"22. ts -2004-04-24 11:43:53.567000 to LocalDateTime: -2004-04-24T11:43:53.567\n" +
 			"23. d -4-04-24 to ts: 0004-04-24 00:00:00.0\n" +
 			"23. d -4-04-24 to tm: 00:00:00\n" +
 			"23. d -4-04-24 to dt: 0004-04-24\n" +
+			"23. d -4-04-24 to LocalDate: rs.getObject(colnm, class<T>): Failed to convert to LocalDate: Text '-4-04-24' could not be parsed at index 1\n" +
 			"24. d -3004-04-24 to ts: 3004-04-24 00:00:00.0\n" +
 			"24. d -3004-04-24 to tm: 00:00:00\n" +
 			"24. d -3004-04-24 to dt: 3004-04-24\n" +
+			"24. d -3004-04-24 to LocalDate: -3004-04-24\n" +
 			"25. vc -2004-04-24 11:43:53.654321 to ts: 2004-04-24 11:43:53.654321\n" +
 			"25. vc -2004-04-24 11:43:53.654321 to tm: rs.getTime(colnm) failed with error: parsing failed at pos 6 found: '-' in '-2004-04-24 11:43:53.654321'\n" +
 			"25. vc -2004-04-24 11:43:53.654321 to dt: 2004-04-24\n" +
@@ -4356,6 +4422,25 @@ final public class JDBC_API_Tester {
 			sb.append(data).append("dt: ").append(rs.getDate(colnm)).append("\n");
 		} catch (SQLException e) {
 			sb.append("rs.getDate(colnm) failed with error: ").append(e.getMessage()).append("\n");
+		}
+		readWarnings(rs.getWarnings());
+		rs.clearWarnings();
+
+		// getObject(colnm, class<T>) may raise a conversion error
+		try {
+			switch(colnm) {
+			case "d":
+				sb.append(data).append("LocalDate: ").append(rs.getObject(colnm, java.time.LocalDate.class)).append("\n");
+				break;
+			case "ts":
+				sb.append(data).append("LocalDateTime: ").append(rs.getObject(colnm, java.time.LocalDateTime.class)).append("\n");
+				break;
+			case "t":
+				sb.append(data).append("LocalTime: ").append(rs.getObject(colnm, java.time.LocalTime.class)).append("\n");
+				break;
+			}
+		} catch (SQLException e) {
+			sb.append("rs.getObject(colnm, class<T>): ").append(e.getMessage()).append("\n");
 		}
 		readWarnings(rs.getWarnings());
 		rs.clearWarnings();

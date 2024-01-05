@@ -1,9 +1,13 @@
 /*
+ * SPDX-License-Identifier: MPL-2.0
+ *
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 1997 - July 2008 CWI, August 2008 - 2023 MonetDB B.V.
+ * Copyright 2024 MonetDB Foundation;
+ * Copyright August 2008 - 2023 MonetDB B.V.;
+ * Copyright 1997 - July 2008 CWI.
  */
 
 package org.monetdb.client;
@@ -754,7 +758,9 @@ public final class JdbcClient {
 						} else if (command.equals("\\vsgi_noheader")) {	// used only for internal automated testing
 							MDBvalidator.validateSqlGeomTablesIntegrity(con, false);
 						} else if (command.startsWith("\\vsi ")) {
-							String schema_nm = command.substring(5);
+							String schema_nm = command.substring(5).trim();
+							if (schema_nm.endsWith(";"))
+								schema_nm = schema_nm.substring(0, schema_nm.length() - 1);
 							MDBvalidator.validateSchemaIntegrity(con, schema_nm, true);
 						} else if (command.startsWith("\\vsi_noheader ")) {	// used only for internal automated testing
 							String schema_nm = command.substring(14);

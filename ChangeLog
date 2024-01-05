@@ -1,6 +1,27 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Dec 28 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- In ResultSet.getObject(column, Class<T> type) and
+  ResultSet.getObject(column, Map<String,Class<?>>) methods added support
+  to return objects for classes: java.time.LocalDate, java.time.LocalDateTime
+  and java.time.LocalTime.
+
+* Wed Dec 20 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Enhanced DatabaseMetaData.getTables() method by adding support for SQL
+  table type names: 'BASE TABLE', 'GLOBAL TEMPORARY' and 'LOCAL TEMPORARY'
+  in parameter types[].  These are SQL synonyms of MonetDB table type names:
+  'TABLE', 'GLOBAL TEMPORARY TABLE' and 'LOCAL TEMPORARY TABLE'.
+
+* Thu Dec 14 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- In ResultSet.getObject() method added support for retrieving
+  TIMESTAMP WITH TIME ZONE data as java.time.OffsetDateTime object
+  and TIME WITH TIME ZONE as java.time.OffsetTime object.
+  Also methods ResultSetMetaData.getColumnClassName() and
+  ParameterMetaData.getParameterClassName() now return
+  java.time.OffsetDateTime.class for columns of type TIMESTAMP WITH TIME ZONE
+  and java.time.OffsetTime.class for columns of type TIME WITH TIME ZONE.
+
 * Thu Oct 12 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved DatabaseMetaData.getSystemFunctions(). It now also returns
   functions: current_sessionid, greatest, ifnull, least, sql_max, sql_min.
@@ -34,9 +55,9 @@
 
 * Wed Jul  5 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected implementation of Connection methods getClientInfo() and
-  setClientInfo(). They used to get/set Connection properties instead
-  of Client Info properties which was a incorrect. MonetDB does not
-  support Client Info properties.
+  setClientInfo(). They used to get/set Connection properties instead of
+  Client Info properties, which was incorrect. MonetDB does not support
+  Client Info properties.
 
 * Thu Jun 22 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected DatabaseMetaData method getClientProperties().
