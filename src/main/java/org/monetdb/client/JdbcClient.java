@@ -43,6 +43,7 @@ import java.sql.SQLWarning;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Properties;
 
 /**
  * This program acts like an extended client program for MonetDB. Its
@@ -127,6 +128,7 @@ public final class JdbcClient {
 	 * @throws Exception if uncaught exception is thrown
 	 */
 	public final static void main(String[] args) throws Exception {
+		final Properties props = new Properties();
 		final CmdLineOpts copts = new CmdLineOpts();
 
 		// arguments which take exactly one argument
@@ -193,6 +195,10 @@ public final class JdbcClient {
 				"would execute the contents on the batch after each 8000 " +
 				"statements read.  Batching can greatly speedup the " +
 				"process of restoring a database dump.");
+
+		copts.addIgnored("save_history");
+		copts.addIgnored("format");
+		copts.addIgnored("width");
 
 		// we store user and password in separate variables in order to
 		// be able to properly act on them like forgetting the password
@@ -287,19 +293,24 @@ public final class JdbcClient {
 
 		user = copts.getOption("user").getArgument();
 
-		// build the hostname
+		// extract hostname and port
 		String host = copts.getOption("host").getArgument();
-		if (host.indexOf(':') == -1) {
-			host = host + ":" + copts.getOption("port").getArgument();
+		String port = copts.getOption("port").getArgument();
+		int hostColon = host.indexOf(':');
+		if (hostColon > 0) {
+			port = host.substring(hostColon + 1);
+			host = host.substring(0, hostColon);
 		}
+		props.setProperty("host", host);
+		props.setProperty("port", port);
 
-		// build the extra arguments of the JDBC connect string
 		// increase the fetchsize from the default 250 to 10000
-		String attr = "?fetchsize=10000&";
+		props.setProperty("fetchsize", "10000");
+
 		CmdLineOpts.OptionContainer oc = copts.getOption("language");
 		final String lang = oc.getArgument();
 		if (oc.isPresent())
-			attr += "language=" + lang + "&";
+			props.setProperty("language", lang);
 
 /* Xquery is no longer functional or supported
 		// set some behaviour based on the language XQuery
@@ -311,13 +322,13 @@ public final class JdbcClient {
 */
 		oc = copts.getOption("Xdebug");
 		if (oc.isPresent()) {
-			attr += "debug=true&";
+			props.setProperty("debug", "true");
 			if (oc.getArgumentCount() == 1)
-				attr += "logfile=" + oc.getArgument() + "&";
+				props.setProperty("logfile", "logfile=" + oc.getArgument());
 		}
 		oc = copts.getOption("Xhash");
 		if (oc.isPresent())
-			attr += "hash=" + oc.getArgument() + "&";
+			props.setProperty("hash", oc.getArgument());
 
 		// request a connection suitable for MonetDB from the driver
 		// manager note that the database specifier is only used when
@@ -329,11 +340,18 @@ public final class JdbcClient {
 			// make sure the driver class is loaded (and thus register itself with the DriverManager)
 			Class.forName("org.monetdb.jdbc.MonetDriver");
 
-			con = DriverManager.getConnection(
-					"jdbc:monetdb://" + host + "/" + database + attr,
-					user,
-					pass
-			);
+			// If the database name is a full url, use that.
+			// Otherwise, construct something.
+			String url;
+			if (database.startsWith("jdbc:")) {
+				url = database;
+			} else {
+				url = "jdbc:monetdb:"; // special case
+				props.setProperty("database", database);
+			}
+			props.setProperty("user", user);
+			props.setProperty("password", pass);
+			con = DriverManager.getConnection(url, props);
 			SQLWarning warn = con.getWarnings();
 			while (warn != null) {
 				System.err.println("Connection warning: " + warn.getMessage());

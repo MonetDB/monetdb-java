@@ -99,6 +99,18 @@ public final class BufferedMCLReader {
 	}
 
 	/**
+	 * Return a substring of the current line, or null if we're at the end or before the beginning.
+	 *
+	 * @return the current line or null
+	 */
+	public String getLine(int start) {
+		String line = getLine();
+		if (line != null)
+			line = line.substring(start);
+		return line;
+	}
+
+	/**
 	 * getLineType returns the type of the current line.
 	 *
 	 * @return Linetype representing the kind of line this is, one of the

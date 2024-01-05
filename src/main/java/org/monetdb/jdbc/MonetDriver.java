@@ -12,14 +12,11 @@
 
 package org.monetdb.jdbc;
 
-import java.net.URI;
-import java.sql.Connection;
-import java.sql.Driver;
-import java.sql.DriverManager;
-import java.sql.DriverPropertyInfo;
-import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.Types;
+import org.monetdb.mcl.net.Target;
+import org.monetdb.mcl.net.ValidationError;
+
+import java.net.URISyntaxException;
+import java.sql.*;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -46,8 +43,6 @@ import java.util.Properties;
 public final class MonetDriver implements Driver {
 	// the url kind will be jdbc:monetdb://<host>[:<port>]/<database>
 	// Chapter 9.2.1 from Sun JDBC 3.0 specification
-	/** The prefix of a MonetDB url */
-	static final String MONETURL = "jdbc:monetdb://";
 
 	// initialize this class: register it at the DriverManager
 	// Chapter 9.2 from Sun JDBC 3.0 specification
@@ -71,7 +66,9 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public boolean acceptsURL(final String url) {
-		return url != null && url.startsWith(MONETURL);
+		if (url == null)
+			return false;
+		return url.startsWith("jdbc:monetdb:") || url.startsWith("jdbc:monetdbs:");
 	}
 
 	/**
@@ -103,56 +100,12 @@ public final class MonetDriver implements Driver {
 		if (!acceptsURL(url))
 			return null;
 
-		final Properties props = new Properties();
-		// set the optional properties and their defaults here
-		props.put("port", "50000");
-		props.put("debug", "false");
-		props.put("language", "sql");	// mal, sql, <future>
-		props.put("so_timeout", "0");
-
-		if (info != null)
-			props.putAll(info);
-		info = props;
-
-		// remove leading "jdbc:" so the rest is a valid hierarchical URI
-		final URI uri;
 		try {
-			uri = new URI(url.substring(5));
-		} catch (java.net.URISyntaxException e) {
-			return null;
+			Target target = new Target(url, info);
+			return new MonetConnection(target);
+		} catch (ValidationError | URISyntaxException e) {
+			throw new SQLException(e.getMessage());
 		}
-
-		final String uri_host = uri.getHost();
-		if (uri_host == null)
-			return null;
-		info.put("host", uri_host);
-
-		int uri_port = uri.getPort();
-		if (uri_port > 0)
-			info.put("port", Integer.toString(uri_port));
-
-		// check the database
-		String uri_path = uri.getPath();
-		if (uri_path != null && !uri_path.isEmpty()) {
-			uri_path = uri_path.substring(1).trim();
-			if (!uri_path.isEmpty())
-				info.put("database", uri_path);
-		}
-
-		final String uri_query = uri.getQuery();
-		if (uri_query != null) {
-			int pos;
-			// handle additional connection properties separated by the & character
-			final String args[] = uri_query.split("&");
-			for (int i = 0; i < args.length; i++) {
-				pos = args[i].indexOf('=');
-				if (pos > 0)
-					info.put(args[i].substring(0, pos), args[i].substring(pos + 1));
-			}
-		}
-
-		// finally return the Connection object as requested
-		return new MonetConnection(info);
 	}
 
 	/**

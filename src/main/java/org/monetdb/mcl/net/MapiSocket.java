@@ -21,16 +21,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Writer;
-import java.net.Socket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.net.URI;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
+import java.util.*;
+
+import javax.net.ssl.SSLException;
 
 import org.monetdb.mcl.MCLException;
 import org.monetdb.mcl.io.BufferedMCLReader;
@@ -89,10 +86,27 @@ import org.monetdb.mcl.parser.MCLParseException;
  * @see org.monetdb.mcl.io.BufferedMCLWriter
  */
 public final class MapiSocket {
+	/* an even number of NUL bytes used during the handshake */
+	private static final byte[] NUL_BYTES = new byte[]{ 0, 0, 0, 0, 0, 0, 0, 0 };
+
+	/* A mapping between hash algorithm names as used in the MAPI
+	 * protocol, and the names by which the Java runtime knows them.
+	 */
+	private static final String[][] KNOWN_ALGORITHMS = new String[][] {
+			{"SHA512", "SHA-512"},
+			{"SHA384", "SHA-384"},
+			{"SHA256", "SHA-256"},
+			// should we deprecate this by now?
+			{"SHA1", "SHA-1"},
+	};
+
+	// MUST be lowercase!
+	private static final char[] HEXDIGITS = "0123456789abcdef".toCharArray();
+
+	/** Connection parameters */
+	private Target target;
 	/** The TCP Socket to mserver */
 	private Socket con;
-	/** The TCP Socket timeout in milliseconds. Default is 0 meaning the timeout is disabled (i.e., timeout of infinity) */
-	private int soTimeout = 0;
 	/** Stream from the Socket for reading */
 	private BlockInputStream fromMonet;
 	/** Stream from the Socket for writing */
@@ -104,36 +118,30 @@ public final class MapiSocket {
 	/** protocol version of the connection */
 	private int version;
 
-	/** The database to connect to */
-	private String database = null;
-	/** The language to connect with */
-	private String language = "sql";
-	/** The hash methods to use (null = default) */
-	private String hash = null;
-
-	/** Whether we should follow redirects */
+	/** Whether we should follow redirects.
+	 * Not sure why this needs to be separate
+	 * from 'ttl' but someone someday explicitly documented setTtl
+	 * with 'to disable completely, use followRedirects' so
+	 * apparently there is a use case.
+	 */
 	private boolean followRedirects = true;
 	/** How many redirections do we follow until we're fed up with it? */
 	private int ttl = 10;
 
-	/** Whether we are debugging or not */
-	private boolean debug = false;
 	/** The Writer for the debug log-file */
 	private Writer log;
 
 	/** The blocksize (hardcoded in compliance with MonetDB common/stream/stream.h) */
-	public final static int BLOCK = 8 * 1024 - 2;
+	public final static int BLOCK = 8190;
 
 	/** A short in two bytes for holding the block size in bytes */
 	private final byte[] blklen = new byte[2];
-
-	/** Options that can be sent during the auth handshake if the server supports it */
-	private HandshakeOption<?>[] handshakeOptions;
 
 	/**
 	 * Constructs a new MapiSocket.
 	 */
 	public MapiSocket() {
+		target = new Target();
 		con = null;
 	}
 
@@ -145,7 +153,7 @@ public final class MapiSocket {
 	 * @param db the database
 	 */
 	public void setDatabase(final String db) {
-		this.database = db;
+		target.setDatabase(db);
 	}
 
 	/**
@@ -154,7 +162,7 @@ public final class MapiSocket {
 	 * @param lang the language
 	 */
 	public void setLanguage(final String lang) {
-		this.language = lang;
+		target.setLanguage(lang);
 	}
 
 	/**
@@ -167,7 +175,7 @@ public final class MapiSocket {
 	 * @param hash the hash method to use
 	 */
 	public void setHash(final String hash) {
-		this.hash = hash;
+		target.setHash(hash);
 	}
 
 	/**
@@ -212,7 +220,7 @@ public final class MapiSocket {
 		if (s < 0) {
 			throw new IllegalArgumentException("timeout can't be negative");
 		}
-		this.soTimeout = s;
+		target.setSoTimeout(s);
 		// limit time to wait on blocking operations
 		if (con != null) {
 			con.setSoTimeout(s);
@@ -226,10 +234,7 @@ public final class MapiSocket {
 	 * @throws SocketException Issue with the socket
 	 */
 	public int getSoTimeout() throws SocketException {
-		if (con != null) {
-			this.soTimeout = con.getSoTimeout();
-		}
-		return this.soTimeout;
+		return target.getSoTimeout();
 	}
 
 	/**
@@ -238,7 +243,7 @@ public final class MapiSocket {
 	 * @param debug Value to set
 	 */
 	public void setDebug(final boolean debug) {
-		this.debug = debug;
+		target.setDebug(debug);
 	}
 
 	/**
@@ -261,21 +266,29 @@ public final class MapiSocket {
 	public List<String> connect(final String host, final int port, final String user, final String pass)
 		throws IOException, SocketException, UnknownHostException, MCLParseException, MCLException
 	{
-		// Wrap around the internal connect that needs to know if it
-		// should really make a TCP connection or not.
-		return connect(host, port, user, pass, true);
+		target.setHost(host);
+		target.setPort(port);
+		target.setUser(user);
+		target.setPassword(pass);
+		return connect(target, null);
+	}
+
+	public List<String> connect(String url, Properties props) throws URISyntaxException, ValidationError, MCLException, MCLParseException, IOException {
+		return connect(new Target(url, props), null);
 	}
 
 	/**
-	 * Connects to the given host and port, logging in as the given
-	 * user.  If followRedirect is false, a RedirectionException is
+	 * Connect according to the settings in the 'target' parameter.
+	 * If followRedirect is false, a RedirectionException is
 	 * thrown when a redirect is encountered.
 	 *
-	 * @param host the hostname, or null for the loopback address
-	 * @param port the port number (must be between 0 and 65535, inclusive)
-	 * @param user the username
-	 * @param pass the password
-	 * @param makeConnection whether a new socket connection needs to be created
+	 * Some settings, such as the initial reply size, can already be configured
+	 * during the handshake, saving a command round-trip later on.
+	 * To do so, create and pass a subclass of {@link MapiSocket.OptionsCallback}.
+	 *
+	 * @param target the connection settings
+	 * @param callback will be called if the server allows options to be set during the
+	 * initial handshake
 	 * @return A List with informational (warning) messages. If this
 	 *		list is empty; then there are no warnings.
 	 * @throws IOException if an I/O error occurs when creating the socket
@@ -284,351 +297,344 @@ public final class MapiSocket {
 	 * @throws MCLParseException if bogus data is received
 	 * @throws MCLException if an MCL related error occurs
 	 */
-	private List<String> connect(final String host, final int port, final String user, final String pass, final boolean makeConnection)
-		throws IOException, SocketException, UnknownHostException, MCLParseException, MCLException
-	{
-		if (ttl-- <= 0)
-			throw new MCLException("Maximum number of redirects reached, aborting connection attempt.");
+	public List<String> connect(Target target, OptionsCallback callback) throws MCLException, MCLParseException, IOException {
+		// get rid of any earlier connection state, including the existing target
+		close();
+		this.target = target;
 
-		if (makeConnection) {
-			con = new Socket(host, port);
-			con.setSoTimeout(this.soTimeout);
-			// set nodelay, as it greatly speeds up small messages (like we often do)
-			con.setTcpNoDelay(true);
-			con.setKeepAlive(true);
+		Target.Validated validated;
+		try {
+			validated = target.validate();
+		} catch (ValidationError e) {
+			throw new MCLException(e.getMessage());
+		}
 
-			fromMonet = new BlockInputStream(con.getInputStream());
-			toMonet = new BlockOutputStream(con.getOutputStream());
+		if (validated.connectScan()) {
+			return scanUnixSockets(callback);
+		}
+
+		ArrayList<String> warnings = new ArrayList<>();
+		int attempts = 0;
+		do {
+			boolean ok = false;
+			try {
+				boolean done = tryConnect(callback, warnings);
+				ok = true;
+				if (done) {
+					return warnings;
+				}
+			} finally {
+				if (!ok)
+					close();
+			}
+		} while (followRedirects && attempts++ < this.ttl);
+		throw new MCLException("max redirect count exceeded");
+	}
+
+	private List<String> scanUnixSockets(OptionsCallback callback) throws MCLException, MCLParseException, IOException {
+		// Because we do not support Unix Domain sockets, we just go back to connect().
+		// target.connectScan() will now return false;
+		target.setHost("localhost");
+		return connect(target, callback);
+	}
+
+	private boolean tryConnect(OptionsCallback callback, ArrayList<String> warningBuffer) throws MCLException, IOException {
+		try {
+			// We need a valid target
+			Target.Validated validated = target.validate();
+			// con will be non-null if the previous attempt ended in a redirect to mapi:monetdb://proxy
+			if (con == null)
+				connectSocket(validated);
+			return handshake(validated, callback, warningBuffer);
+		} catch (IOException | MCLException e) {
+			close();
+			throw e;
+		} catch (ValidationError e) {
+			close();
+			throw new MCLException(e.getMessage());
+		}
+	}
+
+	private void connectSocket(Target.Validated validated) throws MCLException, IOException {
+		// This method performs steps 2-6 of the procedure outlined in the URL spec
+		String tcpHost = validated.connectTcp();
+		if (tcpHost.isEmpty()) {
+			throw new MCLException("Unix domain sockets are not supported, only TCP");
+		}
+		int port = validated.connectPort();
+		Socket sock = null;
+		try {
+			sock = new Socket(tcpHost, port);
+			sock.setSoTimeout(validated.getSoTimeout());
+			sock.setTcpNoDelay(true);
+			sock.setKeepAlive(true);
+
+			sock = wrapTLS(sock, validated);
+
+			fromMonet = new BlockInputStream(sock.getInputStream());
+			toMonet = new BlockOutputStream(sock.getOutputStream());
 			reader = new BufferedMCLReader(fromMonet, StandardCharsets.UTF_8);
 			writer = new BufferedMCLWriter(toMonet, StandardCharsets.UTF_8);
 			writer.registerReader(reader);
-		}
-
-		reader.advance();
-		final String c = reader.getLine();
-		reader.discardRemainder();
-		writer.writeLine(getChallengeResponse(c, user, pass, language, database, hash));
-
-		// read monetdb mserver response till prompt
-		final ArrayList<String> redirects = new ArrayList<String>();
-		final List<String> warns = new ArrayList<String>();
-		String err = "", tmp;
-		do {
 			reader.advance();
-			tmp = reader.getLine();
-			if (tmp == null)
-				throw new IOException("Read from " +
-						con.getInetAddress().getHostName() + ":" +
-						con.getPort() + ": End of stream reached");
-			if (reader.getLineType() == LineType.ERROR) {
-				err += "\n" + tmp.substring(7);
-			} else if (reader.getLineType() == LineType.INFO) {
-				warns.add(tmp.substring(1));
-			} else if (reader.getLineType() == LineType.REDIRECT) {
-				redirects.add(tmp.substring(1));
-			}
-		} while (reader.getLineType() != LineType.PROMPT);
 
-		if (err.length() > 0) {
-			close();
-			throw new MCLException(err);
-		}
-
-		if (!redirects.isEmpty()) {
-			if (followRedirects) {
-				// Ok, server wants us to go somewhere else.  The list
-				// might have multiple clues on where to go.  For now we
-				// don't support anything intelligent but trying the
-				// first one.  URI should be in form of:
-				// "mapi:monetdb://host:port/database?arg=value&..."
-				// or
-				// "mapi:merovingian://proxy?arg=value&..."
-				// note that the extra arguments must be obeyed in both
-				// cases
-				final String suri = redirects.get(0).toString();
-				if (!suri.startsWith("mapi:"))
-					throw new MCLException("unsupported redirect: " + suri);
-
-				final URI u;
+			// Only assign to sock when everything went ok so far
+			con = sock;
+			sock = null;
+		} catch (SSLException e) {
+			throw new MCLException("SSL error: " + e.getMessage(), e);
+		} catch (IOException e) {
+			throw new MCLException("Could not connect to " + tcpHost + ":" + port + ": " + e.getMessage(), e);
+		} finally {
+			if (sock != null)
 				try {
-					u = new URI(suri.substring(5));
-				} catch (java.net.URISyntaxException e) {
-					throw new MCLParseException(e.toString());
+					sock.close();
+				} catch (IOException e) {
+					// ignore
 				}
-
-				tmp = u.getQuery();
-				if (tmp != null) {
-					final String args[] = tmp.split("&");
-					for (int i = 0; i < args.length; i++) {
-						int pos = args[i].indexOf('=');
-						if (pos > 0) {
-							tmp = args[i].substring(0, pos);
-							switch (tmp) {
-								case "database":
-									tmp = args[i].substring(pos + 1);
-									if (!tmp.equals(database)) {
-										warns.add("redirect points to different database: " + tmp);
-										setDatabase(tmp);
-									}
-									break;
-								case "language":
-									tmp = args[i].substring(pos + 1);
-									warns.add("redirect specifies use of different language: " + tmp);
-									setLanguage(tmp);
-									break;
-								case "user":
-									tmp = args[i].substring(pos + 1);
-									if (!tmp.equals(user))
-										warns.add("ignoring different username '" + tmp + "' set by " +
-												"redirect, what are the security implications?");
-									break;
-								case "password":
-									warns.add("ignoring different password set by redirect, " +
-											"what are the security implications?");
-									break;
-								default:
-									warns.add("ignoring unknown argument '" + tmp + "' from redirect");
-									break;
-							}
-						} else {
-							warns.add("ignoring illegal argument from redirect: " + args[i]);
-						}
-					}
-				}
-
-				if (u.getScheme().equals("monetdb")) {
-					// this is a redirect to another (monetdb) server,
-					// which means a full reconnect
-					// avoid the debug log being closed
-					if (debug) {
-						debug = false;
-						close();
-						debug = true;
-					} else {
-						close();
-					}
-					tmp = u.getPath();
-					if (tmp != null && tmp.length() > 0) {
-						tmp = tmp.substring(1).trim();
-						if (!tmp.isEmpty() && !tmp.equals(database)) {
-							warns.add("redirect points to different database: " + tmp);
-							setDatabase(tmp);
-						}
-					}
-					final int p = u.getPort();
-					warns.addAll(connect(u.getHost(), p == -1 ? port : p, user, pass, true));
-					warns.add("Redirect by " + host + ":" + port + " to " + suri);
-				} else if (u.getScheme().equals("merovingian")) {
-					// reuse this connection to inline connect to the
-					// right database that Merovingian proxies for us
-					reader.resetLineType();
-					warns.addAll(connect(host, port, user, pass, false));
-				} else {
-					throw new MCLException("unsupported scheme in redirect: " + suri);
-				}
-			} else {
-				final StringBuilder msg = new StringBuilder("The server sent a redirect for this connection:");
-				for (String it : redirects) {
-					msg.append(" [" + it + "]");
-				}
-				throw new MCLException(msg.toString());
-			}
 		}
-		return warns;
 	}
 
-	/**
-	 * A little helper function that processes a challenge string, and
-	 * returns a response string for the server.  If the challenge
-	 * string is null, a challengeless response is returned.
-	 *
-	 * @param chalstr the challenge string
-	 *	for example: H8sRMhtevGd:mserver:9:PROT10,RIPEMD160,SHA256,SHA1,COMPRESSION_SNAPPY,COMPRESSION_LZ4:LIT:SHA512:
-	 * @param username the username to use
-	 * @param password the password to use
-	 * @param language the language to use
-	 * @param database the database to connect to
-	 * @param hash the hash method(s) to use, or NULL for all supported hashes
-	 * @return the response string for the server
-	 * @throws MCLParseException when parsing failed
-	 * @throws MCLException if an MCL related error occurs
-	 * @throws IOException when IO exception occurred
-	 */
-	private String getChallengeResponse(
-			final String chalstr,
-			String username,
-			String password,
-			final String language,
-			final String database,
-			final String hash
-	) throws MCLParseException, MCLException, IOException {
-		// parse the challenge string, split it on ':'
-		final String[] chaltok = chalstr.split(":");
-		if (chaltok.length <= 5)
-			throw new MCLParseException("Server challenge string unusable! It contains too few (" + chaltok.length + ") tokens: " + chalstr);
+	private Socket wrapTLS(Socket sock, Target.Validated validated) throws IOException {
+		if (validated.getTls())
+			return SecureSocket.wrap(validated, sock);
+		else {
+			// Send an even number of NUL bytes to avoid a deadlock if
+			// we're accidentally connecting to a TLS-protected server.
+			// The cause of the deadlock is that we speak MAPI and we wait
+			// for the server to send a MAPI challenge.
+			// However, if the server is trying to set up TLS, it will be
+			// waiting for us to send a TLS 'Client Hello' packet.
+			// Hence, deadlock.
+			// NUL NUL is a no-op in MAPI and will hopefully force an error
+			// in the TLS server. This does not always work, some
+			// TLS implementations abort on the first NUL, some need more NULs
+			// than we are prepared to send here. 8 seems to be a good number.
+			sock.getOutputStream().write(NUL_BYTES);
+		}
+		return sock;
+	}
 
+	private boolean handshake(Target.Validated validated, OptionsCallback callback, ArrayList<String> warnings) throws IOException, MCLException {
+		String challenge = reader.getLine();
+		reader.advance();
+		if (reader.getLineType() != LineType.PROMPT)
+			throw new MCLException("Garbage after server challenge: " + reader.getLine());
+		String response = challengeResponse(validated, challenge, callback);
+		writer.writeLine(response);
+		reader.advance();
+
+		// Process the response lines.
+		String redirect = null;
+		StringBuilder errors = new StringBuilder();
+		while (reader.getLineType() != LineType.PROMPT) {
+			switch (reader.getLineType()) {
+				case REDIRECT:
+					if (redirect == null)
+						redirect = reader.getLine(1);
+					break;
+				case ERROR:
+					if (errors.length() > 0)
+						errors.append("\n");
+					errors.append(reader.getLine(7));  // 7 not 1!
+					break;
+				case INFO:
+					warnings.add(reader.getLine(1));
+					break;
+				default:
+					// ignore??!!
+					break;
+			}
+			reader.advance();
+		}
+		if (errors.length() > 0)
+			throw new MCLException(errors.toString());
+
+		if (redirect == null)
+			return true;   // we're happy
+
+		// process redirect
 		try {
-			version = Integer.parseInt(chaltok[2]);	// protocol version
-		} catch (NumberFormatException e) {
-			throw new MCLParseException("Protocol version (" + chaltok[2] + ") unparseable as integer.");
+			MonetUrlParser.parse(target, redirect);
+		} catch (URISyntaxException | ValidationError e) {
+			throw new MCLException("While processing redirect " + redirect + ": " + e.getMessage(), e);
+		}
+		if (redirect.startsWith("mapi:merovingian://proxy")) {
+			// The reader is stuck at LineType.PROMPT but actually the
+			// next challenge is already there.
+			reader.resetLineType();
+			reader.advance();
+		} else {
+			close();
 		}
 
-		// handle the challenge according to the version it is
-		switch (version) {
-			case 9:
-				// proto 9 is like 8, but uses a hash instead of the plain password
-				// the server tells us (in 6th token) which hash in the
-				// challenge after the byte-order token
+		return false;   // we need another go
+	}
 
-				String algo;
-				String pwhash = chaltok[5];
-				/* NOTE: Java doesn't support RIPEMD160 :( */
-				/* see: https://docs.oracle.com/javase/8/docs/technotes/guides/security/StandardNames.html#MessageDigest */
-				switch (pwhash) {
-					case "SHA512":
-						algo = "SHA-512";
-						break;
-					case "SHA384":
-						algo = "SHA-384";
-						break;
-					case "SHA256":
-						algo = "SHA-256";
-						/* NOTE: Java 7 doesn't support SHA-224. Java 8 does but we have not tested it. It is also not requested yet. */
-						break;
-					case "SHA1":
-						algo = "SHA-1";
-						break;
-					default:
-						/* Note: MD5 has been deprecated by security experts and support is removed from Oct 2020 release */
-						throw new MCLException("Unsupported password hash: " + pwhash);
-				}
-				try {
-					final MessageDigest md = MessageDigest.getInstance(algo);
-					md.update(password.getBytes(StandardCharsets.UTF_8));
-					password = toHex(md.digest());
-				} catch (NoSuchAlgorithmException e) {
-					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e);
-				}
+	private String challengeResponse(Target.Validated validated, final String challengeLine, OptionsCallback callback) throws MCLException {
+		// The challengeLine looks like this:
+		//
+		// 45IYyVyRnbgEnK92ad:merovingian:9:RIPEMD160,SHA512,SHA384,SHA256,SHA224,SHA1:LIT:SHA512:
+		// WgHIibSyH:mserver:9:RIPEMD160,SHA512,SHA384,SHA256,SHA224,SHA1:LIT:SHA512:sql=6:BINARY=1:
+		// 0         1       2 3                                          4   5      6     7
 
-				// proto 7 (finally) used the challenge and works with a
-				// password hash.  The supported implementations come
-				// from the server challenge.  We chose the best hash
-				// we can find, in the order SHA512, SHA1, MD5, plain.
-				// Also the byte-order is reported in the challenge string,
-				// which makes sense, since only blockmode is supported.
-				// proto 8 made this obsolete, but retained the
-				// byte-order report for future "binary" transports.
-				// In proto 8, the byte-order of the blocks is always little
-				// endian because most machines today are.
-				final String hashes = (hash == null || hash.isEmpty()) ? chaltok[3] : hash;
-				final HashSet<String> hashesSet = new HashSet<String>(java.util.Arrays.asList(hashes.toUpperCase().split("[, ]")));	// split on comma or space
+		String[] parts = challengeLine.split(":");
+		if (parts.length < 3)
+			throw new MCLException("Invalid challenge: expect at least 3 fields");
+		String saltPart = parts[0];
+		String serverTypePart = parts[1];
+		String versionPart = parts[2];
+		int version;
+		if (versionPart.equals("9"))
+			version = 9;
+		else
+			throw new MCLException("Protocol versions other than 9 are note supported: " + versionPart);
+		if (parts.length < 6)
+			throw new MCLException("Protocol version " + version + " requires at least 6 fields, found " + parts.length + ": " + challengeLine);
+		String serverHashesPart = parts[3];
+//		String endianPart = parts[4];
+		String passwordHashPart = parts[5];
+		String optionsPart = parts.length > 6 ? parts[6] : null;
+//		String binaryPart = parts.length > 7 ? parts[7] : null;
 
-				// if we deal with merovingian, mask our credentials
-				if (chaltok[1].equals("merovingian") && !language.equals("control")) {
-					username = "merovingian";
-					password = "merovingian";
-				}
-
-				// reuse variables algo and pwhash
-				algo = null;
-				pwhash = null;
-				if (hashesSet.contains("SHA512")) {
-					algo = "SHA-512";
-					pwhash = "{SHA512}";
-				} else if (hashesSet.contains("SHA384")) {
-					algo = "SHA-384";
-					pwhash = "{SHA384}";
-				} else if (hashesSet.contains("SHA256")) {
-					algo = "SHA-256";
-					pwhash = "{SHA256}";
-				} else if (hashesSet.contains("SHA1")) {
-					algo = "SHA-1";
-					pwhash = "{SHA1}";
-				} else {
-					/* Note: MD5 has been deprecated by security experts and support is removed from Oct 2020 release */
-					throw new MCLException("no supported hash algorithms found in " + hashes);
-				}
-				try {
-					final MessageDigest md = MessageDigest.getInstance(algo);
-					md.update(password.getBytes(StandardCharsets.UTF_8));
-					md.update(chaltok[0].getBytes(StandardCharsets.UTF_8));	// salt/key
-					pwhash += toHex(md.digest());
-				} catch (NoSuchAlgorithmException e) {
-					throw new MCLException("This JVM does not support password hash: " + pwhash + "\n" + e);
-				}
-
-				// TODO: some day when we need this, we should store this
-				if (chaltok[4].equals("BIG")) {
-					// byte-order of server is big-endian
-				} else if (chaltok[4].equals("LIT")) {
-					// byte-order of server is little-endian
-				} else {
-					throw new MCLParseException("Invalid byte-order: " + chaltok[4]);
-				}
-
-				// compose and return response
-				String response = "BIG:"    // JVM byte-order is big-endian
-						+ username + ":"
-						+ pwhash + ":"
-						+ language + ":"
-						+ (database == null ? "" : database) + ":"
-						+ "FILETRANS:";	 // this capability is added in monetdb-jdbc-3.2.jre8.jar
-				if (chaltok.length > 6) {
-					// if supported, send handshake options
-					for (String part : chaltok[6].split(",")) {
-						if (part.startsWith("sql=") && handshakeOptions != null) {
-							int level;
-							try {
-								level = Integer.parseInt(chaltok[6].substring(4));
-							} catch (NumberFormatException e) {
-								throw new MCLParseException("Invalid handshake level: " + chaltok[6]);
-							}
-							boolean first = true;
-							for (HandshakeOption<?> opt: handshakeOptions) {
-								if (opt.getLevel() < level) {
-									// server supports it
-									if (first) {
-										first = false;
-									} else {
-										response += ",";
-									}
-									response += opt.getFieldName() + "=" + opt.numericValue();
-									opt.setSent(true);
-								}
-							}
-							break;
-						}
-					}
-					// this ':' delimits the handshake options field.
-					response += ":";
-				}
-				return response;
-			default:
-				throw new MCLException("Unsupported protocol version: " + version);
+		String userResponse;
+		String password = target.getPassword();
+		if (serverTypePart.equals("merovingian") && !target.getLanguage().equals("control")) {
+			userResponse = "merovingian";
+			password = "merovingian";
+		} else {
+			userResponse = target.getUser();
 		}
+		String optionsResponse = handleOptions(callback, optionsPart);
+
+		// Response looks like this:
+		//
+		// LIT:monetdb:{RIPEMD160}f2236256e5a9b20a5ecab4396e36c14f66c3e3c5:sql:demo
+		// :FILETRANS:auto_commit=1,reply_size=1000,size_header=0,columnar_protocol=0,time_zone=3600:
+		StringBuilder response = new StringBuilder(80);
+		response.append("BIG:");
+		response.append(userResponse).append(":");
+		hashPassword(response, saltPart, password, passwordHashPart, validated.getHash(), serverHashesPart);
+		response.append(":");
+		response.append(validated.getLanguage()).append(":");
+		response.append(validated.getDatabase()).append(":");
+		response.append("FILETRANS:");
+		response.append(optionsResponse).append(":");
+
+		return response.toString();
+	}
+
+	private String hashPassword(StringBuilder responseBuffer, String salt, String password, String passwordAlgo, String configuredHashes, String serverSupportedAlgos) throws MCLException {
+		// First determine which hash algorithms we can choose from for the challenge response.
+		// This defaults to whatever the server offers but may be restricted by the user.
+		Set<String> algoSet = new HashSet<>(Arrays.asList(serverSupportedAlgos.split(",")));
+		if (!configuredHashes.isEmpty()) {
+			String[] allowedList = configuredHashes.toUpperCase().split("[, ]");
+			Set<String> allowedSet = new HashSet<>(Arrays.asList(allowedList));
+			algoSet.retainAll(allowedSet);
+			if (algoSet.isEmpty()) {
+				throw new MCLException("None of the hash algorithms in <" + configuredHashes + "> are supported, server only supports <" + serverSupportedAlgos + ">");
+			}
+		}
+
+		int maxHashDigits = 512 / 4;
+
+		// We'll collect the result in the responseBuffer.
+		// It will start with '{' HASHNAME '}' followed by hexdigits
+
+		// This is where we accumulate what will eventually be hashed into the hexdigits above.
+		// It consists of the hexadecimal pre-hash of the password,
+		// followed by the salt from the server
+		StringBuilder intermediate = new StringBuilder(maxHashDigits + salt.length());
+
+		MessageDigest passwordDigest = pickBestAlgorithm(Collections.singleton(passwordAlgo), null);
+		// Here's the password..
+		hexhash(intermediate, passwordDigest, password);
+		// .. and here's the salt
+		intermediate.append(salt);
+
+		responseBuffer.append('{');
+		MessageDigest responseDigest = pickBestAlgorithm(algoSet, responseBuffer);
+		// the call above has appended the HASHNAME, now add '}'
+		responseBuffer.append('}');
+		// pickBestAlgorithm has appended HASHNAME, buffer now contains '{' HASHNAME '}'
+		hexhash(responseBuffer, responseDigest, intermediate.toString());
+		// response buffer now contains '{' HASHNAME '}' HEX_DIGITS_OF_INTERMEDIATE_BUFFER
+
+		return responseBuffer.toString();
 	}
 
 	/**
-	 * Small helper method to convert a byte string to a hexadecimal
-	 * string representation.
+	 * Pick the most preferred digest algorithm and return a MessageDigest instance for that.
 	 *
-	 * @param digest the byte array to convert
-	 * @return the byte array as hexadecimal string
+	 * @param algos          the MAPI names of permitted algorithms
+	 * @param appendMapiName if not null, append MAPI name of chose algorithm to this buffer
+	 * @return instance of the chosen digester
+	 * @throws MCLException if none of the options is supported
 	 */
-	private final static String toHex(final byte[] digest) {
-		final char[] result = new char[digest.length * 2];
-		int pos = 0;
-		for (int i = 0; i < digest.length; i++) {
-			result[pos++] = hexChar((digest[i] & 0xf0) >> 4);
-			result[pos++] = hexChar(digest[i] & 0x0f);
+	private MessageDigest pickBestAlgorithm(Set<String> algos, StringBuilder appendMapiName) throws MCLException {
+		for (String[] choice : KNOWN_ALGORITHMS) {
+			String mapiName = choice[0];
+			String algoName = choice[1];
+			MessageDigest digest;
+			if (!algos.contains(mapiName))
+				continue;
+			try {
+				digest = MessageDigest.getInstance(algoName);
+			} catch (NoSuchAlgorithmException e) {
+				continue;
+			}
+			// we found a match
+			if (appendMapiName != null) {
+				appendMapiName.append(mapiName);
+			}
+			return digest;
 		}
-		return new String(result);
+		String algoNames = String.join(",", algos);
+		throw new MCLException("No supported hash algorithm: " + algoNames);
 	}
 
-	private final static char hexChar(final int n) {
-		return (n > 9)
-			? (char) ('a' + (n - 10))
-			: (char) ('0' + n);
+	/**
+	 * Hash the text into the MessageDigest and append the hexadecimal form of the
+	 * resulting digest to buffer.
+	 *
+	 * @param buffer where the hex digits are appended
+	 * @param digest where the hex digits come from after the text has been digested
+	 * @param text   text to digest
+	 */
+	private void hexhash(StringBuilder buffer, MessageDigest digest, String text) {
+		byte[] bytes = text.getBytes(StandardCharsets.UTF_8);
+		digest.update(bytes);
+		byte[] output = digest.digest();
+		for (byte b : output) {
+			int hi = (b & 0xF0) >> 4;
+			int lo = b & 0x0F;
+			buffer.append(HEXDIGITS[hi]);
+			buffer.append(HEXDIGITS[lo]);
+		}
+	}
+
+	private String handleOptions(OptionsCallback callback, String optionsPart) throws MCLException {
+		if (callback == null || optionsPart == null || optionsPart.isEmpty())
+			return "";
+
+		StringBuilder buffer = new StringBuilder();
+		callback.setBuffer(buffer);
+		for (String optlevel : optionsPart.split(",")) {
+			int eqindex = optlevel.indexOf('=');
+			if (eqindex < 0)
+				throw new MCLException("Invalid options part in server challenge: " + optionsPart);
+			String lang = optlevel.substring(0, eqindex);
+			int level;
+			try {
+				level = Integer.parseInt(optlevel.substring(eqindex + 1));
+			} catch (NumberFormatException e) {
+				throw new MCLException("Invalid option level in server challenge: " + optlevel);
+			}
+			callback.addOptions(lang, level);
+		}
+
+		return buffer.toString();
 	}
 
 	/**
@@ -720,7 +726,7 @@ public final class MapiSocket {
 	 */
 	public void debug(final Writer out) {
 		log = out;
-		debug = true;
+		setDebug(true);
 	}
 
 	/**
@@ -752,15 +758,6 @@ public final class MapiSocket {
 	}
 
 	/**
-	 * Set the HandshakeOptions
-	 *
-	 * @param handshakeOptions the options array
-	 */
-	public void setHandshakeOptions(HandshakeOption<?>[] handshakeOptions) {
-		this.handshakeOptions = handshakeOptions;
-	}
-
-	/**
 	 * For internal use
 	 *
 	 * @param b to enable/disable insert 'fake' newline and prompt
@@ -770,6 +767,9 @@ public final class MapiSocket {
 		return fromMonet.setInsertFakePrompts(b);
 	}
 
+	public boolean isDebug() {
+		return target.isDebug();
+	}
 
 	/**
 	 * Inner class that is used to write data on a normal stream as a
@@ -809,7 +809,7 @@ public final class MapiSocket {
 			// it's a bit nasty if an exception is thrown from the log,
 			// but ignoring it can be nasty as well, so it is decided to
 			// let it go so there is feedback about something going wrong
-			if (debug) {
+			if (isDebug()) {
 				log.flush();
 			}
 		}
@@ -843,7 +843,7 @@ public final class MapiSocket {
 			// write the actual block
 			out.write(block, 0, writePos);
 
-			if (debug) {
+			if (isDebug()) {
 				if (last) {
 					log("TD ", "write final block: " + writePos + " bytes", false);
 				} else {
@@ -968,7 +968,7 @@ public final class MapiSocket {
 					// if we have read something before, we should have been
 					// able to read the whole, so make this fatal
 					if (off > 0) {
-						if (debug) {
+						if (isDebug()) {
 							log("RD ", "the following incomplete block was received:", false);
 							log("RX ", new String(b, 0, off, StandardCharsets.UTF_8), true);
 						}
@@ -976,7 +976,7 @@ public final class MapiSocket {
 								con.getInetAddress().getHostName() + ":" +
 								con.getPort() + ": Incomplete block read from stream");
 					}
-					if (debug)
+					if (isDebug())
 						log("RD ", "server closed the connection (EOF)", true);
 					return false;
 				}
@@ -1027,7 +1027,7 @@ public final class MapiSocket {
 
 			readPos = 0;
 
-			if (debug) {
+			if (isDebug()) {
 				if (wasEndBlock) {
 					log("RD ", "read final block: " + blockLen + " bytes", false);
 				} else {
@@ -1043,7 +1043,7 @@ public final class MapiSocket {
 			if (!_read(block, blockLen))
 				return -1;
 
-			if (debug)
+			if (isDebug())
 				log("RX ", new String(block, 0, blockLen, StandardCharsets.UTF_8), true);
 
 			// if this is the last block, make it end with a newline and prompt
@@ -1058,7 +1058,7 @@ public final class MapiSocket {
 						block[blockLen++] = b;
 					}
 					block[blockLen++] = '\n';
-					if (debug) {
+					if (isDebug()) {
 						log("RD ", "inserting prompt", true);
 					}
 				}
@@ -1074,7 +1074,7 @@ public final class MapiSocket {
 					return -1;
 			}
 
-			if (debug)
+			if (isDebug())
 				log("RX ", new String(block, readPos, 1, StandardCharsets.UTF_8), true);
 
 			return block[readPos++] & 0xFF;
@@ -1213,7 +1213,7 @@ public final class MapiSocket {
 				con = null;
 			} catch (IOException e) { /* ignore it */ }
 		}
-		if (debug && log != null && log instanceof FileWriter) {
+		if (isDebug() && log != null && log instanceof FileWriter) {
 			try {
 				log.close();
 				log = null;
@@ -1522,6 +1522,50 @@ public final class MapiSocket {
 				return -1;
 			else
 				return off - origOff;
+		}
+	}
+
+	/**
+	 * Callback used during the initial MAPI handshake.
+	 *
+	 * Newer MonetDB versions allow setting some options during the handshake.
+	 * The options are language-specific and each has a 'level'. The server
+	 * advertises up to which level options are supported for a given language.
+	 * For each language/option combination, {@link #addOptions} will be invoked
+	 * during the handshake. This method should call {@link #contribute} for each
+	 * option it wants to set.
+	 *
+	 * At the time of writing, only the 'sql' language supports options,
+	 * they are listed in enum mapi_handshake_options_levels in mapi.h.
+	 */
+	public static abstract class OptionsCallback {
+		private StringBuilder buffer;
+
+		/**
+		 * Callback called for each language/level combination supported by the
+		 * server. May call {@link #contribute} for options with a level STRICTLY
+		 * LOWER than the level passed as a parameter.
+		 * @param lang language advertised by the server
+		 * @param level one higher than the maximum supported option
+		 */
+		public abstract void addOptions(String lang, int level);
+
+		/**
+		 * Pass option=value during the handshake
+		 * @param field
+		 * @param value
+		 */
+		protected void contribute(String field, int value) {
+			if (buffer.length() > 0)
+				buffer.append(',');
+			buffer.append(field);
+			buffer.append('=');
+			buffer.append(value);
+		}
+
+
+		void setBuffer(StringBuilder buf) {
+			buffer = buf;
 		}
 	}
 }

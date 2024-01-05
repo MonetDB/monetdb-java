@@ -14,11 +14,13 @@ package org.monetdb.util;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Properties;
 
 public final class CmdLineOpts {
 	/** the arguments we handle */
 	private HashMap<String, OptionContainer> opts = new HashMap<String, OptionContainer>();
+	private final HashSet<String> ignoredInFile = new HashSet<>();
 	/** the options themself */
 	private ArrayList<OptionContainer> options = new ArrayList<OptionContainer>();
 
@@ -57,6 +59,10 @@ public final class CmdLineOpts {
 			opts.put(longa, oc);
 	}
 
+	public void addIgnored(String name) {
+		ignoredInFile.add(name);
+	}
+
 	public void removeOption(final String name) {
 		final OptionContainer oc = opts.get(name);
 		if (oc != null) {
@@ -92,9 +98,10 @@ public final class CmdLineOpts {
 				if (option != null) {
 					option.resetArguments();
 					option.addArgument(prop.getProperty(key));
-				} else
+				} else if (!ignoredInFile.contains(key)) {
 					// ignore unknown options (it used to throw an OptionsException)
 					System.out.println("Info: Ignoring unknown/unsupported option (in " + file.getAbsolutePath() + "): " + key);
+				}
 			}
 		} catch (java.io.IOException e) {
 			throw new OptionsException("File IO Exception: " + e);
