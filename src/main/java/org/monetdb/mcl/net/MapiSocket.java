@@ -376,10 +376,18 @@ public final class MapiSocket {
 
 			// Only assign to sock when everything went ok so far
 			con = sock;
+			sock = null;
 		} catch (SSLException e) {
 			throw new MCLException("SSL error: " + e.getMessage(), e);
 		} catch (IOException e) {
 			throw new MCLException("Could not connect to " + tcpHost + ":" + port + ": " + e.getMessage(), e);
+		} finally {
+			if (sock != null)
+				try {
+					sock.close();
+				} catch (IOException e) {
+					// ignore
+				}
 		}
 	}
 
