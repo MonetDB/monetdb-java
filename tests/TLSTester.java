@@ -201,7 +201,7 @@ public class TLSTester {
 	}
 
 	private void test_fail_plain_to_tls() throws IOException, SQLException {
-		attempt("fail_plain_to_tls", "server1").with(Parameter.TLS, false).expectFailure("Cannot connect");
+		attempt("fail_plain_to_tls", "server1").with(Parameter.TLS, false).expectFailure("Cannot connect", "Could not connect");
 	}
 
 	private void test_connect_server_name() throws IOException, SQLException {
@@ -305,7 +305,7 @@ public class TLSTester {
 					if (e.getMessage().contains(expected))
 						return;
 				String message = "Test " + testName + " threw the wrong exception: " + e.getMessage() + '\n' + "Expected:\n        <" + String.join(">\n        <", expectedMessages) + ">";
-				throw new RuntimeException(message);
+				throw new RuntimeException(message, e);
 
 			}
 		}
