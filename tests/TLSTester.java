@@ -1,3 +1,15 @@
+/*
+ * SPDX-License-Identifier: MPL-2.0
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 2024 MonetDB Foundation;
+ * Copyright August 2008 - 2023 MonetDB B.V.;
+ * Copyright 1997 - July 2008 CWI.
+ */
+
 import org.monetdb.mcl.net.Parameter;
 
 import java.io.*;
@@ -130,8 +142,8 @@ public class TLSTester {
 		test_refuse_wrong_host();
 		test_refuse_tlsv12();
 		test_refuse_expired();
-//        test_connect_client_auth1();
-//        test_connect_client_auth2();
+//		test_connect_client_auth1();
+//		test_connect_client_auth2();
 		test_fail_tls_to_plain();
 		test_fail_plain_to_tls();
 		test_connect_server_name();
@@ -301,14 +313,13 @@ public class TLSTester {
 				expectSuccess();
 				throw new RuntimeException("Expected test " + testName + " to throw an exception but it didn't");
 			} catch (SQLException e) {
-				for (String expected : expectedMessages)
+				for (String expected : expectedMessages) {
 					if (e.getMessage().contains(expected))
 						return;
+				}
 				String message = "Test " + testName + " threw the wrong exception: " + e.getMessage() + '\n' + "Expected:\n        <" + String.join(">\n        <", expectedMessages) + ">";
 				throw new RuntimeException(message, e);
-
 			}
 		}
-
 	}
 }
