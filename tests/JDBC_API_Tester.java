@@ -741,6 +741,7 @@ final public class JDBC_API_Tester {
 		handleExecuteDDL(stmt, action, "type", "xml", "CREATE TYPE xml EXTERNAL NAME xml");
 
 		try {
+			final boolean isPostDec2023 = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 51);	// Change 51 into 49 after branch cleanup_types has been merged into default
 			DatabaseMetaData dbmd = con.getMetaData();
 
 			// inspect the catalog by use of dbmd functions
@@ -780,7 +781,7 @@ final public class JDBC_API_Tester {
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
 			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
-			"null	sys	table_types	table_type_id	5	smallint	16	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
+			"null	sys	table_types	table_type_id	5	smallint	" + (isPostDec2023 ? "15" : "16") + "	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
 			"null	sys	table_types	table_type_name	12	varchar	25	0	0	0	0	null	null	0	0	100	2	NO	null	null	null	null	NO	NO\n");
 
 			compareResultSet(dbmd.getPrimaryKeys(null, "sys", "table\\_types"), "getPrimaryKeys(null, sys, table\\_types)",
@@ -842,63 +843,63 @@ final public class JDBC_API_Tester {
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	language_id	5	smallint	16	0	0	1\n");
+			"2	language_id	5	smallint	" + (isPostDec2023 ? "15" : "16") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, sys, nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id	4	int	32	0	0	1\n");
+			"2	id	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
 						"getBestRowIdentifier(null, sys, nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id	4	int	32	0	0	1\n");
+			"2	id	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_pk_uc", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, tmp_pk_uc, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id1	4	int	32	0	0	1\n");
+			"2	id1	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n");
+			"2	id2	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
 						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n");
+			"2	id2	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_pk_uc", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, glbl_pk_uc, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id1	4	int	32	0	0	1\n");
+			"2	id1	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, glbl_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n");
+			"2	id2	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
 						"getBestRowIdentifier(null, tmp, glbl_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n");
+			"2	id2	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table\\_types"), "getTablePrivileges(null, sys, table\\_types)",
 			"Resultset with 7 columns\n" +
@@ -1012,7 +1013,7 @@ final public class JDBC_API_Tester {
 
 		/* servers before Jan2022 (11.45) have a problem (server crash and db corruption)
 		   with indexes created on temp tables, so conditionally execute those commands and tests */
-		boolean testCreateDropIndexOnTmpTables = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 43);
+		final boolean testCreateDropIndexOnTmpTables = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 43);
 
 		String action = "Create";
 		handleExecuteDDL(stmt, action, "schema", "jdbctst", "CREATE SCHEMA jdbctst; SET SCHEMA jdbctst;");
@@ -1128,6 +1129,7 @@ final public class JDBC_API_Tester {
 			"COMMENT ON FUNCTION sys.statistics() IS 'sys.statistics() function comment';");
 
 		try {
+			final boolean isPostDec2023 = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 51);	// Change 51 into 49 after branch cleanup_types has been merged into default
 			// query the catalog by calling DatabaseMetaData methods
 			compareResultSet(dbmd.getCatalogs(), "getCatalogs()",
 			"Resultset with 1 columns\n" +
@@ -1184,7 +1186,7 @@ final public class JDBC_API_Tester {
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
 			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
-			"null	jdbctst	pk_uc	id1	4	int	32	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
+			"null	jdbctst	pk_uc	id1	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
 			"null	jdbctst	pk_uc	name1	12	varchar	99	0	0	0	1	null	null	0	0	396	2	YES	null	null	null	null	NO	NO\n");
 
 			compareResultSet(dbmd.getColumns(null, "tmp", "tlargechar", null), "getColumns(null, tmp, tlargechar, null)",
@@ -1265,63 +1267,63 @@ final public class JDBC_API_Tester {
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	language_id	5	smallint	16	0	0	1\n");
+			"2	language_id	5	smallint	" + (isPostDec2023 ? "15" : "16") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "jdbctst", "nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, jdbctst, nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n");
+			"2	id2	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "jdbctst", "nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
 						"getBestRowIdentifier(null, jdbctst, nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n");
+			"2	id2	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_pk_uc", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, tmp_pk_uc, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id1	4	int	32	0	0	1\n");
+			"2	id1	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n");
+			"2	id2	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "tmp_nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
 						"getBestRowIdentifier(null, tmp, tmp_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n");
+			"2	id2	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_pk_uc", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, glbl_pk_uc, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id1	4	int	32	0	0	1\n");
+			"2	id1	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_nopk_twoucs", DatabaseMetaData.bestRowTransaction, true),
 						"getBestRowIdentifier(null, tmp, glbl_nopk_twoucs, DatabaseMetaData.bestRowTransaction, true)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n");
+			"2	id2	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "tmp", "glbl_nopk_twoucs", DatabaseMetaData.bestRowTransaction, false),
 						"getBestRowIdentifier(null, tmp, glbl_nopk_twoucs, DatabaseMetaData.bestRowTransaction, false)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id2	4	int	32	0	0	1\n");
+			"2	id2	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n");
 
 			// also test a table without pk or uc, it should return a row for each column
 			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "schemas", DatabaseMetaData.bestRowTransaction, true),
@@ -1329,10 +1331,10 @@ final public class JDBC_API_Tester {
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id	4	int	32	0	0	1\n" +
+			"2	id	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n" +
 			"2	name	12	varchar	1024	0	0	1\n" +
-			"2	authorization	4	int	32	0	0	1\n" +
-			"2	owner	4	int	32	0	0	1\n" +
+			"2	authorization	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n" +
+			"2	owner	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n" +
 			"2	system	16	boolean	1	0	0	1\n");
 
 			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "_tables", DatabaseMetaData.bestRowTransaction, true),
@@ -1340,14 +1342,14 @@ final public class JDBC_API_Tester {
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	id	4	int	32	0	0	1\n" +
+			"2	id	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n" +
 			"2	name	12	varchar	1024	0	0	1\n" +
-			"2	schema_id	4	int	32	0	0	1\n" +
+			"2	schema_id	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	1\n" +
 			"2	query	12	varchar	1048576	0	0	1\n" +
-			"2	type	5	smallint	16	0	0	1\n" +
+			"2	type	5	smallint	" + (isPostDec2023 ? "15" : "16") + "	0	0	1\n" +
 			"2	system	16	boolean	1	0	0	1\n" +
-			"2	commit_action	5	smallint	16	0	0	1\n" +
-			"2	access	5	smallint	16	0	0	1\n");
+			"2	commit_action	5	smallint	" + (isPostDec2023 ? "15" : "16") + "	0	0	1\n" +
+			"2	access	5	smallint	" + (isPostDec2023 ? "15" : "16") + "	0	0	1\n");
 
 			// also test a view (without pk or uc of course), it should return no rows
 			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "tables", DatabaseMetaData.bestRowTransaction, true),
@@ -1361,7 +1363,7 @@ final public class JDBC_API_Tester {
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
-			"2	table_type_id	5	smallint	16	0	0	1\n");
+			"2	table_type_id	5	smallint	" + (isPostDec2023 ? "15" : "16") + "	0	0	1\n");
 
 			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table\\_types"), "getTablePrivileges(null, sys, table\\_types)",
 			"Resultset with 7 columns\n" +
