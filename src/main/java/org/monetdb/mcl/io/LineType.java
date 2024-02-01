@@ -90,6 +90,13 @@ public enum LineType {
 		return UNKNOWN;
 	}
 
+	/**
+	 * utility method to decide the LineType
+	 *
+	 * @param ch0 the first byte as int
+	 * @param ch1 the second byte as int
+	 * @return LineType the type of line
+	 */
 	private static final LineType classify(int ch0, int ch1) {
 		switch (ch0) {
 			case '!':
