@@ -41,8 +41,6 @@ import org.monetdb.mcl.parser.HeaderLineParser;
 import org.monetdb.mcl.parser.MCLParseException;
 import org.monetdb.mcl.parser.StartOfHeaderParser;
 
-import javax.net.ssl.SSLException;
-
 /**
  *<pre>
  * A {@link Connection} suitable for the MonetDB database.
@@ -76,7 +74,7 @@ public class MonetConnection
 	implements Connection, AutoCloseable
 {
 	/* All connection parameters */
-	Target target;
+	private final Target target;
 	/** A connection to mserver5 using a TCP socket */
 	private final MapiSocket server;
 	/** The Reader from the server */
@@ -137,8 +135,7 @@ public class MonetConnection
 
 	/**
 	 * Constructor of a Connection for MonetDB.
-	 * This constructor is only accessible to
-	 * classes from the jdbc package.
+	 * This constructor is only accessible to classes from the jdbc package.
 	 *
 	 * @param target a {@link Target} object containing all connection parameters
 	 * @throws SQLException if a database error occurs
@@ -212,7 +209,7 @@ public class MonetConnection
 			final String error = in.discardRemainder();
 			if (error != null)
 				throw new SQLNonTransientConnectionException((error.length() > 6) ? error.substring(6) : error, "08001");
-		} catch (SSLException e) {
+		} catch (javax.net.ssl.SSLException e) {
 			throw new SQLNonTransientConnectionException("Cannot establish secure connection: " + e.getMessage(), e);
 		} catch (IOException e) {
 			throw new SQLNonTransientConnectionException("Cannot connect: " + e.getMessage(), "08006", e);
@@ -1671,37 +1668,6 @@ public class MonetConnection
 	 */
 	String getJDBCURL() {
 		return target.buildUrl();
-	}
-
-	/**
-	 * Utility method to check if connection property name is supported.
-	 * If it is not supported a warning is added to this Connection.
-	 *
-	 * @param name the connection property name to check
-	 * @param context the method name from where this is called
-	 * @return valid true or false
-	 */
-	private boolean checkValidProperty(String name, String context) {
-		// supported MonetDB connection properties.
-		// See also MonetDriver.connect()
-		if (name.equals("host")
-		 || name.equals("port")
-		 || name.equals("user")
-		 || name.equals("password")
-		 || name.equals("language")
-		 || name.equals("database")
-		 || name.equals("debug")
-		 || name.equals("logfile")
-		 || name.equals("hash")
-		 || name.equals("treat_blob_as_binary")
-		 || name.equals("treat_clob_as_varchar")
-		 || name.equals("autocommit")
-		 || name.equals("so_timeout")
-		 || name.equals("fetchsize"))	// only supported by servers from version 11.41.1 onwards
-			return true;
-
-		addWarning(context + " property name '" + name + "' is not recognized", "01M07");
-		return false;
 	}
 
 	// Internal caches for 4 static mserver5 environment values

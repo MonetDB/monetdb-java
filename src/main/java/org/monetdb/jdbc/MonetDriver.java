@@ -16,7 +16,13 @@ import org.monetdb.mcl.net.Target;
 import org.monetdb.mcl.net.ValidationError;
 
 import java.net.URISyntaxException;
-import java.sql.*;
+import java.sql.Connection;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.sql.DriverPropertyInfo;
+import java.sql.SQLException;
+import java.sql.SQLFeatureNotSupportedException;
+import java.sql.Types;
 import java.util.Map.Entry;
 import java.util.Properties;
 
@@ -93,9 +99,7 @@ public final class MonetDriver implements Driver {
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public Connection connect(final String url, Properties info)
-		throws SQLException
-	{
+	public Connection connect(final String url, final Properties info) throws SQLException {
 		// url should be of style jdbc:monetdb://<host>/<database>
 		if (!acceptsURL(url))
 			return null;
