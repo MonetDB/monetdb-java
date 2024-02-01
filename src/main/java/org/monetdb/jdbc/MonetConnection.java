@@ -1244,20 +1244,6 @@ public class MonetConnection
 	}
 
 	/**
-	 * Construct a Properties object holding all connection parameters such
-	 * as host, port, TLS configuration, autocommit, etc.
-	 * Passing this to {@link DriverManager.getConnection()} together
-	 * with the URL "jdbc:monetdb:" will create a new connection identical to
-	 * the current one.
-	 *
-	 * @return
-	 */
-
-	public Properties getConnectionProperties() {
-		return target.getProperties();
-	}
-
-	/**
 	 * Returns the value of the client info property specified by name.
 	 * This method may return null if the specified client info property
 	 * has not been set and does not have a default value.
@@ -1525,7 +1511,21 @@ public class MonetConnection
 	//== end methods of interface java.sql.Connection
 
 
-	//== internal helper methods which do not belong to the JDBC interface
+	//== internal helper methods which do NOT belong to the JDBC interface
+
+	/**
+	 * Construct a Properties object holding all connection parameters such
+	 * as host, port, TLS configuration, autocommit, etc.
+	 * Passing this to {@link DriverManager.getConnection()} together
+	 * with the URL "jdbc:monetdb:" will create a new connection identical to
+	 * the current one.
+	 *
+	 * @return a Properties object
+	 */
+	public Properties getConnectionProperties() {
+		return target.getProperties();
+	}
+
 
 	/** Handler for COPY ... INTO ... FROM 'data-file-name' ON CLIENT requests */
 	private UploadHandler uploadHandler;
