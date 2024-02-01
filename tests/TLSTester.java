@@ -128,7 +128,7 @@ public class TLSTester {
 	}
 
 	private InputStream fetchData(String resource) throws IOException {
-		URL url = new URL("http://" + serverHost + ":" + serverPort + resource);
+		URL url = new java.net.URI("http://" + serverHost + ":" + serverPort + resource).toURL;
 		URLConnection conn = url.openConnection();
 		conn.connect();
 		return conn.getInputStream();
