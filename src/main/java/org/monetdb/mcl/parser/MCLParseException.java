@@ -21,9 +21,8 @@ package org.monetdb.mcl.parser;
  * give an error offset whenever possible.  Alternatively it makes sure
  * that the error message includes the offending data read.
  */
+@SuppressWarnings("serial")
 public class MCLParseException extends java.text.ParseException {
-	private static final long serialVersionUID = 1L;
-
 	public MCLParseException(String e) {
 		super(e, -1);
 	}
