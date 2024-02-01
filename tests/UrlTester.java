@@ -387,6 +387,7 @@ public class UrlTester {
 		}
 	}
 
+	@SuppressWarnings("serial")
 	public static class Failure extends Exception {
 		private String filename = null;
 		private int lineno = -1;
