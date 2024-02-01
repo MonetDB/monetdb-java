@@ -40,23 +40,25 @@ public enum Parameter {
 	REPLYSIZE("replysize", ParameterType.Int, 250, "rows beyond this limit are retrieved on demand, <1 means unlimited", false),
 	FETCHSIZE("fetchsize", ParameterType.Int, null, "alias for replysize, specific to jdbc", false),
 	HASH("hash", ParameterType.Str, "", "specific to jdbc", false),
-	DEBUG("debug", ParameterType.Bool, false, "specific to jdbc", false),
-	LOGFILE("logfile", ParameterType.Str, "", "specific to jdbc", false),
-	SO_TIMEOUT("so_timeout", ParameterType.Int, 0, "abort if network I/O does not complete in this many milliseconds", false), CLOB_AS_VARCHAR("treat_clob_as_varchar", ParameterType.Bool, true, "return CLOB/TEXT data as type VARCHAR instead of type CLOB", false), BLOB_AS_BINARY("treat_blob_as_binary", ParameterType.Bool, true, "return BLOB data as type BINARY instead of type BLOB", false),
+	DEBUG("debug", ParameterType.Bool, false, "enable tracing of socket communication for debugging", false),
+	LOGFILE("logfile", ParameterType.Str, "", "when debug is enabled its output will be written to this logfile", false),
+	SO_TIMEOUT("so_timeout", ParameterType.Int, 0, "abort if network I/O does not complete in this many milliseconds, 0 means no timeout", false),
+	CLOB_AS_VARCHAR("treat_clob_as_varchar", ParameterType.Bool, true, "return CLOB/TEXT data as type VARCHAR instead of type CLOB", false),
+	BLOB_AS_BINARY("treat_blob_as_binary", ParameterType.Bool, true, "return BLOB data as type BINARY instead of type BLOB", false),
 	;
 
 	public final String name;
 	public final ParameterType type;
+	private final Object defaultValue;
 	public final String description;
 	public final boolean isCore;
-	private final Object defaultValue;
 
 	Parameter(String name, ParameterType type, Object defaultValue, String description, boolean isCore) {
 		this.name = name;
 		this.type = type;
-		this.isCore = isCore;
 		this.defaultValue = defaultValue;
 		this.description = description;
+		this.isCore = isCore;
 	}
 
 	public static Parameter forName(String name) {
