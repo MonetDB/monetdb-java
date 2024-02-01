@@ -128,7 +128,14 @@ public class TLSTester {
 	}
 
 	private InputStream fetchData(String resource) throws IOException {
-		URL url = new java.net.URI("http://" + serverHost + ":" + serverPort + resource).toURL;
+		URL url;
+		try {
+			// Note: as of Java version 20 java.net.URL(String) constructor is deprecated.
+			// https://docs.oracle.com/en/java/javase/20/docs/api/java.base/java/net/URL.html#%3Cinit%3E(java.lang.String)
+			url = new java.net.URI("http://" + serverHost + ":" + serverPort + resource).toURL();
+		} catch (java.net.URISyntaxException | java.net.MalformedURLException e) {
+			throw new IOException(e.getMessage());
+		}
 		URLConnection conn = url.openConnection();
 		conn.connect();
 		return conn.getInputStream();
