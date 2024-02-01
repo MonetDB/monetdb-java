@@ -1,5 +1,16 @@
-package org.monetdb.mcl.net;
+/*
+ * SPDX-License-Identifier: MPL-2.0
+ *
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0.  If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/.
+ *
+ * Copyright 2024 MonetDB Foundation;
+ * Copyright August 2008 - 2023 MonetDB B.V.;
+ * Copyright 1997 - July 2008 CWI.
+ */
 
+package org.monetdb.mcl.net;
 
 import java.util.Calendar;
 
@@ -31,7 +42,6 @@ public enum Parameter {
 	HASH("hash", ParameterType.Str, "", "specific to jdbc", false),
 	DEBUG("debug", ParameterType.Bool, false, "specific to jdbc", false),
 	LOGFILE("logfile", ParameterType.Str, "", "specific to jdbc", false),
-
 	SO_TIMEOUT("so_timeout", ParameterType.Int, 0, "abort if network I/O does not complete in this many milliseconds", false), CLOB_AS_VARCHAR("treat_clob_as_varchar", ParameterType.Bool, true, "return CLOB/TEXT data as type VARCHAR instead of type CLOB", false), BLOB_AS_BINARY("treat_blob_as_binary", ParameterType.Bool, true, "return BLOB data as type BINARY instead of type BLOB", false),
 	;
 
