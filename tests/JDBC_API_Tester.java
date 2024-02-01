@@ -40,13 +40,26 @@ import org.monetdb.jdbc.types.URL;
  * @version 0.2
  */
 final public class JDBC_API_Tester {
-	StringBuilder sb;	// buffer to collect the test output
-	final static int sbInitLen = 5224;
-	Connection con;	// main connection shared by all tests
-	int dbmsMajorVersion;
-	int dbmsMinorVersion;
-	boolean foundDifferences = false;
+	private StringBuilder sb;	// buffer to collect the test output
+	private Connection con;		// main connection shared by all tests
+	private int dbmsMajorVersion;
+	private int dbmsMinorVersion;
+	private boolean foundDifferences = false;
 
+	final private static int sbInitLen = 5224;
+
+	/**
+	 * constructor
+	 */
+	JDBC_API_Tester() {
+		sb = new StringBuilder(sbInitLen);
+	}
+
+	/**
+	 * main function
+	 * @param args this should contain the connectionURL string
+	 * @throws Exception if a database access error occurs
+	 */
 	public static void main(String[] args) throws Exception {
 		String con_URL = args[0];
 
@@ -54,7 +67,6 @@ final public class JDBC_API_Tester {
 		UrlTester.runAllTests();
 
 		JDBC_API_Tester jt = new JDBC_API_Tester();
-		jt.sb = new StringBuilder(sbInitLen);
 		jt.con = DriverManager.getConnection(con_URL);
 		// we are now connected
 		DatabaseMetaData dbmd = jt.con.getMetaData();
@@ -2628,7 +2640,7 @@ final public class JDBC_API_Tester {
 			"  pstmt has 0 result columns and 0 parameters\n");
 	}
 
-	static final char[] HEXES = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+	static private final char[] HEXES = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 	private String byteArrayToHexStr(final byte[] bytes) {
 		if (bytes == null)
 			return null;
@@ -6865,56 +6877,6 @@ final public class JDBC_API_Tester {
 		}
 
 		sb.append("CopyInto STDIN end\n");
-	}
-
-	private String extractFromJDBCURL(String conn_URL, String prop) {
-		// URL="jdbc:monetdb://${HOST}:${MAPIPORT}/${DBNAME}?user=$(USER)&password=$(PWD)&${JDBC_EXTRA_ARGS}"
-		// URL example: jdbc:monetdb://localhost:35145/mTests_sql_jdbc_tests?user=monetdb&password=monetdb
-		final String pre = "jdbc:monetdb://";
-		final int pre_len = pre.length();
-		int start = 0, end = 0;
-		if ("host".equals(prop)) {
-			start = conn_URL.indexOf(pre);
-			if (start >= 0) {
-				start += pre_len;
-				end = conn_URL.indexOf(':', start);
-			}
-		} else
-		if ("port".equals(prop)) {
-			start = conn_URL.indexOf(':', pre_len);
-			if (start >= 0) {
-				start += 1;
-				end = conn_URL.indexOf('/', start);
-			}
-		} else
-		if ("database".equals(prop)) {
-			start = conn_URL.indexOf('/', pre_len + 1);
-			if (start >= 0) {
-				start += 1;
-				end = conn_URL.indexOf('?', start);
-			}
-		} else
-		if ("user".equals(prop)) {
-			start = conn_URL.indexOf("user=", pre_len);
-			if (start >= 0) {
-				start += 5;
-				end = conn_URL.indexOf('&', start);
-			}
-		} else
-		if ("password".equals(prop)) {
-			start = conn_URL.indexOf("password=", pre_len);
-			if (start >= 0) {
-				start += 9;
-				end = conn_URL.indexOf('&', start);
-			}
-		}
-		if (start >= pre_len) {
-			if (end < 0)
-				end = conn_URL.length();
-			if (end > start)
-				return conn_URL.substring(start, end);
-		}
-		return "";
 	}
 
 	private void DecimalPrecisionAndScale() {
