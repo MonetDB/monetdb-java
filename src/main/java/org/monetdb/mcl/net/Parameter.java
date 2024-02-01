@@ -140,7 +140,7 @@ public enum Parameter {
 	 * Note that the value returned for TIMEZONE may change if the system time zone
 	 * is changed or if Daylight Saving Time starts or ends.
 	 *
-	 * @return
+	 * @return default value for the given setting, as an Object of the appropriate type
 	 */
 	public Object getDefault() {
 		switch (this) {

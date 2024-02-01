@@ -28,7 +28,7 @@ public enum ParameterType {
 	 */
 	Bool,
 	/**
-	 * Functionally the same as {@link ParameterType.Str } but
+	 * Functionally the same as {@link ParameterType#Str} but
 	 * indicates the value is to be interpreted as a path on the
 	 * client's file system.
 	 */

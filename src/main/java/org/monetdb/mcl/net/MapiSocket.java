@@ -81,7 +81,7 @@ import org.monetdb.mcl.parser.MCLParseException;
  * geared towards the format of the data.
  *
  * @author Fabian Groffen
- * @version 4.3
+ * @version 4.4
  * @see org.monetdb.mcl.io.BufferedMCLReader
  * @see org.monetdb.mcl.io.BufferedMCLWriter
  */
@@ -770,6 +770,7 @@ public final class MapiSocket {
 	public boolean isDebug() {
 		return target.isDebug();
 	}
+
 
 	/**
 	 * Inner class that is used to write data on a normal stream as a
@@ -1552,8 +1553,8 @@ public final class MapiSocket {
 
 		/**
 		 * Pass option=value during the handshake
-		 * @param field
-		 * @param value
+		 * @param field name
+		 * @param value int value
 		 */
 		protected void contribute(String field, int value) {
 			if (buffer.length() > 0)
@@ -1563,7 +1564,10 @@ public final class MapiSocket {
 			buffer.append(value);
 		}
 
-
+		/**
+		 * Set the buffer
+		 * @param buf a non null StringBuilder object
+		 */
 		void setBuffer(StringBuilder buf) {
 			buffer = buf;
 		}

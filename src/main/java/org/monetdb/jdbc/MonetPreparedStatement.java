@@ -769,7 +769,7 @@ public class MonetPreparedStatement
 		setValue(parameterIndex, Byte.toString(x));
 	}
 
-	static final char[] HEXES = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
+	private static final char[] HEXES = {'0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'};
 	/**
 	 * Sets the designated parameter to the given Java array of bytes. The
 	 * driver converts this to an SQL VARBINARY or LONGVARBINARY (depending

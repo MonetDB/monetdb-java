@@ -1516,8 +1516,8 @@ public class MonetConnection
 	/**
 	 * Construct a Properties object holding all connection parameters such
 	 * as host, port, TLS configuration, autocommit, etc.
-	 * Passing this to {@link DriverManager.getConnection()} together
-	 * with the URL "jdbc:monetdb:" will create a new connection identical to
+	 * Passing this to {@link java.sql.DriverManager#getConnection(String,java.util.Properties)}
+	 * together with the URL "jdbc:monetdb:" will create a new connection identical to
 	 * the current one.
 	 *
 	 * @return a Properties object
