@@ -37,13 +37,14 @@ import org.monetdb.jdbc.types.URL;
  * Only when it deviates the output is sent to system err, see compareExpectedOutput().
  *
  * @author Martin van Dinther
- * @version 0.2
+ * @version 0.3
  */
 final public class JDBC_API_Tester {
 	private StringBuilder sb;	// buffer to collect the test output
 	private Connection con;		// main connection shared by all tests
 	private int dbmsMajorVersion;
 	private int dbmsMinorVersion;
+	private boolean isPostDec2023;	// flag to support version specific output
 	private boolean foundDifferences = false;
 
 	final private static int sbInitLen = 5224;
@@ -72,6 +73,9 @@ final public class JDBC_API_Tester {
 		DatabaseMetaData dbmd = jt.con.getMetaData();
 		jt.dbmsMajorVersion = dbmd.getDatabaseMajorVersion();
 		jt.dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
+		// from version 11.50 the MonetDB server returns different metadata for
+		// integer digits (1 less) and for clob and char columns (now return varchar).
+		jt.isPostDec2023 = !(jt.dbmsMajorVersion == 11 && jt.dbmsMinorVersion <= 49);
 
 		// run the tests
 		jt.Test_Cautocommit(con_URL);
@@ -753,7 +757,6 @@ final public class JDBC_API_Tester {
 		handleExecuteDDL(stmt, action, "type", "xml", "CREATE TYPE xml EXTERNAL NAME xml");
 
 		try {
-			final boolean isPostDec2023 = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 49);
 			DatabaseMetaData dbmd = con.getMetaData();
 
 			// inspect the catalog by use of dbmd functions
@@ -792,7 +795,7 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getColumns(null, "sys", "table\\_types", null), "getColumns(null, sys, table\\_types, null)",
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
-			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	" + (isPostDec2023 ? "var" : "") + "char(3)	varchar(3)\n" +
 			"null	sys	table_types	table_type_id	5	smallint	" + (isPostDec2023 ? "15" : "16") + "	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
 			"null	sys	table_types	table_type_name	12	varchar	25	0	0	0	0	null	null	0	0	100	2	NO	null	null	null	null	NO	NO\n");
 
@@ -927,14 +930,14 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getUDTs(null, "sys", null, null), "getUDTs(null, sys, null, null)",
 			"Resultset with 7 columns\n" +
 			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE\n" +
-			"char(1)	varchar(1024)	varchar(1024)	char(16)	int	varchar(256)	smallint\n" +
+			"char(1)	varchar(1024)	varchar(1024)	" + (isPostDec2023 ? "var" : "") + "char(16)	int	varchar(256)	smallint\n" +
 			"null	sys	xml	java.lang.String	2000	xml	null\n");
 
 			int[] UDTtypes = { Types.STRUCT, Types.DISTINCT };
 			compareResultSet(dbmd.getUDTs(null, "sys", null, UDTtypes), "getUDTs(null, sys, null, UDTtypes",
 			"Resultset with 7 columns\n" +
 			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	CLASS_NAME	DATA_TYPE	REMARKS	BASE_TYPE\n" +
-			"char(1)	varchar(1024)	varchar(1024)	char(16)	int	varchar(256)	smallint\n");
+			"char(1)	varchar(1024)	varchar(1024)	" + (isPostDec2023 ? "var" : "") + "char(16)	int	varchar(256)	smallint\n");
 
 			sb.setLength(0);	// clear the output log buffer
 		} catch (SQLException e) {
@@ -1141,7 +1144,6 @@ final public class JDBC_API_Tester {
 			"COMMENT ON FUNCTION sys.statistics() IS 'sys.statistics() function comment';");
 
 		try {
-			final boolean isPostDec2023 = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 49);
 			// query the catalog by calling DatabaseMetaData methods
 			compareResultSet(dbmd.getCatalogs(), "getCatalogs()",
 			"Resultset with 1 columns\n" +
@@ -1197,17 +1199,17 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getColumns(null, "jdbctst", "pk\\_uc", null), "getColumns(null, jdbctst, pk\\_uc, null)",
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
-			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	" + (isPostDec2023 ? "var" : "") + "char(3)	varchar(3)\n" +
 			"null	jdbctst	pk_uc	id1	4	int	" + (isPostDec2023 ? "31" : "32") + "	0	0	2	0	null	null	0	0	null	1	NO	null	null	null	null	NO	NO\n" +
 			"null	jdbctst	pk_uc	name1	12	varchar	99	0	0	0	1	null	null	0	0	396	2	YES	null	null	null	null	NO	NO\n");
 
 			compareResultSet(dbmd.getColumns(null, "tmp", "tlargechar", null), "getColumns(null, tmp, tlargechar, null)",
 			"Resultset with 24 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE	IS_AUTOINCREMENT	IS_GENERATEDCOLUMN\n" +
-			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	char(3)	varchar(3)\n" +
+			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	int	varchar(1024)	int	int	int	int	int	varchar(65000)	varchar(2048)	int	int	bigint	int	varchar(3)	char(1)	char(1)	char(1)	smallint	" + (isPostDec2023 ? "var" : "") + "char(3)	varchar(3)\n" +
 			"null	tmp	tlargechar	c1	12	varchar	2147483647	0	0	0	1	null	null	0	0	8589934588	1	YES	null	null	null	null	NO	NO\n" +
 			"null	tmp	tlargechar	c2	1	char	2147483646	0	0	0	1	null	null	0	0	8589934584	2	YES	null	null	null	null	NO	NO\n" +
-			"null	tmp	tlargechar	c3	2005	clob	2147483645	0	0	0	1	null	null	0	0	8589934580	3	YES	null	null	null	null	NO	NO\n" +
+			"null	tmp	tlargechar	c3	" + (isPostDec2023 ? "12	varchar" : "2005	clob") + "	2147483645	0	0	0	1	null	null	0	0	8589934580	3	YES	null	null	null	null	NO	NO\n" +
 			"null	tmp	tlargechar	c4	12	json	2147483644	0	0	0	1	null	null	0	0	8589934576	4	YES	null	null	null	null	NO	NO\n" +
 			"null	tmp	tlargechar	c5	12	url	2147483643	0	0	0	1	null	null	0	0	8589934572	5	YES	null	null	null	null	NO	NO\n");
 
@@ -1393,15 +1395,15 @@ final public class JDBC_API_Tester {
 			"NAME	MAX_LEN	DEFAULT_VALUE	DESCRIPTION\n" +
 			"varchar(64)	int	varchar(128)	varchar(128)\n");
 
-			compareResultSet(dbmd.getSuperTables(null, "jdbctst", "pk_uc"), "getSuperTypes(null, jdbctst, pk_uc)",
+			compareResultSet(dbmd.getSuperTables(null, "jdbctst", "pk_uc"), "getSuperTables(null, jdbctst, pk_uc)",
 			"Resultset with 4 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	SUPERTABLE_NAME\n" +
-			"char(1)	char	char	char\n");
+			"char(1)	" + (isPostDec2023 ? "varchar	varchar	varchar\n" : "char	char	char\n"));
 
 			compareResultSet(dbmd.getPseudoColumns(null, "jdbctst", "pk_uc", "%"), "getPseudoColumns(null, jdbctst, pk_uc, %)",
 			"Resultset with 12 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	DATA_TYPE	COLUMN_SIZE	DECIMAL_DIGITS	NUM_PREC_RADIX	COLUMN_USAGE	REMARKS	CHAR_OCTET_LENGTH	IS_NULLABLE\n" +
-			"char(1)	char	char	char	int	int	int	int	char	char	int	char\n");
+			"char(1)	" + (isPostDec2023 ? "varchar	varchar	varchar" : "char	char	char") + "	int	int	int	int	" + (isPostDec2023 ? "varchar	varchar	int	varchar\n" : "char	char	int	char\n"));
 
 			compareResultSet(dbmd.getVersionColumns(null, "jdbctst", "pk_uc"), "getVersionColumns(null, jdbctst, pk_uc)",
 			"Resultset with 8 columns\n" +
@@ -1411,12 +1413,12 @@ final public class JDBC_API_Tester {
 			compareResultSet(dbmd.getSuperTypes(null, "sys", "xml"), "getSuperTypes(null, sys, xml)",
 			"Resultset with 6 columns\n" +
 			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SUPERTYPE_CAT	SUPERTYPE_SCHEM	SUPERTYPE_NAME\n" +
-			"char(1)	char	char	char(1)	char	char\n");
+			"char(1)	" + (isPostDec2023 ? "varchar	varchar	char(1)	varchar	varchar\n" : "char	char	char(1)	char	char\n"));
 
 			compareResultSet(dbmd.getAttributes(null, "sys", "xml", "%"), "getAttributes(null, sys, xml, %)",
 			"Resultset with 21 columns\n" +
 			"TYPE_CAT	TYPE_SCHEM	TYPE_NAME	ATTR_NAME	DATA_TYPE	ATTR_TYPE_NAME	ATTR_SIZE	DECIMAL_DIGITS	NUM_PREC_RADIX	NULLABLE	REMARKS	ATTR_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SCOPE_CATALOG	SCOPE_SCHEMA	SCOPE_TABLE	SOURCE_DATA_TYPE\n" +
-			"char(1)	char	char	char	int	char	int	int	int	int	char	char	int	int	int	int	char(3)	char	char	char	smallint\n");
+			"char(1)	" + (isPostDec2023 ? "varchar	varchar	varchar" : "char	char	char") + "	int	" + (isPostDec2023 ? "var" : "") + "char	int	int	int	int	" + (isPostDec2023 ? "varchar	varchar" : "char	char") + "	int	int	int	int	" + (isPostDec2023 ? "varchar(3)	varchar	varchar	varchar" : "char(3)	char	char	char") + "	smallint\n");
 
 			sb.setLength(0);	// clear the output log buffer
 		} catch (SQLException e) {
@@ -1835,7 +1837,7 @@ final public class JDBC_API_Tester {
 				! isPreJan2022 ?
 				"Resultset with 1 columns\n" +
 				"rel\n" +
-				"clob(37)\n" +
+				(isPostDec2023 ? "varchar" : "clob") + "(37)\n" +
 				"project (\n" +
 				"|  [ boolean(1) \"true\" as \"%1\".\"%1\" ]\n" +
 				") [ tinyint(2) \"2\" ]\n"
@@ -2495,7 +2497,7 @@ final public class JDBC_API_Tester {
 			"  label         myclob\n" +
 			"  name          myclob\n" +
 			"  type          12\n" +
-			"  typename      clob\n" +
+			"  typename      " + (isPostDec2023 ? "varchar" : "clob") + "\n" +
 			"  precision     0\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
@@ -3403,7 +3405,7 @@ final public class JDBC_API_Tester {
 			"  precision 0\n" +
 			"  scale     0\n" +
 			"  type      12\n" +
-			"  typename  clob\n" +
+			"  typename  " + (isPostDec2023 ? "varchar" : "clob") + "\n" +
 			"  classname java.lang.String\n" +
 			"  mode      1 (IN)\n" +
 			"Param 6\n" +
@@ -3705,7 +3707,7 @@ final public class JDBC_API_Tester {
 			"	label         myclob\n" +
 			"	name          myclob\n" +
 			"	type          12\n" +
-			"	typename      clob\n" +
+			"	typename      " + (isPostDec2023 ? "varchar" : "clob") + "\n" +
 			"	precision     11\n" +
 			"	scale         0\n" +
 			"	catalogname   null\n" +
@@ -3903,7 +3905,7 @@ final public class JDBC_API_Tester {
 			"	label         myclob\n" +
 			"	name          myclob\n" +
 			"	type          12\n" +
-			"	typename      clob\n" +
+			"	typename      " + (isPostDec2023 ? "varchar" : "clob") + "\n" +
 			"	precision     11\n" +
 			"	scale         0\n" +
 			"	catalogname   null\n" +
@@ -5671,11 +5673,11 @@ final public class JDBC_API_Tester {
 
 	private void run_tests(String conURL, String tbl_nm, int iterations, String largedata) throws SQLException {
 		String script =
-			  "delete from " + tbl_nm + " where attribute='activeset_default_fiets';\n"
-			+ "insert into " + tbl_nm + " values ('activeset_default_fiets', '" + largedata + "');\n"
-			+ "insert into " + tbl_nm + " values ('activeset_default_fiets', '" + largedata + "');\n"
-			+ "insert into " + tbl_nm + " values ('activeset_default_fiets', '" + largedata + "');\n"
-			+ "select value from " + tbl_nm + " where attribute='activeset_default_fiets';\n";
+			"delete from " + tbl_nm + " where attribute='activeset_default_fiets';\n" +
+			"insert into " + tbl_nm + " values ('activeset_default_fiets', '" + largedata + "');\n" +
+			"insert into " + tbl_nm + " values ('activeset_default_fiets', '" + largedata + "');\n" +
+			"insert into " + tbl_nm + " values ('activeset_default_fiets', '" + largedata + "');\n" +
+			"select value from " + tbl_nm + " where attribute='activeset_default_fiets';\n";
 		sb.append("Script size is " + script.length()).append("\n");
 
 		// first try to make the execution hang after many iterations of sending large data queries within one connection
@@ -5806,9 +5808,9 @@ final public class JDBC_API_Tester {
 
 		compareExpectedOutput("Bug_PrepStmtSetObject_CLOB_6349",
 				"0. true	true\n" +
-				"Prepared Query has 1 parameters. Type of first is: clob\n" +
-				"Prepared Query has 3 columns. Type of first is: clob\n" +
-				"Query ResultSet has 3 columns. Type of first is: clob\n" +
+				"Prepared Query has 1 parameters. Type of first is: " + (isPostDec2023 ? "varchar" : "clob") + "\n" +
+				"Prepared Query has 3 columns. Type of first is: " + (isPostDec2023 ? "varchar" : "clob") + "\n" +
+				"Query ResultSet has 3 columns. Type of first is: " + (isPostDec2023 ? "varchar" : "clob") + "\n" +
 				"Table dropped\n");
 	}
 
