@@ -753,7 +753,7 @@ final public class JDBC_API_Tester {
 		handleExecuteDDL(stmt, action, "type", "xml", "CREATE TYPE xml EXTERNAL NAME xml");
 
 		try {
-			final boolean isPostDec2023 = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 51);	// Change 51 into 49 after branch cleanup_types has been merged into default
+			final boolean isPostDec2023 = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 49);
 			DatabaseMetaData dbmd = con.getMetaData();
 
 			// inspect the catalog by use of dbmd functions
@@ -1141,7 +1141,7 @@ final public class JDBC_API_Tester {
 			"COMMENT ON FUNCTION sys.statistics() IS 'sys.statistics() function comment';");
 
 		try {
-			final boolean isPostDec2023 = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 51);	// Change 51 into 49 after branch cleanup_types has been merged into default
+			final boolean isPostDec2023 = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 49);
 			// query the catalog by calling DatabaseMetaData methods
 			compareResultSet(dbmd.getCatalogs(), "getCatalogs()",
 			"Resultset with 1 columns\n" +
