@@ -1026,6 +1026,35 @@ final public class JDBC_API_Tester {
 			sb.append("Failed to createStatement: ").append(e.getMessage()).append("\n");
 		}
 
+		try {
+			// test dbmd methods which sent a query to the server and return a String.
+			String s = dbmd.getSQLKeywords();
+			if (s == null || s.length() < 10)
+				sb.append("getSQLKeywords()").append(" failed to return a large enough list\n");
+			s = dbmd.getNumericFunctions();
+			if (s == null || s.length() < 10)
+				sb.append("getNumericFunctions()").append(" failed to return a large enough list\n");
+			s = dbmd.getStringFunctions();
+			if (s == null || s.length() < 10)
+				sb.append("getStringFunctions()").append(" failed to return a large enough list\n");
+			s = dbmd.getSystemFunctions();
+			if (s == null || s.length() < 10)
+				sb.append("getSystemFunctions()").append(" failed to return a large enough list\n");
+			s = dbmd.getTimeDateFunctions();
+			if (s == null || s.length() < 10)
+				sb.append("getTimeDateFunctions()").append(" failed to return a large enough list\n");
+			s = dbmd.getUserName();
+			if (s == null || s.length() < 1)
+				sb.append("getUserName() failed to return a valid name\n");
+			s = dbmd.getDatabaseProductVersion();
+			if (s == null || s.length() < 1)
+				sb.append("getDatabaseProductVersion() failed to return a valid version\n");
+		} catch (SQLException e) {
+			sb.append(e.getMessage()).append("\n");
+		}
+		compareExpectedOutput("Test_DBCmetadata() testing dbmd.get...Functions() as String", "");
+		sb.setLength(0);	// clear the output log buffer
+
 		/* servers before Jan2022 (11.45) have a problem (server crash and db corruption)
 		   with indexes created on temp tables, so conditionally execute those commands and tests */
 		final boolean testCreateDropIndexOnTmpTables = !(dbmsMajorVersion == 11 && dbmsMinorVersion <= 43);
