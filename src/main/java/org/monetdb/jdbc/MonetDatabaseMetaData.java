@@ -1611,11 +1611,14 @@ public final class MonetDatabaseMetaData
 	 * <pre>
 	 * CREATE TABLE T (A INT);
 	 * INSERT INTO T (A) VALUES (2);
-	 * BEGIN;
+	 * BEGIN TRANSACTION;
 	 * UPDATE T SET A = A + 1;
+	 * DROP TABLE IF EXISTS X;
 	 * CREATE TABLE X (A INT);
-	 * SELECT A FROM T INTO X;
-	 * COMMIT;
+	 * INSERT INTO X AS SELECT A FROM T;
+	 * SELECT A FROM X;
+	 * ROLLBACK;
+	 * SELECT A FROM T;
 	 * </pre>
 	 *
 	 * does the CREATE TABLE call cause a commit?  The answer is no.
