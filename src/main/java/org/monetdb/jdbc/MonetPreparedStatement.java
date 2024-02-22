@@ -66,7 +66,7 @@ import java.util.Calendar;
  *
  * @author Fabian Groffen
  * @author Martin van Dinther
- * @version 0.7
+ * @version 0.8
  */
 public class MonetPreparedStatement
 	extends MonetStatement
@@ -83,7 +83,8 @@ public class MonetPreparedStatement
 	private final int id;
 	private final int size;
 
-	private int paramCount = 0;
+	private final int paramCount;
+	private final int paramStartIndex;
 	private final String[] paramValues;
 
 	/** A cache to reduce the number of ResultSetMetaData objects created
@@ -139,7 +140,7 @@ public class MonetPreparedStatement
 
 		/**
 		 * For a PREPARE statement the server sends back a result set
-		 * with info on all the parameters and/or result columns of a
+		 * with info on all the result columns and parameters of a
 		 * parameterized query. This result set however needs to be
 		 * read in one DataBlockResponse due to protocol limitations.
 		 * This requires the fetchSize needs to be set large enough
@@ -161,6 +162,9 @@ public class MonetPreparedStatement
 		// cheat a bit to get the ID and the number of columns
 		id = ((MonetConnection.ResultSetResponse)header).id;
 		size = (int)((MonetConnection.ResultSetResponse)header).tuplecount;
+
+		int countParam = 0;
+		int firstParamOffset = 0;
 
 		// initialise blank finals
 		monetdbType = new String[size];
@@ -199,18 +203,28 @@ public class MonetPreparedStatement
 				column[i] = rs.getString(column_colnr);
 				// System.out.println("column " + i + " has value: " + column[i]);
 				/* when column[i] != null it is a result column of the prepared query,
-				   when column[i] == null it is a parameter for the prepared statement, see getParamIdx(int). */
-				if (column[i] == null)
-					paramCount++;
+				 * when column[i] == null it is a parameter for the prepared statement.
+				 * Note that we always get the result columns (if any) first and
+				 * next the parameters (if any) in the columns[].
+				 */
+				if (column[i] == null) {
+					countParam++;
+					if (countParam == 1)
+						firstParamOffset = i;	// remember where the first parameter is stored
+				}
 			}
 			rs.close();
 		}
+		paramCount = countParam;
+		paramStartIndex = firstParamOffset;
+		// System.out.println("paramCount= " + paramCount + " paramStartIndex= " + paramStartIndex + "\n");
 
 		paramValues = new String[paramCount + 1];	// parameters start from 1
 
 		// PreparedStatements are by default poolable
 		poolable = true;
 	}
+
 
 	//== methods interface PreparedStatement
 
@@ -320,27 +334,6 @@ public class MonetPreparedStatement
 	@Override
 	public int executeUpdate(final String q) throws SQLException {
 		throw new SQLException("This method is not available in a PreparedStatement!", "M1M05");
-	}
-
-	/**
-	 * Returns the index (0..size-1) in the backing arrays for the given
-	 * parameter number or an SQLException when not found
-	 *
-	 * @param paramnr the parameter number
-	 * @return the internal column array index number
-	 * @throws SQLException if parameter number can not be found in the internal array
-	 */
-	private final int getParamIdx(final int paramnr) throws SQLException {
-		int curparam = 0;
-		for (int i = 0; i < size; i++) {
-			/* when column[i] == null it is a parameter, when column[i] != null it is a result column of the prepared query */
-			if (column[i] != null)
-				continue;
-			curparam++;
-			if (curparam == paramnr)
-				return i;
-		}
-		throw new SQLException("No such parameter with index: " + paramnr, "M1M05");
 	}
 
 	/**
@@ -2305,6 +2298,21 @@ public class MonetPreparedStatement
 	//== internal helper methods which do not belong to the JDBC interface
 
 	/**
+	 * Returns the index (0..size-1) in the backing arrays for the given
+	 * parameter number or an SQLException when not valid
+	 *
+	 * @param paramnr the parameter number
+	 * @return the internal column array index number
+	 * @throws SQLException if parameter number is out of bounds
+	 */
+	private final int getParamIdx(final int paramnr) throws SQLException {
+		if (paramnr < 1 || paramnr > paramCount || (paramnr + paramStartIndex > size))
+			throw new SQLException("No parameter with index: " + paramnr, "M1M05");
+
+		return paramnr + paramStartIndex -1;
+	}
+
+	/**
 	 * Sets the given index with the supplied value. If the given index is
 	 * out of bounds, and SQLException is thrown.  The given value should
 	 * never be null.
@@ -2315,7 +2323,7 @@ public class MonetPreparedStatement
 	 */
 	private final void setValue(final int parameterIndex, final String val) throws SQLException {
 		if (parameterIndex < 1 || parameterIndex > paramCount)
-			throw new SQLException("No such parameter with index: " + parameterIndex, "M1M05");
+			throw new SQLException("No parameter with index: " + parameterIndex, "M1M05");
 
 		if (val != null)
 			paramValues[parameterIndex] = val;
