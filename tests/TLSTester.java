@@ -13,6 +13,7 @@
 import org.monetdb.mcl.net.Parameter;
 
 import java.io.*;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.StandardCharsets;
@@ -113,32 +114,20 @@ public class TLSTester {
 		fileCache.put(resource, outPath);
 	}
 
-	private byte[] fetchBytes(String resource) throws IOException {
-		ByteArrayOutputStream out = new ByteArrayOutputStream();
-		try (InputStream in = fetchData(resource)) {
-			byte[] buffer = new byte[22];
-			while (true) {
-				int nread = in.read(buffer);
-				if (nread <= 0)
-					break;
-				out.write(buffer, 0, nread);
-			}
-			return out.toByteArray();
-		}
-	}
-
 	private InputStream fetchData(String resource) throws IOException {
-		URL url;
-		try {
-			// Note: as of Java version 20 java.net.URL(String) constructor is deprecated.
-			// https://docs.oracle.com/en/java/javase/20/docs/api/java.base/java/net/URL.html#%3Cinit%3E(java.lang.String)
-			url = new java.net.URI("http://" + serverHost + ":" + serverPort + resource).toURL();
-		} catch (java.net.URISyntaxException | java.net.MalformedURLException e) {
-			throw new IOException(e.getMessage());
+		String urlText = "http://" + serverHost + ":" + serverPort + resource;
+		if (verbose > 0) {
+			System.out.println("Fetching " + resource + " from " + urlText);
 		}
-		URLConnection conn = url.openConnection();
-		conn.connect();
-		return conn.getInputStream();
+		URL url = null;
+		try {
+			url = new java.net.URI(urlText).toURL();
+			URLConnection conn = url.openConnection();
+			conn.connect();
+			return conn.getInputStream();
+		} catch (URISyntaxException | IOException e) {
+			throw new IOException("Cannot fetch resource " + resource + " from " + urlText + ": " + e, e);
+		}
 	}
 
 	private void run() throws IOException, SQLException {
@@ -184,6 +173,8 @@ public class TLSTester {
 	}
 
 	private void test_refuse_wrong_host() throws IOException, SQLException {
+		if (altHost == null)
+			return;
 		Attempt attempt = attempt("refuse_wrong_host", "server1").with(Parameter.HOST, altHost);
 		attempt.withFile(Parameter.CERT, "/ca1.crt").expectFailure("No subject alternative DNS name");
 	}
@@ -299,13 +290,16 @@ public class TLSTester {
 			preparedButNotRun.remove(testName);
 			if (disabled)
 				return;
+			startVerbose();
 			try {
 				Connection conn = DriverManager.getConnection("jdbc:monetdb:", props);
 				conn.close();
+				throw new RuntimeException("Test " + testName + " was supposed to throw an Exception saying 'Sorry, this is not a real MonetDB instance'");
 			} catch (SQLException e) {
 				if (e.getMessage().startsWith("Sorry, this is not a real MonetDB instance")) {
 					// it looks like a failure but this is actually our success scenario
 					// because this is what the TLS Tester does when the connection succeeds.
+					endVerbose("succesful MAPI handshake, as expected");
 					return;
 				}
 				// other exceptions ARE errors and should be reported.
@@ -314,18 +308,44 @@ public class TLSTester {
 		}
 
 		public void expectFailure(String... expectedMessages) throws SQLException {
+			preparedButNotRun.remove(testName);
 			if (disabled)
 				return;
+			startVerbose();
 			try {
-				expectSuccess();
+				Connection conn = DriverManager.getConnection("jdbc:monetdb:", props);
+				conn.close();
 				throw new RuntimeException("Expected test " + testName + " to throw an exception but it didn't");
 			} catch (SQLException e) {
 				for (String expected : expectedMessages) {
-					if (e.getMessage().contains(expected))
+					if (e.getMessage().contains(expected)) {
+						endVerbose("connection failed as expected, message: " + e.getMessage());
 						return;
+					}
 				}
 				String message = "Test " + testName + " threw the wrong exception: " + e.getMessage() + '\n' + "Expected:\n        <" + String.join(">\n        <", expectedMessages) + ">";
 				throw new RuntimeException(message, e);
+			}
+		}
+
+		private void startVerbose() {
+			if (verbose == 0)
+				return;
+
+			System.out.println("Test " + testName + ":");
+			for (String key: props.stringPropertyNames()) {
+				Object value = props.get(key);
+				if (value == null)
+					System.out.println("    " + key + " is null");
+				else
+					System.out.println("    " + key + " = " + value.toString());
+			}
+		}
+
+		private void endVerbose(String message) {
+			if (verbose > 0) {
+				System.out.println("    -> " + message);
+				System.out.println();
 			}
 		}
 	}
