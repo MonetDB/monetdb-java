@@ -155,4 +155,23 @@ public enum Parameter {
 				return defaultValue;
 		}
 	}
+
+	/**
+	 * Determine if this Parameter is onlyu relevant when TlS is enabled.
+	 *
+	 * Such parameters need not be shown to the user unless the URL starts with <code>monetdbs://</code>.
+	 *
+	 * @return true if this Parameter is only relevant when TLS is enabled
+	 */
+	public boolean isTlsOnly() {
+		switch (this) {
+			case CERT:
+			case CERTHASH:
+			case CLIENTCERT:
+			case CLIENTKEY:
+				return true;
+			default:
+				return false;
+		}
+	}
 }
