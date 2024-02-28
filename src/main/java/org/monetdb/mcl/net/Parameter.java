@@ -149,8 +149,8 @@ public enum Parameter {
 			case TIMEZONE:
 				Calendar cal = Calendar.getInstance();
 				int offsetMillis = cal.get(Calendar.ZONE_OFFSET) + cal.get(Calendar.DST_OFFSET);
-				int offsetSeconds = offsetMillis / 1000;
-				return offsetSeconds;
+				int offsetMinutes = offsetMillis / 60000;
+				return offsetMinutes;
 			default:
 				return defaultValue;
 		}

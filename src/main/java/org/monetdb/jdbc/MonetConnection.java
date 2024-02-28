@@ -234,7 +234,7 @@ public class MonetConnection
 				sendControlCommand("sizeheader 1");
 			}
 			if (!callback.timeZoneSet) {
-				setTimezone(target.getTimezone());
+				setTimezone(60 * target.getTimezone());
 			}
 		}
 
@@ -3754,7 +3754,7 @@ public class MonetConnection
 				defaultFetchSize = target.getReplySize();
 			if (contribute(SqlOption.SizeHeader, 1))
 				sizeHeaderEnabled = true;
-			if (contribute(SqlOption.TimeZone, target.getTimezone()))
+			if (contribute(SqlOption.TimeZone, 60 * target.getTimezone()))
 				timeZoneSet = true;
 		}
 
