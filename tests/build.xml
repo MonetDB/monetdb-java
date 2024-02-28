@@ -123,6 +123,7 @@ Copyright 1997 - July 2008 CWI.
     <java classname="${test.class}" failonerror="true" fork="true">
       <classpath>
         <pathelement path="${builddir}" />
+        <pathelement path="." /> <!-- Needed for 'ant test' to find tests.md. -->
         <pathelement path="${jdbc_jar}" />
       </classpath>
       <arg value="${jdbc_url}" />

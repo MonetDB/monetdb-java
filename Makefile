@@ -7,6 +7,10 @@ jre17jars: src/main/java/org/monetdb/jdbc/MonetVersion.java
 	ant -f build_jre17.xml distjdbc
 	rm -rf build
 
+test: all
+	echo banana
+	cd tests; ant  -f build.xml test
+
 testsjar:
 	cd tests; ant -f build.xml jar_jdbctests
 
