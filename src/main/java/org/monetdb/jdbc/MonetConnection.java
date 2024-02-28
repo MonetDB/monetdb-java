@@ -224,7 +224,7 @@ public class MonetConnection
 			throw sqle;
 		}
 
-		// Now take care of any handshake options not handled during the handshake
+		// Now take care of any options not handled during the handshake
 		curReplySize = defaultFetchSize;
 		if (lang == LANG_SQL) {
 			if (autoCommit != target.isAutocommit()) {
@@ -240,6 +240,13 @@ public class MonetConnection
 
 		// we're absolutely not closed, since we're brand new
 		closed = false;
+
+		if (!target.getSchema().isEmpty()) {
+			try (Statement stmt = this.createStatement()) {
+				String escaped = target.getSchema().replaceAll("\"", "\"\"");
+				stmt.execute("SET SCHEMA \"" + escaped + "\"");
+			}
+		}
 	}
 
 	//== methods of interface Connection
