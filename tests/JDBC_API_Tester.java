@@ -964,12 +964,15 @@ final public class JDBC_API_Tester {
 
 		ResultSetMetaData rsmd = rs.getMetaData();
 		int columnCount = rsmd.getColumnCount();
+		int suppressSPECIFIC_NAME = 0;
 		sb.append("Resultset with ").append(columnCount).append(" columns\n");
 		// print result column header names
 		for (int col = 1; col <= columnCount; col++) {
 			if (col > 1)
 				sb.append("\t");
 			sb.append(rsmd.getColumnName(col));
+			if ("SPECIFIC_NAME".equals(rsmd.getColumnName(col)))
+				suppressSPECIFIC_NAME = col;	// contains internal id values which change
 		}
 		sb.append("\n");
 		// print result column data type info
@@ -1004,7 +1007,10 @@ final public class JDBC_API_Tester {
 			for (int col = 1; col <= columnCount; col++) {
 				if (col > 1)
 					sb.append("\t");
-				sb.append(rs.getString(col));
+				if (col == suppressSPECIFIC_NAME)
+					sb.append("suppressed");
+				else
+					sb.append(rs.getString(col));
 			}
 			sb.append("\n");
 		}
@@ -1140,7 +1146,17 @@ final public class JDBC_API_Tester {
 		handleExecuteDDL(stmt, action, objtype, "tmp.glbl_nopk_twoucs",
 			"GRANT SELECT (id2, name2), UPDATE (name2) ON TABLE tmp.glbl_nopk_twoucs TO monetdb;");
 
-		// TODO add user procedures / functions to test getProcedures() and getProcedureColumns() more
+		// create user procedure to test getProcedures() and getProcedureColumns()
+		action = "create";
+		objtype = "procedure";
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.proc",
+			"CREATE PROCEDURE jdbctst.proc(id bigint, name varchar(999), dt date) BEGIN  SET SCHEMA jdbctst; /* ... */ END;");
+
+		// create user function to test getFunctions() and getFunctionColumns()
+		action = "create";
+		objtype = "function";
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.func",
+			"CREATE FUNCTION jdbctst.func(id bigint, name varchar(999), dt date) RETURNS TABLE (val varchar(1022), dt date, id int) BEGIN return SELECT id||' '||name ||' '|| dt, dt, id WHERE id > 0; END;");
 
 		// set COMMENT ON schema, tables, columns, indexes, procedures and functions to fetch (and test) data in the REMARKS result column
 		action = "comment on";
@@ -1164,6 +1180,8 @@ final public class JDBC_API_Tester {
 		objtype = "procedure";
 		handleExecuteDDL(stmt, action, objtype, "sys.analyze()",
 			"COMMENT ON PROCEDURE sys.analyze() IS 'sys.analyze() procedure comment';");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.proc",
+			"COMMENT ON PROCEDURE jdbctst.proc IS 'jdbctst.proc procedure comment';");
 		objtype = "function";
 		handleExecuteDDL(stmt, action, objtype, "sys.sin(double)",
 			"COMMENT ON FUNCTION sys.sin(double) IS 'sys.sin(double) function comment';");
@@ -1171,6 +1189,8 @@ final public class JDBC_API_Tester {
 			"COMMENT ON FUNCTION sys.env() IS 'sys.env() function comment';");
 		handleExecuteDDL(stmt, action, objtype, "sys.statistics()",
 			"COMMENT ON FUNCTION sys.statistics() IS 'sys.statistics() function comment';");
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.func",
+			"COMMENT ON FUNCTION jdbctst.func IS 'jdbctst.func function comment';");
 
 		try {
 			// query the catalog by calling DatabaseMetaData methods
@@ -1408,6 +1428,41 @@ final public class JDBC_API_Tester {
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
 			"2	table_type_id	5	smallint	" + (isPostDec2023 ? "15" : "16") + "	0	0	1\n");
 
+			compareResultSet(dbmd.getProcedures(null, "jdbctst", "proc"), "getProcedures(null, jdbctst, proc)",
+			"Resultset with 9 columns\n" +
+			"PROCEDURE_CAT	PROCEDURE_SCHEM	PROCEDURE_NAME	Field4	Field5	Field6	REMARKS	PROCEDURE_TYPE	SPECIFIC_NAME\n" +
+			"char(1)	varchar(1024)	varchar(256)	char(1)	char(1)	char(1)	varchar(65000)	smallint	varchar(10)\n" +
+			"null	jdbctst	proc	null	null	null	jdbctst.proc procedure comment	1	suppressed\n");
+			// note that the real SPECIFIC_NAME value (containing the internal functions.id) is replaced with "suppressed" in order to get stable output
+
+			compareResultSet(dbmd.getProcedureColumns(null, "jdbctst", "proc", "%%"), "getProcedureColumns(null, jdbctst, proc, %%)",
+			"Resultset with 20 columns\n" +
+			"PROCEDURE_CAT	PROCEDURE_SCHEM	PROCEDURE_NAME	COLUMN_NAME	COLUMN_TYPE	DATA_TYPE	TYPE_NAME	PRECISION	LENGTH	SCALE	RADIX	NULLABLE	REMARKS	COLUMN_DEF	SQL_DATA_TYPE	SQL_DATETIME_SUB	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SPECIFIC_NAME\n" +
+			"char(1)	varchar(1024)	varchar(256)	varchar(256)	smallint	int	varchar(1024)	int	int	smallint	smallint	smallint	char(1)	char(1)	int	int	bigint	int	varchar(3)	varchar(10)\n" +
+			"null	jdbctst	proc	id	1	-5	bigint	19	8	0	10	2	null	null	0	0	null	1		suppressed\n" +
+			"null	jdbctst	proc	name	1	12	varchar	999	999	null	null	2	null	null	0	0	3996	2		suppressed\n" +
+			"null	jdbctst	proc	dt	1	91	date	0	0	null	null	2	null	null	0	0	null	3		suppressed\n");
+			// note that the real SPECIFIC_NAME value (containing the internal functions.id) is replaced with "suppressed" in order to get stable output
+
+			compareResultSet(dbmd.getFunctions(null, "jdbctst", "func"), "getFunctions(null, jdbctst, func)",
+			"Resultset with 6 columns\n" +
+			"FUNCTION_CAT	FUNCTION_SCHEM	FUNCTION_NAME	REMARKS	FUNCTION_TYPE	SPECIFIC_NAME\n" +
+			"char(1)	varchar(1024)	varchar(256)	varchar(65000)	tinyint	varchar(10)\n" +
+			"null	jdbctst	func	jdbctst.func function comment	2	suppressed\n");
+			// note that the real SPECIFIC_NAME value (containing the internal functions.id) is replaced with "suppressed" in order to get stable output
+
+			compareResultSet(dbmd.getFunctionColumns(null, "jdbctst", "func", "%%"), "getFunctionColumns(null, jdbctst, func, %%)",
+			"Resultset with 17 columns\n" +
+			"FUNCTION_CAT	FUNCTION_SCHEM	FUNCTION_NAME	COLUMN_NAME	COLUMN_TYPE	DATA_TYPE	TYPE_NAME	PRECISION	LENGTH	SCALE	RADIX	NULLABLE	REMARKS	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SPECIFIC_NAME\n" +
+			"char(1)	varchar(1024)	varchar(256)	varchar(256)	smallint	int	varchar(1024)	int	int	smallint	smallint	smallint	char(1)	bigint	int	varchar(3)	varchar(10)\n" +
+			"null	jdbctst	func	val	4	12	varchar	1022	1022	null	null	2	null	4088	0		suppressed\n" +
+			"null	jdbctst	func	dt	3	91	date	0	0	null	null	2	null	null	1		suppressed\n" +
+			"null	jdbctst	func	id	3	4	int	10	4	0	10	2	null	null	2		suppressed\n" +
+			"null	jdbctst	func	id	1	-5	bigint	19	8	0	10	2	null	null	3		suppressed\n" +
+			"null	jdbctst	func	name	1	12	varchar	999	999	null	null	2	null	3996	4		suppressed\n" +
+			"null	jdbctst	func	dt	1	91	date	0	0	null	null	2	null	null	5		suppressed\n");
+			// note that the real SPECIFIC_NAME value (containing the internal functions.id) is replaced with "suppressed" in order to get stable output
+
 			compareResultSet(dbmd.getTablePrivileges(null, "sys", "table\\_types"), "getTablePrivileges(null, sys, table\\_types)",
 			"Resultset with 7 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
@@ -1480,8 +1535,10 @@ final public class JDBC_API_Tester {
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.fk2c", "DROP TABLE jdbctst.fk2c;");
 		handleExecuteDDL(stmt, action, objtype, "jdbctst.pk2c", "DROP TABLE jdbctst.pk2c;");
 		objtype = "procedure";
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.proc()", "DROP PROCEDURE jdbctst.proc(bigint, varchar(999), date);");
 		handleExecuteDDL(stmt, action, objtype, "sys.analyze()", "COMMENT ON PROCEDURE sys.analyze() IS NULL;");
 		objtype = "function";
+		handleExecuteDDL(stmt, action, objtype, "jdbctst.func()", "DROP FUNCTION jdbctst.func(bigint, varchar(999), date);");
 		handleExecuteDDL(stmt, action, objtype, "sys.sin(double)", "COMMENT ON FUNCTION sys.sin(double) IS NULL;");
 		handleExecuteDDL(stmt, action, objtype, "sys.env()", "COMMENT ON FUNCTION sys.env() IS NULL;");
 		handleExecuteDDL(stmt, action, objtype, "sys.statistics()", "COMMENT ON FUNCTION sys.statistics() IS NULL;");
