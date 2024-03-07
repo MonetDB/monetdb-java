@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Mar  7 2024 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved DatabaseMetaData.getTypeInfo(). It now also returns the serial
+  and bigserial data types and all 13 possible interval data types.
+
 * Thu Dec 28 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - In ResultSet.getObject(column, Class<T> type) and
   ResultSet.getObject(column, Map<String,Class<?>>) methods added support

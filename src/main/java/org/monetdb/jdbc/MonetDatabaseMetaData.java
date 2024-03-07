@@ -3057,46 +3057,74 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public ResultSet getTypeInfo() throws SQLException {
-		final StringBuilder query = new StringBuilder(3200);
-		query.append("SELECT CASE \"sqlname\" WHEN 'day_interval' THEN 'interval day'" +
-				" WHEN 'month_interval' THEN 'interval month'" +
-				" WHEN 'sec_interval' THEN 'interval second'" +
-				" ELSE \"sqlname\" END AS \"TYPE_NAME\", " +
+		final StringBuilder query = new StringBuilder(4816);
+		query.append("SELECT \"sqlname\" AS \"TYPE_NAME\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("\"sqlname\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"cast(CASE WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz') THEN \"digits\" -1" +
-				" WHEN \"sqlname\" IN ('sec_interval','day_interval') THEN 3" +
-				" WHEN \"sqlname\" = 'month_interval' THEN 0 ELSE \"digits\" END AS int) AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
-			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','sec_interval','day_interval','month_interval') THEN ''''" +
+				" ELSE \"digits\" END AS int) AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
+			"cast(CASE WHEN \"sqlname\" IN ('char','varchar') THEN ''''" +
 				" WHEN \"sqlname\" IN ('clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob','xml') THEN \"sqlname\"||' '''" +
 				" ELSE NULL END AS varchar(16)) AS \"LITERAL_PREFIX\", " +
-			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','sec_interval','day_interval','month_interval'" +
-						",'clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob','xml') THEN ''''" +
+			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob','xml') THEN ''''" +
 				" ELSE NULL END AS varchar(2)) AS \"LITERAL_SUFFIX\", " +
 			"CASE WHEN \"sqlname\" IN ('char','varchar') THEN 'max length'" +
 				" WHEN \"sqlname\" = 'decimal' THEN 'precision, scale'" +
-				" WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz') THEN 'precision'" +
+				" WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz') THEN 'scale'" +
 				" ELSE NULL END AS \"CREATE_PARAMS\", " +
 			"cast(CASE WHEN \"systemname\" = 'oid' THEN " + DatabaseMetaData.typeNoNulls +
 				" ELSE " + DatabaseMetaData.typeNullable + " END AS smallint) AS \"NULLABLE\", " +
 			"CASE WHEN \"systemname\" IN ('str','json','url','xml') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
 			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','xml') THEN " + DatabaseMetaData.typeSearchable +
 				" ELSE " + DatabaseMetaData.typePredBasic + " END AS smallint) AS \"SEARCHABLE\", " +
-			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','real','double'" +
-				",'day_interval','month_interval','sec_interval') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
+			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','real','double') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
 			"CASE \"sqlname\" WHEN 'decimal' THEN true ELSE false END AS \"FIXED_PREC_SCALE\", " +
 			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint') THEN true ELSE false END AS \"AUTO_INCREMENT\", " +
-			"CASE WHEN \"sqlname\" IN ('sec_interval','day_interval','month_interval') THEN \"sqlname\" ELSE \"systemname\" END AS \"LOCAL_TYPE_NAME\", " +
+			"\"systemname\" AS \"LOCAL_TYPE_NAME\", " +
 			"cast(0 AS smallint) AS \"MINIMUM_SCALE\", " +
 			"cast(CASE WHEN \"sqlname\" = 'decimal' THEN (CASE \"systemname\" WHEN 'int' THEN 9 WHEN 'lng' THEN 18 WHEN 'sht' THEN 4 WHEN 'hge' THEN 38 WHEN 'bte' THEN 2 ELSE 0 END)" +
 				" WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz') THEN 6" +
-				" WHEN \"sqlname\" IN ('day_interval','sec_interval') THEN 3 ELSE 0 END AS smallint) AS \"MAXIMUM_SCALE\", " +
+				" ELSE 0 END AS smallint) AS \"MAXIMUM_SCALE\", " +
 			"cast(0 AS int) AS \"SQL_DATA_TYPE\", " +
 			"cast(0 AS int) AS \"SQL_DATETIME_SUB\", " +
-			"cast(CASE WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz','sec_interval') THEN 10 ELSE \"radix\" END AS int) AS \"NUM_PREC_RADIX\" " +
+			"cast(CASE WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz') THEN 10 ELSE \"radix\" END AS int) AS \"NUM_PREC_RADIX\" " +
 		"FROM \"sys\".\"types\" " +
-		"ORDER BY \"DATA_TYPE\", \"sqlname\", \"id\"");
+		// exclude the 3 interval types here as they are added next
+		"WHERE \"sqlname\" NOT IN ('sec_interval','day_interval','month_interval') " +
+		"UNION ALL " +
+		// add the 13 interval types (like done in ODBC SQLGetTypeInfo())
+		"SELECT \"TYPE_NAME\", 1111 AS \"DATA_TYPE\", PRECISION, 'interval ''' AS LITERAL_PREFIX, LITERAL_SUFFIX, CREATE_PARAMS, " +
+			DatabaseMetaData.typeNullable + " AS NULLABLE, false AS CASE_SENSITIVE, " + DatabaseMetaData.typePredBasic + " AS SEARCHABLE, " +
+			"false AS UNSIGNED_ATTRIBUTE, false AS FIXED_PREC_SCALE, false AS \"AUTO_INCREMENT\", LOCAL_TYPE_NAME, 0 AS MINIMUM_SCALE, " +
+			"MAXIMUM_SCALE, 0 AS SQL_DATA_TYPE, 0 AS SQL_DATETIME_SUB, 10 AS NUM_PREC_RADIX " +
+		"FROM (VALUES" +
+		" ('interval year', 6, ''' year', CAST(NULL AS VARCHAR(5)), 'month_interval', 0)" +
+		",('interval month', 8, ''' month', NULL, 'month_interval', 0)" +
+		",('interval day', 10, ''' day', NULL, 'day_interval', 0)" +
+		",('interval hour', 12, ''' hour', NULL, 'sec_interval', 0)" +
+		",('interval minute', 12, ''' minute', NULL, 'sec_interval', 0)" +
+		",('interval second', 15, ''' second', 'scale', 'sec_interval', 3)" +
+		",('interval year to month', 8, ''' year to month', NULL, 'month_interval', 0)" +
+		",('interval day to hour', 12, ''' day to hour', NULL, 'sec_interval', 0)" +
+		",('interval day to minute', 12, ''' day to minute', NULL, 'sec_interval', 0)" +
+		",('interval day to second', 15, ''' day to second', 'scale', 'sec_interval', 3)" +
+		",('interval hour to minute', 12, ''' hour to minute', NULL, 'sec_interval', 0)" +
+		",('interval hour to second', 15, ''' hour to second', 'scale', 'sec_interval', 3)" +
+		",('interval minute to second', 15, ''' minute to second', 'scale', 'sec_interval', 3)" +
+		") AS interval_types(\"TYPE_NAME\", PRECISION, LITERAL_SUFFIX, CREATE_PARAMS, LOCAL_TYPE_NAME, MAXIMUM_SCALE) " +
+		"UNION ALL " +
+		// also add the 2 serial types (like done in ODBC SQLGetTypeInfo())
+		"SELECT \"TYPE_NAME\", \"DATA_TYPE\", PRECISION, NULL AS LITERAL_PREFIX, NULL AS LITERAL_SUFFIX, NULL AS CREATE_PARAMS, " +
+			DatabaseMetaData.typeNoNulls + " AS NULLABLE, false AS CASE_SENSITIVE, " + DatabaseMetaData.typePredBasic + " AS SEARCHABLE, " +
+			"false AS UNSIGNED_ATTRIBUTE, false AS FIXED_PREC_SCALE, true AS \"AUTO_INCREMENT\", LOCAL_TYPE_NAME, 0 AS MINIMUM_SCALE, " +
+			"0 AS MAXIMUM_SCALE, 0 AS SQL_DATA_TYPE, 0 AS SQL_DATETIME_SUB, 2 AS NUM_PREC_RADIX " +
+		"FROM (VALUES" +
+		" ('bigserial', -5, 64, 'bigint')" +
+		",('serial', 4, 32, 'int')" +
+		") AS serial_types(\"TYPE_NAME\", \"DATA_TYPE\", PRECISION, LOCAL_TYPE_NAME) " +
+		"ORDER BY \"DATA_TYPE\", \"TYPE_NAME\"");
 
-		/* if (query.length() >= 3200) System.err.println("getTypeInfo(), extend query default size to: " + query.length()); */
+		// System.err.println("getTypeInfo() query: " + query.toString());
+		// if (query.length() >= 4800) System.err.println("getTypeInfo(), extend query initial size to: " + query.length());
 		return executeMetaDataQuery(query.toString());
 	}
 
