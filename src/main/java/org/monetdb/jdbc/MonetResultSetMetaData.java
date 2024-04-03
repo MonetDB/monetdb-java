@@ -362,6 +362,9 @@ final class MonetResultSetMetaData
 			case Types.DOUBLE:
 			case Types.DECIMAL:
 			case Types.NUMERIC:
+			case Types.DATE:	// year can be negative
+			case Types.TIMESTAMP:	// year can be negative
+			case Types.TIMESTAMP_WITH_TIMEZONE:
 				return true;
 			case Types.BIGINT:
 				try {
@@ -374,13 +377,6 @@ final class MonetResultSetMetaData
 					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
 				return true;
-		//	All other types should return false
-		//	case Types.BOOLEAN:
-		//	case Types.DATE:	// can year be negative?
-		//	case Types.TIME:	// can time be negative?
-		//	case Types.TIME_WITH_TIMEZONE:
-		//	case Types.TIMESTAMP:	// can year be negative?
-		//	case Types.TIMESTAMP_WITH_TIMEZONE:
 			default:
 				return false;
 		}

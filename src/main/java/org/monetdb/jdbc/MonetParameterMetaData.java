@@ -143,23 +143,19 @@ final class MonetParameterMetaData
 			case Types.DOUBLE:
 			case Types.DECIMAL:
 			case Types.NUMERIC:
+			case Types.DATE:	// year can be negative
+			case Types.TIMESTAMP:	// year can be negative
+			case Types.TIMESTAMP_WITH_TIMEZONE:
 				return true;
 			case Types.BIGINT:
+			{
 				final String monettype = getParameterTypeName(param);
-				if (monettype != null && monettype.length() == 3) {
-					// data of type oid or ptr is not signed
-					if ("oid".equals(monettype)
-					 || "ptr".equals(monettype))
-						return false;
-				}
+				// data of type oid or ptr is not signed
+				if ("oid".equals(monettype)
+				 || "ptr".equals(monettype))
+					return false;
 				return true;
-		//	All other types should return false
-		//	case Types.BOOLEAN:
-		//	case Types.DATE:	// can year be negative?
-		//	case Types.TIME:	// can time be negative?
-		//	case Types.TIME_WITH_TIMEZONE:
-		//	case Types.TIMESTAMP:	// can year be negative?
-		//	case Types.TIMESTAMP_WITH_TIMEZONE:
+			}
 			default:
 				return false;
 		}
