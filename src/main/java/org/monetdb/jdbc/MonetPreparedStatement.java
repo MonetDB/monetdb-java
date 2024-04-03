@@ -357,14 +357,7 @@ public class MonetPreparedStatement
 		if (rsmd == null) {
 			// first use, construct the arrays with metadata and a
 			// ResultSetMetaData object once and reuse it for all next calls
-			int rescolcount = 0;
-			for (int i = 0; i < size; i++) {
-				/* when column[i] == null it is a parameter,
-				   when column[i] != null it is a result column of the prepared query */
-				if (column[i] == null)
-					continue;
-				rescolcount++;
-			}
+			final int rescolcount = size - paramCount;
 			int array_size = rescolcount;
 			if (array_size == 0) {
 				// there are no resultset columns for this prepared statement
@@ -380,62 +373,56 @@ public class MonetPreparedStatement
 			final int[] lengths = new int[array_size];
 			final int[] precisions = new int[array_size];
 			final int[] scales = new int[array_size];
-			// now fill the arrays with only the resultset columns metadata
-			rescolcount = 0;
-			for (int i = 0; i < size; i++) {
-				/* when column[i] == null it is a parameter,
-				   when column[i] != null it is a result column of the prepared query */
-				if (column[i] == null)
-					continue;
-				schemas[rescolcount] = schema[i];
-				tables[rescolcount] = table[i];
-				columns[rescolcount] = column[i];
-				types[rescolcount] = monetdbType[i];
-				jdbcTypes[rescolcount] = javaType[i];
-				switch (jdbcTypes[rescolcount]) {
+			// fill the arrays with the resultset columns metadata
+			for (int i = 0; i < rescolcount; i++) {
+				schemas[i] = schema[i];
+				tables[i] = table[i];
+				columns[i] = column[i];
+				types[i] = monetdbType[i];
+				jdbcTypes[i] = javaType[i];
+				switch (jdbcTypes[i]) {
 					case Types.BIGINT:
-						lengths[rescolcount] = 19;
+						lengths[i] = 19;
 						break;
 					case Types.INTEGER:
-						lengths[rescolcount] = 10;
+						lengths[i] = 10;
 						break;
 					case Types.SMALLINT:
-						lengths[rescolcount] = 5;
+						lengths[i] = 5;
 						break;
 					case Types.TINYINT:
-						lengths[rescolcount] = 3;
+						lengths[i] = 3;
 						break;
 					case Types.REAL:
-						lengths[rescolcount] = 7;
+						lengths[i] = 7;
 						break;
 					case Types.FLOAT:
 					case Types.DOUBLE:
-						lengths[rescolcount] = 15;
+						lengths[i] = 15;
 						break;
 					case Types.DATE:
-						lengths[rescolcount] = 10;	// 2020-10-08
+						lengths[i] = 10;	// 2020-10-08
 						break;
 					case Types.TIME:
-						lengths[rescolcount] = 15;	// 21:51:34.399753
+						lengths[i] = 15;	// 21:51:34.399753
 						break;
 					case Types.TIME_WITH_TIMEZONE:
-						lengths[rescolcount] = 21;	// 21:51:34.399753+02:00
+						lengths[i] = 21;	// 21:51:34.399753+02:00
 						break;
 					case Types.TIMESTAMP:
-						lengths[rescolcount] = 26;	// 2020-10-08 21:51:34.399753
+						lengths[i] = 26;	// 2020-10-08 21:51:34.399753
 						break;
 					case Types.TIMESTAMP_WITH_TIMEZONE:
-						lengths[rescolcount] = 32;	// 2020-10-08 21:51:34.399753+02:00
+						lengths[i] = 32;	// 2020-10-08 21:51:34.399753+02:00
 						break;
 					case Types.BOOLEAN:
-						lengths[rescolcount] = 5;	// true or false
+						lengths[i] = 5;	// true or false
 						break;
 					default:
-						lengths[rescolcount] = digits[i];
+						lengths[i] = digits[i];
 				}
-				precisions[rescolcount] = digits[i];
-				scales[rescolcount] = scale[i];
-				rescolcount++;
+				precisions[i] = digits[i];
+				scales[i] = scale[i];
 			}
 
 			rsmd = new MonetResultSetMetaData((MonetConnection) getConnection(), rescolcount,
