@@ -464,18 +464,16 @@ public class MonetPreparedStatement
 			final int[] jdbcTypes = new int[array_size];
 			final int[] precisions = new int[array_size];
 			final int[] scales = new int[array_size];
-			int param = 1;	// parameters in JDBC start from 1
-			// now fill the arrays with only the parameters metadata
-			for (int i = 0; i < size; i++) {
-				/* when column[i] == null it is a parameter,
-				   when column[i] != null it is a result column of the prepared query */
-				if (column[i] != null)
-					continue;
-				types[param] = monetdbType[i];
-				jdbcTypes[param] = javaType[i];
-				precisions[param] = digits[i];
-				scales[param] = scale[i];
-				param++;
+			if (paramCount > 0) {
+				// fill the arrays with the parameters metadata
+				int param = 1;	// parameters in JDBC start from 1
+				for (int i = paramStartIndex; i < size && param <= paramCount; i++) {
+					types[param] = monetdbType[i];
+					jdbcTypes[param] = javaType[i];
+					precisions[param] = digits[i];
+					scales[param] = scale[i];
+					param++;
+				}
 			}
 
 			pmd = new MonetParameterMetaData((MonetConnection) getConnection(),
