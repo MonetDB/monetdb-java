@@ -95,10 +95,26 @@ final class MonetResultSetMetaData
 		schemas = header.getSchemaNames();
 		tables = header.getTableNames();
 		columns = header.getNames();
-		lengths = header.getColumnLengths();
 		types = header.getTypes();
+		lengths = header.getColumnLengths();
 		precisions = header.getColumnPrecisions();
 		scales = header.getColumnScales();
+		if (schemas == null) {
+			throw new IllegalArgumentException("Schemas may not be null!");
+		}
+		if (tables == null) {
+			throw new IllegalArgumentException("Tables may not be null!");
+		}
+		if (columns == null) {
+			throw new IllegalArgumentException("Columns may not be null!");
+		}
+		if (types == null) {
+			throw new IllegalArgumentException("MonetDB Types may not be null!");
+		}
+		if (lengths == null) {
+			throw new IllegalArgumentException("Lengths may not be null!");
+		}
+		// Note: the precisions and scales arrays are null when the statement is a PLAN, EXPLAIN or TRACE statement !!
 
 		colCount = columns.length;
 		if (columns.length != tables.length || columns.length != types.length ) {
@@ -394,22 +410,19 @@ final class MonetResultSetMetaData
 	@Override
 	public int getColumnDisplaySize(final int column) throws SQLException {
 		checkColumnIndexValidity(column);
-		if (lengths != null) {
-			try {
-				int len = lengths[column - 1];
-				if (len == 0) {
-					final String monettype = types[column - 1];
-					// in case of inet it always has 0 as length. we need to correct it.
-					if ("inet".equals(monettype)) {
-						len = 18;	// 128.127.126.125/24
-					}
+		try {
+			int len = lengths[column - 1];
+			if (len == 0) {
+				final String monettype = types[column - 1];
+				// in case of inet it always has 0 as length. we need to correct it.
+				if ("inet".equals(monettype)) {
+					len = 18;	// 128.127.126.125/24
 				}
-				return len;
-			} catch (IndexOutOfBoundsException e) {
-				throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 			}
+			return len;
+		} catch (IndexOutOfBoundsException e) {
+			throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 		}
-		return 1;
 	}
 
 	/**
@@ -471,14 +484,11 @@ final class MonetResultSetMetaData
 	@Override
 	public String getSchemaName(final int column) throws SQLException {
 		checkColumnIndexValidity(column);
-		if (schemas != null) {
-			try {
-				return schemas[column - 1];
-			} catch (IndexOutOfBoundsException e) {
-				throw MonetResultSet.newSQLInvalidColumnIndexException(column);
-			}
+		try {
+			return schemas[column - 1];
+		} catch (IndexOutOfBoundsException e) {
+			throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 		}
-		return "";
 	}
 
 	/**
@@ -491,14 +501,11 @@ final class MonetResultSetMetaData
 	@Override
 	public String getTableName(final int column) throws SQLException {
 		checkColumnIndexValidity(column);
-		if (tables != null) {
-			try {
-				return tables[column - 1];
-			} catch (IndexOutOfBoundsException e) {
-				throw MonetResultSet.newSQLInvalidColumnIndexException(column);
-			}
+		try {
+			return tables[column - 1];
+		} catch (IndexOutOfBoundsException e) {
+			throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 		}
-		return "";
 	}
 
 	/**
@@ -669,7 +676,6 @@ final class MonetResultSetMetaData
 		switch (getColumnType(column)) {
 			case Types.DECIMAL:
 			case Types.NUMERIC:
-			{
 				// these data types may have a variable scale, max scale is 38
 				try {
 					// Special handling for: day_interval and sec_interval as they are
@@ -684,24 +690,23 @@ final class MonetResultSetMetaData
 					if (scales != null) {
 						return scales[column - 1];
 					}
+					return 0;
 				} catch (IndexOutOfBoundsException e) {
 					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
-				return 0;
-			}
 			case Types.TIME:
 			case Types.TIME_WITH_TIMEZONE:
 			case Types.TIMESTAMP:
 			case Types.TIMESTAMP_WITH_TIMEZONE:
-				if (scales != null) {
-					try {
+				try {
+					if (scales != null) {
 						return scales[column - 1];
-					} catch (IndexOutOfBoundsException e) {
-						throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 					}
+					// support microseconds, so scale 6
+					return 6;	// 21:51:34.399753
+				} catch (IndexOutOfBoundsException e) {
+					throw MonetResultSet.newSQLInvalidColumnIndexException(column);
 				}
-				// support microseconds, so scale 6
-				return 6;	// 21:51:34.399753
 
 			// All other types should return 0
 		//	case Types.BIGINT:
