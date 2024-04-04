@@ -543,12 +543,34 @@ final class MonetResultSetMetaData
 				/* convert the interval type names to valid SQL data type names,
 				 * such that generic applications can use them in create table statements
 				 */
-				if ("day_interval".equals(monettype))
-					return "interval day";
-				if ("month_interval".equals(monettype))
-					return "interval month";
-				if ("sec_interval".equals(monettype))
-					return "interval second";
+				int prec = -1;
+ 				if (precisions != null) {
+					prec = precisions[column - 1];
+				}
+				switch (prec) {
+					case 1: return "interval year";
+					case 2: return "interval year to month";
+					case 3: return "interval month";
+					case 4: return "interval day";
+					case 5: return "interval day to hour";
+					case 6: return "interval day to minute";
+					case 7: return "interval day to second";
+					case 8: return "interval hour";
+					case 9: return "interval hour to minute";
+					case 10: return "interval hour to second";
+					case 11: return "interval minute";
+					case 12: return "interval minute to second";
+					case 13: return "interval second";
+					default:	// when no precisions array was available
+					{	// fall back to the 3 available monettype names
+						if ("day_interval".equals(monettype))
+							return "interval day";
+						if ("month_interval".equals(monettype))
+							return "interval month";
+						if ("sec_interval".equals(monettype))
+							return "interval second";
+					}
+				}
 			}
 			return monettype;
 		} catch (IndexOutOfBoundsException e) {

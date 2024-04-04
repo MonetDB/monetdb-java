@@ -1,6 +1,11 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Apr  4 2024 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Improved ResultSetMetaData.getColumnTypeName() and
+  ParameterMetaData.getParameterTypeName() for interval types. It now
+  returns more precise information for the interval data types.
+
 * Thu Mar  7 2024 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved DatabaseMetaData.getTypeInfo(). It now also returns the serial
   and bigserial data types and all 13 possible interval data types.
