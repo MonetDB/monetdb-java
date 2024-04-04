@@ -166,7 +166,7 @@ public class MonetPreparedStatement
 		int countParam = 0;
 		int firstParamOffset = 0;
 
-		// initialise blank finals
+		// initialise metadata arrays. size can be 0.
 		monetdbType = new String[size];
 		javaType = new int[size];
 		digits = new int[size];
@@ -185,7 +185,7 @@ public class MonetPreparedStatement
 			final int schema_colnr = rs.findColumn("schema");
 			final int table_colnr = rs.findColumn("table");
 			final int column_colnr = rs.findColumn("column");
-			for (int i = 0; rs.next(); i++) {
+			for (int i = 0; rs.next() && i < size; i++) {
 				monetdbType[i] = rs.getString(type_colnr);
 				javaType[i] = MonetDriver.getJdbcSQLType(monetdbType[i]);
 				if (javaType[i] == Types.CLOB) {
@@ -357,22 +357,16 @@ public class MonetPreparedStatement
 		if (rsmd == null) {
 			// first use, construct the arrays with metadata and a
 			// ResultSetMetaData object once and reuse it for all next calls
-			final int rescolcount = size - paramCount;
-			int array_size = rescolcount;
-			if (array_size == 0) {
-				// there are no resultset columns for this prepared statement
-				// we can not create arrays of size 0, so use:
-				array_size = 1;
-			}
+			final int rescolcount = size - paramCount;	// this can be 0
 			// create arrays for storing only the result columns meta data
-			final String[] schemas = new String[array_size];
-			final String[] tables = new String[array_size];
-			final String[] columns = new String[array_size];
-			final String[] types = new String[array_size];
-			final int[] jdbcTypes = new int[array_size];
-			final int[] lengths = new int[array_size];
-			final int[] precisions = new int[array_size];
-			final int[] scales = new int[array_size];
+			final String[] schemas = new String[rescolcount];
+			final String[] tables = new String[rescolcount];
+			final String[] columns = new String[rescolcount];
+			final String[] types = new String[rescolcount];
+			final int[] jdbcTypes = new int[rescolcount];
+			final int[] lengths = new int[rescolcount];
+			final int[] precisions = new int[rescolcount];
+			final int[] scales = new int[rescolcount];
 			// fill the arrays with the resultset columns metadata
 			for (int i = 0; i < rescolcount; i++) {
 				schemas[i] = schema[i];
