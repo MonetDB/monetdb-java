@@ -768,7 +768,7 @@ public class MonetPreparedStatement
 			hex.append(HEXES[(b & 0xF0) >> 4])
 			   .append(HEXES[(b & 0x0F)]);
 		}
-		hex.append("'");	// end of hex string value
+		hex.append('\'');	// end of hex string value
 		setValue(parameterIndex, hex.toString());
 	}
 

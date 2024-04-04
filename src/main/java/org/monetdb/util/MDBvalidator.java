@@ -279,7 +279,7 @@ public final class MDBvalidator {
 		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" FROM sys.keys k JOIN sys.tables t ON k.table_id = t.id JOIN sys.schemas s ON t.schema_id = s.id"
 				+ " WHERE k.type = ").append(pkey ? 0 : 1)	// 0 = primary keys, 1 = unique keys
-			.append(" and s.name = '").append(schema).append("'");
+			.append(" and s.name = '").append(schema).append('\'');
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
 		if (showValidationInfo)
@@ -292,7 +292,7 @@ public final class MDBvalidator {
 			sb.append("SELECT s.name as sch_nm, t.name as tbl_nm, k.name as key_nm, o.name as col_nm, o.nr")
 			.append(" FROM sys.keys k JOIN sys.objects o ON k.id = o.id JOIN sys.tables t ON k.table_id = t.id JOIN sys.schemas s ON t.schema_id = s.id"
 				+ " WHERE k.type = ").append(pkey ? 0 : 1)	// 0 = primary keys, 1 = unique keys
-			.append(" and s.name = '").append(schema).append("'")
+			.append(" and s.name = '").append(schema).append('\'')
 			.append(" ORDER BY t.name, k.name, o.nr;");
 			qry = sb.toString();
 			rs = stmt.executeQuery(qry);
@@ -407,7 +407,7 @@ public final class MDBvalidator {
 		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" FROM sys.keys k JOIN sys.tables t ON k.table_id = t.id JOIN sys.schemas s ON t.schema_id = s.id"
 				+ " WHERE k.type = 2")	// 2 = foreign keys
-			.append(" and s.name = '").append(schema).append("'");
+			.append(" and s.name = '").append(schema).append('\'');
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
 		if (showValidationInfo)
@@ -431,7 +431,7 @@ public final class MDBvalidator {
 				" JOIN sys.schemas ps ON pt.schema_id = ps.id" +
 				" WHERE fk.type = 2" +	// 2 = foreign keys
 				" AND fo.nr = po.nr")	// important: matching fk-pk column ordering
-			.append(" AND fs.name = '").append(schema).append("'")
+			.append(" AND fs.name = '").append(schema).append('\'')
 			.append(" ORDER BY ft.name, fk.name, fo.nr;");
 			qry = sb.toString();
 			rs = stmt.executeQuery(qry);
@@ -588,7 +588,7 @@ public final class MDBvalidator {
 		sb.append(" from sys.columns c join sys.tables t on c.table_id = t.id join sys.schemas s on t.schema_id = s.id"
 				+ " where t.type in (0, 10, 1, 11) and c.\"null\" = false"	// t.type 0 = TABLE, 10 = SYSTEM TABLE, 1 = VIEW, 11 = SYSTEM VIEW
 				+ " and t.system = ").append(system)
-			.append(" and s.name = '").append(schema).append("'");
+			.append(" and s.name = '").append(schema).append('\'');
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
 		if (showValidationInfo)
@@ -640,7 +640,7 @@ public final class MDBvalidator {
 				+ " and c.type_digits >= 1"		// only when a positive max length is specified
 				+ " and t.system = ").append(system)
 			.append(" and c.type in ('varchar','char','clob','json','url','blob')")	// only for variable character/bytes data type columns
-			.append(" and s.name = '").append(schema).append("'");
+			.append(" and s.name = '").append(schema).append('\'');
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
 		if (showValidationInfo)

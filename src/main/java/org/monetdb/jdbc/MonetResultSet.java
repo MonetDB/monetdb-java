@@ -2115,9 +2115,9 @@ public class MonetResultSet
 			} else if (epos < monetDate.length()) {
 				errMsg.append("parsing failed at pos ").append(epos + (negativeYear ? 2 : 1))
 					.append(" found: '").append(monetDate.charAt(epos))
-					.append("' in '").append(monetDateStr).append("'");
+					.append("' in '").append(monetDateStr).append('\'');
 			} else {
-				errMsg.append("parsing failed, expected more data after '").append(monetDateStr).append("'");
+				errMsg.append("parsing failed, expected more data after '").append(monetDateStr).append('\'');
 			}
 			throw new SQLException(errMsg.toString(), "01M10");
 		}
