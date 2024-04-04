@@ -411,12 +411,44 @@ final class MonetResultSetMetaData
 	public int getColumnDisplaySize(final int column) throws SQLException {
 		checkColumnIndexValidity(column);
 		try {
-			int len = lengths[column - 1];
+			// Special handling for interval types
+			final String monettype = types[column - 1];
+			if (monettype != null && monettype.endsWith("_interval")) {
+				/* for interval types, precisions[] contains the interval subtype code */
+				int prec = -1;
+ 				if (precisions != null) {
+					prec = precisions[column - 1];
+				}
+				switch (prec) {
+					case 1: return 4;	// interval year
+					case 2: return 6;	// interval year to month
+					case 3: return 6;	// interval month
+					case 4: return 9;	// interval day
+					case 5: return 11;	// interval day to hour
+					case 6: return 13;	// interval day to minute
+					case 7: return 15;	// interval day to second
+					case 8: return 11;	// interval hour
+					case 9: return 13;	// interval hour to minute
+					case 10: return 15;	// interval hour to second
+					case 11: return 13;	// interval minute
+					case 12: return 15;	// interval minute to second
+					case 13: return 15;	// interval second
+					default:
+					{	// fall back to the 3 available monettype names
+						if ("sec_interval".equals(monettype))
+							return 15;
+						if ("day_interval".equals(monettype))
+							return 9;
+						if ("month_interval".equals(monettype))
+							return 6;
+					}
+				}
+			}
+			final int len = lengths[column - 1];
 			if (len == 0) {
-				final String monettype = types[column - 1];
 				// in case of inet it always has 0 as length. we need to correct it.
 				if ("inet".equals(monettype)) {
-					len = 18;	// 128.127.126.125/24
+					return 18;	// 128.127.126.125/24
 				}
 			}
 			return len;
@@ -543,6 +575,7 @@ final class MonetResultSetMetaData
 				/* convert the interval type names to valid SQL data type names,
 				 * such that generic applications can use them in create table statements
 				 */
+				/* for interval types, precisions[] contains the interval subtype code */
 				int prec = -1;
  				if (precisions != null) {
 					prec = precisions[column - 1];
@@ -614,6 +647,36 @@ final class MonetResultSetMetaData
 				// these data types have a variable precision (max precision is 38)
 				if (precisions != null) {
 					try {
+						// Special handling for: day_interval and sec_interval as they are
+						// mapped to Types.NUMERIC and Types.DECIMAL types (see MonetDriver typeMap)
+						final String monettype = types[column - 1];
+						if (monettype != null && monettype.endsWith("_interval")) {
+							/* for interval types, precisions[] contains the interval subtype code */
+							switch (precisions[column - 1]) {
+								case 1: return 4;	// interval year
+								case 2: return 6;	// interval year to month
+								case 3: return 6;	// interval month
+								case 4: return 9;	// interval day
+								case 5: return 11;	// interval day to hour
+								case 6: return 13;	// interval day to minute
+								case 7: return 15;	// interval day to second
+								case 8: return 11;	// interval hour
+								case 9: return 13;	// interval hour to minute
+								case 10: return 15;	// interval hour to second
+								case 11: return 13;	// interval minute
+								case 12: return 15;	// interval minute to second
+								case 13: return 15;	// interval second
+								default:
+								{	// fall back to the 3 available monettype names
+									if ("sec_interval".equals(monettype))
+										return 15;
+									if ("day_interval".equals(monettype))
+										return 9;
+									if ("month_interval".equals(monettype))
+										return 6;
+								}
+							}
+						}
 						return precisions[column - 1];
 					} catch (IndexOutOfBoundsException e) {
 						throw MonetResultSet.newSQLInvalidColumnIndexException(column);

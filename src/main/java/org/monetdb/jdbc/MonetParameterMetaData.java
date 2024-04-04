@@ -198,6 +198,36 @@ final class MonetParameterMetaData
 			case Types.NUMERIC:
 				// these data types have a variable precision (max precision is 38)
 				try {
+					// Special handling for: day_interval and sec_interval as they are
+					// mapped to Types.NUMERIC and Types.DECIMAL types (see MonetDriver typeMap)
+					final String monettype = monetdbTypes[param];
+					if (monettype != null && monettype.endsWith("_interval")) {
+						/* for interval types, precisions[] contains the interval subtype code */
+						switch (precisions[param]) {
+							case 1: return 4;	// interval year
+							case 2: return 6;	// interval year to month
+							case 3: return 6;	// interval month
+							case 4: return 9;	// interval day
+							case 5: return 11;	// interval day to hour
+							case 6: return 13;	// interval day to minute
+							case 7: return 15;	// interval day to second
+							case 8: return 11;	// interval hour
+							case 9: return 13;	// interval hour to minute
+							case 10: return 15;	// interval hour to second
+							case 11: return 13;	// interval minute
+							case 12: return 15;	// interval minute to second
+							case 13: return 15;	// interval second
+							default:
+							{	// fall back to the 3 available monettype names
+								if ("sec_interval".equals(monettype))
+									return 15;
+								if ("day_interval".equals(monettype))
+									return 9;
+								if ("month_interval".equals(monettype))
+									return 6;
+							}
+						}
+					}
 					return precisions[param];
 				} catch (IndexOutOfBoundsException e) {
 					throw newSQLInvalidParameterIndexException(param);
@@ -293,6 +323,7 @@ final class MonetParameterMetaData
 			final String monettype = monetdbTypes[param];
 			if (monettype != null && monettype.endsWith("_interval")) {
 				/* convert the interval type names to valid SQL data type names */
+				/* for interval types, precisions[] contains the interval subtype code */
 				switch (precisions[param]) {
 					case 1: return "interval year";
 					case 2: return "interval year to month";

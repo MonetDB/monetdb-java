@@ -47,7 +47,7 @@ final public class JDBC_API_Tester {
 	private boolean isPostDec2023;	// flag to support version specific output
 	private boolean foundDifferences = false;
 
-	final private static int sbInitLen = 5442;
+	final private static int sbInitLen = 5468;
 
 	/**
 	 * constructor
@@ -1891,47 +1891,47 @@ final public class JDBC_API_Tester {
 
 		compareExpectedOutput("Test_Interval_Types",
 			"Showing query ResultSetMetaData\n" +
-			"ColumnName: c1	ColumnTypeName: interval year	Precision: 10	Scale: 0	ColumnDisplaySize: 1	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
-			"ColumnName: c2	ColumnTypeName: interval month	Precision: 10	Scale: 0	ColumnDisplaySize: 1	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
-			"ColumnName: c3	ColumnTypeName: interval day	Precision: 4	Scale: 0	ColumnDisplaySize: 5	ColumnType: 2	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c4	ColumnTypeName: interval hour	Precision: 8	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c5	ColumnTypeName: interval minute	Precision: 11	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c6	ColumnTypeName: interval second	Precision: 13	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c7	ColumnTypeName: interval year to month	Precision: 10	Scale: 0	ColumnDisplaySize: 1	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
-			"ColumnName: c8	ColumnTypeName: interval day to hour	Precision: 5	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c9	ColumnTypeName: interval day to minute	Precision: 6	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c10	ColumnTypeName: interval day to second	Precision: 7	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c11	ColumnTypeName: interval hour to minute	Precision: 9	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c12	ColumnTypeName: interval hour to second	Precision: 10	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c13	ColumnTypeName: interval minute to second	Precision: 12	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c1	ColumnTypeName: interval year	Precision: 10	Scale: 0	ColumnDisplaySize: 4	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
+			"ColumnName: c2	ColumnTypeName: interval month	Precision: 10	Scale: 0	ColumnDisplaySize: 6	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
+			"ColumnName: c3	ColumnTypeName: interval day	Precision: 9	Scale: 0	ColumnDisplaySize: 9	ColumnType: 2	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c4	ColumnTypeName: interval hour	Precision: 11	Scale: 3	ColumnDisplaySize: 11	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c5	ColumnTypeName: interval minute	Precision: 13	Scale: 3	ColumnDisplaySize: 13	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c6	ColumnTypeName: interval second	Precision: 15	Scale: 3	ColumnDisplaySize: 15	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c7	ColumnTypeName: interval year to month	Precision: 10	Scale: 0	ColumnDisplaySize: 6	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
+			"ColumnName: c8	ColumnTypeName: interval day to hour	Precision: 11	Scale: 3	ColumnDisplaySize: 11	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c9	ColumnTypeName: interval day to minute	Precision: 13	Scale: 3	ColumnDisplaySize: 13	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c10	ColumnTypeName: interval day to second	Precision: 15	Scale: 3	ColumnDisplaySize: 15	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c11	ColumnTypeName: interval hour to minute	Precision: 13	Scale: 3	ColumnDisplaySize: 13	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c12	ColumnTypeName: interval hour to second	Precision: 15	Scale: 3	ColumnDisplaySize: 15	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c13	ColumnTypeName: interval minute to second	Precision: 15	Scale: 3	ColumnDisplaySize: 15	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
 			"Showing prepared query ResultSetMetaData\n" +
-			"ColumnName: c1	ColumnTypeName: interval year	Precision: 10	Scale: 0	ColumnDisplaySize: 10	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
-			"ColumnName: c2	ColumnTypeName: interval month	Precision: 10	Scale: 0	ColumnDisplaySize: 10	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
-			"ColumnName: c3	ColumnTypeName: interval day	Precision: 4	Scale: 0	ColumnDisplaySize: 4	ColumnType: 2	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c4	ColumnTypeName: interval hour	Precision: 8	Scale: 3	ColumnDisplaySize: 8	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c5	ColumnTypeName: interval minute	Precision: 11	Scale: 3	ColumnDisplaySize: 11	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c6	ColumnTypeName: interval second	Precision: 13	Scale: 3	ColumnDisplaySize: 13	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c7	ColumnTypeName: interval year to month	Precision: 10	Scale: 0	ColumnDisplaySize: 10	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
-			"ColumnName: c8	ColumnTypeName: interval day to hour	Precision: 5	Scale: 3	ColumnDisplaySize: 5	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c9	ColumnTypeName: interval day to minute	Precision: 6	Scale: 3	ColumnDisplaySize: 6	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c10	ColumnTypeName: interval day to second	Precision: 7	Scale: 3	ColumnDisplaySize: 7	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c11	ColumnTypeName: interval hour to minute	Precision: 9	Scale: 3	ColumnDisplaySize: 9	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c12	ColumnTypeName: interval hour to second	Precision: 10	Scale: 3	ColumnDisplaySize: 10	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
-			"ColumnName: c13	ColumnTypeName: interval minute to second	Precision: 12	Scale: 3	ColumnDisplaySize: 12	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c1	ColumnTypeName: interval year	Precision: 10	Scale: 0	ColumnDisplaySize: 4	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
+			"ColumnName: c2	ColumnTypeName: interval month	Precision: 10	Scale: 0	ColumnDisplaySize: 6	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
+			"ColumnName: c3	ColumnTypeName: interval day	Precision: 9	Scale: 0	ColumnDisplaySize: 9	ColumnType: 2	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c4	ColumnTypeName: interval hour	Precision: 11	Scale: 3	ColumnDisplaySize: 11	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c5	ColumnTypeName: interval minute	Precision: 13	Scale: 3	ColumnDisplaySize: 13	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c6	ColumnTypeName: interval second	Precision: 15	Scale: 3	ColumnDisplaySize: 15	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c7	ColumnTypeName: interval year to month	Precision: 10	Scale: 0	ColumnDisplaySize: 6	ColumnType: 4	ColumnClassName: java.lang.Integer\n" +
+			"ColumnName: c8	ColumnTypeName: interval day to hour	Precision: 11	Scale: 3	ColumnDisplaySize: 11	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c9	ColumnTypeName: interval day to minute	Precision: 13	Scale: 3	ColumnDisplaySize: 13	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c10	ColumnTypeName: interval day to second	Precision: 15	Scale: 3	ColumnDisplaySize: 15	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c11	ColumnTypeName: interval hour to minute	Precision: 13	Scale: 3	ColumnDisplaySize: 13	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c12	ColumnTypeName: interval hour to second	Precision: 15	Scale: 3	ColumnDisplaySize: 15	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
+			"ColumnName: c13	ColumnTypeName: interval minute to second	Precision: 15	Scale: 3	ColumnDisplaySize: 15	ColumnType: 3	ColumnClassName: java.math.BigDecimal\n" +
 			"Showing prepared query ParameterMetaData\n" +
 			"ParameterTypeName: interval year	Precision: 10	Scale: 0	ParameterType: 4	ParameterClassName: java.lang.Integer\n" +
 			"ParameterTypeName: interval month	Precision: 10	Scale: 0	ParameterType: 4	ParameterClassName: java.lang.Integer\n" +
-			"ParameterTypeName: interval day	Precision: 4	Scale: 0	ParameterType: 2	ParameterClassName: java.math.BigDecimal\n" +
-			"ParameterTypeName: interval hour	Precision: 8	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
-			"ParameterTypeName: interval minute	Precision: 11	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
-			"ParameterTypeName: interval second	Precision: 13	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
+			"ParameterTypeName: interval day	Precision: 9	Scale: 0	ParameterType: 2	ParameterClassName: java.math.BigDecimal\n" +
+			"ParameterTypeName: interval hour	Precision: 11	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
+			"ParameterTypeName: interval minute	Precision: 13	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
+			"ParameterTypeName: interval second	Precision: 15	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
 			"ParameterTypeName: interval year to month	Precision: 10	Scale: 0	ParameterType: 4	ParameterClassName: java.lang.Integer\n" +
-			"ParameterTypeName: interval day to hour	Precision: 5	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
-			"ParameterTypeName: interval day to minute	Precision: 6	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
-			"ParameterTypeName: interval day to second	Precision: 7	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
-			"ParameterTypeName: interval hour to minute	Precision: 9	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
-			"ParameterTypeName: interval hour to second	Precision: 10	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
-			"ParameterTypeName: interval minute to second	Precision: 12	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n");
+			"ParameterTypeName: interval day to hour	Precision: 11	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
+			"ParameterTypeName: interval day to minute	Precision: 13	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
+			"ParameterTypeName: interval day to second	Precision: 15	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
+			"ParameterTypeName: interval hour to minute	Precision: 13	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
+			"ParameterTypeName: interval hour to second	Precision: 15	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n" +
+			"ParameterTypeName: interval minute to second	Precision: 15	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n");
 	}
 
 	private void Test_PlanExplainTraceDebugCmds() {
