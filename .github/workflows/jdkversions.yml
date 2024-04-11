@@ -1,7 +1,8 @@
 # This workflow will build a Java project with Maven
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+# or https://github.com/actions/checkout  and  https://github.com/actions/setup-java
 
-# Note: Oracle JDK is only supported for JDK 17 and later
+# Note: Oracle JDK is only supported for JDK 17, 21 and later
 
 name: Test with various JDK versions
 
@@ -30,7 +31,7 @@ jobs:
 
     services:
       monetdb_container:
-        image: monetdb/dev-builds:Jun2023
+        image: monetdb/dev-builds:Dec2023
         env:
           MDB_DAEMON_PASS: monetdb
           MDB_DB_ADMIN_PASS: monetdb
