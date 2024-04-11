@@ -1,5 +1,6 @@
 # This workflow will build a Java project with Maven
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+# or https://github.com/actions/checkout  and  https://github.com/actions/setup-java
 
 name: Test with various MonetDB versions
 
@@ -13,6 +14,7 @@ jobs:
       fail-fast: false
       matrix:
         monetdbversion:
+          - "monetdb/dev-builds:Jul2021"
           - "monetdb/dev-builds:Jan2022"
           - "monetdb/dev-builds:Sep2022"
           - "monetdb/dev-builds:Jun2023"
