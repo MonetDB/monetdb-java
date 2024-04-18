@@ -564,29 +564,24 @@ public class MonetPreparedStatement
 	 * @throws SQLException if a database access error occurs
 	 */
 	@Override
-	public void setBigDecimal(final int parameterIndex, BigDecimal x) throws SQLException {
-		// get array position
-		final int i = getParamIdx(parameterIndex);
-
-		// round to the scale of the DB:
-		x = x.setScale(scale[i], java.math.RoundingMode.HALF_UP);
-
-		// if precision is now greater than that of the db, throw an error:
-		if (x.precision() > digits[i]) {
-			throw new SQLDataException("DECIMAL value exceeds allowed digits/scale: " + x.toPlainString() + " (" + digits[i] + "/" + scale[i] + ")", "22003");
+	public void setBigDecimal(final int parameterIndex, final BigDecimal x) throws SQLException
+	{
+		if (x == null) {
+			setValue(parameterIndex, "NULL");
+			return;
 		}
 
-		// MonetDB doesn't like leading 0's, since it counts them as part of
-		// the precision, so let's strip them off. (But be careful not to do
-		// this to the exact number "0".)  Also strip off trailing
-		// numbers that are inherent to the double representation.
-		String xStr = x.toPlainString();
-		final int dot = xStr.indexOf('.');
-		if (dot >= 0)
-			xStr = xStr.substring(0, Math.min(xStr.length(), dot + 1 + scale[i]));
-		while (xStr.startsWith("0") && xStr.length() > 1)
-			xStr = xStr.substring(1);
-		setValue(parameterIndex, xStr);
+		// get array position
+		final int i = getParamIdx(parameterIndex);
+		// round to the scale of the DB specification:
+		final BigDecimal decval = x.setScale(scale[i], java.math.RoundingMode.HALF_UP);
+		final String decvalStr = decval.toPlainString();
+
+		// if precision is now greater than that of the DB specification, throw an error:
+		if (decval.precision() > digits[i]) {
+			throw new SQLDataException("DECIMAL value '" + decvalStr + "' exceeds allowed digits,scale: (" + digits[i] + "," + scale[i] + ")", "22003");
+		}
+		setValue(parameterIndex, decvalStr);
 	}
 
 	/**

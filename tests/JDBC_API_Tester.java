@@ -5586,7 +5586,7 @@ final public class JDBC_API_Tester {
 		ResultSet rs = null;
 		try {
 			stmt1 = con.createStatement();
-			stmt1.executeUpdate("CREATE TABLE bug3561 (d decimal(14,4))");
+			stmt1.executeUpdate("CREATE TABLE bug3561 (d decimal(7,4))");
 
 			pst = con.prepareStatement("INSERT INTO bug3561 VALUES (?)");
 			pst.setBigDecimal(1, new BigDecimal("112.125"));
@@ -5595,6 +5595,29 @@ final public class JDBC_API_Tester {
 			pst.executeUpdate();
 			pst.setBigDecimal(1, new BigDecimal("0.012345"));
 			pst.executeUpdate();
+			pst.setBigDecimal(1, new BigDecimal(0.0/10000000));	// 0.0000
+			pst.executeUpdate();
+			pst.setBigDecimal(1, new BigDecimal(2.0/3));	// 0.666666667
+			pst.executeUpdate();
+			pst.setBigDecimal(1, new BigDecimal(11.0/7));	// 1.571428571
+			pst.executeUpdate();
+			// repeat for negative values
+			pst.setBigDecimal(1, new BigDecimal("-0112.125"));
+			pst.executeUpdate();
+			pst.setBigDecimal(1, new BigDecimal("-0212.12345"));
+			pst.executeUpdate();
+			pst.setBigDecimal(1, new BigDecimal("-0.012345"));
+			pst.executeUpdate();
+			pst.setBigDecimal(1, new BigDecimal(0.0/-10000000));	// 0.0000
+			pst.executeUpdate();
+			pst.setBigDecimal(1, new BigDecimal(-2.0/3));	// -0.666666667
+			pst.executeUpdate();
+			pst.setBigDecimal(1, new BigDecimal(-11.0/7));	// -1.571428571
+			pst.executeUpdate();
+			// check what happens if null is used
+			pst.setBigDecimal(1, null);
+			pst.executeUpdate();
+
 			pst.close();
 
 			stmt2 = con.createStatement();
@@ -5618,7 +5641,17 @@ final public class JDBC_API_Tester {
 		compareExpectedOutput("BugDecimalRound_Bug_3561",
 				"112.1250\n" +
 				"212.1235\n" +
-				"0.0123\n");
+				"0.0123\n" +
+				"0.0000\n" +
+				"0.6667\n" +
+				"1.5714\n" +
+				"-112.1250\n" +
+				"-212.1235\n" +
+				"-0.0123\n" +
+				"0.0000\n" +
+				"-0.6667\n" +
+				"-1.5714\n" +
+				"null\n");
 	}
 
 	private void BugExecuteUpdate_Bug_3350() {
