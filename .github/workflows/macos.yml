@@ -20,4 +20,14 @@ jobs:
         distribution: liberica
 
     - name: Build
-      run: make all
+      run: make
+
+    - name: Create jar symlink
+      run: ln -s monetdb-jdbc*.jar monetdb-jdbc.jar
+      working-directory: jars
+
+    - name: Run JDBC_API_Tester
+      run: java -cp jars/monetdb-jdbc.jar:jars/jdbctests.jar JDBC_API_Tester 'jdbc:monetdb://localhost:50000/monetdb?user=monetdb&password=monetdb'
+
+    - name: Run OnClientTester
+      run: java -cp jars/monetdb-jdbc.jar:jars/jdbctests.jar OnClientTester 'jdbc:monetdb://localhost:50000/monetdb?user=monetdb&password=monetdb' -v
