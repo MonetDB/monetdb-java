@@ -14,7 +14,6 @@ jobs:
       fail-fast: false
       matrix:
         monetdbversion:
-          - "monetdb/dev-builds:Jul2021"
           - "monetdb/dev-builds:Jan2022"
           - "monetdb/dev-builds:Sep2022"
           - "monetdb/dev-builds:Jun2023"
