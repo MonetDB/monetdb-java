@@ -216,7 +216,12 @@ public final class SQLExporter extends Exporter {
 			final String idxname = cols.getString(colIndexNm);
 			if (idxname != null && !idxname.endsWith("_pkey")) {
 				out.println(",");
-				out.print("\tCONSTRAINT " + dq(idxname) + " UNIQUE (" + dq(cols.getString(colNmIndex)));
+				out.print("\tCONSTRAINT " + dq(idxname));
+				if (idxname.endsWith("_nndunique"))
+					out.print(" UNIQUE NULLS NOT DISTINCT (");	// new since release 11.50 (Aug2024)
+				else
+					out.print(" UNIQUE (");
+				out.print(dq(cols.getString(colNmIndex)));
 
 				boolean next;
 				while ((next = cols.next()) && idxname.equals(cols.getString(colIndexNm))) {
