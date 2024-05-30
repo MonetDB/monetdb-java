@@ -2452,18 +2452,18 @@ public final class MonetDatabaseMetaData
 			"SELECT \"id\", \"table_id\" FROM \"sys\".\"keys\" WHERE \"type\" = 0 " +
 			"UNION ALL " +
 			// and first unique constraint of a table when table has no pkey
-			"SELECT \"id\", \"table_id\" FROM \"sys\".\"keys\" WHERE \"type\" = 1 " +
+			"SELECT \"id\", \"table_id\" FROM \"sys\".\"keys\" WHERE \"type\" IN (1, 3) " +
 			"AND \"table_id\" NOT IN (select \"table_id\" from \"sys\".\"keys\" where \"type\" = 0) " +
-			"AND (\"table_id\", \"id\") IN (select \"table_id\", min(\"id\") from \"sys\".\"keys\" where \"type\" = 1 group by \"table_id\"))");
+			"AND (\"table_id\", \"id\") IN (select \"table_id\", min(\"id\") from \"sys\".\"keys\" where \"type\" IN (1, 3) group by \"table_id\"))");
 		if (incltmpkey) {
 			// we must also include the primary key or unique constraint of local temporary tables which are stored in tmp.keys
 		// 2nd cte: tmpkeys
 			query.append(", tmpkeys as (" +
 			"SELECT \"id\", \"table_id\" FROM \"tmp\".\"keys\" WHERE \"type\" = 0 " +
 			"UNION ALL " +
-			"SELECT \"id\", \"table_id\" FROM \"tmp\".\"keys\" WHERE \"type\" = 1 " +
+			"SELECT \"id\", \"table_id\" FROM \"tmp\".\"keys\" WHERE \"type\" IN (1, 3) " +
 			"AND \"table_id\" NOT IN (select \"table_id\" from \"tmp\".\"keys\" where \"type\" = 0) " +
-			"AND (\"table_id\", \"id\") IN (select \"table_id\", min(\"id\") from \"tmp\".\"keys\" where \"type\" = 1 group by \"table_id\"))");
+			"AND (\"table_id\", \"id\") IN (select \"table_id\", min(\"id\") from \"tmp\".\"keys\" where \"type\" IN (1, 3) group by \"table_id\"))");
 		}
 		// 3rd cte: tableids
 		query.append(", tableids as (" +
@@ -2520,7 +2520,7 @@ public final class MonetDatabaseMetaData
 			"SELECT c.\"name\", c.\"type\", c.\"type_digits\", c.\"type_scale\", c.\"number\" " +
 			"FROM tableids t " +
 			"JOIN \"sys\".\"_columns\" c ON t.\"id\" = c.\"table_id\" " +
-			"WHERE t.\"id\" NOT IN (SELECT \"table_id\" FROM \"sys\".\"keys\" WHERE \"type\" in (0, 1))");
+			"WHERE t.\"id\" NOT IN (SELECT \"table_id\" FROM \"sys\".\"keys\" WHERE \"type\" in (0, 1, 3))");
 		if (!nullable) {
 			query.append(" AND c.\"null\" = false");
 		}
@@ -2529,7 +2529,7 @@ public final class MonetDatabaseMetaData
 			"SELECT c.\"name\", c.\"type\", c.\"type_digits\", c.\"type_scale\", c.\"number\" " +
 			"FROM tableids t " +
 			"JOIN \"tmp\".\"_columns\" c ON t.\"id\" = c.\"table_id\" " +
-			"WHERE t.\"id\" NOT IN (SELECT \"table_id\" FROM \"tmp\".\"keys\" WHERE \"type\" in (0, 1))");
+			"WHERE t.\"id\" NOT IN (SELECT \"table_id\" FROM \"tmp\".\"keys\" WHERE \"type\" in (0, 1, 3))");
 			if (!nullable) {
 				query.append(" AND c.\"null\" = false");
 			}
@@ -3230,7 +3230,7 @@ public final class MonetDatabaseMetaData
 		"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 		"JOIN \"sys\".\"objects\" o ON i.\"id\" = o.\"id\" " +
 		"JOIN \"sys\".\"_columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-		"LEFT OUTER JOIN \"sys\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) ");	// primary (0) and unique keys (1) only
+		"LEFT OUTER JOIN \"sys\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0, 1, 3)) ");	// primary (0) and unique keys (1 or 3) only
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
@@ -3277,7 +3277,7 @@ public final class MonetDatabaseMetaData
 			"JOIN \"sys\".\"schemas\" s ON t.\"schema_id\" = s.\"id\" " +
 			"JOIN \"tmp\".\"objects\" o ON i.\"id\" = o.\"id\" " +
 			"JOIN \"tmp\".\"_columns\" c ON (t.\"id\" = c.\"table_id\" AND o.\"name\" = c.\"name\") " +
-			"LEFT OUTER JOIN \"tmp\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0,1)) ");	// primary (0) and unique keys (1) only
+			"LEFT OUTER JOIN \"tmp\".\"keys\" k ON (i.\"name\" = k.\"name\" AND i.\"table_id\" = k.\"table_id\" AND k.\"type\" IN (0, 1, 3)) ");	// primary (0) and unique keys (1 or 3) only
 
 			if (catalog != null && !catalog.isEmpty()) {
 				// non-empty catalog selection.
