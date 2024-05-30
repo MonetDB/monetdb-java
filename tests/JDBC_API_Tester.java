@@ -836,8 +836,8 @@ final public class JDBC_API_Tester {
 			"Resultset with 13 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
 			"char(1)	varchar(1024)	varchar(1024)	boolean	char(1)	varchar(1024)	tinyint	smallint	varchar(1024)	char(1)	int	int	char(1)\n" +
-			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	3	0	null\n" +
-			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	3	0	null\n");
+			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	" + (isPostDec2023 ? "5" : "3") + "	0	null\n" +
+			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	" + (isPostDec2023 ? "5" : "3") + "	0	null\n");
 
 			compareResultSet(dbmd.getIndexInfo(null, "tmp", "tmp_pk_uc", false, false), "getIndexInfo(null, tmp, tmp_pk_uc, false, false)",
 			"Resultset with 13 columns\n" +
@@ -1300,8 +1300,8 @@ final public class JDBC_API_Tester {
 			"Resultset with 13 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	NON_UNIQUE	INDEX_QUALIFIER	INDEX_NAME	TYPE	ORDINAL_POSITION	COLUMN_NAME	ASC_OR_DESC	CARDINALITY	PAGES	FILTER_CONDITION\n" +
 			"char(1)	varchar(1024)	varchar(1024)	boolean	char(1)	varchar(1024)	tinyint	smallint	varchar(1024)	char(1)	int	int	char(1)\n" +
-			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	3	0	null\n" +
-			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	3	0	null\n");
+			"null	sys	key_types	false	null	key_types_key_type_id_pkey	2	1	key_type_id	null	" + (isPostDec2023 ? "5" : "3") + "	0	null\n" +
+			"null	sys	key_types	false	null	key_types_key_type_name_unique	2	1	key_type_name	null	" + (isPostDec2023 ? "5" : "3") + "	0	null\n");
 
 			if (testCreateDropIndexOnTmpTables) {
 			compareResultSet(dbmd.getIndexInfo(null, "tmp", "tmp_pk_uc", false, false), "getIndexInfo(null, tmp, tmp_pk_uc, false, false)",
