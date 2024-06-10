@@ -82,6 +82,8 @@ Copyright 1997 - July 2008 CWI.
         <include name="OnClientTester$*.class" />
         <include name="ConnectionTests.class" />
         <include name="ConnectionTests$*.class" />
+        <include name="TLSTester.class" />
+        <include name="TLSTester$*.class" />
       </fileset>
       <fileset dir="${srcdir}">
         <include name="tests.md" />
