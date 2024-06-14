@@ -46,6 +46,9 @@ public class Target {
 	private int soTimeout = 0;
 	private boolean treatClobAsVarchar = true;
 	private boolean treatBlobAsBinary = true;
+	private boolean clientInfo = true;
+	private String clientApplication = "";
+	private String clientRemark = "";
 	private boolean userWasSet = false;
 	private boolean passwordWasSet = false;
 	private Validated validated = null;
@@ -202,6 +205,15 @@ public class Target {
 			case BLOB_AS_BINARY:
 				setTreatBlobAsBinary((boolean) value);
 				break;
+			case CLIENT_INFO:
+				setClientInfo((boolean) value);
+				break;
+			case CLIENT_APPLICATION:
+				setClientApplication((String) value);
+				break;
+			case CLIENT_REMARK:
+				setClientRemark((String) value);
+				break;
 
 			default:
 				throw new IllegalStateException("unreachable -- missing case: " + parm.name);
@@ -269,6 +281,12 @@ public class Target {
 				return treatClobAsVarchar;
 			case BLOB_AS_BINARY:
 				return treatBlobAsBinary;
+			case CLIENT_INFO:
+				return clientInfo;
+			case CLIENT_APPLICATION:
+				return clientApplication;
+			case CLIENT_REMARK:
+				return clientRemark;
 			default:
 				throw new IllegalStateException("unreachable -- missing case");
 		}
@@ -508,6 +526,30 @@ public class Target {
 	public void setTreatBlobAsBinary(boolean treatBlobAsBinary) {
 		this.treatBlobAsBinary = treatBlobAsBinary;
 		validated = null;
+	}
+
+	public boolean isClientInfo() {
+		return clientInfo;
+	}
+
+	public void setClientInfo(boolean clientInfo) {
+		this.clientInfo = clientInfo;
+	}
+
+	public String getClientApplication() {
+		return clientApplication;
+	}
+
+	public void setClientApplication(String clientApplication) {
+		this.clientApplication = clientApplication;
+	}
+
+	public String getClientRemark() {
+		return clientRemark;
+	}
+
+	public void setClientRemark(String clientRemark) {
+		this.clientRemark = clientRemark;
 	}
 
 	public Validated validate() throws ValidationError {

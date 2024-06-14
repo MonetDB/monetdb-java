@@ -45,6 +45,10 @@ public enum Parameter {
 	SO_TIMEOUT("so_timeout", ParameterType.Int, 0, "abort if network I/O does not complete in this many milliseconds, 0 means no timeout", false),
 	CLOB_AS_VARCHAR("treat_clob_as_varchar", ParameterType.Bool, true, "return CLOB/TEXT data as type VARCHAR instead of type CLOB", false),
 	BLOB_AS_BINARY("treat_blob_as_binary", ParameterType.Bool, true, "return BLOB data as type BINARY instead of type BLOB", false),
+
+	CLIENT_INFO("client_info", ParameterType.Bool, true, "whether to send ClientInfo when connecting", false),
+	CLIENT_APPLICATION("client_application", ParameterType.Str, "", "application name to send in ClientInfo", false),
+	CLIENT_REMARK("client_remark", ParameterType.Str, "", "application name to send in ClientInfo", false),
 	;
 
 	public final String name;
@@ -117,6 +121,12 @@ public enum Parameter {
 				return CLOB_AS_VARCHAR;
 			case "treat_blob_as_binary":
 				return BLOB_AS_BINARY;
+			case "client_info":
+				return CLIENT_INFO;
+			case "client_application":
+				return CLIENT_APPLICATION;
+			case "client_remark":
+				return CLIENT_REMARK;
 			default:
 				return null;
 		}

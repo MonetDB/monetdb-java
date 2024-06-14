@@ -25,6 +25,7 @@ import java.net.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.sql.SQLClientInfoException;
 import java.util.*;
 
 import javax.net.ssl.SSLException;
@@ -117,6 +118,7 @@ public final class MapiSocket {
 	private BufferedMCLWriter writer;
 	/** protocol version of the connection */
 	private int version;
+	private ClientInfo clientInfo;
 
 	/** Whether we should follow redirects.
 	 * Not sure why this needs to be separate
@@ -497,6 +499,17 @@ public final class MapiSocket {
 		String optionsPart = parts.length > 6 ? parts[6] : null;
 //		String binaryPart = parts.length > 7 ? parts[7] : null;
 
+		if (parts.length > 9 && target.isClientInfo()) {
+			clientInfo = new ClientInfo();
+			try {
+				clientInfo.set("ApplicationName", target.getClientApplication());
+				clientInfo.set("ClientRemark", target.getClientRemark());
+			} catch (SQLClientInfoException e) {
+				String keys = String.join(", ", e.getFailedProperties().keySet());
+				throw new MCLException("Could not set ClientInfo properties: " + keys, e);
+			}
+		}
+
 		String userResponse;
 		String password = target.getPassword();
 		if (serverTypePart.equals("merovingian") && !target.getLanguage().equals("control")) {
@@ -771,6 +784,15 @@ public final class MapiSocket {
 		return target.isDebug();
 	}
 
+	public boolean hasClientInfo() {
+		return clientInfo != null;
+	}
+
+	public ClientInfo getClientInfo() {
+		if (clientInfo == null)
+			clientInfo = new ClientInfo();
+		return clientInfo;
+	}
 
 	/**
 	 * Inner class that is used to write data on a normal stream as a

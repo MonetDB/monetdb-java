@@ -28,3 +28,20 @@ EXPECT treat_blob_as_binary=false
 ACCEPT monetdb://?treat_blob_as_binary=yes
 EXPECT treat_blob_as_binary=on
 ```
+
+```test
+ONLY jdbc
+EXPECT client_info=true
+EXPECT client_application=
+EXPECT client_remark=
+```
+
+```test
+ONLY jdbc
+SET client_info=false
+SET client_application=myapp
+SET client_remark=a remark
+EXPECT client_info=false
+EXPECT client_application=myapp
+EXPECT client_remark=a remark
+```

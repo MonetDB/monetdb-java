@@ -224,6 +224,11 @@ public class MonetConnection
 			throw sqle;
 		}
 
+		// send any clientinfo
+		if (server.hasClientInfo()) {
+			sendControlCommand("clientinfo " + server.getClientInfo().format());
+		}
+
 		// Now take care of any options not handled during the handshake
 		curReplySize = defaultFetchSize;
 		if (lang == LANG_SQL) {
