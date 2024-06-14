@@ -502,8 +502,12 @@ public final class MapiSocket {
 		if (parts.length > 9 && target.isClientInfo()) {
 			clientInfo = new ClientInfo();
 			try {
-				clientInfo.set("ApplicationName", target.getClientApplication());
-				clientInfo.set("ClientRemark", target.getClientRemark());
+				String clientApplication = target.getClientApplication();
+				String clientRemark = target.getClientRemark();
+				if (!clientApplication.isEmpty())
+					clientInfo.set("ApplicationName", clientApplication);
+				if (!clientRemark.isEmpty())
+					clientInfo.set("ClientRemark", clientRemark);
 			} catch (SQLClientInfoException e) {
 				String keys = String.join(", ", e.getFailedProperties().keySet());
 				throw new MCLException("Could not set ClientInfo properties: " + keys, e);
