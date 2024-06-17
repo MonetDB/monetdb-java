@@ -21,6 +21,7 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLClientInfoException;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
@@ -35,6 +36,7 @@ import java.util.concurrent.Executor;
 import org.monetdb.mcl.io.BufferedMCLReader;
 import org.monetdb.mcl.io.BufferedMCLWriter;
 import org.monetdb.mcl.io.LineType;
+import org.monetdb.mcl.net.ClientInfo;
 import org.monetdb.mcl.net.MapiSocket;
 import org.monetdb.mcl.net.Target;
 import org.monetdb.mcl.parser.HeaderLineParser;
@@ -117,6 +119,11 @@ public class MonetConnection
 
 	/** A template to apply to each command (like pre and post fixes), filled in constructor */
 	private final String[] commandTempl = new String[2]; // pre, post
+
+	/** A mapping of ClientInfo property names such as 'ClientHostname' to columns of the
+	 * sessions table, such as 'hostname'.
+	 */
+	private HashMap<String,String> clientInfoAttributeNames = null;
 
 	/** the SQL language */
 	private static final int LANG_SQL = 0;
@@ -224,9 +231,16 @@ public class MonetConnection
 			throw sqle;
 		}
 
-		// send any clientinfo
-		if (server.hasClientInfo()) {
-			sendControlCommand("clientinfo " + server.getClientInfo().format());
+		if (server.canClientInfo() && target.sendClientInfo()) {
+			ClientInfo info = new ClientInfo();
+			info.setDefaults();
+			String clientApplication = target.getClientApplication();
+			String clientRemark = target.getClientRemark();
+			if (!clientApplication.isEmpty())
+				info.set("ApplicationName", clientApplication);
+			if (!clientRemark.isEmpty())
+				info.set("ClientRemark", clientRemark);
+			sendClientInfo(info);
 		}
 
 		// Now take care of any options not handled during the handshake
@@ -1270,8 +1284,16 @@ public class MonetConnection
 	 */
 	@Override
 	public String getClientInfo(final String name) throws SQLException {
-		// MonetDB doesn't support any Client Info Properties yet
-		return null;
+		String attrName = getClientInfoAttributeNames().get(name);
+		if (attrName == null)
+			return null;
+		String query = "SELECT " + attrName + " FROM sys.sessions WHERE sessionid = current_sessionid()";
+		try (Statement st = createStatement(); ResultSet rs = st.executeQuery(query)) {
+			if (rs.next())
+				return rs.getString(1);
+			else
+				return null;
+		}
 	}
 
 	/**
@@ -1289,7 +1311,53 @@ public class MonetConnection
 	@Override
 	public Properties getClientInfo() throws SQLException {
 		// MonetDB doesn't support any Client Info Properties yet
-		return new Properties();
+		Properties props = new Properties();
+
+		if (server.canClientInfo()) {
+			StringBuilder builder = new StringBuilder("SELECT ");
+			String sep = "";
+			for (Entry<String, String> entry: getClientInfoAttributeNames().entrySet()) {
+				String jdbcName = entry.getKey();
+				String attrName = entry.getValue();
+				builder.append(sep);
+				sep = ", ";
+				builder.append(attrName);
+				builder.append(" AS \"");
+				builder.append(jdbcName);
+				builder.append("\"");
+			}
+			builder.append(" FROM sys.sessions WHERE sessionid = current_sessionid()");
+
+			try (
+					Statement st = createStatement();
+					ResultSet rs = st.executeQuery(builder.toString())
+			) {
+				if (rs.next()) {
+					ResultSetMetaData md = rs.getMetaData();
+					for (int i = 1; i <= md.getColumnCount(); i++) {
+						String key = md.getColumnName(i);
+						String value = rs.getString(i);
+						props.setProperty(key, value != null ? value : "");
+					}
+				}
+			}
+		}
+		return props;
+	}
+
+	private HashMap<String,String> getClientInfoAttributeNames() throws SQLException {
+		if (clientInfoAttributeNames == null) {
+			HashMap<String, String> map = new HashMap<>();
+			try (Statement st = createStatement(); ResultSet rs = st.executeQuery("SELECT prop, session_attr FROM sys.clientinfo_properties")) {
+				while (rs.next()) {
+					String jdbcName = rs.getString(1);
+					String attrName = rs.getString(2);
+					map.put(jdbcName, attrName);
+				}
+			}
+			clientInfoAttributeNames = map;
+		}
+		return clientInfoAttributeNames;
 	}
 
 	/**
@@ -1330,8 +1398,16 @@ public class MonetConnection
 	 */
 	@Override
 	public void setClientInfo(final String name, final String value) throws SQLClientInfoException {
-		// MonetDB doesn't support any Client Info Properties yet
-		addWarning("setClientInfo: client info property name not recognized", "01M07");
+		ClientInfo info = new ClientInfo();
+		try {
+			info.set(name, value, getClientInfoAttributeNames().keySet());
+			sendClientInfo(info);
+			SQLWarning warn = info.warnings();
+			if (warn != null)
+				addWarning(warn);
+		} catch (SQLException e) {
+			throw info.wrapException(e);
+		}
 	}
 
 	/**
@@ -1359,11 +1435,27 @@ public class MonetConnection
 	 */
 	@Override
 	public void setClientInfo(final Properties props) throws SQLClientInfoException {
-		if (props != null) {
-			for (Entry<Object, Object> entry : props.entrySet()) {
-				setClientInfo(entry.getKey().toString(), entry.getValue().toString());
+		ClientInfo info = new ClientInfo();
+		try {
+			for (String name: props.stringPropertyNames()) {
+				String value = props.getProperty(name);
+				info.set(name, value, getClientInfoAttributeNames().keySet());
 			}
+			sendClientInfo(info);
+			SQLWarning warn = info.warnings();
+			if (warn != null)
+				addWarning(warn);
+		} catch (SQLClientInfoException e) {
+			throw e;
+		} catch (SQLException e) {
+			throw info.wrapException(e);
 		}
+	}
+
+	private void sendClientInfo(ClientInfo info) throws SQLException {
+		String formatted = info.format();
+		if (!formatted.isEmpty())
+			sendControlCommand("clientinfo " + formatted);
 	}
 
 	//== Java 1.7 methods (JDBC 4.1)
@@ -2052,16 +2144,28 @@ public class MonetConnection
 	 * warning will be the first, otherwise this warning will get
 	 * appended to the current warning.
 	 *
+	 * @param warning The warning to add
+	 */
+	private final void addWarning(SQLWarning warning) {
+		if (warnings == null) {
+			warnings = warning;
+		} else {
+			warnings.setNextWarning(warning);
+		}
+	}
+
+	/**
+	 * Adds a warning to the pile of warnings this Connection object has.
+	 * If there were no warnings (or clearWarnings was called) this
+	 * warning will be the first, otherwise this warning will get
+	 * appended to the current warning.
+	 *
 	 * @param reason the warning message
 	 * @param sqlstate the SQLState code (5 characters)
 	 */
 	private final void addWarning(final String reason, final String sqlstate) {
-		final SQLWarning warng = new SQLWarning(reason, sqlstate);
-		if (warnings == null) {
-			warnings = warng;
-		} else {
-			warnings.setNextWarning(warng);
-		}
+		final SQLWarning warning = new SQLWarning(reason, sqlstate);
+		addWarning(warning);
 	}
 
 	/** the default number of rows that are (attempted to) read at once */

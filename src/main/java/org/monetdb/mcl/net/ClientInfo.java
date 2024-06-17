@@ -9,10 +9,17 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.sql.ClientInfoStatus;
 import java.sql.SQLClientInfoException;
-import java.util.Collections;
+import java.sql.SQLException;
+import java.sql.SQLWarning;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 
+/**
+ * Manage ClientInfo properties to track, and help generating a
+ * @{link SQLClientInfoException} if there is a failure
+ */
 public class ClientInfo {
 	private static final String defaultHostname = findHostname();
 
@@ -23,9 +30,13 @@ public class ClientInfo {
 	private static final String defaultPid = findPid();
 
 	private final Properties props;
+	private HashMap<String, ClientInfoStatus> problems = null;
 
 	public ClientInfo() {
 		props = new Properties();
+	}
+
+	public void setDefaults() {
 		props.setProperty("ClientHostname", defaultHostname);
 		props.setProperty("ClientLibrary", defaultClientLibrary);
 		props.setProperty("ClientPid", defaultPid);
@@ -88,24 +99,56 @@ public class ClientInfo {
 	}
 
 	public Properties get() {
-		Properties ret = new Properties();
-		ret.putAll(props);
-		return ret;
+		return props;
 	}
 
-	public boolean set(String name, String value) throws SQLClientInfoException {
+	public HashMap<String,ClientInfoStatus> getProblems() {
+		return problems;
+	}
+
+	public void set(String name, String value, Set<String> known) throws SQLClientInfoException {
 		if (value == null)
 			value = "";
-		if (value.contains("\n")) {
-			Map<String, ClientInfoStatus> map = Collections.singletonMap(name, ClientInfoStatus.REASON_VALUE_INVALID);
-			throw new SQLClientInfoException(map);
-		}
-		if (props.containsKey(name)) {
-			props.setProperty(name, value);
-			return true;
+
+		if (known != null && !known.contains(name)) {
+			addProblem(name, ClientInfoStatus.REASON_UNKNOWN_PROPERTY);
+		} else if (value.contains("\n")) {
+			addProblem(name, ClientInfoStatus.REASON_VALUE_INVALID);
+			throw new SQLClientInfoException("Invalid value for Client Info property '" + name + "'", "01M07", problems);
 		} else {
-			return false;
+			props.setProperty(name, value);
 		}
 	}
 
+	public void set(String name, String value) throws SQLClientInfoException {
+		set(name, value, null);
+	}
+
+	private void addProblem(String name, ClientInfoStatus status) {
+		if (problems == null)
+			problems = new HashMap<>();
+		ClientInfoStatus old = problems.get(name);
+		if (old == null || status.compareTo(old) > 0)
+			problems.put(name, status);
+	}
+
+	public SQLClientInfoException wrapException(SQLException e) {
+		return new SQLClientInfoException(problems, e);
+	}
+
+	public SQLWarning warnings() {
+		SQLWarning ret = null;
+		if (problems == null)
+			return null;
+		for (Map.Entry<String, ClientInfoStatus> entry: problems.entrySet()) {
+			if (!entry.getValue().equals(ClientInfoStatus.REASON_UNKNOWN_PROPERTY))
+				continue;
+			SQLWarning warning = new SQLWarning("unknown client info property: " + entry.getKey(), "01M07");
+			if (ret == null)
+				ret = warning;
+			else
+				ret.setNextWarning(warning);
+		}
+		return ret;
+	}
 }

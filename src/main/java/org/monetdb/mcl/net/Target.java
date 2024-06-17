@@ -528,7 +528,7 @@ public class Target {
 		validated = null;
 	}
 
-	public boolean isClientInfo() {
+	public boolean sendClientInfo() {
 		return clientInfo;
 	}
 
