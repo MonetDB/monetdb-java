@@ -42,9 +42,9 @@ import org.monetdb.jdbc.types.URL;
 final public class JDBC_API_Tester {
 	private StringBuilder sb;	// buffer to collect the test output
 	private Connection con;		// main connection shared by all tests
-	private int dbmsMajorVersion;
-	private int dbmsMinorVersion;
-	private boolean isPostDec2023;	// flag to support version specific output
+	final private int dbmsMajorVersion;
+	final private int dbmsMinorVersion;
+	final private boolean isPostDec2023;	// flag to support version specific output
 	private boolean foundDifferences = false;
 
 	final private static int sbInitLen = 5468;
@@ -52,8 +52,16 @@ final public class JDBC_API_Tester {
 	/**
 	 * constructor
 	 */
-	JDBC_API_Tester() {
+	JDBC_API_Tester(Connection con_) throws SQLException {
+		this.con = con_;
 		sb = new StringBuilder(sbInitLen);
+
+		DatabaseMetaData dbmd = con_.getMetaData();
+		dbmsMajorVersion = dbmd.getDatabaseMajorVersion();
+		dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
+		// from version 11.50 on, the MonetDB server returns different metadata for
+		// integer digits (1 less) and for clob and char columns (now return varchar).
+		isPostDec2023 = versionIsAtLeast(11, 50);
 	}
 
 	/**
@@ -67,15 +75,9 @@ final public class JDBC_API_Tester {
 		// Test this before trying to connect
 		UrlTester.runAllTests();
 
-		JDBC_API_Tester jt = new JDBC_API_Tester();
-		jt.con = DriverManager.getConnection(con_URL);
-		// we are now connected
-		DatabaseMetaData dbmd = jt.con.getMetaData();
-		jt.dbmsMajorVersion = dbmd.getDatabaseMajorVersion();
-		jt.dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
-		// from version 11.50 the MonetDB server returns different metadata for
-		// integer digits (1 less) and for clob and char columns (now return varchar).
-		jt.isPostDec2023 = !(jt.dbmsMajorVersion == 11 && jt.dbmsMinorVersion <= 49);
+		Connection conn = DriverManager.getConnection(con_URL);
+		JDBC_API_Tester jt = new JDBC_API_Tester(conn);
+
 
 		// run the tests
 		jt.Test_Cautocommit(con_URL);
@@ -145,12 +147,16 @@ final public class JDBC_API_Tester {
 		ConnectionTests.runTests(con_URL);
 
 		// invoke running OnClientTester only on Oct2020 (11.39) or older servers
-		if (jt.dbmsMajorVersion == 11 && jt.dbmsMinorVersion <= 39) {
+		if (!jt.versionIsAtLeast(11,40)) {
 			OnClientTester oct = new OnClientTester(con_URL, 0);
 			int failures = oct.runTests();
 			if (failures > 0)
 				System.exit(-1);
 		}
+	}
+
+	private boolean versionIsAtLeast(int major, int minor) {
+		return (dbmsMajorVersion > major || (dbmsMajorVersion == major && dbmsMinorVersion >= minor));
 	}
 
 	private void Test_Cautocommit(String arg0) {
@@ -7242,16 +7248,18 @@ final public class JDBC_API_Tester {
 							prodLen = pos + 40;
 						System.err.println("Difference found at line " + line + " position " + rowpos
 							+ ". Expected:\n\"" + expected.substring(pos < expLen ? pos : expLen-1, expLen-1)
-							+ "\"\nbut gotten:\n\"" + produced.substring(pos < prodLen ? pos : prodLen-1, prodLen-1) + "\"");
+							+ "\"\nFound:\n\"" + produced.substring(pos < prodLen ? pos : prodLen-1, prodLen-1) + "\"");
 						pos = max_pos;
 					}
 				}
 			}
 			System.err.println();
-			System.err.println("Expected:");
-			System.err.println(expected);
-			System.err.println("Gotten:");
+			System.err.println("---- Full Output: ---------------------------");
 			System.err.println(sb);
+			System.err.println("---- END --------------------------------------");
+			System.err.println("---- Expected Output: -------------------------");
+			System.err.println(expected);
+			System.err.println("---- END --------------------------------------");
 			System.err.println();
 		}
 		if (sb.length() > sbInitLen) {
