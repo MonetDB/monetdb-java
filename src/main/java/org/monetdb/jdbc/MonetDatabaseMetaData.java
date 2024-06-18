@@ -12,6 +12,8 @@
 
 package org.monetdb.jdbc;
 
+import org.monetdb.mcl.net.ClientInfo;
+
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Statement;
@@ -3917,15 +3919,34 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public ResultSet getClientInfoProperties() throws SQLException {
-		// MonetDB currently does not support any client properties, so return an empty ResultSet
+		// This query combines the properties we know about with any additional properties that
+		// may have been added to sys.clientinfo_properties in the mean time.
 		final String query =
-		"SELECT cast(null as varchar(64)) AS \"NAME\", " +
-			"cast(0 as int) AS \"MAX_LEN\", " +
-			"cast(null as varchar(128)) AS \"DEFAULT_VALUE\", " +
-			"cast(null as varchar(128)) AS \"DESCRIPTION\" " +
-		"WHERE 1=0";
+				"WITH jdbc_info AS (\n" +
+				"    SELECT 'ApplicationName' AS \"NAME\", NULL AS \"MAX_LEN\", " + stringEscape(ClientInfo.defaultApplicationName) + " AS \"DEFAULT_VALUE\", 'Name of the application' AS \"DESCRIPTION\", 0 AS i\n" +
+				"    UNION ALL\n" +
+				"    SELECT 'ClientHostname' AS \"NAME\", NULL AS \"MAX_LEN\", " + stringEscape(ClientInfo.defaultHostname) + " AS \"DEFAULT_VALUE\", 'Host the application is running on' AS \"DESCRIPTION\", 1 AS i\n" +
+				"    UNION ALL\n" +
+				"    SELECT 'ClientRemark' AS \"NAME\", 256 AS \"MAX_LEN\", R'' AS \"DEFAULT_VALUE\", 'Additional information' AS \"DESCRIPTION\", 2 AS i\n" +
+				"    UNION ALL\n" +
+				"    SELECT 'ClientLibrary' AS \"NAME\", NULL AS \"MAX_LEN\", " + stringEscape(ClientInfo.defaultClientLibrary) + " AS \"DEFAULT_VALUE\", 'Name and version of the driver' AS \"DESCRIPTION\", 3 AS i\n" +
+				"    UNION ALL\n" +
+				"    SELECT 'ClientPid' AS \"NAME\", 10 AS \"MAX_LEN\", " + stringEscape(ClientInfo.defaultPid) + " AS \"DEFAULT_VALUE\", 'Process id of the application' AS \"DESCRIPTION\", 4 AS i\n" +
+				")\n" +
+				"SELECT\n" +
+				"    prop AS \"NAME\",\n" +
+				"    COALESCE(\"MAX_LEN\", 24) AS \"MAX_LEN\",\n" +
+				"    \"DEFAULT_VALUE\",\n" +
+				"    \"DESCRIPTION\"\n" +
+				"FROM sys.clientinfo_properties AS sys_info LEFT OUTER JOIN jdbc_info ON prop = \"NAME\"\n" +
+				"ORDER BY COALESCE(i, 1000), \"NAME\"\n"
+				;
 
 		return executeMetaDataQuery(query);
+	}
+
+	private static String stringEscape(String s) {
+		return "R'" + s.replaceAll("'", "''") + "'";
 	}
 
 	/**

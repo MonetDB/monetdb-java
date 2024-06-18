@@ -21,13 +21,13 @@ import java.util.Set;
  * @{link SQLClientInfoException} if there is a failure
  */
 public class ClientInfo {
-	private static final String defaultHostname = findHostname();
+	public static final String defaultHostname = findHostname();
 
-	private static final String defaultClientLibrary = findClientLibrary();
+	public static final String defaultClientLibrary = findClientLibrary();
 
-	private static final String defaultApplicationName = findApplicationName();
+	public static final String defaultApplicationName = findApplicationName();
 
-	private static final String defaultPid = findPid();
+	public static final String defaultPid = findPid();
 
 	private final Properties props;
 	private HashMap<String, ClientInfoStatus> problems = null;
