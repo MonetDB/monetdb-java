@@ -1348,11 +1348,13 @@ public class MonetConnection
 	private HashMap<String,String> getClientInfoAttributeNames() throws SQLException {
 		if (clientInfoAttributeNames == null) {
 			HashMap<String, String> map = new HashMap<>();
-			try (Statement st = createStatement(); ResultSet rs = st.executeQuery("SELECT prop, session_attr FROM sys.clientinfo_properties")) {
-				while (rs.next()) {
-					String jdbcName = rs.getString(1);
-					String attrName = rs.getString(2);
-					map.put(jdbcName, attrName);
+			if (server.canClientInfo()) {
+				try (Statement st = createStatement(); ResultSet rs = st.executeQuery("SELECT prop, session_attr FROM sys.clientinfo_properties")) {
+					while (rs.next()) {
+						String jdbcName = rs.getString(1);
+						String attrName = rs.getString(2);
+						map.put(jdbcName, attrName);
+					}
 				}
 			}
 			clientInfoAttributeNames = map;
