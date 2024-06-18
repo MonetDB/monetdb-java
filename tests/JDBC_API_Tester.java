@@ -118,6 +118,8 @@ final public class JDBC_API_Tester {
 		jt.Test_SgeneratedKeys();
 		jt.Test_Smoreresults();
 		jt.Test_Wrapper();
+		if (jt.isPostDec2023)
+			jt.Test_ClientInfo(con_URL);
 		jt.bogus_auto_generated_keys();
 		jt.BugConcurrent_clients_SF_1504657(con_URL);
 		jt.BugConcurrent_sequences(con_URL);
@@ -1480,10 +1482,12 @@ final public class JDBC_API_Tester {
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	COLUMN_NAME	GRANTOR	GRANTEE	PRIVILEGE	IS_GRANTABLE\n" +
 			"char(1)	varchar(1024)	varchar(1024)	varchar(1024)	varchar(1024)	varchar(1024)	varchar(40)	varchar(3)\n");
 
-			compareResultSet(dbmd.getClientInfoProperties(), "getClientInfoProperties()",
-			"Resultset with 4 columns\n" +
-			"NAME	MAX_LEN	DEFAULT_VALUE	DESCRIPTION\n" +
-			"varchar(64)	int	varchar(128)	varchar(128)\n");
+			if (!isPostDec2023) {
+				compareResultSet(dbmd.getClientInfoProperties(), "getClientInfoProperties()",
+				"Resultset with 4 columns\n" +
+				"NAME	MAX_LEN	DEFAULT_VALUE	DESCRIPTION\n" +
+				"varchar(64)	int	varchar(128)	varchar(128)\n");
+			}
 
 			compareResultSet(dbmd.getSuperTables(null, "jdbctst", "pk_uc"), "getSuperTables(null, jdbctst, pk_uc)",
 			"Resultset with 4 columns\n" +
@@ -7133,6 +7137,133 @@ final public class JDBC_API_Tester {
 				"col 12	1234567.89000000000	1234567.89000000000\n" +
 				"col 13	123456.789000000000	123456.789000000000\n" +
 				"\n");
+	}
+
+	private void Test_ClientInfo(String con_URL) {
+		if (!isPostDec2023)
+			return;
+
+		sb.setLength(0);
+
+		final String[] known = {
+				"ApplicationName", "ClientHostname", "ClientLibrary",  "ClientPid", "ClientRemark"
+		};
+
+		try {
+			sb.append("Connecting\n");
+			try (Connection conn = DriverManager.getConnection(con_URL)) {
+
+				// Server metadata includes list of supported clientinfo properties
+				sb.append("Fetching supported clientinfo properties\n");
+				DatabaseMetaData md = conn.getMetaData();
+				try (ResultSet rs = md.getClientInfoProperties()) {
+					HashSet<String> seen = new HashSet<>();
+					while (rs.next()) {
+						String name = rs.getString(1);
+						if (name == null || name.isEmpty()) {
+							sb.append("NAME column contains empty string\n");
+						}
+						seen.add(name);
+						int width = rs.getInt(2);
+						if (width <= 0) {
+							sb.append("MAX_LEN for " + name + " is " + width + "\n");
+						}
+						String description = rs.getString(4);
+						if (description == null || description.isEmpty()) {
+							sb.append("DESCRIPTION for " + name + " is empty\n");
+						}
+					}
+					for (String name: known) {
+						boolean found = seen.contains(name);
+						sb.append("- " + name + (found ? " was " : " was not ") + "found\n");
+					}
+				}
+
+				// I cannot think of a way to check the default values that doesn't
+				// essentially duplicate the code that came up with the default values.
+				// The best we can do is verify they're not empty.
+				sb.append("Check initial values.\n");
+				Properties initialValues = conn.getClientInfo();
+				for (String name: known) {
+					String value = (String) initialValues.getOrDefault(name, "");
+					sb.append("- " + name + (value.isEmpty() ? " is empty" : " is not empty") + "\n");
+				}
+
+				// We should get a fresh copy every time
+				if (conn.getClientInfo() != initialValues)
+					sb.append("Calls to con.getClientInfo do not return references to the same Properties object\n");
+				else
+					sb.append("Calls to con.getClientInfo DO return references to the same Properties object!\n");
+
+				// Assign new values in various ways.
+				// Also include some unknown properties
+				sb.append("Set ApplicationName=1\n");
+				conn.setClientInfo("ApplicationName", "1");
+				readWarnings(conn.getWarnings());
+				conn.clearWarnings();
+
+				sb.append("Set BananaNameXYZ=99\n");
+				conn.setClientInfo("BananaNameXYZ", "99");
+				readWarnings(conn.getWarnings());
+				conn.clearWarnings();
+
+				sb.append("Set { ClientHostname=2, ClientLibrary=3, ClientPid=4, ClientRemark=5, ClientBananaPQR=999 }\n");
+				Properties toBeInserted = new Properties();
+				toBeInserted.put("ClientHostname", "2");
+				toBeInserted.put("ClientLibrary", "3");
+				toBeInserted.put("ClientPid", "4");
+				toBeInserted.put("ClientRemark", "5");
+				toBeInserted.put("ClientBananaPQR", "999");
+				conn.setClientInfo(toBeInserted);
+				readWarnings(conn.getWarnings());
+				conn.clearWarnings();
+
+				sb.append("Checking the results\n");
+				Properties foundValues = conn.getClientInfo();
+				for (String name: known) {
+					sb.append("- " + name + ": prop=" );
+					String propValue = (String) foundValues.getOrDefault(name, "");
+					sb.append("" + propValue);
+					sb.append(", single=");
+					String singleValue = conn.getClientInfo(name);
+					sb.append("" + singleValue);
+					if (propValue != null && !propValue.equals(singleValue))
+						sb.append("   !!! DIFFERENT !!!");
+					sb.append("\n");
+				}
+
+			}
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		compareExpectedOutput("Test_ClientInfo",
+				"Connecting\n" +
+				"Fetching supported clientinfo properties\n" +
+				"- ApplicationName was found\n" +
+				"- ClientHostname was found\n" +
+				"- ClientLibrary was found\n" +
+				"- ClientPid was found\n" +
+				"- ClientRemark was found\n" +
+				"Check initial values.\n" +
+				"- ApplicationName is not empty\n" +
+				"- ClientHostname is not empty\n" +
+				"- ClientLibrary is not empty\n" +
+				"- ClientPid is not empty\n" +
+				"- ClientRemark is empty\n" +
+				"Calls to con.getClientInfo do not return references to the same Properties object\n" +
+				"Set ApplicationName=1\n" +
+				"Set BananaNameXYZ=99\n" +
+				"Warning: java.sql.SQLWarning: unknown client info property: BananaNameXYZ\n" +
+				"Set { ClientHostname=2, ClientLibrary=3, ClientPid=4, ClientRemark=5, ClientBananaPQR=999 }\n" +
+				"Warning: java.sql.SQLWarning: unknown client info property: ClientBananaPQR\n" +
+				"Checking the results\n" +
+				"- ApplicationName: prop=1, single=1\n" +
+				"- ClientHostname: prop=2, single=2\n" +
+				"- ClientLibrary: prop=3, single=3\n" +
+				"- ClientPid: prop=4, single=4\n" +
+				"- ClientRemark: prop=5, single=5\n"
+				);
 	}
 
 	// some private utility methods for showing table content and params meta data
