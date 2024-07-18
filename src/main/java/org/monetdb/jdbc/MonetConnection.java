@@ -1284,12 +1284,13 @@ public class MonetConnection
 	 */
 	@Override
 	public String getClientInfo(final String name) throws SQLException {
+		// only MonetDB Server 11.51 (Aug2024) or higher supports Client Info Properties
 		String attrName = getClientInfoAttributeNames().get(name);
 		if (attrName == null)
 			return null;
 		String query = "SELECT " + attrName + " FROM sys.sessions WHERE sessionid = current_sessionid()";
 		try (Statement st = createStatement(); ResultSet rs = st.executeQuery(query)) {
-			if (rs.next())
+			if (rs != null && rs.next())
 				return rs.getString(1);
 			else
 				return null;
@@ -1310,9 +1311,9 @@ public class MonetConnection
 	 */
 	@Override
 	public Properties getClientInfo() throws SQLException {
-		// MonetDB doesn't support any Client Info Properties yet
 		Properties props = new Properties();
 
+		// only MonetDB Server 11.51 (Aug2024) or higher supports Client Info Properties
 		if (server.canClientInfo()) {
 			StringBuilder builder = new StringBuilder("SELECT ");
 			String sep = "";
@@ -1328,11 +1329,8 @@ public class MonetConnection
 			}
 			builder.append(" FROM sys.sessions WHERE sessionid = current_sessionid()");
 
-			try (
-					Statement st = createStatement();
-					ResultSet rs = st.executeQuery(builder.toString())
-			) {
-				if (rs.next()) {
+			try (Statement st = createStatement(); ResultSet rs = st.executeQuery(builder.toString())) {
+				if (rs != null && rs.next()) {
 					ResultSetMetaData md = rs.getMetaData();
 					for (int i = 1; i <= md.getColumnCount(); i++) {
 						String key = md.getColumnName(i);
@@ -1348,9 +1346,10 @@ public class MonetConnection
 	private HashMap<String,String> getClientInfoAttributeNames() throws SQLException {
 		if (clientInfoAttributeNames == null) {
 			HashMap<String, String> map = new HashMap<>();
+			// only MonetDB Server 11.51 (Aug2024) or higher has table sys.clientinfo_properties with 5 rows
 			if (server.canClientInfo()) {
 				try (Statement st = createStatement(); ResultSet rs = st.executeQuery("SELECT prop, session_attr FROM sys.clientinfo_properties")) {
-					while (rs.next()) {
+					while (rs != null && rs.next()) {
 						String jdbcName = rs.getString(1);
 						String attrName = rs.getString(2);
 						map.put(jdbcName, attrName);
