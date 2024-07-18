@@ -938,13 +938,16 @@ public final class MonetDatabaseMetaData
 	 * inter-column constraints to be maintained by the database system.
 	 * Default clauses provide optional default values for missing data.
 	 *
-	 * We currently do not supprt CHECK constraints (see bug 3568) nor deferrable FK constraints.
-	 *
 	 * @return true if so
 	 */
 	@Override
 	public boolean supportsIntegrityEnhancementFacility() {
-		return false;
+		// Starting with release Aug2024 (11.51.1) MonetDB now also supports CHECK constraints (ref issue 3335, 3568).
+		try {
+			if ((con.getDatabaseMajorVersion() == 11) && (con.getDatabaseMinorVersion() >= 51))
+				return true;
+		} catch (SQLException e) { /* ignore */	}
+		return false;	// for older servers
 	}
 
 	/**
