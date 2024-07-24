@@ -16,7 +16,7 @@ import java.io.*;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 
-public class UrlTester {
+public final class UrlTester {
 	final String filename;
 	final int verbose;
 	final BufferedReader reader;

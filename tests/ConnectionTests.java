@@ -19,7 +19,7 @@ import java.util.Properties;
 import java.util.SimpleTimeZone;
 import java.util.TimeZone;
 
-public class ConnectionTests {
+public final class ConnectionTests {
 
 	private final String url;
 	private final Properties connProps;

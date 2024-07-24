@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Properties;
 
-public class TLSTester {
+public final class TLSTester {
 	final HashMap<String, File> fileCache = new HashMap<>();
 	int verbose = 0;
 	String serverHost = null;

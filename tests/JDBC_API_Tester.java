@@ -39,7 +39,7 @@ import org.monetdb.jdbc.types.URL;
  * @author Martin van Dinther
  * @version 0.3
  */
-final public class JDBC_API_Tester {
+public final class JDBC_API_Tester {
 	private StringBuilder sb;	// buffer to collect the test output
 	private Connection con;		// main connection shared by all tests
 	final private int dbmsMajorVersion;

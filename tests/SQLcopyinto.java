@@ -24,7 +24,7 @@ import org.monetdb.mcl.io.BufferedMCLWriter;
  * @author Fabian Groffen, Martin van Dinther
  */
 
-public class SQLcopyinto {
+public final class SQLcopyinto {
 	final private static String tablenm = "exampleSQLCopyInto";
 
 	public static void main(String[] args) throws Exception {
