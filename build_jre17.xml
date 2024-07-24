@@ -178,7 +178,7 @@ Copyright 1997 - July 2008 CWI.
     </javac>
   </target>
 
-  <target name="compile_mcl" depends="prepare">
+  <target name="compile_mcl" depends="prepare,driver">
     <echo message="Compiling MCL" />
     <javac
       classpath="${srcdir}"
