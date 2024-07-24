@@ -24,7 +24,7 @@ import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
 import java.util.Collections;
 
-public class SecureSocket {
+public final class SecureSocket {
 	private static final String[] ENABLED_PROTOCOLS = {"TLSv1.3"};
 	private static final String[] APPLICATION_PROTOCOLS = {"mapi/9"};
 

@@ -22,7 +22,7 @@ import java.net.URLEncoder;
  * Helper class to keep the URL parsing code separate from the rest of
  * the {@link Target} class.
  */
-public class MonetUrlParser {
+public final class MonetUrlParser {
 	private final Target target;
 	private final String urlText;
 	private final URI url;

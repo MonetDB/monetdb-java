@@ -75,13 +75,13 @@ public abstract class HandshakeOption<T> {
 		}
 	}
 
-	public static class AutoCommit extends BooleanOption {
+	public final static class AutoCommit extends BooleanOption {
 		public AutoCommit(boolean autoCommit) {
 			super(1, "auto_commit",  autoCommit);
 		}
 	}
 
-	public static class ReplySize extends HandshakeOption<Integer> {
+	public final static class ReplySize extends HandshakeOption<Integer> {
 		public ReplySize(int size) {
 			super(2, "reply_size", size);
 		}
@@ -92,14 +92,14 @@ public abstract class HandshakeOption<T> {
 		}
 	}
 
-	public static class SizeHeader extends BooleanOption {
+	public final static class SizeHeader extends BooleanOption {
 		public SizeHeader(boolean sendHeader) {
 			super(3, "size_header", sendHeader);
 			set(sendHeader);
 		}
 	}
 
-	public static class TimeZone extends HandshakeOption<Integer> {
+	public final static class TimeZone extends HandshakeOption<Integer> {
 		public TimeZone(int offset) {
 			super(5, "time_zone", offset);
 		}

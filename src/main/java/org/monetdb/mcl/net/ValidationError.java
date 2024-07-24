@@ -13,7 +13,7 @@
 package org.monetdb.mcl.net;
 
 @SuppressWarnings("serial")
-public class ValidationError extends Exception {
+public final class ValidationError extends Exception {
 	public ValidationError(String parameter, String message) {
 		super(parameter + ": " + message);
 	}

@@ -16,7 +16,7 @@ import java.net.URISyntaxException;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-public class Target {
+public final class Target {
 	protected static final Target defaults = new Target();
 	private static final Pattern namePattern = Pattern.compile("^[a-zzA-Z_][-a-zA-Z0-9_.]*$");
 	private static final Pattern hashPattern = Pattern.compile("^sha256:[0-9a-fA-F:]*$");

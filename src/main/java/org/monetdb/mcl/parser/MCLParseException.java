@@ -22,7 +22,7 @@ package org.monetdb.mcl.parser;
  * that the error message includes the offending data read.
  */
 @SuppressWarnings("serial")
-public class MCLParseException extends java.text.ParseException {
+public final class MCLParseException extends java.text.ParseException {
 	public MCLParseException(String e) {
 		super(e, -1);
 	}

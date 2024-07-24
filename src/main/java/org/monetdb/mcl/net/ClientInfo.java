@@ -32,7 +32,7 @@ import java.util.Set;
  * Manage ClientInfo properties to track, and help generating a
  * @{link SQLClientInfoException} if there is a failure
  */
-public class ClientInfo {
+public final class ClientInfo {
 	public static final String defaultHostname = findHostname();
 
 	public static final String defaultClientLibrary = findClientLibrary();
