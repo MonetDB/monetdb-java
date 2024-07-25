@@ -264,6 +264,7 @@ public final class MonetDriver implements Driver {
 	/**
 	 * Returns a touched up identifying version string of this driver.
 	 * It is made public as it is called from  org/monetdb/client/JdbcClient.java
+	 * and org/monetdb/mcl/net/ClientInfo.java
 	 * @return the version string
 	 */
 	public static final String getDriverVersion() {
