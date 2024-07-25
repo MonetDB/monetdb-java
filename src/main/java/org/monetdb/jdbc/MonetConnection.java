@@ -1727,10 +1727,11 @@ public class MonetConnection
 
 			// as of release Jun2020 (11.37.7) the function sys.settimeout(secs bigint)
 			// is deprecated and replaced by new sys.setquerytimeout(secs int)
-			if ((getDatabaseMajorVersion() == 11) && (getDatabaseMinorVersion() < 37))
-				callstmt = "CALL sys.\"settimeout\"(" + seconds + ")";
-			else
+			if (checkMinimumDBVersion(11, 37))
 				callstmt = "CALL sys.\"setquerytimeout\"(" + seconds + ")";
+			else
+				callstmt = "CALL sys.\"settimeout\"(" + seconds + ")";
+
 			// for debug: System.out.println("Before: " + callstmt);
 			st = createStatement();
 			st.execute(callstmt);
@@ -1955,22 +1956,30 @@ public class MonetConnection
 	}
 
 	/**
+	 * Utility method to check if connected server matches or is higher than a requested version.
+	 *
+	 * @param major dbserver major version number.
+	 * @param minor dbserver minor version number.
+	 * @return true when the server version is higher or equal to the major.minor else false.
+	 */
+	boolean checkMinimumDBVersion(int major, int minor) {
+		try {
+			if ((getDatabaseMinorVersion() >= minor) && (getDatabaseMajorVersion() == major))
+				return true;
+		} catch (SQLException e) { /* ignore */	}
+		return false;
+	}
+
+	/**
 	 * Get whether the MonetDB SQL parser supports ODBC/JDBC escape sequence syntax.
 	 * See also: https://docs.oracle.com/javadb/10.6.2.1/ref/rrefjdbc1020262.html
-	 * It does when the server version is 11.46 or higher.
+	 * It does when the server version is 11.47 (Jun2023) or higher.
 	 * This method is called from: MonetDatabaseMetaData and MonetCallableStatement.
 	 *
 	 * @return true when the server supports ODBC/JDBC escape sequence syntax else false.
 	 */
 	boolean supportsEscapeSequenceSyntax() {
-		try {
-			if ((getDatabaseMajorVersion() == 11) && (getDatabaseMinorVersion() <= 45))
-				// older servers do not support it
-				return false;
-		} catch (SQLException e) {
-			return false;
-		}
-		return true;
+		return checkMinimumDBVersion(11, 47);
 	}
 
 
