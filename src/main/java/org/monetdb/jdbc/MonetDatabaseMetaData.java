@@ -469,13 +469,11 @@ public final class MonetDatabaseMetaData
 		String unionPart =
 			// add functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT * FROM (VALUES('cast'),('coalesce'),('convert'),('ifnull'),('nullif')) as sf";
-		try {
-			// from release 11.47.1 we support function: ifnull, but only with odbc escape notation, so {fn ifnull(null, 2)}. See issue: 6933.
-			// from release 11.49.1 we support function: ifnull also without odbc escape notation.
-			if ((con.getDatabaseMajorVersion() == 11) && (con.getDatabaseMinorVersion() <= 45))
-				// release 11.45 (Sep2022) or older did not support function: ifnull.
-				unionPart = unionPart.replace(",('ifnull')", "");
-		} catch (SQLException e) { /* ignore */	}
+		// from release 11.47.1 we support function: ifnull, but only with odbc escape notation, so {fn ifnull(null, 2)}. See issue: 6933.
+		// from release 11.49.1 we support function: ifnull also without odbc escape notation.
+		if (! con.checkMinimumDBVersion(11, 47))
+			// release 11.45 (Sep2022) or older did not support function: ifnull. remove it.
+			unionPart = unionPart.replace(",('ifnull')", "");
 		return getConcatenatedStringFromQuery(FunctionsSelect + wherePart + unionPart + FunctionsOrderBy1);
 	}
 
@@ -943,11 +941,7 @@ public final class MonetDatabaseMetaData
 	@Override
 	public boolean supportsIntegrityEnhancementFacility() {
 		// Starting with release Aug2024 (11.51.1) MonetDB now also supports CHECK constraints (ref issue 3335, 3568).
-		try {
-			if ((con.getDatabaseMajorVersion() == 11) && (con.getDatabaseMinorVersion() >= 51))
-				return true;
-		} catch (SQLException e) { /* ignore */	}
-		return false;	// for older servers
+		return con.checkMinimumDBVersion(11, 51);
 	}
 
 	/**
@@ -3922,29 +3916,22 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public ResultSet getClientInfoProperties() throws SQLException {
-		// This query combines the properties we know about with any additional properties that
-		// may have been added to sys.clientinfo_properties in the mean time.
-		final String query =
-				"WITH jdbc_info AS (\n" +
-				"    SELECT 'ApplicationName' AS \"NAME\", NULL AS \"MAX_LEN\", " + stringEscape(ClientInfo.defaultApplicationName) + " AS \"DEFAULT_VALUE\", 'Name of the application' AS \"DESCRIPTION\", 0 AS i\n" +
-				"    UNION ALL\n" +
-				"    SELECT 'ClientHostname' AS \"NAME\", NULL AS \"MAX_LEN\", " + stringEscape(ClientInfo.defaultHostname) + " AS \"DEFAULT_VALUE\", 'Host the application is running on' AS \"DESCRIPTION\", 1 AS i\n" +
-				"    UNION ALL\n" +
-				"    SELECT 'ClientRemark' AS \"NAME\", 256 AS \"MAX_LEN\", R'' AS \"DEFAULT_VALUE\", 'Additional information' AS \"DESCRIPTION\", 2 AS i\n" +
-				"    UNION ALL\n" +
-				"    SELECT 'ClientLibrary' AS \"NAME\", NULL AS \"MAX_LEN\", " + stringEscape(ClientInfo.defaultClientLibrary) + " AS \"DEFAULT_VALUE\", 'Name and version of the driver' AS \"DESCRIPTION\", 3 AS i\n" +
-				"    UNION ALL\n" +
-				"    SELECT 'ClientPid' AS \"NAME\", 10 AS \"MAX_LEN\", " + stringEscape(ClientInfo.defaultPid) + " AS \"DEFAULT_VALUE\", 'Process id of the application' AS \"DESCRIPTION\", 4 AS i\n" +
-				")\n" +
-				"SELECT\n" +
-				"    prop AS \"NAME\",\n" +
-				"    COALESCE(\"MAX_LEN\", 24) AS \"MAX_LEN\",\n" +
-				"    \"DEFAULT_VALUE\",\n" +
-				"    \"DESCRIPTION\"\n" +
-				"FROM sys.clientinfo_properties AS sys_info LEFT OUTER JOIN jdbc_info ON prop = \"NAME\"\n" +
-				"ORDER BY COALESCE(i, 1000), \"NAME\"\n"
-				;
-
+		String query = "SELECT cast('' as varchar(40)) AS \"NAME\", cast(0 as int) AS \"MAX_LEN\", cast('' as varchar(128)) AS \"DEFAULT_VALUE\", cast('' as varchar(256)) AS \"DESCRIPTION\" WHERE 1=0";
+		// only MonetDB Server 11.51 (Aug2024) or higher supports table sys.clientinfo_properties
+		if (con.checkMinimumDBVersion(11, 51)) {
+			// The query combines the 5 properties (added in Aug2024) we know about with
+			// any additional properties that may have been added later to sys.clientinfo_properties table
+			query = "SELECT prop AS \"NAME\", cast(maxlen as int) AS \"MAX_LEN\", defval AS \"DEFAULT_VALUE\", descr AS \"DESCRIPTION\"" +
+				" FROM sys.clientinfo_properties" +
+				" LEFT OUTER JOIN (VALUES " +
+				"('ApplicationName',128," + stringEscape(ClientInfo.defaultApplicationName) + ",'Name of the application')," +
+				"('ClientHostname',128," + stringEscape(ClientInfo.defaultHostname) + ",'Host the application is running on')," +
+				"('ClientLibrary',128," + stringEscape(ClientInfo.defaultClientLibrary) + ",'Name and version of the driver')," +
+				"('ClientPid',19," + stringEscape(ClientInfo.defaultPid) + ",'Process id of the application')," +
+				"('ClientRemark',256,NULL,'Additional information')" +
+				") AS t(nm, maxlen, defval, descr) ON prop = nm" +
+				" ORDER BY 1";
+		}
 		return executeMetaDataQuery(query);
 	}
 
