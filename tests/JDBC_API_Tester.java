@@ -7268,11 +7268,12 @@ public final class JDBC_API_Tester {
 
 	// some private utility methods for showing table content and params meta data
 	private void showTblContents(String tblnm) {
+		final String query = "SELECT * FROM \"" + tblnm + "\"";
 		Statement stmt = null;
 		ResultSet rs = null;
 		try {
 			stmt = con.createStatement();
-			rs = stmt.executeQuery("SELECT * FROM " + tblnm);
+			rs = stmt.executeQuery(query);
 			if (rs != null) {
 				ResultSetMetaData rsmd = rs.getMetaData();
 				sb.append("Table ").append(tblnm).append(" has ").append(rsmd.getColumnCount()).append(" columns:\n");
@@ -7287,7 +7288,7 @@ public final class JDBC_API_Tester {
 					sb.append("\n");
 				}
 			} else
-				sb.append("failed to execute query: SELECT * FROM ").append(tblnm).append("\n");
+				sb.append("failed to execute query: ").append(query).append("\n");
 		} catch (SQLException e) {
 			sb.append("showContents failed: ").append(e.getMessage()).append("\n");
 		}
@@ -7385,12 +7386,12 @@ public final class JDBC_API_Tester {
 				}
 			}
 			System.err.println();
-			System.err.println("---- Full Output: ---------------------------");
+			System.err.println("---- Full Output: ------------");
 			System.err.println(sb);
-			System.err.println("---- END --------------------------------------");
-			System.err.println("---- Expected Output: -------------------------");
+			System.err.println("---- END ---------------------");
+			System.err.println("---- Expected Output: --------");
 			System.err.println(expected);
-			System.err.println("---- END --------------------------------------");
+			System.err.println("---- END ---------------------");
 			System.err.println();
 		}
 		if (sb.length() > sbInitLen) {
