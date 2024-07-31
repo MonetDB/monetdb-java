@@ -1486,7 +1486,7 @@ public final class JDBC_API_Tester {
 				compareResultSet(dbmd.getClientInfoProperties(), "getClientInfoProperties()",
 				"Resultset with 4 columns\n" +
 				"NAME	MAX_LEN	DEFAULT_VALUE	DESCRIPTION\n" +
-				"varchar(64)	int	varchar(128)	varchar(128)\n");
+				"varchar(40)	int	varchar(128)	varchar(256)\n");
 			}
 
 			compareResultSet(dbmd.getSuperTables(null, "jdbctst", "pk_uc"), "getSuperTables(null, jdbctst, pk_uc)",
