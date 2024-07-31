@@ -295,6 +295,7 @@ public class MonetConnection
 			return;
 
 		clearWarnings();
+		clientInfoAttributeNames = null;
 		dbmd = null;
 		synchronized (server) {
 			// Note: An entry in a WeakHashMap will automatically be
