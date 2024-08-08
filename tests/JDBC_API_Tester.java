@@ -47,7 +47,7 @@ public final class JDBC_API_Tester {
 	final private boolean isPostDec2023;	// flag to support version specific output
 	private boolean foundDifferences = false;
 
-	final private static int sbInitLen = 5468;
+	final private static int sbInitLen = 5468; // max needed size of sb
 
 	/**
 	 * constructor
@@ -66,18 +66,24 @@ public final class JDBC_API_Tester {
 
 	/**
 	 * main function
-	 * @param args this should contain the connectionURL string
-	 * @throws Exception if a database access error occurs
+	 * @param args args[0] should contain the connectionURL string, args[1] an optional flag: -skipMALoutput
+	 * @throws Exception if a connection or database access error occurs
 	 */
 	public static void main(String[] args) throws Exception {
-		String con_URL = args[0];
+		if (args.length < 1) {
+			System.err.println("Error: Missing required connection URL as first startup argument!");
+			System.exit(-1);
+		}
+
+		final String con_URL = args[0];
+		final boolean skipMALoutput = (args.length >= 2) ? args[1].equals("-skipMALoutput") : false;
+		// System.err.println("skipMALoutput = " + skipMALoutput);
 
 		// Test this before trying to connect
 		UrlTester.runAllTests();
 
-		Connection conn = DriverManager.getConnection(con_URL);
+		final Connection conn = DriverManager.getConnection(con_URL);
 		JDBC_API_Tester jt = new JDBC_API_Tester(conn);
-
 
 		// run the tests
 		jt.Test_Cautocommit(con_URL);
@@ -93,7 +99,7 @@ public final class JDBC_API_Tester {
 		jt.Test_FetchSize();
 		jt.Test_Int128();
 		jt.Test_Interval_Types();
-		jt.Test_PlanExplainTraceDebugCmds();
+		jt.Test_PlanExplainTraceDebugCmds(skipMALoutput);
 		jt.Test_PSgeneratedkeys();
 		jt.Test_PSgetObject();
 		jt.Test_PSlargebatchval();
@@ -1944,7 +1950,7 @@ public final class JDBC_API_Tester {
 			"ParameterTypeName: interval minute to second	Precision: 15	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n");
 	}
 
-	private void Test_PlanExplainTraceDebugCmds() {
+	private void Test_PlanExplainTraceDebugCmds(boolean skipMALoutput) {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
@@ -1966,21 +1972,23 @@ public final class JDBC_API_Tester {
 			// plan statements are supported via JDBC
 			qry = "plan SELECT 2;";
 			rs = stmt.executeQuery(qry);
-			compareResultSet(rs, qry,
-				! isPreJan2022 ?
-				"Resultset with 1 columns\n" +
-				"rel\n" +
-				(isPostDec2023 ? "varchar" : "clob") + "(37)\n" +
-				"project (\n" +
-				"|  [ boolean(1) \"true\" as \"%1\".\"%1\" ]\n" +
-				") [ tinyint(2) \"2\" ]\n"
-				:
-				"Resultset with 1 columns\n" +
-				"rel\n" +
-				"clob(21)\n" +
-				"project (\n" +
-				"|  [ boolean \"true\" ]\n" +
-				") [ tinyint \"2\" ]\n");
+			if (!skipMALoutput) {
+				compareResultSet(rs, qry,
+					! isPreJan2022 ?
+					"Resultset with 1 columns\n" +
+					"rel\n" +
+					(isPostDec2023 ? "varchar" : "clob") + "(37)\n" +
+					"project (\n" +
+					"|  [ boolean(1) \"true\" as \"%1\".\"%1\" ]\n" +
+					") [ tinyint(2) \"2\" ]\n"
+					:
+					"Resultset with 1 columns\n" +
+					"rel\n" +
+					"clob(21)\n" +
+					"project (\n" +
+					"|  [ boolean \"true\" ]\n" +
+					") [ tinyint \"2\" ]\n");
+			}
 			rs.close();
 			rs = null;
 			sb.setLength(0);	// clear the output log buffer
@@ -1995,11 +2003,13 @@ public final class JDBC_API_Tester {
 			}
 			rs.close();
 			rs = null;
-			compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
-				"function user.main():void;\n" +
-				"    X_1:void := querylog.define(\"explain select 3;\":str, \"default_pipe\":str, 6:int);\n" +
-				"    X_10:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 2:int, 0:int, 7:int, 3:bte);\n" +
-				"end user.main;\n");
+			if (!skipMALoutput) {
+				compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
+					"function user.main():void;\n" +
+					"    X_1:void := querylog.define(\"explain select 3;\":str, \"default_pipe\":str, 6:int);\n" +
+					"    X_10:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 2:int, 0:int, 7:int, 3:bte);\n" +
+					"end user.main;\n");
+			}
 			sb.setLength(0);	// clear the output log buffer
 
 			// trace statements are supported via JDBC. Note that it returns two resultsets, one with the query result and next one with the trace result.
@@ -2017,17 +2027,19 @@ public final class JDBC_API_Tester {
 			}
 			rs.close();
 			rs = null;
-			compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
-				! isPreJan2022 ?
-				"4\n" +
-				"Another resultset\n" +
-				"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
-				"    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
-				:
-				"4\n" +
-				"Another resultset\n" +
-				"X_0=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
-				"X_1=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n");
+			if (!skipMALoutput) {
+				compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
+					! isPreJan2022 ?
+					"4\n" +
+					"Another resultset\n" +
+					"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
+					"    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
+					:
+					"4\n" +
+					"Another resultset\n" +
+					"X_0=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
+					"X_1=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n");
+			}
 			sb.setLength(0);	// clear the output log buffer
 
 			// debug statements are NOT supported via JDBC driver, so the execution should throw an SQLException
