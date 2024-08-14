@@ -1,6 +1,11 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Jun 19 2024 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Implemented Connection#set/getClientInfo, and send sensible default info
+  at connect time. This can be controlled with the properties 'client_info=on/off',
+  'client_application=ApplicationName' and 'client_remark=Other Useful Info'.
+
 * Thu Apr  4 2024 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected ResultSetMetaData methods getColumnTypeName(), getPrecision(),
   getColumnDisplaySize() and ParameterMetaData methods getParameterTypeName()
