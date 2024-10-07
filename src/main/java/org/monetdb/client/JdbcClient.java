@@ -1192,12 +1192,12 @@ public final class JdbcClient {
 				}
 				if (batchSize > 0 && i % batchSize == 0) {
 					stmt.executeBatch();
-					// stmt.clearBatch();	// this is no longer needed after call executeBatch(), see https://www.monetdb.org/bugzilla/show_bug.cgi?id=6953
+					// stmt.clearBatch();	// this is no longer needed after call executeBatch(), see https://github.com/MonetDB/MonetDB/issues/6953
 				}
 			}
 			stmt.addBatch(query.toString());
 			stmt.executeBatch();
-			// stmt.clearBatch();	// this is no longer needed after call executeBatch(), see https://www.monetdb.org/bugzilla/show_bug.cgi?id=6953
+			// stmt.clearBatch();	// this is no longer needed after call executeBatch(), see https://github.com/MonetDB/MonetDB/issues/6953
 		} catch (SQLException e) {
 			do {
 				System.err.println("Error at line " + i + ": [" + e.getSQLState() + "] " + e.getMessage());

@@ -308,7 +308,7 @@
 - Corrected Statement.executeBatch() method. It now implicitly clears the
   batch buffer, ready to accept new addBatch() calls without the need for
   an explicit clearBatch() call.
-  See also https://www.monetdb.org/bugzilla/show_bug.cgi?id=6953
+  See also https://github.com/MonetDB/MonetDB/issues/6953
 
 * Wed Feb 19 2020 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected the return value of getCatalogTerm() to "cat".
@@ -322,14 +322,14 @@
   monetdb-mcl-1.18.jre7.jar and jdbcclient.jre7.jar
 - Following issues are resolved with this new MonetDB JDBC driver release:
   - JDBC: Support for Connection.prepareCall()
-    See https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402
+    See https://github.com/MonetDB/MonetDB/issues/6402
     We implemented the java.sql.CallableStatement interface.
   - Jdbc connection hangs
-    See https://www.monetdb.org/bugzilla/show_bug.cgi?id=6571
+    See https://github.com/MonetDB/MonetDB/issues/6571
   - Mix of long and short queries make JDBC-driver hang
-    See https://www.monetdb.org/bugzilla/show_bug.cgi?id=6693
+    See https://github.com/MonetDB/MonetDB/issues/6693
   - Example SQLcopyinto.java does not work
-    See https://www.monetdb.org/bugzilla/show_bug.cgi?id=6646
+    See https://github.com/MonetDB/MonetDB/issues/6646
   Also improvements are made in:
   - reducing the number of objects created (and thereby heap memory size)
   - reducing number of methods called
@@ -392,7 +392,7 @@
 * Thu Mar 21 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Added implementation of java.sql.CallableStatement interface. Some standard
   Java applications require this JDBC interface for executing SQL stored procedures.
-  This implementation resolves request: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6402
+  This implementation resolves request: https://github.com/MonetDB/MonetDB/issues/6402
 
 * Thu Mar  7 2019 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Improved MonetDatabaseMetaData methods:
@@ -452,7 +452,7 @@
   year value less than 1000. It would throw an SQLDataException with message:
    Could not convert value to a Date. Expected JDBC date escape format
    yyyy-[m]m-[d]d.
-  See also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6468
+  See also: https://github.com/MonetDB/MonetDB/issues/6468
 
 * Mon Oct 23 2017 Sjoerd Mullender <sjoerd@acm.org>
 - Compiled and released new jars: monetdb-jdbc-2.27.jar, monetdb-mcl-1.16.jar
@@ -493,7 +493,7 @@
 - Corrected PreparedStatement methods setString(int, String)
   and setObject(int, Object, ...) in case the target parameter
   data type was json or inet or url or uuid.  See also
-  https://www.monetdb.org/bugzilla/show_bug.cgi?id=6382
+  https://github.com/MonetDB/MonetDB/issues/6382
 
 * Thu Aug 24 2017 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Implemented PreparedStatement method setURL(int, URL).
@@ -519,7 +519,7 @@
 - Corrected implementation of PreparedStatement method
    setObject(int parameterIndex, Object x, int targetSqlType, int scaleOrLength)
   for the case the targetSqlType is Types.CLOB.
-  See also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6349
+  See also: https://github.com/MonetDB/MonetDB/issues/6349
 
 * Thu Mar 30 2017 Sjoerd Mullender <sjoerd@acm.org>
 - Compiled and released new jars: monetdb-jdbc-2.25.jar, monetdb-mcl-1.15.jar
@@ -529,7 +529,7 @@
 - Corrected ResultSetMetaData methods getColumnLabel(int), getColomnName(int),
   getTableName(int) and getSchemaName(int) for names which contain special
   characters such as a space, a tab, a comma, a double quote, etc.
-  See also: https://www.monetdb.org/bugzilla/show_bug.cgi?id=6183
+  See also: https://github.com/MonetDB/MonetDB/issues/6183
 
 * Wed Dec 21 2016 Sjoerd Mullender <sjoerd@acm.org>
 - Compiled and released new jars: monetdb-jdbc-2.24.jar, monetdb-mcl-1.14.jar

@@ -976,7 +976,7 @@ public final class MDBvalidator {
 //		{"storagemodel", "schema, table, column", null},	// is a view on storagemodelinput
 //		{"tablestoragemodel", "schema, table", null},	// is a view on storagemodelinput
 
-		{"rejects", "rowid", "19"},	// querying this view caused problems in versions pre Jul2015, see https://www.monetdb.org/bugzilla/show_bug.cgi?id=3794
+		{"rejects", "rowid", "19"},	// querying this view caused problems in versions pre Jul2015, see https://github.com/MonetDB/MonetDB/issues/3794
 
 	// new tables introduced in Jul2015 release (11.21.5)
 		{"keywords", "keyword", "21"},

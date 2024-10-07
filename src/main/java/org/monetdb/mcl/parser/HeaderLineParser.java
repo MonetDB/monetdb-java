@@ -144,7 +144,7 @@ public final class HeaderLineParser extends MCLParser {
 	 *
 	 * As of Oct2014-SP1 release MAPI adds double quotes around names when
 	 * the name contains a comma or a tab or a space or a # or " or \ escape character.
-	 * See issue: https://www.monetdb.org/bugzilla/show_bug.cgi?id=3616
+	 * See issue: https://github.com/MonetDB/MonetDB/issues/3616
 	 * If the parsed name string part has a " as first and last character,
 	 * we remove those added double quotes here.
 	 *

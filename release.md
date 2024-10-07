@@ -144,7 +144,7 @@ Currently implemented JDBC 4.2 interfaces include:
     The following methods/options are NOT useable/supported:
     - cancel (query execution cannot be terminated, once started)
        see also: https://github.com/MonetDB/monetdb-java/issues/7
-       or https://www.monetdb.org/bugzilla/show_bug.cgi?id=6222
+       or https://github.com/MonetDB/MonetDB/issues/6222
     - execute with column indices or names
     - executeUpdate with column indices or names
     - setMaxFieldSize

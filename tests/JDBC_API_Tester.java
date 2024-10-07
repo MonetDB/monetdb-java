@@ -2204,7 +2204,7 @@ public final class JDBC_API_Tester {
 			sb.append(" passed\n");
 
 			while (rs.next()) {
-				// test fix for https://www.monetdb.org/bugzilla/show_bug.cgi?id=4026
+				// test fix for https://github.com/MonetDB/MonetDB/issues/4026
 				Short ti = (Short) rs.getObject(1);
 				Short si = (Short) rs.getObject(2);
 				Integer i = (Integer) rs.getObject(3);
@@ -2291,7 +2291,7 @@ public final class JDBC_API_Tester {
 			pstmt.executeBatch();
 			sb.append("3. inserted 1 large string\n");
 
-			/* test issue reported at https://www.monetdb.org/bugzilla/show_bug.cgi?id=3470 */
+			/* test issue reported at https://github.com/MonetDB/MonetDB/issues/3470 */
 			pstmt.setLong(1, -2L);
 			pstmt.setClob(2, new StringReader(largeStr));
 			pstmt.setDouble(3, -2.0);
