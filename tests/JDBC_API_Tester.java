@@ -7120,7 +7120,7 @@ public final class JDBC_API_Tester {
 		compareExpectedOutput("DecimalPrecisionAndScale()",
 				"Query has 13 columns:\n" +
 				"colnr	label	typenm	displaylength	precision	scale\n" +
-				"col 1	dec1800	decimal	" + (isPostDec2023 ? "10	9" : "19	18") + "	0\n" +
+				"col 1	dec1800	decimal	19	18	0\n" +
 				"col 2	dec1801	decimal	20	18	1\n" +
 				"col 3	dec1802	decimal	20	18	2\n" +
 				"col 4	dec1803	decimal	20	18	3\n" +
