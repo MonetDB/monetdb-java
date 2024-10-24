@@ -12,6 +12,7 @@
 
 package org.monetdb.jdbc;
 
+import org.monetdb.mcl.net.Parameter;
 import org.monetdb.mcl.net.Target;
 import org.monetdb.mcl.net.ValidationError;
 
@@ -139,7 +140,7 @@ public final class MonetDriver implements Driver {
 	 * discover what properties it should prompt a human for in order to get
 	 * enough information to connect to a database. Note that depending on the
 	 * values the human has supplied so far, additional values may become
-	 * necessary, so it may be necessary to iterate though several calls to the
+	 * necessary, so it may be necessary to iterate through several calls to the
 	 * getPropertyInfo method.
 	 *
 	 * @param url the URL of the database to which to connect
@@ -154,66 +155,8 @@ public final class MonetDriver implements Driver {
 		if (!acceptsURL(url))
 			return null;
 
-		final String[] boolean_choices = new String[] { "true", "false" };
-		final DriverPropertyInfo[] dpi = new DriverPropertyInfo[10];	// we currently support 10 connection properties
-
-		DriverPropertyInfo prop = new DriverPropertyInfo("user", info != null ? info.getProperty("user") : null);
-		prop.required = true;
-		prop.description = "The user loginname to use when authenticating on the database server";
-		dpi[0] = prop;
-
-		prop = new DriverPropertyInfo("password", info != null ? info.getProperty("password") : null);
-		prop.required = true;
-		prop.description = "The password to use when authenticating on the database server";
-		dpi[1] = prop;
-
-		prop = new DriverPropertyInfo("debug", "false");
-		prop.required = false;
-		prop.description = "Whether or not to create a log file for debugging purposes";
-		prop.choices = boolean_choices;
-		dpi[2] = prop;
-
-		prop = new DriverPropertyInfo("logfile", null);
-		prop.required = false;
-		prop.description = "The filename to write the debug log to. Only takes effect if debug is set to true. If the file exists, an incrementing number is added, till the filename is unique.";
-		dpi[3] = prop;
-
-		prop = new DriverPropertyInfo("language", "sql");
-		prop.required = false;
-		prop.description = "What language to use for MonetDB conversations (experts only)";
-		prop.choices = new String[] { "sql", "mal" };
-		dpi[4] = prop;
-
-		prop = new DriverPropertyInfo("hash", null);
-		prop.required = false;
-		prop.description = "Force the use of the given hash algorithm (SHA512 or SHA384 or SHA256 or SHA1) during challenge response";
-		prop.choices = new String[] { "SHA512", "SHA384", "SHA256", "SHA1" };
-		dpi[5] = prop;
-
-		prop = new DriverPropertyInfo("treat_blob_as_binary", "true");
-		prop.required = false;
-		prop.description = "Should blob columns be mapped to Types.VARBINARY instead of Types.BLOB in ResultSets and PreparedStatements"; // recommend for increased performance due to less overhead
-		prop.choices = boolean_choices;
-		dpi[6] = prop;
-
-		prop = new DriverPropertyInfo("treat_clob_as_varchar", "true");
-		prop.required = false;
-		prop.description = "Should clob columns be mapped to Types.VARCHAR instead of Types.CLOB in ResultSets and PreparedStatements"; // recommend for increased performance due to less overhead
-		prop.choices = boolean_choices;
-		dpi[7] = prop;
-
-		prop = new DriverPropertyInfo("so_timeout", "0");
-		prop.required = false;
-		prop.description = "Defines the maximum time to wait in milliseconds on a blocking read socket call"; // this corresponds to the Connection.setNetworkTimeout() method introduced in JDBC 4.1
-		dpi[8] = prop;
-
-		prop = new DriverPropertyInfo("autocommit", "true");
-		prop.required = false;
-		prop.description = "Whether the connection should start in auto-commit mode";
-		prop.choices = boolean_choices;
-		dpi[9] = prop;
-
-		return dpi;
+		// delegate to mcl.net.Parameters enum class, which maintains all connection properties
+		return Parameter.getPropertyInfo(info, url.startsWith("jdbc:monetdbs:"));
 	}
 
 	/**

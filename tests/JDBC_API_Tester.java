@@ -10,13 +10,11 @@
  * Copyright 1997 - July 2008 CWI.
  */
 
-import java.sql.*;
-
 import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
-import java.sql.Date;
+import java.sql.*;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
@@ -93,6 +91,7 @@ public final class JDBC_API_Tester {
 		jt.Test_Creplysize();
 		jt.Test_Csavepoints();
 		jt.Test_Ctransaction();
+		jt.Test_Driver(con_URL);
 		jt.Test_Dobjects();
 		jt.Test_DBCmetadata();
 		jt.Test_EmptySql();
@@ -730,6 +729,50 @@ public final class JDBC_API_Tester {
 			"12. true	true\n" +
 			"13. commit...failed as expected: COMMIT: not allowed in auto commit mode\n");
 	}
+
+	private void Test_Driver(String con_URL) {
+		sb.setLength(0);	// clear the output log buffer
+
+		try {
+			final Driver driver = DriverManager.getDriver(con_URL);
+			DriverPropertyInfo[] props = driver.getPropertyInfo(con_URL, null);
+			DriverPropertyInfo prop;
+			final String space = "  ";
+			for (int i = 0; i < props.length; i++) {
+				prop = props[i];
+				sb.append(i).append(space);
+				sb.append(prop.name).append(space);
+				sb.append(prop.required).append(space);
+				sb.append(prop.value).append(space);
+				sb.append(prop.description).append("\n");
+			}
+			// also test against monetdbs, this should make tls and cert required.
+			props = driver.getPropertyInfo("jdbc:monetdbs:", null);
+			sb.append("getPropertyInfo of jdbc:monetdbs:").append("\n");
+			for (int i = 0; i < props.length; i++) {
+				prop = props[i];
+				sb.append(i).append(space);
+				sb.append(prop.name).append(space);
+				sb.append(prop.required).append(space);
+				sb.append(prop.value).append(space);
+				sb.append(prop.description).append("\n");
+			}
+		} catch (SQLException e) {
+			// this means we get what we expect
+			sb.append("failed to get Driver class: ").append(e.getMessage());
+			sb.append("\n");
+		}
+
+		compareExpectedOutput("Test_Driver",
+			"0  user  true  null  User loginname to use when authenticating on the database server\n" +
+			"1  password  true  null  Password to use when authenticating on the database server\n" +
+			"getPropertyInfo of jdbc:monetdbs:\n" +
+			"0  user  true  null  User loginname to use when authenticating on the database server\n" +
+			"1  password  true  null  Password to use when authenticating on the database server\n" +
+			"2  tls  true  null  secure the connection using TLS\n" +
+			"3  cert  true  null  path to TLS certificate to authenticate server with\n");
+	}
+
 
 	private void handleExecuteDDL(Statement stmt, String action, String objtype, String objname, String sql) {
 		try {

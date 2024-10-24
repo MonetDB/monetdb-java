@@ -12,12 +12,15 @@
 
 package org.monetdb.mcl.net;
 
+import java.sql.DriverPropertyInfo;
 import java.util.Calendar;
+import java.util.Properties;
 
 /**
  * Enumerates things that can be configured on a connection to MonetDB.
  */
 public enum Parameter {
+	//  String name, ParameterType type, Object defaultValue, String description, boolean isCore
 	TLS("tls", ParameterType.Bool, false, "secure the connection using TLS", true),
 	HOST("host", ParameterType.Str, "", "IP number, domain name or one of the special values `localhost` and `localhost.`", true),
 	PORT("port", ParameterType.Int, -1, "Port to connect to, 1..65535 or -1 for 'not set'", true),
@@ -167,7 +170,7 @@ public enum Parameter {
 	}
 
 	/**
-	 * Determine if this Parameter is onlyu relevant when TlS is enabled.
+	 * Determine if this Parameter is only relevant when TlS is enabled.
 	 *
 	 * Such parameters need not be shown to the user unless the URL starts with <code>monetdbs://</code>.
 	 *
@@ -183,5 +186,60 @@ public enum Parameter {
 			default:
 				return false;
 		}
+	}
+
+	/**
+	 * Gets information about the possible properties for this driver.
+	 *
+	 * The getPropertyInfo method is intended to allow a generic GUI tool to
+	 * discover what properties it should prompt a human for in order to get
+	 * enough information to connect to a database. Note that depending on the
+	 * values the human has supplied so far, additional values may become
+	 * necessary, so it may be necessary to iterate through several calls to the
+	 * getPropertyInfo method.
+	 *
+	 * Note: This method is called from  jdbc.MonetDriver.getPropertyInfo()
+	 *
+	 * @param info a proposed list of tag/value pairs that will be sent on
+	 *        connect open
+	 * @return an array of DriverPropertyInfo objects describing possible
+	 *         properties. This array may be an empty array if no properties
+	 *         are required.
+	 */
+	public static DriverPropertyInfo[] getPropertyInfo(final Properties info, boolean requires_tls) {
+		final String tls = info != null ? info.getProperty("tls") : null;
+		final boolean tls_enabled = requires_tls || (tls != null && tls.equals("true"));
+		final int dpi_size = (tls_enabled ? 4 : 2);
+		final DriverPropertyInfo[] dpi = new DriverPropertyInfo[dpi_size];
+		DriverPropertyInfo prop = null;
+
+		// minimal required connection settings are "user" and "password"
+		prop = new DriverPropertyInfo("user", info != null ? info.getProperty("user") : null);
+		prop.required = true;
+		prop.description = "User loginname to use when authenticating on the database server";
+		dpi[0] = prop;
+
+		prop = new DriverPropertyInfo("password", info != null ? info.getProperty("password") : null);
+		prop.required = true;
+		prop.description = "Password to use when authenticating on the database server";
+		dpi[1] = prop;
+
+		if (tls_enabled && dpi_size > 2) {
+			// when tls is enabled or required also "tls" and "cert" become required
+			final String[] boolean_choices = new String[] { "true", "false" };
+
+			prop = new DriverPropertyInfo("tls", tls);
+			prop.required = true;
+			prop.description = "secure the connection using TLS";
+			prop.choices = boolean_choices;
+			dpi[2] = prop;
+
+			prop = new DriverPropertyInfo("cert", info != null ? info.getProperty("cert") : null);
+			prop.required = true;
+			prop.description = "path to TLS certificate to authenticate server with";
+			dpi[3] = prop;
+		}
+
+		return dpi;
 	}
 }
