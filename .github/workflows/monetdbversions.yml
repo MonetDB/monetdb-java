@@ -18,6 +18,7 @@ jobs:
           - "monetdb/dev-builds:Sep2022"
           - "monetdb/dev-builds:Jun2023"
           - "monetdb/dev-builds:Dec2023"
+          - "monetdb/dev-builds:Aug2024"
           - "monetdb/dev-builds:default"
 
     services:
