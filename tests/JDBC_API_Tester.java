@@ -773,7 +773,6 @@ public final class JDBC_API_Tester {
 			"3  cert  true  null  path to TLS certificate to authenticate server with\n");
 	}
 
-
 	private void handleExecuteDDL(Statement stmt, String action, String objtype, String objname, String sql) {
 		try {
 			int response = stmt.executeUpdate(sql);

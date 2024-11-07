@@ -757,8 +757,25 @@ public final class MDBvalidator {
 				}
 			}
 		} catch (SQLException e) {
-			System.err.println("Failed to execute query: " + qry);
-			printExceptions(e);
+			// When the connected user does not have enough select privileges,
+			// we may get following error messages, both with SQLState "42000":
+			// "SELECT: access denied for ..." or
+			// "SELECT: insufficient privileges for table returning function ..."
+			// Suppress them from the violation output report.
+			String state = e.getSQLState();
+			boolean suppress = "42000".equals(state);
+			if (suppress) {
+				String msg = e.getMessage();
+				// System.err.println("SQLState: " + state + " msg: " + msg);
+				if (msg != null) {
+					suppress = msg.startsWith("SELECT: access denied for")
+						|| msg.startsWith("SELECT: insufficient privileges for");
+				}
+			}
+			if (!suppress) {
+				System.err.println("Failed to execute query: " + qry);
+				printExceptions(e);
+			}
 		}
 		freeStmtRs(stmt, rs);
 	}

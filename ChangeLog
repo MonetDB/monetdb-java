@@ -1,6 +1,12 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Nov  7 2024 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- In JdbcClient when running the \vsci or \vdbi or \vsi commands, we now
+  suppress "42000 SELECT: insufficient privileges for ..." and
+  "42000 SELECT: access denied for ..." error messages when the connected user
+  does not have 'monetdb' or 'sysadmin' privileges, needed for some validations.
+
 * Wed Jun 19 2024 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
 - Implemented Connection#set/getClientInfo, and send sensible default info
   at connect time. This can be controlled with the properties 'client_info=on/off',
