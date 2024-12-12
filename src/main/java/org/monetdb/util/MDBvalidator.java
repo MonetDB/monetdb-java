@@ -278,7 +278,7 @@ public final class MDBvalidator {
 		// fetch the primary or unique key info from the MonetDB system tables
 		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" FROM sys.keys k JOIN sys.tables t ON k.table_id = t.id JOIN sys.schemas s ON t.schema_id = s.id"
-				+ " WHERE k.type = ").append(pkey ? 0 : 1)	// 0 = primary keys, 1 = unique keys
+				+ " WHERE k.\"type\" = ").append(pkey ? 0 : 1)	// 0 = primary keys, 1 = unique keys
 			.append(" and s.name = '").append(schema).append('\'');
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
@@ -291,7 +291,7 @@ public final class MDBvalidator {
 			// fetch the primary or unique key info including columns from the MonetDB system tables
 			sb.append("SELECT s.name as sch_nm, t.name as tbl_nm, k.name as key_nm, o.name as col_nm, o.nr")
 			.append(" FROM sys.keys k JOIN sys.objects o ON k.id = o.id JOIN sys.tables t ON k.table_id = t.id JOIN sys.schemas s ON t.schema_id = s.id"
-				+ " WHERE k.type = ").append(pkey ? 0 : 1)	// 0 = primary keys, 1 = unique keys
+				+ " WHERE k.\"type\" = ").append(pkey ? 0 : 1)	// 0 = primary keys, 1 = unique keys
 			.append(" and s.name = '").append(schema).append('\'')
 			.append(" ORDER BY t.name, k.name, o.nr;");
 			qry = sb.toString();
@@ -406,7 +406,7 @@ public final class MDBvalidator {
 		// fetch the foreign key info from the MonetDB system tables
 		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" FROM sys.keys k JOIN sys.tables t ON k.table_id = t.id JOIN sys.schemas s ON t.schema_id = s.id"
-				+ " WHERE k.type = 2")	// 2 = foreign keys
+				+ " WHERE k.\"type\" = 2")	// 2 = foreign keys
 			.append(" and s.name = '").append(schema).append('\'');
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
@@ -429,7 +429,7 @@ public final class MDBvalidator {
 				" JOIN sys.objects po ON pk.id = po.id" +
 				" JOIN sys.tables pt ON pk.table_id = pt.id" +
 				" JOIN sys.schemas ps ON pt.schema_id = ps.id" +
-				" WHERE fk.type = 2" +	// 2 = foreign keys
+				" WHERE fk.\"type\" = 2" +	// 2 = foreign keys
 				" AND fo.nr = po.nr")	// important: matching fk-pk column ordering
 			.append(" AND fs.name = '").append(schema).append('\'')
 			.append(" ORDER BY ft.name, fk.name, fo.nr;");
@@ -550,7 +550,7 @@ public final class MDBvalidator {
 						if (colx.endsWith("name") || colx.endsWith("keyword")
 						 || "\"schema\"".equals(colx) || "\"table\"".equals(colx) || "\"column\"".equals(colx)
 						 || "func".equals(colx) || "mod".equals(colx) || "statement".equals(colx)
-						 || ("type".equals(colx) && ("_columns".equals(tbl) || "args".equals(tbl) || "storage()".equals(tbl) || "storagemodelinput".equals(tbl)))) {
+						 || ("\"type\"".equals(colx) && ("_columns".equals(tbl) || "args".equals(tbl) || "storage()".equals(tbl) || "storagemodelinput".equals(tbl)))) {
 							isNullCond.append(" OR ").append(colx).append(" = ''");
 						}
 					}
@@ -561,7 +561,7 @@ public final class MDBvalidator {
 					if (col.endsWith("name") || col.endsWith("keyword")
 					 || "\"schema\"".equals(col) || "\"table\"".equals(col) || "\"column\"".equals(col)
 					 || "func".equals(col) || "mod".equals(col) || "statement".equals(col)
-					 || ("type".equals(col) && ("_columns".equals(tbl) || "args".equals(tbl) || "storage()".equals(tbl) || "storagemodelinput".equals(tbl)))) {
+					 || ("\"type\"".equals(col) && ("_columns".equals(tbl) || "args".equals(tbl) || "storage()".equals(tbl) || "storagemodelinput".equals(tbl)))) {
 						isNullCond.append(" OR ").append(col).append(" = ''");
 					}
 				}
@@ -588,7 +588,7 @@ public final class MDBvalidator {
 		// fetch the NOT NULL info from the MonetDB system tables as those are leading for user tables (but not system tables)
 		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" from sys.columns c join sys.tables t on c.table_id = t.id join sys.schemas s on t.schema_id = s.id"
-				+ " where t.type in (0, 10, 1, 11) and c.\"null\" = false"	// t.type 0 = TABLE, 10 = SYSTEM TABLE, 1 = VIEW, 11 = SYSTEM VIEW
+				+ " where t.\"type\" in (0, 10, 1, 11) and c.\"null\" = false"	// t."type" 0 = TABLE, 10 = SYSTEM TABLE, 1 = VIEW, 11 = SYSTEM VIEW
 				+ " and t.system = ").append(system)
 			.append(" and s.name = '").append(schema).append('\'');
 		String qry = sb.toString();
@@ -599,7 +599,7 @@ public final class MDBvalidator {
 		ResultSet rs = null;
 		try {
 			sb.setLength(0);	// empty previous usage of sb
-			sb.append("SELECT s.name as sch_nm, t.name as tbl_nm, c.name as col_nm")	// , t.type, t.system, c.type, c.type_digits
+			sb.append("SELECT s.name as sch_nm, t.name as tbl_nm, c.name as col_nm")	// , t."type", t."system", c."type", c.type_digits
 			.append(qry).append(" ORDER BY s.name, t.name, c.name;");
 			qry = sb.toString();
 			rs = stmt.executeQuery(qry);
@@ -638,10 +638,10 @@ public final class MDBvalidator {
 		// fetch the max char str len info from the MonetDB system tables as those are leading
 		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" from sys.columns c join sys.tables t on c.table_id = t.id join sys.schemas s on t.schema_id = s.id"
-				+ " where t.type in (0, 10, 1, 11)"	// t.type 0 = TABLE, 10 = SYSTEM TABLE, 1 = VIEW, 11 = SYSTEM VIEW
+				+ " where t.\"type\" in (0, 10, 1, 11)"	// t."type" 0 = TABLE, 10 = SYSTEM TABLE, 1 = VIEW, 11 = SYSTEM VIEW
 				+ " and c.type_digits >= 1"		// only when a positive max length is specified
 				+ " and t.system = ").append(system)
-			.append(" and c.type in ('varchar','char','clob','json','url','blob')")	// only for variable character/bytes data type columns
+			.append(" and c.\"type\" in ('varchar','char','clob','json','url','blob')")	// only for variable character/bytes data type columns
 			.append(" and s.name = '").append(schema).append('\'');
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
@@ -651,7 +651,7 @@ public final class MDBvalidator {
 		ResultSet rs = null;
 		try {
 			sb.setLength(0);	// empty previous usage of sb
-			sb.append("SELECT s.name as sch_nm, t.name as tbl_nm, c.name as col_nm, c.type_digits")	// , t.type, t.system, c.type
+			sb.append("SELECT s.name as sch_nm, t.name as tbl_nm, c.name as col_nm, c.type_digits")	// , t."type", t."system", c."type"
 			.append(qry).append(" ORDER BY s.name, t.name, c.name, c.type_digits;");
 			qry = sb.toString();
 			rs = stmt.executeQuery(qry);
@@ -1069,7 +1069,7 @@ public final class MDBvalidator {
 		{"(SELECT id FROM sys.schemas UNION ALL SELECT id FROM sys._tables UNION ALL SELECT id FROM sys._columns UNION ALL SELECT id FROM sys.functions) as T", "T.id", null},
 		{"(SELECT id FROM sys.schemas UNION ALL SELECT id FROM sys.tables UNION ALL SELECT id FROM sys.columns UNION ALL SELECT id FROM sys.functions) as T", "T.id", null},
 		// the next query used to return duplicates for overloaded functions (same function but with different arg names/types), hence it has been extended
-		{"functions f join sys.args a on f.id=a.func_id", "schema_id, f.name, func, mod, language, f.type, side_effect, varres, vararg, a.id", null},
+		{"functions f join sys.args a on f.id=a.func_id", "schema_id, f.name, func, mod, \"language\", f.\"type\", side_effect, varres, vararg, a.id", null},
 		{"args", "func_id, name, inout", null},
 		{"types", "schema_id, systemname, sqlname", null},
 		{"objects", "id, name", null},
@@ -1125,19 +1125,19 @@ public final class MDBvalidator {
 		{"schemas", "owner", "id", "auths", null},
 		{"_tables", "schema_id", "id", "schemas", null},
 		{"tables", "schema_id", "id", "schemas", null},
-		{"_tables", "type", "table_type_id", "table_types", "21"},
-		{"tables", "type", "table_type_id", "table_types", "21"},
+		{"_tables", "\"type\"", "table_type_id", "table_types", "21"},
+		{"tables", "\"type\"", "table_type_id", "table_types", "21"},
 		{"_columns", "table_id", "id", "_tables", null},
 		{"columns", "table_id", "id", "tables", null},
-		{"_columns", "type", "sqlname", "types", null},
-		{"columns", "type", "sqlname", "types", null},
+		{"_columns", "\"type\"", "sqlname", "types", null},
+		{"columns", "\"type\"", "sqlname", "types", null},
 		{"functions", "schema_id", "id", "schemas", null},
-		{"functions", "type", "function_type_id", "function_types", "27"},
-		{"functions", "language", "language_id", "function_languages", "27"},
+		{"functions", "\"type\"", "function_type_id", "function_types", "27"},
+		{"functions", "\"language\"", "language_id", "function_languages", "27"},
 		// system functions should refer only to functions in MonetDB system schemas
 		{"functions WHERE system AND ", "schema_id", "id", "schemas WHERE system", "33"},	// column "system" was added in release 11.33.3
 		{"args", "func_id", "id", "functions", null},
-		{"args", "type", "sqlname", "types", null},
+		{"args", "\"type\"", "sqlname", "types", null},
 		{"types", "schema_id", "id", "schemas", null},
 	//	{"types WHERE schema_id <> 0 AND ", "schema_id", "id", "schemas", null},	// types with schema_id = 0 should no longer exist
 		{"objects", "id", "id", "ids", "29"},
@@ -1145,12 +1145,12 @@ public final class MDBvalidator {
 		{"keys", "id", "id", "objects", null},
 		{"keys", "table_id", "id", "_tables", null},
 		{"keys", "table_id", "id", "tables", null},
-		{"keys", "type", "key_type_id", "key_types", "27"},
+		{"keys", "\"type\"", "key_type_id", "key_types", "27"},
 		{"keys WHERE rkey <> -1 AND ", "rkey", "id", "keys", null},
 		{"idxs", "id", "id", "objects", null},
 		{"idxs", "table_id", "id", "_tables", null},
 		{"idxs", "table_id", "id", "tables", null},
-		{"idxs", "type", "index_type_id", "index_types", "27"},
+		{"idxs", "\"type\"", "index_type_id", "index_types", "27"},
 		{"sequences", "schema_id", "id", "schemas", null},
 		{"triggers", "table_id", "id", "_tables", null},
 		{"triggers", "table_id", "id", "tables", null},
@@ -1184,27 +1184,27 @@ public final class MDBvalidator {
 		{"sessions", "\"username\"", "name", "users", "37"},
 		{"sessions", "sessions.optimizer", "name", "optimizers", "37"}, 	// without the sessions. prefix it will give an error on Jun2020 release
 		{"statistics", "column_id", "id", "(SELECT id FROM sys._columns UNION ALL SELECT id FROM tmp._columns) as c", null},
-		{"statistics", "type", "sqlname", "types", null},
+		{"statistics", "\"type\"", "sqlname", "types", null},
 		{"storage()", "\"schema\"", "name", "schemas", null},
 		{"storage()", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
 		{"storage()", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
 		{"storage()", "\"column\"", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
-		{"storage()", "type", "sqlname", "types", null},
+		{"storage()", "\"type\"", "sqlname", "types", null},
 		{"storage", "\"schema\"", "name", "schemas", null},
 		{"storage", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
 		{"storage", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
 		{"storage", "\"column\"", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
-		{"storage", "type", "sqlname", "types", null},
+		{"storage", "\"type\"", "sqlname", "types", null},
 		{"storagemodel", "\"schema\"", "name", "schemas", null},
 		{"storagemodel", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
 		{"storagemodel", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
 		{"storagemodel", "\"column\"", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
-		{"storagemodel", "type", "sqlname", "types", null},
+		{"storagemodel", "\"type\"", "sqlname", "types", null},
 		{"storagemodelinput", "\"schema\"", "name", "schemas", null},
 		{"storagemodelinput", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
 		{"storagemodelinput", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
 		{"storagemodelinput", "\"column\"", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
-		{"storagemodelinput", "type", "sqlname", "types", null},
+		{"storagemodelinput", "\"type\"", "sqlname", "types", null},
 		{"tablestoragemodel", "\"schema\"", "name", "schemas", null},
 		{"tablestoragemodel", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
 		{"tablestoragemodel", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
@@ -1222,25 +1222,25 @@ public final class MDBvalidator {
 	// new tables / views introduced in Jan2022 feature release (11.43.1)
 		{"keys WHERE action >= 0 AND ", "cast(((action >> 8) & 255) as smallint)", "action_id", "fkey_actions", "43"},	// update action id
 		{"keys WHERE action >= 0 AND ", "cast((action & 255) as smallint)", "action_id", "fkey_actions", "43"},	// delete action id
-		{"fkeys", "id, table_id, type, name, rkey", "id, table_id, type, name, rkey", "keys", "43"},
+		{"fkeys", "id, table_id, \"type\", name, rkey", "id, table_id, \"type\", name, rkey", "keys", "43"},
 		{"fkeys", "update_action_id", "action_id", "fkey_actions", "43"},
 		{"fkeys", "delete_action_id", "action_id", "fkey_actions", "43"}
 	};
 
 	private static final String[][] tmp_fkeys = {
 		{"_tables", "schema_id", "id", "sys.schemas", null},
-		{"_tables", "type", "table_type_id", "sys.table_types", "21"},
+		{"_tables", "\"type\"", "table_type_id", "sys.table_types", "21"},
 		{"_columns", "table_id", "id", "_tables", null},
-		{"_columns", "type", "sqlname", "sys.types", null},
+		{"_columns", "\"type\"", "sqlname", "sys.types", null},
 		{"keys", "id", "id", "objects", null},
 		{"keys", "table_id", "id", "_tables", null},
-		{"keys", "type", "key_type_id", "sys.key_types", "27"},
+		{"keys", "\"type\"", "key_type_id", "sys.key_types", "27"},
 		{"keys WHERE rkey <> -1 AND ", "rkey", "id", "keys", null},
 		{"keys WHERE action >= 0 AND ", "cast(((action >> 8) & 255) as smallint)", "action_id", "sys.fkey_actions", "43"},	// update action id
 		{"keys WHERE action >= 0 AND ", "cast((action & 255) as smallint)", "action_id", "sys.fkey_actions", "43"},	// delete action id
 		{"idxs", "id", "id", "objects", null},
 		{"idxs", "table_id", "id", "_tables", null},
-		{"idxs", "type", "index_type_id", "sys.index_types", "27"},
+		{"idxs", "\"type\"", "index_type_id", "sys.index_types", "27"},
 		{"objects", "id", "id", "sys.ids", "29"},
 		{"triggers", "table_id", "id", "_tables", null}
 	};
@@ -1267,7 +1267,7 @@ public final class MDBvalidator {
 	private static final String[][] sys_notnull = {
 		{"_columns", "id", null},
 		{"_columns", "name", null},
-		{"_columns", "type", null},
+		{"_columns", "\"type\"", null},
 		{"_columns", "type_digits", null},
 		{"_columns", "type_scale", null},
 		{"_columns", "table_id", null},
@@ -1276,14 +1276,14 @@ public final class MDBvalidator {
 		{"_tables", "id", null},
 		{"_tables", "name", null},
 		{"_tables", "schema_id", null},
-		{"_tables", "type", null},
+		{"_tables", "\"type\"", null},
 		{"_tables", "system", null},
 		{"_tables", "commit_action", null},
 		{"_tables", "access", null},
 		{"args", "id", null},
 		{"args", "func_id", null},
 		{"args", "name", null},
-		{"args", "type", null},
+		{"args", "\"type\"", null},
 		{"args", "type_digits", null},
 		{"args", "type_scale", null},
 		{"args", "inout", null},
@@ -1306,8 +1306,8 @@ public final class MDBvalidator {
 		{"functions", "name", null},
 		{"functions", "func", null},
 		{"functions", "mod", null},
-		{"functions", "language", null},
-		{"functions", "type", null},
+		{"functions", "\"language\"", null},
+		{"functions", "\"type\"", null},
 		{"functions", "side_effect", null},
 		{"functions", "varres", null},
 		{"functions", "vararg", null},
@@ -1315,7 +1315,7 @@ public final class MDBvalidator {
 		{"functions", "system", "33"},
 		{"idxs", "id", null},
 		{"idxs", "table_id", null},
-		{"idxs", "type", null},
+		{"idxs", "\"type\"", null},
 		{"idxs", "name", null},
 		{"index_types", "index_type_id", "27"},
 		{"index_types", "index_type_name", "27"},
@@ -1323,7 +1323,7 @@ public final class MDBvalidator {
 		{"key_types", "key_type_name", "27"},
 		{"keys", "id", null},
 		{"keys", "table_id", null},
-		{"keys", "type", null},
+		{"keys", "\"type\"", null},
 		{"keys", "name", null},
 		{"keys", "rkey", null},
 		{"keys", "action", null},
@@ -1359,7 +1359,7 @@ public final class MDBvalidator {
 		{"statistics", "\"schema\"", "43"},	// new column as of Jan2022 release (11.43.1)
 		{"statistics", "\"table\"", "43"},	// new column as of Jan2022 release (11.43.1)
 		{"statistics", "\"column\"", "43"},	// new column as of Jan2022 release (11.43.1)
-		{"statistics", "type", null},
+		{"statistics", "\"type\"", null},
 		{"statistics", "\"width\"", null},
 		{"statistics", "\"count\"", null},
 		{"statistics", "\"unique\"", null},
@@ -1370,7 +1370,7 @@ public final class MDBvalidator {
 		{"\"storage\"()", "\"schema\"", null},
 		{"\"storage\"()", "\"table\"", null},
 		{"\"storage\"()", "\"column\"", null},
-		{"\"storage\"()", "type", null},
+		{"\"storage\"()", "\"type\"", null},
 		{"\"storage\"()", "mode", null},
 		{"\"storage\"()", "location", null},
 		{"\"storage\"()", "count", null},
@@ -1384,7 +1384,7 @@ public final class MDBvalidator {
 		{"storagemodelinput", "\"schema\"", null},
 		{"storagemodelinput", "\"table\"", null},
 		{"storagemodelinput", "\"column\"", null},
-		{"storagemodelinput", "type", null},
+		{"storagemodelinput", "\"type\"", null},
 		{"storagemodelinput", "typewidth", null},
 		{"storagemodelinput", "count", null},
 		{"storagemodelinput", "\"distinct\"", null},
@@ -1398,7 +1398,7 @@ public final class MDBvalidator {
 		{"tables", "id", null},
 		{"tables", "name", null},
 		{"tables", "schema_id", null},
-		{"tables", "type", null},
+		{"tables", "\"type\"", null},
 		{"tables", "system", null},
 		{"tables", "commit_action", null},
 		{"tables", "access", null},
@@ -1433,7 +1433,7 @@ public final class MDBvalidator {
 		{"range_partitions", "with_nulls", "33"},
 		{"table_partitions", "id", "33"},
 		{"table_partitions", "table_id", "33"},
-		{"table_partitions", "type", "33"},
+		{"table_partitions", "\"type\"", "33"},
 		{"value_partitions", "table_id", "33"},
 		{"value_partitions", "partition_id", "33"},
 	// new tables / views introduced in Jan2022 feature release (11.43.1)
@@ -1441,7 +1441,7 @@ public final class MDBvalidator {
 		{"fkey_actions", "action_name", "43"},
 		{"fkeys", "id", "43"},
 		{"fkeys", "table_id", "43"},
-		{"fkeys", "type", "43"},
+		{"fkeys", "\"type\"", "43"},
 		{"fkeys", "name", "43"},
 		{"fkeys", "rkey", "43"},
 		{"fkeys", "update_action_id", "43"},
@@ -1453,7 +1453,7 @@ public final class MDBvalidator {
 	private static final String[][] tmp_notnull = {
 		{"_columns", "id", null},
 		{"_columns", "name", null},
-		{"_columns", "type", null},
+		{"_columns", "\"type\"", null},
 		{"_columns", "type_digits", null},
 		{"_columns", "type_scale", null},
 		{"_columns", "table_id", null},
@@ -1462,17 +1462,17 @@ public final class MDBvalidator {
 		{"_tables", "id", null},
 		{"_tables", "name", null},
 		{"_tables", "schema_id", null},
-		{"_tables", "type", null},
+		{"_tables", "\"type\"", null},
 		{"_tables", "system", null},
 		{"_tables", "commit_action", null},
 		{"_tables", "access", null},
 		{"idxs", "id", null},
 		{"idxs", "table_id", null},
-		{"idxs", "type", null},
+		{"idxs", "\"type\"", null},
 		{"idxs", "name", null},
 		{"keys", "id", null},
 		{"keys", "table_id", null},
-		{"keys", "type", null},
+		{"keys", "\"type\"", null},
 		{"keys", "name", null},
 		{"keys", "rkey", null},
 		{"keys", "action", null},
