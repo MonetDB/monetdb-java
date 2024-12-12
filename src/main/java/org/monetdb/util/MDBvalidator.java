@@ -278,7 +278,7 @@ public final class MDBvalidator {
 		// fetch the primary or unique key info from the MonetDB system tables
 		final StringBuilder sb = new StringBuilder(400);
 		sb.append(" FROM sys.keys k JOIN sys.tables t ON k.table_id = t.id JOIN sys.schemas s ON t.schema_id = s.id"
-				+ " WHERE k.\"type\" = ").append(pkey ? 0 : 1)	// 0 = primary keys, 1 = unique keys
+				+ " WHERE k.\"type\" ").append(pkey ? "= 0" : "IN (1,3)")	// 0 = Primary Key, 1 = Unique Key, 3 = Unique Key With Nulls Not Distinct
 			.append(" and s.name = '").append(schema).append('\'');
 		String qry = sb.toString();
 		final int count = runCountQuery(qry);
@@ -291,7 +291,7 @@ public final class MDBvalidator {
 			// fetch the primary or unique key info including columns from the MonetDB system tables
 			sb.append("SELECT s.name as sch_nm, t.name as tbl_nm, k.name as key_nm, o.name as col_nm, o.nr")
 			.append(" FROM sys.keys k JOIN sys.objects o ON k.id = o.id JOIN sys.tables t ON k.table_id = t.id JOIN sys.schemas s ON t.schema_id = s.id"
-				+ " WHERE k.\"type\" = ").append(pkey ? 0 : 1)	// 0 = primary keys, 1 = unique keys
+				+ " WHERE k.\"type\" ").append(pkey ? "= 0" : "IN (1,3)")	// 0 = Primary Key, 1 = Unique Key, 3 = Unique Key With Nulls Not Distinct
 			.append(" and s.name = '").append(schema).append('\'')
 			.append(" ORDER BY t.name, k.name, o.nr;");
 			qry = sb.toString();
