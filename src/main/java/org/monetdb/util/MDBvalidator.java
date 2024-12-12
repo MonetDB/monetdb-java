@@ -548,7 +548,8 @@ public final class MDBvalidator {
 
 						/* for some sys/tmp columns also check for empty strings */
 						if (colx.endsWith("name") || colx.endsWith("keyword")
-						 || "schema".equals(colx) || "table".equals(colx) || "column".equals(colx) || "func".equals(colx) || "mod".equals(colx) || "statement".equals(colx)
+						 || "\"schema\"".equals(colx) || "\"table\"".equals(colx) || "\"column\"".equals(colx)
+						 || "func".equals(colx) || "mod".equals(colx) || "statement".equals(colx)
 						 || ("type".equals(colx) && ("_columns".equals(tbl) || "args".equals(tbl) || "storage()".equals(tbl) || "storagemodelinput".equals(tbl)))) {
 							isNullCond.append(" OR ").append(colx).append(" = ''");
 						}
@@ -558,7 +559,8 @@ public final class MDBvalidator {
 
 					/* for some sys/tmp columns also check for empty strings */
 					if (col.endsWith("name") || col.endsWith("keyword")
-					 || "schema".equals(col) || "table".equals(col) || "column".equals(col) || "func".equals(col) || "mod".equals(col) || "statement".equals(col)
+					 || "\"schema\"".equals(col) || "\"table\"".equals(col) || "\"column\"".equals(col)
+					 || "func".equals(col) || "mod".equals(col) || "statement".equals(col)
 					 || ("type".equals(col) && ("_columns".equals(tbl) || "args".equals(tbl) || "storage()".equals(tbl) || "storagemodelinput".equals(tbl)))) {
 						isNullCond.append(" OR ").append(col).append(" = ''");
 					}
@@ -987,11 +989,11 @@ public final class MDBvalidator {
 		{"db_user_info", "name", null},
 		{"statistics", "column_id", null},
 // old	{"tracelog", "event", null},		-- Error: Profiler not started. This table now (from Jun2020) contains only: ticks, stmt
-		{"\"storage\"()", "schema, table, column", null},	// the function "storage"() also lists the storage for system tables
-//		{"storage", "schema, table, column", null},	// is a view on table producing function: sys.storage() which filters out all system tables.
-		{"storagemodelinput", "schema, table, column", null},
-//		{"storagemodel", "schema, table, column", null},	// is a view on storagemodelinput
-//		{"tablestoragemodel", "schema, table", null},	// is a view on storagemodelinput
+		{"\"storage\"()", "\"schema\", \"table\", \"column\"", null},	// the function "storage"() also lists the storage for system tables
+//		{"\"storage\"", "\"schema\", \"table\", \"column\"", null},	// is a view on table producing function: sys.storage() which filters out all system tables.
+		{"storagemodelinput", "\"schema\", \"table\", \"column\"", null},
+//		{"storagemodel", "\"schema\", \"table\", \"column\"", null},	// is a view on storagemodelinput
+//		{"tablestoragemodel", "\"schema\", \"table\"", null},	// is a view on storagemodelinput
 
 		{"rejects", "rowid", "19"},	// querying this view caused problems in versions pre Jul2015, see https://github.com/MonetDB/MonetDB/issues/3794
 
@@ -1012,8 +1014,8 @@ public final class MDBvalidator {
 		{"var_values", "var_name", "29"},	// is a view
 
 	// new views introduced in Apr2019 feature release (11.33.3)
-//		{"tablestorage", "schema, table", "33"},	// is a view on view storage, see check on "storage"() above
-//		{"schemastorage", "schema", "33"},	// is a view on view storage, see check on "storage"() above
+//		{"tablestorage", "\"schema\", \"table\"", "33"},	// is a view on view storage, see check on "storage"() above
+//		{"schemastorage", "\"schema\"", "33"},	// is a view on view storage, see check on "storage"() above
 	// new tables introduced in Apr2019 feature release (11.33.3)
 		{"table_partitions", "id", "33"},
 		{"range_partitions", "table_id, partition_id, minimum", "33"},
@@ -1183,34 +1185,34 @@ public final class MDBvalidator {
 		{"sessions", "sessions.optimizer", "name", "optimizers", "37"}, 	// without the sessions. prefix it will give an error on Jun2020 release
 		{"statistics", "column_id", "id", "(SELECT id FROM sys._columns UNION ALL SELECT id FROM tmp._columns) as c", null},
 		{"statistics", "type", "sqlname", "types", null},
-		{"storage()", "schema", "name", "schemas", null},
-		{"storage()", "table", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
-		{"storage()", "schema, table", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
-		{"storage()", "column", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
+		{"storage()", "\"schema\"", "name", "schemas", null},
+		{"storage()", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
+		{"storage()", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
+		{"storage()", "\"column\"", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
 		{"storage()", "type", "sqlname", "types", null},
-		{"storage", "schema", "name", "schemas", null},
-		{"storage", "table", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
-		{"storage", "schema, table", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
-		{"storage", "column", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
+		{"storage", "\"schema\"", "name", "schemas", null},
+		{"storage", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
+		{"storage", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
+		{"storage", "\"column\"", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
 		{"storage", "type", "sqlname", "types", null},
-		{"storagemodel", "schema", "name", "schemas", null},
-		{"storagemodel", "table", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
-		{"storagemodel", "schema, table", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
-		{"storagemodel", "column", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
+		{"storagemodel", "\"schema\"", "name", "schemas", null},
+		{"storagemodel", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
+		{"storagemodel", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
+		{"storagemodel", "\"column\"", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
 		{"storagemodel", "type", "sqlname", "types", null},
-		{"storagemodelinput", "schema", "name", "schemas", null},
-		{"storagemodelinput", "table", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
-		{"storagemodelinput", "schema, table", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
-		{"storagemodelinput", "column", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
+		{"storagemodelinput", "\"schema\"", "name", "schemas", null},
+		{"storagemodelinput", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
+		{"storagemodelinput", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
+		{"storagemodelinput", "\"column\"", "name", "(SELECT name FROM sys._columns UNION ALL SELECT name FROM tmp._columns UNION ALL SELECT name FROM sys.keys UNION ALL SELECT name FROM tmp.keys UNION ALL SELECT name FROM sys.idxs UNION ALL SELECT name FROM tmp.idxs) as c", null},
 		{"storagemodelinput", "type", "sqlname", "types", null},
-		{"tablestoragemodel", "schema", "name", "schemas", null},
-		{"tablestoragemodel", "table", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
-		{"tablestoragemodel", "schema, table", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
+		{"tablestoragemodel", "\"schema\"", "name", "schemas", null},
+		{"tablestoragemodel", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", null},
+		{"tablestoragemodel", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", null},
 	// new tables / views introduced in Apr2019  "33"
-		{"schemastorage", "schema", "name", "schemas", "33"},
-		{"tablestorage", "schema", "name", "schemas", "33"},
-		{"tablestorage", "table", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", "33"},
-		{"tablestorage", "schema, table", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", "33"},
+		{"schemastorage", "\"schema\"", "name", "schemas", "33"},
+		{"tablestorage", "\"schema\"", "name", "schemas", "33"},
+		{"tablestorage", "\"table\"", "name", "(SELECT name FROM sys._tables UNION ALL SELECT name FROM tmp._tables) as t", "33"},
+		{"tablestorage", "\"schema\", \"table\"", "sname, tname", "(SELECT sch.name as sname, tbl.name as tname FROM sys.schemas AS sch JOIN sys.tables AS tbl ON sch.id = tbl.schema_id) as t", "33"},
 		{"table_partitions", "table_id", "id", "_tables", "33"},
 		{"table_partitions WHERE column_id IS NOT NULL AND ", "column_id", "id", "_columns", "33"},
 		{"range_partitions", "table_id", "id", "_tables", "33"},
@@ -1357,7 +1359,7 @@ public final class MDBvalidator {
 		{"statistics", "\"schema\"", "43"},	// new column as of Jan2022 release (11.43.1)
 		{"statistics", "\"table\"", "43"},	// new column as of Jan2022 release (11.43.1)
 		{"statistics", "\"column\"", "43"},	// new column as of Jan2022 release (11.43.1)
-		{"statistics", "\"type\"", null},
+		{"statistics", "type", null},
 		{"statistics", "\"width\"", null},
 		{"statistics", "\"count\"", null},
 		{"statistics", "\"unique\"", null},
@@ -1365,9 +1367,9 @@ public final class MDBvalidator {
 		{"statistics", "sorted", null},
 		{"statistics", "revsorted", null},
 		// the table producing function "storage"() also lists the storage for system tables, whereas the view "storage" does not, so use "storage"()
-		{"\"storage\"()", "schema", null},
-		{"\"storage\"()", "table", null},
-		{"\"storage\"()", "column", null},
+		{"\"storage\"()", "\"schema\"", null},
+		{"\"storage\"()", "\"table\"", null},
+		{"\"storage\"()", "\"column\"", null},
 		{"\"storage\"()", "type", null},
 		{"\"storage\"()", "mode", null},
 		{"\"storage\"()", "location", null},
@@ -1379,9 +1381,9 @@ public final class MDBvalidator {
 		{"\"storage\"()", "phash", null},
 		{"\"storage\"()", "imprints", null},
 		{"\"storage\"()", "orderidx", null},
-		{"storagemodelinput", "schema", null},
-		{"storagemodelinput", "table", null},
-		{"storagemodelinput", "column", null},
+		{"storagemodelinput", "\"schema\"", null},
+		{"storagemodelinput", "\"table\"", null},
+		{"storagemodelinput", "\"column\"", null},
 		{"storagemodelinput", "type", null},
 		{"storagemodelinput", "typewidth", null},
 		{"storagemodelinput", "count", null},
