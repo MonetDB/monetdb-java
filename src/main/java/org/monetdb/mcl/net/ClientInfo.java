@@ -30,7 +30,7 @@ import java.util.Set;
 
 /**
  * Manage ClientInfo properties to track, and help generating a
- * @{link SQLClientInfoException} if there is a failure
+ * {@link SQLClientInfoException} if there is a failure
  */
 public final class ClientInfo {
 	public static final String defaultHostname = findHostname();

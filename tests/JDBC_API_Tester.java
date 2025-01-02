@@ -49,6 +49,8 @@ public final class JDBC_API_Tester {
 
 	/**
 	 * constructor
+	 * @param con_ an active connection
+	 * @throws SQLException if a connection or database access error occurs
 	 */
 	JDBC_API_Tester(Connection con_) throws SQLException {
 		this.con = con_;

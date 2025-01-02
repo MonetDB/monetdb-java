@@ -202,6 +202,7 @@ public enum Parameter {
 	 *
 	 * @param info a proposed list of tag/value pairs that will be sent on
 	 *        connect open
+	 * @param requires_tls flag to inform is tls required
 	 * @return an array of DriverPropertyInfo objects describing possible
 	 *         properties. This array may be an empty array if no properties
 	 *         are required.
