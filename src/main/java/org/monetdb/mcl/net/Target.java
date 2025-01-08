@@ -766,7 +766,7 @@ public final class Target {
 			return language;
 		}
 
-		public boolean getAutocommit() {
+		public boolean isAutocommit() {
 			return autocommit;
 		}
 
@@ -791,7 +791,7 @@ public final class Target {
 			return hash;
 		}
 
-		public boolean getDebug() {
+		public boolean isDebug() {
 			return debug;
 		}
 
@@ -809,6 +809,18 @@ public final class Target {
 
 		public boolean isTreatBlobAsBinary() {
 			return treatBlobAsBinary;
+		}
+
+		public boolean sendClientInfo() {
+			return clientInfo;
+		}
+
+		public String getClientApplication() {
+			return clientApplication;
+		}
+
+		public String getClientRemark() {
+			return clientRemark;
 		}
 
 		public boolean connectScan() {

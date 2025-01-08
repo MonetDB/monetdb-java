@@ -222,6 +222,24 @@ public enum Parameter {
 		for (Parameter parm: Parameter.values()) {
 			if (!includeTls && parm.isTlsRelated)
 				continue;
+			switch (parm) {
+				case TABLESCHEMA:
+				case TABLE:
+				case SOCK:
+				case SOCKDIR:
+				case BINARY:
+				case CLOB_AS_VARCHAR:
+				case BLOB_AS_BINARY:
+					// hide, not supported in Java
+					continue;
+				case FETCHSIZE:
+					// hide, alias of REPLYSIZE
+					continue;
+				case LANGUAGE:
+				case HASH:
+					// hide, we don't want users to mess with this
+					continue;
+			}
 			if (parm == Parameter.FETCHSIZE)    // alias of REPLYSIZE
 				continue;
 			String value = info == null ? null : info.getProperty(parm.name);

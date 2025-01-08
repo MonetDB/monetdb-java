@@ -39,6 +39,7 @@ import org.monetdb.mcl.io.LineType;
 import org.monetdb.mcl.net.ClientInfo;
 import org.monetdb.mcl.net.MapiSocket;
 import org.monetdb.mcl.net.Target;
+import org.monetdb.mcl.net.ValidationError;
 import org.monetdb.mcl.parser.HeaderLineParser;
 import org.monetdb.mcl.parser.MCLParseException;
 import org.monetdb.mcl.parser.StartOfHeaderParser;
@@ -152,12 +153,18 @@ public class MonetConnection
 		throws SQLException, IllegalArgumentException
 	{
 		this.target = target;
+		Target.Validated validated;
+		try {
+			validated = target.validate();
+		} catch (ValidationError e) {
+			throw new SQLNonTransientConnectionException(e.getMessage());
+		}
 		server = new MapiSocket();
 
 		// we're debugging here... uhm, should be off in real life
-		if (target.isDebug()) {
+		if (validated.isDebug()) {
 			try {
-				String fname = target.getLogfile();
+				String fname = validated.getLogfile();
 				if (fname == null)
 					fname = "monet_" + System.currentTimeMillis() + ".log";
 
@@ -180,7 +187,7 @@ public class MonetConnection
 		}
 
 		SqlOptionsCallback callback = null;
-		switch (target.getLanguage()) {
+		switch (validated.getLanguage()) {
 			case "sql":
 				lang = LANG_SQL;
 				queryTempl[0] = "s";        // pre
@@ -188,7 +195,7 @@ public class MonetConnection
 				queryTempl[2] = "\n;\n";    // separator
 				commandTempl[0] = "X";      // pre
 				commandTempl[1] = "";       // post
-				callback = new SqlOptionsCallback();
+				callback = new SqlOptionsCallback(validated);
 				break;
 			case "mal":
 				lang = LANG_MAL;
@@ -231,11 +238,11 @@ public class MonetConnection
 			throw sqle;
 		}
 
-		if (server.canClientInfo() && target.sendClientInfo()) {
+		if (server.canClientInfo() && validated.sendClientInfo()) {
 			ClientInfo info = new ClientInfo();
 			info.setDefaults();
-			String clientApplication = target.getClientApplication();
-			String clientRemark = target.getClientRemark();
+			String clientApplication = validated.getClientApplication();
+			String clientRemark = validated.getClientRemark();
 			if (!clientApplication.isEmpty())
 				info.set("ApplicationName", clientApplication);
 			if (!clientRemark.isEmpty())
@@ -246,23 +253,23 @@ public class MonetConnection
 		// Now take care of any options not handled during the handshake
 		curReplySize = defaultFetchSize;
 		if (lang == LANG_SQL) {
-			if (autoCommit != target.isAutocommit()) {
-				setAutoCommit(target.isAutocommit());
+			if (autoCommit != validated.isAutocommit()) {
+				setAutoCommit(validated.isAutocommit());
 			}
 			if (!callback.sizeHeaderEnabled) {
 				sendControlCommand("sizeheader 1");
 			}
 			if (!callback.timeZoneSet) {
-				setTimezone(60 * target.getTimezone());
+				setTimezone(60 * validated.getTimezone());
 			}
 		}
 
 		// we're absolutely not closed, since we're brand new
 		closed = false;
 
-		if (!target.getSchema().isEmpty()) {
+		if (!validated.getSchema().isEmpty()) {
 			try (Statement stmt = this.createStatement()) {
-				String escaped = target.getSchema().replaceAll("\"", "\"\"");
+				String escaped = validated.getSchema().replaceAll("\"", "\"\"");
 				stmt.execute("SET SCHEMA \"" + escaped + "\"");
 			}
 		}
@@ -3863,9 +3870,15 @@ public class MonetConnection
 
 
 	private class SqlOptionsCallback extends MapiSocket.OptionsCallback {
+		private final Target.Validated validated;
 		private int level;
 		boolean sizeHeaderEnabled = false; // used during handshake
 		boolean timeZoneSet = false; // used during handshake
+
+		public SqlOptionsCallback(Target.Validated validated) {
+			super();
+			this.validated = validated;
+		}
 
 
 		@Override
@@ -3875,10 +3888,10 @@ public class MonetConnection
 			this.level = level;
 
 			// Try to add options and record that this happened if it succeeds.
-			if (contribute(SqlOption.Autocommit, target.isAutocommit() ? 1 : 0))
+			if (contribute(SqlOption.Autocommit, validated.isAutocommit() ? 1 : 0))
 				autoCommit = target.isAutocommit();
-			if (contribute(SqlOption.ReplySize, target.getReplySize()))
-				defaultFetchSize = target.getReplySize();
+			if (contribute(SqlOption.ReplySize, validated.getReplySize()))
+				defaultFetchSize = validated.getReplySize();
 			if (contribute(SqlOption.SizeHeader, 1))
 				sizeHeaderEnabled = true;
 			if (contribute(SqlOption.TimeZone, 60 * target.getTimezone()))
