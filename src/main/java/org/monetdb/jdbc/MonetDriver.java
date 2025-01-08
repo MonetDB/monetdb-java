@@ -155,8 +155,13 @@ public final class MonetDriver implements Driver {
 		if (!acceptsURL(url))
 			return null;
 
-		// delegate to mcl.net.Parameters enum class, which maintains all connection properties
-		return Parameter.getPropertyInfo(info, url.startsWith("jdbc:monetdbs:"));
+		// Delegate to enum mcl.net.Parameters, which maintains all connection properties.
+		// Note that if the URL starts with jdbc:monetdb://, TLS is always off.
+		// If it starts with jdbc:monetdbs://, TLS is always on.
+		// Only when the URL is exactly "jdbc:monetdb:", without slashes, TLS is determined
+		// by the properties.
+		boolean includeTls = (url.equals("jdbc:monetdb:") || url.startsWith("jdbc:monetdbs:"));
+		return Parameter.getPropertyInfo(info, includeTls);
 	}
 
 	/**

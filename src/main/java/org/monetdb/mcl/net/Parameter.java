@@ -13,6 +13,7 @@
 package org.monetdb.mcl.net;
 
 import java.sql.DriverPropertyInfo;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Properties;
 
@@ -21,7 +22,7 @@ import java.util.Properties;
  */
 public enum Parameter {
 	//  String name, ParameterType type, Object defaultValue, String description, boolean isCore
-	TLS("tls", ParameterType.Bool, false, "secure the connection using TLS", true),
+	TLS("tls", ParameterType.Bool, false, "secure the connection using TLS", true, true),
 	HOST("host", ParameterType.Str, "", "IP number, domain name or one of the special values `localhost` and `localhost.`", true),
 	PORT("port", ParameterType.Int, -1, "Port to connect to, 1..65535 or -1 for 'not set'", true),
 	DATABASE("database", ParameterType.Str, "", "name of database to connect to", true),
@@ -29,10 +30,10 @@ public enum Parameter {
 	TABLE("table", ParameterType.Str, "", "only used for REMOTE TABLE, otherwise unused", true),
 	SOCK("sock", ParameterType.Path, "", "path to Unix domain socket to connect to", false),
 	SOCKDIR("sockdir", ParameterType.Path, "/tmp", "Directory for implicit Unix domain sockets (.s.monetdb.PORT)", false),
-	CERT("cert", ParameterType.Path, "", "path to TLS certificate to authenticate server with", false),
-	CERTHASH("certhash", ParameterType.Str, "", "hash of server TLS certificate must start with these hex digits; overrides cert", false),
-	CLIENTKEY("clientkey", ParameterType.Path, "", "path to TLS key (+certs) to authenticate with as client", false),
-	CLIENTCERT("clientcert", ParameterType.Path, "", "path to TLS certs for 'clientkey', if not included there", false),
+	CERT("cert", ParameterType.Path, "", "path to TLS certificate to authenticate server with", false, true),
+	CERTHASH("certhash", ParameterType.Str, "", "hash of server TLS certificate must start with these hex digits; overrides cert", false, true),
+	CLIENTKEY("clientkey", ParameterType.Path, "", "path to TLS key (+certs) to authenticate with as client", false, true),
+	CLIENTCERT("clientcert", ParameterType.Path, "", "path to TLS certs for 'clientkey', if not included there", false, true),
 	USER("user", ParameterType.Str, "", "user name to authenticate as", false),
 	PASSWORD("password", ParameterType.Str, "", "password to authenticate with", false),
 	LANGUAGE("language", ParameterType.Str, "sql", "for example, \"sql\", \"mal\", \"msql\", \"profiler\"", false),
@@ -59,13 +60,19 @@ public enum Parameter {
 	private final Object defaultValue;
 	public final String description;
 	public final boolean isCore;
+	public final boolean isTlsRelated;
 
-	Parameter(String name, ParameterType type, Object defaultValue, String description, boolean isCore) {
+	Parameter(String name, ParameterType type, Object defaultValue, String description, boolean isCore, boolean isTlsRelated) {
 		this.name = name;
 		this.type = type;
 		this.defaultValue = defaultValue;
 		this.description = description;
 		this.isCore = isCore;
+		this.isTlsRelated = isTlsRelated;
+	}
+
+	Parameter(String name, ParameterType type, Object defaultValue, String description, boolean isCore) {
+		this(name, type, defaultValue, description, isCore, false);
 	}
 
 	public static Parameter forName(String name) {
@@ -202,45 +209,45 @@ public enum Parameter {
 	 *
 	 * @param info a proposed list of tag/value pairs that will be sent on
 	 *        connect open
-	 * @param requires_tls flag to inform is tls required
+	 * @param includeTls include TLS related properties.
 	 * @return an array of DriverPropertyInfo objects describing possible
 	 *         properties. This array may be an empty array if no properties
 	 *         are required.
 	 */
-	public static DriverPropertyInfo[] getPropertyInfo(final Properties info, boolean requires_tls) {
-		final String tls = info != null ? info.getProperty("tls") : null;
-		final boolean tls_enabled = requires_tls || (tls != null && tls.equals("true"));
-		final int dpi_size = (tls_enabled ? 4 : 2);
-		final DriverPropertyInfo[] dpi = new DriverPropertyInfo[dpi_size];
-		DriverPropertyInfo prop = null;
+	public static DriverPropertyInfo[] getPropertyInfo(final Properties info, boolean includeTls) {
+		final String[] booleanChoices = new String[] { "true", "false" };
+		final ArrayList<DriverPropertyInfo> mandatory = new ArrayList<>(Parameter.values().length);
+		final ArrayList<DriverPropertyInfo> optional = new ArrayList<>(Parameter.values().length);
 
-		// minimal required connection settings are "user" and "password"
-		prop = new DriverPropertyInfo("user", info != null ? info.getProperty("user") : null);
-		prop.required = true;
-		prop.description = "User loginname to use when authenticating on the database server";
-		dpi[0] = prop;
-
-		prop = new DriverPropertyInfo("password", info != null ? info.getProperty("password") : null);
-		prop.required = true;
-		prop.description = "Password to use when authenticating on the database server";
-		dpi[1] = prop;
-
-		if (tls_enabled && dpi_size > 2) {
-			// when tls is enabled or required also "tls" and "cert" become required
-			final String[] boolean_choices = new String[] { "true", "false" };
-
-			prop = new DriverPropertyInfo("tls", tls);
-			prop.required = true;
-			prop.description = "secure the connection using TLS";
-			prop.choices = boolean_choices;
-			dpi[2] = prop;
-
-			prop = new DriverPropertyInfo("cert", info != null ? info.getProperty("cert") : null);
-			prop.required = true;
-			prop.description = "path to TLS certificate to authenticate server with";
-			dpi[3] = prop;
+		for (Parameter parm: Parameter.values()) {
+			if (!includeTls && parm.isTlsRelated)
+				continue;
+			if (parm == Parameter.FETCHSIZE)    // alias of REPLYSIZE
+				continue;
+			String value = info == null ? null : info.getProperty(parm.name);
+			if (value == null) {
+				Object defaultValue = parm.getDefault();
+				if (defaultValue != null)
+					value = defaultValue.toString();
+			}
+			DriverPropertyInfo propInfo = new DriverPropertyInfo(parm.name, value);
+			propInfo.description = parm.description;
+			if (parm.type == ParameterType.Bool)
+				propInfo.choices = booleanChoices;
+			propInfo.required = (parm == Parameter.USER || parm == Parameter.PASSWORD);
+			if (propInfo.required)
+				mandatory.add(propInfo);
+			else
+				optional.add(propInfo);
 		}
 
-		return dpi;
+		final DriverPropertyInfo[] result = new DriverPropertyInfo[mandatory.size() + optional.size()];
+		int i = 0;
+		for (DriverPropertyInfo propInfo: mandatory)
+			result[i++] = propInfo;
+		for (DriverPropertyInfo propInfo: optional)
+			result[i++] = propInfo;
+
+		return result;
 	}
 }
