@@ -228,8 +228,6 @@ public enum Parameter {
 				case SOCK:
 				case SOCKDIR:
 				case BINARY:
-				case CLOB_AS_VARCHAR:
-				case BLOB_AS_BINARY:
 					// hide, not supported in Java
 					continue;
 				case FETCHSIZE:
@@ -239,6 +237,8 @@ public enum Parameter {
 				case HASH:
 					// hide, we don't want users to mess with this
 					continue;
+				default:
+					break;
 			}
 			if (parm == Parameter.FETCHSIZE)    // alias of REPLYSIZE
 				continue;
