@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Jan  8 2025 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- The JDBC jar now includes JdbcClient. For backward compatibility the jar
+  is still also available as jdbcclient.jreX.jar.
+
 * Thu Nov  7 2024 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - In JdbcClient when running the \vsci or \vdbi or \vsi commands, we now
   suppress "42000 SELECT: insufficient privileges for ..." and

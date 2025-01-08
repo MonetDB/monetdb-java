@@ -72,13 +72,12 @@ Copyright 1997 - July 2008 CWI.
   </target>
 
   <target name="default">
-    <antcall target="jar_jdbcclient" />
+    <antcall target="jar_jdbc" />
     <antcall target="jar_jmonetdb" />
   </target>
 
   <target name="distjdbc">
     <antcall target="jar_jdbc" />
-    <antcall target="jar_jdbcclient" />
   </target>
 
   <target name="distmerocontrol">
@@ -86,35 +85,12 @@ Copyright 1997 - July 2008 CWI.
   </target>
 
   <!-- jar targets -->
-  <target name="jar_jdbc" depends="compile_mcl,compile_jdbc"
+  <target name="jar_jdbc" depends="compile_mcl,compile_jdbc,compile_util,compile_client"
     unless="uptodate.jdbc-jar">
     <echo file="${builddir}/META-INF/services/java.sql.Driver" append="false">org.monetdb.jdbc.MonetDriver</echo>
     <jar jarfile="${jdbc-jar}">
       <fileset dir="${builddir}">
         <include name="META-INF/services/java.sql.Driver" />
-        <include name="${jdbc-package}/**/*.class" />
-        <include name="${mcl-package}/**/*.class" />
-        <include name="${util-package}/FileTransferHandler.class" />
-      </fileset>
-    </jar>
-  </target>
-
-  <target name="jar_client" depends="compile_util,compile_client">
-    <jar jarfile="${jardir}/monetdb-clients.jar">
-      <fileset dir="${builddir}">
-        <include name="${client-package}/**/*.class" />
-        <include name="${util-package}/**/*.class" />
-      </fileset>
-    </jar>
-  </target>
-
-  <!-- a convenience jar of jdbcclient command line program plus JDBC driver -->
-  <target name="jar_jdbcclient"
-    depends="compile_mcl,compile_jdbc,compile_util,compile_client"
-    unless="uptodate.jdbcclient-jar">
-    <echo message="Building jdbcclient + JDBC driver convenience jar" />
-    <jar jarfile="${jdbcclient-jar}">
-      <fileset dir="${builddir}">
         <include name="${client-package}/**/*.class" />
         <include name="${util-package}/**/*.class" />
         <include name="META-INF/services/java.sql.Driver" />
@@ -126,6 +102,13 @@ Copyright 1997 - July 2008 CWI.
         <attribute name="Main-Class" value="org.monetdb.client.JdbcClient" />
       </manifest>
     </jar>
+  </target>
+
+  <!-- JdbcClient is now included in the JDBC jar but we also provide it by its old name for backward compatibility -->
+  <target name="jar_jdbcclient"
+    depends="jar_jdbc">
+    <echo message="Copying ${jdbc-jar} to ${jdbcclient-jar}" />
+    <copy file="${jdbc-jar}" tofile="${jdbcclient-jar}" />
   </target>
 
   <!-- a convenience jar of MeroControl plus the JMonetDB utility -->
@@ -295,15 +278,11 @@ Copyright 1997 - July 2008 CWI.
 
     <uptodate targetfile="${jdbc-jar}" property="uptodate.jdbc-jar">
       <srcfiles dir="${srcdir}">
-        <include name="${jdbc-package}/**/*.java" />
-        <include name="${mcl-package}/**/*.java" />
-      </srcfiles>
-    </uptodate>
-    <uptodate targetfile="${jdbcclient-jar}" property="uptodate.jdbcclient-jar">
-      <srcfiles dir="${srcdir}">
-        <include name="${client-package}/**/*.java" />
-        <include name="${jdbc-package}/**/*.java" />
-        <include name="${mcl-package}/**/*.java" />
+        <include name="${client-package}/**/*.class" />
+        <include name="${util-package}/**/*.class" />
+        <include name="META-INF/services/java.sql.Driver" />
+        <include name="${jdbc-package}/**/*.class" />
+        <include name="${mcl-package}/**/*.class" />
       </srcfiles>
     </uptodate>
     <uptodate targetfile="${jmonetdb-jar}" property="uptodate.jmonetdb-jar">
