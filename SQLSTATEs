@@ -2,7 +2,7 @@ Following SQLStates are MonetDB JDBC driver specific:
 01M02 redirect warning
 01M03 illegal arguments (invalid call of internal function)
 01M07 unrecognised clientinfo property
-01M08 read-only conection mode not supported
+01M08 read-only connection mode not supported
 01M09 transaction mode not supported
 01M10 unexpected server output
 01M11 server-client autocommit state mismatch

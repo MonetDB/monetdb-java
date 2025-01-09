@@ -182,7 +182,7 @@ public final class MapiSocket {
 	/**
 	 * Sets whether MCL redirections should be followed or not.  If set
 	 * to false, an MCLException will be thrown when a redirect is
-	 * encountered during connect.  The default bahaviour is to
+	 * encountered during connect.  The default behavior is to
 	 * automatically follow redirects.
 	 *
 	 * @param r whether to follow redirects (true) or not (false)

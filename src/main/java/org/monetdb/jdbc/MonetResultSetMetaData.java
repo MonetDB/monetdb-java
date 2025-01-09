@@ -368,7 +368,7 @@ final class MonetResultSetMetaData
 	 */
 	@Override
 	public boolean isSigned(final int column) throws SQLException {
-		// we can hardcode this, based on the colum type
+		// we can hardcode this, based on the column type
 		switch (getColumnType(column)) {
 			case Types.TINYINT:
 			case Types.SMALLINT:

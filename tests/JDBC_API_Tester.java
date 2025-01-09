@@ -3168,7 +3168,7 @@ public final class JDBC_API_Tester {
 	private void Test_PStimezone() {
 		sb.setLength(0);	// clear the output log buffer
 
-		// make sure this test is reproducable regardless timezone
+		// make sure this test is reproducible regardless timezone
 		// setting, by overriding the VM's default
 		// we have to make sure that one doesn't have daylight
 		// savings corrections
@@ -4827,7 +4827,7 @@ public final class JDBC_API_Tester {
 			stmt = con.createStatement();
 			sb.append("1. more results?...");
 			if (stmt.getMoreResults() != false || stmt.getUpdateCount() != -1)
-				sb.append("more results on an unitialised Statement, how can that be?\n");
+				sb.append("more results on an uninitialized Statement, how can that be?\n");
 			sb.append(" nope :)\n");
 
 			sb.append("2. SELECT 1...");
@@ -6723,7 +6723,7 @@ public final class JDBC_API_Tester {
 	private void testTimeout_3357(Statement st, int secs) throws SQLException {
 		sb.append("setQueryTimeout = ").append(secs).append(". ");
 		st.setQueryTimeout(secs);
-		// as the call to set the timeout is delayed till a statement is executed, issue a select statment
+		// as the call to set the timeout is delayed till a statement is executed, issue a select statement
 		ResultSet rs = st.executeQuery("SELECT " + secs);
 		if (rs != null)
 			rs.close();

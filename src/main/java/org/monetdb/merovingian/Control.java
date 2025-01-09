@@ -87,7 +87,7 @@ public class Control {
 	/**
 	 * Instructs to write a MCL protocol debug log to the given file.
 	 * This affects any newly performed command, and can be changed
-	 * inbetween commands.  Passing null to this method disables the
+	 * in between commands.  Passing null to this method disables the
 	 * debug log.
 	 *
 	 * @param filename the filename to write debug information to, or null

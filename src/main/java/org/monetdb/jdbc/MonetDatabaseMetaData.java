@@ -1290,7 +1290,7 @@ public final class MonetDatabaseMetaData
 
 	/**
 	 * Can statements remain open across commits?  They may, but
-	 * this driver cannot guarentee that.  In further reflection.
+	 * this driver cannot guarantee that.  In further reflection.
 	 * we are taking a Statement object here, so the answer is
 	 * yes, since the Statement is only a vehicle to execute some SQL
 	 *
@@ -1303,7 +1303,7 @@ public final class MonetDatabaseMetaData
 
 	/**
 	 * Can statements remain open across rollbacks?  They may, but
-	 * this driver cannot guarentee that.  In further contemplation,
+	 * this driver cannot guarantee that.  In further contemplation,
 	 * we are taking a Statement object here, so the answer is yes again.
 	 *
 	 * @return true if they always remain open; false otherwise
@@ -1334,7 +1334,7 @@ public final class MonetDatabaseMetaData
 	}
 
 	/**
-	 * Whats the limit on column name length.
+	 * What's the limit on column name length.
 	 * I take some safety here, but it's just a varchar in MonetDB
 	 *
 	 * @return the maximum column name length
@@ -1543,7 +1543,7 @@ public final class MonetDatabaseMetaData
 
 	/**
 	 * What is the database's default transaction isolation level?
-	 * We only see commited data, nonrepeatable reads and phantom
+	 * We only see committed data, nonrepeatable reads and phantom
 	 * reads can occur.
 	 *
 	 * @return the default isolation level
@@ -2208,7 +2208,7 @@ public final class MonetDatabaseMetaData
 	 * <P>Only privileges matching the column name criteria are
 	 * returned.  They are ordered by COLUMN_NAME and PRIVILEGE.
 	 *
-	 * <P>Each privilige description has the following columns:
+	 * <P>Each privilege description has the following columns:
 	 *	<OL>
 	 *	<LI><B>TABLE_CAT</B> String =&gt; table catalog (may be null)
 	 *	<LI><B>TABLE_SCHEM</B> String =&gt; table schema (may be null)
@@ -2217,7 +2217,7 @@ public final class MonetDatabaseMetaData
 	 *	<LI><B>GRANTOR</B> =&gt; grantor of access (may be null)
 	 *	<LI><B>GRANTEE</B> String =&gt; grantee of access
 	 *	<LI><B>PRIVILEGE</B> String =&gt; name of access (SELECT,
-	 *		INSERT, UPDATE, REFRENCES, ...)
+	 *		INSERT, UPDATE, REFERENCES, ...)
 	 *	<LI><B>IS_GRANTABLE</B> String =&gt; "YES" if grantee is permitted
 	 *		to grant to others; "NO" if not; null if unknown
 	 *	</OL>
@@ -2315,7 +2315,7 @@ public final class MonetDatabaseMetaData
 	 *	<LI><B>GRANTOR</B> =&gt; grantor of access (may be null)
 	 *	<LI><B>GRANTEE</B> String =&gt; grantee of access
 	 *	<LI><B>PRIVILEGE</B> String =&gt; name of access (SELECT,
-	 *		INSERT, UPDATE, REFRENCES, ...)
+	 *		INSERT, UPDATE, REFERENCES, ...)
 	 *	<LI><B>IS_GRANTABLE</B> String =&gt; "YES" if grantee is permitted
 	 *		to grant to others; "NO" if not; null if unknown
 	 *	</OL>
@@ -3145,7 +3145,7 @@ public final class MonetDatabaseMetaData
 	 *	<LI><B>TYPE</B> short =&gt; index type:
 	 *		<UL>
 	 *		<LI> tableIndexStatistic - this identifies table statistics that are
-	 *			 returned in conjuction with a table's index descriptions
+	 *			 returned in conjunction with a table's index descriptions
 	 *		<LI> tableIndexClustered - this is a clustered index
 	 *		<LI> tableIndexHashed - this is a hashed index
 	 *		<LI> tableIndexOther - this is some other style of index
@@ -3883,7 +3883,7 @@ public final class MonetDatabaseMetaData
 
 	/**
 	 * Retrieves whether a SQLException while autoCommit is true
-	 * inidcates that all open ResultSets are closed, even ones that are
+	 * indicates that all open ResultSets are closed, even ones that are
 	 * holdable. When a SQLException occurs while autocommit is true, it
 	 * is vendor specific whether the JDBC driver responds with a commit
 	 * operation, a rollback operation, or by doing neither a commit nor

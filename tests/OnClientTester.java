@@ -662,7 +662,7 @@ public final class OnClientTester {
 						(int)sub.charAt(0), (int)sub.charAt(1), (int)sub.charAt(2)));
 			}
 		}
-		// only to show some succesful output if the above succeeds
+		// only to show some successful output if the above succeeds
 		assertEq("Every 3-byte normalized chunk", "|\\r\\n", "|\\r\\n");
 
 		exitTest();

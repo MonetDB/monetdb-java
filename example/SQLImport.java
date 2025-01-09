@@ -22,7 +22,7 @@ import java.io.*;
  * continues reading and executing lines.
  * A very lousy way of implementing options is used to somewhat configure the
  * behaviour of the program in order to be a bit more verbose or commit after
- * each (sucessfully) executed line.
+ * each (successfully) executed line.
  *
  * The program uses a debuglog in which the exact conversation between the
  * JDBC driver and Mserver is reported. The log file is put in the current

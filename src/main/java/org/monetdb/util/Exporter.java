@@ -89,7 +89,7 @@ public abstract class Exporter {
 	 * The "query" column value contains the original SQL view creation text or the ON clause text when it is a REMOTE TABLE
 	 *
 	 * @param con the JDBC connection, may not be null
-	 * @param schema the schem name, may not be null or empty
+	 * @param schema the schema name, may not be null or empty
 	 * @param name the view or table name, may not be null or empty
 	 * @return the value of the "query" field for the specified view/table name and schema. It can return null.
 	 */

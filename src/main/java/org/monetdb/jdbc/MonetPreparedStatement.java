@@ -144,7 +144,7 @@ public class MonetPreparedStatement
 		 * parameterized query. This result set however needs to be
 		 * read in one DataBlockResponse due to protocol limitations.
 		 * This requires the fetchSize needs to be set large enough
-		 * to retrieve all rows in one go, else we get eror:
+		 * to retrieve all rows in one go, else we get error:
 		 * <pre>resultBlocks[1] should have been fetched by now</pre>
 		 * See also: https://github.com/MonetDB/MonetDB/issues/7337
 		 */
@@ -1123,7 +1123,7 @@ public class MonetPreparedStatement
 	}
 
 	/**
-	 * Sets the designated paramter to the given String object. The
+	 * Sets the designated parameter to the given String object. The
 	 * driver converts this to a SQL NCHAR or NVARCHAR or LONGNVARCHAR
 	 * value (depending on the argument's size relative to the driver's
 	 * limits on NVARCHAR values) when it sends it to the database.

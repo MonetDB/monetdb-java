@@ -1173,7 +1173,7 @@ public class MonetResultSet
 			return Integer.parseInt(val);
 		} catch (NumberFormatException e) {
 			// The oid datatype values (as string) have a  @0  suffix in the string value.
-			// To allow succesful parsing and conversion to int, we need to remove the suffix first
+			// To allow successful parsing and conversion to int, we need to remove the suffix first
 			if ("oid".equals(types[columnIndex - 1])) {
 				if (val.endsWith("@0")) {
 					try {
@@ -1224,7 +1224,7 @@ public class MonetResultSet
 			return Long.parseLong(val);
 		} catch (NumberFormatException e) {
 			// The oid datatype values (as string) have a  @0  suffix in the string value.
-			// To allow succesful parsing and conversion to long, we need to remove the suffix first
+			// To allow successful parsing and conversion to long, we need to remove the suffix first
 			if ("oid".equals(types[columnIndex - 1])) {
 				if (val.endsWith("@0")) {
 					try {
@@ -1997,7 +1997,7 @@ public class MonetResultSet
 	 * Helper method which parses the date/time value for columns of type
 	 * TIME, DATE and TIMESTAMP.  For the types CHAR, VARCHAR and
 	 * LONGVARCHAR an attempt is made to parse the date according to the
-	 * given type.  The given Calender object is filled with the parsed
+	 * given type.  The given Calendar object is filled with the parsed
 	 * data.  Optional fractional seconds (nanos) are returned by this
 	 * method.  If the underlying type of the column is none of the
 	 * mentioned six, January 1st 1970 0:00:00 GMT is returned.<br />

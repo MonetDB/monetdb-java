@@ -42,7 +42,7 @@ public final class StartOfHeaderParser {
 	public final static int Q_UPDATE  = '2';
 	/** A response to a schema update */
 	public final static int Q_SCHEMA  = '3';
-	/** A response to a transation statement (start, rollback, abort,
+	/** A response to a transaction statement (start, rollback, abort,
 	 * commit) */
 	public final static int Q_TRANS   = '4';
 	/** A tabular response in response to a PREPARE statement containing

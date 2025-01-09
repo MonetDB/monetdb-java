@@ -126,7 +126,7 @@
   We also provide a utility class:
     public class org.monetdb.util.FileTransferHandler
   which provides an example implementation of the MonetConnection.UploadHandler
-  and MonetConnection.DownloadHandler interfaces useable for reading files
+  and MonetConnection.DownloadHandler interfaces usable for reading files
   from or writing files to a local file system.
 
 * Mon Jun 14 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
@@ -140,7 +140,7 @@
   each column of the ResultSet. Now these metadata queries are combined
   into one query fetching this meta data for up to 50 columns in one query.
   This reduces the number of queries sent to the server significantly.
-  This is noticable for instance when using generic JDBC query tools
+  This is noticeable for instance when using generic JDBC query tools
   such as SQuirreL, DBeaver, which now respond much faster.
 
 * Wed Mar  3 2021 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
@@ -181,7 +181,7 @@
   functionality to validate the integrity of the system tables (\vsci) or
   to validate the integrity of data in tables of a specific schema (\vsi xyz)
   based on defined declarative constraints (pkey, fkey, not null, etc.).
-  This will be usefull to find and report inconsistencies in your database.
+  This will be useful to find and report inconsistencies in your database.
   This functionality is a beta release. Please let us know if you
   encounter any issues running it. See below for more information.
 
@@ -257,7 +257,7 @@
   - Column NOT NULL constraint
   - Varchar(n) max length constraint
   - Idem for char(n), clob(n), blob(n), json(n) and url(n).
-  It can be usefull to run \vsci before and after an upgrade of MonetDB server.
+  It can be useful to run \vsci before and after an upgrade of MonetDB server.
   Use \vsi my_schema  to validate data in all tables of a specific schema.
   Use \vdbi  to validate integrity of data in all user schemas in
   the database. Note: this can take a while, depending on your number
@@ -913,7 +913,7 @@
 
 * Tue Nov  9 2010 Fabian Groffen <fabian@cwi.nl> - 1.40.1-20101110
 - Fix SQL syntax of inserting BLOB code, using setBytes()
-- Added propery 'treat_blob_as_binary' to simulate BINARY types based on
+- Added property 'treat_blob_as_binary' to simulate BINARY types based on
   BLOBs for applications, (e.g. Hibernate-based) that rely on BINARY's
   byte array mapping
 - Added code to handle BINARY types

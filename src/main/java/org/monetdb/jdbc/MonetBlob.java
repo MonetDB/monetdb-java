@@ -231,7 +231,7 @@ public final class MonetBlob implements Blob {
 	 * pos. The bytes written to the stream will overwrite the existing
 	 * bytes in the Blob object starting at the position pos. If the end
 	 * of the Blob value is reached while writing to the stream, then
-	 * the length of the Blob value will be increased to accomodate the
+	 * the length of the Blob value will be increased to accommodate the
 	 * extra bytes.
 	 *
 	 * @param pos the position in the BLOB value at which to start

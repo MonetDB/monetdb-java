@@ -1652,9 +1652,9 @@ public class MonetConnection
 	}
 
 	/**
-	 * Get the currently registerered {@link UploadHandler}, or null
+	 * Get the currently registered {@link UploadHandler}, or null
 	 *
-	 * @return the currently registerered UploadHandler, or null
+	 * @return the currently registered UploadHandler, or null
 	 */
 	public UploadHandler getUploadHandler() {
 		return uploadHandler;
@@ -1670,9 +1670,9 @@ public class MonetConnection
 	}
 
 	/**
-	 * Get the currently registerered {@link DownloadHandler} handler, or null
+	 * Get the currently registered {@link DownloadHandler} handler, or null
 	 *
-	 * @return the currently registerered DownloadHandler handler, or null
+	 * @return the currently registered DownloadHandler handler, or null
 	 */
 	public DownloadHandler getDownloadHandler() {
 		return downloadHandler;
@@ -2298,7 +2298,7 @@ public class MonetConnection
 
 		/** The Connection that we should use when requesting a new block */
 		private final MonetConnection.ResponseList parent;
-		/** Whether the fetchSize was explitly set by the user */
+		/** Whether the fetchSize was explicitly set by the user */
 		private final boolean cacheSizeSetExplicitly;
 		/** Whether we should send an Xclose command to the server
 		 *  if we close this Response */
@@ -2531,7 +2531,7 @@ public class MonetConnection
 		 * needs to be consistent with regard to its internal data.
 		 *
 		 * @throws SQLException if the data currently in this Response is not
-		 *         sufficient to be consistant
+		 *         sufficient to be consistent
 		 */
 		/* MvD: disabled not used/needed code
 		@Override
@@ -2936,7 +2936,7 @@ public class MonetConnection
 	 * The SchemaResponse represents an schema modification response.
 	 * It is issued on statements like CREATE, DROP or ALTER TABLE.
 	 * This response keeps a field that represents the success state, as
-	 * defined by JDBC, which is currently in MonetDB's case alwats
+	 * defined by JDBC, which is currently in MonetDB's case always
 	 * SUCCESS_NO_INFO.  Note that this state is not sent by the
 	 * server.<br />
 	 * <samp>&amp;3</samp>

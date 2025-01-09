@@ -299,7 +299,7 @@ public final class TLSTester {
 				if (e.getMessage().startsWith("Sorry, this is not a real MonetDB instance")) {
 					// it looks like a failure but this is actually our success scenario
 					// because this is what the TLS Tester does when the connection succeeds.
-					endVerbose("succesful MAPI handshake, as expected");
+					endVerbose("successful MAPI handshake, as expected");
 					return;
 				}
 				// other exceptions ARE errors and should be reported.

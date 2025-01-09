@@ -211,7 +211,7 @@ public final class MonetClob implements Clob {
 	 * Clob object represents, starting at position pos. Characters written to the stream
 	 * will overwrite the existing characters in the Clob object starting at the position pos.
 	 * If the end of the Clob value is reached while writing characters to the stream,
-	 * then the length of the Clob value will be increased to accomodate the extra characters.
+	 * then the length of the Clob value will be increased to accommodate the extra characters.
 	 *
 	 * Note: If the value specified for pos is greater then the length+1 of the CLOB value
 	 * then the behavior is undefined. Some JDBC drivers may throw a SQLException while
@@ -232,7 +232,7 @@ public final class MonetClob implements Clob {
 	 * this Clob object represents, starting at position pos. Characters written to the stream
 	 * will overwrite the existing characters in the Clob object starting at the position pos.
 	 * If the end of the Clob value is reached while writing characters to the stream,
-	 * then the length of the Clob value will be increased to accomodate the extra characters.
+	 * then the length of the Clob value will be increased to accommodate the extra characters.
 	 *
 	 * Note: If the value specified for pos is greater then the length+1 of the CLOB value
 	 * then the behavior is undefined. Some JDBC drivers may throw a SQLException while
@@ -252,7 +252,7 @@ public final class MonetClob implements Clob {
 	 * Writes the given Java String to the CLOB value that this Clob object designates at the position pos.
 	 * The string will overwrite the existing characters in the Clob object starting at the position pos.
 	 * If the end of the Clob value is reached while writing the given string,
-	 * then the length of the Clob value will be increased to accomodate the extra characters.
+	 * then the length of the Clob value will be increased to accommodate the extra characters.
 	 *
 	 * @param pos the position at which to start writing to the CLOB value that this Clob object represents
 	 * @param str the string to be written to the CLOB value that this Clob designates
@@ -270,7 +270,7 @@ public final class MonetClob implements Clob {
 	 * Writes len characters of str, starting at character offset, to the CLOB value that this Clob represents.
 	 * The string will overwrite the existing characters in the Clob object starting at the position pos.
 	 * If the end of the Clob value is reached while writing the given string,
-	 * then the length of the Clob value will be increased to accomodate the extra characters.
+	 * then the length of the Clob value will be increased to accommodate the extra characters.
 	 *
 	 * @param pos the position at which to start writing to this CLOB object
 	 * @param str the string to be written to the CLOB value that this Clob object represents

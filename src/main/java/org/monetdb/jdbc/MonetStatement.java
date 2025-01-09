@@ -134,7 +134,7 @@ public class MonetStatement
 	//== methods of interface Statement
 
 	/**
-	 * Adds the given SQL command to the current list of commmands for this
+	 * Adds the given SQL command to the current list of commands for this
 	 * Statement object.  The commands in this list can be executed as a
 	 * batch by calling the method executeBatch.
 	 *
@@ -358,7 +358,7 @@ public class MonetStatement
 	 * getResultSet or getUpdateCount to retrieve the result, and
 	 * getMoreResults to move to any subsequent result(s).
 	 *
-	 * MonetDB only supports returing the generated key for one column,
+	 * MonetDB only supports returning the generated key for one column,
 	 * which will be the first column that has a serial.  Hence, this
 	 * method cannot work as required and the driver will fall back to
 	 * executing with request to the database to return the generated
@@ -402,7 +402,7 @@ public class MonetStatement
 	 * getResultSet or getUpdateCount to retrieve the result, and
 	 * getMoreResults to move to any subsequent result(s).
 	 *
-	 * MonetDB only supports returing the generated key for one column,
+	 * MonetDB only supports returning the generated key for one column,
 	 * which will be the first column that has a serial.  Hence, this
 	 * method cannot work as required and the driver will fall back to
 	 * executing with request to the database to return the generated
@@ -544,7 +544,7 @@ public class MonetStatement
 	 * available for retrieval. The driver will ignore the array if the
 	 * SQL statement is not an INSERT statement.
 	 *
-	 * MonetDB only supports returing the generated key for one column,
+	 * MonetDB only supports returning the generated key for one column,
 	 * which will be the first column that has a serial.  Hence, this
 	 * method cannot work as required and the driver will fall back to
 	 * executing with request to the database to return the generated
@@ -575,7 +575,7 @@ public class MonetStatement
 	 * available for retrieval. The driver will ignore the array if the
 	 * SQL statement is not an INSERT statement.
 	 *
-	 * MonetDB only supports returing the generated key for one column,
+	 * MonetDB only supports returning the generated key for one column,
 	 * which will be the first column that has a serial.  Hence, this
 	 * method cannot work as required and the driver will fall back to
 	 * executing with request to the database to return the generated
@@ -748,7 +748,7 @@ public class MonetStatement
 	 */
 	@Override
 	public boolean getMoreResults(final int current) throws SQLException {
-		// protect against people calling this on an unitialised state
+		// protect against people calling this on an uninitialized state
 		if (lastResponseList == null) {
 			header = null;
 			return false;
@@ -1052,7 +1052,7 @@ public class MonetStatement
 	/**
 	 * Requests that a Statement be pooled or not pooled. The value
 	 * specified is a hint to the statement pool implementation
-	 * indicating whether the applicaiton wants the statement to be
+	 * indicating whether the application wants the statement to be
 	 * pooled. It is up to the statement pool manager as to whether the
 	 * hint is used.
 	 *
@@ -1413,7 +1413,7 @@ public class MonetStatement
 	 * Note: This method cannot be called on a PreparedStatement or CallableStatement.
 	 * The default implementation will throw SQLFeatureNotSupportedException
 	 *
-	 * MonetDB only supports returing the generated key for one column,
+	 * MonetDB only supports returning the generated key for one column,
 	 * which will be the first column that has a serial.  Hence, this
 	 * method cannot work as required and the driver will fall back to
 	 * executing with request to the database to return the generated
@@ -1450,7 +1450,7 @@ public class MonetStatement
 	 * Note: This method cannot be called on a PreparedStatement or CallableStatement.
 	 * The default implementation will throw SQLFeatureNotSupportedException
 	 *
-	 * MonetDB only supports returing the generated key for one column,
+	 * MonetDB only supports returning the generated key for one column,
 	 * which will be the first column that has a serial.  Hence, this
 	 * method cannot work as required and the driver will fall back to
 	 * executing with request to the database to return the generated

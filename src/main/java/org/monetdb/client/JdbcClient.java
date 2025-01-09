@@ -108,7 +108,7 @@ public final class JdbcClient {
 	 * -e --echo     Also outputs the contents of the input file, if any.
 	 * -q --quiet    Suppress printing the welcome header.
 	 * -D --dump     Dumps the given table(s), or the complete database if none given.
-	 * --csvdir      The directory path where csv data files wil be read from or
+	 * --csvdir      The directory path where csv data files will be read from or
 	 *               written to when COPY ... ON CLIENT commands are executed.
 	 * -Xoutput      The output mode when dumping.  Default is sql, xml may be used for
 	 *               an experimental XML output.
@@ -1072,7 +1072,7 @@ public final class JdbcClient {
 	 * @param query the query to execute
 	 * @param stmt the Statement to execute the query on
 	 * @param out the PrintWriter to write to
-	 * @param showTiming flag to specify if timing information nees to be printed
+	 * @param showTiming flag to specify if timing information needs to be printed
 	 * @throws SQLException if a database related error occurs
 	 */
 	private static void executeQuery(final String query,
@@ -1155,7 +1155,7 @@ public final class JdbcClient {
 		// if there were warnings for this connection show them!
 		warn = con.getWarnings();
 		while (warn != null) {
-			// suppress warning when issueing a "set schema xyz;" command
+			// suppress warning when issuing a "set schema xyz;" command
 //			if ( !(warn.getMessage()).equals("Server enabled auto commit mode while local state already was auto commit.") )
 				System.err.println("Connection warning: " + warn.getMessage());
 			warn = warn.getNextWarning();
