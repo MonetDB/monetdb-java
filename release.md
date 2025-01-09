@@ -89,36 +89,6 @@ The old driver class (nl.cwi.monetdb.jdbc.MonetDriver) has been deprecated
 since 12 Nov 2020 and has been removed in release 3.4 (monetdb-jdbc-3.4.jre8.jar).
 
 
-ON CLIENT support
------------------
-
-Since release 3.2 (monetdb-jdbc-3.2.jre8.jar), the MonetDB JDBC driver has
-support for the ON CLIENT clause of the COPY statement. To use
-this functionality you must register handlers for upload and download of data.
-The MonetConnection class has been extended with 2 methods:
-
-* public void setUploadHandler(UploadHandler uploadHandler)
-* public void setDownloadHandler(DownloadHandler downloadHandler)
-
-The API has been extended with some further interfaces and utility classes:
-* public interface org.monetdb.jdbc.MonetConnection.UploadHandler
-* public interface org.monetdb.jdbc.MonetConnection.DownloadHandler
-* public static class org.monetdb.jdbc.MonetConnection.Upload
-* public static class org.monetdb.jdbc.MonetConnection.Download
-* public class org.monetdb.util.FileTransferHandler
-  which implements the UploadHandler and DownloadHandler interfaces.
-
-See file  onclient.txt  for more information on how to use these from Java.
-
-The JdbcClient application has also been extended to support COPY ...
-ON CLIENT functionality. However for security reasons you must provide an
-explicit new startup argument
-  --csvdir "/path/to/csvdatafiles"
-or on MS Windows
-  --csvdir "C:\\path\\to\\csvdatafiles"
-in order to allow the JdbcClient to access local files.
-
-
 Notes and tips
 --------------
 
