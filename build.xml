@@ -40,9 +40,9 @@ Copyright 1997 - July 2008 CWI.
   -->
 
   <property name="jvm.version" value="8" />
-  <property name="jre.version" value="jre8" />
+  <property name="jre.version" value="jre${jvm.version}" />
   <property name="javac.flags" value="-source 8" />
-  <property name="javac.flags" value="-target 8" />
+  <property name="javac.flags" value="-target ${jvm.version}" />
   <property name="javac.flags" value="-profile compact2" />
   <property name="javac.flags" value="-Xlint" />
 

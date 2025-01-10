@@ -4,16 +4,15 @@ all: src/main/java/org/monetdb/jdbc/MonetVersion.java.in
 
 jre17jars: src/main/java/org/monetdb/jdbc/MonetVersion.java
 	rm -rf build
-	ant -f build_jre17.xml distjdbc
+	ant -f build.xml -Djvm.version=17 distjdbc
 	rm -rf build
 
 jre21jars: src/main/java/org/monetdb/jdbc/MonetVersion.java
 	rm -rf build
-	ant -f build_jre21.xml distjdbc
+	ant -f build.xml -Djvm.version=21 distjdbc
 	rm -rf build
 
 test: all
-	echo banana
 	cd tests; ant  -f build.xml test
 
 testsjar:
