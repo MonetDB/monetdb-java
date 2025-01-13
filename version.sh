@@ -85,14 +85,22 @@ for param in $* ; do
 	esac
 done
 
-echo "Current version: ${CUR_MAJOR}.${CUR_MINOR} (${CUR_SUFFIX})"
-echo "New version:     ${NEW_MAJOR}.${NEW_MINOR} (${NEW_SUFFIX})"
+if [[ -n $CUR_SUFFIX ]]; then
+    CUR_SUFFIX_p=" (${CUR_SUFFIX})"
+    ESC_SUFFIX_p=" (${ESC_SUFFIX})"
+fi
+if [[ -n $NEW_SUFFIX ]]; then
+    NEW_SUFFIX_p=" (${NEW_SUFFIX})"
+fi
+
+echo "Current version: ${CUR_MAJOR}.${CUR_MINOR}${CUR_SUFFIX_p}"
+echo "New version:     ${NEW_MAJOR}.${NEW_MINOR}${NEW_SUFFIX_p}"
 
 diff="diff -Naur"
 
 file="release.txt"
 sed \
-	-e "s|version ${ESC_MAJOR}\.${ESC_MINOR} (${ESC_SUFFIX}|version ${NEW_MAJOR}.${NEW_MINOR} \(${NEW_SUFFIX}|g" \
+	-e "s|version ${ESC_MAJOR}\.${ESC_MINOR}${ESC_SUFFIX_p}|version ${NEW_MAJOR}.${NEW_MINOR}${NEW_SUFFIX_p}|g" \
 	-e "s|${TYPE}-${ESC_MAJOR}\.${ESC_MINOR}|${TYPE}-${NEW_MAJOR}.${NEW_MINOR}|g" \
 	-e "s|Release date: 20[0-9][0-9]-[01][0-9]-[0-3][0-9]|Release date: `date +%F`|" \
 	${file} | ${diff} ${file} - | ${patch}
