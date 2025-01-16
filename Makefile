@@ -13,7 +13,7 @@ jre21jars: src/main/java/org/monetdb/jdbc/MonetVersion.java
 	rm -rf build
 
 test: all
-	cd tests; ant  -f build.xml test
+	cd tests; ant -f build.xml test
 
 testsjar:
 	cd tests; ant -f build.xml jar_jdbctests
