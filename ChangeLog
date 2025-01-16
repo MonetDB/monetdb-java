@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Jan 16 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Compiled and released new jar files: monetdb-jdbc-12.0.jre8.jar and
+  jdbcclient.jre8.jar
+
 * Wed Jan  8 2025 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
 - The JDBC jar now includes JdbcClient. For backward compatibility the jar
   is still also available as jdbcclient.jreX.jar.
@@ -15,6 +19,7 @@
 - Implemented Connection#set/getClientInfo, and send sensible default info
   at connect time. This can be controlled with the properties 'client_info=on/off',
   'client_application=ApplicationName' and 'client_remark=Other Useful Info'.
+  Note setting client info requires MonetDB server 11.51 (Aug2024) or higher.
 
 * Thu Apr  4 2024 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected ResultSetMetaData methods getColumnTypeName(), getPrecision(),
@@ -81,8 +86,7 @@
 * Wed Jul  5 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected implementation of Connection methods getClientInfo() and
   setClientInfo(). They used to get/set Connection properties instead of
-  Client Info properties, which was incorrect. MonetDB does not support
-  Client Info properties.
+  Client Info properties, which was incorrect.
 
 * Thu Jun 22 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected DatabaseMetaData method getClientProperties().
