@@ -2,6 +2,8 @@
 # This file is updated with Maddlog
 
 * Thu Jan 16 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- The release version number has been bumped to 12.0 to avoid confusion
+  with historic 11.x versions.
 - Compiled and released new jar files: monetdb-jdbc-12.0.jre8.jar and
   jdbcclient.jre8.jar
 
