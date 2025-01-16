@@ -11,7 +11,7 @@
 # Copyright 1997 - July 2008 CWI.
 
 if [[ -z $1 ]] ; then
-	echo "Usage: $0 [-w] jdbc <(major|minor|suffix)=newversion> [...]"
+	echo "Usage: $0 [-w] <(major|minor)=newversion> [...]"
 	echo "where -w activates actual write of changes"
 	exit -1
 fi
@@ -36,29 +36,15 @@ case $1 in
 		shift
 		;;
 esac
-case $1 in
-	jdbc)
-		TYPE=JDBC
-		FILES="monetdb-jdbc-XXX.jar"
-		;;
-	*)
-		echo "invalid type: $1"
-		exit -1
-		;;
-esac
-shift
 
-CUR_MAJOR=$(eval "get_value '${TYPE}_MAJOR'")
-CUR_MINOR=$(eval "get_value '${TYPE}_MINOR'")
-CUR_SUFFIX=$(eval "get_value '${TYPE}_VER_SUFFIX'")
+CUR_MAJOR=$(eval "get_value 'JDBC_MAJOR'")
+CUR_MINOR=$(eval "get_value 'JDBC_MINOR'")
 
 NEW_MAJOR=${CUR_MAJOR}
 NEW_MINOR=${CUR_MINOR}
-NEW_SUFFIX=${CUR_SUFFIX}
 
 ESC_MAJOR=$(escape_value ${CUR_MAJOR})
 ESC_MINOR=$(escape_value ${CUR_MINOR})
-ESC_SUFFIX=$(escape_value ${CUR_SUFFIX})
 
 for param in $* ; do
 	arg=${param%%=*}
@@ -79,37 +65,25 @@ for param in $* ; do
 		fi
 		NEW_MINOR=${num}
 		;;
-	suffix)
-		NEW_SUFFIX=${val}
-		;;
 	esac
 done
 
-if [[ -n $CUR_SUFFIX ]]; then
-    CUR_SUFFIX_p=" (${CUR_SUFFIX})"
-    ESC_SUFFIX_p=" (${ESC_SUFFIX})"
-fi
-if [[ -n $NEW_SUFFIX ]]; then
-    NEW_SUFFIX_p=" (${NEW_SUFFIX})"
-fi
-
-echo "Current version: ${CUR_MAJOR}.${CUR_MINOR}${CUR_SUFFIX_p}"
-echo "New version:     ${NEW_MAJOR}.${NEW_MINOR}${NEW_SUFFIX_p}"
+echo "Current version: ${CUR_MAJOR}.${CUR_MINOR}"
+echo "New version:     ${NEW_MAJOR}.${NEW_MINOR}"
 
 diff="diff -Naur"
 
 file="release.txt"
 sed \
-	-e "s|version ${ESC_MAJOR}\.${ESC_MINOR}${ESC_SUFFIX_p}|version ${NEW_MAJOR}.${NEW_MINOR}${NEW_SUFFIX_p}|g" \
-	-e "s|${TYPE}-${ESC_MAJOR}\.${ESC_MINOR}|${TYPE}-${NEW_MAJOR}.${NEW_MINOR}|g" \
+	-e "s|version ${ESC_MAJOR}\.${ESC_MINOR}|version ${NEW_MAJOR}.${NEW_MINOR}|g" \
+	-e "s|JDBC-${ESC_MAJOR}\.${ESC_MINOR}|JDBC-${NEW_MAJOR}.${NEW_MINOR}|g" \
 	-e "s|Release date: 20[0-9][0-9]-[01][0-9]-[0-3][0-9]|Release date: `date +%F`|" \
 	${file} | ${diff} ${file} - | ${patch}
 
 file="build.properties"
 sed \
-	-e "s|${TYPE}_MAJOR=${ESC_MAJOR}|${TYPE}_MAJOR=${NEW_MAJOR}|g" \
-	-e "s|${TYPE}_MINOR=${ESC_MINOR}|${TYPE}_MINOR=${NEW_MINOR}|g" \
-	-e "s|${TYPE}_VER_SUFFIX=${ESC_SUFFIX}|${TYPE}_VER_SUFFIX=${NEW_SUFFIX}|g" \
+	-e "s|JDBC_MAJOR=${ESC_MAJOR}|JDBC_MAJOR=${NEW_MAJOR}|g" \
+	-e "s|JDBC_MINOR=${ESC_MINOR}|JDBC_MINOR=${NEW_MINOR}|g" \
 	${file} | ${diff} ${file} - | ${patch}
 
 file="pom.xml"

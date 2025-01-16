@@ -1,7 +1,7 @@
 RELEASE INFO
 ============
 
-MonetDB JDBC driver version 3.3 (Liberica)
+MonetDB JDBC driver version 3.3
 Release date: 2023-02-23
 
 The Java Database Connectivity (JDBC) API provides universal data access from
