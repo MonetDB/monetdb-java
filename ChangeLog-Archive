@@ -34,6 +34,18 @@
 - Improved DatabaseMetaData.getTypeInfo(). It now also returns the serial
   and bigserial data types and all 13 possible interval data types.
 
+* Fri Jan  5 2024 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Network connections can now be encrypted with TLS by using jdbc:monetdbs://..
+  instead of jdbc:monetdb://. The server is authenticated using the JVM's root
+  certificate pool unless cert= or certhash= properties are given.
+- The syntax of the JDBC URL's has been updated to match the monetdb:// and
+  monetdbs:// URL syntax introduced in MonetDB 11.51 (Aug2024), see
+  https://www.monetdb.org/documentation/user-guide/client-interfaces/monetdb-urls/.
+  This adds a number of properties that can be set in the URL but is otherwise
+  backward compatible except that percent sign are now used to escape other characters.
+  For example, the password '100%milk&cookies' can be passed as
+  password=100%25milk%26cookies.
+
 * Thu Dec 28 2023 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - In ResultSet.getObject(column, Class<T> type) and
   ResultSet.getObject(column, Map<String,Class<?>>) methods added support
