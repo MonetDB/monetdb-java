@@ -736,29 +736,10 @@ public final class JDBC_API_Tester {
 		sb.setLength(0);	// clear the output log buffer
 
 		try {
-			final Driver driver = DriverManager.getDriver(con_URL);
-			DriverPropertyInfo[] props = driver.getPropertyInfo(con_URL, null);
-			DriverPropertyInfo prop;
-			final String space = "  ";
-			for (int i = 0; i < props.length; i++) {
-				prop = props[i];
-				sb.append(i).append(space);
-				sb.append(prop.name).append(space);
-				sb.append(prop.required).append(space);
-				sb.append(prop.value).append(space);
-				sb.append(prop.description).append("\n");
-			}
+			listDriverProperties(con_URL);
 			// also test against monetdbs, this should make tls and cert required.
-			props = driver.getPropertyInfo("jdbc:monetdbs:", null);
 			sb.append("getPropertyInfo of jdbc:monetdbs:").append("\n");
-			for (int i = 0; i < props.length; i++) {
-				prop = props[i];
-				sb.append(i).append(space);
-				sb.append(prop.name).append(space);
-				sb.append(prop.required).append(space);
-				sb.append(prop.value).append(space);
-				sb.append(prop.description).append("\n");
-			}
+			listDriverProperties("jdbc:monetdbs:");
 		} catch (SQLException e) {
 			// this means we get what we expect
 			sb.append("failed to get Driver class: ").append(e.getMessage());
@@ -773,7 +754,7 @@ public final class JDBC_API_Tester {
 			"4  database  false    name of database to connect to\n" +
 			"5  autocommit  false  true  initial value of autocommit\n" +
 			"6  schema  false    initial schema\n" +
-			"7  timezone  false  60  client time zone as minutes east of UTC\n" +
+			"7  timezone  false  <tz>  client time zone as minutes east of UTC\n" +
 			"8  replysize  false  250  rows beyond this limit are retrieved on demand, <1 means unlimited\n" +
 			"9  debug  false  false  enable tracing of socket communication for debugging\n" +
 			"10  logfile  false    when debug is enabled its output will be written to this logfile\n" +
@@ -796,7 +777,7 @@ public final class JDBC_API_Tester {
 			"9  clientcert  false    path to TLS certs for 'clientkey', if not included there\n" +
 			"10  autocommit  false  true  initial value of autocommit\n" +
 			"11  schema  false    initial schema\n" +
-			"12  timezone  false  60  client time zone as minutes east of UTC\n" +
+			"12  timezone  false  <tz>  client time zone as minutes east of UTC\n" +
 			"13  replysize  false  250  rows beyond this limit are retrieved on demand, <1 means unlimited\n" +
 			"14  debug  false  false  enable tracing of socket communication for debugging\n" +
 			"15  logfile  false    when debug is enabled its output will be written to this logfile\n" +
@@ -806,6 +787,24 @@ public final class JDBC_API_Tester {
 			"19  client_info  false  true  whether to send ClientInfo when connecting\n" +
 			"20  client_application  false    application name to send in ClientInfo\n" +
 			"21  client_remark  false    any client remark to send in ClientInfo\n");
+	}
+
+	private void listDriverProperties(String url) throws SQLException {
+		final Driver driver = DriverManager.getDriver(url);
+		DriverPropertyInfo[] props = driver.getPropertyInfo(url, null);
+		for (int i = 0; i < props.length; i++) {
+			DriverPropertyInfo prop = props[i];
+			final String name = prop.name;
+			String value = prop.value;
+			if (name.equals("timezone"))
+				value = "<tz>";
+			sb.append(i).append("  ");
+			sb.append(name).append("  ");
+			sb.append(prop.required).append("  ");
+			sb.append(value).append("  ");
+			sb.append(prop.description).append("\n");
+		}
+
 	}
 
 	private void handleExecuteDDL(Statement stmt, String action, String objtype, String objname, String sql) {
