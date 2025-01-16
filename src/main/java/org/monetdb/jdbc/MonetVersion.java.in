@@ -27,5 +27,5 @@ final class MonetVersion {
 	/**
 	 * Full version string of MonetDB JDBC driver.
 	 */
-	public static String driverVersion = "@JDBC_MAJOR@.@JDBC_MINOR@ (@JDBC_VER_SUFFIX@)";
+	public static String driverVersion = "@JDBC_MAJOR@.@JDBC_MINOR@";
 }
