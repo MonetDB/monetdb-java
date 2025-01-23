@@ -1,6 +1,6 @@
 ## MonetDB-java
 
-This repository contains the java source code of the official `MonetDB JDBC driver`,
+This repository contains the Java source code of the official `MonetDB JDBC driver`,
 the `MonetDB JdbcClient program`, and some Java test and example programs.
 
 The master repository is: [hg monetdb-java](https://www.monetdb.org/hg/monetdb-java/file/tip).
@@ -9,7 +9,7 @@ A read-only copy is available on: [github monetdb-java](https://github.com/Monet
 
 
 These Java programs are designed to work only with the [MonetDB Database System](https://www.monetdb.org/).
-They support MonetDB servers from version Jul2015 (11.21) and higher.
+They support MonetDB servers from version 11.21 (Jul2015) and higher.
 However only the latest MonetDB server versions are tested actively.
 
 The `MonetDB JDBC driver` allows Java programs to connect to a MonetDB
@@ -83,7 +83,7 @@ This Source Code Form is subject to the terms of the Mozilla Public
 License, v. 2.0.  If a copy of the MPL was not distributed with this  
 file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-Copyright 2024 MonetDB Foundation;  
+Copyright 2024, 2025 MonetDB Foundation;  
 Copyright August 2008 - 2023 MonetDB B.V.;  
 Copyright 1997 - July 2008 CWI.
 
