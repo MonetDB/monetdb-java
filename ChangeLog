@@ -2,6 +2,9 @@
 # This file is updated with Maddlog
 
 * Wed Feb 12 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Fix a bug in DatabaseMetaData.getTables() where a provided string in the
+  array of table types argument would contain a single quote or back slash.
+  It was not escaped properly, resulting in an SQL syntax error.
 - Fix missing escaping of single back slashes in string data provided to
   PreparedStatement methods setString(), setClob(), setObject() and setURL().
 

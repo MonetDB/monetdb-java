@@ -1324,7 +1324,7 @@ public final class JDBC_API_Tester {
 			"char(1)	varchar(1024)	varchar(1024)	varchar(25)	varchar(1048576)	char(1)	char(1)	char(1)	char(1)	char(1)\n" +
 			"null	tmp	tlargechar	LOCAL TEMPORARY TABLE	null	null	null	null	null	null\n");
 
-			String badtabletypes[] = {null, "", null, ""};
+			String badtabletypes[] = {null, "", "'", "\\'", "\"", null, "bad", "%", "% %"};
 			compareResultSet(dbmd.getTables(null, "tmp", "tlargechar", badtabletypes), "getTables(null, tmp, tlargechar, badtabletypes)",
 			"Resultset with 10 columns\n" +
 			"TABLE_CAT	TABLE_SCHEM	TABLE_NAME	TABLE_TYPE	REMARKS	TYPE_CAT	TYPE_SCHEM	TYPE_NAME	SELF_REFERENCING_COL_NAME	REF_GENERATION\n" +

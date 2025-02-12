@@ -1956,7 +1956,7 @@ public final class MonetDatabaseMetaData
 					if (foundType) {
 						query.append(',');
 					}
-					query.append('\'').append(tabletype).append('\'');
+					query.append(MonetWrapper.sq(tabletype));
 					foundType = true;
 				}
 			}
