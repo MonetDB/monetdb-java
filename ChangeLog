@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Feb 12 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Fix missing escaping of single back slashes in string data provided to
+  PreparedStatement methods setString(), setClob(), setObject() and setURL().
+
 * Thu Jan 16 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - The release version number has been bumped to 12.0 to avoid confusion
   with historic 11.x versions.

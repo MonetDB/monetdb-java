@@ -108,11 +108,11 @@ public class MonetWrapper implements java.sql.Wrapper {
 	 */
 	public static final String dq(final String in) {
 		String ret = in;
-		if (ret.contains("\\\\"))
-			// all double slashes in input need to be escaped.
+		if (ret.indexOf('\\') >= 0)
+			// every back slash in input needs to be escaped.
 			ret = ret.replaceAll("\\\\", "\\\\\\\\");
-		if (ret.contains("\""))
-			// all double quotes in input need to be escaped.
+		if (ret.indexOf('"') >= 0)
+			// every double quote in input needs to be escaped.
 			ret = ret.replaceAll("\"", "\\\\\"");
 		return "\"" + ret + "\"";
 	}
@@ -128,11 +128,11 @@ public class MonetWrapper implements java.sql.Wrapper {
 	 */
 	public static final String sq(final String in) {
 		String ret = in;
-		if (ret.contains("\\\\"))
-			// all double slashes in input need to be escaped.
+		if (ret.indexOf('\\') >= 0)
+			// every back slash in input needs to be escaped.
 			ret = ret.replaceAll("\\\\", "\\\\\\\\");
-		if (ret.contains("'"))
-			// all single quotes in input need to be escaped.
+		if (ret.indexOf('\'') >= 0)
+			// every single quote in input needs to be escaped.
 			ret = ret.replaceAll("'", "\\\\'");
 		return "'" + ret + "'";
 	}

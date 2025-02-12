@@ -1511,8 +1511,8 @@ public final class JDBC_API_Tester {
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n");
 
-			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "table\\_types", DatabaseMetaData.bestRowTransaction, false),
-						"getBestRowIdentifier(null, sys, table\\_types, DatabaseMetaData.bestRowTransaction, false)",
+			compareResultSet(dbmd.getBestRowIdentifier(null, "sys", "table_types", DatabaseMetaData.bestRowTransaction, false),
+						"getBestRowIdentifier(null, sys, table_types, DatabaseMetaData.bestRowTransaction, false)",
 			"Resultset with 8 columns\n" +
 			"SCOPE	COLUMN_NAME	DATA_TYPE	TYPE_NAME	COLUMN_SIZE	BUFFER_LENGTH	DECIMAL_DIGITS	PSEUDO_COLUMN\n" +
 			"smallint	varchar(1024)	int	varchar(1024)	int	int	smallint	smallint\n" +
@@ -2769,21 +2769,31 @@ public final class JDBC_API_Tester {
 			.append(" result columns and ")
 			.append(pstmt.getParameterMetaData().getParameterCount())
 			.append(" parameters\n");
+
 			String val = "0123456789abcdef";
 			pstmt.setString(1, val);
 			pstmt.setBytes(2, val.getBytes(StandardCharsets.UTF_8));
 			sb.append("3 Insert data row 1\n");
 			pstmt.execute();
+
 			val = "~!@#$%^&*()_+`1-=][{}\\|';:,<.>/?";
 			pstmt.setString(1, val);
 			pstmt.setBytes(2, val.getBytes(StandardCharsets.UTF_8));
 			sb.append("4 Insert data row 2\n");
 			pstmt.execute();
+
 			val = "\u00e0\u004f\u20f0\u0020\u00ea\u003a\u0069\u0010\u00a2\u00d8\u0008\u0001\u002b\u0030\u019c\u129e";
 			pstmt.setString(1, val);
 			pstmt.setBytes(2, val.getBytes(StandardCharsets.UTF_8));
 			sb.append("4 Insert data row 3\n");
 			pstmt.execute();
+
+			val = "\\X\\Y\\\\";
+			pstmt.setString(1, val);
+			pstmt.setBytes(2, val.getBytes(StandardCharsets.UTF_8));
+			sb.append("4 Insert data row 4\n");
+			pstmt.execute();
+
 			pstmt.close();
 
 			sb.append("5 Prepare Select data\n");
@@ -2850,6 +2860,7 @@ public final class JDBC_API_Tester {
 			"3 Insert data row 1\n" +
 			"4 Insert data row 2\n" +
 			"4 Insert data row 3\n" +
+			"4 Insert data row 4\n" +
 			"5 Prepare Select data\n" +
 			"  pstmt has 4 result columns and 0 parameters\n" +
 			"6 Execute Select\n" +
@@ -2857,8 +2868,9 @@ public final class JDBC_API_Tester {
 			"7 Show data rows\n" +
 			"col1	len_col1	col2	len_col2\n" +
 			"0123456789abcdef	16	30313233343536373839616263646566	30313233343536373839616263646566	16\n" +
-			"~!@#$%^&*()_+`1-=][{}|';:,<.>/?	31	7E21402324255E262A28295F2B60312D3D5D5B7B7D5C7C273B3A2C3C2E3E2F3F	7E21402324255E262A28295F2B60312D3D5D5B7B7D5C7C273B3A2C3C2E3E2F3F	32\n" +
+			"~!@#$%^&*()_+`1-=][{}\\|';:,<.>/?	32	7E21402324255E262A28295F2B60312D3D5D5B7B7D5C7C273B3A2C3C2E3E2F3F	7E21402324255E262A28295F2B60312D3D5D5B7B7D5C7C273B3A2C3C2E3E2F3F	32\n" +
 			"\u00e0\u004f\u20f0\u0020\u00ea\u003a\u0069\u0010\u00a2\u00d8\u0008\u0001\u002b\u0030\u019c\u129e	16	C3A04FE283B020C3AA3A6910C2A2C39808012B30C69CE18A9E	C3A04FE283B020C3AA3A6910C2A2C39808012B30C69CE18A9E	25\n" +
+			"\\X\\Y\\\\	6	5C585C595C5C	5C585C595C5C	6\n" +
 			"8 Drop table\n" +
 			"  pstmt has 0 result columns and 0 parameters\n");
 	}
