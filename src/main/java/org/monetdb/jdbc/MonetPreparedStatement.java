@@ -327,7 +327,7 @@ public class MonetPreparedStatement
 		if (execute() != false)
 			throw new SQLException("Query produced a result set", "M1M17");
 
-		return getUpdateCount();
+		return Math.max(getUpdateCount(), 0);
 	}
 
 	/** override the executeUpdate from the Statement to throw an SQLException */
@@ -2263,7 +2263,7 @@ public class MonetPreparedStatement
 		if (execute() != false)
 			throw new SQLException("Query produced a result set", "M1M17");
 
-		return getLargeUpdateCount();
+		return Math.max(getLargeUpdateCount(), 0L);
 	}
 
 	//== end methods interface PreparedStatement

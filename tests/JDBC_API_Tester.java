@@ -810,8 +810,8 @@ public final class JDBC_API_Tester {
 	private void handleExecuteDDL(Statement stmt, String action, String objtype, String objname, String sql) {
 		try {
 			int response = stmt.executeUpdate(sql);
-			if (response != Statement.SUCCESS_NO_INFO)
-				sb.append(action).append(" ").append(objtype).append(" ").append(objname).append(" failed to return -2!! It returned: ").append(response).append("\n");
+			if (response != 0)
+				sb.append(action).append(" ").append(objtype).append(" ").append(objname).append(" failed to return 0!! It returned: ").append(response).append("\n");
 		} catch (SQLException e) {
 			sb.append("Failed to ").append(action).append(" ").append(objtype).append(" ").append(objname).append(": ").append(e.getMessage()).append("\n");
 		}
@@ -2542,8 +2542,8 @@ public final class JDBC_API_Tester {
 			stmt = con.createStatement();
 			int updates = 0;
 			updates = stmt.executeUpdate("CREATE TABLE table_Test_PSmetadata ( myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob )");
-			if (updates != Statement.SUCCESS_NO_INFO)
-				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+			if (updates != 0)
+				sb.append("1. Expected 0 got ").append(updates).append(" instead\n");
 
 			// all NULLs
 			updates = stmt.executeUpdate("INSERT INTO table_Test_PSmetadata VALUES (NULL, NULL,            NULL,           NULL,                  NULL)");
@@ -3024,8 +3024,8 @@ public final class JDBC_API_Tester {
 
 			stmt = con.createStatement();
 			int updates = stmt.executeUpdate("CREATE TABLE table_Test_PSsqldata ( myinet inet, myurl url )");
-			if (updates != Statement.SUCCESS_NO_INFO)
-				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+			if (updates != 0)
+				sb.append("1. Expected 0 got ").append(updates).append(" instead\n");
 
 			pstmt = con.prepareStatement("INSERT INTO table_Test_PSsqldata VALUES (?, ?)");
 			ParameterMetaData pmd = pstmt.getParameterMetaData();
@@ -3131,8 +3131,8 @@ public final class JDBC_API_Tester {
 
 			stmt = con.createStatement();
 			int updates = stmt.executeUpdate("CREATE TABLE Test_PStimedate (t time, ts timestamp, d date)");
-			if (updates != Statement.SUCCESS_NO_INFO)
-				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+			if (updates != 0)
+				sb.append("1. Expected 0 got ").append(updates).append(" instead\n");
 
 			pstmt = con.prepareStatement("INSERT INTO Test_PStimedate VALUES (?, ?, ?)");
 			sb.append("1. empty call...");
@@ -3228,8 +3228,8 @@ public final class JDBC_API_Tester {
 
 			stmt = con.createStatement();
 			int updates = stmt.executeUpdate("CREATE TABLE Test_PStimezone (ts timestamp, tsz timestamp with time zone, t time, tz time with time zone)");
-			if (updates != Statement.SUCCESS_NO_INFO)
-				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+			if (updates != 0)
+				sb.append("1. Expected 0 got ").append(updates).append(" instead\n");
 
 			pstmt = con.prepareStatement("INSERT INTO Test_PStimezone VALUES (?, ?, ?, ?)");
 			sb.append("1. empty call...");
@@ -3448,13 +3448,13 @@ public final class JDBC_API_Tester {
 				"       comment  varchar(100)," +
 				"       CONSTRAINT htmtest_htmid_pkey PRIMARY KEY (htmid)" +
 				")" );
-			if (updates != Statement.SUCCESS_NO_INFO)
-				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+			if (updates != 0)
+				sb.append("1. Expected 0 got ").append(updates).append(" instead\n");
 
 			// index is not used, but the original bug had it too
 			updates = stmt.executeUpdate("CREATE INDEX htmid ON htmtest (htmid)");
-			if (updates != Statement.SUCCESS_NO_INFO)
-				sb.append("1. Expected -2 got ").append(updates).append(" instead\n");
+			if (updates != 0)
+				sb.append("1. Expected 0 got ").append(updates).append(" instead\n");
 
 			stmt.close();
 
@@ -3694,8 +3694,8 @@ public final class JDBC_API_Tester {
 				" id int, tiny_int tinyint, small_int smallint, medium_int mediumint, \"integer\" int, big_int bigint," +
 				" a_real real, a_float float, a_double double, a_decimal decimal(8,2), a_numeric numeric(8)," +
 				" bool boolean, a_char char(4), b_char char(5), a_varchar varchar(20), PRIMARY KEY (id) )");
-			if (updates != Statement.SUCCESS_NO_INFO)
-				sb.append("1a. Expected -2 got ").append(updates).append(" instead\n");
+			if (updates != 0)
+				sb.append("1a. Expected 0 got ").append(updates).append(" instead\n");
 
 			// all falses
 			updates = stmt.executeUpdate("INSERT INTO Test_Rbooleans VALUES (1,0,0,0,0,0,0.0,0.0,0.0,0.0,0,false,'fals','false','false')");
@@ -4709,7 +4709,7 @@ public final class JDBC_API_Tester {
 			stmt = con.createStatement();
 
 			sb.append("1. create...");
-			if (stmt.executeUpdate("CREATE TABLE Test_Sbatching ( id int )") != Statement.SUCCESS_NO_INFO)
+			if (stmt.executeUpdate("CREATE TABLE Test_Sbatching ( id int )") != 0)
 				sb.append("Wrong return status\n");
 			else
 				sb.append("passed\n");
@@ -4780,7 +4780,7 @@ public final class JDBC_API_Tester {
 			sb.append(rs.getInt(1)).append(" passed\n");
 
 			sb.append("8. drop table...");
-			if (stmt.executeUpdate("DROP TABLE Test_Sbatching") != Statement.SUCCESS_NO_INFO)
+			if (stmt.executeUpdate("DROP TABLE Test_Sbatching") != 0)
 				sb.append("Wrong return status\n");
 			else
 				sb.append("passed\n");
@@ -5043,7 +5043,7 @@ public final class JDBC_API_Tester {
 			sb.append("1. create table...");
 			// create a simple table with an auto-generated key (id)
 			upd = stmt.executeUpdate("CREATE TABLE bogus_gen_keys (\n	\"id\" serial,\n	\"x\" varchar(12)\n);");
-			if (upd != Statement.SUCCESS_NO_INFO)
+			if (upd != 0)
 				sb.append("Wrong return status: ").append(upd).append("\n");
 			else
 				sb.append("passed\n");
@@ -5094,7 +5094,7 @@ public final class JDBC_API_Tester {
 		try {
 			sb.append("7. drop table...");
 			upd = stmt.executeUpdate("DROP TABLE bogus_gen_keys");
-			if (upd != Statement.SUCCESS_NO_INFO)
+			if (upd != 0)
 				sb.append("Wrong return status: ").append(upd).append("\n");
 			else
 				sb.append("passed\n");
@@ -6093,7 +6093,7 @@ public final class JDBC_API_Tester {
 
 			stmt = con.createStatement();
 			sb.append("1. Creating table ").append(tableName);
-			if (stmt.executeUpdate("CREATE TABLE " + tableName + " (myint INT, myvarchar VARCHAR(15), myjson JSON, myuuid UUID, myurl URL, myinet INET)") != Statement.SUCCESS_NO_INFO)
+			if (stmt.executeUpdate("CREATE TABLE " + tableName + " (myint INT, myvarchar VARCHAR(15), myjson JSON, myuuid UUID, myurl URL, myinet INET)") != 0)
 				sb.append("Wrong return status\n");
 
 			sb.append("\n2. Insert row 1, ");
@@ -6447,8 +6447,8 @@ public final class JDBC_API_Tester {
 			stmt = con.createStatement();
 			sb.append("1. create table ").append(dqTblName).append("\n");
 			int ret = stmt.executeUpdate(ctsb.toString());
-			if (ret != -2)
-				sb.append(" returned: ").append(ret).append(" (expected -2)\n");
+			if (ret != 0)
+				sb.append(" returned: ").append(ret).append(" (expected 0)\n");
 
 			String tblName = dqTblName.substring(1, dqTblName.length() -1);	// trim the leading and trailing double quote characters
 			sb.append("2. show column names of this new table (").append(tblName).append(") via sys.columns query\n");
@@ -6675,8 +6675,8 @@ public final class JDBC_API_Tester {
 		try {
 			sb.append("Finally drop table ").append(dqTblName).append("\n");
 			int ret = stmt.executeUpdate("DROP TABLE " + dqTblName);
-			if (ret != -2)
-				sb.append(" returned: ").append(ret).append(" (expected -2)\n");
+			if (ret != 0)
+				sb.append(" returned: ").append(ret).append(" (expected 0)\n");
 		} catch (SQLException e) {
 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
 		}
@@ -6871,7 +6871,7 @@ public final class JDBC_API_Tester {
 		compareExpectedOutput("Bug_PrepStmtManyParams_7337(" + nrParams + ")",
 			"0. fetch size of new statement: 250\n" +
 			"1. create table with " + (NR_COLUMNS+2) + " columns, sql has length: " + ((NR_COLUMNS * 23) -29) + "\n" +
-			"2. table created. ret = -2\n" +
+			"2. table created. ret = 0\n" +
 			"3. prepare insert statement (no params), sql has length: " + ((NR_COLUMNS * 25) -53) + "\n" +
 			"   fetch size after prepare 1: 250\n" +
 			"   pmd. 0 parameters\n" +

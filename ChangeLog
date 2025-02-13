@@ -1,6 +1,17 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Feb 13 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected the returned integer values of Statement methods
+  getUpdateCount() and getLargeUpdateCount(). They returned -2 for
+  DDL statements, which was not in compliance with the JDBC API
+  documentation. Now they no longer return numbers smaller than -1.
+- Corrected the returned integer values of Statement methods
+  executeUpdate(...) and executeLargeUpdate(...) and PreparedStatement
+  methods executeUpdate() and executeLargeUpdate(). They returned -2 for
+  DDL statements, which was not in compliance with the JDBC API
+  documentation. Now they no longer return negative numbers.
+
 * Wed Feb 12 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Fix a bug in DatabaseMetaData.getTables() where a provided string in the
   array of table types argument would contain a single quote or back slash.

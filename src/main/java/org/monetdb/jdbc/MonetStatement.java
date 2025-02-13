@@ -502,7 +502,7 @@ public class MonetStatement
 		if (execute(sql) != false)
 			throw new SQLException("Statement produced a result set", "M1M17");
 
-		return getUpdateCount();
+		return Math.max(getUpdateCount(), 0);
 	}
 
 	/**
@@ -535,7 +535,7 @@ public class MonetStatement
 		if (execute(sql) != false)
 			throw new SQLException("Statement produced a result set", "M1M17");
 
-		return getUpdateCount();
+		return Math.max(getUpdateCount(), 0);
 	}
 
 	/**
@@ -1133,9 +1133,9 @@ public class MonetStatement
 	public long getLargeUpdateCount() throws SQLException {
 		if (header != null) {
 			if (header instanceof MonetConnection.UpdateResponse) {
-				return ((MonetConnection.UpdateResponse)header).count;
-			} else if (header instanceof MonetConnection.SchemaResponse) {
-				return ((MonetConnection.SchemaResponse)header).state;
+				final long updCnt = ((MonetConnection.UpdateResponse)header).count;
+				if (updCnt >= 0)
+					return updCnt;
 			}
 		}
 		return -1;
@@ -1319,8 +1319,8 @@ public class MonetStatement
 						new SQLException("Batch query produced a ResultSet! " +
 							"Ignoring and setting update count to value " + EXECUTE_FAILED, "M1M17"));
 					counts[offset] = EXECUTE_FAILED;
-				} else if (count >= 0) {
-					counts[offset] = count;
+				} else {
+					counts[offset] = (count >= 0) ? count : SUCCESS_NO_INFO;
 				}
 				offset++;
 			} while ((hasResultSet = getMoreResults()) || (count = getLargeUpdateCount()) != -1);
@@ -1358,7 +1358,7 @@ public class MonetStatement
 		if (execute(sql) != false)
 			throw new SQLException("Statement produced a result set", "M1M17");
 
-		return getLargeUpdateCount();
+		return Math.max(getLargeUpdateCount(), 0L);
 	}
 
 	/**
@@ -1400,7 +1400,7 @@ public class MonetStatement
 		if (execute(sql) != false)
 			throw new SQLException("Statement produced a result set", "M1M17");
 
-		return getLargeUpdateCount();
+		return Math.max(getLargeUpdateCount(), 0L);
 	}
 
 	/**

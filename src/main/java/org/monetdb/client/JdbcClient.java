@@ -1087,10 +1087,10 @@ public final class JdbcClient {
 		long finishTime = 0;
 
 		// execute the query, let the driver decide what type it is
-		int aff = -1;
+		long aff = -1;
 		boolean nextRslt = stmt.execute(query, Statement.RETURN_GENERATED_KEYS);
 		if (!nextRslt)
-			aff = stmt.getUpdateCount();
+			aff = stmt.getLargeUpdateCount();
 		do {
 			if (nextRslt) {
 				// we have a ResultSet, print it
@@ -1118,7 +1118,7 @@ public final class JdbcClient {
 					rs.clearWarnings();
 				}
 				rs.close();
-			} else if (aff != -1) {
+			} else {
 				String timingoutput = "";
 				if (showTiming) {
 					finishTime = System.currentTimeMillis();
@@ -1126,13 +1126,13 @@ public final class JdbcClient {
 					startTime = finishTime;
 				}
 
-				if (aff == Statement.SUCCESS_NO_INFO) {
+				if (aff == -1) {
 					out.println("Operation successful" + timingoutput);
 				} else {
 					// we have an update count
 					// see if a key was generated
 					final ResultSet rs = stmt.getGeneratedKeys();
-					final boolean hasGeneratedKeyData = rs.next();
+					final boolean hasGeneratedKeyData = (rs != null && rs.next());
 					out.println(aff + " affected row" + (aff != 1 ? "s" : "") +
 						(hasGeneratedKeyData ? ", last generated key: " + rs.getString(1) : "") +
 						timingoutput);
@@ -1142,7 +1142,7 @@ public final class JdbcClient {
 
 			out.flush();
 		} while ((nextRslt = stmt.getMoreResults()) ||
-			 (aff = stmt.getUpdateCount()) != -1);
+			 (aff = stmt.getLargeUpdateCount()) != -1);
 
 		// if there were warnings for this statement show them!
 		warn = stmt.getWarnings();

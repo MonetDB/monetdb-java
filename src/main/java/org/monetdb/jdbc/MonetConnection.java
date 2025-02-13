@@ -2935,16 +2935,10 @@ public class MonetConnection
 	/**
 	 * The SchemaResponse represents an schema modification response.
 	 * It is issued on statements like CREATE, DROP or ALTER TABLE.
-	 * This response keeps a field that represents the success state, as
-	 * defined by JDBC, which is currently in MonetDB's case always
-	 * SUCCESS_NO_INFO.  Note that this state is not sent by the
-	 * server.<br />
 	 * <samp>&amp;3</samp>
 	 */
 	// {{{ SchemaResponse class implementation
 	class SchemaResponse implements Response {
-		public final int state = Statement.SUCCESS_NO_INFO;
-
 		@Override
 		public String addLine(final String line, final LineType linetype) {
 			return "Header lines are not supported for a SchemaResponse";
