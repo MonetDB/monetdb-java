@@ -775,20 +775,18 @@ public final class JDBC_API_Tester {
 			"5  database  false    name of database to connect to\n" +
 			"6  cert  false    path to TLS certificate to authenticate server with\n" +
 			"7  certhash  false    hash of server TLS certificate must start with these hex digits; overrides cert\n" +
-			"8  clientkey  false    path to TLS key (+certs) to authenticate with as client\n" +
-			"9  clientcert  false    path to TLS certs for 'clientkey', if not included there\n" +
-			"10  autocommit  false  true  initial value of autocommit\n" +
-			"11  schema  false    initial schema\n" +
-			"12  timezone  false  <tz>  client time zone as minutes east of UTC\n" +
-			"13  replysize  false  250  rows beyond this limit are retrieved on demand, <1 means unlimited\n" +
-			"14  debug  false  false  enable tracing of socket communication for debugging\n" +
-			"15  logfile  false    when debug is enabled its output will be written to this logfile\n" +
-			"16  so_timeout  false  0  abort if network I/O does not complete in this many milliseconds, 0 means no timeout\n" +
-			"17  treat_clob_as_varchar  false  true  map CLOB/TEXT data to type VARCHAR instead of type CLOB\n" +
-			"18  treat_blob_as_binary  false  true  map BLOB data to type BINARY instead of type BLOB\n" +
-			"19  client_info  false  true  whether to send ClientInfo when connecting\n" +
-			"20  client_application  false    application name to send in ClientInfo\n" +
-			"21  client_remark  false    any client remark to send in ClientInfo\n");
+			"8  autocommit  false  true  initial value of autocommit\n" +
+			"9  schema  false    initial schema\n" +
+			"10  timezone  false  <tz>  client time zone as minutes east of UTC\n" +
+			"11  replysize  false  250  rows beyond this limit are retrieved on demand, <1 means unlimited\n" +
+			"12  debug  false  false  enable tracing of socket communication for debugging\n" +
+			"13  logfile  false    when debug is enabled its output will be written to this logfile\n" +
+			"14  so_timeout  false  0  abort if network I/O does not complete in this many milliseconds, 0 means no timeout\n" +
+			"15  treat_clob_as_varchar  false  true  map CLOB/TEXT data to type VARCHAR instead of type CLOB\n" +
+			"16  treat_blob_as_binary  false  true  map BLOB data to type BINARY instead of type BLOB\n" +
+			"17  client_info  false  true  whether to send ClientInfo when connecting\n" +
+			"18  client_application  false    application name to send in ClientInfo\n" +
+			"19  client_remark  false    any client remark to send in ClientInfo\n");
 	}
 
 	private void listDriverProperties(String url) throws SQLException {

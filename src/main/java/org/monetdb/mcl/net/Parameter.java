@@ -228,6 +228,8 @@ public enum Parameter {
 				case SOCK:
 				case SOCKDIR:
 				case BINARY:
+				case CLIENTKEY:
+				case CLIENTCERT:
 					// hide, not supported in Java
 					continue;
 				case FETCHSIZE:
