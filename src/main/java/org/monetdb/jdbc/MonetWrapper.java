@@ -14,6 +14,8 @@ package org.monetdb.jdbc;
 
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  *<pre>
@@ -96,6 +98,8 @@ public class MonetWrapper implements java.sql.Wrapper {
 		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 
+	private static final Pattern dqPattern = Pattern.compile("[\\\\\"]");
+
 	/**
 	 * General utility function to add double quotes around an SQL Identifier
 	 * such as column or table or schema name in SQL queries.
@@ -107,15 +111,12 @@ public class MonetWrapper implements java.sql.Wrapper {
 	 * @return the double quoted string
 	 */
 	public static final String dq(final String in) {
-		String ret = in;
-		if (ret.indexOf('\\') >= 0)
-			// every back slash in input needs to be escaped.
-			ret = ret.replaceAll("\\\\", "\\\\\\\\");
-		if (ret.indexOf('"') >= 0)
-			// every double quote in input needs to be escaped.
-			ret = ret.replaceAll("\"", "\\\\\"");
-		return "\"" + ret + "\"";
+		Matcher matcher = dqPattern.matcher(in);
+		String escaped = matcher.replaceAll("\\\\$0");
+		return "\"" + escaped + "\"";
 	}
+
+	private static final Pattern sqPattern = Pattern.compile("[\\\\']");
 
 	/**
 	 * General utility function to add single quotes around string literals as used in SQL queries.
@@ -127,13 +128,8 @@ public class MonetWrapper implements java.sql.Wrapper {
 	 * @return the single quoted string
 	 */
 	public static final String sq(final String in) {
-		String ret = in;
-		if (ret.indexOf('\\') >= 0)
-			// every back slash in input needs to be escaped.
-			ret = ret.replaceAll("\\\\", "\\\\\\\\");
-		if (ret.indexOf('\'') >= 0)
-			// every single quote in input needs to be escaped.
-			ret = ret.replaceAll("'", "\\\\'");
-		return "'" + ret + "'";
+		Matcher matcher = sqPattern.matcher(in);
+		String escaped = matcher.replaceAll("\\\\$0");
+		return "'" + escaped + "'";
 	}
 }
