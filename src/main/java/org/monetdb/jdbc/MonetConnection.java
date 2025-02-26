@@ -2398,7 +2398,8 @@ public class MonetConnection
 		 * be given.
 		 *
 		 * @param id the ID of the result set
-		 * @param tuplecount the total number of tuples in the result set
+		 * @param realtuplecount the total number of tuples in the result set
+		 * @param tuplecount the number of tuples in the result set after maxRows has been applied
 		 * @param columncount the number of columns in the result set
 		 * @param rowcount the number of rows in the current block
 		 * @param parent the parent that created this Response and will
@@ -2407,6 +2408,7 @@ public class MonetConnection
 		 */
 		ResultSetResponse(
 				final int id,
+				final long realtuplecount,
 				final long tuplecount,
 				final int columncount,
 				final int rowcount,
@@ -2438,7 +2440,7 @@ public class MonetConnection
 				cacheSize = rowcount;
 			seqnr = seq;
 			closed = false;
-			destroyOnClose = id > 0 && tuplecount > rowcount;
+			destroyOnClose = id > 0 && realtuplecount > rowcount;
 
 			this.id = id;
 			this.tuplecount = tuplecount;
@@ -3256,13 +3258,12 @@ public class MonetConnection
 								case StartOfHeaderParser.Q_TABLE:
 								case StartOfHeaderParser.Q_PREPARE: {
 									final int id = sohp.getNextAsInt();
-									long tuplecount = sohp.getNextAsLong();
+									final long realtuplecount = sohp.getNextAsLong();
 									final int columncount = sohp.getNextAsInt();
 									final int rowcount = sohp.getNextAsInt();
 									// enforce the maxrows setting
-									if (maxrows != 0 && tuplecount > maxrows)
-										tuplecount = maxrows;
-									res = new ResultSetResponse(id, tuplecount, columncount, rowcount, this, seqnr);
+									final long tuplecount = (maxrows == 0 || realtuplecount <= maxrows) ? realtuplecount : maxrows;
+									res = new ResultSetResponse(id, realtuplecount, tuplecount, columncount, rowcount, this, seqnr);
 									// only add this resultset to the hashmap if it can possibly have an additional datablock
 									if (rowcount < tuplecount) {
 										if (rsresponses == null)
