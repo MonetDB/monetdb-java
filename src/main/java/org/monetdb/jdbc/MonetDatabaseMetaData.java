@@ -482,7 +482,7 @@ public final class MonetDatabaseMetaData
 		final String wherePart =
 			 "\"mod\" IN ('mtime','timestamp')" +
 			// include Date/Time functions which are located in 'str' module
-			" OR f.\"name\" IN ('localtime','localtimestamp','date_trunc')";
+			" OR f.\"name\" IN ('localtime','localtimestamp','date_trunc','dayname','monthname')";
 		final String unionPart =
 			// add time date functions which are not listed in sys.functions but implemented in the SQL parser (see sql/server/sql_parser.y)
 			" UNION SELECT 'extract'" +
