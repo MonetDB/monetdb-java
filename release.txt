@@ -13,6 +13,6 @@ See https://www.monetdb.org/
 The latest MonetDB JDBC driver can be downloaded from
 https://www.monetdb.org/downloads/Java/
 
-Documentation on the MonetDB JDBC driver is avaliable from
+Documentation for the MonetDB JDBC driver is available from
 https://www.monetdb.org/documentation/user-guide/client-interfaces/libraries-drivers/jdbc-driver/
 
