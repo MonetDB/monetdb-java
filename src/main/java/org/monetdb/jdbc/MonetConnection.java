@@ -2440,7 +2440,7 @@ public class MonetConnection
 				cacheSize = rowcount;
 			seqnr = seq;
 			closed = false;
-			destroyOnClose = id > 0 && realtuplecount > rowcount;
+			destroyOnClose = realtuplecount > rowcount;
 
 			this.id = id;
 			this.tuplecount = tuplecount;
