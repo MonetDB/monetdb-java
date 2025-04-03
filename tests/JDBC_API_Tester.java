@@ -5577,7 +5577,8 @@ public final class JDBC_API_Tester {
 					String tt = rs2.getString(1);
 					// the STREAM TABLE type is REMOVED in post Oct2020 releases, so filter it out for a stable output on all releases
 					// the UNLOGGED TABLE type is ADDED in post Jan2022 releases, so filter it out for a stable output on all releases
-					if (! ("STREAM TABLE".equals(tt) || "UNLOGGED TABLE".equals(tt)) )
+					// the LOCAL TEMPORARY VIEW type is ADDED in 11.53.4 (Mar2025-SP1) releases, filter it out for a stable output on all releases
+					if (! ("STREAM TABLE".equals(tt) || "UNLOGGED TABLE".equals(tt) || "LOCAL TEMPORARY VIEW".equals(tt)) )
 						sb.append(tt).append("\n");
 				}
 				rs2.close();
