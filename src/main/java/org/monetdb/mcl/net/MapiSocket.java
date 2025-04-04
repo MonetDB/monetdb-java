@@ -378,6 +378,9 @@ public final class MapiSocket {
 			writer = new BufferedMCLWriter(toMonet, StandardCharsets.UTF_8);
 			writer.registerReader(reader);
 			reader.advance();
+			if (reader.getLine() == null) {
+				throw new IOException("server did not send a challenge");
+			}
 
 			// Only assign to sock when everything went ok so far
 			con = sock;
