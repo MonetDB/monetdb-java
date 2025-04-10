@@ -25,6 +25,7 @@ jobs:
           - 21
           - 22
           - 23
+          - 24
         exclude:
           - distribution: oracle
             java_version: 8
@@ -33,7 +34,7 @@ jobs:
 
     services:
       monetdb_container:
-        image: monetdb/dev-builds:Aug2024
+        image: monetdb/dev-builds:Mar2025
         env:
           MDB_DAEMON_PASS: monetdb
           MDB_DB_ADMIN_PASS: monetdb
