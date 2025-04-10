@@ -14,12 +14,13 @@ jobs:
       fail-fast: false
       matrix:
         monetdbversion:
-          - "monetdb/dev-builds:Jan2022"
-          - "monetdb/dev-builds:Sep2022"
-          - "monetdb/dev-builds:Jun2023"
-          - "monetdb/dev-builds:Dec2023"
-          - "monetdb/dev-builds:Aug2024"
-          - "monetdb/dev-builds:Mar2025"
+          - "monetdb/monetdb:Jan2022-SP4"
+          - "monetdb/monetdb:Sep2022-SP3"
+          - "monetdb/monetdb:Jun2023-SP3"
+          - "monetdb/monetdb:Dec2023-SP4"
+          - "monetdb/monetdb:Aug2024-SP2"
+          - "monetdb/monetdb:Mar2025"
+          - "monetdb/monetdb:latest"
           - "monetdb/dev-builds:default"
 
     services:
