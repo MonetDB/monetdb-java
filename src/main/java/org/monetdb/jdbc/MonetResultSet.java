@@ -215,15 +215,15 @@ public class MonetResultSet
 			connection = (MonetConnection) statement.getConnection();
 		} catch (SQLException se) { /* ignore it */ }
 
+		final boolean mapClobAsVarChar = connection != null && connection.mapClobAsVarChar();
+		final boolean mapBlobAsVarBinary = connection != null && connection.mapBlobAsVarBinary();
 		for (int i = 0; i < types.length; i++) {
 			int javaSQLtype = MonetDriver.getJdbcSQLType(types[i]);
-			if (javaSQLtype == Types.CLOB) {
-				if (connection != null && connection.mapClobAsVarChar())
-					javaSQLtype = Types.VARCHAR;
+			if (javaSQLtype == Types.CLOB && mapClobAsVarChar) {
+				javaSQLtype = Types.VARCHAR;
 			} else
-			if (javaSQLtype == Types.BLOB) {
-				if (connection != null && connection.mapBlobAsVarBinary())
-					javaSQLtype = Types.VARBINARY;
+			if (javaSQLtype == Types.BLOB && mapBlobAsVarBinary) {
+				javaSQLtype = Types.VARBINARY;
 			}
 			JdbcSQLTypes[i] = javaSQLtype;
 		}

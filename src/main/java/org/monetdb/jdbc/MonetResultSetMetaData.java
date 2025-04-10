@@ -121,17 +121,17 @@ final class MonetResultSetMetaData
 			throw new IllegalArgumentException("Inconsistent Header metadata");
 		}
 
+		final boolean mapClobAsVarChar = connection.mapClobAsVarChar();
+		final boolean mapBlobAsVarBinary = connection.mapBlobAsVarBinary();
 		// derive the JDBC SQL type codes from the types[] names once
 		JdbcSQLTypes = new int[types.length];
 		for (int i = 0; i < types.length; i++) {
 			int javaSQLtype = MonetDriver.getJdbcSQLType(types[i]);
-			if (javaSQLtype == Types.CLOB) {
-				if (connection.mapClobAsVarChar())
-					javaSQLtype = Types.VARCHAR;
+			if (javaSQLtype == Types.CLOB && mapClobAsVarChar) {
+				javaSQLtype = Types.VARCHAR;
 			} else
-			if (javaSQLtype == Types.BLOB) {
-				if (connection.mapBlobAsVarBinary())
-					javaSQLtype = Types.VARBINARY;
+			if (javaSQLtype == Types.BLOB && mapBlobAsVarBinary) {
+				javaSQLtype = Types.VARBINARY;
 			}
 			JdbcSQLTypes[i] = javaSQLtype;
 		}
