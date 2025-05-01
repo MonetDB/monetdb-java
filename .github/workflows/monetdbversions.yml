@@ -14,18 +14,18 @@ jobs:
       fail-fast: false
       matrix:
         monetdbversion:
-          - "monetdb/monetdb:Jan2022-SP4"
-          - "monetdb/monetdb:Sep2022-SP3"
-          - "monetdb/monetdb:Jun2023-SP3"
-          - "monetdb/monetdb:Dec2023-SP4"
-          - "monetdb/monetdb:Aug2024-SP2"
-          - "monetdb/monetdb:Mar2025"
-          - "monetdb/monetdb:latest"
-          - "monetdb/dev-builds:default"
+          - default
+          - latest
+          - Mar2025
+          - Aug2024
+          - Dec2023
+          - Jun2023
+          - Sep2022
+          - Jan2022
 
     services:
       monetdb_container:
-        image: ${{ matrix.monetdbversion }}
+        image: "monetdb/dev-builds:${{ matrix.monetdbversion }}"
         env:
           MDB_DAEMON_PASS: monetdb
           MDB_DB_ADMIN_PASS: monetdb
