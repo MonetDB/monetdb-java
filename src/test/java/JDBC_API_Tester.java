@@ -62,7 +62,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 	private int dbmsMajorVersion;
 	private int dbmsMinorVersion;
 	private boolean isPostDec2023;	// flag to support version specific output
-	private boolean skipMALoutput = false;
+	private boolean skipMALoutput = Config.isSkipMalOutput();
 
 	final private static int sbInitLen = 5468; // max needed size of sb
 
