@@ -12,6 +12,7 @@
 package org.monetdb.jdbc;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.condition.EnabledIf;
 import org.junit.jupiter.api.io.TempDir;
 import org.monetdb.testinfra.Config;
 import org.monetdb.mcl.net.Parameter;
@@ -29,6 +30,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.monetdb.testinfra.Assertions.assertSQLException;
 
 @Tag("tls")
+@EnabledIf("org.monetdb.testinfra.Config#isTLSTesterConfigured")
 public class TLSTests {
 	@TempDir
 	File tmpDir;
@@ -45,7 +47,7 @@ public class TLSTests {
 	private String query;
 
 	@BeforeAll
-	public static void checkEnabled() throws IOException {
+	public static void checkConfig() throws IOException {
 		Config.getTesterHost();
 		Config.getTesterPort();
 		TLSTests me = new TLSTests();

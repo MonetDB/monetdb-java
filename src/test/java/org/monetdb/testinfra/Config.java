@@ -95,6 +95,11 @@ public class Config {
 		return Boolean.parseBoolean(lookup(SKIP_SLOW_PROPERTY, SKIP_SLOW_ENVVAR, "false"));
 	}
 
+	public static boolean isTLSTesterConfigured() {
+		String addr = getTLSTester();
+		return addr != null && !addr.isEmpty();
+	}
+
 	private static String getTLSTester() {
 		return lookup(TLSTESTER_PROPERTY, TLSTESTER_ENVVAR, null);
 	}
