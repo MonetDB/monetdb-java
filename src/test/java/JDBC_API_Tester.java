@@ -2921,7 +2921,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 	/* this test is same as Test_PSsomeamount() but for many more PreparedStatements to stress the server */
 	@Test
 	@Tag("slow")
-	@DisabledIf("org.monetdb.testinfra.Config#getSkipSlow")
+	@DisabledIf("org.monetdb.testinfra.Config#isSkipSlow")
 	public void Test_PSlargeamount() {
 		sb.setLength(0);	// clear the output log buffer
 

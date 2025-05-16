@@ -226,7 +226,7 @@ public class OnClientTests extends OnClientTestsParent {
 
 	@Test
 	@Tag("slow")
-	@DisabledIf("org.monetdb.testinfra.Config#getSkipSlow")
+	@DisabledIf("org.monetdb.testinfra.Config#isSkipSlow")
 	public void testLargeDownload() throws SQLException {
 		testDownload_(4_000_000);
 	}
@@ -247,7 +247,7 @@ public class OnClientTests extends OnClientTestsParent {
 
 	@Test
 	@Tag("slow")
-	@DisabledIf("org.monetdb.testinfra.Config#getSkipSlow")
+	@DisabledIf("org.monetdb.testinfra.Config#isSkipSlow")
 	public void testLargeUpload() throws SQLException {
 		int n = 4_000_000;
 		MyUploadHandler handler = new MyUploadHandler(n);

@@ -87,11 +87,11 @@ public class Config {
 		return fixed;
 	}
 
-	public static boolean getSkipMalOutput() {
+	public static boolean isSkipMalOutput() {
 		return Boolean.parseBoolean(lookup(SKIP_MALOUTPUT_PROPERTY, SKIP_MALOUTPUT_ENVVAR, "false"));
 	}
 
-	public static boolean getSkipSlow() {
+	public static boolean isSkipSlow() {
 		return Boolean.parseBoolean(lookup(SKIP_SLOW_PROPERTY, SKIP_SLOW_ENVVAR, "false"));
 	}
 
