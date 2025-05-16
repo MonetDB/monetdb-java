@@ -16,6 +16,9 @@ import org.junit.jupiter.api.extension.TestWatcher;
 
 import java.lang.reflect.Field;
 
+/**
+ * Implementation of the {@code CloseOnFailure} annotations
+ */
 public class CloseOnFailureExtension implements TestWatcher {
 
 	@Override
