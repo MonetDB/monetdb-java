@@ -3073,11 +3073,10 @@ public final class MonetDatabaseMetaData
 			"cast(CASE WHEN \"systemname\" = 'oid' THEN " + DatabaseMetaData.typeNoNulls +
 				" ELSE " + DatabaseMetaData.typeNullable + " END AS smallint) AS \"NULLABLE\", " +
 			"CASE WHEN \"systemname\" IN ('str','json','url','xml') THEN true ELSE false END AS \"CASE_SENSITIVE\", " +
-			"cast(CASE WHEN \"systemname\" IN ('str','inet','json','url','uuid','xml') THEN " + DatabaseMetaData.typeSearchable +
-				" ELSE " + DatabaseMetaData.typePredBasic + " END AS smallint) AS \"SEARCHABLE\", " +
+			"cast(" + DatabaseMetaData.typeSearchable + " AS smallint) AS \"SEARCHABLE\", " +
 			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint','hugeint','decimal','real','double') THEN false ELSE true END AS \"UNSIGNED_ATTRIBUTE\", " +
 			"CASE \"sqlname\" WHEN 'decimal' THEN true ELSE false END AS \"FIXED_PREC_SCALE\", " +
-			"CASE WHEN \"sqlname\" IN ('tinyint','smallint','int','bigint') THEN true ELSE false END AS \"AUTO_INCREMENT\", " +
+			"false AS \"AUTO_INCREMENT\", " +
 			"\"systemname\" AS \"LOCAL_TYPE_NAME\", " +
 			"cast(0 AS smallint) AS \"MINIMUM_SCALE\", " +
 			"cast(CASE WHEN \"sqlname\" = 'decimal' THEN (CASE \"systemname\" WHEN 'int' THEN 9 WHEN 'lng' THEN 18 WHEN 'sht' THEN 4 WHEN 'hge' THEN 38 WHEN 'bte' THEN 2 ELSE 0 END)" +
@@ -3113,12 +3112,12 @@ public final class MonetDatabaseMetaData
 		"UNION ALL " +
 		// also add the 2 serial types (like done in ODBC SQLGetTypeInfo())
 		"SELECT \"TYPE_NAME\", \"DATA_TYPE\", PRECISION, NULL AS LITERAL_PREFIX, NULL AS LITERAL_SUFFIX, NULL AS CREATE_PARAMS, " +
-			DatabaseMetaData.typeNoNulls + " AS NULLABLE, false AS CASE_SENSITIVE, " + DatabaseMetaData.typePredBasic + " AS SEARCHABLE, " +
+			DatabaseMetaData.typeNoNulls + " AS NULLABLE, false AS CASE_SENSITIVE, " + DatabaseMetaData.typeSearchable + " AS SEARCHABLE, " +
 			"false AS UNSIGNED_ATTRIBUTE, false AS FIXED_PREC_SCALE, true AS \"AUTO_INCREMENT\", LOCAL_TYPE_NAME, 0 AS MINIMUM_SCALE, " +
 			"0 AS MAXIMUM_SCALE, 0 AS SQL_DATA_TYPE, 0 AS SQL_DATETIME_SUB, 2 AS NUM_PREC_RADIX " +
 		"FROM (VALUES" +
-		" ('bigserial', -5, 64, 'bigint')" +
-		",('serial', 4, 32, 'int')" +
+		" ('bigserial', -5, 63, 'bigint')" +
+		",('serial', 4, 31, 'int')" +
 		") AS serial_types(\"TYPE_NAME\", \"DATA_TYPE\", PRECISION, LOCAL_TYPE_NAME) " +
 		"ORDER BY \"DATA_TYPE\", \"TYPE_NAME\"");
 

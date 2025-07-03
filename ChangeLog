@@ -1,6 +1,11 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Jul  3 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected output of columns SEARCHABLE and AUTO_INCREMENT of method
+  DatabaseMetaData.getTypeInfo(). Most types are searchable with LIKE
+  pattern matching. AUTO_INCREMENT is no longer true for base integer types.
+
 * Thu Feb 13 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected the returned integer values of Statement methods
   getUpdateCount() and getLargeUpdateCount(). They returned -2 for
