@@ -42,7 +42,8 @@ public final class JDBC_API_Tester {
 	private Connection con;		// main connection shared by all tests
 	final private int dbmsMajorVersion;
 	final private int dbmsMinorVersion;
-	final private boolean isPostDec2023;	// flag to support version specific output
+	final private boolean isPostDec2023;	// flags to support version specific output
+	final private boolean isPostMar2025;
 	private boolean foundDifferences = false;
 
 	final private static int sbInitLen = 5468; // max needed size of sb
@@ -62,6 +63,7 @@ public final class JDBC_API_Tester {
 		// from version 11.50 on, the MonetDB server returns different metadata for
 		// integer digits (1 less) and for clob and char columns (now return varchar).
 		isPostDec2023 = versionIsAtLeast(11, 50);
+		isPostMar2025 = versionIsAtLeast(11, 54);
 	}
 
 	/**
@@ -165,7 +167,7 @@ public final class JDBC_API_Tester {
 	}
 
 	private boolean versionIsAtLeast(int major, int minor) {
-		return (dbmsMajorVersion > major || (dbmsMajorVersion == major && dbmsMinorVersion >= minor));
+		return ((dbmsMajorVersion == major && dbmsMinorVersion >= minor) || dbmsMajorVersion > major);
 	}
 
 	private void Test_Cautocommit(String arg0) {
@@ -2082,8 +2084,8 @@ public final class JDBC_API_Tester {
 			if (!skipMALoutput) {
 				compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
 					"function user.main():void;\n" +
-					"    X_1:void := querylog.define(\"explain select 3;\":str, \"default_pipe\":str, 6:int);\n" +
-					"    X_10:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 2:int, 0:int, 7:int, 3:bte);\n" +
+					"    X_1:void := querylog.define(\"explain select 3;\":str, \"default_pipe\":str, " + (isPostMar2025 ? "4" : "6") + ":int);\n" +
+					"    X_" + (isPostMar2025 ? "8" : "10") + ":int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 2:int, 0:int, 7:int, 3:bte);\n" +
 					"end user.main;\n");
 			}
 			sb.setLength(0);	// clear the output log buffer
@@ -2108,8 +2110,8 @@ public final class JDBC_API_Tester {
 					! isPreJan2022 ?
 					"4\n" +
 					"Another resultset\n" +
-					"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
-					"    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
+					"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, " + (isPostMar2025 ? "4" : "6") + ":int);\n" +
+					"    X_" + (isPostMar2025 ? "8" : "10") + "=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
 					:
 					"4\n" +
 					"Another resultset\n" +
