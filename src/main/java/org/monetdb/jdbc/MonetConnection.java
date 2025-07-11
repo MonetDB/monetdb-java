@@ -2059,8 +2059,8 @@ public class MonetConnection
 		if (checkMinimumDBVersion(11, 53, 0))
 			return false;
 
-		// Aug2024 has the fix starting from SP3
-		if (checkMinimumDBVersion(11, 51, 8))
+		// Aug2024 will have the fix starting from SP3
+		if (checkMinimumDBVersion(11, 51, 9))
 			return true;
 
 		// anything earlier doesn't have the fix (yet, as far as we know)
