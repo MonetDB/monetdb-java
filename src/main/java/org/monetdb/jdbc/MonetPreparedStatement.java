@@ -150,8 +150,9 @@ public class MonetPreparedStatement
 		 */
 		final int originalFetchSize = getFetchSize();
 		// increase the fetchSize temporarily before sending the PREPARE statement
-		// we can not use -1 (unlimited), so use a high value.
-		setFetchSize(50*1000);
+		// we can not use -1 (unlimited), so use a very high value.
+		if (!connection.supportsLargePrepares())
+			setFetchSize(50*1000 * 1000);
 
 		if (!super.execute("PREPARE " + prepareQuery))
 			throw new SQLException("Unexpected server response", "M0M10");

@@ -1963,6 +1963,63 @@ public class MonetConnection
 		return databaseMinorVersion;
 	}
 
+	private int databaseMicroVersion = 0;
+	/**
+	 * Get the micro product version of the connected MonetDB Database Server.
+	 * The number is extracted from the env_monet_version the first time and cached for next calls.
+	 * It is called from: MonetDatabaseMetaData and MonetConnection
+	 *
+	 * @return the MonetDB Database Server minor version number.
+	 * @throws SQLException if fetching MonetDB server version string failed
+	 */
+	int getDatabaseMicroVersion() throws SQLException {
+		if (databaseMicroVersion == 0) {
+			if (env_monet_version == null)
+				getEnvValues();
+			if (env_monet_version != null) {
+				try {
+					// from version string such as 11.33.9 extract number: 9
+					int start = env_monet_version.lastIndexOf('.'); // position of '.' or -1
+					start++;
+					databaseMicroVersion = Integer.parseInt(env_monet_version.substring(start));
+				} catch (NumberFormatException nfe) {
+					// ignore
+				}
+			}
+		}
+		return databaseMicroVersion;
+	}
+
+	/**
+	 * Utility method to check if connected server matches or is higher than a requested version.
+	 *
+	 * @param requiredMajor dbserver requiredMajor version number.
+	 * @param requiredMinor dbserver requiredMinor version number.
+	 * @param requiredMicro dbserver requiredMicro version nimber
+	 * @return true when the server version is higher or equal to the requiredMajor.requiredMinor.requiredMicro else false.
+	 */
+	boolean checkMinimumDBVersion(int requiredMajor, int requiredMinor, int requiredMicro) {
+		try {
+			int serverMajor = getDatabaseMajorVersion();
+			if (serverMajor > requiredMajor)
+				return true;
+			if (serverMajor < requiredMajor)
+				return false;
+
+			int serverMinor = getDatabaseMinorVersion();
+			if (serverMinor > requiredMinor)
+				return true;
+			if (serverMinor < requiredMinor)
+				return false;
+
+			int serverMicro = getDatabaseMicroVersion();
+			return serverMicro >= requiredMicro;
+		} catch (SQLException e) {
+			// is this really the best way to handle this?
+			return false;
+		}
+	}
+
 	/**
 	 * Utility method to check if connected server matches or is higher than a requested version.
 	 *
@@ -1971,11 +2028,7 @@ public class MonetConnection
 	 * @return true when the server version is higher or equal to the major.minor else false.
 	 */
 	boolean checkMinimumDBVersion(int major, int minor) {
-		try {
-			if ((getDatabaseMinorVersion() >= minor) && (getDatabaseMajorVersion() == major))
-				return true;
-		} catch (SQLException e) { /* ignore */	}
-		return false;
+		return checkMinimumDBVersion(major, minor, 0);
 	}
 
 	/**
@@ -1990,6 +2043,29 @@ public class MonetConnection
 		return checkMinimumDBVersion(11, 47);
 	}
 
+	/**
+	 * Older versions of MonetDB have a bug when PREPARE returns a large descriptor,
+	 * see https://github.com/MonetDB/MonetDB/issues/7622.
+	 * In those versions fetchSize must be set to a very large number as a workaround.
+	 *
+	 * @return true if the server supports arbitrarily large prepare results and does
+	 * not need the workaround.
+	 */
+	boolean supportsLargePrepares() {
+		// Mar2025 has the fix starting from SP2
+		if (checkMinimumDBVersion(11, 53, 4))
+			return true;
+		// older Mar2025 release
+		if (checkMinimumDBVersion(11, 53, 0))
+			return false;
+
+		// Aug2024 has the fix starting from SP3
+		if (checkMinimumDBVersion(11, 51, 8))
+			return true;
+
+		// anything earlier doesn't have the fix (yet, as far as we know)
+		return false;
+	}
 
 	// Internal cache for determining if system table sys.privilege_codes (new as of Jul2017 release) exists on connected server
 	private boolean queriedPrivilege_codesTable = false;

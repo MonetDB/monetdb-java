@@ -62,6 +62,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 	private int dbmsMajorVersion;
 	private int dbmsMinorVersion;
 	private boolean isPostDec2023;	// flag to support version specific output
+	private boolean isPostMar2025;
 	private boolean skipMALoutput = Config.isSkipMalOutput();
 
 	final private static int sbInitLen = 5468; // max needed size of sb
@@ -83,6 +84,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 		// from version 11.50 on, the MonetDB server returns different metadata for
 		// integer digits (1 less) and for clob and char columns (now return varchar).
 		isPostDec2023 = versionIsAtLeast(11, 50);
+		isPostMar2025 = versionIsAtLeast(11, 54);
 	}
 
 	@BeforeEach
@@ -128,7 +130,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 	}
 
 	private boolean versionIsAtLeast(int major, int minor) {
-		return (dbmsMajorVersion > major || (dbmsMajorVersion == major && dbmsMinorVersion >= minor));
+		return ((dbmsMajorVersion == major && dbmsMinorVersion >= minor) || dbmsMajorVersion > major);
 	}
 
 	// getter is used by the @EnabledIf attribute on Test_ClientInfo
@@ -2063,8 +2065,8 @@ public final class JDBC_API_Tester extends JUnitTester {
 			if (!skipMALoutput) {
 				compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
 					"function user.main():void;\n" +
-					"    X_1:void := querylog.define(\"explain select 3;\":str, \"default_pipe\":str, 6:int);\n" +
-					"    X_10:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 2:int, 0:int, 7:int, 3:bte);\n" +
+					"    X_1:void := querylog.define(\"explain select 3;\":str, \"default_pipe\":str, " + (isPostMar2025 ? "4" : "6") + ":int);\n" +
+					"    X_" + (isPostMar2025 ? "8" : "10") + ":int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 2:int, 0:int, 7:int, 3:bte);\n" +
 					"end user.main;\n");
 			}
 			sb.setLength(0);	// clear the output log buffer
@@ -2089,8 +2091,8 @@ public final class JDBC_API_Tester extends JUnitTester {
 					! isPreJan2022 ?
 					"4\n" +
 					"Another resultset\n" +
-					"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
-					"    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
+					"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, " + (isPostMar2025 ? "4" : "6") + ":int);\n" +
+					"    X_" + (isPostMar2025 ? "8" : "10") + "=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
 					:
 					"4\n" +
 					"Another resultset\n" +
@@ -5588,7 +5590,8 @@ public final class JDBC_API_Tester extends JUnitTester {
 					String tt = rs2.getString(1);
 					// the STREAM TABLE type is REMOVED in post Oct2020 releases, so filter it out for a stable output on all releases
 					// the UNLOGGED TABLE type is ADDED in post Jan2022 releases, so filter it out for a stable output on all releases
-					if (! ("STREAM TABLE".equals(tt) || "UNLOGGED TABLE".equals(tt)) )
+					// the LOCAL TEMPORARY VIEW type is ADDED in 11.53.4 (Mar2025-SP1) releases, filter it out for a stable output on all releases
+					if (! ("STREAM TABLE".equals(tt) || "UNLOGGED TABLE".equals(tt) || "LOCAL TEMPORARY VIEW".equals(tt)) )
 						sb.append(tt).append("\n");
 				}
 				rs2.close();

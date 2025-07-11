@@ -8,12 +8,12 @@ The master repository is: [hg monetdb-java](https://www.monetdb.org/hg/monetdb-j
 A read-only copy is available on: [github monetdb-java](https://github.com/MonetDB/monetdb-java).
 
 
-These Java programs are designed to work only with the [MonetDB Database System](https://www.monetdb.org/).
+These Java programs are designed to work with the [MonetDB Database System](https://www.monetdb.org/).
 They support MonetDB servers from version 11.21 (Jul2015) and higher.
 However only the latest MonetDB server versions are tested actively.
 
 The `MonetDB JDBC driver` allows Java programs to connect to a MonetDB
-database server using standard, database independent Java code.  
+database server using standard, database independent Java code.
 It is an open source JDBC driver implementing JDBC API 4.2, written in Pure Java (Type 4),
 and communicates in the MonetDB native network protocol.
 
@@ -35,46 +35,46 @@ By default debug symbols are **not** included in the compiled class and jar file
 To include debug symbols, edit file `build.properties` change line `enable_debug=true` and rebuild.
 
 ## Tests
-**Note** For the tests to succeed you first have to startup a MonetDB server (on localhost, port 50000).
-
 To test, simply run `make test` command from a shell.
 
-The `JdbcClient CLI program` (jdbcclient.jre8.jar) includes and uses the MonetDB JDBC driver,
-so it can also be used to test connectivity and sending SQL statements to a MonetDB server.
+**Note** For the tests to succeed you first have to startup a MonetDB server (on localhost, port 50000).
 
-The `JdbcClient CLI program` can be started via shell commands:
+## JDBC Driver
+The MonetDB JDBC driver consists of one single jar file: `monetdb-jdbc-##.#.jre8.jar`.
+
+We recommend to always use the [latest released jar file](https://www.monetdb.org/downloads/Java/).
+The latest released JDBC driver can be downloaded from [MonetDB Java Download Area](https://www.monetdb.org/downloads/Java/).
+
+See [JDBC driver info](https://www.monetdb.org/documentation/user-guide/client-interfaces/libraries-drivers/jdbc-driver/) for more info.
+
+## JdbcClient program
+The `JdbcClient program` is an interactive program using a command-line interface (CLI), similar to the mclient program.
+It consists of one single jar file: [jdbcclient.jre8.jar](https://www.monetdb.org/downloads/Java/) and includes and uses the MonetDB JDBC driver.
+
+The `JdbcClient program` can be started via shell commands:
 ```
 cd jars
 
 java -jar jdbcclient.jre8.jar
 ```
 
-To get a list of JdbcClient startup options simply run:
+To get a list of JdbcClient startup options simply execute:
 ```
 java -jar jdbcclient.jre8.jar --help
 ```
 
 See [JdbcClient doc](https://www.monetdb.org/documentation/user-guide/client-interfaces/jdbcclient/) for more info.
 
-## JDBC Driver
-The JDBC driver consists of one single jar file: `monetdb-jdbc-##.#.jre8.jar`.
-
-We recommend to always use the latest released jar file.
-The latest released JDBC driver can be downloaded from [MonetDB Java Download Area](https://www.monetdb.org/downloads/Java/).
-
-See [JDBC driver info](https://www.monetdb.org/documentation/user-guide/client-interfaces/libraries-drivers/jdbc-driver/) for more info.
-
 ## Reporting issues
-Before reporting an issue, please check if you have used the latest released jar files.
+Before reporting an issue, please check if you have used the [latest released jar files](https://www.monetdb.org/downloads/Java/).
 Some issues may already have been fixed in the latest released jar files.
 
 If you find a bug in the latest released jar files or have a request, please log it as an issue at:
 [github monetdb-java issues](https://github.com/MonetDB/monetdb-java/issues).
-
 Include which versions of the released JDBC driver and MonetDB server you are using and on which platforms.  
 For bugs also include a small standalone java reproduction program.
 
-**Note** we do not accept Pull requests on Github.
+**Note** we do not accept Pull requests on Github as it is a read-only copy.
 
 ## Copyright Notice
 SPDX-License-Identifier: MPL-2.0
@@ -86,4 +86,3 @@ file, You can obtain one at http://mozilla.org/MPL/2.0/.
 Copyright 2024, 2025 MonetDB Foundation;  
 Copyright August 2008 - 2023 MonetDB B.V.;  
 Copyright 1997 - July 2008 CWI.
-
