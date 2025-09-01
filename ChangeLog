@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Mon Sep  1 2025 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Automatic compression and decompression in FileTransferHandler can now
+  be disabled by passing 'false' as the third constructor parameter.
+
 * Thu Jul  3 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected output of columns SEARCHABLE and AUTO_INCREMENT of method
   DatabaseMetaData.getTypeInfo(). Most types are searchable with LIKE

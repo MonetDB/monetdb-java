@@ -187,6 +187,8 @@ public final class OnClientTester {
 				test_FileTransferHandlerUploadCompressed();
 			if (isSelected("test_FileTransferHandlerUploadCompressedSkip"))
 				test_FileTransferHandlerUploadCompressedSkip();
+			if (isSelected("test_FileTransferHandlerUploadCompressionDisabled"))
+				test_FileTransferHandlerUploadCompressionDisabled();
 			if (isSelected("FileTransferHandlerDownloadRefused"))
 				test_FileTransferHandlerDownloadRefused();
 		} catch (Failure e) {
@@ -773,25 +775,31 @@ public final class OnClientTester {
 
 	private void test_FileTransferHandlerUploadNotCompressed() throws IOException, SQLException, Failure {
 		initTest("FileTransferHandlerUploadNotCompressed");
-		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, false, 0);
+		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, false, "", 0, true);
 		exitTest();
 	}
 
 	private void test_FileTransferHandlerUploadNotCompressedSkip() throws IOException, SQLException, Failure {
 		initTest("FileTransferHandlerUploadNotCompressedSkip");
-		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, false, 2);
+		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, false, "", 2, true);
 		exitTest();
 	}
 
 	private void test_FileTransferHandlerUploadCompressed() throws IOException, SQLException, Failure {
 		initTest("FileTransferHandlerUploadCompressed");
-		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, true, 0);
+		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, true, ".gz", 0, true);
 		exitTest();
 	}
 
 	private void test_FileTransferHandlerUploadCompressedSkip() throws IOException, SQLException, Failure {
 		initTest("FileTransferHandlerUploadCompressedSkip");
-		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, true, 2);
+		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, true, ".gz", 2, true);
+		exitTest();
+	}
+
+	private void test_FileTransferHandlerUploadCompressionDisabled() throws IOException, SQLException, Failure {
+		initTest("test_FileTransferHandlerUploadCompressionDisabled");
+		testFileTransferHandlerUploadCompressed(StandardCharsets.UTF_8, false, ".gz", 0, false);
 		exitTest();
 	}
 
@@ -857,15 +865,14 @@ public final class OnClientTester {
 //		assertEq("query result", two, result);
 	}
 
-	private void testFileTransferHandlerUploadCompressed(Charset encoding, boolean compressed, int skipLines) throws IOException, SQLException, Failure {
+	private void testFileTransferHandlerUploadCompressed(Charset encoding, boolean compressData, String suffix, int skipLines, boolean compressionEnabled) throws IOException, SQLException, Failure {
 		prepare();
 		Path d = getTmpDir(currentTestName);
 		String fileName = "data.txt";
-		if (compressed)
-			fileName += ".gz";
+		fileName += suffix;
 		Path f = d.resolve(fileName);
 		OutputStream s = Files.newOutputStream(f, CREATE_NEW);
-		if (compressed) {
+		if (compressData) {
 			s = new GZIPOutputStream(s);
 		}
 		Writer w = new OutputStreamWriter(s, encoding);
@@ -882,7 +889,7 @@ public final class OnClientTester {
 			i += 1;
 		}
 		ps.close();
-		conn.setUploadHandler(new FileTransferHandler(d, encoding));
+		conn.setUploadHandler(new FileTransferHandler(d, encoding, compressionEnabled));
 		String query = "COPY OFFSET " + (skipLines + 1) + " INTO foo FROM '" + fileName + "' ON CLIENT";
 		update(query);
 		assertQueryInt("SELECT SUM(i) FROM foo", expectedSum);
