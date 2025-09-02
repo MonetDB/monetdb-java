@@ -3447,7 +3447,7 @@ public final class MonetDatabaseMetaData
 		// exclude the built-in types (I assume they always have id <= 99 and eclass < 18)
 		"WHERE t.\"id\" > 99" +
 		" AND t.\"eclass\" >= 18" +
-		" AND t.\"sqlname\" NOT IN ('inet','json','url','uuid')");
+		" AND t.\"sqlname\" NOT IN ('inet','json','url','uuid','inet4','inet6')");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.
