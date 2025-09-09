@@ -559,6 +559,10 @@ public final class Target {
 	}
 
 	public String buildUrl() {
+		return buildUrl(false);
+	}
+
+	public String buildUrl(boolean includeCredentials) {
 		final StringBuilder sb = new StringBuilder(128);
 		sb.append("jdbc:");
 		sb.append(tls ? "monetdbs" : "monetdb");
@@ -571,8 +575,11 @@ public final class Target {
 		sb.append('/').append(database);
 		String sep = "?";
 		for (Parameter parm : Parameter.values()) {
-			if (parm.isCore || parm == Parameter.USER || parm == Parameter.PASSWORD)
+			if (parm.isCore)
 				continue;
+			else if (parm == Parameter.USER || parm == Parameter.PASSWORD)
+				if (!includeCredentials)
+					continue;
 			Object defaultValue = parm.getDefault();
 			if (defaultValue == null)
 				continue;
