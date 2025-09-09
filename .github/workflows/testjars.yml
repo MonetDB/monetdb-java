@@ -34,7 +34,7 @@ jobs:
       - name: Start containers
         if: (!steps.cache-all.outputs.cache-hit)
         run: |
-          docker run -d -e MDB_DB_ADMIN_PASS=monetdb -e MDB_CREATE_DBS=jdbctest -p 50000:50000 docker.io/monetdb/dev-builds:Aug2024
+          docker run -d -e MDB_DB_ADMIN_PASS=monetdb -e MDB_CREATE_DBS=testjdbc -p 50000:50000 docker.io/monetdb/dev-builds:Aug2024
           docker run -d -e TLSTEST_DOMAIN=localhost -p 4300-4350:4300-4350 docker.io/monetdb/tlstester:0.3.1
 
       - name: Cache Maven downloads
@@ -130,7 +130,7 @@ jobs:
         env:
           MDB_DAEMON_PASS: monetdb
           MDB_DB_ADMIN_PASS: monetdb
-          MDB_CREATE_DBS: jdbctest
+          MDB_CREATE_DBS: testjdbc
         ports:
           - 50000:50000
       tlstester:
@@ -163,7 +163,7 @@ jobs:
 
       - name: API Tests
         run: |
-          java -cp jars/'*' JDBC_API_Tester -v jdbc:monetdb:///jdbctest
+          java -cp jars/'*' JDBC_API_Tester -v jdbc:monetdb:///testjdbc
 
       - name: TLS Tests
         run: |
@@ -172,4 +172,4 @@ jobs:
       - name: Slow Tests
         if: false
         run: |
-          java -cp jars/'*' SlowTester -v jdbc:monetdb:///jdbctest
+          java -cp jars/'*' SlowTester -v jdbc:monetdb:///testjdbc

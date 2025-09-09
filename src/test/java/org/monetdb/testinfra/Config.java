@@ -27,7 +27,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 public class Config {
 	public static final String SERVER_URL_PROPERTY = "test.url";
 	public static final String SERVER_URL_ENVVAR = "MONETDB_TEST_URL";
-	public static final String SERVER_URL_DEFAULT = "jdbc:monetdb:///jdbctest";
+	public static final String SERVER_URL_DEFAULT = "jdbc:monetdb:///testjdbc";
 
 	public static final String TLSTESTER_PROPERTY = "test.tlstester";
 	public static final String TLSTESTER_ENVVAR = "MONETDB_TLSTESTER";
