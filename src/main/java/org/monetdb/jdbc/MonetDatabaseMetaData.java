@@ -1568,7 +1568,6 @@ public final class MonetDatabaseMetaData
 
 	/**
 	 * Does the database support the given transaction isolation level?
-	 * We only support TRANSACTION_SERIALIZABLE as far as I know
 	 *
 	 * @param level the values are defined in java.sql.Connection
 	 * @return true if so
@@ -1576,7 +1575,7 @@ public final class MonetDatabaseMetaData
 	 */
 	@Override
 	public boolean supportsTransactionIsolationLevel(final int level) {
-		return level == Connection.TRANSACTION_SERIALIZABLE;
+		return level != Connection.TRANSACTION_NONE;
 	}
 
 	/**
