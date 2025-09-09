@@ -176,7 +176,7 @@ public class MonetConnection
 				final String pre = fname.substring(0, ext);
 				final String suf = fname.substring(ext);
 
-				for (int i = 1; f.exists(); i++) {
+				for (int i = 1; !f.createNewFile(); i++) {
 					f = new File(pre + "-" + i + suf);
 				}
 
