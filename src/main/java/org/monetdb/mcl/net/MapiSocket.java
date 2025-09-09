@@ -299,8 +299,12 @@ public final class MapiSocket {
 	 * @throws MCLException if an MCL related error occurs
 	 */
 	public List<String> connect(Target target, OptionsCallback callback) throws MCLException, MCLParseException, IOException {
-		// get rid of any earlier connection state, including the existing target
+		// Get rid of any earlier connection state, including the existing target.
+		// (But preserve the logging)
+		Writer tmpLog = this.log;
+		this.log = null;
 		close();
+		this.log = tmpLog;
 		this.target = target;
 
 		Target.Validated validated;
