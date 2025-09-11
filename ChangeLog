@@ -1,6 +1,18 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Tue Sep  9 2025 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Fixed the 'debug' and 'logfile' properties. The log file was opened
+  but immediately closed again.
+- Made the log file name choosing algorithm more robust against race
+  conditions: instead of checking whether the intended file already exists
+  and opening it when it doesn't, open it in 'create' mode and handle
+  the error that gets thrown when it already exists.
+- conn.getMetaData().supportsTransactionIsolationLevel() now always
+  returns 'true' exept for level TRANSACTION_NONE. It used to return 'true'
+  only for TRANSACTION_SERIALIZABLE, but serializable actually implies
+  the other levels. Matches the behavior of PostgreSQL.
+
 * Mon Sep  1 2025 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
 - Automatic compression and decompression in FileTransferHandler can now
   be disabled by passing 'false' as the third constructor parameter.
@@ -9,6 +21,19 @@
 - Corrected output of columns SEARCHABLE and AUTO_INCREMENT of method
   DatabaseMetaData.getTypeInfo(). Most types are searchable with LIKE
   pattern matching. AUTO_INCREMENT is no longer true for base integer types.
+
+* Fri Apr  4 2025 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Improve error message when server closes the connection immediately after
+  accepting it.
+
+* Wed Mar 31 2025 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Fixed more result set leaks.
+
+* Wed Feb 26 2025 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Properties 'clientkey' and 'clientcert' are no longer included in the
+  result of Driver#getPropertyInfo() because though the driver recognizes
+  them, it does not support them.
+- Fixed a number of result set leak when Statement#setMaxRows was called.
 
 * Thu Feb 13 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected the returned integer values of Statement methods
