@@ -41,6 +41,8 @@ Copyright 1997 - July 2008 CWI.
     value="jdbc:monetdb://localhost/?user=monetdb&amp;password=monetdb${debug}" />
   <property name="jdbctests-jar"
     value="${jardir}/jdbctests.jar" />
+  <property name="merocontrol_jar"
+    value="${jardir}/merocontrol.${jre.version}.jar" />
 
   <!-- Prepares the build directory -->
   <target name="prepare">
@@ -64,6 +66,7 @@ Copyright 1997 - July 2008 CWI.
       <classpath>
         <pathelement path="${srcdir}" />
         <pathelement path="${jdbc_jar}" />
+        <pathelement path="${merocontrol_jar}" />
       </classpath>
     </javac>
   </target>
@@ -84,6 +87,7 @@ Copyright 1997 - July 2008 CWI.
         <include name="ConnectionTests$*.class" />
         <include name="TLSTester.class" />
         <include name="TLSTester$*.class" />
+        <include name="ControlTester.class" />
       </fileset>
       <fileset dir="${srcdir}">
         <include name="tests.md" />

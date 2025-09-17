@@ -44,8 +44,10 @@ jobs:
     - name: Build
       run: make
 
-    - name: Create jar symlink
-      run: ln -s monetdb-jdbc*.jar monetdb-jdbc.jar
+    - name: Create jar symlinks
+      run: |
+        ln -s monetdb-jdbc.*.jar monetdb-jdbc.jar
+        ln -s merocontrol.*.jar merocontrol.jar
       working-directory: jars
 
     - name: Run JDBC_API_Tester
@@ -53,3 +55,6 @@ jobs:
 
     - name: Run OnClientTester
       run: java -cp jars/monetdb-jdbc.jar:jars/jdbctests.jar OnClientTester 'jdbc:monetdb://localhost:50000/monetdb?user=monetdb&password=monetdb' -v
+
+    - name: Run ControlTester
+      run: java -cp jars/monetdb-jdbc.jar:jars/merocontrol.jar:jars/jdbctests.jar ControlTester localhost monetdb

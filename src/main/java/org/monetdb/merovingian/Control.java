@@ -29,19 +29,19 @@ import java.util.List;
 import java.util.Properties;
 
 /**
- * A Control class to perform operations on a remote merovingian
- * instance, using the TCP control protocol.
+ * <p>A Control class to perform operations on a remote merovingian
+ * instance, using the TCP control protocol.</p>
  *
- * This class implements the protocol specific bits to perform all
+ * <p>This class implements the protocol specific bits to perform all
  * possible actions against a merovingian server that has remote control
- * facilities enabled.
+ * facilities enabled.</p>
  *
- * In the merovingian world, other merovingians in the vicinity are
+ * <p>In the merovingian world, other merovingians in the vicinity are
  * known to each merovingian, allowing to perform cluster wide actions.
  * The implementation taken in this class is to require one known
  * merovingian to get insight in the entire network.  Note that
  * connecting to a merovingian requires a passphrase that is likely to
- * be different for each merovingian.
+ * be different for each merovingian.</p>
  *
  * @author Fabian Groffen
  * @version 1.0
@@ -74,7 +74,7 @@ public class Control {
 		this.port = port;
 		this.passphrase = passphrase;
 	}
-	
+
 	/**
 	 * Sets the socket timeout.
 	 *
@@ -151,14 +151,9 @@ public class Control {
 			ms.close();
 
 			// Try old protocol instead
-			Socket s;
-			PrintStream out;
-			BufferedReader in;
-			s = new Socket(host, port);
-			out = new PrintStream(s.getOutputStream());
-			in = new BufferedReader(
-					new InputStreamReader(s.getInputStream()));
-			try {
+			try (Socket s = new Socket(host, port);
+				 PrintStream out = new PrintStream(s.getOutputStream());
+				 BufferedReader in = new BufferedReader(new InputStreamReader(s.getInputStream()))) {
 				/* login ritual, step 1: get challenge from server */
 				String response = in.readLine();
 				if (response == null)
@@ -168,7 +163,7 @@ public class Control {
 						!response.startsWith("merovingian:2:"))
 					throw new MerovingianException("unsupported merovingian server");
 
-				String[] tokens = response.split(":");
+				String[] tokens = response.split(":", 4);
 				if (tokens.length < 3)
 					throw new MerovingianException("did not understand merovingian server");
 				String version = tokens[1];
@@ -187,7 +182,7 @@ public class Control {
 					throw new MerovingianException("server closed the connection");
 				}
 
-				if (!response.substring(1).equals(RESPONSE_OK)) {
+				if (response.length() != 3 || response.indexOf(RESPONSE_OK) != 1) {
 					throw new MerovingianException(response);
 				}
 
@@ -201,7 +196,7 @@ public class Control {
 				if (response == null) {
 					throw new MerovingianException("server closed the connection");
 				}
-				if (!response.substring(1).equals(RESPONSE_OK)) {
+				if (response.length() != 3 || response.indexOf(RESPONSE_OK) != 1) {
 					throw new MerovingianException(response);
 				}
 
@@ -213,10 +208,6 @@ public class Control {
 					l.add(response);
 				}
 				return l;
-			} finally {
-				in.close();
-				out.close();
-				s.close();
 			}
 		}
 
@@ -228,7 +219,7 @@ public class Control {
 		case ERROR:
 			throw new MerovingianException(tmpLine.substring(6));
 		case RESULT:
-			if (!tmpLine.substring(1).equals(RESPONSE_OK))
+			if (tmpLine.length() != 3 || tmpLine.indexOf(RESPONSE_OK) != 1)
 				throw new MerovingianException(tmpLine);
 			break;
 		default:
@@ -239,6 +230,7 @@ public class Control {
 		lineloop:
 		while (true) {
 			min.advance();
+			tmpLine = min.getLine();
 			switch (min.getLineType()) {
 				case PROMPT:
 				break lineloop;
@@ -275,7 +267,7 @@ public class Control {
 			throw new IllegalStateException();
 		}
 	}
-	
+
 	public void stop(String database)
 		throws MerovingianException, IOException
 	{
@@ -361,7 +353,7 @@ public class Control {
 			if (pos > 0) {
 				ret.setProperty(
 						responseLine.substring(0, pos),
-						responseLine.substring(pos + 1, responseLine.length()));
+						responseLine.substring(pos + 1));
 			}
 		}
 		return ret;
@@ -407,24 +399,24 @@ public class Control {
 	public List<SabaothDB> getAllStatuses()
 		throws MerovingianException, IOException
 	{
-		List<SabaothDB> l = new ArrayList<SabaothDB>();
 		List<String> response = sendCommand("#all", "status", true);
 		try {
+			List<SabaothDB> l = new ArrayList<SabaothDB>();
 			for (String responseLine : response) {
 				l.add(new SabaothDB(responseLine));
 			}
+			return Collections.unmodifiableList(l);
 		} catch (IllegalArgumentException e) {
 			throw new MerovingianException(e.getMessage());
 		}
-		return Collections.unmodifiableList(l);
 	}
 
 	public List<URI> getAllNeighbours()
 		throws MerovingianException, IOException
 	{
-		List<URI> l = new ArrayList<URI>();
 		List<String> response = sendCommand("anelosimus", "eximius", true);
 		try {
+			List<URI> l = new ArrayList<URI>();
 			for (String responseLine : response) {
 				// format is <db>\t<uri>
 				String[] parts = responseLine.split("\t", 2);
@@ -437,9 +429,9 @@ public class Control {
 					l.add(new URI(parts[1] + parts[0]));
 				}
 			}
+			return Collections.unmodifiableList(l);
 		} catch (URISyntaxException e) {
 			throw new MerovingianException(e.getMessage());
 		}
-		return Collections.unmodifiableList(l);
 	}
 }
