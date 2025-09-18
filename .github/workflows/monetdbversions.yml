@@ -2,6 +2,9 @@
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 # or https://github.com/actions/checkout  and  https://github.com/actions/setup-java
 
+# See https://hub.docker.com/r/monetdb/monetdb/tags for docker image names of official MonetDB releases
+# See https://hub.docker.com/r/monetdb/dev-builds/tags for docker image name of default branch
+
 name: Test with various MonetDB versions
 
 on: [push]
@@ -16,12 +19,14 @@ jobs:
         monetdbversion:
           - "monetdb/dev-builds:default"
           - "monetdb/monetdb:latest"
+          - "monetdb/monetdb:Mar2025-SP2"
+          - "monetdb/monetdb:Mar2025-SP1"
           - "monetdb/monetdb:Mar2025"
-          - "monetdb/dev-builds:Aug2024"
-          - "monetdb/dev-builds:Dec2023"
-          - "monetdb/dev-builds:Jun2023"
-          - "monetdb/dev-builds:Sep2022"
-          - "monetdb/dev-builds:Jan2022"
+          - "monetdb/monetdb:Aug2024-SP2"
+          - "monetdb/monetdb:Dec2023-SP4"
+          - "monetdb/monetdb:Jun2023-SP3"
+          - "monetdb/monetdb:Sep2022-SP3"
+          - "monetdb/monetdb:Jan2022-SP4"
 
     services:
       monetdb_container:
