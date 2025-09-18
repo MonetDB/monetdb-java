@@ -1378,7 +1378,7 @@ public class MonetResultSet
 				return Boolean.valueOf(val);
 			case Types.VARCHAR:
 			{
-				// The MonetDB types: inet, json, url, uuid and xml are all mapped to Types.VARCHAR in MonetDriver.typeMap
+				// The MonetDB types: inet, inet4, inet6, json, url, uuid and xml are all mapped to Types.VARCHAR in MonetDriver.typeMap
 				// For these MonetDB types (except json and xml, see comments below) we try to create objects of the corresponding class.
 				final String MonetDBType = types[columnIndex - 1];
 				switch (MonetDBType.length()) {
@@ -1421,6 +1421,28 @@ public class MonetResultSet
 						// Note that it would make our JDBC driver dependent of an external jar
 						// and we don't want that so simply return it as String object
 //						return val;
+					}
+					break;
+				case 5:
+					if ("inet4".equals(MonetDBType)) {
+						try {
+							final org.monetdb.jdbc.types.Inet4 inet_obj = new org.monetdb.jdbc.types.Inet4();
+							inet_obj.fromString(val);
+							return inet_obj;
+						} catch (Exception exc) {
+							// ignore exception and just return the val String object
+							return val;
+						}
+					} else
+					if ("inet6".equals(MonetDBType)) {
+						try {
+							final org.monetdb.jdbc.types.Inet6 inet_obj = new org.monetdb.jdbc.types.Inet6();
+							inet_obj.fromString(val);
+							return inet_obj;
+						} catch (Exception exc) {
+							// ignore exception and just return the val String object
+							return val;
+						}
 					}
 					break;
 				}
@@ -3331,6 +3353,20 @@ public class MonetResultSet
 				return type.cast(java.net.InetAddress.getByName(slash < 0 ? val : val.substring(0, slash)));
 			} catch (java.net.UnknownHostException exc) {
 				throw new SQLException("conversion to java.net.InetAddress object failed: " + exc.getMessage(), "M1M05");
+			}
+		}
+		if (type == java.net.Inet4Address.class) {
+			try {
+				return type.cast(java.net.Inet4Address.getByName(val));
+			} catch (java.net.UnknownHostException exc) {
+				throw new SQLException("conversion to java.net.Inet4Address object failed: " + exc.getMessage(), "M1M05");
+			}
+		}
+		if (type == java.net.Inet6Address.class) {
+			try {
+				return type.cast(java.net.Inet6Address.getByName(val));
+			} catch (java.net.UnknownHostException exc) {
+				throw new SQLException("conversion to java.net.Inet6Address object failed: " + exc.getMessage(), "M1M05");
 			}
 		}
 

@@ -1,6 +1,9 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Sep 18 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Added support for new MonetDB data types: inet4 and inet6.
+
 * Tue Sep  9 2025 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
 - Fixed the 'debug' and 'logfile' properties. The log file was opened
   but immediately closed again.

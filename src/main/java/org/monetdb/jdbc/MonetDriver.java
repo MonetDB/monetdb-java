@@ -239,6 +239,8 @@ public final class MonetDriver implements Driver {
 		// typeMap.put("geometrya", Integer.valueOf(Types.???));
 		typeMap.put("hugeint", Integer.valueOf(Types.NUMERIC));
 		typeMap.put("inet", Integer.valueOf(Types.VARCHAR));
+		typeMap.put("inet4", Integer.valueOf(Types.VARCHAR));	// New as of Nov2025 release
+		typeMap.put("inet6", Integer.valueOf(Types.VARCHAR));	// New as of Nov2025 release
 		typeMap.put("int", Integer.valueOf(Types.INTEGER));
 		typeMap.put("json", Integer.valueOf(Types.VARCHAR));
 		// typeMap.put("mbr", Integer.valueOf(Types.???));

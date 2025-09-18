@@ -102,6 +102,8 @@ public class MonetConnection
 		private static final long serialVersionUID = 1L;
 		{
 			put("inet", org.monetdb.jdbc.types.INET.class);
+			put("inet4", org.monetdb.jdbc.types.Inet4.class);
+			put("inet6", org.monetdb.jdbc.types.Inet6.class);
 			put("url",  org.monetdb.jdbc.types.URL.class);
 		}
 	};
