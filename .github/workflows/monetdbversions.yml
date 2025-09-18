@@ -46,8 +46,8 @@ jobs:
 
     - name: Create jar symlinks
       run: |
-        ln -s monetdb-jdbc.*.jar monetdb-jdbc.jar
-        ln -s merocontrol.*.jar merocontrol.jar
+        ln -sv monetdb-jdbc-*.jre*.jar monetdb-jdbc.jar
+        ln -sv merocontrol.*.jar merocontrol.jar
       working-directory: jars
 
     - name: Run JDBC_API_Tester
