@@ -2088,37 +2088,38 @@ public final class JDBC_API_Tester {
 			}
 			sb.setLength(0);	// clear the output log buffer
 
-			if (!isPostMar2025) {
-				// trace statements are supported via JDBC. Note that it returns two resultsets, one with the query result and next one with the trace result.
-				qry = "trace SELECT 4;";
-				rs = stmt.executeQuery(qry);
-				while (rs.next()) {
-					sb.append(rs.getString(1)).append("\n");
-				}
-				if (stmt.getMoreResults()) {
-					sb.append("Another resultset\n");
-					rs = stmt.getResultSet();
-					while (rs.next()) {
-						sb.append(rs.getString(2)).append("\n");
-					}
-				}
-				rs.close();
-				rs = null;
-				if (!skipMALoutput) {
-					compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
-							      ! isPreJan2022 ?
-							      "4\n" +
-							      "Another resultset\n" +
-							      "    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
-							      "    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
-							      :
-							      "4\n" +
-							      "Another resultset\n" +
-							      "X_0=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
-							      "X_1=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n");
-				}
-				sb.setLength(0);	// clear the output log buffer
+			// trace statements are supported via JDBC. Note that it returns two resultsets, one with the query result and next one with the trace result.
+			qry = "trace SELECT 4;";
+			rs = stmt.executeQuery(qry);
+			while (rs.next()) {
+				sb.append(rs.getString(1)).append("\n");
 			}
+			if (stmt.getMoreResults()) {
+				sb.append("Another resultset\n");
+				rs = stmt.getResultSet();
+				while (rs.next()) {
+					sb.append(rs.getString(2)).append("\n");
+				}
+			}
+			rs.close();
+			rs = null;
+			if (!skipMALoutput) {
+				compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
+					isPostMar2025 ?
+						"4\n"	/* after Mar2025 release trace command no longer returns second resultset */
+					: isPreJan2022 ?
+						"4\n" +
+						"Another resultset\n" +
+						"X_0=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
+						"X_1=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
+					:
+						"4\n" +
+						"Another resultset\n" +
+						"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
+						"    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
+					);
+			}
+			sb.setLength(0);	// clear the output log buffer
 
 			// debug statements are NOT supported via JDBC driver, so the execution should throw an SQLException
 			// Note: as of release 11.47 (Jun2023) the debug statement is not supported anymore, error msg: syntax error in: "debug"
