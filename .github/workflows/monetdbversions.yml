@@ -27,6 +27,7 @@ jobs:
           - "monetdb/monetdb:Jun2023-SP3"
           - "monetdb/monetdb:Sep2022-SP3"
           - "monetdb/monetdb:Jan2022-SP4"
+          - "monetdb/monetdb:Jul2021-SP2"
 
     services:
       monetdb_container:
