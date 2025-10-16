@@ -12,6 +12,11 @@ jre21jars: src/main/java/org/monetdb/jdbc/MonetVersion.java
 	ant -f build.xml -Djvm.version=21 distjdbc
 	rm -rf build
 
+jre25jars: src/main/java/org/monetdb/jdbc/MonetVersion.java
+	rm -rf build
+	ant -f build.xml -Djvm.version=25 distjdbc
+	rm -rf build
+
 test: all
 	cd tests; ant -f build.xml test
 
