@@ -1737,7 +1737,7 @@ public class MonetConnection
 
 			// as of release Jun2020 (11.37.7) the function sys.settimeout(secs bigint)
 			// is deprecated and replaced by new sys.setquerytimeout(secs int)
-			if (checkMinimumDBVersion(11, 37))
+			if (checkMinimumDBVersion(11, 37, 7))
 				callstmt = "CALL sys.\"setquerytimeout\"(" + seconds + ")";
 			else
 				callstmt = "CALL sys.\"settimeout\"(" + seconds + ")";
@@ -2042,7 +2042,7 @@ public class MonetConnection
 	 * @return true when the server supports ODBC/JDBC escape sequence syntax else false.
 	 */
 	boolean supportsEscapeSequenceSyntax() {
-		return checkMinimumDBVersion(11, 47);
+		return checkMinimumDBVersion(11, 47, 0);
 	}
 
 	/**
@@ -2081,6 +2081,15 @@ public class MonetConnection
 	 * @return whether the system table sys.privilege_codes exist in the connected server.
 	 */
 	boolean privilege_codesTableExists() {
+		if (hasPrivilege_codesTable)
+			return true;
+
+		// optimisation: servers from Jul2021 (11.41.5) onwards will have the system table. No need to query the server.
+		if (checkMinimumDBVersion(11, 41, 5)) {
+			hasPrivilege_codesTable = true;
+			return hasPrivilege_codesTable;
+		}
+
 		if (!queriedPrivilege_codesTable) {
 			querySysTable();
 			queriedPrivilege_codesTable = true;	// set flag, so the querying is done only at first invocation.
@@ -2100,6 +2109,15 @@ public class MonetConnection
 	 * @return whether the system table sys.comments exist in the connected server.
 	 */
 	boolean commentsTableExists() {
+		if (hasCommentsTable)
+			return true;
+
+		// optimisation: servers from Jul2021 (11.41.5) onwards will have the system table. No need to query the server.
+		if (checkMinimumDBVersion(11, 41, 5)) {
+			hasCommentsTable = true;
+			return hasCommentsTable;
+		}
+
 		if (!queriedCommentsTable) {
 			querySysTable();
 			queriedCommentsTable = true;	// set flag, so the querying is done only at first invocation.
