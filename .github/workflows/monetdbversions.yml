@@ -19,6 +19,7 @@ jobs:
         monetdbversion:
           - "monetdb/dev-builds:default"
           - "monetdb/monetdb:latest"
+          - "monetdb/monetdb:Mar2025-SP3"
           - "monetdb/monetdb:Mar2025-SP2"
           - "monetdb/monetdb:Mar2025-SP1"
           - "monetdb/monetdb:Mar2025"
