@@ -7395,6 +7395,7 @@ public final class JDBC_API_Tester {
 			int updates;
 
 			stmt = con.createStatement();
+			stmt.executeUpdate("drop table if exists " + inetType);
 			stmt.executeUpdate("create table " + inetType + "(i " + inetType + ", c varchar(80))");
 			sb.append("Table " + inetType + " created\n");
 
