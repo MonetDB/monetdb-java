@@ -6609,7 +6609,7 @@ public final class JDBC_API_Tester {
 				"12. show content of column(s): \"my\"\"double_doublequote\"\n" +
 				"Resultset with 1 columns\n" +
 				"	Column Name, Column Label:\n" +
-				"1	my\\\"double_doublequote	my\\\"double_doublequote\n" +
+				"1	my\"double_doublequote	my\"double_doublequote\n" +
 				"Data rows:\n" +
 				"\"my\"\"double_doublequote\"\n" +
 				"my\"\"double_doublequote\n" +
@@ -6665,7 +6665,7 @@ public final class JDBC_API_Tester {
 				"5	my	tab	my	tab\n" +
 				"6	my	,tab_comma	my	,tab_comma\n" +
 				"7	my,	comma_tab	my,	comma_tab\n" +
-				"8	my\\\"double_doublequote	my\\\"double_doublequote\n" +
+				"8	my\"double_doublequote	my\"double_doublequote\n" +
 				"9	Abc	Abc\n" +
 				"10	 	 \n" +
 				"11	123	123\n" +

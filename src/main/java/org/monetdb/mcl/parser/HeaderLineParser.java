@@ -30,6 +30,8 @@ public final class HeaderLineParser extends MCLParser {
 	 /** The int values found while parsing.  Public, you may touch it. */
 	public final int intValues[];
 
+	private final QuotedStringParser qsparser = new QuotedStringParser();
+
 	/**
 	 * Constructs a HeaderLineParser which expects columncount columns.
 	 *
@@ -146,68 +148,43 @@ public final class HeaderLineParser extends MCLParser {
 	 * the name contains a comma or a tab or a space or a # or " or \ escape character.
 	 * See issue: https://github.com/MonetDB/MonetDB/issues/3616
 	 * If the parsed name string part has a " as first and last character,
-	 * we remove those added double quotes here.
+	 * we remove those added double quotes here and expand any backslash escapes.
 	 *
 	 * @param chrLine a character array holding the input data
 	 * @param start where the relevant data starts
-	 * @param stop where the relevant data stops
+	 * @param end where the relevant data stops
 	 */
-	private final void getValues(final char[] chrLine, int start, final int stop) {
+	private void getValues(final char[] chrLine, int start, final int end) throws MCLParseException {
 		int elem = 0;
-		boolean inString = false, escaped = false;
 
-		for (int i = start; i < stop; i++) {
-			switch(chrLine[i]) {
-				case '\\':
-					escaped = !escaped;
-					break;
-				case '"':
-					/**
-					 * If all strings are wrapped between two quotes, a \" can
-					 * never exist outside a string. Thus if we believe that we
-					 * are not within a string, we can safely assume we're about
-					 * to enter a string if we find a quote.
-					 * If we are in a string we should stop being in a string if
-					 * we find a quote which is not prefixed by a \, for that
-					 * would be an escaped quote. However, a nasty situation can
-					 * occur where the string is like "test \\" as obvious, a
-					 * test for a \ in front of a " doesn't hold here for all
-					 * cases. Because "test \\\"" can exist as well, we need to
-					 * know if a quote is prefixed by an escaping slash or not.
-					 */
-					if (!inString) {
-						inString = true;
-					} else if (!escaped) {
-						inString = false;
-					}
-					// reset escaped flag
-					escaped = false;
-					break;
-				case ',':
-					if (!inString && chrLine[i + 1] == '\t') {
-						// we found the field separator
-						if (chrLine[start] == '"')
-							start++;  // skip leading double quote
-						if (elem < values.length) {
-							// TODO: also deal with escape characters as done in TupleLineParser.parse()
-							values[elem++] = new String(chrLine, start, i - (chrLine[i - 1] == '"' ? 1 : 0) - start);
-						}
-						i++;
-						start = i + 1;	// reset start for the next name, skipping the field separator (a comma and tab)
-					}
-					// reset escaped flag
-					escaped = false;
-					break;
-				default:
-					escaped = false;
-					break;
+		int pos = start;
+		while (pos < end) {
+			// Extract a value and leave pos at its end
+			String value;
+			if (chrLine[pos] == '"') {
+				value = qsparser.parse(chrLine, pos, end);
+				pos += qsparser.size;
+			} else {
+				int i = pos;
+				while (i < end && chrLine[i] != ',')
+					i++;
+				value = new String(chrLine, pos, i - pos);
+				pos = i;
 			}
+
+			// Is it a suitable separator (or end?)
+			if ((pos != end) && (pos > end - 2 || chrLine[pos] != ',' || chrLine[pos + 1] != '\t'))
+				throw new MCLParseException("invalid separator", pos);
+
+			// Append the value and skip the separator
+			if (elem >= values.length)
+				throw new MCLParseException("too many values", pos);
+			values[elem++] = value;
+			pos += 2;
 		}
-		// add the left over part (last column)
-		if (chrLine[start] == '"')
-			start++;  // skip leading double quote
-		if (elem < values.length)
-			values[elem] = new String(chrLine, start, stop - (chrLine[stop - 1] == '"' ? 1 : 0) - start);
+
+		if (elem != values.length)
+			throw new MCLParseException("not enough values", end);
 	}
 
 	/**

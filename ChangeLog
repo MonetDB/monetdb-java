@@ -8,3 +8,6 @@
 For a complete list of changes in previous monetdb-java releases see:
   https://www.monetdb.org/downloads/Java/archive/ChangeLog-Archive
 
+* Fri Jan  2 2026 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Fix backslash issues in ResultSetMetaData column names. (#11).
+
