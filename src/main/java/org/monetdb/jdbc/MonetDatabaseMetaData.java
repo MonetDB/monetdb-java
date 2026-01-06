@@ -3061,9 +3061,9 @@ public final class MonetDatabaseMetaData
 			"cast(CASE WHEN \"sqlname\" IN ('time','timetz','timestamp','timestamptz') THEN \"digits\" -1" +
 				" ELSE \"digits\" END AS int) AS \"PRECISION\", " +	// note that when radix is 2 the precision shows the number of bits
 			"cast(CASE WHEN \"sqlname\" IN ('char','varchar') THEN ''''" +
-				" WHEN \"sqlname\" IN ('clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob','xml') THEN \"sqlname\"||' '''" +
+				" WHEN \"sqlname\" IN ('clob','inet','inet4','inet6','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob','xml') THEN \"sqlname\"||' '''" +
 				" ELSE NULL END AS varchar(16)) AS \"LITERAL_PREFIX\", " +
-			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','clob','inet','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob','xml') THEN ''''" +
+			"cast(CASE WHEN \"sqlname\" IN ('char','varchar','clob','inet','inet4','inet6','json','url','uuid','date','time','timetz','timestamp','timestamptz','blob','sqlblob','xml') THEN ''''" +
 				" ELSE NULL END AS varchar(2)) AS \"LITERAL_SUFFIX\", " +
 			"CASE WHEN \"sqlname\" IN ('char','varchar') THEN 'max length'" +
 				" WHEN \"sqlname\" = 'decimal' THEN 'precision, scale'" +
@@ -3446,7 +3446,7 @@ public final class MonetDatabaseMetaData
 		// exclude the built-in types (I assume they always have id <= 99 and eclass < 18)
 		"WHERE t.\"id\" > 99" +
 		" AND t.\"eclass\" >= 18" +
-		" AND t.\"sqlname\" NOT IN ('inet','json','url','uuid')");
+		" AND t.\"sqlname\" NOT IN ('inet','json','url','uuid','inet4','inet6')");
 
 		if (catalog != null && !catalog.isEmpty()) {
 			// non-empty catalog selection.

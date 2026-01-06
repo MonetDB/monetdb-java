@@ -1741,6 +1741,28 @@ public class MonetPreparedStatement
 						}
 						castprefix = "inet ";
 						break;
+					case "inet4":
+						try {
+							// check if x represents a valid inet4 string to prevent
+							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+							org.monetdb.jdbc.types.Inet4 inet_obj = new org.monetdb.jdbc.types.Inet4();
+							inet_obj.fromString(x);
+						} catch (SQLException se) {
+							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + se.getMessage(), "22M29");
+						}
+						castprefix = "inet4 ";
+						break;
+					case "inet6":
+						try {
+							// check if x represents a valid inet6 string to prevent
+							// failing exec #(..., ...) calls which destroy the prepared statement, see bug 6351
+							org.monetdb.jdbc.types.Inet6 inet_obj = new org.monetdb.jdbc.types.Inet6();
+							inet_obj.fromString(x);
+						} catch (SQLException se) {
+							throw new SQLDataException("Conversion of string: " + x + " to parameter data type " + paramMonetdbType + " failed. " + se.getMessage(), "22M29");
+						}
+						castprefix = "inet6 ";
+						break;
 					case "json":
 					{
 						// do a quick JSON string validity check to prevent failing exec #(..., ...) calls
@@ -1884,7 +1906,7 @@ public class MonetPreparedStatement
 						// break;
 				}
 				if (castprefix != null) {
-					/* in specific cases prefix the string with: inet or json or url or uuid or xml casting */
+					/* in specific cases prefix the string with: inet or inet4 or inet6 or json or url or uuid or xml casting */
 					setValue(parameterIndex, castprefix + MonetWrapper.sq(x));
 				} else {
 					setValue(parameterIndex, MonetWrapper.sq(x));

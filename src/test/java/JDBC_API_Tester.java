@@ -137,6 +137,9 @@ public final class JDBC_API_Tester extends JUnitTester {
 	public boolean isPostDec2023() {
 		return isPostDec2023;
 	}
+	public boolean isPostMar2025() {
+		return isPostMar2025;
+	}
 
 	@Test
 	public void Test_Cautocommit() {
@@ -2088,16 +2091,19 @@ public final class JDBC_API_Tester extends JUnitTester {
 			rs = null;
 			if (!skipMALoutput) {
 				compareExpectedOutput("Test_PlanExplainTraceDebugCmds: " + qry,
-					! isPreJan2022 ?
-					"4\n" +
-					"Another resultset\n" +
-					"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, " + (isPostMar2025 ? "4" : "6") + ":int);\n" +
-					"    X_" + (isPostMar2025 ? "8" : "10") + "=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
+					isPostMar2025 ?
+						"4\n"	/* after Mar2025 release trace command no longer returns second resultset */
+					: isPreJan2022 ?
+						"4\n" +
+						"Another resultset\n" +
+						"X_0=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
+						"X_1=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
 					:
-					"4\n" +
-					"Another resultset\n" +
-					"X_0=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
-					"X_1=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n");
+						"4\n" +
+						"Another resultset\n" +
+						"    X_1=0@0:void := querylog.define(\"trace select 4;\":str, \"default_pipe\":str, 6:int);\n" +
+						"    X_10=0:int := sql.resultSet(\".%2\":str, \"%2\":str, \"tinyint\":str, 3:int, 0:int, 7:int, 4:bte);\n"
+					);
 			}
 			sb.setLength(0);	// clear the output log buffer
 
@@ -6625,7 +6631,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 				"12. show content of column(s): \"my\"\"double_doublequote\"\n" +
 				"Resultset with 1 columns\n" +
 				"	Column Name, Column Label:\n" +
-				"1	my\\\"double_doublequote	my\\\"double_doublequote\n" +
+				"1	my\"double_doublequote	my\"double_doublequote\n" +
 				"Data rows:\n" +
 				"\"my\"\"double_doublequote\"\n" +
 				"my\"\"double_doublequote\n" +
@@ -6681,7 +6687,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 				"5	my	tab	my	tab\n" +
 				"6	my	,tab_comma	my	,tab_comma\n" +
 				"7	my,	comma_tab	my,	comma_tab\n" +
-				"8	my\\\"double_doublequote	my\\\"double_doublequote\n" +
+				"8	my\"double_doublequote	my\"double_doublequote\n" +
 				"9	Abc	Abc\n" +
 				"10	 	 \n" +
 				"11	123	123\n" +
@@ -7389,6 +7395,129 @@ public final class JDBC_API_Tester extends JUnitTester {
 				"- ClientPid: prop=4, single=4\n" +
 				"- ClientRemark: prop=5, single=5\n"
 				);
+	}
+
+	@Test
+	public void Test_InetType() {
+		Test_InetType("inet");
+	}
+
+	@Test
+	@EnabledIf("isPostMar2025")
+	public void Test_Inet4Type() {
+		Test_InetType("inet4");
+	}
+
+	@Test
+	@EnabledIf("isPostMar2025")
+	public void Test_Inet6Type() {
+		Test_InetType("inet6");
+	}
+
+	private void Test_InetType(String inetType) {
+		sb.setLength(0);	// clear the output log buffer
+
+		Statement stmt = null;
+		ResultSet rs = null;
+		try {
+			final boolean is_inet6 = "inet6".equals(inetType);
+			int updates;
+
+			stmt = con.createStatement();
+			stmt.executeUpdate("drop table if exists " + inetType);
+			stmt.executeUpdate("create table " + inetType + "(i " + inetType + ", c varchar(80))");
+			sb.append("Table " + inetType + " created\n");
+
+			updates = stmt.executeUpdate("insert into " + inetType + " values (" + inetType
+					+ (is_inet6 ? " '4B0C:200C:417a:0C20:880C:99A8:4B0:4411', '4B0C:200C:417a:0C20:880C:99A8:4B0:4411')" : " '127.0.0.1', '127.0.0.1')"));
+			updates += stmt.executeUpdate("insert into " + inetType + " values (" + inetType
+					+ (is_inet6 ? " '0:8:800:200C:417a:1081:a0:f0', '0:8:800:200C:417a:1081:a0:f0')" : " '255.255.255.255', '255.255.255.255')"));
+			updates += stmt.executeUpdate("insert into " + inetType + " values (" + inetType
+					+ (is_inet6 ? " '01:23:45:68:AB:CD:0C20:7A41', '01:23:45:68:AB:CD:0C20:7A41')" : " '0.0.0.1', '0.0.0.1')"));
+			sb.append("Inserted ").append(updates).append(" rows\n");
+
+			final String query = "select * from " + inetType;
+			rs = stmt.executeQuery(query);
+			if (rs != null) {
+				ResultSetMetaData rsmd = rs.getMetaData();
+				final int colcount = rsmd.getColumnCount();
+				sb.append("Query has ").append(colcount).append(" columns:\n");
+
+				int col;
+				for (col = 1; col <= colcount; col++) {
+					sb.append("\t").append(rsmd.getColumnLabel(col));
+				}
+				sb.append("\n");
+				for (col = 1; col <= colcount; col++) {
+					sb.append("\t").append(rsmd.getColumnType(col));
+				}
+				sb.append("\n");
+				for (col = 1; col <= colcount; col++) {
+					sb.append("\t").append(rsmd.getColumnClassName(col));
+				}
+				sb.append("\n");
+				while (rs.next()) {
+					for (col = 1; col <= colcount; col++) {
+						// get both columns as String
+						sb.append("\t").append(rs.getString(col));
+					}
+					sb.append("\n");
+					// get first column as Object of default org.monetdb.jdbc.types.* class
+					sb.append("\t").append(rs.getObject(1));
+					sb.append("\t");
+					// get first column as Object of specific java.net.Inet?Address class
+					switch (inetType) {
+						case "inet":
+							sb.append(rs.getObject(1, java.net.InetAddress.class));
+							break;
+						case "inet4":
+							sb.append(rs.getObject(1, java.net.Inet4Address.class));
+							break;
+						case "inet6":
+							sb.append(rs.getObject(1, java.net.Inet6Address.class));
+							break;
+					}
+					sb.append("\n");
+				}
+			} else
+				sb.append("failed to execute query: ").append(query).append("\n");
+		} catch (SQLException e) {
+			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+		}
+
+		closeStmtResSet(stmt, rs);
+		compareExpectedOutput("Test_InetType(" + inetType + ")",
+			"Table " + inetType + " created\n" +
+			"Inserted 3 rows\n" +
+			"Query has 2 columns:\n" +
+			"	i	c\n" +
+			"	12	12\n" +
+			( ("inet".equals(inetType)) ?
+			"	org.monetdb.jdbc.types.INET	java.lang.String\n" +
+			"	127.0.0.1	127.0.0.1\n" +
+			"	127.0.0.1	/127.0.0.1\n" +
+			"	255.255.255.255	255.255.255.255\n" +
+			"	255.255.255.255	/255.255.255.255\n" +
+			"	0.0.0.1	0.0.0.1\n" +
+			"	0.0.0.1	/0.0.0.1\n"
+			: ("inet4".equals(inetType)) ?
+			"	org.monetdb.jdbc.types.Inet4	java.lang.String\n" +
+			"	127.0.0.1	127.0.0.1\n" +
+			"	/127.0.0.1	/127.0.0.1\n" +
+			"	255.255.255.255	255.255.255.255\n" +
+			"	/255.255.255.255	/255.255.255.255\n" +
+			"	0.0.0.1	0.0.0.1\n" +
+			"	/0.0.0.1	/0.0.0.1\n"
+			: ("inet6".equals(inetType)) ?
+			"	org.monetdb.jdbc.types.Inet6	java.lang.String\n" +
+			"	4b0c:200c:417a:c20:880c:99a8:4b0:4411	4B0C:200C:417a:0C20:880C:99A8:4B0:4411\n" +
+			"	/4b0c:200c:417a:c20:880c:99a8:4b0:4411	/4b0c:200c:417a:c20:880c:99a8:4b0:4411\n" +
+			"	0:8:800:200c:417a:1081:a0:f0	0:8:800:200C:417a:1081:a0:f0\n" +
+			"	/0:8:800:200c:417a:1081:a0:f0	/0:8:800:200c:417a:1081:a0:f0\n" +
+			"	1:23:45:68:ab:cd:c20:7a41	01:23:45:68:AB:CD:0C20:7A41\n" +
+			"	/1:23:45:68:ab:cd:c20:7a41	/1:23:45:68:ab:cd:c20:7a41\n"
+			: "unexpected type " + inetType)
+		);
 	}
 
 	// some private utility methods for showing table content and params meta data

@@ -39,7 +39,7 @@ import java.util.zip.GZIPOutputStream;
  *   COPY SELECT_query INTO 'file-name' ON CLIENT ...
  * handling.
  *
- * Currently only file compression format .gz is supported. This is intentionally
+ * Currently only file compression format .gz is supported. This is intentional
  * as other compression formats would introduce dependencies on external
  * libraries which complicates usage of JDBC driver or JdbcClient application.
  * Developers can of course build their own MyFileTransferHandler class
@@ -56,6 +56,22 @@ import java.util.zip.GZIPOutputStream;
 public class FileTransferHandler implements MonetConnection.UploadHandler, MonetConnection.DownloadHandler {
 	private final Path root;
 	private final Charset encoding;
+	private final boolean compression;
+
+	/**
+	 * Create a new FileTransferHandler which serves the given directory.
+	 *
+	 * @param dir directory Path to read and write files from
+	 * @param encoding the specified characterSet encoding is used for all data files in the directory
+	 *                 when null the Charset.defaultCharset() is used.
+	 * @param compression automatically compress/decompress files whose name
+	 *                    ends in .gz
+	 */
+	public FileTransferHandler(final Path dir, final Charset encoding, boolean compression) {
+		this.root = dir.toAbsolutePath().normalize();
+		this.encoding = encoding != null ? encoding: Charset.defaultCharset();
+		this.compression = compression;
+	}
 
 	/**
 	 * Create a new FileTransferHandler which serves the given directory.
@@ -65,8 +81,7 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 	 *                 when null the Charset.defaultCharset() is used.
 	 */
 	public FileTransferHandler(final Path dir, final Charset encoding) {
-		this.root = dir.toAbsolutePath().normalize();
-		this.encoding = encoding != null ? encoding: Charset.defaultCharset();
+		this(dir, encoding, true);
 	}
 
 	/**
@@ -98,16 +113,25 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			return;
 		}
 
-		// In this implementation we ONLY support gzip compression format and none of the other compression formats.
-		if (name.endsWith(".bz2") || name.endsWith(".lz4") || name.endsWith(".xz") || name.endsWith(".zip")) {
-			final String extension = name.substring(name.lastIndexOf('.'));
-			handle.sendError("Specified file compression format " + extension + " is not supported. Only .gz is supported.");
-			return;
-		}
-
 		InputStream byteStream = Files.newInputStream(path);
-		if (name.endsWith(".gz")) {
-			byteStream = new GZIPInputStream(byteStream, 128 * 1024);
+
+		if (compression) {
+			// In this implementation we ONLY support gzip compression format and none of the other compression formats.
+			if (name.endsWith(".gz")) {
+				byteStream = new GZIPInputStream(byteStream, 128 * 1024);
+			} else if (name.endsWith(".bz2")) {
+				handle.sendError("Specified file compression format .bz2 is not supported. Only .gz is supported.");
+				return;
+			} else if (name.endsWith(".lz4")) {
+				handle.sendError("Specified file compression format .lz4 is not supported. Only .gz is supported.");
+				return;
+			} else if (name.endsWith(".xz")) {
+				handle.sendError("Specified file compression format .xz is not supported. Only .gz is supported.");
+				return;
+			} else if (name.endsWith(".zip")) {
+				handle.sendError("Specified file compression format .zip is not supported. Only .gz is supported.");
+				return;
+			}
 		}
 
 		if (!textMode || (linesToSkip == 0 && utf8Encoded())) {
@@ -142,16 +166,25 @@ public class FileTransferHandler implements MonetConnection.UploadHandler, Monet
 			return;
 		}
 
-		// In this implementation we ONLY support gzip compression format and none of the other compression formats.
-		if (name.endsWith(".bz2") || name.endsWith(".lz4") || name.endsWith(".xz") || name.endsWith(".zip")) {
-			final String extension = name.substring(name.lastIndexOf('.'));
-			handle.sendError("Requested file compression format " + extension + " is not supported. Use .gz instead.");
-			return;
-		}
-
 		OutputStream byteStream = Files.newOutputStream(path, StandardOpenOption.CREATE_NEW);
-		if (name.endsWith(".gz")) {
-			byteStream = new GZIPOutputStream(byteStream, 128 * 1024);
+
+		if (compression) {
+			// In this implementation we ONLY support gzip compression format and none of the other compression formats.
+			if (name.endsWith(".gz")) {
+				byteStream = new GZIPOutputStream(byteStream, 128 * 1024);
+			} else if (name.endsWith(".bz2")) {
+				handle.sendError("Specified file compression format .bz2 is not supported. Only .gz is supported.");
+				return;
+			} else if (name.endsWith(".lz4")) {
+				handle.sendError("Specified file compression format .lz4 is not supported. Only .gz is supported.");
+				return;
+			} else if (name.endsWith(".xz")) {
+				handle.sendError("Specified file compression format .xz is not supported. Only .gz is supported.");
+				return;
+			} else if (name.endsWith(".zip")) {
+				handle.sendError("Specified file compression format .zip is not supported. Only .gz is supported.");
+				return;
+			}
 		}
 
 		if (!textMode || utf8Encoded()) {

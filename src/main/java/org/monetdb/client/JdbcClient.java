@@ -410,7 +410,7 @@ public final class JdbcClient {
 			// we only want user tables and views to be dumped (DDL and optional data), unless a specific table is requested
 			final String[] types = {"TABLE","VIEW","MERGE TABLE","REMOTE TABLE","REPLICA TABLE","STREAM TABLE"};
 			// Future: fetch all type names using dbmd.getTableTypes() and construct String[] with all
-			// table type names excluding the SYSTEM ... ones and LOCAL TEMPORARY TABLE ones.
+			// table type names excluding the SYSTEM ... ones and LOCAL TEMPORARY TABLE/VIEW ones.
 
 			// request the list of tables/views available in the current schema in the database
 			ResultSet tbl = dbmd.getTables(null, con.getSchema(), null, (argcount == 0) ? types : null);
@@ -558,14 +558,17 @@ public final class JdbcClient {
 			} else {
 				if (!copts.getOption("quiet").isPresent()) {
 					// print welcome message
-					out.println("Welcome to the MonetDB interactive JDBC terminal!");
+					out.println("Welcome to JdbcClient, the MonetDB interactive SQL client");
 					if (dbmd != null) {
-						out.println("JDBC Driver: " + dbmd.getDriverName() +
+						String monet_release = "";
+						if (con instanceof MonetConnection)
+							monet_release = ((MonetConnection) con).getServerProductRelease();
+						out.println("Using JDBC Driver: " + dbmd.getDriverName() +
 							" v" + dbmd.getDriverVersion());
-						out.println("Database Server: " + dbmd.getDatabaseProductName() +
-							" v" + dbmd.getDatabaseProductVersion());
+						out.println("Connected Server : " + dbmd.getDatabaseProductName() +
+							" v" + dbmd.getDatabaseProductVersion() + " " + monet_release);
 					}
-					out.println("Current Schema: " + con.getSchema());
+					out.println("Current Schema   : \"" + con.getSchema() + "\"");
 					out.println("Type \\q to quit (you can also use: quit or exit), \\? or \\h for a list of available commands");
 					out.flush();
 				}

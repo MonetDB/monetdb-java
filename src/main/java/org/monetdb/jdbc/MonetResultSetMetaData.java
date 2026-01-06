@@ -286,8 +286,10 @@ final class MonetResultSetMetaData
 			case Types.VARCHAR:
 				try {
 					final String monettype = types[column - 1];
-					// data of type inet or uuid is not case sensitive
+					// data of type inet, inet4, inet6 or uuid is not case sensitive
 					if ("inet".equals(monettype)
+					 || "inet4".equals(monettype)
+					 || "inet6".equals(monettype)
 					 || "uuid".equals(monettype))
 						return false;
 				} catch (IndexOutOfBoundsException e) {
@@ -449,6 +451,12 @@ final class MonetResultSetMetaData
 				// in case of inet it always has 0 as length. we need to correct it.
 				if ("inet".equals(monettype)) {
 					return 18;	// 128.127.126.125/24
+				}
+				if ("inet4".equals(monettype)) {
+					return 15;	// 128.127.126.125
+				}
+				if ("inet6".equals(monettype)) {
+					return 39;	// 1A80:1B00:2C00:3d00:4E08:180F:200C:417A
 				}
 			}
 			return len;

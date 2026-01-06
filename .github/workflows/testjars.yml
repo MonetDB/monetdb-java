@@ -76,9 +76,13 @@ jobs:
           - ubuntu-latest
           - macos-latest
           - windows-latest
-        java:   # not sure, let's test with 8 and the latest
+        java:    # do we really need to test all these versions?
           - 8
+          #- 11
+          #- 17
+          #- 21
           - 24
+          #- 25
         include:
           # override java-dist only for java 8
           - java: 8
@@ -115,18 +119,32 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        monetdb:
-          - Jan2022
-          - Sep2022
-          - Jun2023
-          - Dec2023
-          - Aug2024
-          - Mar2025
+        monetdb_image:
+          # See https://hub.docker.com/r/monetdb/monetdb/tags for docker image names of official MonetDB releases
+          # See https://hub.docker.com/r/monetdb/dev-builds/tags for docker image name of default branch
+          - "monetdb/dev-builds:default"
+          - "monetdb/monetdb:latest"
+          - "monetdb/monetdb:Mar2025-SP3"
+          # - "monetdb/monetdb:Mar2025-SP2"
+          # - "monetdb/monetdb:Mar2025-SP1"
+          # - "monetdb/monetdb:Mar2025"
+          - "monetdb/monetdb:Aug2024-SP2"
+          - "monetdb/monetdb:Dec2023-SP4"
+          - "monetdb/monetdb:Jun2023-SP3"
+          - "monetdb/monetdb:Sep2022-SP3"
+          - "monetdb/monetdb:Jan2022-SP4"
+          - "monetdb/monetdb:Jul2021-SP2"
+          # - Jan2022
+          # - Sep2022
+          # - Jun2023
+          # - Dec2023
+          # - Aug2024
+          # - Mar2025
 #          - default
     runs-on: ubuntu-latest
     services:
       monetdb:
-        image: monetdb/dev-builds:${{ matrix.monetdb }}
+        image: ${{ matrix.monetdb_image }}
         env:
           MDB_DAEMON_PASS: monetdb
           MDB_DB_ADMIN_PASS: monetdb
@@ -168,6 +186,9 @@ jobs:
       - name: TLS Tests
         run: |
           java -cp jars/'*' TLSTester -v $MONETDB_TLSTESTER
+
+      - name: Run ControlTester
+        run: java -cp jars/'*' ControlTester localhost monetdb
 
       - name: Slow Tests
         if: false

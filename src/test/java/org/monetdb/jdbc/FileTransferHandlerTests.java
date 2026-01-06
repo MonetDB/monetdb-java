@@ -32,35 +32,37 @@ import static org.monetdb.testinfra.Assertions.assertSQLException;
 @Tag("api")
 public class FileTransferHandlerTests extends OnClientTestsParent {
 
-
 	@Test
 	public void testUploadNotCompressed(@TempDir Path tempDir) throws IOException, SQLException {
-		testFileTransferHandlerUploadCompressed(tempDir, StandardCharsets.UTF_8, false, 0);
+		testFileTransferHandlerUploadCompressed(tempDir, StandardCharsets.UTF_8, false, "", 0, true);
 	}
-
 
 	@Test
 	public void testUploadNotCompressedSkip(@TempDir Path tempDir) throws IOException, SQLException {
-		testFileTransferHandlerUploadCompressed(tempDir, StandardCharsets.UTF_8, false, 2);
+		testFileTransferHandlerUploadCompressed(tempDir, StandardCharsets.UTF_8, false, "", 2, true);
 	}
 
 	@Test
 	public void testUploadCompressed(@TempDir Path tempDir) throws IOException, SQLException {
-		testFileTransferHandlerUploadCompressed(tempDir, StandardCharsets.UTF_8, true, 0);
+		testFileTransferHandlerUploadCompressed(tempDir, StandardCharsets.UTF_8, true, ".gz", 0, true);
 	}
 
 	@Test
 	public void testUploadCompressedSkip(@TempDir Path tempDir) throws IOException, SQLException {
-		testFileTransferHandlerUploadCompressed(tempDir, StandardCharsets.UTF_8, true, 2);
+		testFileTransferHandlerUploadCompressed(tempDir, StandardCharsets.UTF_8, true, ".gz", 2, true);
 	}
 
-	private void testFileTransferHandlerUploadCompressed(Path tempDir, Charset encoding, boolean compressed, int skipLines) throws IOException, SQLException {
+	@Test
+	public void testUploadCompressionDisabled(@TempDir Path tempDir) throws IOException, SQLException {
+		testFileTransferHandlerUploadCompressed(tempDir, StandardCharsets.UTF_8, false, ".gz", 0, false);
+	}
+
+	private void testFileTransferHandlerUploadCompressed(Path tempDir, Charset encoding, boolean compressData, String suffix, int skipLines, boolean compressionEnabled) throws IOException, SQLException {
 		String fileName = "data.txt";
-		if (compressed)
-			fileName += ".gz";
+		fileName += suffix;
 		Path f = tempDir.resolve(fileName);
 		OutputStream s = Files.newOutputStream(f, CREATE_NEW);
-		if (compressed) {
+		if (compressData) {
 			s = new GZIPOutputStream(s);
 		}
 		Writer w = new OutputStreamWriter(s, encoding);
@@ -77,7 +79,7 @@ public class FileTransferHandlerTests extends OnClientTestsParent {
 			i += 1;
 		}
 		ps.close();
-		conn.setUploadHandler(new FileTransferHandler(tempDir, encoding));
+		conn.setUploadHandler(new FileTransferHandler(tempDir, encoding, compressionEnabled));
 		String query = "COPY OFFSET " + (skipLines + 1) + " INTO foo FROM '" + fileName + "' ON CLIENT";
 		stmt.executeUpdate(query);
 		assertEquals(expectedSum, queryInt("SELECT SUM(i) FROM foo"));

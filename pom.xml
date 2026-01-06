@@ -4,12 +4,12 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>org.monetdb</groupId>
-    <artifactId>monetdb-jdbc</artifactId>
-    <version>12.1-SNAPSHOT</version>
-
-    <name>MonetDB JDBC Driver</name>
-    <description>JDBC Driver for MonetDB, a fast relational database for analytics</description>
+  <groupId>monetdb</groupId>
+  <artifactId>monetdb-jdbc</artifactId>
+  <version>12.2-SNAPSHOT</version>
+  <name>MonetDB JDBC Driver</name>
+  <description>JDBC Driver for MonetDB, a fast relational database for analytics</description>
+  <url>https://www.monetdb.org</url>
 
     <licenses>
         <license>

@@ -102,6 +102,8 @@ public class MonetConnection
 		private static final long serialVersionUID = 1L;
 		{
 			put("inet", org.monetdb.jdbc.types.INET.class);
+			put("inet4", org.monetdb.jdbc.types.Inet4.class);
+			put("inet6", org.monetdb.jdbc.types.Inet6.class);
 			put("url",  org.monetdb.jdbc.types.URL.class);
 		}
 	};
@@ -1735,7 +1737,7 @@ public class MonetConnection
 
 			// as of release Jun2020 (11.37.7) the function sys.settimeout(secs bigint)
 			// is deprecated and replaced by new sys.setquerytimeout(secs int)
-			if (checkMinimumDBVersion(11, 37))
+			if (checkMinimumDBVersion(11, 37, 7))
 				callstmt = "CALL sys.\"setquerytimeout\"(" + seconds + ")";
 			else
 				callstmt = "CALL sys.\"settimeout\"(" + seconds + ")";
@@ -1784,15 +1786,16 @@ public class MonetConnection
 		return target.buildUrl();
 	}
 
-	// Internal caches for 4 static mserver5 environment values
+	// Internal caches for 5 static mserver5 environment values
 	private String env_current_user;
 	private String env_monet_version;
+	private String env_monet_release;
 	private String env_raw_strings;	// Note: this is only supported from Jun2020 (11.37) servers
 	private int maxConnections;
 
 	/**
-	 * Utility method to fetch 4 mserver5 environment values combined in one query for efficiency.
-	 * We fetch the env values of: current_user, monet_version, max_clients and raw_strings.
+	 * Utility method to fetch 5 mserver5 environment values combined in one query for efficiency.
+	 * We fetch the env() values of: current_user, monet_version, monet_release, max_clients and raw_strings.
 	 * We cache them such that we do not need to query the server again and again.
 	 * Note: raw_strings is available in sys.env() result set since release Jun2020 (11.37)
 	 *
@@ -1806,7 +1809,7 @@ public class MonetConnection
 			if (st != null) {
 				rs = st.executeQuery(
 					"SELECT \"name\", \"value\" FROM \"sys\".\"env\"()" +
-					" WHERE \"name\" IN ('monet_version', 'max_clients', 'raw_strings')" +
+					" WHERE \"name\" IN ('monet_version', 'monet_release', 'max_clients', 'raw_strings')" +
 					" UNION SELECT 'current_user' as \"name\", current_user as \"value\"");
 				if (rs != null) {
 					while (rs.next()) {
@@ -1817,6 +1820,9 @@ public class MonetConnection
 						} else
 						if ("monet_version".equals(prop)) {
 							env_monet_version = value;
+						} else
+						if ("monet_release".equals(prop)) {
+							env_monet_release = value;
 						} else
 						if ("raw_strings".equals(prop)) {
 							env_raw_strings = value;
@@ -1837,7 +1843,7 @@ public class MonetConnection
 		} finally {
 			closeResultsetStatement(rs, st);
 		}
-		// for debug: System.out.println("Read: env_current_user: " + env_current_user + "  env_monet_version: " + env_monet_version + "  env_max_clients: " + maxConnections + "  env_raw_strings: " + env_raw_strings);
+		// for debug: System.out.println("Read: env_current_user: " + env_current_user + "  env_monet_version: " + env_monet_version + "  env_monet_release: " + env_monet_release + "  env_max_clients: " + maxConnections + "  env_raw_strings: " + env_raw_strings);
 	}
 
 	/**
@@ -1892,6 +1898,22 @@ public class MonetConnection
 	}
 
 	/**
+	 * Get the product release of the connected MonetDB server.
+	 * It is called from JdbcClient, hence it is made public.
+	 *
+	 * @return the MonetDB server release string.
+	 * @throws SQLException if fetching MonetDB server release string failed
+	 */
+	public String getServerProductRelease() throws SQLException {
+		if (env_monet_release == null)
+			getEnvValues();
+		if (env_monet_version != null)
+			return env_monet_release;
+		// always return a valid String to prevent NPE
+		return "";
+	}
+
+	/**
 	 * Get the product version of the connected MonetDB Database Server.
 	 * It is called from: MonetDatabaseMetaData
 	 *
@@ -1901,9 +1923,9 @@ public class MonetConnection
 	String getDatabaseProductVersion() throws SQLException {
 		if (env_monet_version == null)
 			getEnvValues();
-		// always return a valid String to prevent NPE in getTables() and getTableTypes()
 		if (env_monet_version != null)
 			return env_monet_version;
+		// always return a valid String to prevent NPE in getTables() and getTableTypes()
 		return "";
 	}
 
@@ -2040,7 +2062,7 @@ public class MonetConnection
 	 * @return true when the server supports ODBC/JDBC escape sequence syntax else false.
 	 */
 	boolean supportsEscapeSequenceSyntax() {
-		return checkMinimumDBVersion(11, 47);
+		return checkMinimumDBVersion(11, 47, 0);
 	}
 
 	/**
@@ -2059,8 +2081,8 @@ public class MonetConnection
 		if (checkMinimumDBVersion(11, 53, 0))
 			return false;
 
-		// Aug2024 has the fix starting from SP3
-		if (checkMinimumDBVersion(11, 51, 8))
+		// Aug2024 will have the fix starting from SP3
+		if (checkMinimumDBVersion(11, 51, 9))
 			return true;
 
 		// anything earlier doesn't have the fix (yet, as far as we know)
@@ -2079,6 +2101,15 @@ public class MonetConnection
 	 * @return whether the system table sys.privilege_codes exist in the connected server.
 	 */
 	boolean privilege_codesTableExists() {
+		if (hasPrivilege_codesTable)
+			return true;
+
+		// optimisation: servers from Jul2021 (11.41.5) onwards will have the system table. No need to query the server.
+		if (checkMinimumDBVersion(11, 41, 5)) {
+			hasPrivilege_codesTable = true;
+			return hasPrivilege_codesTable;
+		}
+
 		if (!queriedPrivilege_codesTable) {
 			querySysTable();
 			queriedPrivilege_codesTable = true;	// set flag, so the querying is done only at first invocation.
@@ -2098,6 +2129,15 @@ public class MonetConnection
 	 * @return whether the system table sys.comments exist in the connected server.
 	 */
 	boolean commentsTableExists() {
+		if (hasCommentsTable)
+			return true;
+
+		// optimisation: servers from Jul2021 (11.41.5) onwards will have the system table. No need to query the server.
+		if (checkMinimumDBVersion(11, 41, 5)) {
+			hasCommentsTable = true;
+			return hasCommentsTable;
+		}
+
 		if (!queriedCommentsTable) {
 			querySysTable();
 			queriedCommentsTable = true;	// set flag, so the querying is done only at first invocation.
