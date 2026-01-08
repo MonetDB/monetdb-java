@@ -79,6 +79,8 @@ public abstract class Exporter {
 	 * @return a String holding cnt times chr
 	 */
 	protected static final String repeat(final char chr, final int cnt) {
+		if (cnt <= 0)
+			return "";
 		final char[] buf = new char[cnt];
 		java.util.Arrays.fill(buf, chr);
 		return new String(buf);
