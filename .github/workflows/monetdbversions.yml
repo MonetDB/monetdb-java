@@ -19,16 +19,14 @@ jobs:
         monetdbversion:
           - "monetdb/dev-builds:default"
           - "monetdb/monetdb:latest"
+          - "monetdb/monetdb:Dec2025"
           - "monetdb/monetdb:Mar2025-SP3"
-          - "monetdb/monetdb:Mar2025-SP2"
-          - "monetdb/monetdb:Mar2025-SP1"
-          - "monetdb/monetdb:Mar2025"
           - "monetdb/monetdb:Aug2024-SP2"
           - "monetdb/monetdb:Dec2023-SP4"
           - "monetdb/monetdb:Jun2023-SP3"
           - "monetdb/monetdb:Sep2022-SP3"
-          - "monetdb/monetdb:Jan2022-SP4"
-          - "monetdb/monetdb:Jul2021-SP2"
+#          - "monetdb/monetdb:Jan2022-SP4"
+#          - "monetdb/monetdb:Jul2021-SP2"
 
     services:
       monetdb_container:
