@@ -98,7 +98,7 @@ public class MonetWrapper implements java.sql.Wrapper {
 		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 
-	private static final Pattern dqPattern = Pattern.compile("[\\\\\"]");
+	private static final Pattern dqPattern = Pattern.compile("\"");
 
 	/**
 	 * General utility function to add double quotes around an SQL Identifier
@@ -112,7 +112,7 @@ public class MonetWrapper implements java.sql.Wrapper {
 	 */
 	public static final String dq(final String in) {
 		Matcher matcher = dqPattern.matcher(in);
-		String escaped = matcher.replaceAll("\\\\$0");
+		String escaped = matcher.replaceAll("\"$0");
 		return "\"" + escaped + "\"";
 	}
 
