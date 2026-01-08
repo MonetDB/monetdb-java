@@ -1062,6 +1062,8 @@ public final class JdbcClient {
 
 	private static String optAddDqs(final String name)
 	{
+		if (name == null)
+			return "";
 		if (name.contains(" ") || name.contains("\t") || name.contains("\n"))
 			return Exporter.dq(name);
 		return name;
