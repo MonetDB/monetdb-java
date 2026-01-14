@@ -408,7 +408,7 @@ public final class JdbcClient {
 				out = new PrintWriter(new BufferedWriter(new java.io.FileWriter(oc.getArgument())));
 
 			// we only want user tables and views to be dumped (DDL and optional data), unless a specific table is requested
-			final String[] types = {"TABLE","VIEW","MERGE TABLE","REMOTE TABLE","REPLICA TABLE","STREAM TABLE"};
+			final String[] types = {"TABLE","VIEW","MERGE TABLE","REMOTE TABLE","REPLICA TABLE","UNLOGGED TABLE","GLOBAL TEMPORARY TABLE"};
 			// Future: fetch all type names using dbmd.getTableTypes() and construct String[] with all
 			// table type names excluding the SYSTEM ... ones and LOCAL TEMPORARY TABLE/VIEW ones.
 
