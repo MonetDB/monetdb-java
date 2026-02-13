@@ -44,6 +44,7 @@ public final class JDBC_API_Tester {
 	final private int dbmsMinorVersion;
 	final private boolean isPostDec2023;	// flags to support version specific output
 	final private boolean isPostMar2025;
+	final private boolean isPostDec2025;	// Dec2025-SP1 or later
 	private boolean foundDifferences = false;
 
 	final private static int sbInitLen = 5468; // max needed size of sb
@@ -64,6 +65,9 @@ public final class JDBC_API_Tester {
 		// integer digits (1 less) and for clob and char columns (now return varchar).
 		isPostDec2023 = versionIsAtLeast(11, 50);
 		isPostMar2025 = versionIsAtLeast(11, 54);
+		// the "micro" version is not easily accessible
+		// post-Dec2025 means Dec2025-SP1 or later
+		isPostDec2025 = versionIsAtLeast(11, 56) || (dbmsMajorVersion == 11 && dbmsMinorVersion == 55 && Integer.parseInt(dbmd.getDatabaseProductVersion().substring(6)) >= 2);
 	}
 
 	/**
@@ -874,6 +878,7 @@ public final class JDBC_API_Tester {
 			"null	tmp	tmp_pk_uc	LOCAL TEMPORARY TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	_columns	SYSTEM TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	_tables	SYSTEM TABLE	null	null	null	null	null	null\n" +
+			(isPostDec2025 ? "null	tmp	dependencies	SYSTEM TABLE	null	null	null	null	null	null\n" : "") +
 			"null	tmp	idxs	SYSTEM TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	keys	SYSTEM TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	objects	SYSTEM TABLE	null	null	null	null	null	null\n" +
@@ -5640,6 +5645,7 @@ public final class JDBC_API_Tester {
 				"List Tables in schema tmp:\n" +
 				"_columns\n" +
 				"_tables\n" +
+				(isPostDec2025 ? "dependencies\n" : "") +
 				"idxs\n" +
 				"keys\n" +
 				"objects\n" +
