@@ -102,6 +102,7 @@ public final class TLSTester {
 			tempDir.deleteOnExit();
 		}
 		File outPath = new File(tempDir, resource.substring(1));
+		outPath.deleteOnExit();
 		try (InputStream in = fetchData(resource); FileOutputStream out = new FileOutputStream(outPath)) {
 			byte[] buffer = new byte[12];
 			while (true) {
