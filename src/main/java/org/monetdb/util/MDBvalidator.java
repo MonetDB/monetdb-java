@@ -1035,6 +1035,7 @@ public final class MDBvalidator {
 	private static final String[][] tmp_pkeys = {
 		{"_tables", "id", null},
 		{"_columns", "id", null},
+		{"dependencies", "id, depend_id", "56"},	// table tmp.dependencies new since 11.55.3 (Dec2025-SP1)
 		{"objects", "id, nr", null},
 		{"keys", "id", null},
 		{"idxs", "id", null},
@@ -1236,6 +1237,10 @@ public final class MDBvalidator {
 		{"_tables", "\"type\"", "table_type_id", "sys.table_types", "21"},
 		{"_columns", "table_id", "id", "_tables", null},
 		{"_columns", "\"type\"", "sqlname", "sys.types", null},
+		// table tmp.dependencies new since 11.55.3 (Dec2025-SP1)
+		{"dependencies", "id", "id", "sys.ids", "56"},
+		{"dependencies", "depend_id", "id", "sys.ids", "56"},
+		{"dependencies", "depend_type", "dependency_type_id", "sys.dependency_types", "56"},
 		{"keys", "id", "id", "objects", null},
 		{"keys", "table_id", "id", "_tables", null},
 		{"keys", "\"type\"", "key_type_id", "sys.key_types", "27"},
@@ -1480,6 +1485,10 @@ public final class MDBvalidator {
 		{"_tables", "system", null},
 		{"_tables", "commit_action", null},
 		{"_tables", "access", null},
+		// table tmp.dependencies new since 11.55.3 (Dec2025-SP1)
+		{"dependencies", "id", "56"},
+		{"dependencies", "depend_id", "56"},
+		{"dependencies", "depend_type", "56"},
 		{"idxs", "id", null},
 		{"idxs", "table_id", null},
 		{"idxs", "\"type\"", null},
