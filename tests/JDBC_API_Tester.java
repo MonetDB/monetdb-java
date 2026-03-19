@@ -42,6 +42,7 @@ public final class JDBC_API_Tester {
 	private Connection con;		// main connection shared by all tests
 	final private int dbmsMajorVersion;
 	final private int dbmsMinorVersion;
+	final private int dbmsMicroVersion;
 	final private boolean isPostDec2023;	// flags to support version specific output
 	final private boolean isPostMar2025;
 	final private boolean isPostDec2025;	// Dec2025-SP1 or later
@@ -61,13 +62,13 @@ public final class JDBC_API_Tester {
 		DatabaseMetaData dbmd = con_.getMetaData();
 		dbmsMajorVersion = dbmd.getDatabaseMajorVersion();
 		dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
+		dbmsMicroVersion = (con_ instanceof MonetConnection) ? ((MonetConnection) con_).getDatabaseMicroVersion() : 0;
 		// from version 11.50 on, the MonetDB server returns different metadata for
 		// integer digits (1 less) and for clob and char columns (now return varchar).
-		isPostDec2023 = versionIsAtLeast(11, 50);
-		isPostMar2025 = versionIsAtLeast(11, 54);
-		// the "micro" version is not easily accessible
-		// post-Dec2025 means Dec2025-SP1 or later
-		isPostDec2025 = versionIsAtLeast(11, 56) || (dbmsMajorVersion == 11 && dbmsMinorVersion == 55 && Integer.parseInt(dbmd.getDatabaseProductVersion().substring(6)) >= 2);
+		isPostDec2023 = versionIsAtLeast(11, 50, 0);
+		isPostMar2025 = versionIsAtLeast(11, 54, 0);
+		// post-Dec2025 means Dec2025-SP1 (11.55.2) or later. It has new system table: tmp.dependencies
+		isPostDec2025 = versionIsAtLeast(11, 55, 2);
 	}
 
 	/**
@@ -165,7 +166,7 @@ public final class JDBC_API_Tester {
 		ConnectionTests.runTests(con_URL);
 
 		// invoke running OnClientTester only on Oct2020 (11.39) or older servers
-		if (!jt.versionIsAtLeast(11,40)) {
+		if (!jt.versionIsAtLeast(11,40,0)) {
 			OnClientTester oct = new OnClientTester(con_URL, 0);
 			int failures = oct.runTests();
 			if (failures > 0)
@@ -173,8 +174,18 @@ public final class JDBC_API_Tester {
 		}
 	}
 
-	private boolean versionIsAtLeast(int major, int minor) {
-		return ((dbmsMajorVersion == major && dbmsMinorVersion >= minor) || dbmsMajorVersion > major);
+	private boolean versionIsAtLeast(int requiredMajor, int requiredMinor, int requiredMicro) {
+		if (dbmsMajorVersion > requiredMajor)
+			return true;
+		if (dbmsMajorVersion < requiredMajor)
+			return false;
+
+		if (dbmsMinorVersion > requiredMinor)
+			return true;
+		if (dbmsMinorVersion < requiredMinor)
+			return false;
+
+		return dbmsMicroVersion >= requiredMicro;
 	}
 
 	private void Test_Cautocommit(String arg0) {
