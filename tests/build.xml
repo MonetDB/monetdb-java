@@ -30,8 +30,7 @@ Copyright 1997 - July 2008 CWI.
 
   <property name="jvm.version" value="8" />
   <property name="jre.version" value="jre8" />
-  <property name="javac.flags" value="-source 8" />
-  <property name="javac.flags" value="-target 8" />
+  <property name="javac.flags" value="--release 8" />
   <property name="javac.flags" value="-profile compact2" />
   <property name="javac.flags" value="-Xlint" />
 
@@ -58,8 +57,6 @@ Copyright 1997 - July 2008 CWI.
       debug="true"
       optimize="false"
       includeantruntime="false"
-      source="${jvm.version}"
-      target="${jvm.version}"
       >
       <include name="**/*.java" />
       <compilerarg line="${javac.flags}" />

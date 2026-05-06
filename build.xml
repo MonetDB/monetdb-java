@@ -41,8 +41,7 @@ Copyright 1997 - July 2008 CWI.
 
   <property name="jvm.version" value="8" />
   <property name="jre.version" value="jre${jvm.version}" />
-  <property name="javac.flags" value="-source 8" />
-  <property name="javac.flags" value="-target ${jvm.version}" />
+  <property name="javac.flags" value="--release ${jvm.version}" />
   <property name="javac.flags" value="-profile compact2" />
   <property name="javac.flags" value="-Xlint" />
 
@@ -147,8 +146,6 @@ Copyright 1997 - July 2008 CWI.
       debug="${debug}"
       optimize="${optimize}"
       includeantruntime="false"
-      source="${jvm.version}"
-      target="${jvm.version}"
       >
       <src path="${srcdir}" />
       <include name="${jdbc-package}/**/*.java" />
@@ -166,8 +163,6 @@ Copyright 1997 - July 2008 CWI.
       debug="${debug}"
       optimize="${optimize}"
       includeantruntime="false"
-      source="${jvm.version}"
-      target="${jvm.version}"
       >
       <include name="${mcl-package}/**/*.java" />
       <compilerarg line="${javac.flags}" />
@@ -183,8 +178,6 @@ Copyright 1997 - July 2008 CWI.
       debug="${debug}"
       optimize="${optimize}"
       includeantruntime="false"
-      source="${jvm.version}"
-      target="${jvm.version}"
       >
       <include name="${client-package}/**/*.java" />
       <compilerarg line="${javac.flags}" />
@@ -200,8 +193,6 @@ Copyright 1997 - July 2008 CWI.
       debug="${debug}"
       optimize="${optimize}"
       includeantruntime="false"
-      source="${jvm.version}"
-      target="${jvm.version}"
       >
       <include name="${util-package}/**/*.java" />
       <compilerarg line="${javac.flags}" />
@@ -217,8 +208,6 @@ Copyright 1997 - July 2008 CWI.
       debug="${debug}"
       optimize="${optimize}"
       includeantruntime="false"
-      source="${jvm.version}"
-      target="${jvm.version}"
       >
       <include name="${mero-control-package}/**/*.java" />
       <compilerarg line="${javac.flags}" />
