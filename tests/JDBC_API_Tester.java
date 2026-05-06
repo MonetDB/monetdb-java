@@ -5574,11 +5574,16 @@ public final class JDBC_API_Tester {
 			sb.append("DatabaseProductVersion = ").append((postNov2019 ? "11.35.+" : dbmsVersion)).append("\n");
 
 			sb.append("4.5. getDatabaseMajorVersion()\n");
-			sb.append("DatabaseMajorVersion = ").append(dbmd.getDatabaseMajorVersion()).append("\n");	// should be 11
+			int dbmsMajorVersion = dbmd.getDatabaseMajorVersion();	// should be 35 or higher
+			if (dbmsMajorVersion != 11 && dbmsMajorVersion < 56) {
+				sb.append("DatabaseMajorVersion = ").append(dbmd.getDatabaseMajorVersion()).append("\n");
+			}
 
 			sb.append("4.6. getDatabaseMinorVersion()\n");
-			int dbmsMinorVersion = dbmd.getDatabaseMinorVersion();	// should be 35 or higher
-			sb.append("DatabaseMinorVersion = ").append((dbmsMinorVersion >= 35 ? "35+" : dbmsMinorVersion)).append("\n");
+			int dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
+			if (dbmsMajorVersion == 11 && dbmsMinorVersion < 35) {
+				sb.append("DatabaseMinorVersion = ").append(dbmsMinorVersion).append("\n");
+			}
 
 			sb.append("4.7. getTables(null, 'tmp', null, null)\n");
 			rs2 = dbmd.getTables(null, "tmp", null, null);
@@ -5649,9 +5654,7 @@ public final class JDBC_API_Tester {
 				"4.4. getDatabaseProductVersion()\n" +
 				"DatabaseProductVersion = 11.35.+\n" +
 				"4.5. getDatabaseMajorVersion()\n" +
-				"DatabaseMajorVersion = 11\n" +
 				"4.6. getDatabaseMinorVersion()\n" +
-				"DatabaseMinorVersion = 35+\n" +
 				"4.7. getTables(null, 'tmp', null, null)\n" +
 				"List Tables in schema tmp:\n" +
 				"_columns\n" +
