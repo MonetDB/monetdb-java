@@ -5,7 +5,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 2024, 2025 MonetDB Foundation;
+ * Copyright 2024 - 2026 MonetDB Foundation;
  * Copyright August 2008 - 2023 MonetDB B.V.;
  * Copyright 1997 - July 2008 CWI.
  */
@@ -151,7 +151,6 @@ public final class SecureSocket {
 		} catch (NoSuchAlgorithmException | KeyManagementException e) {
 			throw new RuntimeException("Could not create SSLContext", e);
 		}
-
 	}
 
 	private static class HashBasedTrustManager implements X509TrustManager {
@@ -161,7 +160,6 @@ public final class SecureSocket {
 		public HashBasedTrustManager(String hashDigits) {
 			this.hashDigits = hashDigits;
 		}
-
 
 		@Override
 		public void checkClientTrusted(X509Certificate[] x509Certificates, String s) throws CertificateException {
@@ -196,8 +194,6 @@ public final class SecureSocket {
 			if (!certDigits.startsWith(hashDigits)) {
 				throw new CertificateException("Certificate hash does not start with '" + hashDigits + "': " + certDigits);
 			}
-
-
 		}
 
 		@Override
