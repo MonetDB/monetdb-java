@@ -23,8 +23,8 @@ jobs:
           - 11
           - 17
           - 21
-          - 24
           - 25
+          - 26
         exclude:
           - distribution: oracle
             java_version: 8
