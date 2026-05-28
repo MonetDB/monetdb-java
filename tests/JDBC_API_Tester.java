@@ -73,7 +73,8 @@ public final class JDBC_API_Tester {
 
 	/**
 	 * main function
-	 * @param args args[0] should contain the connectionURL string, args[1] an optional flag: -skipMALoutput
+	 * @param args args[0] should contain the connectionURL string,
+	 *             args[1] an optional flag: -skipMALoutput or -supportsNestedTypes
 	 * @throws Exception if a connection or database access error occurs
 	 */
 	public static void main(String[] args) throws Exception {
@@ -85,6 +86,8 @@ public final class JDBC_API_Tester {
 		final String con_URL = args[0];
 		final boolean skipMALoutput = (args.length >= 2) ? args[1].equals("-skipMALoutput") : false;
 		// System.err.println("skipMALoutput = " + skipMALoutput);
+		final boolean supportsNestedTypes = (args.length >= 2) ? args[1].equals("-supportsNestedTypes") : false;
+		// System.err.println("supportsNestedTypes = " + supportsNestedTypes);
 
 		// Test this before trying to connect
 		UrlTester.runAllTests();
@@ -113,7 +116,7 @@ public final class JDBC_API_Tester {
 		jt.Test_PSlargebatchval();
 		jt.Test_PSlargeresponse(con_URL);
 		jt.Test_PSmanycon(con_URL);
-		jt.Test_PSmetadata();
+		jt.Test_PSmetadata(supportsNestedTypes);
 		jt.Test_PSsetBytes();
 		jt.Test_PSsomeamount();
 		jt.Test_PSsqldata();
@@ -2552,7 +2555,7 @@ public final class JDBC_API_Tester {
 			"56... result: 56, closed. 57... result: 57, closed. 58... result: 58, closed. 59... result: 59, closed. 60... result: 60, closed. Forced transaction failure\n");
 	}
 
-	private void Test_PSmetadata() {
+	private void Test_PSmetadata(boolean supportsNestedTypes) {
 		sb.setLength(0);	// clear the output log buffer
 
 		Statement stmt = null;
@@ -2660,13 +2663,13 @@ public final class JDBC_API_Tester {
 			"  precision     10\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
-			"  schemaname    \n" +
+			"  schemaname    " + (supportsNestedTypes ? "sys\n" : "\n") +
 			"  tablename     table_test_psmetadata\n" +
 			"  autoincrement false\n" +
 			"  casesensitive false\n" +
 			"  currency      false\n" +
 			"  defwritable   false\n" +
-			"  nullable      2\n" +
+			"  nullable      " + (supportsNestedTypes ? "1\n" : "2\n") +
 			"  readonly      true\n" +
 			"  searchable    true\n" +
 			"  signed        true\n" +
@@ -2681,13 +2684,13 @@ public final class JDBC_API_Tester {
 			"  precision     15\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
-			"  schemaname    \n" +
+			"  schemaname    " + (supportsNestedTypes ? "sys\n" : "\n") +
 			"  tablename     table_test_psmetadata\n" +
 			"  autoincrement false\n" +
 			"  casesensitive false\n" +
 			"  currency      false\n" +
 			"  defwritable   false\n" +
-			"  nullable      2\n" +
+			"  nullable      " + (supportsNestedTypes ? "1\n" : "2\n") +
 			"  readonly      true\n" +
 			"  searchable    true\n" +
 			"  signed        true\n" +
@@ -2702,13 +2705,13 @@ public final class JDBC_API_Tester {
 			"  precision     1\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
-			"  schemaname    \n" +
+			"  schemaname    " + (supportsNestedTypes ? "sys\n" : "\n") +
 			"  tablename     table_test_psmetadata\n" +
 			"  autoincrement false\n" +
 			"  casesensitive false\n" +
 			"  currency      false\n" +
 			"  defwritable   false\n" +
-			"  nullable      2\n" +
+			"  nullable      " + (supportsNestedTypes ? "1\n" : "2\n") +
 			"  readonly      true\n" +
 			"  searchable    true\n" +
 			"  signed        false\n" +
@@ -2723,13 +2726,13 @@ public final class JDBC_API_Tester {
 			"  precision     15\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
-			"  schemaname    \n" +
+			"  schemaname    " + (supportsNestedTypes ? "sys\n" : "\n") +
 			"  tablename     table_test_psmetadata\n" +
 			"  autoincrement false\n" +
 			"  casesensitive true\n" +
 			"  currency      false\n" +
 			"  defwritable   false\n" +
-			"  nullable      2\n" +
+			"  nullable      " + (supportsNestedTypes ? "1\n" : "2\n") +
 			"  readonly      true\n" +
 			"  searchable    true\n" +
 			"  signed        false\n" +
@@ -2744,13 +2747,13 @@ public final class JDBC_API_Tester {
 			"  precision     0\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
-			"  schemaname    \n" +
+			"  schemaname    " + (supportsNestedTypes ? "sys\n" : "\n") +
 			"  tablename     table_test_psmetadata\n" +
 			"  autoincrement false\n" +
 			"  casesensitive true\n" +
 			"  currency      false\n" +
 			"  defwritable   false\n" +
-			"  nullable      2\n" +
+			"  nullable      " + (supportsNestedTypes ? "1\n" : "2\n") +
 			"  readonly      true\n" +
 			"  searchable    true\n" +
 			"  signed        false\n" +
