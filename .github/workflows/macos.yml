@@ -11,14 +11,15 @@ jobs:
 
     runs-on: macos-latest
 
-    services:
-      monetdb_container:
-        image: monetdb/monetdb:latest
-        env:
-          MDB_DAEMON_PASS: monetdb
-          MDB_DB_ADMIN_PASS: monetdb
-        ports:
-          - 50000:50000
+#    services:
+#      monetdb_container:
+#        image: monetdb/monetdb:latest
+#        env:
+#          MDB_DAEMON_PASS: monetdb
+#          MDB_DB_ADMIN_PASS: monetdb
+#        ports:
+#          - 50000:50000
+# Error: docker: command not found
 
     steps:
     - uses: actions/checkout@v6
