@@ -11,12 +11,22 @@ jobs:
 
     runs-on: macos-latest
 
+    services:
+      monetdb_container:
+        image: monetdb/monetdb:latest
+        env:
+          MDB_DAEMON_PASS: monetdb
+          MDB_DB_ADMIN_PASS: monetdb
+        ports:
+          - 50000:50000
+
     steps:
     - uses: actions/checkout@v6
-    - name: Set up JDK 1.8
+
+    - name: Set up JDK
       uses: actions/setup-java@v5
       with:
-        java-version: 8
+        java-version: 11
         distribution: liberica
 
     - name: Build
