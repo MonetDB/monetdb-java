@@ -46,7 +46,9 @@ public final class JDBC_API_Tester {
 	final private boolean isPostDec2023;	// flags to support version specific output
 	final private boolean isPostMar2025;
 	final private boolean isPostDec2025;	// Dec2025-SP1 or later
+	final private boolean isAtLeast56;		// version name not yet known
 	private boolean foundDifferences = false;
+	private int counter = 0;
 
 	final private static int sbInitLen = 5468; // max needed size of sb
 
@@ -69,6 +71,7 @@ public final class JDBC_API_Tester {
 		isPostMar2025 = versionIsAtLeast(11, 54, 0);
 		// post-Dec2025 means Dec2025-SP1 (11.55.2) or later. It has new system table: tmp.dependencies
 		isPostDec2025 = versionIsAtLeast(11, 55, 2);
+		isAtLeast56 = versionIsAtLeast(56, 0, 0);
 	}
 
 	/**
@@ -97,6 +100,8 @@ public final class JDBC_API_Tester {
 
 		// run the tests
 		jt.Test_Cautocommit(con_URL);
+		if (jt.isAtLeast56)
+			jt.Test_CautocommitWithErrors(con_URL);
 		jt.Test_CisValid();
 		jt.Test_Clargequery();
 		jt.Test_Cmanycon(con_URL);
@@ -315,6 +320,195 @@ public final class JDBC_API_Tester {
 				"Expected error: java.sql.SQLException: SELECT: no such table 'doesnotexist'\n" +
 				"Validating connection: con.isValid? true");
 	}
+
+	private void Test_CautocommitWithErrors(String arg0) {
+		Connection helper = null;
+		Statement stmt = null;
+		ResultSet rs = null;
+		sb.setLength(0);
+
+		try {
+			// Connections
+			stmt = con.createStatement();
+			helper = DriverManager.getConnection(arg0);
+
+			// Used for autocommit verification
+			stmt.executeUpdate(
+					"DROP TABLE IF EXISTS autocommitcheck;\n" +
+							"CREATE TABLE autocommitcheck(i INT);");
+
+			sb.append("1a. initially auto commit mode is on\n");
+			checkReportedAutocommit(true, helper);
+
+			sb.append("1b. after an error it's still on\n");
+			try {
+				stmt.execute("SELECT x FROM autocommitcheck -- column x does not exist");
+			} catch (SQLException ignored) {
+				sb.append("  statement failed as expected\n");
+			}
+			checkReportedAutocommit(true, helper);
+
+			sb.append("\n2a. START TRANSACTION turns it off\n");
+			stmt.execute("START TRANSACTION");
+			checkReportedAutocommit(false, helper);
+
+			sb.append("2b. COMMIT turns it on\n");
+			stmt.execute("COMMIT");
+			checkReportedAutocommit(true, helper);
+
+			sb.append("\n3a. START TRANSACTION turns it off again\n");
+			stmt.execute("START TRANSACTION");
+			checkReportedAutocommit(false, helper);
+
+			sb.append("3b. after an error it's still off\n");
+			try {
+				stmt.execute("SELECT x FROM autocommitcheck -- column x does not exist");
+			} catch (SQLException ignored) {
+				sb.append("  statement failed as expected\n");
+			}
+			checkReportedAutocommit(false, helper);
+
+			sb.append("3c. after ROLLBACK it's on again\n");
+			stmt.execute("ROLLBACK");
+			checkReportedAutocommit(true, helper);
+
+			sb.append("\n4a. START TRANSACTION turns it off again\n");
+			stmt.execute("START TRANSACTION");
+			checkReportedAutocommit(false, helper);
+
+			sb.append("4b. after an error it's still off\n");
+			try {
+				stmt.execute("SELECT x FROM autocommitcheck -- column x does not exist");
+			} catch (SQLException ignored) {
+				sb.append("  statement failed as expected\n");
+			}
+			checkReportedAutocommit(false, helper);
+
+			sb.append("4c. COMMIT fails, autocommit is on again\n");
+			try {
+				stmt.execute("COMMIT");
+			} catch (SQLException ignored) {
+				sb.append("  statement failed as expected\n");
+			}
+			checkReportedAutocommit(true, helper);
+
+
+
+
+
+		} catch (SQLException e) {
+			sb.append("FAILED: " + e.getMessage() + "\n");
+			closeConx(helper);
+			closeStmtResSet(stmt, rs);
+			sb.append("ABORTING TEST!!!");
+		}
+
+		//language=TEXT
+		compareExpectedOutput("Test_Cautocommit_errors", ""
+				+ "1a. initially auto commit mode is on\n"
+				+ "  reported autocommit = true, as expected\n"
+				+ "  the inserted test data is visible, as expected\n"
+				+ "1b. after an error it's still on\n"
+				+ "  statement failed as expected\n"
+				+ "  reported autocommit = true, as expected\n"
+				+ "  the inserted test data is visible, as expected\n"
+				+ "\n"
+				+ "2a. START TRANSACTION turns it off\n"
+				+ "  reported autocommit = false, as expected\n"
+				+ "  the inserted test data is not visible, as expected\n"
+				+ "2b. COMMIT turns it on\n"
+				+ "  reported autocommit = true, as expected\n"
+				+ "  the inserted test data is visible, as expected\n"
+				+ "\n"
+				+ "3a. START TRANSACTION turns it off again\n"
+				+ "  reported autocommit = false, as expected\n"
+				+ "  the inserted test data is not visible, as expected\n"
+				+ "3b. after an error it's still off\n"
+				+ "  statement failed as expected\n"
+				+ "  reported autocommit = false, as expected\n"
+				+ "  connection indeed in autocommit mode\n"
+				+ "3c. after ROLLBACK it's on again\n"
+				+ "  reported autocommit = true, as expected\n"
+				+ "  the inserted test data is visible, as expected\n"
+				+ "\n"
+				+ "4a. START TRANSACTION turns it off again\n"
+				+ "  reported autocommit = false, as expected\n"
+				+ "  the inserted test data is not visible, as expected\n"
+				+ "4b. after an error it's still off\n"
+				+ "  statement failed as expected\n"
+				+ "  reported autocommit = false, as expected\n"
+				+ "  connection indeed in autocommit mode\n"
+				+ "4c. COMMIT fails, autocommit is on again\n"
+				+ "  statement failed as expected\n"
+				+ "  reported autocommit = true, as expected\n"
+				+ "  the inserted test data is visible, as expected\n");
+		if (foundDifferences)
+			System.exit(1);
+	}
+
+	/**
+	 * Verify 'con' believes it's in autocommit mode.
+	 * @param expectedAutocommit
+	 * @param helper Helper connection used to check if it's really the case
+	 * @throws SQLException
+	 */
+	private void checkReportedAutocommit(boolean expectedAutocommit, Connection helper) throws SQLException {
+		boolean reportedAutocommit = con.getAutoCommit();
+		if (reportedAutocommit == expectedAutocommit)
+			sb.append("  reported autocommit = " + reportedAutocommit + ", as expected\n");
+		else
+			sb.append("  ERROR: reported autocommit = " + reportedAutocommit + ", expected " + expectedAutocommit + "\n");
+
+		if (helper != null)
+			verifyAutocommit(expectedAutocommit, helper);
+	}
+
+	/**
+	 * Append some data to table 'autocommitcheck', see if it shows up in the
+	 * other connection
+	 * @param expectedAutocommit
+	 * @param helper
+	 */
+	private void verifyAutocommit(boolean expectedAutocommit, Connection helper) throws SQLException {
+		int value = counter++;
+
+		// Append the data
+		try (PreparedStatement ps = con.prepareStatement("INSERT INTO autocommitcheck VALUES (?)")) {
+			ps.setInt(1, value);
+			ps.execute();
+		} catch (SQLException e) {
+			// We only care about 25005!Current transaction is aborted (please ROLLBACK)
+			if (!e.getSQLState().equals("25005"))
+				throw e;
+			// 25005 implies we're not in auto commit mode
+			if (expectedAutocommit) {
+				sb.append("  ERROR: expected to be in autocommit mode but inserting test data gave " + e.getMessage() + "\n");
+			} else {
+				sb.append("  connection indeed in autocommit mode\n");
+			}
+			return;
+		}
+
+		// We didn't get an error inserting the data, is it visible from the other connection?
+		final boolean visible;
+		try (PreparedStatement ps = helper.prepareStatement("SELECT * FROM autocommitcheck WHERE i = ?")) {
+			ps.setInt(1, value);
+			try (ResultSet rs = ps.executeQuery()) {
+				visible = rs.next();
+			}
+		}
+		if (expectedAutocommit)
+			if (visible)
+				sb.append("  the inserted test data is visible, as expected\n");
+			else
+				sb.append("  ERROR: the inserted test data is not visible, but we're supposed to be in auto commit mode\n");
+		else
+			if (visible)
+				sb.append("  ERROR: the inserted test data is is visible but we're supposed to not be in auto commit mode\n");
+			else
+				sb.append("  the inserted test data is not visible, as expected\n");
+	}
+
 
 	private void Test_Clargequery() {
 		sb.setLength(0);	// clear the output log buffer
