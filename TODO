@@ -1,0 +1,11 @@
+Quick notes from the mvn branch
+
+- remove the years from the copyright message
+
+- restore Test_Csendthread, it's actuall useful
+
+- re-check github actions versions
+
+- modernize copyright message (see ControlTester for an example)
+
+- start converting the JDBC_API_Tester tests to Junit style

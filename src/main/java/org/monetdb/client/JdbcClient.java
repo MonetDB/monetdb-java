@@ -5,7 +5,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 2024, 2025 MonetDB Foundation;
+ * Copyright 2024 - 2026 MonetDB Foundation;
  * Copyright August 2008 - 2023 MonetDB B.V.;
  * Copyright 1997 - July 2008 CWI.
  */
@@ -408,7 +408,7 @@ public final class JdbcClient {
 				out = new PrintWriter(new BufferedWriter(new java.io.FileWriter(oc.getArgument())));
 
 			// we only want user tables and views to be dumped (DDL and optional data), unless a specific table is requested
-			final String[] types = {"TABLE","VIEW","MERGE TABLE","REMOTE TABLE","REPLICA TABLE","STREAM TABLE"};
+			final String[] types = {"TABLE","VIEW","MERGE TABLE","REMOTE TABLE","REPLICA TABLE","UNLOGGED TABLE","GLOBAL TEMPORARY TABLE"};
 			// Future: fetch all type names using dbmd.getTableTypes() and construct String[] with all
 			// table type names excluding the SYSTEM ... ones and LOCAL TEMPORARY TABLE/VIEW ones.
 
@@ -1062,6 +1062,8 @@ public final class JdbcClient {
 
 	private static String optAddDqs(final String name)
 	{
+		if (name == null)
+			return "";
 		if (name.contains(" ") || name.contains("\t") || name.contains("\n"))
 			return Exporter.dq(name);
 		return name;

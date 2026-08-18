@@ -1,13 +1,13 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
-* Thu Oct 2 2025 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
-- Compiled and released new jar files: monetdb-jdbc-12.1.jre8.jar and
+* Thu Jan  8 2026 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- Compiled and released new jar files: monetdb-jdbc-12.2.jre8.jar and
   jdbcclient.jre8.jar
-
-For a complete list of changes in previous monetdb-java releases see:
-  https://www.monetdb.org/downloads/Java/archive/ChangeLog-Archive
 
 * Fri Jan  2 2026 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
 - Fix backslash issues in ResultSetMetaData column names. (#11).
+
+For a complete list of changes in previous monetdb-java releases see:
+  https://www.monetdb.org/downloads/Java/archive/ChangeLog-Archive
 

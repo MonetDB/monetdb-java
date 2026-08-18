@@ -5,7 +5,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 2024, 2025 MonetDB Foundation;
+ * Copyright 2024 - 2026 MonetDB Foundation;
  * Copyright August 2008 - 2023 MonetDB B.V.;
  * Copyright 1997 - July 2008 CWI.
  */
@@ -58,12 +58,16 @@ public final class JDBC_API_Tester extends JUnitTester {
 	// Connection state set in connect()
 	private String jdbcUrl;
 	@CloseOnFailure
-	private Connection con;		// main connection shared by all tests
+	private Connection con;		// main Connection shared by all tests
+	private MonetConnection mcon;	// same, but as a MonetConnection
 	private int dbmsMajorVersion;
 	private int dbmsMinorVersion;
+	private int dbmsMicroVersion;
 	private boolean isPostDec2023;	// flag to support version specific output
 	private boolean isPostMar2025;
+	private boolean isPostDec2025;	// Dec2025-SP1 or later;
 	private boolean skipMALoutput = Config.isSkipMalOutput();
+	private boolean supportsNestedTypes;
 
 	final private static int sbInitLen = 5468; // max needed size of sb
 
@@ -78,13 +82,29 @@ public final class JDBC_API_Tester extends JUnitTester {
 	private void connect(String url) throws SQLException {
 		jdbcUrl = url;
 		con = DriverManager.getConnection(jdbcUrl);
+		mcon = con.unwrap(MonetConnection.class);
 		DatabaseMetaData dbmd = con.getMetaData();
 		dbmsMajorVersion = dbmd.getDatabaseMajorVersion();
 		dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
+		MonetConnection mcon = con.unwrap(MonetConnection.class);
+		dbmsMicroVersion = mcon.getDatabaseMicroVersion();
 		// from version 11.50 on, the MonetDB server returns different metadata for
 		// integer digits (1 less) and for clob and char columns (now return varchar).
-		isPostDec2023 = versionIsAtLeast(11, 50);
-		isPostMar2025 = versionIsAtLeast(11, 54);
+		isPostDec2023 = versionIsAtLeast(11, 50, 0);
+		isPostMar2025 = versionIsAtLeast(11, 54, 0);
+		// post-Dec2025 means Dec2025-SP1 (11.55.2) or later. It has a new system table: tmp.dependencies
+		isPostDec2025 = versionIsAtLeast(11, 55, 2);
+
+		String checkNested =
+				"SELECT c.name\n" +
+				"FROM sys.columns c, sys.tables t, sys.schemas s\n" +
+				"WHERE c.name = 'multiset' AND t.name = '_columns' AND s.name = 'sys'\n" +
+				"AND c.table_id = t.id AND t.schema_id = s.id\n";
+		try (Statement stmt = con.createStatement()) {
+			try (ResultSet rs = stmt.executeQuery(checkNested)) {
+				supportsNestedTypes = rs.next();
+			}
+		}
 	}
 
 	@BeforeEach
@@ -115,7 +135,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 		if (con == null || con.isClosed())
 			return;
 		assertTrue(con.getAutoCommit());
-		if (versionIsAtLeast(11, 52)) {
+		if (versionIsAtLeast(11, 52, 0)) {
 			String query = "SELECT 'query_id=' || query_id || '/res_id=' || res_id FROM sys.unclosed_result_sets()";
 			StringBuilder unclosed = new StringBuilder();
 			try (Statement stmt = con.createStatement(); ResultSet rs = stmt.executeQuery(query)) {
@@ -129,8 +149,16 @@ public final class JDBC_API_Tester extends JUnitTester {
 		}
 	}
 
-	private boolean versionIsAtLeast(int major, int minor) {
-		return ((dbmsMajorVersion == major && dbmsMinorVersion >= minor) || dbmsMajorVersion > major);
+	private boolean versionIsAtLeast(int major, int minor, int micro) {
+		if (dbmsMajorVersion > major)
+			return true;
+		if (dbmsMajorVersion < major)
+			return false;
+		if (dbmsMinorVersion > minor)
+			return true;
+		if (dbmsMinorVersion < minor)
+			return false;
+		return dbmsMicroVersion >= micro;
 	}
 
 	// getter is used by the @EnabledIf attribute on Test_ClientInfo
@@ -851,6 +879,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 			"null	tmp	tmp_pk_uc	LOCAL TEMPORARY TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	_columns	SYSTEM TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	_tables	SYSTEM TABLE	null	null	null	null	null	null\n" +
+			(isPostDec2025 ? "null	tmp	dependencies	SYSTEM TABLE	null	null	null	null	null	null\n" : "") +
 			"null	tmp	idxs	SYSTEM TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	keys	SYSTEM TABLE	null	null	null	null	null	null\n" +
 			"null	tmp	objects	SYSTEM TABLE	null	null	null	null	null	null\n" +
@@ -2634,13 +2663,13 @@ public final class JDBC_API_Tester extends JUnitTester {
 			"  precision     10\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
-			"  schemaname    \n" +
+			"  schemaname    " + (supportsNestedTypes ? "sys\n" : "\n") +
 			"  tablename     table_test_psmetadata\n" +
 			"  autoincrement false\n" +
 			"  casesensitive false\n" +
 			"  currency      false\n" +
 			"  defwritable   false\n" +
-			"  nullable      2\n" +
+			"  nullable      " + (supportsNestedTypes ? "1\n" : "2\n") +
 			"  readonly      true\n" +
 			"  searchable    true\n" +
 			"  signed        true\n" +
@@ -2655,13 +2684,13 @@ public final class JDBC_API_Tester extends JUnitTester {
 			"  precision     15\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
-			"  schemaname    \n" +
+			"  schemaname    " + (supportsNestedTypes ? "sys\n" : "\n") +
 			"  tablename     table_test_psmetadata\n" +
 			"  autoincrement false\n" +
 			"  casesensitive false\n" +
 			"  currency      false\n" +
 			"  defwritable   false\n" +
-			"  nullable      2\n" +
+			"  nullable      " + (supportsNestedTypes ? "1\n" : "2\n") +
 			"  readonly      true\n" +
 			"  searchable    true\n" +
 			"  signed        true\n" +
@@ -2676,13 +2705,13 @@ public final class JDBC_API_Tester extends JUnitTester {
 			"  precision     1\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
-			"  schemaname    \n" +
+			"  schemaname    " + (supportsNestedTypes ? "sys\n" : "\n") +
 			"  tablename     table_test_psmetadata\n" +
 			"  autoincrement false\n" +
 			"  casesensitive false\n" +
 			"  currency      false\n" +
 			"  defwritable   false\n" +
-			"  nullable      2\n" +
+			"  nullable      " + (supportsNestedTypes ? "1\n" : "2\n") +
 			"  readonly      true\n" +
 			"  searchable    true\n" +
 			"  signed        false\n" +
@@ -2697,13 +2726,13 @@ public final class JDBC_API_Tester extends JUnitTester {
 			"  precision     15\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
-			"  schemaname    \n" +
+			"  schemaname    " + (supportsNestedTypes ? "sys\n" : "\n") +
 			"  tablename     table_test_psmetadata\n" +
 			"  autoincrement false\n" +
 			"  casesensitive true\n" +
 			"  currency      false\n" +
 			"  defwritable   false\n" +
-			"  nullable      2\n" +
+			"  nullable      " + (supportsNestedTypes ? "1\n" : "2\n") +
 			"  readonly      true\n" +
 			"  searchable    true\n" +
 			"  signed        false\n" +
@@ -2718,13 +2747,13 @@ public final class JDBC_API_Tester extends JUnitTester {
 			"  precision     0\n" +
 			"  scale         0\n" +
 			"  catalogname   null\n" +
-			"  schemaname    \n" +
+			"  schemaname    " + (supportsNestedTypes ? "sys\n" : "\n") +
 			"  tablename     table_test_psmetadata\n" +
 			"  autoincrement false\n" +
 			"  casesensitive true\n" +
 			"  currency      false\n" +
 			"  defwritable   false\n" +
-			"  nullable      2\n" +
+			"  nullable      " + (supportsNestedTypes ? "1\n" : "2\n") +
 			"  readonly      true\n" +
 			"  searchable    true\n" +
 			"  signed        false\n" +
@@ -5571,11 +5600,16 @@ public final class JDBC_API_Tester extends JUnitTester {
 			sb.append("DatabaseProductVersion = ").append((postNov2019 ? "11.35.+" : dbmsVersion)).append("\n");
 
 			sb.append("4.5. getDatabaseMajorVersion()\n");
-			sb.append("DatabaseMajorVersion = ").append(dbmd.getDatabaseMajorVersion()).append("\n");	// should be 11
+			int dbmsMajorVersion = dbmd.getDatabaseMajorVersion();        // should qq or be 35 or higher
+			if (dbmsMajorVersion != 11 && dbmsMajorVersion < 56) {
+					sb.append("DatabaseMajorVersion = ").append(dbmd.getDatabaseMajorVersion()).append("\n");
+			}
 
 			sb.append("4.6. getDatabaseMinorVersion()\n");
-			int dbmsMinorVersion = dbmd.getDatabaseMinorVersion();	// should be 35 or higher
-			sb.append("DatabaseMinorVersion = ").append((dbmsMinorVersion >= 35 ? "35+" : dbmsMinorVersion)).append("\n");
+			int dbmsMinorVersion = dbmd.getDatabaseMinorVersion();
+			if (dbmsMajorVersion == 11 && dbmsMinorVersion < 35) {
+					sb.append("DatabaseMinorVersion = ").append(dbmsMinorVersion).append("\n");
+			}
 
 			sb.append("4.7. getTables(null, 'tmp', null, null)\n");
 			rs2 = dbmd.getTables(null, "tmp", null, null);
@@ -5646,13 +5680,12 @@ public final class JDBC_API_Tester extends JUnitTester {
 				"4.4. getDatabaseProductVersion()\n" +
 				"DatabaseProductVersion = 11.35.+\n" +
 				"4.5. getDatabaseMajorVersion()\n" +
-				"DatabaseMajorVersion = 11\n" +
 				"4.6. getDatabaseMinorVersion()\n" +
-				"DatabaseMinorVersion = 35+\n" +
 				"4.7. getTables(null, 'tmp', null, null)\n" +
 				"List Tables in schema tmp:\n" +
 				"_columns\n" +
 				"_tables\n" +
+				(isPostDec2025 ? "dependencies\n" : "") +
 				"idxs\n" +
 				"keys\n" +
 				"objects\n" +

@@ -32,6 +32,9 @@ import static org.junit.platform.launcher.TagFilter.includeTags;
 
 /**
  * JUnit test launcher compatible with MonetDB's Mtest.py.
+ *
+ * This means it prefixes non-error output with '# ' and the {@link #run()} method
+ * provides an exit code to return.
  */
 public class MtestLauncher {
 	private final PrintStream always;
@@ -59,7 +62,9 @@ public class MtestLauncher {
 	private static LauncherDiscoveryRequest buildDiscoveryRequest(String tags) {
 		LauncherDiscoveryRequest request = LauncherDiscoveryRequestBuilder
 				.request()
-				.selectors(selectPackage("org.monetdb"),selectClass("JDBC_API_Tester"))
+				.selectors(
+						selectPackage("org.monetdb"),
+						selectClass("JDBC_API_Tester"))
 				.filters(includeTags(tags))
 				.build();
 		return request;
@@ -75,9 +80,9 @@ public class MtestLauncher {
 			launcher.registerTestExecutionListeners(verbosityListener, summaryListener);
 
 
-			long t0 = System.currentTimeMillis();
 			verbose.println("==================== Start ====================================================");
 			verbose.println();
+			long t0 = System.currentTimeMillis();
 			launcher.execute(testPlan);
 			long t1 = System.currentTimeMillis();
 			verbose.println();

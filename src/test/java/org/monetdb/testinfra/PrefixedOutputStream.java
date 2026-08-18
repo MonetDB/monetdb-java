@@ -20,7 +20,8 @@ import java.io.OutputStream;
  * Prefix every line of the output with "# "
  */
 public class PrefixedOutputStream extends FilterOutputStream {
-	boolean pending = true;
+	private static final byte[] PREFIX = new byte[]{ '#', ' '};
+	boolean atStart = true;
 
 	public PrefixedOutputStream(OutputStream out) {
 		super(new BufferedOutputStream(out));
@@ -28,14 +29,13 @@ public class PrefixedOutputStream extends FilterOutputStream {
 
 	@Override
 	public void write(int b) throws IOException {
-		byte[] prefix = { '#', ' '};
-		if (pending) {
-			out.write(prefix);
-			pending = false;
+		if (atStart) {
+			out.write(PREFIX);
+			atStart = false;
 		}
 		out.write(b);
 		if ( b == '\n') {
-			pending = true;
+			atStart = true;
 			out.flush();
 		}
 	}

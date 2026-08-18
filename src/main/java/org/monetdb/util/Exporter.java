@@ -5,7 +5,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 2024, 2025 MonetDB Foundation;
+ * Copyright 2024 - 2026 MonetDB Foundation;
  * Copyright August 2008 - 2023 MonetDB B.V.;
  * Copyright 1997 - July 2008 CWI.
  */
@@ -79,6 +79,8 @@ public abstract class Exporter {
 	 * @return a String holding cnt times chr
 	 */
 	protected static final String repeat(final char chr, final int cnt) {
+		if (cnt <= 0)
+			return "";
 		final char[] buf = new char[cnt];
 		java.util.Arrays.fill(buf, chr);
 		return new String(buf);

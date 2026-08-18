@@ -5,7 +5,7 @@
  * License, v. 2.0.  If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  *
- * Copyright 2024, 2025 MonetDB Foundation;
+ * Copyright 2024 - 2026 MonetDB Foundation;
  * Copyright August 2008 - 2023 MonetDB B.V.;
  * Copyright 1997 - July 2008 CWI.
  */
@@ -98,7 +98,7 @@ public class MonetWrapper implements java.sql.Wrapper {
 		return new SQLFeatureNotSupportedException("Method " + name + " not implemented", "0A000");
 	}
 
-	private static final Pattern dqPattern = Pattern.compile("[\\\\\"]");
+	private static final Pattern dqPattern = Pattern.compile("\"");
 
 	/**
 	 * General utility function to add double quotes around an SQL Identifier
@@ -112,7 +112,7 @@ public class MonetWrapper implements java.sql.Wrapper {
 	 */
 	public static final String dq(final String in) {
 		Matcher matcher = dqPattern.matcher(in);
-		String escaped = matcher.replaceAll("\\\\$0");
+		String escaped = matcher.replaceAll("\"$0");
 		return "\"" + escaped + "\"";
 	}
 

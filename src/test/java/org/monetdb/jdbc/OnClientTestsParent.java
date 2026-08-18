@@ -17,15 +17,21 @@ import org.junit.jupiter.api.BeforeEach;
 import org.monetdb.testinfra.Config;
 import org.monetdb.testinfra.MonetVersionNumber;
 
-import java.sql.*;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+/**
+ * Common code between tthe {@link OnClientTests} and the {@link FileTransferHandlerTests}.
+ */
 public abstract class OnClientTestsParent {
 	protected MonetVersionNumber monetVersion;
-	MonetConnection conn;
-	Statement stmt;
+	protected MonetConnection conn;
+	protected Statement stmt;
 
 	@BeforeAll
 	public static void checkConnection() throws SQLException {
@@ -34,7 +40,7 @@ public abstract class OnClientTestsParent {
 
 	@BeforeEach
 	public void setUp() throws SQLException {
-		Connection c = DriverManager.getConnection(Config.getServerURL());
+		java.sql.Connection c = DriverManager.getConnection(Config.getServerURL());
 		conn = c.unwrap(MonetConnection.class);
 		stmt = conn.createStatement();
 		monetVersion = MonetVersionNumber.retrieve(conn);
@@ -50,7 +56,7 @@ public abstract class OnClientTestsParent {
 		conn.close();
 	}
 
-	String queryString(String query) throws SQLException {
+	protected String queryString(String query) throws SQLException {
 		try (ResultSet rs = stmt.executeQuery(query)) {
 			assertTrue(rs.next(), "query should return a single row");
 			String result = rs.getString(1);
@@ -59,7 +65,7 @@ public abstract class OnClientTestsParent {
 		}
 	}
 
-	int queryInt(String query) throws SQLException {
+	protected int queryInt(String query) throws SQLException {
 		try (ResultSet rs = stmt.executeQuery(query)) {
 			assertTrue(rs.next(), "query should return a single row");
 			int result = rs.getInt(1);

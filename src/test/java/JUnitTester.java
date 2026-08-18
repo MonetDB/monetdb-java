@@ -3,12 +3,17 @@ import org.monetdb.testinfra.MtestLauncher;
 import static java.lang.System.exit;
 
 /**
- * Invoked by Mtest to run the TLS tests.
+ * Common code for the main methods of the legacy Mtest entry points
+ * {@link JDBC_API_Tester#main(String[])}, {@link OnClientTester#main(String[])}
+ * and {@link TLSTester#main(String[])}.
  */
 public abstract class JUnitTester {
 
 	/**
-	 * Method to be invoked from the main() class of subclasses
+	 * Method to be invoked from the main() class of subclasses.
+	 * The main methods are called with a parameter, usually a jdbc: URL
+	 * but sometimes something else. This method stores the parameter
+	 * in the given system property for the tests to find.
 	 * @param tags JUnit tag expression to select tests to run, for example
 	 *             "api&!slow" or "tls".
 	 * @param property System property in which to store the value passed
@@ -25,6 +30,8 @@ public abstract class JUnitTester {
 				verbose = true;
 			else if (arg.equals("-a"))
 				i++ /* sometimes passed to TLSTester, ignore */;
+			else if (arg.equals("-supportsNestedTypes"))
+				i++ /* sometimes passed to JDBC_API_Tester, ignore */;
 			else if (arg.startsWith("-")) {
 				System.err.println("Invalid flag " + arg);
 				exit(1);
