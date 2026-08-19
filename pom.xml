@@ -289,6 +289,51 @@
                 </configuration>
             </plugin>
 
+            <!-- Sign the jar files before uploading.
+                 This plugin and the uploading plugin below both run in phase 'deploy'.
+                 Signing must come first.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifact</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <useAgent>true</useAgent>
+                    <keyname>9FC6C7E952E4E586C432C13A273BF13AC4816244</keyname>
+                </configuration>
+            </plugin>
+
+            <!-- Upload to Maven Central via Sonatype.
+                 This plugin and the signing plugin above both run in phase 'deploy'.
+                 Signing must come first.
+            -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.11.0</version>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <id>upload-to-maven-central</id>
+                        <phase>deploy</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- corresponds to a <server> entry in settings.xml with credentials -->
+                    <publishingServerId>central</publishingServerId>
+
+                </configuration>
+            </plugin>
+
             <!--
                 Temporarily dropped the following plugins until I've figured out
                 how they work and if we still need them
@@ -303,8 +348,9 @@
     </build>
 
     <profiles>
+
+        <!-- the 'quick' profile inhibits javadoc, sources and slow tests -->
         <profile>
-            <!-- the 'quick' profile inhibits javadoc, sources and slow tests -->
             <id>quick</id>
             <build>
                 <plugins>
@@ -335,6 +381,18 @@
                 </plugins>
             </build>
         </profile>
+
+        <!-- the 'sign' profile enables GPG-signing the jar files -->
+        <profile>
+            <id>sign</id>
+            <build>
+                <plugins>
+
+                </plugins>
+            </build>
+        </profile>
+
+
     </profiles>
 
 
