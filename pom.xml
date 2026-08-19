@@ -52,31 +52,13 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     </properties>
 
-    <!-- with this we can omit the version numbers of junit stuff -->
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <groupId>org.junit</groupId>
-                <artifactId>junit-bom</artifactId>
-                <version>5.11.4</version>
-                <type>pom</type>
-                <scope>import</scope>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
 
     <dependencies>
 
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.github.java-diff-utils</groupId>
-            <artifactId>java-diff-utils</artifactId>
-            <version>4.15</version>
+            <version>5.14.4</version>
             <scope>test</scope>
         </dependency>
 
@@ -84,12 +66,23 @@
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-console</artifactId>
+            <version>1.14.4</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.java-diff-utils</groupId>
+            <artifactId>java-diff-utils</artifactId>
+            <version>4.17</version>
             <scope>test</scope>
         </dependency>
 
     </dependencies>
 
     <build>
+
+        <!-- insert the version number in MonetDriver.properties
+             so MonetDriver.class can determine its version number -->
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -97,85 +90,40 @@
             </resource>
         </resources>
 
-        <!-- lock down plugins versions for reproducibility.. someone recommended this -->
-        <pluginManagement>
-            <plugins>
-                <!-- clean lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#clean_Lifecycle -->
-                <plugin>
-                    <artifactId>maven-clean-plugin</artifactId>
-                    <version>3.1.0</version>
-                </plugin>
-                <!-- default lifecycle, jar packaging: see https://maven.apache.org/ref/current/maven-core/default-bindings.html#Plugin_bindings_for_jar_packaging -->
-                <plugin>
-                    <artifactId>maven-resources-plugin</artifactId>
-                    <version>3.0.2</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.8.0</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-dependency-plugin</artifactId>
-                    <version>3.8.1</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                    <version>2.22.1</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-jar-plugin</artifactId>
-                    <version>3.0.2</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-install-plugin</artifactId>
-                    <version>2.5.2</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-deploy-plugin</artifactId>
-                    <version>2.8.2</version>
-                </plugin>
-                <!-- site lifecycle, see https://maven.apache.org/ref/current/maven-core/lifecycles.html#site_Lifecycle -->
-                <plugin>
-                    <artifactId>maven-site-plugin</artifactId>
-                    <version>3.7.1</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-project-info-reports-plugin</artifactId>
-                    <version>3.0.0</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.7.1</version>
-                </plugin>
-
-                <plugin>
-                    <artifactId>maven-source-plugin</artifactId>
-                    <version>3.3.1</version>
-                </plugin>
-                <plugin>
-                    <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.11.2</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.6.0</version>
-                </plugin>
-
-            </plugins>
-        </pluginManagement>
-
         <plugins>
+            <!-- Enforce minimum Maven version -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.6.3</version>
+                <executions>
+                    <execution>
+                        <id>enforce-maven-version</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>3.9.10</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
 
-            <!-- Configure jar builder
-                 1. to set a main class
+            </plugin>
+
+            <!-- Configure the jar builder plugin
+                 1. to set the main class to JdbcClient
                  2. to create a tests jar
-                 Note that the tests jar does not contain the dependencies yet, we will use the assembly plugin for that
+                 Later on, the assembly plugin will create a 'fat' tests jar that also contains
+                 all dependencies
             -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.1</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -184,7 +132,6 @@
                     </archive>
                 </configuration>
                 <executions>
-                    <!-- There is a default execution that creates the regular jar, this one creates the test jar -->
                     <execution>
                         <id>make-test-jar</id>
                         <goals>
@@ -200,7 +147,7 @@
                 </executions>
             </plugin>
 
-            <!-- Generate the tests jar -->
+            <!-- Let the assembly plugin create a tests jar with dependencies -->
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
@@ -226,10 +173,11 @@
                 </executions>
             </plugin>
 
-            <!-- parse the version number in preparation of copying files to the jar directory -->
+            <!-- parse the version number in preparation of the copy-jdbc-jar action below -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
                 <executions>
                     <execution>
                         <id>parse-version-number</id>
@@ -244,8 +192,11 @@
                  I must admit that I find it concerning that it doesn't seem to worry the Maven designers
                  that we need 50 lines of xml to copy two files.
              -->
+            <!-- Copy files to jars/ with names backward compatible with Mtest.py -->
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.7.0</version>
                 <executions>
                     <execution>
                         <id>copy-jdbc-jar</id>
@@ -292,6 +243,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-source-plugin</artifactId>
+                <version>3.4.0</version>
                 <executions>
                     <execution>
                         <id>attach-sources</id>
@@ -305,6 +257,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.12.0</version>
                 <executions>
                     <execution>
                         <id>attach-javadoc</id>
@@ -321,7 +274,9 @@
             </plugin>
 
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.4</version>
                 <configuration>
                     <!-- set this explicitly because JDBC_API_Tester does not match the default patterns -->
                     <includes>
@@ -344,6 +299,7 @@
             -->
 
         </plugins>
+
     </build>
 
     <profiles>
