@@ -27,18 +27,6 @@
         </developer>
     </developers>
 
-    <!-- this needs to be updated! -->
-    <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-        <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-    </distributionManagement>
-
     <scm>
         <connection>scm:hg:https://dev.monetdb.org/hg/monetdb-java/</connection>
         <developerConnection>scm:hg:ssh://hg@dev.monetdb.org/monetdb-java/</developerConnection>
@@ -334,14 +322,20 @@
                 </configuration>
             </plugin>
 
-            <!--
-                Temporarily dropped the following plugins until I've figured out
-                how they work and if we still need them
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions></executions>
+                <configuration>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                    <arguments>-DskipTests</arguments>
+                    <!-- only record changes and tags locally, do not push -->
+                    <pushChanges>false</pushChanges>
+                    <localCheckout>true</localCheckout>
+                </configuration>
 
-                nexus-staging-maven-plugin
-                maven-release-plugin
-                maven-gpg-plugin
-            -->
+            </plugin>
 
         </plugins>
 
