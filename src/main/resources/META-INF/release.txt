@@ -1,8 +1,8 @@
 RELEASE INFO
 ============
 
-MonetDB JDBC driver version 12.2
-Release date: 2026-01-08
+MonetDB JDBC driver version ${project.version}
+Release date: ${build-timestamp}
 
 The Java Database Connectivity (JDBC) API provides universal data access from
 the Java programming language.
