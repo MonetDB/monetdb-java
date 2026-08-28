@@ -32,7 +32,7 @@ public final class SQLcopyinto {
 		if (args.length == 0) {
 			System.err.println("Error: missing startup argument: the jdbc connection url !");
 			System.err.println("Usage: java -cp monetdb-jdbc-3.0.jre8.jar:. SQLcopyinto \"jdbc:monetdb://localhost:50000/demo?user=monetdb&password=monetdb\"");
-			System.exit(-1);
+			System.exit(1);
 		}
 		String jdbc_url = args[0];
 

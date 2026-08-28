@@ -83,7 +83,7 @@ public final class JDBC_API_Tester {
 	public static void main(String[] args) throws Exception {
 		if (args.length < 1) {
 			System.err.println("Error: Missing required connection URL as first startup argument!");
-			System.exit(-1);
+			System.exit(1);
 		}
 
 		final String con_URL = args[0];
@@ -169,7 +169,7 @@ public final class JDBC_API_Tester {
 		jt.closeConx(jt.con);
 
 		if (jt.foundDifferences)
-			System.exit(-1);
+			System.exit(1);
 
 		ConnectionTests.runTests(con_URL);
 
@@ -178,7 +178,7 @@ public final class JDBC_API_Tester {
 			OnClientTester oct = new OnClientTester(con_URL, 0);
 			int failures = oct.runTests();
 			if (failures > 0)
-				System.exit(-1);
+				System.exit(1);
 		}
 	}
 

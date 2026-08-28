@@ -109,7 +109,7 @@ public final class OnClientTester {
 		OnClientTester tester = new OnClientTester(jdbcUrl, verbosity, selectedTests);
 		int failures = tester.runTests();
 		if (failures > 0)
-			System.exit(-1);
+			System.exit(1);
 	}
 
 	boolean isSelected(String name) {
