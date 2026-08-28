@@ -46,7 +46,7 @@ public final class JDBC_API_Tester {
 	final private boolean isPostDec2023;	// flags to support version specific output
 	final private boolean isPostMar2025;
 	final private boolean isPostDec2025;	// Dec2025-SP1 or later
-	final private boolean isAtLeast56;		// version name not yet known
+	final private boolean isAtLeast56;		// version name not yet known, has improved autocommit reporting on COMMIT failure
 	private boolean foundDifferences = false;
 	private int counter = 0;
 
@@ -335,7 +335,7 @@ public final class JDBC_API_Tester {
 			// Used for autocommit verification
 			stmt.executeUpdate(
 					"DROP TABLE IF EXISTS autocommitcheck;\n" +
-							"CREATE TABLE autocommitcheck(i INT);");
+						"CREATE TABLE autocommitcheck(i INT);");
 
 			sb.append("1a. initially auto commit mode is on\n");
 			checkReportedAutocommit(true, helper);
@@ -391,11 +391,6 @@ public final class JDBC_API_Tester {
 				sb.append("  statement failed as expected\n");
 			}
 			checkReportedAutocommit(true, helper);
-
-
-
-
-
 		} catch (SQLException e) {
 			sb.append("FAILED: " + e.getMessage() + "\n");
 			closeConx(helper);
@@ -442,8 +437,6 @@ public final class JDBC_API_Tester {
 				+ "  statement failed as expected\n"
 				+ "  reported autocommit = true, as expected\n"
 				+ "  the inserted test data is visible, as expected\n");
-		if (foundDifferences)
-			System.exit(1);
 	}
 
 	/**
