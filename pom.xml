@@ -34,6 +34,7 @@
     </scm>
 
     <properties>
+        <!-- to be filled in from the command line -->
         <signing-key>Please run with -Dsigning-key=...</signing-key>
 
         <maven.compiler.source>8</maven.compiler.source>
@@ -54,18 +55,18 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>io.github.java-diff-utils</groupId>
+            <artifactId>java-diff-utils</artifactId>
+            <version>4.17</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- this serves as the main class for the jdbctests.jar -->
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-console</artifactId>
             <version>1.14.4</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>io.github.java-diff-utils</groupId>
-            <artifactId>java-diff-utils</artifactId>
-            <version>4.17</version>
             <scope>test</scope>
         </dependency>
 
@@ -102,7 +103,6 @@
                         </configuration>
                     </execution>
                 </executions>
-
             </plugin>
 
             <!-- Configure the jar builder plugin
@@ -179,10 +179,6 @@
                 </executions>
             </plugin>
 
-            <!-- Copy some files over to the jars/ directory for backward compatibility with Mtest.
-                 I must admit that I find it concerning that it doesn't seem to worry the Maven designers
-                 that we need 50 lines of xml to copy two files.
-             -->
             <!-- Copy files to jars/ with names backward compatible with Mtest.py -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -239,7 +235,7 @@
                     <execution>
                         <id>attach-sources</id>
                         <goals>
-                            <goal>jar-no-fork</goal>
+                            <goal>jar</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -319,9 +315,8 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <!-- corresponds to a <server> entry in settings.xml with credentials -->
+                    <!-- the credentials are in settings.xml -->
                     <publishingServerId>central</publishingServerId>
-
                 </configuration>
             </plugin>
 
@@ -337,7 +332,6 @@
                     <pushChanges>false</pushChanges>
                     <localCheckout>true</localCheckout>
                 </configuration>
-
             </plugin>
 
         </plugins>
@@ -380,6 +374,5 @@
         </profile>
 
     </profiles>
-
 
 </project>
