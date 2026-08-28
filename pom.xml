@@ -34,6 +34,8 @@
     </scm>
 
     <properties>
+        <signing-key>Please run with -Dsigning-key=...</signing-key>
+
         <maven.compiler.source>8</maven.compiler.source>
         <maven.compiler.target>8</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -296,7 +298,7 @@
                 </executions>
                 <configuration>
                     <useAgent>true</useAgent>
-                    <keyname>9FC6C7E952E4E586C432C13A273BF13AC4816244</keyname>
+                    <keyname>${signing-key}</keyname>
                 </configuration>
             </plugin>
 
@@ -329,7 +331,7 @@
                 <executions></executions>
                 <configuration>
                     <tagNameFormat>v@{project.version}</tagNameFormat>
-                    <arguments>-DskipTests</arguments>
+                    <arguments>-DskipTests -Dsigning-key="${signing-key}"</arguments>
                     <!-- only record changes and tags locally, do not push -->
                     <pushChanges>false</pushChanges>
                     <localCheckout>true</localCheckout>
@@ -375,17 +377,6 @@
                 </plugins>
             </build>
         </profile>
-
-        <!-- the 'sign' profile enables GPG-signing the jar files -->
-        <profile>
-            <id>sign</id>
-            <build>
-                <plugins>
-
-                </plugins>
-            </build>
-        </profile>
-
 
     </profiles>
 
