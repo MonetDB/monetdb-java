@@ -24,21 +24,28 @@ public abstract class JUnitTester {
 		String value = null;
 		boolean verbose = false;
 
+		System.err.println("# Invoked with " + args.length + " args");
+		for (int i = 0; i < args.length; i++)
+			System.err.println("#  - " + args[i]);
+
 		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
 			if (arg.equals("-v"))
 				verbose = true;
 			else if (arg.equals("-a"))
-				i++ /* sometimes passed to TLSTester, ignore */;
-			else if (arg.equals("-supportsNestedTypes"))
-				i++ /* sometimes passed to JDBC_API_Tester, ignore */;
-			else if (arg.startsWith("-")) {
+				i++ /* sometimes passed to TLSTester, ignore following argument */;
+			else if (arg.equals("-supportsNestedTypes")) {
+				/* sometimes passed to JDBC_API_Tester, autodetected now, ignore it */;
+			} else if (arg.startsWith("-")) {
 				System.err.println("Invalid flag " + arg);
 				exit(1);
-			} else if (value != null) {
-				System.err.println("Duplicate value: " + arg + ". Already have " + value);
+			} else if (value == null) {
+				value = arg; /* positional argument to be assigned to the property */
+			} else if (arg.isEmpty()) {
+				/* Mtest sometimes passes an empty, unnecessary argument. just ignore it */
 			} else {
-				value = arg;
+				System.err.println("Duplicate value: " + arg + ". Already have " + value);
+				System.exit(1);
 			}
 		}
 
