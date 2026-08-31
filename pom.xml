@@ -62,10 +62,10 @@
             <scope>test</scope>
         </dependency>
 
-        <!-- this serves as the main class for the jdbctests.jar -->
+        <!-- used by JunitTester (our Mtest compatible Junit runner)  -->
         <dependency>
             <groupId>org.junit.platform</groupId>
-            <artifactId>junit-platform-console</artifactId>
+            <artifactId>junit-platform-launcher</artifactId>
             <version>1.14.4</version>
             <scope>test</scope>
         </dependency>
@@ -147,11 +147,6 @@
                     <descriptors>
                         <descriptor>src/test/assembly/test-jar-with-deps.xml</descriptor>
                     </descriptors>
-                    <archive>
-                        <manifest>
-                            <mainClass>org.junit.platform.console.ConsoleLauncher</mainClass>
-                        </manifest>
-                    </archive>
                 </configuration>
                 <executions>
                     <execution>
