@@ -493,4 +493,75 @@ public class ApiTests {
 		stmt.executeUpdate("DROP TABLE test_huge_int");
 		stmt.executeUpdate("DROP TABLE test_huge_dec");
 	}
+
+	@TestFactory
+	public ArrayList<DynamicTest> testIntervalTypes() {
+		ArrayList<DynamicTest> tests = new ArrayList<>();
+
+		tests.add(DynamicTest.dynamicTest("interval year",
+				() -> verifyIntervalType("interval year", 10, 0, 4, 4, "java.lang.Integer")));
+		tests.add(DynamicTest.dynamicTest("interval month",
+				() -> verifyIntervalType("interval month", 10, 0, 6, 4, "java.lang.Integer")));
+		tests.add(DynamicTest.dynamicTest("interval day",
+				() -> verifyIntervalType("interval day", 9, 0, 9, 2, "java.math.BigDecimal")));
+		tests.add(DynamicTest.dynamicTest("interval hour",
+				() -> verifyIntervalType("interval hour", 11, 3, 11, 3, "java.math.BigDecimal")));
+		tests.add(DynamicTest.dynamicTest("interval minute",
+				() -> verifyIntervalType("interval minute", 13, 3, 13, 3, "java.math.BigDecimal")));
+		tests.add(DynamicTest.dynamicTest("interval second",
+				() -> verifyIntervalType("interval second", 15, 3, 15, 3, "java.math.BigDecimal")));
+		tests.add(DynamicTest.dynamicTest("interval year to month",
+				() -> verifyIntervalType("interval year to month", 10, 0, 6, 4, "java.lang.Integer")));
+		tests.add(DynamicTest.dynamicTest("interval day to hour",
+				() -> verifyIntervalType("interval day to hour", 11, 3, 11, 3, "java.math.BigDecimal")));
+		tests.add(DynamicTest.dynamicTest("interval day to minute",
+				() -> verifyIntervalType("interval day to minute", 13, 3, 13, 3, "java.math.BigDecimal")));
+		tests.add(DynamicTest.dynamicTest("interval day to second",
+				() -> verifyIntervalType("interval day to second", 15, 3, 15, 3, "java.math.BigDecimal")));
+		tests.add(DynamicTest.dynamicTest("interval hour to minute",
+				() -> verifyIntervalType("interval hour to minute", 13, 3, 13, 3, "java.math.BigDecimal")));
+		tests.add(DynamicTest.dynamicTest("interval hour to second",
+				() -> verifyIntervalType("interval hour to second", 15, 3, 15, 3, "java.math.BigDecimal")));
+		tests.add(DynamicTest.dynamicTest("interval minute to second",
+				() -> verifyIntervalType("interval minute to second", 15, 3, 15, 3, "java.math.BigDecimal")));
+
+		return tests;
+	}
+
+	private void verifyIntervalType(String tname, int prec, int scale, int width, int tnum, String className) throws SQLException {
+		stmt.executeUpdate("DROP TABLE IF EXISTS test_interval_type");
+		stmt.executeUpdate("CREATE TABLE test_interval_type(c " + tname + ")");
+
+		// verify regular statement result set metadata
+		try (ResultSet rs = stmt.executeQuery("SELECT * FROM test_interval_type")) {
+			ResultSetMetaData md = rs.getMetaData();
+			assertEquals(tname, md.getColumnTypeName(1));
+			assertEquals(tnum, md.getColumnType(1));
+			assertEquals(prec, md.getPrecision(1));
+			assertEquals(scale, md.getScale(1));
+			assertEquals(width, md.getColumnDisplaySize(1));
+			assertEquals(className, md.getColumnClassName(1));
+		}
+
+		// verify prepared statement parameter- and result set metadata
+		try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM test_interval_type WHERE c = ?")) {
+			// Parameter
+			ParameterMetaData pmd = ps.getParameterMetaData();
+			assertEquals(tname, pmd.getParameterTypeName(1));
+			assertEquals(tnum, pmd.getParameterType(1));
+			assertEquals(prec, pmd.getPrecision(1));
+			// Curiously, the parameter metadata always has scale 0
+			assertEquals(0, pmd.getScale(1));
+			assertEquals(className, pmd.getParameterClassName(1));
+			// Result set
+			ResultSetMetaData md = ps.getMetaData();
+			assertEquals(tname, md.getColumnTypeName(1));
+			assertEquals(tnum, md.getColumnType(1));
+			assertEquals(prec, md.getPrecision(1));
+			assertEquals(scale, md.getScale(1));
+			assertEquals(width, md.getColumnDisplaySize(1));
+			assertEquals(className, md.getColumnClassName(1));
+		}
+		stmt.executeUpdate("DROP TABLE test_interval_type");
+	}
 }
