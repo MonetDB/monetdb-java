@@ -175,62 +175,6 @@ public final class JDBC_API_Tester extends JUnitTester {
 	}
 
 	@Test
-	public void Test_Clargequery() {
-		sb.setLength(0);	// clear the output log buffer
-		final String query =
-			"-- When a query larger than the send buffer is being " +
-			"sent, a deadlock situation can occur when the server writes " +
-			"data back, blocking because we as client are sending as well " +
-			"and not reading.  Hence, to avoid this deadlock, in JDBC a " +
-			"separate thread is started in the background such that results " +
-			"from the server can be read, while data is still being sent to " +
-			"the server.  To test this, we need to trigger the SendThread " +
-			"being started, which we do with a quite large query.  We " +
-			"construct it by repeating some stupid query plus a comment " +
-			"a lot of times.  And as you're guessing by now, you're reading " +
-			"this stupid comment that we use :)\n" +
-			"select 1;\n";
-
-		final int size = 1234;
-		StringBuilder bigq = new StringBuilder(query.length() * size);
-		for (int i = 0; i < size; i++) {
-			bigq.append(query);
-		}
-
-		Statement stmt = null;
-		try {
-			// >> true: auto commit should be on by default
-			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
-			stmt = con.createStatement();
-
-			// sending big script with many simple queries
-			sb.append("1. executing script\n");
-			stmt.execute(bigq.toString());
-
-			int i = 1;	// we skip the first "getResultSet()"
-			while (stmt.getMoreResults() != false) {
-				i++;
-			}
-			if (stmt.getUpdateCount() != -1) {
-				sb.append("Error: found an update count for a SELECT query\n");
-			}
-			if (i != size) {
-				sb.append("Error: expecting ").append(size).append(" tuples, only got ").append(i).append("\n");
-			}
-			sb.append("2. queries processed\n");
-		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-		}
-
-		closeStmtResSet(stmt, null);
-
-		compareExpectedOutput("Test_Clargequery",
-				"0. true	true\n" +
-				"1. executing script\n" +
-				"2. queries processed\n");
-	}
-
-	@Test
 	public void Test_Cmanycon() {
 		sb.setLength(0);	// clear the output log buffer
 

@@ -136,5 +136,35 @@ public class ApiTests {
 		conn.setAutoCommit(true);
 	}
 
+	@Test
+	public void testLargeQuery() throws SQLException {
+		// Build a big sql script
+		StringBuilder builder = new StringBuilder();
+		int nrepetitions = 1234;
+		for (int i = 0; i < nrepetitions; i++) {
+			builder.append("SELECT\n");
+			builder.append("-- When a query larger than the send buffer is being ");
+			builder.append("sent, a deadlock situation can occur when the server writes ");
+			builder.append("data back, blocking because we as client are sending as well ");
+			builder.append("and not reading.  Hence, to avoid this deadlock, in JDBC a ");
+			builder.append("separate thread is started in the background such that results ");
+			builder.append("from the server can be read, while data is still being sent to ");
+			builder.append("the server.  To test this, we need to trigger the SendThread ");
+			builder.append("being started, which we do with a quite large query.  We ");
+			builder.append("construct it by repeating some stupid query plus a comment ");
+			builder.append("a lot of times.  And as you're guessing by now, you're reading ");
+			builder.append("this stupid comment that we use :)\n");
+			builder.append("1;\n");
+		}
+
+		stmt.execute(builder.toString());
+		int count = 0;
+		do {
+			assertNotNull(stmt.getResultSet());
+			count++;
+		} while (stmt.getMoreResults());
+
+		assertEquals(nrepetitions, count);
+	}
 }
 
