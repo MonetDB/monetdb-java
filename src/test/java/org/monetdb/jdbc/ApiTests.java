@@ -89,6 +89,20 @@ public class ApiTests {
 		return DriverManager.getConnection(Config.getServerURL());
 	}
 
+	private String concatenateColumn(String sep, String query) throws SQLException {
+		StringBuilder builder = new StringBuilder();
+		boolean first = true;
+		try (ResultSet rs = stmt.executeQuery(query)) {
+			while (rs.next()) {
+				if (!first)
+					builder.append(sep);
+				first = false;
+				builder.append(rs.getString(1));
+			}
+		}
+		return builder.toString();
+	}
+
 	private int queryInt(String query) throws SQLException {
 		try (ResultSet rs = stmt.executeQuery(query)) {
 			assertTrue(rs.next(), query);
@@ -258,6 +272,36 @@ public class ApiTests {
 		}
 		assertEquals(10, rowCount);
 
+		conn.setAutoCommit(true);
+	}
+
+	@Test
+	public void testSavepoints() throws SQLException {
+		// savepoints not allowed in autocommit mode
+		assertTrue(conn.getAutoCommit());
+		assertSQLException("SAVEPOINT: not allowed in auto commit", () -> conn.setSavepoint());
+
+		conn.setAutoCommit(false);
+		Savepoint savepoint1 = conn.setSavepoint();
+		assertNotNull(savepoint1);
+
+		stmt.executeUpdate("CREATE TABLE test_savepoints(i INT)");
+		Savepoint savepoint2 = conn.setSavepoint("empty table");
+		assertNotNull(savepoint2);
+
+		assertEquals("", concatenateColumn(",", "SELECT i FROM test_savepoints"));
+		stmt.executeUpdate("INSERT INTO test_savepoints VALUES (1), (2), (3)");
+		Savepoint savepoint3 = conn.setSavepoint("three values");
+		assertNotNull(savepoint3);
+		assertEquals("1,2,3", concatenateColumn(",", "SELECT i FROM test_savepoints"));
+
+		conn.releaseSavepoint(savepoint3);
+		assertEquals("1,2,3", concatenateColumn(",", "SELECT i FROM test_savepoints"));
+
+		conn.rollback(savepoint2);
+		assertEquals("", concatenateColumn(",", "SELECT i FROM test_savepoints"));
+
+		conn.rollback();
 		conn.setAutoCommit(true);
 	}
 }
