@@ -744,7 +744,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 			"13. commit...failed as expected: COMMIT: not allowed in auto commit mode\n");
 	}
 
-	@Test
+	@Test  // CHANGED
 	public void Test_Driver() {
 		sb.setLength(0);	// clear the output log buffer
 
@@ -828,7 +828,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 		}
 	}
 
-	@Test
+	@Test   // CHANGED
 	public void Test_Dobjects() {
 		sb.setLength(0);	// clear the output log buffer
 
@@ -2044,7 +2044,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 			"ParameterTypeName: interval minute to second	Precision: 15	Scale: 0	ParameterType: 3	ParameterClassName: java.math.BigDecimal\n");
 	}
 
-	@Test
+	@Test     // CHANGED
 	public void Test_PlanExplainTraceDebugCmds() {
 		sb.setLength(0);	// clear the output log buffer
 
@@ -2558,7 +2558,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 			"56... result: 56, closed. 57... result: 57, closed. 58... result: 58, closed. 59... result: 59, closed. 60... result: 60, closed. Forced transaction failure\n");
 	}
 
-	@Test
+	@Test    // CHANGED supportsNestedTypes
 	public void Test_PSmetadata() {
 		sb.setLength(0);	// clear the output log buffer
 
@@ -5566,7 +5566,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 				"Cleanup TABLE tconc_seq\n");
 	}
 
-	@Test
+	@Test    // CHANGED
 	public void Bug_Connect_as_voc_getMetaData_Failure_Bug_6388() {
 		sb.setLength(0);	// clear the output log buffer
 
@@ -6492,7 +6492,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 				"5. normal end of test\n");
 	}
 
-	@Test
+	@Test     // CHANGED
 	public void BugResultSetMetaData_Bug_6183() {
 		sb.setLength(0);	// clear the output log buffer
 
