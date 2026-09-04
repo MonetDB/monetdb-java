@@ -89,6 +89,15 @@ public class ApiTests {
 		return DriverManager.getConnection(Config.getServerURL());
 	}
 
+	private int queryInt(String query) throws SQLException {
+		try (ResultSet rs = stmt.executeQuery(query)) {
+			assertTrue(rs.next(), query);
+			int result = rs.getInt(1);
+			assertFalse(rs.next(), query);
+			return result;
+		}
+	}
+
 	@Test
 	public void testAutocommit() throws SQLException {
 		stmt.executeUpdate("DROP TABLE IF EXISTS test_autocommit");
@@ -202,6 +211,54 @@ public class ApiTests {
 				}
 			}
 		}
+	}
+
+	@Test
+	public void testReplySize() throws SQLException {
+		int rowCount;
+		conn.setAutoCommit(false);
+
+		// Create table with 21 rows
+		stmt.executeUpdate("DROP TABLE IF EXISTS test_replysize");
+		stmt.executeUpdate("CREATE TABLE test_replysize(i INT)");
+		stmt.executeUpdate("INSERT INTO test_replysize SELECT * FROM sys.generate_series(0, 21)");
+		assertEquals(21, queryInt("SELECT COUNT(*) FROM test_replysize"));
+
+		rowCount = 0;
+		try (ResultSet rs = stmt.executeQuery("SELECT * FROM test_replysize")) {
+			while (rs.next())
+				rowCount++;
+		}
+		assertEquals(21, rowCount);
+
+		// set fetchsize to 10
+		stmt.setFetchSize(10);
+		rowCount = 0;
+		try (ResultSet rs = stmt.executeQuery("SELECT * FROM test_replysize")) {
+			while (rs.next())
+				rowCount++;
+		}
+		assertEquals(21, rowCount);
+
+		// maxrows and fetchsize + maxrows
+		stmt.setFetchSize(0);
+		stmt.setMaxRows(10);
+		rowCount = 0;
+		try (ResultSet rs = stmt.executeQuery("SELECT * FROM test_replysize")) {
+			while (rs.next())
+				rowCount++;
+		}
+		assertEquals(10, rowCount);
+
+		stmt.setFetchSize(5);
+		rowCount = 0;
+		try (ResultSet rs = stmt.executeQuery("SELECT * FROM test_replysize")) {
+			while (rs.next())
+				rowCount++;
+		}
+		assertEquals(10, rowCount);
+
+		conn.setAutoCommit(true);
 	}
 }
 
