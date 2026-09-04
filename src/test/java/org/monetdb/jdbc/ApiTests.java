@@ -304,5 +304,37 @@ public class ApiTests {
 		conn.rollback();
 		conn.setAutoCommit(true);
 	}
+
+	@Test
+	public void testAutocommitTransaction() throws SQLException {
+		// NOTE: this whole test seems to be just about autcommit / commit and rollback.
+		// There are no data changes.
+
+		// commit fails in autocommit mode
+		assertSQLException("not allowed in auto commit mode", () -> conn.commit());
+
+		// it succeeds when autocommit is off
+		conn.setAutoCommit(false);
+		assertFalse(conn.getAutoCommit());
+		conn.commit();
+		// twice, even (??)
+		conn.commit();
+		// and so does rollback
+		conn.rollback();
+
+		// now we turn autocommit back on and start a transaction manually
+		conn.setAutoCommit(true);
+		assertTrue(conn.getAutoCommit());
+		stmt.executeUpdate("START TRANSACTION");
+
+		// the jdbc driver realizes that autocommit is now off
+		// (NOTE: this check was not in the original test)
+		assertFalse(conn.getAutoCommit());
+
+		conn.rollback();
+		assertTrue(conn.getAutoCommit());
+
+		assertSQLException("not allowed in auto commit mode", () -> conn.commit());
+	}
 }
 
