@@ -50,6 +50,7 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 @Tag("api")
+@Tag("unconverted")
 public final class JDBC_API_Tester extends JUnitTester {
 	// This is where we gather test output which is then verified
 	// in compareExpectedOutput()
@@ -5419,8 +5420,7 @@ public final class JDBC_API_Tester extends JUnitTester {
 
 			// create a table
 			sb.append("1. create table tconc_seq using client 1... ");
-			stmt1.executeUpdate("DROP TABLE IF EXISTS tconc_seq");
-			stmt1.executeUpdate("CREATE TABLE tconc_seq ( id serial, who varchar(12) )");
+			stmt1.executeUpdate("DROP TABLE IF EXISTS tconc_seq; CREATE TABLE tconc_seq ( id serial, who varchar(12) )");
 			sb.append("passed :)\n");
 
 			// test the insertion of values with concurrent clients
