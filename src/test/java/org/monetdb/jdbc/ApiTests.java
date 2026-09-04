@@ -1,12 +1,16 @@
 package org.monetdb.jdbc;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.FieldSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.monetdb.testinfra.CloseOnFailure;
 import org.monetdb.testinfra.Config;
 import org.monetdb.testinfra.MonetVersionNumber;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.monetdb.testinfra.Assertions.assertSQLException;
@@ -25,6 +29,7 @@ public class ApiTests {
 	@CloseOnFailure
 	Connection conn;
 	MonetVersionNumber monetVersion;
+	String[] serverURLs; // used by testDriverProperties
 	Statement stmt;
 	PreparedStatement pstmt;
 
@@ -41,6 +46,7 @@ public class ApiTests {
 		if (conn == null || conn.isClosed()) {
 			conn = newConnection();
 			monetVersion = MonetVersionNumber.retrieve(conn);
+			serverURLs = new String[] { Config.getServerURL() };
 		}
 		stmt = conn.createStatement();
 	}
@@ -336,5 +342,71 @@ public class ApiTests {
 
 		assertSQLException("not allowed in auto commit mode", () -> conn.commit());
 	}
-}
 
+	@ParameterizedTest
+	@ValueSource(strings = {"jdbc:monetdb:///demo", "jdbc:monetdbs:///demo", "jdbc:monetdb:",})
+	@FieldSource("serverURLs")
+	public void testDriverProperties(String url) throws SQLException {
+		// NOTE the previous version of this test called getDriverPropertyInfo
+		// for the test database URL (which could be anything) and checked
+		// that all properties came out in an exact order and with specific
+		// values and doc strings.
+		//
+		// Nowadays, the parameters are all centralized in enum org.monetdb.mcl.net.Parameter
+		// and their default values and documentation can simply be inspected there.
+		// We do however want to check that some properties are always present,
+		// never present, etc.
+
+		assertTrue(url.startsWith("jdbc:monetdb:") || url.startsWith("jdbc:monetdbs:"));
+
+		Driver driver = DriverManager.getDriver(url);
+		HashMap<String, DriverPropertyInfo> props = new HashMap<>();
+		for (DriverPropertyInfo entry : driver.getPropertyInfo(url, null)) {
+			props.put(entry.name, entry);
+		}
+
+		// A nontrivial number of properties must be returned and they must
+		// be properly filled in
+		int nprops = props.size();
+		assertTrue(nprops >= 15, "found " + nprops + " driver properties");
+		for (DriverPropertyInfo entry : props.values()) {
+			assertNotNull(entry.description, entry.name);
+			assertNotNull(entry.value, entry.name);
+			assertFalse(entry.description.isEmpty(), entry.name);
+		}
+
+		// Some properties must always be present. This is not an exhaustive list.
+		for (String required : new String[]{ //
+				"host", "port", "database", //
+				"user", "password", //
+				"autocommit", "timezone", "replysize" //
+		}) {
+			assertTrue(props.containsKey(required), required);
+		}
+
+		// Boolean properties have a choices list. Above we checked that autocommit is present.
+		assertEquals(2, props.get("autocommit").choices.length);
+
+		// Some properties exist as Parameters but are not exposed to the end user.
+		assertFalse(props.containsKey("sock"));
+		assertFalse(props.containsKey("sockdir"));
+		assertFalse(props.containsKey("fetchsize"));
+		assertFalse(props.containsKey("language"));
+		assertFalse(props.containsKey("hash"));
+		assertFalse(props.containsKey("tableschema"));
+		assertFalse(props.containsKey("table"));
+		assertFalse(props.containsKey("clientkey"));
+		assertFalse(props.containsKey("clientcert"));
+
+		// TLS-related properties must be omitted if this is a jdbc:monetdb:// URL.
+		// They must be included if this is a jdbc:monetdbs:// URL or if
+		// the URL is exactly "jdbc:monetdb:". In the latter case, TLS use is determined
+		// by the tls property instead of the URL schema so the property must be
+		// included.
+		boolean expectTLS = !url.startsWith("jdbc:monetdb:/");
+
+		assertEquals(expectTLS, props.containsKey("tls"));
+		assertEquals(expectTLS, props.containsKey("cert"));
+		assertEquals(expectTLS, props.containsKey("certhash"));
+	}
+}
