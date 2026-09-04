@@ -1025,38 +1025,6 @@ public final class JDBC_API_Tester extends JUnitTester {
 	}
 
 	@Test
-	public void Test_FetchSize() {
-		sb.setLength(0);	// clear the output log buffer
-
-		Statement stmt = null;
-		ResultSet rs = null;
-		try {
-			stmt = con.createStatement();
-			rs = stmt.executeQuery("SELECT * FROM _tables");
-
-			sb.append("Statement fetch size before set: ").append(stmt.getFetchSize()).append("\n");
-			sb.append("ResultSet fetch size before set: ").append(rs.getFetchSize()).append("\n");
-
-			stmt.setFetchSize(40);
-			rs.setFetchSize(16384);
-
-			sb.append("Statement fetch size after set: ").append(stmt.getFetchSize()).append("\n");
-			sb.append("ResultSet fetch size after set: ").append(rs.getFetchSize()).append("\n");
-
-		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-		}
-
-		closeStmtResSet(stmt, rs);
-
-		compareExpectedOutput("Test_FetchSize",
-			"Statement fetch size before set: 250\n" +
-			"ResultSet fetch size before set: 250\n" +
-			"Statement fetch size after set: 40\n" +
-			"ResultSet fetch size after set: 16384\n");
-	}
-
-	@Test
 	public void Test_Int128() {
 		sb.setLength(0);	// clear the output log buffer
 

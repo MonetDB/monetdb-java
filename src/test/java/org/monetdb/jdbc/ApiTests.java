@@ -438,4 +438,16 @@ public class ApiTests {
 		assertSQLException(msg, () -> conn.prepareCall(""));
 		assertSQLException(msg, () -> conn.prepareCall(null));
 	}
+
+	@Test
+	public void testFetchSize() throws SQLException {
+		try (ResultSet rs = stmt.executeQuery("SELECT * FROM tables")) {
+			assertEquals(250, stmt.getFetchSize());
+			assertEquals(250, rs.getFetchSize());
+			stmt.setFetchSize(40);
+			rs.setFetchSize(16384);
+			assertEquals(40, stmt.getFetchSize());
+			assertEquals(16384, rs.getFetchSize());
+		}
+	}
 }
