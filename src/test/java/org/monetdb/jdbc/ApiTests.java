@@ -8,11 +8,14 @@ import org.monetdb.testinfra.CloseOnFailure;
 import org.monetdb.testinfra.Config;
 import org.monetdb.testinfra.MonetVersionNumber;
 
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.monetdb.testinfra.Assertions.assertSQLException;
 
 /**
@@ -449,5 +452,45 @@ public class ApiTests {
 			assertEquals(40, stmt.getFetchSize());
 			assertEquals(16384, rs.getFetchSize());
 		}
+	}
+
+	@Test
+	public void testInt128() throws SQLException {
+		// skip if server does not have huge
+		boolean serverHasHuge = 1 == queryInt("SELECT COUNT(*) FROM sys.types where sqlname = 'hugeint'");
+		assumeTrue(serverHasHuge);
+
+		stmt.executeUpdate("DROP TABLE IF EXISTS test_huge_int");
+		stmt.executeUpdate("CREATE TABLE test_huge_int (i HUGEINT)");
+		stmt.executeUpdate("DROP TABLE IF EXISTS test_huge_dec");
+		stmt.executeUpdate("CREATE TABLE test_huge_dec (d DECIMAL(38,19))");
+
+		BigInteger bi = new BigInteger("123456789012345678909876543210987654321");
+		BigDecimal bd = new BigDecimal("1234567890123456789.9876543210987654321");
+
+		// Insert huge int using prepared statement
+		String insertQuery = "INSERT INTO test_huge_int VALUES (?)";
+		try (PreparedStatement ps = conn.prepareStatement(insertQuery)) {
+			ps.setBigDecimal(1, new BigDecimal(bi));
+			ps.executeUpdate();
+		}
+
+		// insert huge decimal using string interpolation
+		stmt.executeUpdate("INSERT INTO test_huge_dec VALUES (" + bd + ");");
+
+		// extract them
+		try (ResultSet rs = stmt.executeQuery("SELECT * FROM test_huge_int")) {
+			rs.next();
+			BigInteger i = rs.getBigDecimal(1).toBigInteger();
+			assertEquals(bi, i);
+		}
+		try (ResultSet rs = stmt.executeQuery("SELECT * FROM test_huge_dec")) {
+			rs.next();
+			BigDecimal d = rs.getBigDecimal(1);
+			assertEquals(bd, d);
+		}
+
+		stmt.executeUpdate("DROP TABLE test_huge_int");
+		stmt.executeUpdate("DROP TABLE test_huge_dec");
 	}
 }
