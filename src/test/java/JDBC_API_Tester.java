@@ -175,60 +175,6 @@ public final class JDBC_API_Tester extends JUnitTester {
 	}
 
 	@Test
-	public void Test_Cmanycon() {
-		sb.setLength(0);	// clear the output log buffer
-
-		final int maxCons = 60;	// default max_clients is 64, 2 connections are already open from this program
-		List<Connection> cons = new ArrayList<Connection>(maxCons);	// Connections go in here
-		try {
-			// spawn a lot of Connections, just for fun...
-			int i = 1;
-			sb.append("Establishing Connection ");
-			for (; i <= maxCons; i++) {
-				sb.append(i);
-				Connection conx = DriverManager.getConnection(jdbcUrl);
-				sb.append(",");
-				cons.add(conx);
-
-				// do something with the connection to test if it works
-				conx.setAutoCommit(false);
-				sb.append(" ");
-				conx.createStatement();
-			}
-			sb.append("\n");
-
-			// now try to nicely close them
-			i = 1;
-			sb.append("Closing Connection ");
-			for (Iterator<Connection> it = cons.iterator(); it.hasNext(); i++) {
-				Connection conx = it.next();
-				// see if the connection still works
-				sb.append(i);
-				conx.setAutoCommit(true);
-				sb.append(",");
-				conx.close();	// this will also implicitly close the created statement object
-				sb.append(" ");
-			}
-		} catch (SQLException e) {
-			sb.append(" FAILED: ").append(e.getMessage()).append("\n");
-		}
-
-		compareExpectedOutput("Test_Cmanycon",
-			"Establishing Connection 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, " +
-			"11, 12, 13, 14, 15, 16, 17, 18, 19, 20, " +
-			"21, 22, 23, 24, 25, 26, 27, 28, 29, 30, " +
-			"31, 32, 33, 34, 35, 36, 37, 38, 39, 40, " +
-			"41, 42, 43, 44, 45, 46, 47, 48, 49, 50, " +
-			"51, 52, 53, 54, 55, 56, 57, 58, 59, 60, \n" +
-			"Closing Connection 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, " +
-			"11, 12, 13, 14, 15, 16, 17, 18, 19, 20, " +
-			"21, 22, 23, 24, 25, 26, 27, 28, 29, 30, " +
-			"31, 32, 33, 34, 35, 36, 37, 38, 39, 40, " +
-			"41, 42, 43, 44, 45, 46, 47, 48, 49, 50, " +
-			"51, 52, 53, 54, 55, 56, 57, 58, 59, 60, ");
-	}
-
-	@Test
 	public void Test_Creplysize() {
 		sb.setLength(0);	// clear the output log buffer
 

@@ -166,5 +166,42 @@ public class ApiTests {
 
 		assertEquals(nrepetitions, count);
 	}
+
+	@Test
+	public void testManyConnections() throws SQLException {
+		Connection[] conns = new Connection[60];
+
+		try {
+			// connect them all
+			for (int i = 0; i < conns.length; i++) {
+				try {
+					conns[i] = newConnection();
+					conns[i].setAutoCommit(false);
+				} catch (SQLException e) {
+					fail("Caught exception while opening connection #" + i, e);
+				}
+			}
+
+			// check and disconnect them all
+			for (int i = 0; i < conns.length; i++) {
+				try {
+					conns[i].setAutoCommit(true); // do something with it
+					conns[i].close();
+					conns[i] = null;
+				} catch (SQLException e) {
+					fail("Caught exception while closing connection #" + i, e);
+				}
+			}
+		} finally {
+			// all connections must be closed even if errors happened
+			for (int i = 0; i < conns.length; i++) {
+				if (conns[i] != null) {
+					try {
+						conns[i].close();
+					} catch (SQLException ignored) {}
+				}
+			}
+		}
+	}
 }
 
