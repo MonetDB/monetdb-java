@@ -8,8 +8,7 @@ import org.monetdb.testinfra.MonetVersionNumber;
 import java.sql.*;
 import java.util.ArrayList;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests migrated from JDBC_API_Testser
@@ -87,6 +86,38 @@ public class ApiTests {
 
 	private Connection newConnection() throws SQLException {
 		return DriverManager.getConnection(Config.getServerURL());
+	}
+
+	@Test
+	public void testAutocommit() throws SQLException {
+		stmt.executeUpdate("DROP TABLE IF EXISTS test_autocommit");
+
+		try (Connection conn2 = newConnection(); Statement stmt2 = conn2.createStatement()) {
+
+			assertTrue(conn.getAutoCommit());
+			assertTrue(conn2.getAutoCommit());
+
+			// conn1 creates it, conn2 sees it
+			stmt.executeUpdate("CREATE TABLE test_autocommit ( id int )");
+			stmt2.executeQuery("SELECT * FROM test_autocommit").close();
+
+			conn.setAutoCommit(false);
+			assertFalse(conn.getAutoCommit());
+			assertTrue(conn2.getAutoCommit()); // still true
+			conn2.setAutoCommit(false);
+			assertFalse(conn2.getAutoCommit()); // now false
+
+			// conn2 drops it, conn1 still sees it
+			stmt2.executeUpdate("DROP TABLE test_autocommit");
+			stmt.executeQuery("SELECT * FROM test_autocommit").close();
+			// conn2 commits the drop, conn1 still doesn't notice
+			conn2.commit();
+			stmt.executeQuery("SELECT * FROM test_autocommit").close();
+			// conn can even commit because it didn't change anything
+			conn.commit();
+
+			conn.setAutoCommit(true);
+		}
 	}
 
 }
