@@ -409,4 +409,33 @@ public class ApiTests {
 		assertEquals(expectTLS, props.containsKey("cert"));
 		assertEquals(expectTLS, props.containsKey("certhash"));
 	}
+
+	@Test
+	public void testEmptySQL() throws SQLException {
+		String msg = "Missing SQL statement";
+
+		assertSQLException(msg, () -> stmt.execute(""));
+		assertSQLException(msg, () -> stmt.execute(null));
+
+		assertSQLException(msg, () -> stmt.executeUpdate(""));
+		assertSQLException(msg, () -> stmt.executeUpdate(null));
+
+		assertSQLException(msg, () -> stmt.executeLargeUpdate(""));
+		assertSQLException(msg, () -> stmt.executeLargeUpdate(null));
+
+		assertSQLException(msg, () -> stmt.addBatch(""));
+		assertSQLException(msg, () -> stmt.addBatch(null));
+
+		assertSQLException(msg, () -> stmt.executeQuery(""));
+		assertSQLException(msg, () -> stmt.executeQuery(null));
+
+		assertSQLException(msg, () -> conn.prepareStatement(""));
+		assertSQLException(msg, () -> conn.prepareStatement(null));
+
+		assertSQLException(msg, () -> conn.prepareStatement("", Statement.RETURN_GENERATED_KEYS));
+		assertSQLException(msg, () -> conn.prepareStatement(null, Statement.RETURN_GENERATED_KEYS));
+
+		assertSQLException(msg, () -> conn.prepareCall(""));
+		assertSQLException(msg, () -> conn.prepareCall(null));
+	}
 }
