@@ -9,6 +9,7 @@ import java.sql.*;
 import java.util.ArrayList;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.monetdb.testinfra.Assertions.assertSQLException;
 
 /**
  * Tests migrated from JDBC_API_Testser
@@ -118,6 +119,21 @@ public class ApiTests {
 
 			conn.setAutoCommit(true);
 		}
+	}
+
+	@Test
+	public void testIsValid() throws SQLException {
+		// initially valid
+		assertTrue(conn.isValid(30));
+
+		// still valid after exception
+		conn.setAutoCommit(false);
+		assertSQLException("no such table", () -> stmt.executeQuery("SELECT COUNT(*) FROM doesnotexist"));
+		assertTrue(conn.isValid(30));
+
+		// leave clean connection
+		conn.rollback();
+		conn.setAutoCommit(true);
 	}
 
 }

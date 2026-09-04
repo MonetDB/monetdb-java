@@ -175,42 +175,6 @@ public final class JDBC_API_Tester extends JUnitTester {
 	}
 
 	@Test
-	public void Test_CisValid() {
-		sb.setLength(0);	// clear the output log buffer
-
-		Statement stmt = null;
-		try {
-			stmt = con.createStatement();
-			con.setAutoCommit(false); // start a transaction
-			stmt.executeQuery("SELECT COUNT(*) FROM doesnotexist;"); // let's trigger an error
-		} catch (SQLException e) {
-			// e.printStackTrace();
-			sb.append("Expected error: ").append(e).append("\n");
-			try {
-				// test calling conn.isValid()
-				sb.append("Validating connection: con.isValid? ").append(con.isValid(30));
-				// Can we rollback on this connection without causing an error?
-				con.rollback();
-			} catch (SQLException e2) {
-				sb.append("UnExpected error: ").append(e2);
-			}
-		}
-
-		try {
-			// restore auto commit mode
-			con.setAutoCommit(true);
-		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-		}
-
-		closeStmtResSet(stmt, null);
-
-		compareExpectedOutput("Test_CisValid",
-				"Expected error: java.sql.SQLException: SELECT: no such table 'doesnotexist'\n" +
-				"Validating connection: con.isValid? true");
-	}
-
-	@Test
 	public void Test_Clargequery() {
 		sb.setLength(0);	// clear the output log buffer
 		final String query =
