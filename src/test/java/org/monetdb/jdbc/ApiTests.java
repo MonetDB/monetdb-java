@@ -783,4 +783,57 @@ public class ApiTests {
 
 		stmt.executeUpdate("DROP TABLE test_largeval");
 	}
+
+	@Test
+	public void testManyConnectionsPrepared() throws SQLException {
+		Connection[] conns = new Connection[60];
+		PreparedStatement[] stmts = new PreparedStatement[conns.length];
+
+		try {
+			// connect them all
+			for (int i = 0; i < conns.length; i++) {
+				try {
+					conns[i] = newConnection();
+					stmts[i] = conns[i].prepareStatement("SELECT " + i);
+				} catch (SQLException e) {
+					fail("Caught exception while opening connection #" + i, e);
+				}
+			}
+
+			// Check and disconnect them all
+			// Occasionally force an error on another connection
+			// to prove that doesn't affect other connections
+			for (int i = 0; i < conns.length; i++) {
+				try {
+					try (ResultSet rs = stmts[i].executeQuery()) {
+						assertTrue(rs.next());
+						assertEquals(i, rs.getInt(1));
+						assertFalse(rs.next());
+					}
+					stmts[i].close();
+					conns[i].close();
+					conns[i] = null;
+				} catch (SQLException e) {
+					fail("Caught exception while checking connection #" + i, e);
+				}
+
+				// Force an error on a throwaway connection.
+				// Shouldn't affect ours.
+				try (Connection c = newConnection(); Statement s = c.createStatement()) {
+					s.execute("SELECT bad FROM FROM wrong");
+					fail("expected the statement above to raise an exception");
+				} catch (SQLException ignored) {}
+			}
+		} finally {
+			// all connections must be closed even if errors happened
+			for (int i = 0; i < conns.length; i++) {
+				if (conns[i] != null) {
+					try {
+						conns[i].close();
+					} catch (SQLException ignored) {}
+				}
+			}
+		}
+	}
+
 }
