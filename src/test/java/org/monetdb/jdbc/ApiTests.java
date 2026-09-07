@@ -1023,4 +1023,74 @@ public class ApiTests {
 
 		stmt.executeUpdate("DROP TABLE table_Test_PSmetadata");
 	}
+
+	@Test
+	public void testSetBytes() throws SQLException {
+		stmt.executeUpdate("DROP TABLE IF EXISTS test_setbytes");
+
+		// Let's create with a prepared statement for a change
+		String create = "CREATE TABLE test_setbytes(col1 CLOB, col2 BLOB, id SERIAL)";
+		try (PreparedStatement ps = conn.prepareStatement(create)) {
+			assertEquals(0, ps.getMetaData().getColumnCount());
+			assertEquals(0, ps.getParameterMetaData().getParameterCount());
+			ps.execute();
+		}
+
+		String[] testdata = {
+				"0123456789abcdef",
+				"~!@#$%^&*()_+`1-=][{}\\|';:,<.>/?",
+				"\u00e0\u004f\u20f0\u0020\u00ea\u003a\u0069\u0010\u00a2\u00d8\u0008\u0001\u002b\u0030\u019c\u129e",
+				"X\\Y"
+		};
+
+		// insert them
+		String ins = "INSERT INTO test_setbytes(col1, col2) VALUES (?, ?)";
+		try (PreparedStatement ps = conn.prepareStatement(ins)) {
+			assertEquals(0, ps.getMetaData().getColumnCount());
+			assertEquals(2, ps.getParameterMetaData().getParameterCount());
+			for (String val : testdata) {
+				ps.setString(1, val);
+				ps.setBytes(2, val.getBytes(UTF_8));
+				ps.addBatch();
+			}
+			ps.executeBatch();
+		}
+
+		// retrieve and compare
+		String sel = "SELECT col1, LENGTH(col1) AS lencol1, col2, LENGTH(col2) AS lencol2 FROM test_setbytes ORDER BY id";
+		try (PreparedStatement ps = conn.prepareStatement(sel)) {
+			assertEquals(4, ps.getMetaData().getColumnCount());
+			assertEquals(0, ps.getParameterMetaData().getParameterCount());
+			try (ResultSet rs = ps.executeQuery()) {
+				assertEquals(4, rs.getMetaData().getColumnCount());
+
+				for (String val : testdata) {
+					assertTrue(rs.next());
+
+					byte[] bin = val.getBytes(UTF_8);
+					String hex = toUppercaseHexDigits(bin);
+					assertEquals(val, rs.getString("col1"));
+					assertEquals(val.length(), rs.getInt("lencol1"));
+					assertArrayEquals(bin, rs.getBytes("col2"));
+					assertEquals(hex, rs.getString("col2"));
+					assertEquals(bin.length, rs.getInt("lencol2"));
+				}
+				assertFalse(rs.next());
+			}
+		}
+
+		stmt.executeUpdate("DROP TABLE test_setbytes");
+	}
+
+	private String toUppercaseHexDigits(byte[] bytes) {
+		StringBuilder sb = new StringBuilder(bytes.length * 2);
+		String digits = "0123456789ABCDEF";
+		for (byte b : bytes) {
+			int hi = b & 0xF0;
+			int lo = b & 0x0F;
+			sb.append(digits.charAt(hi >> 4));
+			sb.append(digits.charAt(lo));
+		}
+		return sb.toString();
+	}
 }
