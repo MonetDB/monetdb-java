@@ -1125,4 +1125,48 @@ public class ApiTests {
 		stmt.executeUpdate("DROP TABLE test_backslashes");
 	}
 
+	// Converted from Test_PSsqldata() and Test_Rsqldata().
+	// These also tested the inet types but those have their
+	// own dedicated tests now.
+	@Test
+	public void testURLType() throws Exception {
+		org.monetdb.jdbc.types.URL turl = new org.monetdb.jdbc.types.URL();
+		// Note: the following method is declared to throw Exception
+		turl.fromString("http://www.monetdb.org/");
+
+		conn.setAutoCommit(false);
+		try {
+			stmt.execute("DROP TABLE IF EXISTS urltest");
+			stmt.execute("CREATE TABLE urltest(myurl URL)");
+			String insert = "INSERT INTO urltest VALUES (?)";
+			try (PreparedStatement ps = conn.prepareStatement(insert)) {
+				ParameterMetaData pmd = ps.getParameterMetaData();
+				assertEquals(1, pmd.getParameterCount());
+				assertEquals(Types.VARCHAR, pmd.getParameterType(1));
+				assertEquals("url", pmd.getParameterTypeName(1));
+				assertEquals("org.monetdb.jdbc.types.URL", pmd.getParameterClassName(1));
+
+				ps.setObject(1, turl);
+				ps.execute();
+			}
+			String select = "SELECT * FROM urltest";
+			try (ResultSet rs = stmt.executeQuery(select)) {
+				ResultSetMetaData rmd = rs.getMetaData();
+				assertEquals("org.monetdb.jdbc.types.URL", rmd.getColumnClassName(1));
+				assertEquals(null, rmd.getCatalogName(1));
+				assertEquals("sys", rmd.getSchemaName(1));
+				assertEquals("urltest", rmd.getTableName(1));
+				assertEquals("myurl", rmd.getColumnName(1));
+
+				assertTrue(rs.next());
+				Object obj = rs.getObject(1);
+				assertEquals("http://www.monetdb.org/", obj.toString());
+				org.monetdb.jdbc.types.URL url = (org.monetdb.jdbc.types.URL) obj;
+				assertEquals("http://www.monetdb.org/", url.toString());
+			}
+		} finally {
+			conn.rollback();
+			conn.setAutoCommit(true);
+		}
+	}
 }
