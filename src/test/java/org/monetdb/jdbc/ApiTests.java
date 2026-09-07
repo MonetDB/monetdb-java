@@ -1093,4 +1093,36 @@ public class ApiTests {
 		}
 		return sb.toString();
 	}
+
+	@Test
+	public void testBackslashes() throws SQLException {
+		stmt.executeUpdate("DROP TABLE IF EXISTS test_backslashes");
+		stmt.executeUpdate("CREATE TABLE test_backslashes(t VARCHAR(20))");
+
+
+		// We have a string with a SINGLE backslash in the middle
+		String val = "X\\Y";
+		assertEquals(val.length(), 3);
+		assertEquals(val.charAt(0), 'X');
+		assertEquals(val.charAt(1), '\\');
+		assertEquals(val.charAt(2), 'Y');
+
+		// We insert it into our table
+		String ins = "INSERT INTO test_backslashes VALUES (?)";
+		try (PreparedStatement ps = conn.prepareStatement(ins)) {
+			ps.setString(1, val);
+			ps.execute();
+		}
+
+		// We expect to get it back with the backslash included
+		String query = "SELECT t FROM test_backslashes";
+		try (ResultSet rs = stmt.executeQuery(query)) {
+			assertTrue(rs.next());
+			assertEquals(val, rs.getString(1));
+			assertFalse(rs.next());
+		}
+
+		stmt.executeUpdate("DROP TABLE test_backslashes");
+	}
+
 }
