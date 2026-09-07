@@ -1169,4 +1169,59 @@ public class ApiTests {
 			conn.setAutoCommit(true);
 		}
 	}
+
+	@Test
+	public void testBatching() throws SQLException {
+		final int n1 = 3432;
+		final int n2 = 3568;
+		int i;
+		stmt.execute("DROP TABLE IF EXISTS testbatching");
+		stmt.execute("CREATE TABLE testbatching(id INT)");
+
+		// Test regular statement with executeBatch
+		for (i = 1; i <= n1; i++) {
+			stmt.addBatch("INSERT INTO testbatching VALUES (" + i + ")");
+			if (i % 1500 == 0)
+				testBatching_execute(stmt, false, 1500);
+		}
+		testBatching_execute(stmt, false, n1 % 1500);
+		stmt.clearBatch();
+
+		// Test prepared statement with executeLargeBatch
+		pstmt = conn.prepareStatement("INSERT INTO testbatching VALUES (?)");
+		for (i = 1; i <= n2; i++) {
+			pstmt.setInt(1, 1);
+			pstmt.addBatch();
+			if (i % 3000 == 0)
+				testBatching_execute(pstmt, true, 3000);
+		}
+		testBatching_execute(pstmt, true, n2 % 3000);
+		pstmt.clearBatch();
+
+		// Check row count
+		assertEquals(n1 + n2, queryInt("SELECT COUNT(*) FROM testbatching"));
+	}
+
+	private void testBatching_execute(Statement s, boolean large, int expected) throws SQLException {
+		int[] ints = null;
+		long[] longs = null;
+		int resultCount;
+
+		if (large) {
+			longs = s.executeLargeBatch();
+			resultCount = longs.length;
+		} else {
+			ints = s.executeBatch();
+			resultCount = ints.length;
+		}
+
+		assertEquals(expected, resultCount);
+
+		for (int i = 0; i < resultCount; i++)
+			assertEquals(
+					1L,
+					large ? longs[i] : (long)ints[i],
+					"result #" + i + " is wrong"
+			);
+	}
 }
