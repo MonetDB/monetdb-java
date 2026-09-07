@@ -8,12 +8,14 @@ import org.monetdb.testinfra.CloseOnFailure;
 import org.monetdb.testinfra.Config;
 import org.monetdb.testinfra.MonetVersionNumber;
 
+import java.io.StringReader;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.monetdb.testinfra.Assertions.assertSQLException;
@@ -736,5 +738,49 @@ public class ApiTests {
 		}
 
 		stmt.executeUpdate("DROP TABLE test_getobject");
+	}
+
+	@Test
+	public void testLargeBatchValue() throws SQLException {
+		/* test issue reported at https://github.com/MonetDB/MonetDB/issues/3470 */
+
+		stmt.executeUpdate("DROP TABLE IF EXISTS test_largeval");
+		stmt.executeUpdate("CREATE TABLE test_largeval(c INT, a CLOB, b DOUBLE)");
+
+		// U+2027 Unicode name: HYPHENATION POINT
+		byte[] errorBytes = new byte[]{(byte) 0xe2, (byte) 0x80, (byte) 0xa7};
+		String errorStr = new String(errorBytes, UTF_8);
+		StringBuilder repeatedErrorStr = new StringBuilder();
+		for (int i = 0; i < 8170; i++) {
+			repeatedErrorStr.append(errorStr);
+		}
+		String largeStr = repeatedErrorStr.toString();
+
+		String ins = "INSERT INTO test_largeval VALUES (?, ?, ?)";
+		try (PreparedStatement ps = conn.prepareStatement(ins)) {
+			ps.setLong(1, 1L);
+			ps.setString(2, largeStr);  // pass string directly
+			ps.setDouble(3, 1.0);
+			ps.addBatch();
+			ps.executeBatch();
+
+			ps.setLong(1, -2L);
+			ps.setClob(2, new StringReader(largeStr));  // pass string as clob via reader
+			ps.setDouble(3, -2.0);
+			ps.addBatch();
+
+			Clob myClob = conn.createClob();
+			myClob.setString(1L, largeStr);
+			ps.setLong(1, 123456789L);
+			ps.setClob(2, myClob);
+			ps.setDouble(3, 1245678901.98765);
+			ps.addBatch();
+
+			ps.executeBatch();
+		}
+
+		assertEquals(3, queryInt("SELECT COUNT(*) FROM test_largeval"));
+
+		stmt.executeUpdate("DROP TABLE test_largeval");
 	}
 }
