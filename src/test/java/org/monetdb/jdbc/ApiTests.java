@@ -684,4 +684,57 @@ public class ApiTests {
 
 		stmt.executeUpdate("DROP TABLE psgenkey");
 	}
+
+	@Test
+	public void testGetIntObject() throws SQLException {
+		stmt.executeUpdate("DROP TABLE IF EXISTS test_getobject");
+		stmt.executeUpdate("CREATE TABLE test_getobject (ti tinyint, si smallint, i int, bi bigint)");
+
+		String ins = "INSERT INTO test_getobject(ti, si, i, bi) VALUES (?, ?, ?, ?)";
+		try (PreparedStatement ps = conn.prepareStatement(ins)) {
+			ps.setShort(1, (short) 1);
+			ps.setShort(2, (short) 1);
+			ps.setInt(3, 1);
+			ps.setLong(4, 1);
+			ps.addBatch();
+
+			ps.setShort(1, (short) 127);
+			ps.setShort(2, (short) 12700);
+			ps.setInt(3, 1270000);
+			ps.setLong(4, 127000000);
+			ps.addBatch();
+
+			ps.setShort(1, (short) -127);
+			ps.setShort(2, (short) -12700);
+			ps.setInt(3, -1270000);
+			ps.setLong(4, -127000000);
+			ps.addBatch();
+
+			ps.executeBatch();
+		}
+
+		try (ResultSet rs = stmt.executeQuery("SELECT ti, si, i, bi FROM test_getobject")) {
+			assertTrue(rs.next());
+			assertEquals((short) 1, (Short) rs.getObject(1));
+			assertEquals((short) 1, (Short) rs.getObject(2));
+			assertEquals(1, (Integer) rs.getObject(3));
+			assertEquals((long) 1, (Long) rs.getObject(4));
+
+			assertTrue(rs.next());
+			assertEquals((short) 127, (Short) rs.getObject(1));
+			assertEquals((short) 12700, (Short) rs.getObject(2));
+			assertEquals(1270000, rs.getObject(3));
+			assertEquals((long) 127000000, (Long) rs.getObject(4));
+
+			assertTrue(rs.next());
+			assertEquals((short) -127, (Short) rs.getObject(1));
+			assertEquals((short) -12700, (Short) rs.getObject(2));
+			assertEquals(-1270000, (Integer) rs.getObject(3));
+			assertEquals((long) -127000000, (Long) rs.getObject(4));
+
+			assertFalse(rs.next());
+		}
+
+		stmt.executeUpdate("DROP TABLE test_getobject");
+	}
 }
