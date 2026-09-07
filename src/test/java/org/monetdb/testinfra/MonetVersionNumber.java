@@ -88,4 +88,15 @@ public class MonetVersionNumber {
 	public boolean serverReturnsNewMetadata() {
 		return isAtLeast(11, 50, 0);
 	}
+
+	/**
+	 * Equivalent to {@code isAtLeast 11, 54, 0)}
+	 *
+	 * From version 11.54 on, PLAN has been replaced with EXPLAIN and EXPLAIN has been
+	 * replaced with EXPLAIN PHYSICAL
+	 * @return
+	 */
+	public boolean planHasBecomeExplain() {
+		return isAtLeast(11, 54, 00);
+	}
 }

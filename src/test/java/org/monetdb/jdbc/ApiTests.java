@@ -564,4 +564,96 @@ public class ApiTests {
 		}
 		stmt.executeUpdate("DROP TABLE test_interval_type");
 	}
+
+	@Test
+	public void testLogicalPlan() throws SQLException {
+		String keyword = monetVersion.planHasBecomeExplain() ? "EXPLAIN" : "PLAN";
+		String query = keyword + " SELECT * FROM sys.generate_series(1, 10)";
+		// EXPLAIN (PLAN) yields a one-column result set. One row describes a projection operation1
+		try (ResultSet rs = stmt.executeQuery(query)) {
+			ResultSetMetaData md = rs.getMetaData();
+			assertEquals(1, md.getColumnCount());
+			int colType = md.getColumnType(1);
+			assertTrue(colType == Types.VARCHAR || colType == Types.CLOB, md.getColumnTypeName(1) + "=" + colType);
+			while (rs.next()) {
+				if (rs.getString(1).equals("project ("))
+					return;
+			}
+			fail("Could not find substring <" + "project (" + "> in result set of query: " + query);
+		}
+	}
+
+	@Test
+	public void testExplain() throws SQLException {
+		String keyword = monetVersion.planHasBecomeExplain() ? "EXPLAIN PHYSICAL" : "EXPLAIN";
+		String query = keyword + " SELECT 42";
+		// EXPLAIN PHYSICAL yields a one-column result set.
+		// The first line is 'function user.main()', the last non-comment line is 'end user.main'
+		try (ResultSet rs = stmt.executeQuery(query)) {
+			ResultSetMetaData md = rs.getMetaData();
+			assertEquals(1, md.getColumnCount());
+			int colType = md.getColumnType(1);
+			assertTrue(colType == Types.VARCHAR || colType == Types.CLOB, md.getColumnTypeName(1) + "=" + colType);
+			String firstLine = null;
+			String lastLine = null;
+			while (rs.next()) {
+				String line = rs.getString(1);
+				if (line.startsWith("#"))
+					continue;
+				if (firstLine == null)
+					firstLine = line;
+				lastLine = line;
+			}
+			assertNotNull(lastLine); // implies same for firstLine
+			assertTrue(firstLine.startsWith("function user.main"), firstLine);
+			assertTrue(lastLine.startsWith("end user.main"), lastLine);
+		}
+	}
+
+	@Test
+	public void testTrace() throws SQLException {
+		String query = "TRACE SELECT 42";
+		ResultSet rs = null;  // used twice, once for the result set and once for the trace
+		try {
+			rs = stmt.executeQuery(query);
+
+			// first the result set
+			assertTrue(rs.next());
+			assertEquals(42, rs.getInt(1));
+			assertFalse(rs.next());
+
+			if (monetVersion.planHasBecomeExplain()) {
+				// Newer MonetDB's leave the trace in sys.tracelog
+				assertFalse(stmt.getMoreResults());
+				rs.close();    // is this necessary?
+				rs = stmt.executeQuery("SELECT * FROM sys.tracelog");
+			} else {
+				// Older MonetDB's send the trace as a second result set
+				assertTrue(stmt.getMoreResults());
+				rs = stmt.getResultSet();
+			}
+
+			// Inspect the trace, is it really a trace?
+			ResultSetMetaData md = rs.getMetaData();
+			assertTrue(rs.next());
+			String line = rs.getString(2);
+			assertTrue(line.contains(":= querylog.define"), line);
+			assertTrue(line.contains("select 42"), line);
+		} finally {
+			if (rs != null)
+				rs.close();
+		}
+	}
+
+	@Test
+	public void testDebug() throws SQLException {
+		// DEBUG has not been supported by MonetDB for a while but the old jdbc test
+		// suite had a test for it so we include it.
+		//
+		// The original test had the following comment:
+		//     From Jun2023 we skip the comparison as it gives a different error msg on power8 platform: syntax error, unexpected IDENT in: "debug"
+		// let's see what happens and adjust this test accordingly
+		assertSQLException("unexpected IDENT", () -> stmt.executeQuery("DEBUG SELECT 42"));
+	}
+
 }
