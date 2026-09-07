@@ -656,4 +656,32 @@ public class ApiTests {
 		assertSQLException("unexpected IDENT", () -> stmt.executeQuery("DEBUG SELECT 42"));
 	}
 
+	@Test
+	public void testGeneratedKeys() throws SQLException {
+		stmt.executeUpdate("DROP TABLE IF EXISTS psgenkey");
+		stmt.executeUpdate("CREATE TABLE psgenkey (id SERIAL, val VARCHAR(20))");
+
+		String ins = "INSERT INTO psgenkey(val) VALUES ('this is a test')";
+		try (PreparedStatement ps = conn.prepareStatement(ins)) {
+			ps.executeUpdate();
+			ps.executeUpdate();
+			ps.executeUpdate();
+			int maxId = queryInt("SELECT MAX(id) FROM psgenkey");
+			try (ResultSet rs = ps.getGeneratedKeys()) {
+				// only yields the last one
+				assertTrue(rs.next());
+				int generatedKey = rs.getInt(1);
+				assertFalse(rs.next());
+				assertEquals(maxId, generatedKey);
+
+				// While we're at it, test ResultSet#getStatement
+				// (not sure why here, but that's ok)
+				Statement parent = rs.getStatement();
+				assertNotNull(parent);
+				assertEquals(ps, parent);
+			}
+		}
+
+		stmt.executeUpdate("DROP TABLE psgenkey");
+	}
 }
