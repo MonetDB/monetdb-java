@@ -836,4 +836,191 @@ public class ApiTests {
 		}
 	}
 
+	@Test
+	public void testPreparedStatementMetadata() throws SQLException {
+		// Results depend on MonetDB version
+		boolean supportsNestedTypes = false;
+		String checkNested =
+				"SELECT c.name\n" +
+				"FROM sys.columns c, sys.tables t, sys.schemas s\n" +
+				"WHERE c.name = 'multiset' AND t.name = '_columns' AND s.name = 'sys'\n" +
+				"AND c.table_id = t.id AND t.schema_id = s.id\n";
+		try (ResultSet rs = stmt.executeQuery(checkNested)) {
+			supportsNestedTypes = rs.next();
+		}
+
+		// note the uppercase letters in the table name.
+		// on retrieval they will be all lowercase.
+		stmt.executeUpdate("DROP TABLE IF EXISTS table_Test_PSmetadata");
+		stmt.executeUpdate("CREATE TABLE table_Test_PSmetadata ( myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob )");
+		stmt.executeUpdate("INSERT INTO table_Test_PSmetadata VALUES (NULL, NULL, NULL, NULL, NULL)");
+		stmt.executeUpdate("INSERT INTO table_Test_PSmetadata VALUES (2 , 3.0, true, 'A string', 'bla bla bla')");
+
+		String query = "SELECT CASE WHEN myint IS NULL THEN 0 ELSE 1 END AS intnull, * FROM table_Test_PSmetadata WHERE myint = ?";
+		try (PreparedStatement ps = conn.prepareStatement(query)) {
+			ResultSetMetaData md = ps.getMetaData();
+
+			assertEquals("java.lang.Short", md.getColumnClassName(1));
+			assertEquals("java.lang.Integer", md.getColumnClassName(2));
+			assertEquals("java.lang.Double", md.getColumnClassName(3));
+			assertEquals("java.lang.Boolean", md.getColumnClassName(4));
+			assertEquals("java.lang.String", md.getColumnClassName(5));
+			assertEquals("java.lang.String", md.getColumnClassName(6));
+
+			assertEquals(3, md.getColumnDisplaySize(1));
+			assertEquals(10, md.getColumnDisplaySize(2));
+			assertEquals(15, md.getColumnDisplaySize(3));
+			assertEquals(5, md.getColumnDisplaySize(4));
+			assertEquals(15, md.getColumnDisplaySize(5));
+			assertEquals(0, md.getColumnDisplaySize(6));
+
+			assertEquals("intnull", md.getColumnLabel(1));
+			assertEquals("myint", md.getColumnLabel(2));
+			assertEquals("mydouble", md.getColumnLabel(3));
+			assertEquals("mybool", md.getColumnLabel(4));
+			assertEquals("myvarchar", md.getColumnLabel(5));
+			assertEquals("myclob", md.getColumnLabel(6));
+
+			assertEquals("intnull", md.getColumnName(1));
+			assertEquals("myint", md.getColumnName(2));
+			assertEquals("mydouble", md.getColumnName(3));
+			assertEquals("mybool", md.getColumnName(4));
+			assertEquals("myvarchar", md.getColumnName(5));
+			assertEquals("myclob", md.getColumnName(6));
+
+			assertEquals(-6, md.getColumnType(1));
+			assertEquals(4, md.getColumnType(2));
+			assertEquals(8, md.getColumnType(3));
+			assertEquals(16, md.getColumnType(4));
+			assertEquals(12, md.getColumnType(5));
+			assertEquals(12, md.getColumnType(6));
+
+			assertEquals("tinyint", md.getColumnTypeName(1));
+			assertEquals("int", md.getColumnTypeName(2));
+			assertEquals("double", md.getColumnTypeName(3));
+			assertEquals("boolean", md.getColumnTypeName(4));
+			assertEquals("varchar", md.getColumnTypeName(5));
+			if (monetVersion.serverReturnsNewMetadata())
+				assertEquals("varchar", md.getColumnTypeName(6));
+			else
+				assertEquals("clob", md.getColumnTypeName(6));
+
+			assertEquals(3, md.getPrecision(1));
+			assertEquals(10, md.getPrecision(2));
+			assertEquals(15, md.getPrecision(3));
+			assertEquals(1, md.getPrecision(4));
+			assertEquals(15, md.getPrecision(5));
+			assertEquals(0, md.getPrecision(6));
+
+			assertEquals(0, md.getScale(1));
+			assertEquals(0, md.getScale(2));
+			assertEquals(0, md.getScale(3));
+			assertEquals(0, md.getScale(4));
+			assertEquals(0, md.getScale(5));
+			assertEquals(0, md.getScale(6));
+
+			assertNull(md.getCatalogName(1));
+			assertNull(md.getCatalogName(2));
+			assertNull(md.getCatalogName(3));
+			assertNull(md.getCatalogName(4));
+			assertNull(md.getCatalogName(5));
+			assertNull(md.getCatalogName(6));
+
+			String expectedSchemaName = supportsNestedTypes ? "sys" : "";
+			assertEquals("", md.getSchemaName(1));
+			assertEquals(expectedSchemaName, md.getSchemaName(2));
+			assertEquals(expectedSchemaName, md.getSchemaName(3));
+			assertEquals(expectedSchemaName, md.getSchemaName(4));
+			assertEquals(expectedSchemaName, md.getSchemaName(5));
+			assertEquals(expectedSchemaName, md.getSchemaName(6));
+
+			assertEquals("", md.getTableName(1));
+			assertEquals("table_test_psmetadata", md.getTableName(2));
+			assertEquals("table_test_psmetadata", md.getTableName(3));
+			assertEquals("table_test_psmetadata", md.getTableName(4));
+			assertEquals("table_test_psmetadata", md.getTableName(5));
+			assertEquals("table_test_psmetadata", md.getTableName(6));
+
+			assertFalse(md.isAutoIncrement(1));
+			assertFalse(md.isAutoIncrement(2));
+			assertFalse(md.isAutoIncrement(3));
+			assertFalse(md.isAutoIncrement(4));
+			assertFalse(md.isAutoIncrement(5));
+			assertFalse(md.isAutoIncrement(6));
+
+			assertFalse(md.isCaseSensitive(1));
+			assertFalse(md.isCaseSensitive(2));
+			assertFalse(md.isCaseSensitive(3));
+			assertFalse(md.isCaseSensitive(4));
+			assertTrue(md.isCaseSensitive(5));
+			assertTrue(md.isCaseSensitive(6));
+
+			assertFalse(md.isCurrency(1));
+			assertFalse(md.isCurrency(2));
+			assertFalse(md.isCurrency(3));
+			assertFalse(md.isCurrency(4));
+			assertFalse(md.isCurrency(5));
+			assertFalse(md.isCurrency(6));
+
+			assertFalse(md.isDefinitelyWritable(1));
+			assertFalse(md.isDefinitelyWritable(2));
+			assertFalse(md.isDefinitelyWritable(3));
+			assertFalse(md.isDefinitelyWritable(4));
+			assertFalse(md.isDefinitelyWritable(5));
+			assertFalse(md.isDefinitelyWritable(6));
+
+			int expectedNullability = supportsNestedTypes
+					? ResultSetMetaData.columnNullable /* == 1 */
+					: ResultSetMetaData.columnNullableUnknown /* == 2 */
+					;
+			assertEquals(ResultSetMetaData.columnNullableUnknown, md.isNullable(1));
+			assertEquals(expectedNullability, md.isNullable(2));
+			assertEquals(expectedNullability, md.isNullable(3));
+			assertEquals(expectedNullability, md.isNullable(4));
+			assertEquals(expectedNullability, md.isNullable(5));
+			assertEquals(expectedNullability, md.isNullable(6));
+
+			assertTrue(md.isReadOnly(1));
+			assertTrue(md.isReadOnly(2));
+			assertTrue(md.isReadOnly(3));
+			assertTrue(md.isReadOnly(4));
+			assertTrue(md.isReadOnly(5));
+			assertTrue(md.isReadOnly(6));
+
+			assertTrue(md.isSearchable(1));
+			assertTrue(md.isSearchable(2));
+			assertTrue(md.isSearchable(3));
+			assertTrue(md.isSearchable(4));
+			assertTrue(md.isSearchable(5));
+			assertTrue(md.isSearchable(6));
+
+			assertTrue(md.isSigned(1));
+			assertTrue(md.isSigned(2));
+			assertTrue(md.isSigned(3));
+			assertFalse(md.isSigned(4));
+			assertFalse(md.isSigned(5));
+			assertFalse(md.isSigned(6));
+
+			assertFalse(md.isWritable(1));
+			assertFalse(md.isWritable(2));
+			assertFalse(md.isWritable(3));
+			assertFalse(md.isWritable(4));
+			assertFalse(md.isWritable(5));
+			assertFalse(md.isWritable(6));
+
+			// That was the result set metadata, now the parameter metadata
+
+			ParameterMetaData pmd = ps.getParameterMetaData();
+			assertEquals(ParameterMetaData.parameterNullableUnknown, pmd.isNullable(1));
+			assertEquals(true, pmd.isSigned(1));
+			assertEquals(10, pmd.getPrecision(1));
+			assertEquals(0, pmd.getScale(1));
+			assertEquals(Types.INTEGER, pmd.getParameterType(1));
+			assertEquals("int", pmd.getParameterTypeName(1));
+			assertEquals("java.lang.Integer", pmd.getParameterClassName(1));
+			assertEquals(ParameterMetaData.parameterModeIn, pmd.getParameterMode(1));
+		}
+
+		stmt.executeUpdate("DROP TABLE table_Test_PSmetadata");
+	}
 }
