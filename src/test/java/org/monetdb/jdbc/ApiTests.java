@@ -1242,4 +1242,20 @@ public class ApiTests {
 			assertNotEquals(0, count); // stop complaints about neccessary loop
 		}
 	}
+
+	@Test
+	public void testPreparedSomeAmount() throws SQLException {
+		for (int i = 0; i < 120; i++) {
+			String query = String.format("SELECT %d, %d = ?", i, i);
+			try (PreparedStatement ps = conn.prepareStatement(query)) {
+				ps.setInt(1, i);
+				try (ResultSet rs = ps.executeQuery()) {
+					assertTrue(rs.next());
+					assertEquals(i, rs.getInt(1));
+					assertTrue(rs.getBoolean(2));
+					assertFalse(rs.next());
+				}
+			}
+		}
+	}
 }

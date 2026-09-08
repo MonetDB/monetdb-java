@@ -1023,44 +1023,6 @@ public final class JDBC_API_Tester extends JUnitTester {
 		compareExpectedOutput("Test_DBCmetadata", "");
 	}
 
-	@Test
-	public void Test_PSsomeamount() {
-		sb.setLength(0);	// clear the output log buffer
-
-		PreparedStatement pstmt = null;
-		ResultSet rs = null;
-		try {
-			// >> true: auto commit should be on
-			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
-
-			sb.append("1. Preparing and executing a unique statement\n");
-			for (int i = 0; i < 120; i++) {
-				pstmt = con.prepareStatement("select " + i + ", " + i + " = ?");
-				pstmt.setInt(1, i);
-				rs = pstmt.executeQuery();
-				if (rs != null && rs.next() && i % 20 == 0) {
-					sb.append(rs.getInt(1)).append(", ").append(rs.getBoolean(2)).append("\n");
-				}
-				/* next call should cause resources on the server to be freed */
-				pstmt.close();
-			}
-		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-		}
-
-		closeStmtResSet(pstmt, rs);
-
-		compareExpectedOutput("Test_PSsomeamount",
-			"0. true	true\n" +
-			"1. Preparing and executing a unique statement\n" +
-			"0, true\n" +
-			"20, true\n" +
-			"40, true\n" +
-			"60, true\n" +
-			"80, true\n" +
-			"100, true\n");
-	}
-
 	/* Create a lot of PreparedStatements, to emulate webloads such as those from Hibernate. */
 	/* this test is same as Test_PSsomeamount() but for many more PreparedStatements to stress the server */
 	@Test
