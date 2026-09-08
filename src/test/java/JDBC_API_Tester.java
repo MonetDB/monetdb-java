@@ -1024,36 +1024,6 @@ public final class JDBC_API_Tester extends JUnitTester {
 	}
 
 	@Test
-	public void Test_PSlargeresponse() {
-		sb.setLength(0);	// clear the output log buffer
-
-		PreparedStatement pstmt = null;
-		try {
-			sb.append("1. DatabaseMetadata environment retrieval... ");
-
-			// retrieve this to simulate a bug report
-			con.getMetaData().getURL();
-			// There used to be a test "if (conURL.startsWith(dbmdURL))" here
-			// but with the new URLs that is too simplistic.
-			sb.append("oke").append("\n");
-
-			pstmt = con.prepareStatement("select * from columns");
-			sb.append("2. empty call...");
-			// should succeed (no arguments given)
-			pstmt.execute();
-			sb.append(" passed\n");
-		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-		} finally {
-			closeStmtResSet(pstmt, null);
-		}
-
-		compareExpectedOutput("Test_PSlargeresponse",
-			"1. DatabaseMetadata environment retrieval... oke\n" +
-			"2. empty call... passed\n");
-	}
-
-	@Test
 	public void Test_PSsomeamount() {
 		sb.setLength(0);	// clear the output log buffer
 

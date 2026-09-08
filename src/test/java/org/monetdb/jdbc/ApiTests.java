@@ -1224,4 +1224,22 @@ public class ApiTests {
 					"result #" + i + " is wrong"
 			);
 	}
+
+	@Test
+	public void testPreparedLargeResponse() throws SQLException {
+		// retrieve this to simulate a bug report
+		String url = conn.getMetaData().getURL();
+
+		try (PreparedStatement ps = conn.prepareStatement("SELECT * FROM sys.columns")) {
+			ps.execute();
+			// The original test just ran execute.
+			// Maybe we should actually retrieve the data as well
+			int count = 0;
+			try (ResultSet rs = ps.executeQuery()) {
+				while (rs.next())
+					count++;
+			}
+			assertNotEquals(0, count); // stop complaints about neccessary loop
+		}
+	}
 }
