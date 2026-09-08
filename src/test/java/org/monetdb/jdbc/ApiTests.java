@@ -1,6 +1,7 @@
 package org.monetdb.jdbc;
 
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.FieldSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -1245,7 +1246,18 @@ public class ApiTests {
 
 	@Test
 	public void testPreparedSomeAmount() throws SQLException {
-		for (int i = 0; i < 120; i++) {
+		testManyPrepareStatements(120);
+	}
+
+	@Test
+	@Tag("slow")
+	@DisabledIf("org.monetdb.testinfra.Config#isSkipSlow")
+	public void testPreparedLargeAmount() throws SQLException {
+		testManyPrepareStatements(50001);
+	}
+
+	private void testManyPrepareStatements(int n) throws SQLException {
+		for (int i = 0; i < n; i++) {
 			String query = String.format("SELECT %d, %d = ?", i, i);
 			try (PreparedStatement ps = conn.prepareStatement(query)) {
 				ps.setInt(1, i);
