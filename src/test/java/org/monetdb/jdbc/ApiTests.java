@@ -1270,4 +1270,47 @@ public class ApiTests {
 			}
 		}
 	}
+
+	@Test
+	public void testTimeDatePrepared() throws SQLException {
+		java.util.Date d = new java.util.Date();    // java.util.Date is basically millis since epoch
+		long millis = d.getTime();
+		java.sql.Time sqlTime = new Time(millis);
+		java.sql.Timestamp sqlTimestamp = new Timestamp(millis);
+		java.sql.Date sqlDate = new Date(millis);
+
+		conn.setAutoCommit(false);
+		stmt.execute("DROP TABLE IF EXISTS testtimedate");
+		stmt.execute("CREATE TABLE testtimestamp(t TIME, ts TIMESTAMP, d DATE)");
+
+		String insert = "INSERT INTO testtimestamp VALUES (?, ?, ?)";
+		try (PreparedStatement ps = conn.prepareStatement(insert)) {
+			ps.setTime(1, sqlTime);
+			ps.setTimestamp(2, sqlTimestamp);
+			ps.setDate(3, sqlDate);
+			ps.executeUpdate();
+		}
+
+		String select = "SELECT * FROM testtimestamp";
+		try (PreparedStatement ps = conn.prepareStatement(select); ResultSet rs = ps.executeQuery()) {
+			assertTrue(rs.next());
+
+			java.sql.Time rsTime = (Time) rs.getObject(1);
+			java.sql.Timestamp rsTimestamp = (Timestamp) rs.getObject(2);
+			java.sql.Date rsDate = (Date) rs.getObject(3);
+			// We cannot directly assertEquals(sqlTime, rsTime) because
+			// sqlTime is initialized from the millis of today and rsTime
+			// from the millis of some moment of 1970-01-01.
+			//
+			// We do string comparisons instead
+			assertEquals(sqlTime.toString(), rsTime.toString());
+			assertEquals(sqlTimestamp.toString(), rsTimestamp.toString());
+			assertEquals(sqlDate.toString(), rsDate.toString());
+
+			assertFalse(rs.next());
+		}
+
+		conn.rollback();
+		conn.setAutoCommit(true);
+	}
 }
