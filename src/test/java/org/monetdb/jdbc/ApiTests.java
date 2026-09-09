@@ -1375,4 +1375,102 @@ public class ApiTests {
 			}
 		}
 	}
+
+	@Test
+	public void testBoolean_tinyint() throws SQLException {
+		startScratchTransaction();
+		testBooleans("tinyint", "(0), (1), (2), (2)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_smallint() throws SQLException {
+		startScratchTransaction();
+		testBooleans("smallint", "(0), (1), (3), (3)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_mediumint() throws SQLException {
+		startScratchTransaction();
+		testBooleans("mediumint", "(0), (1), (4), (4)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_int() throws SQLException {
+		startScratchTransaction();
+		testBooleans("int", "(0), (1), (5), (5)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_bigint() throws SQLException {
+		startScratchTransaction();
+		testBooleans("bigint", "(0), (1), (6), (6)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_real() throws SQLException {
+		startScratchTransaction();
+		testBooleans("real", "(0.0), (1.0), (7.1), (7.1)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_float() throws SQLException {
+		startScratchTransaction();
+		testBooleans("float", "(0.0), (1.0), (8.2), (8.2)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_double() throws SQLException {
+		startScratchTransaction();
+		testBooleans("double", "(0.0), (1.0), (9.3), (9.3)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_decimal_8_2() throws SQLException {
+		startScratchTransaction();
+		testBooleans("decimal(8,2)", "(0.0), (1.0), (10.4), (10.4)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_numeric_8() throws SQLException {
+		startScratchTransaction();
+		testBooleans("numeric(8)", "(0), (1), (11), (11)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_boolean() throws SQLException {
+		startScratchTransaction();
+		testBooleans("boolean", "(false), (true), (true), (true)", false, true, true, true);
+	}
+
+	@Test
+	public void testBoolean_char4() throws SQLException {
+		startScratchTransaction();
+		testBooleans("char(4)", "('fals'), ('true'), ('TrUe'), ('t   ')", false, true, true, false);
+	}
+
+	@Test
+	public void testBoolean_char5() throws SQLException {
+		startScratchTransaction();
+		testBooleans("char(5)", "('false'), ('true '), ('fAlSe'), ('f    ')", false, false, false, false);
+	}
+
+	@Test
+	public void testBoolean_varchar() throws SQLException {
+		startScratchTransaction();
+		testBooleans("varchar(20)", "('false'), ('true'), ('true/false'), ('TRUE      ')", false, true, false, false);
+	}
+
+	private void testBooleans(String typeDecl, String values, boolean... booleans) throws SQLException {
+		stmt.execute("DROP TABLE IF EXISTS foo");
+		stmt.execute("CREATE TABLE foo(id SERIAL, value " + typeDecl + ")");
+		stmt.execute("INSERT INTO foo(value) VALUES " + values);
+
+		try (ResultSet rs = stmt.executeQuery("SELECT value FROM foo")) {
+			for (int i = 0; i < booleans.length; i++) {
+				assertTrue(rs.next(), "row " + i + " (0-based) should exist");
+				assertEquals(booleans[i], rs.getBoolean(1));
+			}
+			assertFalse(rs.next(), "row " + booleans.length + " (0-based) should not exist");
+		}
+	}
 }
