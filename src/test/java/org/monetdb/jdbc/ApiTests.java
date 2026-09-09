@@ -38,10 +38,11 @@ public class ApiTests {
 	String[] serverURLs; // used by testDriverProperties
 	Statement stmt;
 	PreparedStatement pstmt;
+	private boolean scratchTransactionStarted;
 
 	// Skip all tests if the test database isn't running
 	@BeforeAll
-	public static void checkConnection() throws SQLException {
+	public static void checkDatabaseReachable() throws SQLException {
 		DriverManager.getConnection(Config.getServerURL()).close();
 	}
 
@@ -55,18 +56,24 @@ public class ApiTests {
 			serverURLs = new String[] { Config.getServerURL() };
 		}
 		stmt = conn.createStatement();
+		scratchTransactionStarted = false;
 	}
 
 	// After each test, check for abandoned transactions and unclosed
 	// result sets
 	@AfterEach
-	protected void checkLingeringState() throws SQLException {
+	protected void wrapUp() throws SQLException {
 		if (conn == null || conn.isClosed()) {
 			stmt = null;
 			pstmt = null;
 			return;
 		}
 
+		if (scratchTransactionStarted) {
+			conn.rollback();
+			conn.setAutoCommit(true);
+			scratchTransactionStarted = false;
+		}
 		assertTrue(conn.getAutoCommit());
 
 		if (monetVersion.serverCanQueryUnclosedResultSets()) {
@@ -99,6 +106,11 @@ public class ApiTests {
 
 	private Connection newConnection() throws SQLException {
 		return DriverManager.getConnection(Config.getServerURL());
+	}
+
+	private void startScratchTransaction() throws SQLException {
+		conn.setAutoCommit(false);
+		scratchTransactionStarted = true;
 	}
 
 	private String concatenateColumn(String sep, String query) throws SQLException {
@@ -162,13 +174,9 @@ public class ApiTests {
 		assertTrue(conn.isValid(30));
 
 		// still valid after exception
-		conn.setAutoCommit(false);
+		startScratchTransaction();
 		assertSQLException("no such table", () -> stmt.executeQuery("SELECT COUNT(*) FROM doesnotexist"));
 		assertTrue(conn.isValid(30));
-
-		// leave clean connection
-		conn.rollback();
-		conn.setAutoCommit(true);
 	}
 
 	@Test
@@ -242,7 +250,7 @@ public class ApiTests {
 	@Test
 	public void testReplySize() throws SQLException {
 		int rowCount;
-		conn.setAutoCommit(false);
+		startScratchTransaction();
 
 		// Create table with 21 rows
 		stmt.executeUpdate("DROP TABLE IF EXISTS test_replysize");
@@ -283,9 +291,7 @@ public class ApiTests {
 				rowCount++;
 		}
 		assertEquals(10, rowCount);
-
-		conn.setAutoCommit(true);
-	}
+}
 
 	@Test
 	public void testSavepoints() throws SQLException {
@@ -463,6 +469,8 @@ public class ApiTests {
 		boolean serverHasHuge = 1 == queryInt("SELECT COUNT(*) FROM sys.types where sqlname = 'hugeint'");
 		assumeTrue(serverHasHuge);
 
+		startScratchTransaction();
+
 		stmt.executeUpdate("DROP TABLE IF EXISTS test_huge_int");
 		stmt.executeUpdate("CREATE TABLE test_huge_int (i HUGEINT)");
 		stmt.executeUpdate("DROP TABLE IF EXISTS test_huge_dec");
@@ -532,6 +540,8 @@ public class ApiTests {
 	}
 
 	private void verifyIntervalType(String tname, int prec, int scale, int width, int tnum, String className) throws SQLException {
+		startScratchTransaction();
+
 		stmt.executeUpdate("DROP TABLE IF EXISTS test_interval_type");
 		stmt.executeUpdate("CREATE TABLE test_interval_type(c " + tname + ")");
 
@@ -661,6 +671,8 @@ public class ApiTests {
 
 	@Test
 	public void testGeneratedKeys() throws SQLException {
+		startScratchTransaction();
+
 		stmt.executeUpdate("DROP TABLE IF EXISTS psgenkey");
 		stmt.executeUpdate("CREATE TABLE psgenkey (id SERIAL, val VARCHAR(20))");
 
@@ -684,12 +696,12 @@ public class ApiTests {
 				assertEquals(ps, parent);
 			}
 		}
-
-		stmt.executeUpdate("DROP TABLE psgenkey");
 	}
 
 	@Test
 	public void testGetIntObject() throws SQLException {
+		startScratchTransaction();
+
 		stmt.executeUpdate("DROP TABLE IF EXISTS test_getobject");
 		stmt.executeUpdate("CREATE TABLE test_getobject (ti tinyint, si smallint, i int, bi bigint)");
 
@@ -744,6 +756,8 @@ public class ApiTests {
 	@Test
 	public void testLargeBatchValue() throws SQLException {
 		/* test issue reported at https://github.com/MonetDB/MonetDB/issues/3470 */
+
+		startScratchTransaction();
 
 		stmt.executeUpdate("DROP TABLE IF EXISTS test_largeval");
 		stmt.executeUpdate("CREATE TABLE test_largeval(c INT, a CLOB, b DOUBLE)");
@@ -852,6 +866,7 @@ public class ApiTests {
 
 		// note the uppercase letters in the table name.
 		// on retrieval they will be all lowercase.
+		startScratchTransaction();
 		stmt.executeUpdate("DROP TABLE IF EXISTS table_Test_PSmetadata");
 		stmt.executeUpdate("CREATE TABLE table_Test_PSmetadata ( myint int, mydouble double, mybool boolean, myvarchar varchar(15), myclob clob )");
 		stmt.executeUpdate("INSERT INTO table_Test_PSmetadata VALUES (NULL, NULL, NULL, NULL, NULL)");
@@ -1027,6 +1042,7 @@ public class ApiTests {
 
 	@Test
 	public void testSetBytes() throws SQLException {
+		startScratchTransaction();
 		stmt.executeUpdate("DROP TABLE IF EXISTS test_setbytes");
 
 		// Let's create with a prepared statement for a change
@@ -1097,6 +1113,7 @@ public class ApiTests {
 
 	@Test
 	public void testBackslashes() throws SQLException {
+		startScratchTransaction();
 		stmt.executeUpdate("DROP TABLE IF EXISTS test_backslashes");
 		stmt.executeUpdate("CREATE TABLE test_backslashes(t VARCHAR(20))");
 
@@ -1135,7 +1152,7 @@ public class ApiTests {
 		// Note: the following method is declared to throw Exception
 		turl.fromString("http://www.monetdb.org/");
 
-		conn.setAutoCommit(false);
+		startScratchTransaction();
 		try {
 			stmt.execute("DROP TABLE IF EXISTS urltest");
 			stmt.execute("CREATE TABLE urltest(myurl URL)");
@@ -1166,8 +1183,7 @@ public class ApiTests {
 				assertEquals("http://www.monetdb.org/", url.toString());
 			}
 		} finally {
-			conn.rollback();
-			conn.setAutoCommit(true);
+
 		}
 	}
 
@@ -1176,6 +1192,8 @@ public class ApiTests {
 		final int n1 = 3432;
 		final int n2 = 3568;
 		int i;
+
+		startScratchTransaction();
 		stmt.execute("DROP TABLE IF EXISTS testbatching");
 		stmt.execute("CREATE TABLE testbatching(id INT)");
 
@@ -1273,13 +1291,14 @@ public class ApiTests {
 
 	@Test
 	public void testTimeDatePrepared() throws SQLException {
+		startScratchTransaction();
+
 		java.util.Date d = new java.util.Date();    // java.util.Date is basically millis since epoch
 		long millis = d.getTime();
 		java.sql.Time sqlTime = new Time(millis);
 		java.sql.Timestamp sqlTimestamp = new Timestamp(millis);
 		java.sql.Date sqlDate = new Date(millis);
 
-		conn.setAutoCommit(false);
 		stmt.execute("DROP TABLE IF EXISTS testtimedate");
 		stmt.execute("CREATE TABLE testtimestamp(t TIME, ts TIMESTAMP, d DATE)");
 
@@ -1309,16 +1328,13 @@ public class ApiTests {
 
 			assertFalse(rs.next());
 		}
-
-		conn.rollback();
-		conn.setAutoCommit(true);
 	}
 
 	@Test
 	public void testBug1757923() throws SQLException {
 		// #1757923 is probably from the Sourceforge-era!
+		startScratchTransaction();
 
-		conn.setAutoCommit(false);
 		stmt.execute("" +
 						"DROP TABLE IF EXISTS htmtest;\n" +
 						"CREATE TABLE htmtest (\n" +
@@ -1358,8 +1374,5 @@ public class ApiTests {
 				// what went wrong here
 			}
 		}
-
-		conn.rollback();
-		conn.setAutoCommit(true);
 	}
 }
