@@ -1473,4 +1473,63 @@ public class ApiTests {
 			assertFalse(rs.next(), "row " + booleans.length + " (0-based) should not exist");
 		}
 	}
+
+	@Test
+	public void testWideResultSetMetaData() throws SQLException {
+		startScratchTransaction();
+
+		final int NR_COLUMNS = 180;
+		StringBuilder sql = new StringBuilder();
+		sql.append("CREATE TABLE Test_RfetchManyColumnsInfo (\n");
+		String sep = "  ";
+		for (int col = 1; col <= NR_COLUMNS; col++) {
+			sql.append(sep).append("col").append(col).append(" int").append("\n");
+			sep = ", ";
+		}
+		sql.append(")");
+		stmt.execute(sql.toString());
+		stmt.execute("INSERT INTO Test_RfetchManyColumnsInfo(col1) VALUES (1)");
+
+		// Examine in reverse order to torture test some optimizations in the
+		// implementation.
+		try (ResultSet rs =  stmt.executeQuery("SELECT * FROM Test_RfetchManyColumnsInfo")) {
+			assertTrue(rs.next());
+			ResultSetMetaData rsmd = rs.getMetaData();
+			for (int i = rsmd.getColumnCount(); i >= 1; i--) {
+				inspectColumnMetadata(rsmd, i);
+			}
+		}
+
+		// Do it again in forward order
+		try (ResultSet rs =  stmt.executeQuery("SELECT * FROM Test_RfetchManyColumnsInfo")) {
+			assertTrue(rs.next());
+			ResultSetMetaData rsmd = rs.getMetaData();
+			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+				inspectColumnMetadata(rsmd, i);
+			}
+		}
+	}
+
+	private static void inspectColumnMetadata(ResultSetMetaData rsmd, int i) throws SQLException {
+		rsmd.getColumnClassName(i);
+		rsmd.getColumnDisplaySize(i);
+		rsmd.getColumnLabel(i);
+		rsmd.getColumnName(i);
+		rsmd.getColumnType(i);
+		rsmd.getColumnTypeName(i);
+		rsmd.getPrecision(i);
+		rsmd.getScale(i);
+		rsmd.getCatalogName(i);
+		rsmd.getSchemaName(i);
+		rsmd.getTableName(i);
+		rsmd.isAutoIncrement(i);
+		rsmd.isCaseSensitive(i);
+		rsmd.isCurrency(i);
+		rsmd.isDefinitelyWritable(i);
+		assertEquals(MonetResultSetMetaData.columnNullable, rsmd.isNullable(i), "wrong nullability in col " + i);
+		rsmd.isReadOnly(i);
+		rsmd.isSearchable(i);
+		rsmd.isSigned(i);
+		rsmd.isWritable(i);
+	}
 }
