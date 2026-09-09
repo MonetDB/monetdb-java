@@ -1532,4 +1532,75 @@ public class ApiTests {
 		rsmd.isSigned(i);
 		rsmd.isWritable(i);
 	}
+
+	@Test
+	public void testPositioning() throws SQLException {
+		try (ResultSet rs = stmt.executeQuery("SELECT 1")) {
+			// We should be before the first row
+			assertTrue(rs.isBeforeFirst());
+			assertFalse(rs.isFirst());
+
+			// There is one row, so we can call next once
+			assertTrue(rs.next());
+
+			// We're on the first AND last row
+			assertFalse(rs.isBeforeFirst());
+			assertTrue(rs.isFirst());
+			assertTrue(rs.isLast());
+			assertFalse(rs.isAfterLast());
+
+			// There is one result, so this is it
+			assertFalse(rs.next());
+
+			// Yes, we're at the end
+			assertTrue(rs.isAfterLast());
+			assertFalse(rs.isLast());
+
+			// Seriously!
+			assertFalse(rs.next());
+			assertTrue(rs.isAfterLast());
+		}
+
+		// TableTypes is scrollable
+		try (ResultSet rs = conn.getMetaData().getTableTypes()) {
+			// We should be before the first row
+			assertTrue(rs.isBeforeFirst());
+			assertFalse(rs.isFirst());
+
+			// The result set definitely contains > 1 row
+			assertTrue(rs.next());
+
+			// We're not before the first row anymore
+			assertFalse(rs.isBeforeFirst());
+			assertTrue(rs.isFirst());
+
+			// The result set definitely contains > 1 row
+			assertFalse(rs.isLast());
+			assertFalse(rs.isAfterLast());
+
+			// move to last row
+			rs.last();
+
+			// We're on the last row
+			assertTrue(rs.isLast());
+			assertFalse(rs.isAfterLast());
+
+			// Move beyond it
+			assertFalse(rs.next());
+
+			// Yes, we're at the end
+			assertFalse(rs.isLast());
+			assertTrue(rs.isAfterLast());
+
+			// Really
+			assertFalse(rs.next());
+			assertFalse(rs.isLast());
+			assertTrue(rs.isAfterLast());
+
+			// Really really
+			assertFalse(rs.next());
+			assertFalse(rs.isLast());
+			assertTrue(rs.isAfterLast());
+		}
+	}
 }
