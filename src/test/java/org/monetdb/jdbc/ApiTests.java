@@ -1639,4 +1639,75 @@ public class ApiTests {
 			assertFalse(stmt.getMoreResults());
 		}
 	}
+
+	@Test
+	public void testWrapper() throws SQLException {
+		assertTrue(isWrapperFor(conn, java.sql.Connection.class));
+		assertTrue(isWrapperFor(conn, org.monetdb.jdbc.MonetConnection.class));
+		assertFalse(isWrapperFor(conn, java.sql.Statement.class));
+		assertFalse(isWrapperFor(conn, org.monetdb.jdbc.MonetStatement.class));
+
+		DatabaseMetaData dbmd = conn.getMetaData();
+		assertTrue(isWrapperFor(dbmd, java.sql.DatabaseMetaData.class));
+		assertTrue(isWrapperFor(dbmd, org.monetdb.jdbc.MonetDatabaseMetaData.class));
+		assertFalse(isWrapperFor(dbmd, java.sql.Statement.class));
+		assertFalse(isWrapperFor(dbmd, org.monetdb.jdbc.MonetStatement.class));
+
+		try (ResultSet rs = dbmd.getSchemas()) {
+			assertTrue(isWrapperFor(rs, java.sql.ResultSet.class));
+			assertTrue(isWrapperFor(rs, org.monetdb.jdbc.MonetResultSet.class));
+			assertFalse(isWrapperFor(rs, java.sql.Statement.class));
+			assertFalse(isWrapperFor(rs, org.monetdb.jdbc.MonetStatement.class));
+
+			ResultSetMetaData rsmd = rs.getMetaData();
+			assertTrue(isWrapperFor(rsmd, java.sql.ResultSetMetaData.class));
+			assertFalse(isWrapperFor(rsmd, org.monetdb.jdbc.MonetResultSet.class));
+			assertTrue(isWrapperFor(rsmd, org.monetdb.jdbc.MonetResultSetMetaData.class));
+			assertFalse(isWrapperFor(rsmd, java.sql.Statement.class));
+			assertFalse(isWrapperFor(rsmd, org.monetdb.jdbc.MonetStatement.class));
+		}
+
+		try (Statement stmt = conn.createStatement()) {
+			assertTrue(isWrapperFor(stmt, java.sql.Statement.class));
+			assertTrue(isWrapperFor(stmt, org.monetdb.jdbc.MonetStatement.class));
+			assertFalse(isWrapperFor(stmt, java.sql.Connection.class));
+			assertFalse(isWrapperFor(stmt, org.monetdb.jdbc.MonetConnection.class));
+		}
+
+		try (PreparedStatement pstmt = conn.prepareStatement("SELECT name FROM sys.tables WHERE system AND name like ?")) {
+			assertTrue(isWrapperFor(pstmt, java.sql.PreparedStatement.class));
+			assertTrue(isWrapperFor(pstmt, org.monetdb.jdbc.MonetPreparedStatement.class));
+			assertTrue(isWrapperFor(pstmt, java.sql.Statement.class));
+			assertTrue(isWrapperFor(pstmt, org.monetdb.jdbc.MonetStatement.class));
+			assertFalse(isWrapperFor(pstmt, java.sql.Connection.class));
+			assertFalse(isWrapperFor(pstmt, org.monetdb.jdbc.MonetConnection.class));
+
+			ParameterMetaData pmd = pstmt.getParameterMetaData();
+			assertTrue(isWrapperFor(pmd, java.sql.ParameterMetaData.class));
+			assertFalse(isWrapperFor(pmd, org.monetdb.jdbc.MonetPreparedStatement.class));
+			assertTrue(isWrapperFor(pmd, org.monetdb.jdbc.MonetParameterMetaData.class));
+			assertFalse(isWrapperFor(pmd, java.sql.Connection.class));
+			assertFalse(isWrapperFor(pmd, org.monetdb.jdbc.MonetConnection.class));
+
+			ResultSetMetaData psrsmd = pstmt.getMetaData();
+			assertTrue(isWrapperFor(psrsmd, java.sql.ResultSetMetaData.class));
+			assertFalse(isWrapperFor(psrsmd, org.monetdb.jdbc.MonetPreparedStatement.class));
+			assertTrue(isWrapperFor(psrsmd, org.monetdb.jdbc.MonetResultSetMetaData.class));
+			assertFalse(isWrapperFor(psrsmd, java.sql.Connection.class));
+			assertFalse(isWrapperFor(psrsmd, org.monetdb.jdbc.MonetConnection.class));
+		}
+	}
+
+	private boolean isWrapperFor(Wrapper wrapper, Class<?> wrappedClass) throws SQLException {
+		String wrappedClassName = wrappedClass.getName();
+		String contextMessage = "unwrapping " + wrapper.getClass().getName() + " as " + wrappedClassName;
+
+		if (!wrapper.isWrapperFor(wrappedClass))
+			return false;
+
+		Object obj = wrapper.unwrap(wrappedClass);
+		assertNotNull(obj, contextMessage);
+		assertInstanceOf(wrappedClass, obj, contextMessage);
+		return true;
+	}
 }
