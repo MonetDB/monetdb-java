@@ -1878,50 +1878,6 @@ public final class JDBC_API_Tester extends JUnitTester {
 	}
 
 	@Test
-	public void Test_Smoreresults() {
-		sb.setLength(0);	// clear the output log buffer
-
-		Statement stmt = null;
-		try {
-			// >> true: auto commit should be on by default
-			sb.append("0. true\t").append(con.getAutoCommit()).append("\n");
-
-			stmt = con.createStatement();
-			sb.append("1. more results?...");
-			if (stmt.getMoreResults() != false || stmt.getUpdateCount() != -1)
-				sb.append("more results on an uninitialized Statement, how can that be?\n");
-			sb.append(" nope :)\n");
-
-			sb.append("2. SELECT 1...");
-			if (stmt.execute("SELECT 1;") == false)
-				sb.append("SELECT 1 returns update or no results\n");
-			sb.append(" ResultSet :)\n");
-
-			sb.append("3. more results?...");
-			if (stmt.getMoreResults() != false || stmt.getUpdateCount() != -1)
-				sb.append("more results after SELECT 1 query, how can that be?\n");
-			sb.append(" nope :)\n");
-
-			sb.append("4. even more results?...");
-			if (stmt.getMoreResults() != false)
-				sb.append("still more results after SELECT 1 query, how can that be?\n");
-			sb.append(" nope :)\n");
-
-		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-		}
-
-		closeStmtResSet(stmt, null);
-
-		compareExpectedOutput("Test_Smoreresults",
-				"0. true	true\n" +
-				"1. more results?... nope :)\n" +
-				"2. SELECT 1... ResultSet :)\n" +
-				"3. more results?... nope :)\n" +
-				"4. even more results?... nope :)\n");
-	}
-
-	@Test
 	public void Test_Wrapper() {
 		sb.setLength(0);	// clear the output log buffer
 

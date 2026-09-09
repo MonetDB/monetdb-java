@@ -1603,4 +1603,40 @@ public class ApiTests {
 			assertTrue(rs.isAfterLast());
 		}
 	}
+
+	@Test
+	public void testMoreResults() throws SQLException {
+		boolean haveResultSet;
+
+		try (Statement stmt = conn.createStatement()) {
+			// We haven't executed anything with stmt yet.
+			// There are not Results let alone MoreResults
+			assertFalse(stmt.getMoreResults());
+			assertEquals(-1, stmt.getUpdateCount());
+
+			// Execute a single-statement block
+			haveResultSet = stmt.execute("SELECT 1");
+			// First result set
+			assertTrue(haveResultSet);
+			// No second result set
+			assertFalse(stmt.getMoreResults());
+			assertEquals(-1, stmt.getUpdateCount());
+			// One more time
+			assertFalse(stmt.getMoreResults());
+
+			// Execute a multi-statement block
+			haveResultSet = stmt.execute("SELECT 1; SELECT 2; SELECT 3");
+			// First result set
+			assertTrue(haveResultSet);
+			// Second result set
+			assertTrue(stmt.getMoreResults());
+			// Third result set
+			assertTrue(stmt.getMoreResults());
+			// No fourth result set
+			assertFalse(stmt.getMoreResults());
+			assertEquals(-1, stmt.getUpdateCount());
+			// One more time
+			assertFalse(stmt.getMoreResults());
+		}
+	}
 }
