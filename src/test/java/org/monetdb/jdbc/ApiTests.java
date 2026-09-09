@@ -1313,4 +1313,53 @@ public class ApiTests {
 		conn.rollback();
 		conn.setAutoCommit(true);
 	}
+
+	@Test
+	public void testBug1757923() throws SQLException {
+		// #1757923 is probably from the Sourceforge-era!
+
+		conn.setAutoCommit(false);
+		stmt.execute("" +
+						"DROP TABLE IF EXISTS htmtest;\n" +
+						"CREATE TABLE htmtest (\n" +
+						"       htmid    bigint       NOT NULL,\n" +
+						"       ra       double ,\n" +
+						"       decl     double ,\n" +
+						"       dra      double ,\n" +
+						"       ddecl    double ,\n" +
+						"       flux     double ,\n" +
+						"       dflux    double ,\n" +
+						"       freq     double ,\n" +
+						"       bw       double ,\n" +
+						"       type     decimal(1,0),\n" +
+						"       imageurl url(100),\n" +
+						"       comment  varchar(100),\n" +
+						"       CONSTRAINT htmtest_htmid_pkey PRIMARY KEY (htmid)\n" +
+						");\n" +
+						"CREATE INDEX htmid ON htmtest (htmid);");
+
+		String insert = "INSERT INTO HTMTEST (HTMID,RA,DECL,FLUX,COMMENT) VALUES (?,?,?,?,?)";
+		String update = "UPDATE HTMTEST set COMMENT=?, TYPE=? WHERE HTMID=?";
+		try (PreparedStatement ps1 = conn.prepareStatement(insert)) {
+			ps1.setLong(1, 1L);
+			ps1.setFloat(2, (float) 1.2);
+			ps1.setDouble(3, 2.4);
+			ps1.setDouble(4, 3.2);
+			ps1.setString(5, "vlavbla");
+			ps1.executeUpdate();
+
+			try (PreparedStatement ps2 = conn.prepareStatement(update)) {
+				ps2.setString(1, "some update");
+				ps2.setObject(2, (float)3.2);
+				ps2.setLong(3, 1L);
+				ps2.executeUpdate();
+
+				// Unfortunately the original test does not mention
+				// what went wrong here
+			}
+		}
+
+		conn.rollback();
+		conn.setAutoCommit(true);
+	}
 }
