@@ -5,6 +5,7 @@ import org.junit.jupiter.api.condition.DisabledIf;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.FieldSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.monetdb.testinfra.Assertions;
 import org.monetdb.testinfra.CloseOnFailure;
 import org.monetdb.testinfra.Config;
 import org.monetdb.testinfra.MonetVersionNumber;
@@ -98,9 +99,7 @@ public class ApiTests {
 	@AfterAll
 	protected void dropConnection() {
 		if (conn != null) {
-			try {
-				conn.close();
-			} catch (SQLException ignored) {}
+			ignoreFailures(conn::close);
 		}
 	}
 
@@ -138,6 +137,16 @@ public class ApiTests {
 			assertFalse(rs.next(), query);
 			return result;
 		}
+	}
+
+	private void ignoreFailures(String sql) {
+		ignoreFailures(() -> stmt.execute(sql));
+	}
+
+	private void ignoreFailures(Assertions.SQLCode func) {
+		try {
+			func.execute();
+		} catch (SQLException ignored) {}
 	}
 
 	@Test
@@ -241,12 +250,9 @@ public class ApiTests {
 			}
 		} finally {
 			// all connections must be closed even if errors happened
-			for (int i = 0; i < conns.length; i++) {
-				if (conns[i] != null) {
-					try {
-						conns[i].close();
-					} catch (SQLException ignored) {}
-				}
+			for (Connection c : conns) {
+				if (c != null)
+					ignoreFailures(c::close);
 			}
 		}
 	}
@@ -845,12 +851,9 @@ public class ApiTests {
 			}
 		} finally {
 			// all connections must be closed even if errors happened
-			for (int i = 0; i < conns.length; i++) {
-				if (conns[i] != null) {
-					try {
-						conns[i].close();
-					} catch (SQLException ignored) {}
-				}
+			for (Connection c : conns) {
+				if (c != null)
+					ignoreFailures(c::close);
 			}
 		}
 	}
