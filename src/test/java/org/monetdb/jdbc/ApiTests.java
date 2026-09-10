@@ -16,6 +16,7 @@ import java.math.BigInteger;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Properties;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
@@ -117,16 +118,20 @@ public class ApiTests {
 		return concatenateColumn(this.conn, sep, query);
 	}
 
-	private String concatenateColumn(Connection c, String sep, String query) throws SQLException {
+	private static String concatenateColumn(Connection c, String sep, String query) throws SQLException {
+		try (Statement s = c.createStatement(); ResultSet rs = s.executeQuery(query)) {
+			return concatenateColumn(sep, 1, rs);
+		}
+	}
+
+	private static String concatenateColumn(String sep, int colnr, ResultSet rs) throws SQLException {
 		StringBuilder builder = new StringBuilder();
 		boolean first = true;
-		try (Statement s = c.createStatement(); ResultSet rs = s.executeQuery(query)) {
-			while (rs.next()) {
-				if (!first)
-					builder.append(sep);
-				first = false;
-				builder.append(rs.getString(1));
-			}
+		while (rs.next()) {
+			if (!first)
+				builder.append(sep);
+			first = false;
+			builder.append(rs.getString(colnr));
 		}
 		return builder.toString();
 	}
@@ -1833,4 +1838,58 @@ public class ApiTests {
 			assertEquals("1client1 3client1 4client2", concatenateColumn(conn1, " ", "SELECT id || who FROM tconc_seq ORDER BY id"));
 		}
 	}
+
+	@Test
+	public void testBugConnectAsVOCgetMetaDataFailure6388() throws SQLException {
+		try {
+			assertTrue(conn.getAutoCommit());  // cleanupVOC is going to cause errors
+
+			cleanupVOC();
+
+			stmt.execute("CREATE USER voc WITH PASSWORD 'voc' NAME 'VOC Explorer' SCHEMA sys");
+			stmt.execute("CREATE SCHEMA voc AUTHORIZATION  voc");
+			stmt.execute("ALTER USER voc SET SCHEMA voc");
+
+			// Modify connection to log in as 'voc'
+			Properties props = conn.unwrap(MonetConnection.class).getConnectionProperties();
+			props.setProperty("user", "voc");
+			props.setProperty("password", "voc");
+
+			try (Connection voconn = DriverManager.getConnection("jdbc:monetdb:", props)) {
+				DatabaseMetaData dbmd = voconn.getMetaData();
+
+				assertEquals("voc", dbmd.getUserName());
+
+				int maxConnections = dbmd.getMaxConnections();
+				assertTrue(0 < maxConnections, "getMaxConnections yielded " + maxConnections);
+
+				assertNotEquals("", dbmd.getDatabaseProductVersion());
+				int major = dbmd.getDatabaseMajorVersion();
+				assertTrue( major == 11 || major >= 56, "database major version = " + major);
+				int minor = dbmd.getDatabaseMinorVersion();
+				assertTrue(minor >= 0, "database minor version = " + minor);
+
+				try (ResultSet rs = dbmd.getTables(null, "tmp", null, null)) {
+					String tmpTableNames = concatenateColumn(" ", 3, rs);
+					assertContains("_columns _tables", tmpTableNames);
+				}
+
+				try (ResultSet rs = dbmd.getTableTypes()) {
+					String tableTypes = "," + concatenateColumn(",", 1, rs) + ",";
+					assertContains(",TABLE,", tableTypes);
+					assertContains(",VIEW,", tableTypes);
+					assertContains(",MERGE TABLE,", tableTypes);
+				}
+			}
+		} finally {
+				cleanupVOC();
+		}
+	}
+
+	private void cleanupVOC() {
+		ignoreFailures("ALTER USER voc SET SCHEMA sys");
+		ignoreFailures("DROP SCHEMA voc");
+		ignoreFailures("DROP USER voc");
+	}
+
 }
