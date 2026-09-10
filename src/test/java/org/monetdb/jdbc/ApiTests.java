@@ -1798,4 +1798,35 @@ public class ApiTests {
 			assertEquals("monetdb monet mon monetdb monet mon monetdb monet mon", concatenateColumn(conn3," ", "SELECT name FROM t1504657"));
 		}
 	}
+
+	@Test
+	public void testBugConcurrentSequences() throws SQLException {
+		stmt.execute("DROP TABLE IF EXISTS tconc_seq");
+
+		try (
+				Connection conn1 = newConnection();
+				Connection conn2 = newConnection();
+		     	Statement stmt1 = conn1.createStatement();
+				Statement stmt2 = conn2.createStatement();
+		) {
+			stmt1.execute("CREATE TABLE tconc_seq(id SERIAL, who VARCHAR(12))");
+
+			stmt1.execute("INSERT INTO tconc_seq(who) VALUES ('client1')");
+
+			conn2.setAutoCommit(false);
+			stmt2.execute("INSERT INTO tconc_seq(who) VALUES ('client2')");
+
+			stmt1.execute("INSERT INTO tconc_seq(who) VALUES ('client1')");
+
+			// Committing conn2 fails, somehow conn1 and conn2 fight over the primary key index
+			SQLException sqle = assertThrows(SQLException.class, conn2::commit);
+			assertTrue(sqle.getMessage().contains("concurrency conflicts"), sqle.getMessage());
+
+			conn2.setAutoCommit(true);
+			stmt2.execute("INSERT INTO tconc_seq(who) VALUES ('client2')");
+
+			assertEquals("1client1 3client1 4client2", concatenateColumn(conn1, " ", "SELECT id || who FROM tconc_seq ORDER BY id"));
+			assertEquals("1client1 3client1 4client2", concatenateColumn(conn1, " ", "SELECT id || who FROM tconc_seq ORDER BY id"));
+		}
+	}
 }
