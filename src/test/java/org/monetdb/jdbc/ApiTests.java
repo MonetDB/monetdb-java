@@ -114,9 +114,13 @@ public class ApiTests {
 	}
 
 	private String concatenateColumn(String sep, String query) throws SQLException {
+		return concatenateColumn(this.conn, sep, query);
+	}
+
+	private String concatenateColumn(Connection c, String sep, String query) throws SQLException {
 		StringBuilder builder = new StringBuilder();
 		boolean first = true;
-		try (ResultSet rs = stmt.executeQuery(query)) {
+		try (Statement s = c.createStatement(); ResultSet rs = s.executeQuery(query)) {
 			while (rs.next()) {
 				if (!first)
 					builder.append(sep);
@@ -1729,5 +1733,69 @@ public class ApiTests {
 		}
 		assertEquals(1, stmt.executeUpdate("UPDATE bogus_gen_keys SET x = 'bla' WHERE id = 1"));
 		assertEquals(0, stmt.executeUpdate("UPDATE bogus_gen_keys SET x = 'bla' WHERE id = 12"));
+	}
+
+	@Test
+	public void testBugConcurrentClients() throws SQLException {
+		// SourceForge 1504657
+
+		stmt.execute("DROP TABLE IF EXISTS t1504657");
+
+		try (
+				Connection conn1 = newConnection();
+				Connection conn2 = newConnection();
+				Connection conn3 = newConnection();
+				Statement stmt1 = conn1.createStatement();
+				Statement stmt2 = conn2.createStatement();
+				Statement stmt3 = conn3.createStatement()
+		) {
+			assertTrue(conn1.getAutoCommit());
+			assertTrue(conn2.getAutoCommit());
+			assertTrue(conn3.getAutoCommit());
+
+			// Table creation visible on other connections
+			stmt1.execute("CREATE TABLE t1504657(id INT, name VARCHAR(1024))");
+			try (ResultSet rs = stmt2.executeQuery("SELECT name FROM sys.tables WHERE name LIKE 't1504657'")) {
+				assertTrue(rs.next());  // visible on conn2
+				assertFalse(rs.next());
+			}
+			try (ResultSet rs = stmt3.executeQuery("SELECT name FROM sys.tables WHERE name LIKE 't1504657'")) {
+				assertTrue(rs.next());  // visible on conn3
+				assertFalse(rs.next());
+			}
+
+			// Insertion visible on other clients
+			stmt1.execute("INSERT INTO t1504657 VALUES (1, 'monetdb')");
+			stmt1.execute("INSERT INTO t1504657 VALUES (2, 'monet')");
+			stmt1.execute("INSERT INTO t1504657 VALUES (3, 'mon')");
+			assertEquals("1 2 3", concatenateColumn(conn1, " ", "SELECT id FROM t1504657"));
+			assertEquals("monetdb monet mon", concatenateColumn(conn1," ", "SELECT name FROM t1504657"));
+			assertEquals("1 2 3", concatenateColumn(conn2, " ", "SELECT id FROM t1504657"));
+			assertEquals("monetdb monet mon", concatenateColumn(conn2," ", "SELECT name FROM t1504657"));
+			assertEquals("1 2 3", concatenateColumn(conn3, " ", "SELECT id FROM t1504657"));
+			assertEquals("monetdb monet mon", concatenateColumn(conn3," ", "SELECT name FROM t1504657"));
+
+			// Insertion with concurrent clients
+			stmt2.execute("INSERT INTO t1504657 VALUES (4, 'monetdb')");
+			stmt2.execute("INSERT INTO t1504657 VALUES (5, 'monet')");
+			stmt2.execute("INSERT INTO t1504657 VALUES (6, 'mon')");
+			assertEquals("1 2 3 4 5 6", concatenateColumn(conn1, " ", "SELECT id FROM t1504657"));
+			assertEquals("monetdb monet mon monetdb monet mon", concatenateColumn(conn1," ", "SELECT name FROM t1504657"));
+			assertEquals("1 2 3 4 5 6", concatenateColumn(conn2, " ", "SELECT id FROM t1504657"));
+			assertEquals("monetdb monet mon monetdb monet mon", concatenateColumn(conn2," ", "SELECT name FROM t1504657"));
+			assertEquals("1 2 3 4 5 6", concatenateColumn(conn3, " ", "SELECT id FROM t1504657"));
+			assertEquals("monetdb monet mon monetdb monet mon", concatenateColumn(conn3," ", "SELECT name FROM t1504657"));
+
+			// And statement 3
+			stmt3.execute("INSERT INTO t1504657 VALUES (7, 'monetdb')");
+			stmt3.execute("INSERT INTO t1504657 VALUES (8, 'monet')");
+			stmt3.execute("INSERT INTO t1504657 VALUES (9, 'mon')");
+			assertEquals("1 2 3 4 5 6 7 8 9", concatenateColumn(conn1, " ", "SELECT id FROM t1504657"));
+			assertEquals("monetdb monet mon monetdb monet mon monetdb monet mon", concatenateColumn(conn1," ", "SELECT name FROM t1504657"));
+			assertEquals("1 2 3 4 5 6 7 8 9", concatenateColumn(conn2, " ", "SELECT id FROM t1504657"));
+			assertEquals("monetdb monet mon monetdb monet mon monetdb monet mon", concatenateColumn(conn2," ", "SELECT name FROM t1504657"));
+			assertEquals("1 2 3 4 5 6 7 8 9", concatenateColumn(conn3, " ", "SELECT id FROM t1504657"));
+			assertEquals("monetdb monet mon monetdb monet mon monetdb monet mon", concatenateColumn(conn3," ", "SELECT name FROM t1504657"));
+		}
 	}
 }

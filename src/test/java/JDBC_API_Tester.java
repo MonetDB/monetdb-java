@@ -1877,242 +1877,242 @@ public final class JDBC_API_Tester extends JUnitTester {
 				"ColumnName: GENERATED_KEY ColumnTypeName: bigint Precision: 19 Scale: 0 ColumnDisplaySize: 20 ColumnType: -5 ColumnClassName: java.lang.Long isNullable: 2 isAutoIncrement: false\n");
 	}
 
-	@Test public void BugConcurrent_clients_SF_1504657() {
-		sb.setLength(0);	// clear the output log buffer
-
-		Connection con1 = null, con2 = null, con3 = null;
-		Statement stmt1 = null, stmt2 = null, stmt3 = null;
-		ResultSet rs1 = null, rs2= null, rs3 = null;
-		try {
-			con1 = DriverManager.getConnection(jdbcUrl);
-			con2 = DriverManager.getConnection(jdbcUrl);
-			con3 = DriverManager.getConnection(jdbcUrl);
-			stmt1 = con1.createStatement();
-			stmt2 = con2.createStatement();
-			stmt3 = con3.createStatement();
-
-			// >> true: auto commit should be on by default
-			sb.append("0. true\t").append(con1.getAutoCommit()).append("\n");
-			sb.append("0. true\t").append(con2.getAutoCommit()).append("\n");
-			sb.append("0. true\t").append(con3.getAutoCommit()).append("\n");
-
-			// test the creation of a table with concurrent clients
-			sb.append("1.1. create table t1504657 using client 1...\n");
+ 	@Test public void BugConcurrent_clients_SF_1504657() {
+ 		sb.setLength(0);	// clear the output log buffer
+ 
+ 		Connection con1 = null, con2 = null, con3 = null;
+ 		Statement stmt1 = null, stmt2 = null, stmt3 = null;
+ 		ResultSet rs1 = null, rs2= null, rs3 = null;
+ 		try {
+ 			con1 = DriverManager.getConnection(jdbcUrl);
+ 			con2 = DriverManager.getConnection(jdbcUrl);
+ 			con3 = DriverManager.getConnection(jdbcUrl);
+ 			stmt1 = con1.createStatement();
+ 			stmt2 = con2.createStatement();
+ 			stmt3 = con3.createStatement();
+ 
+ 			// >> true: auto commit should be on by default
+ 			sb.append("0. true\t").append(con1.getAutoCommit()).append("\n");
+ 			sb.append("0. true\t").append(con2.getAutoCommit()).append("\n");
+ 			sb.append("0. true\t").append(con3.getAutoCommit()).append("\n");
+ 
+ 			// test the creation of a table with concurrent clients
+ 			sb.append("1.1. create table t1504657 using client 1...\n");
 			stmt1.executeUpdate("DROP TABLE IF EXISTS t1504657");
-			stmt1.executeUpdate("CREATE TABLE t1504657 ( id int, name varchar(1024) )");
-			sb.append("passed :)\n");
-
-			sb.append("1.2. check table existence in client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT name FROM tables where name LIKE 't1504657'");
-			while (rs2.next())
-				sb.append(rs2.getString("name")).append("\n");
-			sb.append("passed :)\n");
-
-			sb.append("1.3. check table existence in client 3...\n");
-			rs3 = stmt3.executeQuery("SELECT name FROM tables where name LIKE 't1504657'");
-			while (rs3.next())
-				sb.append(rs3.getString("name")).append("\n");
-			sb.append("passed :)\n");
-
-			// test the insertion of values with concurrent clients
-			sb.append("2 insert into t1504657 using client 1...\n");
-			stmt1.executeUpdate("INSERT INTO t1504657 values( 1, 'monetdb' )");
-			sb.append("passed :)\n");
-			stmt1.executeUpdate("INSERT INTO t1504657 values( 2, 'monet' )");
-			sb.append("passed :)\n");
-			stmt1.executeUpdate("INSERT INTO t1504657 values( 3, 'mon' )");
-			sb.append("passed :)\n");
-
-			sb.append("2.1. check table status with client 1...\n");
-			rs1 = stmt1.executeQuery("SELECT * FROM t1504657");
-			while (rs1.next())
-				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
-			sb.append("passed :)\n");
-
-			sb.append("2.2. check table status with client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT * FROM t1504657");
-			while (rs2.next())
-				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
-			sb.append("passed :)\n");
-
-			sb.append("2.3. check table status with client 3...\n");
-			rs3 = stmt3.executeQuery("SELECT * FROM t1504657");
-			while (rs3.next())
-				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
-			sb.append("passed :)\n");
-
-			// test the insertion of values with concurrent clients
-			sb.append("3 insert into t1504657 using client 2...\n");
-			stmt2.executeUpdate("INSERT INTO t1504657 values( 4, 'monetdb' )");
-			sb.append("passed :)\n");
-			stmt2.executeUpdate("INSERT INTO t1504657 values( 5, 'monet' )");
-			sb.append("passed :)\n");
-			stmt2.executeUpdate("INSERT INTO t1504657 values( 6, 'mon' )");
-			sb.append("passed :)\n");
-
-			sb.append("3.1. check table status with client 1...\n");
-			rs1 = stmt1.executeQuery("SELECT * FROM t1504657");
-			while (rs1.next())
-				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
-			sb.append("passed :)\n");
-
-			sb.append("3.2. check table status with client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT * FROM t1504657");
-			while (rs2.next())
-				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
-			sb.append("passed :)\n");
-
-			sb.append("3.3. check table status with client 3...\n");
-			rs3 = stmt3.executeQuery("SELECT * FROM t1504657");
-			while (rs3.next())
-				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
-			sb.append("passed :)\n");
-
-			// test the insertion of values with concurrent clients
-			sb.append("4 insert into t1504657 using client 3...\n");
-			stmt3.executeUpdate("INSERT INTO t1504657 values( 7, 'monetdb' )");
-			sb.append("passed :)\n");
-			stmt3.executeUpdate("INSERT INTO t1504657 values( 8, 'monet' )");
-			sb.append("passed :)\n");
-			stmt3.executeUpdate("INSERT INTO t1504657 values( 9, 'mon' )");
-			sb.append("passed :)\n");
-
-			sb.append("4.1. check table status with client 1...\n");
-			rs1 = stmt1.executeQuery("SELECT * FROM t1504657");
-			while (rs1.next())
-				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
-			sb.append("passed :)\n");
-
-			sb.append("4.2. check table status with client 2...\n");
-			rs2 = stmt2.executeQuery("SELECT * FROM t1504657");
-			while (rs2.next())
-				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
-			sb.append("passed :)\n");
-
-			sb.append("4.3. check table status with client 3...\n");
-			rs3 = stmt3.executeQuery("SELECT * FROM t1504657");
-			while (rs3.next())
-				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
-			sb.append("passed :)\n");
-		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-		}
-
-		// cleanup
-		try {
-			sb.append("Cleanup TABLE t1504657\n");
-			stmt3.executeUpdate("DROP TABLE t1504657");
-		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-		}
-
-		closeStmtResSet(stmt3, rs3);
-		closeStmtResSet(stmt1, rs1);
-		closeStmtResSet(stmt2, rs2);
-
-		closeConx(con2);
-		closeConx(con1);
-		closeConx(con3);
-
-		compareExpectedOutput("BugConcurrent_clients_SF_1504657",
-				"0. true	true\n" +
-				"0. true	true\n" +
-				"0. true	true\n" +
-				"1.1. create table t1504657 using client 1...\n" +
-				"passed :)\n" +
-				"1.2. check table existence in client 2...\n" +
-				"t1504657\n" +
-				"passed :)\n" +
-				"1.3. check table existence in client 3...\n" +
-				"t1504657\n" +
-				"passed :)\n" +
-				"2 insert into t1504657 using client 1...\n" +
-				"passed :)\n" +
-				"passed :)\n" +
-				"passed :)\n" +
-				"2.1. check table status with client 1...\n" +
-				"1, monetdb\n" +
-				"2, monet\n" +
-				"3, mon\n" +
-				"passed :)\n" +
-				"2.2. check table status with client 2...\n" +
-				"1, monetdb\n" +
-				"2, monet\n" +
-				"3, mon\n" +
-				"passed :)\n" +
-				"2.3. check table status with client 3...\n" +
-				"1, monetdb\n" +
-				"2, monet\n" +
-				"3, mon\n" +
-				"passed :)\n" +
-				"3 insert into t1504657 using client 2...\n" +
-				"passed :)\n" +
-				"passed :)\n" +
-				"passed :)\n" +
-				"3.1. check table status with client 1...\n" +
-				"1, monetdb\n" +
-				"2, monet\n" +
-				"3, mon\n" +
-				"4, monetdb\n" +
-				"5, monet\n" +
-				"6, mon\n" +
-				"passed :)\n" +
-				"3.2. check table status with client 2...\n" +
-				"1, monetdb\n" +
-				"2, monet\n" +
-				"3, mon\n" +
-				"4, monetdb\n" +
-				"5, monet\n" +
-				"6, mon\n" +
-				"passed :)\n" +
-				"3.3. check table status with client 3...\n" +
-				"1, monetdb\n" +
-				"2, monet\n" +
-				"3, mon\n" +
-				"4, monetdb\n" +
-				"5, monet\n" +
-				"6, mon\n" +
-				"passed :)\n" +
-				"4 insert into t1504657 using client 3...\n" +
-				"passed :)\n" +
-				"passed :)\n" +
-				"passed :)\n" +
-				"4.1. check table status with client 1...\n" +
-				"1, monetdb\n" +
-				"2, monet\n" +
-				"3, mon\n" +
-				"4, monetdb\n" +
-				"5, monet\n" +
-				"6, mon\n" +
-				"7, monetdb\n" +
-				"8, monet\n" +
-				"9, mon\n" +
-				"passed :)\n" +
-				"4.2. check table status with client 2...\n" +
-				"1, monetdb\n" +
-				"2, monet\n" +
-				"3, mon\n" +
-				"4, monetdb\n" +
-				"5, monet\n" +
-				"6, mon\n" +
-				"7, monetdb\n" +
-				"8, monet\n" +
-				"9, mon\n" +
-				"passed :)\n" +
-				"4.3. check table status with client 3...\n" +
-				"1, monetdb\n" +
-				"2, monet\n" +
-				"3, mon\n" +
-				"4, monetdb\n" +
-				"5, monet\n" +
-				"6, mon\n" +
-				"7, monetdb\n" +
-				"8, monet\n" +
-				"9, mon\n" +
-				"passed :)\n" +
-				"Cleanup TABLE t1504657\n");
-	}
-
+ 			stmt1.executeUpdate("CREATE TABLE t1504657 ( id int, name varchar(1024) )");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("1.2. check table existence in client 2...\n");
+ 			rs2 = stmt2.executeQuery("SELECT name FROM tables where name LIKE 't1504657'");
+ 			while (rs2.next())
+ 				sb.append(rs2.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("1.3. check table existence in client 3...\n");
+ 			rs3 = stmt3.executeQuery("SELECT name FROM tables where name LIKE 't1504657'");
+ 			while (rs3.next())
+ 				sb.append(rs3.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 
+ 			// test the insertion of values with concurrent clients
+ 			sb.append("2 insert into t1504657 using client 1...\n");
+ 			stmt1.executeUpdate("INSERT INTO t1504657 values( 1, 'monetdb' )");
+ 			sb.append("passed :)\n");
+ 			stmt1.executeUpdate("INSERT INTO t1504657 values( 2, 'monet' )");
+ 			sb.append("passed :)\n");
+ 			stmt1.executeUpdate("INSERT INTO t1504657 values( 3, 'mon' )");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("2.1. check table status with client 1...\n");
+ 			rs1 = stmt1.executeQuery("SELECT * FROM t1504657");
+ 			while (rs1.next())
+ 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("2.2. check table status with client 2...\n");
+ 			rs2 = stmt2.executeQuery("SELECT * FROM t1504657");
+ 			while (rs2.next())
+ 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("2.3. check table status with client 3...\n");
+ 			rs3 = stmt3.executeQuery("SELECT * FROM t1504657");
+ 			while (rs3.next())
+ 				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 
+ 			// test the insertion of values with concurrent clients
+ 			sb.append("3 insert into t1504657 using client 2...\n");
+ 			stmt2.executeUpdate("INSERT INTO t1504657 values( 4, 'monetdb' )");
+ 			sb.append("passed :)\n");
+ 			stmt2.executeUpdate("INSERT INTO t1504657 values( 5, 'monet' )");
+ 			sb.append("passed :)\n");
+ 			stmt2.executeUpdate("INSERT INTO t1504657 values( 6, 'mon' )");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("3.1. check table status with client 1...\n");
+ 			rs1 = stmt1.executeQuery("SELECT * FROM t1504657");
+ 			while (rs1.next())
+ 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("3.2. check table status with client 2...\n");
+ 			rs2 = stmt2.executeQuery("SELECT * FROM t1504657");
+ 			while (rs2.next())
+ 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("3.3. check table status with client 3...\n");
+ 			rs3 = stmt3.executeQuery("SELECT * FROM t1504657");
+ 			while (rs3.next())
+ 				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 
+ 			// test the insertion of values with concurrent clients
+ 			sb.append("4 insert into t1504657 using client 3...\n");
+ 			stmt3.executeUpdate("INSERT INTO t1504657 values( 7, 'monetdb' )");
+ 			sb.append("passed :)\n");
+ 			stmt3.executeUpdate("INSERT INTO t1504657 values( 8, 'monet' )");
+ 			sb.append("passed :)\n");
+ 			stmt3.executeUpdate("INSERT INTO t1504657 values( 9, 'mon' )");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("4.1. check table status with client 1...\n");
+ 			rs1 = stmt1.executeQuery("SELECT * FROM t1504657");
+ 			while (rs1.next())
+ 				sb.append(rs1.getInt("id")).append(", ").append(rs1.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("4.2. check table status with client 2...\n");
+ 			rs2 = stmt2.executeQuery("SELECT * FROM t1504657");
+ 			while (rs2.next())
+ 				sb.append(rs2.getInt("id")).append(", ").append(rs2.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 
+ 			sb.append("4.3. check table status with client 3...\n");
+ 			rs3 = stmt3.executeQuery("SELECT * FROM t1504657");
+ 			while (rs3.next())
+ 				sb.append(rs3.getInt("id")).append(", ").append(rs3.getString("name")).append("\n");
+ 			sb.append("passed :)\n");
+ 		} catch (SQLException e) {
+ 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+ 		}
+ 
+ 		// cleanup
+ 		try {
+ 			sb.append("Cleanup TABLE t1504657\n");
+ 			stmt3.executeUpdate("DROP TABLE t1504657");
+ 		} catch (SQLException e) {
+ 			sb.append("FAILED: ").append(e.getMessage()).append("\n");
+ 		}
+ 
+ 		closeStmtResSet(stmt3, rs3);
+ 		closeStmtResSet(stmt1, rs1);
+ 		closeStmtResSet(stmt2, rs2);
+ 
+ 		closeConx(con2);
+ 		closeConx(con1);
+ 		closeConx(con3);
+ 
+ 		compareExpectedOutput("BugConcurrent_clients_SF_1504657",
+ 				"0. true	true\n" +
+ 				"0. true	true\n" +
+ 				"0. true	true\n" +
+ 				"1.1. create table t1504657 using client 1...\n" +
+ 				"passed :)\n" +
+ 				"1.2. check table existence in client 2...\n" +
+ 				"t1504657\n" +
+ 				"passed :)\n" +
+ 				"1.3. check table existence in client 3...\n" +
+ 				"t1504657\n" +
+ 				"passed :)\n" +
+ 				"2 insert into t1504657 using client 1...\n" +
+ 				"passed :)\n" +
+ 				"passed :)\n" +
+ 				"passed :)\n" +
+ 				"2.1. check table status with client 1...\n" +
+ 				"1, monetdb\n" +
+ 				"2, monet\n" +
+ 				"3, mon\n" +
+ 				"passed :)\n" +
+ 				"2.2. check table status with client 2...\n" +
+ 				"1, monetdb\n" +
+ 				"2, monet\n" +
+ 				"3, mon\n" +
+ 				"passed :)\n" +
+ 				"2.3. check table status with client 3...\n" +
+ 				"1, monetdb\n" +
+ 				"2, monet\n" +
+ 				"3, mon\n" +
+ 				"passed :)\n" +
+ 				"3 insert into t1504657 using client 2...\n" +
+ 				"passed :)\n" +
+ 				"passed :)\n" +
+ 				"passed :)\n" +
+ 				"3.1. check table status with client 1...\n" +
+ 				"1, monetdb\n" +
+ 				"2, monet\n" +
+ 				"3, mon\n" +
+ 				"4, monetdb\n" +
+ 				"5, monet\n" +
+ 				"6, mon\n" +
+ 				"passed :)\n" +
+ 				"3.2. check table status with client 2...\n" +
+ 				"1, monetdb\n" +
+ 				"2, monet\n" +
+ 				"3, mon\n" +
+ 				"4, monetdb\n" +
+ 				"5, monet\n" +
+ 				"6, mon\n" +
+ 				"passed :)\n" +
+ 				"3.3. check table status with client 3...\n" +
+ 				"1, monetdb\n" +
+ 				"2, monet\n" +
+ 				"3, mon\n" +
+ 				"4, monetdb\n" +
+ 				"5, monet\n" +
+ 				"6, mon\n" +
+ 				"passed :)\n" +
+ 				"4 insert into t1504657 using client 3...\n" +
+ 				"passed :)\n" +
+ 				"passed :)\n" +
+ 				"passed :)\n" +
+ 				"4.1. check table status with client 1...\n" +
+ 				"1, monetdb\n" +
+ 				"2, monet\n" +
+ 				"3, mon\n" +
+ 				"4, monetdb\n" +
+ 				"5, monet\n" +
+ 				"6, mon\n" +
+ 				"7, monetdb\n" +
+ 				"8, monet\n" +
+ 				"9, mon\n" +
+ 				"passed :)\n" +
+ 				"4.2. check table status with client 2...\n" +
+ 				"1, monetdb\n" +
+ 				"2, monet\n" +
+ 				"3, mon\n" +
+ 				"4, monetdb\n" +
+ 				"5, monet\n" +
+ 				"6, mon\n" +
+ 				"7, monetdb\n" +
+ 				"8, monet\n" +
+ 				"9, mon\n" +
+ 				"passed :)\n" +
+ 				"4.3. check table status with client 3...\n" +
+ 				"1, monetdb\n" +
+ 				"2, monet\n" +
+ 				"3, mon\n" +
+ 				"4, monetdb\n" +
+ 				"5, monet\n" +
+ 				"6, mon\n" +
+ 				"7, monetdb\n" +
+ 				"8, monet\n" +
+ 				"9, mon\n" +
+ 				"passed :)\n" +
+ 				"Cleanup TABLE t1504657\n");
+ 	}
+ 
 	@Test public void BugConcurrent_sequences() {
 		sb.setLength(0);	// clear the output log buffer
 
