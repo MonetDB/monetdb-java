@@ -57,9 +57,6 @@ public class Config {
 	public static final String TLSTEST_ALIAS_ENVVAR = "MONETDB_TLS_ALTURL";
 	public static final String TLSTEST_ALIAS_DEFAULT = "jdbc:monetdbs://monetdbxyz.ergates.nl/demo";
 
-	public static final String SKIP_MALOUTPUT_PROPERTY = "test.skipmaloutput";
-	public static final String SKIP_MALOUTPUT_ENVVAR = "MONETDB_TEST_SKIP_MAL_OUTPUT";
-
 	public static final String SKIP_SLOW_PROPERTY = "test.skipslow";
 	public static final String SKIP_SLOW_ENVVAR = "MONETDB_TEST_SKIP_SLOW";
 
@@ -122,10 +119,6 @@ public class Config {
 		String rawUrl = lookup(SERVER_URL_PROPERTY, SERVER_URL_ENVVAR, SERVER_URL_DEFAULT);
 		String jdbcUrl = prependJdbc(rawUrl);
 		return addDefaultCredentials(jdbcUrl);
-	}
-
-	public static boolean isSkipMalOutput() {
-		return Boolean.parseBoolean(lookup(SKIP_MALOUTPUT_PROPERTY, SKIP_MALOUTPUT_ENVVAR, "false"));
 	}
 
 	public static boolean isSkipSlow() {

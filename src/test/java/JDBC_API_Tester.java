@@ -70,7 +70,6 @@ public final class JDBC_API_Tester extends JUnitTester {
 	private boolean isPostMar2025;
 	private boolean isPostDec2025;	// Dec2025-SP1 or later;
 	private boolean isAtLeast56;
-	private boolean skipMALoutput = Config.isSkipMalOutput();
 	private boolean supportsNestedTypes;
 
 	final private static int sbInitLen = 5468; // max needed size of sb
