@@ -1933,4 +1933,19 @@ public class ApiTests {
 		ignoreFailures("DROP USER voc");
 	}
 
+	@Test
+	public void testBugDatabaseMetaDataBug3356() throws SQLException {
+		DatabaseMetaData dbmd = conn.getMetaData();
+		ResultSet rs = dbmd.getColumns("", "sys", "_tables", "id");
+		assertTrue(rs.next());
+
+		assertEquals("_tables", rs.getString("TABLE_NAME"));
+		assertEquals("_tables", rs.getString(3));
+
+		assertEquals("YES", rs.getString("IS_NULLABLE"));
+		assertEquals("YES", rs.getString(18));
+
+		assertFalse(rs.next());
+	}
+
 }

@@ -2114,36 +2114,6 @@ public final class JDBC_API_Tester extends JUnitTester {
  	}
 
 	@Test
-	public void BugDatabaseMetaData_Bug_3356() {
-		sb.setLength(0);	// clear the output log buffer
-
-		ResultSet rs = null;
-		try {
-			DatabaseMetaData dbmd = con.getMetaData();
-			rs = dbmd.getColumns("", "sys", "_tables", "id");
-			rs.next();
-			String tableName1 = rs.getString("TABLE_NAME");
-			String tableName2 = rs.getString(3);
-			String isNullable1 = rs.getString("IS_NULLABLE");
-			String isNullable2 = rs.getString(18);
-			sb.append(tableName1).append("\n");
-			sb.append(tableName2).append("\n");
-			sb.append(isNullable1).append("\n");
-			sb.append(isNullable2).append("\n");
-		} catch (SQLException e) {
-			sb.append("FAILED: ").append(e.getMessage()).append("\n");
-		}
-
-		closeStmtResSet(null, rs);
-
-		compareExpectedOutput("BugDatabaseMetaData_Bug_3356",
-				"_tables\n" +
-				"_tables\n" +
-				"YES\n" +
-				"YES\n");
-	}
-
-	@Test
 	public void BugDecimalRound_Bug_3561() {
 		sb.setLength(0);	// clear the output log buffer
 
