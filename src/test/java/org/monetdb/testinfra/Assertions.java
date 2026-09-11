@@ -13,6 +13,7 @@ package org.monetdb.testinfra;
 
 import java.sql.SQLException;
 
+import static org.junit.jupiter.api.AssertionFailureBuilder.assertionFailure;
 import static org.junit.jupiter.api.Assertions.fail;
 
 public class Assertions {
@@ -41,5 +42,39 @@ public class Assertions {
 
 	}
 
+	public static void assertContains(String needle, String haystack) {
+		assertContains(needle, haystack, null);
+	}
 
+	public static void assertContains(String needle, String haystack, String message) {
+		if (needle == null)
+			assertionFailure().reason("substring to search must not be null").buildAndThrow();
+		if (haystack != null && haystack.contains(needle))
+			return;
+
+		assertionFailure() //
+				.reason("substring not found") //
+				.message(message) //
+				.expected(needle) //
+				.actual(haystack) //
+				.buildAndThrow();
+	}
+
+	public static void assertNotContains(String needle, String haystack) {
+		assertNotContains(needle, haystack, null);
+	}
+
+	public static void assertNotContains(String needle, String haystack, String message) {
+		if (needle == null)
+			assertionFailure().reason("substring to search must not be null").buildAndThrow();
+		if (haystack != null && !haystack.contains(needle))
+			return;
+
+		assertionFailure() //
+				.reason("forbidden substring did occur") //
+				.message(message) //
+				.expected(needle) //
+				.actual(haystack) //
+				.buildAndThrow();
+	}
 }

@@ -27,6 +27,7 @@ import java.net.URLConnection;
 import java.sql.SQLException;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.monetdb.testinfra.Assertions.assertNotContains;
 import static org.monetdb.testinfra.Assertions.assertSQLException;
 
 @Tag("tls")
@@ -102,7 +103,7 @@ public class TLSTests {
 	 */
 	private String download(String name) throws IOException {
 		assertTrue(name.startsWith("/"));
-		assertFalse(name.substring(1).contains("/"));
+		assertNotContains("/", name.substring(1));
 		File filename = new File(tmpDir, name.substring(1));
 		try (FileOutputStream out = new FileOutputStream(filename)) {
 			fetch(name, out);

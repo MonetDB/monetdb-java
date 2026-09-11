@@ -20,6 +20,7 @@ import java.util.HashMap;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeTrue;
+import static org.monetdb.testinfra.Assertions.assertContains;
 import static org.monetdb.testinfra.Assertions.assertSQLException;
 
 /**
@@ -660,8 +661,8 @@ public class ApiTests {
 			ResultSetMetaData md = rs.getMetaData();
 			assertTrue(rs.next());
 			String line = rs.getString(2);
-			assertTrue(line.contains(":= querylog.define"), line);
-			assertTrue(line.contains("select 42"), line);
+			assertContains(":= querylog.define", line);
+			assertContains("select 42", line);
 		} finally {
 			if (rs != null)
 				rs.close();
@@ -1823,7 +1824,7 @@ public class ApiTests {
 
 			// Committing conn2 fails, somehow conn1 and conn2 fight over the primary key index
 			SQLException sqle = assertThrows(SQLException.class, conn2::commit);
-			assertTrue(sqle.getMessage().contains("concurrency conflicts"), sqle.getMessage());
+			assertContains("concurrency conflicts", sqle.getMessage());
 
 			conn2.setAutoCommit(true);
 			stmt2.execute("INSERT INTO tconc_seq(who) VALUES ('client2')");

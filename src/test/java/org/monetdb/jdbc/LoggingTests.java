@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.monetdb.testinfra.Assertions.assertContains;
 
 public class LoggingTests {
 	@TempDir
@@ -78,7 +79,7 @@ public class LoggingTests {
 
 		byte[] contentBytes = Files.readAllBytes(logFile);
 		String content = new String(contentBytes, StandardCharsets.UTF_8);
-		assertTrue(content.contains(data));
+		assertContains(data, content);
 	}
 
 
