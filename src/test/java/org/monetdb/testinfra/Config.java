@@ -11,8 +11,15 @@
  */
 package org.monetdb.testinfra;
 
+import java.io.IOException;
+import java.io.Reader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -22,9 +29,19 @@ import static org.junit.jupiter.api.Assertions.fail;
 /**
  * Centralize the names of the system properties and environment variables used in the tests.
  *
- * This class also provides getters.
+ * This class provides a number of useful getters for test config info.
+
+ * First we look for a System property.
+ * Then an environment variable.
+ * Then for a property in Properties file System.getProperty("user.dir") / "test.properties"
+ * Then we return the default value
+ *
+ * We return the first result that's not null and not "".
+ * We only load the config file once.
  */
 public class Config {
+	public static final String CONFIG_FILE = "test.properties";
+
 	public static final String SERVER_URL_PROPERTY = "test.url";
 	public static final String SERVER_URL_ENVVAR = "MONETDB_TEST_URL";
 	public static final String SERVER_URL_DEFAULT = "jdbc:monetdb:///testjdbc";
@@ -46,45 +63,65 @@ public class Config {
 	public static final String SKIP_SLOW_PROPERTY = "test.skipslow";
 	public static final String SKIP_SLOW_ENVVAR = "MONETDB_TEST_SKIP_SLOW";
 
+	// only access these while synchronized on cachedConfigFile:
+	private static final Properties cachedConfigFile = new Properties();
+	private static boolean configLoaded = false;
+
 	private static String lookup(String propName, String envName, String defaultValue) {
-		String value = null;
-		try {
-			if (propName != null)
-				value = System.getProperty(propName);
-			if (value != null && !value.equals(""))
-				return value;
-		} catch (SecurityException ignored) {
-		}
+		String value;
 
-		try {
-			if (envName != null)
-				value = System.getenv(envName);
-			if (value != null)
-				return value;
-		} catch (SecurityException ignored) {
-		}
+		value = lookupSystemProperty(propName);
+		if (value != null && !value.isEmpty())
+			return value;
 
-		if (defaultValue != null)
-			return defaultValue;
+		value = lookupEnvironmentVariable(envName);
+		if (value != null && !value.isEmpty())
+			return value;
 
-		if (propName != null && envName != null)
-			return fail("Neither property '" + propName + "' nor environment variable '" + envName + "' is set");
-		else if (propName != null)
-			return fail("Property '" + propName + "' is not set");
-		else if (envName != null)
-			return fail("Environment variable '" + envName + "' is not set");
-		else
-			return fail("propName and envName cannot both be null");
+		value = lookupConfigFile(propName);
+		if (value != null && !value.isEmpty())
+			return value;
+
+		return defaultValue;
 	}
 
-	public static String getRawServerURL() {
-		return lookup(SERVER_URL_PROPERTY, SERVER_URL_ENVVAR, SERVER_URL_DEFAULT);
+	private static String lookupSystemProperty(String propName) {
+		try {
+			if (propName != null)
+				return System.getProperty(propName);
+		} catch (SecurityException ignored) {}
+		return null;
+	}
+
+	private static String lookupEnvironmentVariable(String envName) {
+		try {
+			if (envName != null)
+				return System.getenv(envName);
+		} catch (SecurityException ignored) {}
+		return null;
+	}
+
+	private static String lookupConfigFile(String propName) {
+		if (propName == null)
+			return null;
+		synchronized (cachedConfigFile) {
+			if (!configLoaded) {
+				configLoaded = true;
+				try {
+					Path path = Paths.get(System.getProperty("user.dir"), CONFIG_FILE);
+					try (Reader rd = Files.newBufferedReader(path)) {
+						cachedConfigFile.load(rd);
+					}
+				} catch (IOException | SecurityException | InvalidPathException ignored) {}
+			}
+		}
+		return cachedConfigFile.getProperty(propName);
 	}
 
 	public static String getServerURL() {
-		String raw = getRawServerURL();
-		String fixed = addDefaultCredentials(raw);
-		return fixed;
+		String rawUrl = lookup(SERVER_URL_PROPERTY, SERVER_URL_ENVVAR, SERVER_URL_DEFAULT);
+		String jdbcUrl = prependJdbc(rawUrl);
+		return addDefaultCredentials(jdbcUrl);
 	}
 
 	public static boolean isSkipMalOutput() {
