@@ -1,3 +1,4 @@
+import org.monetdb.testinfra.Config;
 import org.monetdb.testinfra.MtestLauncher;
 
 import static java.lang.System.exit;
@@ -22,6 +23,7 @@ public abstract class JUnitTester {
 	 */
 	public static void runTests(String tags, String property, String[] args) {
 		String value = null;
+		String skipMALoutput = null;
 		boolean verbose = false;
 
 		System.err.println("# Invoked with " + args.length + " args");
@@ -30,12 +32,14 @@ public abstract class JUnitTester {
 
 		for (int i = 0; i < args.length; i++) {
 			String arg = args[i];
-			if (arg.equals("-v"))
+			if (arg.equals("-v")) {
 				verbose = true;
-			else if (arg.equals("-a"))
+			} else if (arg.equals("-a")) {
 				i++ /* sometimes passed to TLSTester, ignore following argument */;
-			else if (arg.equals("-supportsNestedTypes")) {
-				/* sometimes passed to JDBC_API_Tester, autodetected now, ignore it */;
+			} else if (arg.equals("-supportsNestedTypes")) {
+				; // sometimes passed to JDBC_API_Tester, autodetected now, ignore it
+			} else if (arg.equals("-skipMALoutput")) {
+					skipMALoutput = "true";
 			} else if (arg.startsWith("-")) {
 				System.err.println("Invalid flag " + arg);
 				exit(1);
@@ -55,6 +59,10 @@ public abstract class JUnitTester {
 		if (value != null) {
 			launcher.logAlways().println("Command line: setting " + property + " to " + value);
 			System.setProperty(property, value);
+		}
+		if (skipMALoutput != null) {
+			launcher.logAlways().println("Command line: setting " + Config.SKIP_MALOUTPUT_PROPERTY + " to " + skipMALoutput);
+			System.setProperty(Config.SKIP_MALOUTPUT_PROPERTY, skipMALoutput);
 		}
 
 		int status = launcher.run();
