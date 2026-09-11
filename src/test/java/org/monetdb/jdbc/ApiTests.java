@@ -114,25 +114,66 @@ public class ApiTests {
 		scratchTransactionStarted = true;
 	}
 
+	/**
+	 * Execute a query on the connection, take the first column of the result
+	 * and concatenate all values, separated by and prefixed- and suffixed with
+	 * the given separator, replacing nulls with "<null>".
+	 * <p>
+	 * For example, the result might look like {@code ",foo,<null>,bar,"}
+	 *
+	 * @param connection    ResultSet to extract values from
+	 * @param sep    string to insert between the values, and before and after all values
+	 * @param query  query to execute
+	 * @return      the concatenated values
+	 * @throws SQLException if the query fails
+	 */
 	private String concatenateColumn(String sep, String query) throws SQLException {
 		return concatenateColumn(this.conn, sep, query);
 	}
 
-	private static String concatenateColumn(Connection c, String sep, String query) throws SQLException {
-		try (Statement s = c.createStatement(); ResultSet rs = s.executeQuery(query)) {
-			return concatenateColumn(sep, 1, rs);
+	/**
+	 * Execute a query on the connection, take the first column of the result
+	 * and concatenate all values, separated by and prefixed- and suffixed with
+	 * the given separator, replacing nulls with "<null>".
+	 * <p>
+	 * For example, the result might look like {@code ",foo,<null>,bar,"}
+	 *
+	 * @param connection    ResultSet to extract values from
+	 * @param sep    string to insert between the values, and before and after all values
+	 * @param query  query to execute
+	 * @return      the concatenated values
+	 * @throws SQLException if the query fails
+	 */
+	private static String concatenateColumn(Connection connection, String sep, String query) throws SQLException {
+		try (Statement s = connection.createStatement(); ResultSet rs = s.executeQuery(query)) {
+			return concatenateColumn(rs, 1, sep);
 		}
 	}
 
-	private static String concatenateColumn(String sep, int colnr, ResultSet rs) throws SQLException {
+	/**
+	 * Take a column of the given result set and concatenate all values,
+	 * separated by and prefixed- and suffixed with the given separator,
+	 * replacing nulls with "<null>".
+	 * <p>
+	 * For example, the result might look like {@code ",foo,<null>,bar,"}
+	 *
+	 * @param rs    ResultSet to extract values from
+	 * @param colnr column of the ResultSet to pick
+	 * @param sep   string to insert between the values, and before and after all values
+	 * @return      the concatenated values
+	 * @throws SQLException
+	 */
+	private static String concatenateColumn(ResultSet rs, int colnr, String sep) throws SQLException {
 		StringBuilder builder = new StringBuilder();
-		boolean first = true;
 		while (rs.next()) {
-			if (!first)
-				builder.append(sep);
-			first = false;
-			builder.append(rs.getString(colnr));
+			builder.append(sep).append(rs.getString(colnr));
 		}
+		// we now either have "" or something like ",val1,val2"
+		builder.append(sep);
+		// "," or ",val1,val2,"
+		if (builder.length() == 1)
+			builder.append(sep);
+		// ",," or ",val1,val2,"
 		return builder.toString();
 	}
 
@@ -323,17 +364,17 @@ public class ApiTests {
 		Savepoint savepoint2 = conn.setSavepoint("empty table");
 		assertNotNull(savepoint2);
 
-		assertEquals("", concatenateColumn(",", "SELECT i FROM test_savepoints"));
+		assertEquals(",,", concatenateColumn(",", "SELECT i FROM test_savepoints"));
 		stmt.executeUpdate("INSERT INTO test_savepoints VALUES (1), (2), (3)");
 		Savepoint savepoint3 = conn.setSavepoint("three values");
 		assertNotNull(savepoint3);
-		assertEquals("1,2,3", concatenateColumn(",", "SELECT i FROM test_savepoints"));
+		assertEquals(",1,2,3,", concatenateColumn(",", "SELECT i FROM test_savepoints"));
 
 		conn.releaseSavepoint(savepoint3);
-		assertEquals("1,2,3", concatenateColumn(",", "SELECT i FROM test_savepoints"));
+		assertEquals(",1,2,3,", concatenateColumn(",", "SELECT i FROM test_savepoints"));
 
 		conn.rollback(savepoint2);
-		assertEquals("", concatenateColumn(",", "SELECT i FROM test_savepoints"));
+		assertEquals(",,", concatenateColumn(",", "SELECT i FROM test_savepoints"));
 
 		conn.rollback();
 		conn.setAutoCommit(true);
@@ -1777,34 +1818,34 @@ public class ApiTests {
 			stmt1.execute("INSERT INTO t1504657 VALUES (1, 'monetdb')");
 			stmt1.execute("INSERT INTO t1504657 VALUES (2, 'monet')");
 			stmt1.execute("INSERT INTO t1504657 VALUES (3, 'mon')");
-			assertEquals("1 2 3", concatenateColumn(conn1, " ", "SELECT id FROM t1504657"));
-			assertEquals("monetdb monet mon", concatenateColumn(conn1," ", "SELECT name FROM t1504657"));
-			assertEquals("1 2 3", concatenateColumn(conn2, " ", "SELECT id FROM t1504657"));
-			assertEquals("monetdb monet mon", concatenateColumn(conn2," ", "SELECT name FROM t1504657"));
-			assertEquals("1 2 3", concatenateColumn(conn3, " ", "SELECT id FROM t1504657"));
-			assertEquals("monetdb monet mon", concatenateColumn(conn3," ", "SELECT name FROM t1504657"));
+			assertEquals(" 1 2 3 ", concatenateColumn(conn1, " ", "SELECT id FROM t1504657"));
+			assertEquals(" monetdb monet mon ", concatenateColumn(conn1," ", "SELECT name FROM t1504657"));
+			assertEquals(" 1 2 3 ", concatenateColumn(conn2, " ", "SELECT id FROM t1504657"));
+			assertEquals(" monetdb monet mon ", concatenateColumn(conn2," ", "SELECT name FROM t1504657"));
+			assertEquals(" 1 2 3 ", concatenateColumn(conn3, " ", "SELECT id FROM t1504657"));
+			assertEquals(" monetdb monet mon ", concatenateColumn(conn3," ", "SELECT name FROM t1504657"));
 
 			// Insertion with concurrent clients
 			stmt2.execute("INSERT INTO t1504657 VALUES (4, 'monetdb')");
 			stmt2.execute("INSERT INTO t1504657 VALUES (5, 'monet')");
 			stmt2.execute("INSERT INTO t1504657 VALUES (6, 'mon')");
-			assertEquals("1 2 3 4 5 6", concatenateColumn(conn1, " ", "SELECT id FROM t1504657"));
-			assertEquals("monetdb monet mon monetdb monet mon", concatenateColumn(conn1," ", "SELECT name FROM t1504657"));
-			assertEquals("1 2 3 4 5 6", concatenateColumn(conn2, " ", "SELECT id FROM t1504657"));
-			assertEquals("monetdb monet mon monetdb monet mon", concatenateColumn(conn2," ", "SELECT name FROM t1504657"));
-			assertEquals("1 2 3 4 5 6", concatenateColumn(conn3, " ", "SELECT id FROM t1504657"));
-			assertEquals("monetdb monet mon monetdb monet mon", concatenateColumn(conn3," ", "SELECT name FROM t1504657"));
+			assertEquals(" 1 2 3 4 5 6 ", concatenateColumn(conn1, " ", "SELECT id FROM t1504657"));
+			assertEquals(" monetdb monet mon monetdb monet mon ", concatenateColumn(conn1," ", "SELECT name FROM t1504657"));
+			assertEquals(" 1 2 3 4 5 6 ", concatenateColumn(conn2, " ", "SELECT id FROM t1504657"));
+			assertEquals(" monetdb monet mon monetdb monet mon ", concatenateColumn(conn2," ", "SELECT name FROM t1504657"));
+			assertEquals(" 1 2 3 4 5 6 ", concatenateColumn(conn3, " ", "SELECT id FROM t1504657"));
+			assertEquals(" monetdb monet mon monetdb monet mon ", concatenateColumn(conn3," ", "SELECT name FROM t1504657"));
 
 			// And statement 3
 			stmt3.execute("INSERT INTO t1504657 VALUES (7, 'monetdb')");
 			stmt3.execute("INSERT INTO t1504657 VALUES (8, 'monet')");
 			stmt3.execute("INSERT INTO t1504657 VALUES (9, 'mon')");
-			assertEquals("1 2 3 4 5 6 7 8 9", concatenateColumn(conn1, " ", "SELECT id FROM t1504657"));
-			assertEquals("monetdb monet mon monetdb monet mon monetdb monet mon", concatenateColumn(conn1," ", "SELECT name FROM t1504657"));
-			assertEquals("1 2 3 4 5 6 7 8 9", concatenateColumn(conn2, " ", "SELECT id FROM t1504657"));
-			assertEquals("monetdb monet mon monetdb monet mon monetdb monet mon", concatenateColumn(conn2," ", "SELECT name FROM t1504657"));
-			assertEquals("1 2 3 4 5 6 7 8 9", concatenateColumn(conn3, " ", "SELECT id FROM t1504657"));
-			assertEquals("monetdb monet mon monetdb monet mon monetdb monet mon", concatenateColumn(conn3," ", "SELECT name FROM t1504657"));
+			assertEquals(" 1 2 3 4 5 6 7 8 9 ", concatenateColumn(conn1, " ", "SELECT id FROM t1504657"));
+			assertEquals(" monetdb monet mon monetdb monet mon monetdb monet mon ", concatenateColumn(conn1," ", "SELECT name FROM t1504657"));
+			assertEquals(" 1 2 3 4 5 6 7 8 9 ", concatenateColumn(conn2, " ", "SELECT id FROM t1504657"));
+			assertEquals(" monetdb monet mon monetdb monet mon monetdb monet mon ", concatenateColumn(conn2," ", "SELECT name FROM t1504657"));
+			assertEquals(" 1 2 3 4 5 6 7 8 9 ", concatenateColumn(conn3, " ", "SELECT id FROM t1504657"));
+			assertEquals(" monetdb monet mon monetdb monet mon monetdb monet mon ", concatenateColumn(conn3," ", "SELECT name FROM t1504657"));
 		}
 	}
 
@@ -1834,8 +1875,8 @@ public class ApiTests {
 			conn2.setAutoCommit(true);
 			stmt2.execute("INSERT INTO tconc_seq(who) VALUES ('client2')");
 
-			assertEquals("1client1 3client1 4client2", concatenateColumn(conn1, " ", "SELECT id || who FROM tconc_seq ORDER BY id"));
-			assertEquals("1client1 3client1 4client2", concatenateColumn(conn1, " ", "SELECT id || who FROM tconc_seq ORDER BY id"));
+			assertEquals(" 1client1 3client1 4client2 ", concatenateColumn(conn1, " ", "SELECT id || who FROM tconc_seq ORDER BY id"));
+			assertEquals(" 1client1 3client1 4client2 ", concatenateColumn(conn1, " ", "SELECT id || who FROM tconc_seq ORDER BY id"));
 		}
 	}
 
@@ -1870,12 +1911,12 @@ public class ApiTests {
 				assertTrue(minor >= 0, "database minor version = " + minor);
 
 				try (ResultSet rs = dbmd.getTables(null, "tmp", null, null)) {
-					String tmpTableNames = concatenateColumn(" ", 3, rs);
-					assertContains("_columns _tables", tmpTableNames);
+					String tmpTableNames = concatenateColumn(rs, 3, " ");
+					assertContains(" _columns _tables ", tmpTableNames);
 				}
 
 				try (ResultSet rs = dbmd.getTableTypes()) {
-					String tableTypes = "," + concatenateColumn(",", 1, rs) + ",";
+					String tableTypes = concatenateColumn(rs, 1, ",");
 					assertContains(",TABLE,", tableTypes);
 					assertContains(",VIEW,", tableTypes);
 					assertContains(",MERGE TABLE,", tableTypes);
