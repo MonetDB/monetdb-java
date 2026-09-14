@@ -1948,4 +1948,34 @@ public class ApiTests {
 		assertFalse(rs.next());
 	}
 
+	@Test
+	public void testBug3350() throws SQLException {
+		startScratchTransaction();
+
+		try {
+			stmt.execute("DROP TABLE IF EXISTS t3350");
+			stmt.execute("CREATE TABLE t3350(keyword VARCHAR(30) PRIMARY KEY)");
+			conn.commit();
+
+			assertEquals(1, stmt.executeUpdate("INSERT INTO t3350 VALUES ('Bug_3350')"));
+			assertSQLException(
+					"PRIMARY KEY",
+					() -> stmt.executeUpdate("INSERT INTO t3350 VALUES ('Bug_3350')"));
+			conn.rollback();
+
+			assertEquals(1, stmt.executeUpdate("INSERT INTO t3350 VALUES ('Bug_3350')"));
+			assertEquals(4, stmt.executeUpdate("INSERT INTO t3350 VALUES ('1'), ('x'), ('3'), ('y')"));
+			assertEquals(1, stmt.executeUpdate("DELETE FROM t3350 WHERE \"keyword\" = 'Bug_3350'"));
+			assertEquals(0, stmt.executeUpdate("DELETE FROM t3350 WHERE \"keyword\" = 'Bug_3350'"));
+			assertEquals(4, stmt.executeUpdate("UPDATE t3350 set \"keyword\" = keyword||'_ext'"));
+			assertEquals(4, stmt.executeUpdate("DELETE FROM t3350"));
+			conn.commit();
+		} finally {
+			ignoreFailures(() -> {
+				conn.rollback();
+				stmt.execute("DROP TABLE IF EXISTS t3350");
+				conn.commit();
+			});
+		}
+	}
 }
