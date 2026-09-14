@@ -2192,48 +2192,6 @@ public final class JDBC_API_Tester extends JUnitTester {
 	}
 
 	@Test
-	public void Bug_IsValid_Timeout_Bug_6782() {
-		sb.setLength(0);	// clear the output log buffer
-
-		Connection con2 = null;
-		Statement st = null;
-		try {
-			con2 = DriverManager.getConnection(jdbcUrl);
-			sb.append("connected :)\n");
-
-			st = con2.createStatement();
-			st.setQueryTimeout(5);
-			sb.append("getQueryTimeout must give 5: ").append(st.getQueryTimeout()).append("\n");
-			st.close();
-
-			con.isValid(6);
-
-			st = con.createStatement();
-			sb.append("getQueryTimeout must give 0: ").append(st.getQueryTimeout()).append("\n");
-
-			con.isValid(4);
-			sb.append("getQueryTimeout must give 0: ").append(st.getQueryTimeout()).append("\n");
-			st.close();
-
-			st.setQueryTimeout(7);
-			con.isValid(3);
-			sb.append("getQueryTimeout must give 7: ").append(st.getQueryTimeout()).append("\n");
-			st.close();
-		} catch (SQLException se) {
-			sb.append(se.getMessage()).append("\n");
-		}
-		closeStmtResSet(st, null);
-		closeConx(con2);
-
-		compareExpectedOutput("Bug_IsValid_Timeout_Bug_6782",
-				"connected :)\n" +
-				"getQueryTimeout must give 5: 5\n" +
-				"getQueryTimeout must give 0: 0\n" +
-				"getQueryTimeout must give 0: 0\n" +
-				"getQueryTimeout must give 7: 7\n");
-	}
-
-	@Test
 	public void Bug_LargeQueries_6571_6693() {
 		sb.setLength(0);	// clear the output log buffer
 

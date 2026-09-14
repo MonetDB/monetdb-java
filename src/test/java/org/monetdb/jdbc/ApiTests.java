@@ -1978,4 +1978,34 @@ public class ApiTests {
 			});
 		}
 	}
+
+	@Test
+public void testIsValidTimeoutBug6782() throws SQLException {
+		try (Connection conn2 = newConnection()) {
+			Statement st;
+
+			// Here 'st' is conn2's
+			st = conn2.createStatement();
+			st.setQueryTimeout(5);
+			assertEquals(5, st.getQueryTimeout());
+			st.close();
+
+			conn.isValid(6);
+			// Here, 'st' is conn's
+			st = conn.createStatement();
+			assertEquals(0, st.getQueryTimeout());
+
+			conn.isValid(4);
+			assertEquals(0, st.getQueryTimeout());
+			st.close();
+
+			// Here, 'st' is used after closing ????
+			st.setQueryTimeout(7);
+			conn.isValid(3);
+			assertEquals(7, st.getQueryTimeout());
+
+			// Here, 'st' is closed a second time. what are we testing here?
+			st.close();
+		}
+	}
 }
