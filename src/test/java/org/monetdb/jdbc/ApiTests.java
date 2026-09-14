@@ -109,6 +109,14 @@ public class ApiTests {
 		return DriverManager.getConnection(Config.getServerURL());
 	}
 
+	private Connection cloneConnection(Connection prototype, String ...overrides) throws SQLException {
+		Properties props = prototype.unwrap(MonetConnection.class).getConnectionProperties();
+		for (int i = 0; i < overrides.length; i+= 2) {
+			props.setProperty(overrides[i], overrides[i + 1]);
+		}
+		return DriverManager.getConnection("jdbc:monetdb:", props);
+	}
+
 	private void startScratchTransaction() throws SQLException {
 		conn.setAutoCommit(false);
 		scratchTransactionStarted = true;
@@ -1892,12 +1900,8 @@ public class ApiTests {
 			stmt.execute("ALTER USER voc SET SCHEMA voc");
 
 			// Modify connection to log in as 'voc'
-			Properties props = conn.unwrap(MonetConnection.class).getConnectionProperties();
-			props.setProperty("user", "voc");
-			props.setProperty("password", "voc");
-
-			try (Connection voconn = DriverManager.getConnection("jdbc:monetdb:", props)) {
-				DatabaseMetaData dbmd = voconn.getMetaData();
+			try (Connection voc = cloneConnection(conn, "user", "voc", "password", "voc")) {
+				DatabaseMetaData dbmd = voc.getMetaData();
 
 				assertEquals("voc", dbmd.getUserName());
 
