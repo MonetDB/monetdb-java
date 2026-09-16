@@ -4,6 +4,9 @@ build
 jars
 *.class
 
+# local overrides while testing
+test.properties
+
 
 src/main/java/org/monetdb/jdbc/MonetVersion.java
 

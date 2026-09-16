@@ -1,6 +1,11 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Wed Sep 16 2026 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
+- switched build system to use Maven
+- The groupId in the Maven coordinates has changed from 'monetdb' to
+  'org.monetdb'.
+
 * Thu Jan  8 2026 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
 - Compiled and released new jar files: monetdb-jdbc-12.2.jre8.jar and
   jdbcclient.jre8.jar

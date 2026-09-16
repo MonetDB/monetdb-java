@@ -16,6 +16,8 @@ import org.monetdb.mcl.net.Parameter;
 import org.monetdb.mcl.net.Target;
 import org.monetdb.mcl.net.ValidationError;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.Driver;
@@ -120,7 +122,7 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public int getMajorVersion() {
-		return MonetVersion.majorVersion;
+		return majorVersion;
 	}
 
 	/**
@@ -130,7 +132,7 @@ public final class MonetDriver implements Driver {
 	 */
 	@Override
 	public int getMinorVersion() {
-		return MonetVersion.minorVersion;
+		return minorVersion;
 	}
 
 	/**
@@ -208,6 +210,39 @@ public final class MonetDriver implements Driver {
 
 	//== end methods of interface driver
 
+	/*
+	 * Version fields and a static initializer block that sets them.
+	 *
+	 * They are package-private because MonetDatabaseMetaData also refers to them
+	*/
+	private static final String DRIVER_PROPERTIES_RESOURCE = "MonetDriver.properties";
+	static final String driverVersion;
+	static final int majorVersion;
+	static final int minorVersion;
+	static {
+		try (InputStream stream = MonetDriver.class.getResourceAsStream(DRIVER_PROPERTIES_RESOURCE)) {
+			if (stream == null) {
+				throw new RuntimeException("Could not load " + DRIVER_PROPERTIES_RESOURCE + " resource");
+			}
+			Properties props = new Properties();
+			props.load(stream);
+
+			driverVersion = props.getProperty("version");
+			if (driverVersion == null) {
+				throw new RuntimeException("No 'version' entry in " + DRIVER_PROPERTIES_RESOURCE + " resource");
+			}
+
+			int length = driverVersion.length();
+			if (driverVersion.endsWith("-SNAPSHOT")) {
+				length -= 9;
+			}
+			String[] parts = driverVersion.substring(0, length).split("[.]", 2);
+			majorVersion = Integer.parseInt(parts[0]);
+			minorVersion = Integer.parseInt(parts[1]);
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * Returns a touched up identifying version string of this driver.
@@ -216,7 +251,7 @@ public final class MonetDriver implements Driver {
 	 * @return the version string
 	 */
 	public static final String getDriverVersion() {
-		return MonetVersion.driverVersion;
+		return driverVersion;
 	}
 
 	/** A static Map containing the mapping between MonetDB types and Java SQL types */

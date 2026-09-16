@@ -1,148 +1,373 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-			     http://maven.apache.org/xsd/maven-4.0.0.xsd"
-	 xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-  <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
 
-  <groupId>monetdb</groupId>
+  <groupId>org.monetdb</groupId>
   <artifactId>monetdb-jdbc</artifactId>
-  <version>12.2</version>
-  <name>${project.groupId}:${project.artifactId}</name>
-  <description>MonetDB JDBC driver</description>
+  <version>12.3-SNAPSHOT</version>
+  <name>MonetDB JDBC Driver</name>
+  <description>JDBC Driver for MonetDB, a fast relational database for analytics</description>
   <url>https://www.monetdb.org</url>
 
-  <licenses>
-    <license>
-      <name>Mozilla Public License, Version 2.0</name>
-      <url>https://www.mozilla.org/MPL/2.0/</url>
-    </license>
-  </licenses>
+    <licenses>
+        <license>
+            <name>Mozilla Public License, Version 2.0</name>
+            <url>https://www.mozilla.org/MPL/2.0/</url>
+        </license>
+    </licenses>
 
-  <developers>
-    <developer>
-      <name>Sjoerd Mullender</name>
-      <email>sjoerd@monetdb.org</email>
-      <organization>MonetDB</organization>
-      <organizationUrl>https://www.monetdb.org</organizationUrl>
-    </developer>
-  </developers>
+    <developers>
+        <developer>
+            <name>Sjoerd Mullender</name>
+            <email>sjoerd@monetdb.org</email>
+            <organization>MonetDB</organization>
+            <organizationUrl>https://www.monetdb.org</organizationUrl>
+        </developer>
+    </developers>
 
-  <distributionManagement>
-    <snapshotRepository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-    </snapshotRepository>
-    <repository>
-      <id>ossrh</id>
-      <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-    </repository>
-  </distributionManagement>
+    <scm>
+        <connection>scm:hg:https://dev.monetdb.org/hg/monetdb-java/</connection>
+        <developerConnection>scm:hg:ssh://hg@dev.monetdb.org/monetdb-java/</developerConnection>
+        <url>https://dev.monetdb.org/hg/monetdb-java/</url>
+    </scm>
 
-  <scm>
-    <connection>scm:hg:https://dev.monetdb.org/hg/monetdb-java/</connection>
-    <developerConnection>scm:hg:ssh://hg@dev.monetdb.org/monetdb-java/</developerConnection>
-    <url>https://dev.monetdb.org/hg/monetdb-java/</url>
-  </scm>
+    <properties>
+        <!-- to be filled in from the command line -->
+        <signing-key>Please run with -Dsigning-key=...</signing-key>
 
-  <properties>
-    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <jdbc.sources>org/monetdb/jdbc/**/*.java</jdbc.sources>
-    <mcl.sources>org/monetdb/mcl/**/*.java</mcl.sources>
-  </properties>
+        <maven.compiler.source>8</maven.compiler.source>
+        <maven.compiler.target>8</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <build-timestamp>${maven.build.timestamp}</build-timestamp>
+        <maven.build.timestamp.format>yyyy-MM-dd</maven.build.timestamp.format>
+    </properties>
 
-  <build>
-    <plugins>
-      <plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-compiler-plugin</artifactId>
-	<version>3.2</version>
-	<configuration>
-	  <includes>
-	    <include>${jdbc.sources}</include>
-	    <include>${mcl.sources}</include>
-	  </includes>
-	  <source>8</source>
-	  <target>8</target>
-	  <showDeprecation>true</showDeprecation>
-	  <showWarnings>true</showWarnings>
-	</configuration>
-      </plugin>
-      <plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-source-plugin</artifactId>
-	<version>2.2.1</version>
-	<executions>
-	  <execution>
-	    <id>attach-sources</id>
-	    <goals>
-	      <goal>jar-no-fork</goal>
-	    </goals>
-	  </execution>
-	</executions>
-	<configuration>
-	  <includes>
-	    <include>${jdbc.sources}</include>
-	    <include>${mcl.sources}</include>
-	  </includes>
-	</configuration>
-      </plugin>
-      <plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-javadoc-plugin</artifactId>
-	<version>2.9.1</version>
-	<executions>
-	  <execution>
-	    <id>attach-javadocs</id>
-	    <goals>
-	      <goal>jar</goal>
-	    </goals>
-	  </execution>
-	</executions>
-	<configuration>
-	  <sourceFileIncludes>
-	    <include>${jdbc.sources}</include>
-	    <include>${mcl.sources}</include>
-	  </sourceFileIncludes>
-	  <additionalparam>-Xdoclint:none</additionalparam>
-	</configuration>
-      </plugin>
-      <plugin>
-	<groupId>org.sonatype.plugins</groupId>
-	<artifactId>nexus-staging-maven-plugin</artifactId>
-	<version>1.6.3</version>
-	<extensions>true</extensions>
-	<configuration>
-	  <serverId>ossrh</serverId>
-	  <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-	  <autoReleaseAfterClose>false</autoReleaseAfterClose>
-	</configuration>
-      </plugin>
-      <plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-release-plugin</artifactId>
-	<version>2.5</version>
-	<configuration>
-	  <autoVersionSubmodules>true</autoVersionSubmodules>
-	  <useReleaseProfile>false</useReleaseProfile>
-	  <releaseProfiles>release</releaseProfiles>
-	  <goals>deploy</goals>
-	</configuration>
-      </plugin>
-      <plugin>
-	<groupId>org.apache.maven.plugins</groupId>
-	<artifactId>maven-gpg-plugin</artifactId>
-	<version>1.5</version>
-	<executions>
-	  <execution>
-	    <id>sign-artifacts</id>
-	    <phase>verify</phase>
-	    <goals>
-	      <goal>sign</goal>
-	    </goals>
-	  </execution>
-	</executions>
-      </plugin>
-    </plugins>
-  </build>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>5.14.4</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>io.github.java-diff-utils</groupId>
+            <artifactId>java-diff-utils</artifactId>
+            <version>4.17</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- used by JunitTester (our Mtest compatible Junit runner)  -->
+        <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-launcher</artifactId>
+            <version>1.14.4</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <build>
+
+        <resources>
+            <!-- Insert version number in MonetDriver.properties -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
+        <plugins>
+            <!-- Enforce minimum Maven version -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.6.3</version>
+                <executions>
+                    <execution>
+                        <id>enforce-maven-version</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <requireMavenVersion>
+                                    <version>3.9.10</version>
+                                </requireMavenVersion>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Configure the jar builder plugin
+                 1. to set the main class to JdbcClient
+                 2. to create a tests jar
+                 Later on, the assembly plugin will create a 'fat' tests jar that also contains
+                 all dependencies
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.1</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>org.monetdb.client.JdbcClient</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-test-jar</id>
+                        <goals>
+                            <goal>test-jar</goal>
+                        </goals>
+                        <configuration>
+                            <excludes>
+                                <exclude>SQLcopyinto.class</exclude>
+                                <exclude>Test_C*.class</exclude>
+                            </excludes>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Let the assembly plugin create a tests jar with dependencies -->
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <configuration>
+                    <!-- <finalName>jdbctests</finalName> -->
+                    <!-- <appendAssemblyId>false</appendAssemblyId> -->
+                    <descriptors>
+                        <descriptor>src/test/assembly/test-jar-with-deps.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-tests-jar-with-deps</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- parse the version number in preparation of the copy-jdbc-jar action below -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>build-helper-maven-plugin</artifactId>
+                <version>3.6.1</version>
+                <executions>
+                    <execution>
+                        <id>parse-version-number</id>
+                        <goals>
+                            <goal>parse-version</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <!-- Copy files to jars/ with names backward compatible with Mtest.py -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.7.0</version>
+                <executions>
+                    <execution>
+                        <id>copy-jdbc-jar</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                        <configuration>
+                            <artifactItems>
+                                <!-- main jar -->
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>${project.packaging}</type>
+                                    <destFileName>monetdb-jdbc-${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.jre8.jar</destFileName>
+                                </artifactItem>
+                                <!-- jdbcclient -->
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>${project.packaging}</type>
+                                    <destFileName>jdbcclient.jre8.jar</destFileName>
+                                </artifactItem>
+                                <!-- tests jar -->
+                                <artifactItem>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${project.version}</version>
+                                    <type>${project.packaging}</type>
+                                    <classifier>test-jar-with-deps</classifier>
+                                    <destFileName>jdbctests.jar</destFileName>
+                                </artifactItem>
+                            </artifactItems>
+                        </configuration>
+                    </execution>
+                </executions>
+                <configuration>
+                    <outputDirectory>${project.basedir}/jars</outputDirectory>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.4.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.12.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-javadoc</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <author>false</author>
+                    <doclint>none</doclint>
+                    <windowtitle>MonetDB Java APIs</windowtitle>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.4</version>
+                <configuration>
+                    <!-- set this explicitly because JDBC_API_Tester does not match the default patterns -->
+                    <includes>
+                        <include>JDBC_API_Tester.java</include>
+                        <include>**/Test*.java</include>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                        <include>**/*TestCase.java</include>
+                    </includes>
+                </configuration>
+            </plugin>
+
+            <!-- Sign the jar files before uploading.
+                 This plugin and the uploading plugin below both run in phase 'deploy'.
+                 Signing must come first.
+            -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>1.6</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifact</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>sign</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <useAgent>true</useAgent>
+                    <keyname>${signing-key}</keyname>
+                </configuration>
+            </plugin>
+
+            <!-- Upload to Maven Central via Sonatype.
+                 This plugin and the signing plugin above both run in phase 'deploy'.
+                 Signing must come first.
+            -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.11.0</version>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <id>upload-to-maven-central</id>
+                        <phase>deploy</phase>
+                    </execution>
+                </executions>
+                <configuration>
+                    <!-- the credentials are in settings.xml -->
+                    <publishingServerId>central</publishingServerId>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.3.1</version>
+                <executions></executions>
+                <configuration>
+                    <tagNameFormat>v@{project.version}</tagNameFormat>
+                    <arguments>-DskipTests -Dsigning-key="${signing-key}"</arguments>
+                    <!-- only record changes and tags locally, do not push -->
+                    <pushChanges>false</pushChanges>
+                    <localCheckout>true</localCheckout>
+                </configuration>
+            </plugin>
+
+        </plugins>
+
+    </build>
+
+    <profiles>
+
+        <!-- the 'quick' profile inhibits javadoc, sources and slow tests -->
+        <profile>
+            <id>quick</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-javadoc-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-javadoc</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-source-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>attach-sources</id>
+                                <phase>none</phase>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <groups>!slow</groups>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+    </profiles>
 
 </project>

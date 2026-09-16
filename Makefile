@@ -1,39 +1,20 @@
-all: src/main/java/org/monetdb/jdbc/MonetVersion.java.in
-	ant -f build.xml distjdbc distmerocontrol
-	cd tests; ant -f build.xml jar_jdbctests
+#
 
-jre17jars: src/main/java/org/monetdb/jdbc/MonetVersion.java
-	rm -rf build
-	ant -f build.xml -Djvm.version=17 distjdbc
-	rm -rf build
+# Build the main jar. Suppress sources jar, docs jar and all tests.
+default:
+	./mvnw -Pquick -DskipTests package
 
-jre21jars: src/main/java/org/monetdb/jdbc/MonetVersion.java
-	rm -rf build
-	ant -f build.xml -Djvm.version=21 distjdbc
-	rm -rf build
+# Run tests but not the slow ones
+test:
+	# Run up to phase 'test'. Skip the slow tests
+	./mvnw -Pquick test
 
-jre25jars: src/main/java/org/monetdb/jdbc/MonetVersion.java
-	rm -rf build
-	ant -f build.xml -Djvm.version=25 distjdbc
-	rm -rf build
-
-test: all
-	cd tests; ant -f build.xml test
-
-testsjar:
-	cd tests; ant -f build.xml jar_jdbctests
-
-doc:
-	ant -f build.xml doc
+# Run all tests including the slow ones.
+testall:
+	./mvnw test
 
 clean:
-	rm -f src/main/java/org/monetdb/jdbc/MonetVersion.java
-	rm -rf build tests/build jars doc
+	./mvnw clean
 
-cleandoc:
-	rm -rf doc
 
-cleantests:
-	rm -rf tests/build
-	rm -f  jars/jdbctests.jar
 

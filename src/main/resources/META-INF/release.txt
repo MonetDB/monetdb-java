@@ -1,0 +1,18 @@
+RELEASE INFO
+============
+
+MonetDB JDBC driver version ${project.version}
+Release date: ${build-timestamp}
+
+The Java Database Connectivity (JDBC) API provides universal data access from
+the Java programming language.
+
+The MonetDB JDBC driver is designed for use with MonetDB, an Open-Source column-store RDBMS.
+See https://www.monetdb.org/
+
+The latest MonetDB JDBC driver can be downloaded from
+https://www.monetdb.org/downloads/Java/
+
+Documentation for the MonetDB JDBC driver is available from
+https://www.monetdb.org/documentation/user-guide/client-interfaces/libraries-drivers/jdbc-driver/
+

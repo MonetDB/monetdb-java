@@ -1,0 +1,30 @@
+Quick notes from the mvn branch
+
+Before the merge
+
+- [X] restore Test_Csendthread, it's actually useful
+      (we have that test by other names)
+
+- [X] harmoniseer environment variables pymonetdb en jdbc
+      (de Java namen zijn beter, pymonetdb moet zich aanpassen)
+
+- [X] check bouwen met Java 8
+
+- [X] test Maven release plugin met Mercurial
+
+- [X] draft documentatie update
+
+
+After the merge
+
+- [ ] remove the years from the copyright message
+  and modernize copyright message (see ControlTester for an example)
+
+- [ ] start converting the JDBC_API_Tester tests to Junit style
+
+
+After the (first) release
+
+- [ ] in MonetDB-scripts, promote buildjava-mvn to buildjava and
+  uncomment the autoPublish flag
+
