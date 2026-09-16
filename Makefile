@@ -1,8 +1,11 @@
 #
 
 # Build the main jar. Suppress sources jar, docs jar and all tests.
-default:
+jar:
 	./mvnw -Pquick -DskipTests package
+
+alljars:
+	./mvnw -DskipTests package
 
 # Run tests but not the slow ones
 test:
@@ -17,4 +20,4 @@ clean:
 	./mvnw clean
 
 
-
+.PHONY: jar alljars test testall clean
