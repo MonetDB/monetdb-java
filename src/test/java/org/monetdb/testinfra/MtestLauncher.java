@@ -171,8 +171,10 @@ public class MtestLauncher {
 				case SUCCESSFUL:
 					verbose.println("           ok after " + elapsedMillis + "ms");
 					break;
-				default:
-					verbose.println("            " + status);
+				case ABORTED:
+					verbose.println("           aborted (skipped)" + status);
+					break;
+				case FAILED:
 					System.err.println();
 					System.err.println("!!! TEST " + nestedName + " FAILED");
 					if (optException.isPresent()) {
@@ -181,6 +183,10 @@ public class MtestLauncher {
 					}
 					System.err.println();
 					System.err.println();
+					break;
+				default:
+					// at the time of writing there is only SUCCESFUL, ABORTED and FAILED
+					throw new IllegalStateException("encountered unhandled test status");
 			}
 		}
 	}
