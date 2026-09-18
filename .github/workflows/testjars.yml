@@ -132,7 +132,7 @@ jobs:
 
       - name: Run tests
         run: |
-          java -cp jars/'*' JDBC_API_Tester -v jdbc:monetdb:///demo
+          java -cp jars/'*' JDBC_API_Tester jdbc:monetdb:///demo
 
 
 
@@ -198,11 +198,11 @@ jobs:
 
       - name: API Tests
         run: |
-          java -cp jars/'*' JDBC_API_Tester -v jdbc:monetdb:///testjdbc
+          java -cp jars/'*' JDBC_API_Tester jdbc:monetdb:///testjdbc
 
       - name: TLS Tests
         run: |
-          java -cp jars/'*' TLSTester -v $MONETDB_TLSTESTER
+          java -cp jars/'*' TLSTester $MONETDB_TLSTESTER
 
       - name: Run ControlTester
         run: java -cp jars/'*' ControlTester localhost monetdb
@@ -210,4 +210,4 @@ jobs:
       - name: Slow Tests
         if: false
         run: |
-          java -cp jars/'*' SlowTester -v jdbc:monetdb:///testjdbc
+          java -cp jars/'*' SlowTester jdbc:monetdb:///testjdbc
