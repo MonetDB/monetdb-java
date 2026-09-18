@@ -3822,7 +3822,8 @@ public final class JDBC_API_Tester extends JUnitTester {
 
 		// Older versions forget to send autocommit status change
 		// notifications when transaction fails
-		assumeTrue(isAtLeast56);
+		if (!isAtLeast56)
+			return;
 
 		try {
 			// Connections
