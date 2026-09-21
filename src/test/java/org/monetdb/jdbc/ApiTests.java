@@ -42,6 +42,7 @@ public class ApiTests {
 	Statement stmt;
 	PreparedStatement pstmt;
 	private boolean scratchTransactionStarted;
+	private int nextUniqueId = 42;
 
 	// Skip all tests if the test database isn't running
 	@BeforeAll
@@ -195,8 +196,7 @@ public class ApiTests {
 	}
 
 	/**
-	 * Execute SQL code using this instances' {@link stmt} Statement
-	 * and ignore any SQLExceptions it may throw.
+	 * Execute SQL code using the {@link stmt} Statement and ignore any SQLExceptions
 	 * @param sql statements to execute
 	 */
 	private void ignoreFailures(String sql) {
@@ -204,8 +204,7 @@ public class ApiTests {
 	}
 
 	/**
-	 * Execute the callback using this instances' {@link stmt} Statement
-	 * and ignore any SQLExceptions it may throw.
+	 * Execute the callback and ignore any SQLExceptions it may throw.
 	 * @param func callback to execute
 	 */
 	private void ignoreFailures(Assertions.SQLCode func) {
@@ -245,6 +244,117 @@ public class ApiTests {
 			conn.setAutoCommit(true);
 		}
 	}
+
+	@Test
+	public void testAutocommitWithFailedTransaction() throws SQLException {
+
+		// Older versions forget to send autocommit status change
+		// notifications when transaction fails.
+		assumeTrue(monetVersion.hasAccurateAutocommitStatus());
+
+		// We use a helper connection and -table to verify autocommit status
+		stmt.execute("DROP TABLE IF EXISTS autocommitcheck");
+		try (
+				Connection helper = cloneConnection(conn, "client_remark", "helper");
+				Statement hs = helper.createStatement()
+		) {
+			hs.execute("CREATE TABLE autocommitcheck ( id int )");
+			hs.execute("INSERT INTO autocommitcheck VALUES (NULL)");
+			testAutocommitTransaction(helper);
+			hs.execute("DROP TABLE autocommitcheck");
+		}
+	}
+
+	private void testAutocommitTransaction(Connection helper) throws SQLException {
+		// 1a. Initially, autocommit is on
+		assertTrue(conn.getAutoCommit());
+		assertTrue(isActuallyAutoCommit(helper));
+
+		// 1b. After an error it's still on
+		ignoreFailures("SELECT nosuchcolumn FROM autocommitcheck");
+		assertTrue(conn.getAutoCommit());
+		assertTrue(isActuallyAutoCommit(helper));
+
+		// 2a. START TRANSACTION turns it off
+		stmt.execute("START TRANSACTION");
+		assertFalse(conn.getAutoCommit());
+		assertFalse(isActuallyAutoCommit(helper));
+
+		// 2b. COMMIT (as a statement!) turns it back on
+		stmt.execute("COMMIT");
+		assertTrue(conn.getAutoCommit());
+		assertTrue(isActuallyAutoCommit(helper));
+
+		// 3a. START TRANSACTION turns it off again
+		stmt.execute("START TRANSACTION");
+		assertFalse(conn.getAutoCommit());
+		assertFalse(isActuallyAutoCommit(helper));
+
+		// 3b. After an error it's still off
+		ignoreFailures("SELECT nosuchcolumn FROM autocommitcheck");
+		assertFalse(conn.getAutoCommit());
+		assertFalse(isActuallyAutoCommit(helper));
+
+		// 3c. After ROLLBACK it's on again
+		stmt.execute("ROLLBACK");
+		assertTrue(conn.getAutoCommit());
+		assertTrue(isActuallyAutoCommit(helper));
+
+		// 4a.
+		stmt.execute("START TRANSACTION");
+		assertFalse(conn.getAutoCommit());
+		assertFalse(isActuallyAutoCommit(helper));
+
+		// 4b. After an error it's still off
+		ignoreFailures("SELECT nosuchcolumn FROM autocommitcheck");
+		assertFalse(conn.getAutoCommit());
+		assertFalse(isActuallyAutoCommit(helper));
+
+		// 4c. but commit fails due to the error, causing a rollback
+		// which turns autocommit back on
+		ignoreFailures("COMMIT");
+		assertFalse(conn.getAutoCommit());
+		assertFalse(isActuallyAutoCommit(helper));
+
+
+		// At the end of the test, autocommit is on
+		assertTrue(conn.getAutoCommit());
+		assertTrue(isActuallyAutoCommit(helper));
+
+	}
+
+	/**
+	 * Update table 'autocommitcheck' on {@link conn}, then check the result
+	 * on {@param helper}.
+	 * A transaction conflict during the update also indicates auto commit mode is off.
+	 * @param helper Connection to verify the update on
+	 * @return whether the helper sees the update
+	 */
+	private boolean isActuallyAutoCommit(Connection helper) throws SQLException {
+		// Update using conn
+		int cookie = nextUniqueId++;
+		try {
+			stmt.execute("UPDATE autocommitcheck SET id = " + cookie);
+		} catch (SQLException e) {
+			if (e.getSQLState().equals("25005")) {
+				// It's a 25005!Current transaction is aborted (please ROLLBACK).
+				// This means we're in a connection and therefore auto commit is off
+				return false;
+			} else {
+				throw e;
+			}
+		}
+
+		// Does the helper see the update?
+		String query = "SELECT id FROM autocommitcheck WHERE id = " + cookie;
+		try (
+				Statement s = helper.createStatement();
+				ResultSet rs = s.executeQuery(query)
+		) {
+			return rs.next();  // if present, 'conn' autocommitted the update
+		}
+	}
+
 
 	@Test
 	public void testIsValid() throws SQLException {
