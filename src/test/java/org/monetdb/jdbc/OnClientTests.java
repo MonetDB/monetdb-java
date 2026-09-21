@@ -238,7 +238,7 @@ public class OnClientTests extends OnClientTestsParent {
 		conn.setDownloadHandler(handler);
 		stmt.executeUpdate("INSERT INTO foo SELECT value as i, 'number' || value AS t FROM sys.generate_series(0, 100)");
 		assertSQLException("download refused", () -> stmt.executeUpdate("COPY (SELECT * FROM foo) INTO 'banana' ON CLIENT"));
-		if (monetVersion.serverCanRefuseDownload())
+		if (monetVersion.canRefuseDownload())
 			assertEquals(100, queryInt("SELECT COUNT(*) FROM foo"));
 		else
 			// Wish it were different but the server closes the connection

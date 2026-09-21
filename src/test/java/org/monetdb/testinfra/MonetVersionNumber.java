@@ -66,7 +66,7 @@ public class MonetVersionNumber {
 	 *
 	 * @return
 	 */
-	public boolean serverCanRefuseDownload() {
+	public boolean canRefuseDownload() {
 		return isAtLeast(11, 41, 12);
 	}
 
@@ -75,7 +75,8 @@ public class MonetVersionNumber {
 	 *
 	 * @return
 	 */
-	public boolean serverCanQueryUnclosedResultSets() {
+	public boolean canQueryUnclosedResultSets() {
+
 		return isAtLeast(11, 52, 0);
 	}
 
@@ -85,7 +86,7 @@ public class MonetVersionNumber {
 	 * From version 11.50 on, the MonetDB server returns different metadata for
 	 * integer digits (1 less) and for clob and char columns (now return varchar).
 	 */
-	public boolean serverReturnsNewMetadata() {
+	public boolean returnsNewMetadata() {
 		return isAtLeast(11, 50, 0);
 	}
 
@@ -98,5 +99,9 @@ public class MonetVersionNumber {
 	 */
 	public boolean planHasBecomeExplain() {
 		return isAtLeast(11, 54, 00);
+	}
+
+	public boolean hasAccurateAutocommitStatus() {
+		return isAtLeast(56, 0, 00);
 	}
 }

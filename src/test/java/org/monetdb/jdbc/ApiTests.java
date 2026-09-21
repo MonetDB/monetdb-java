@@ -79,7 +79,7 @@ public class ApiTests {
 		}
 		assertTrue(conn.getAutoCommit());
 
-		if (monetVersion.serverCanQueryUnclosedResultSets()) {
+		if (monetVersion.canQueryUnclosedResultSets()) {
 			ArrayList<String> unclosed = new ArrayList<>();
 			String query = "SELECT 'query_id=' || query_id || '/res_id=' || res_id FROM sys.unclosed_result_sets()";
 			try (ResultSet rs = stmt.executeQuery(query)) {
@@ -194,10 +194,20 @@ public class ApiTests {
 		}
 	}
 
+	/**
+	 * Execute SQL code using this instances' {@link stmt} Statement
+	 * and ignore any SQLExceptions it may throw.
+	 * @param sql statements to execute
+	 */
 	private void ignoreFailures(String sql) {
 		ignoreFailures(() -> stmt.execute(sql));
 	}
 
+	/**
+	 * Execute the callback using this instances' {@link stmt} Statement
+	 * and ignore any SQLExceptions it may throw.
+	 * @param func callback to execute
+	 */
 	private void ignoreFailures(Assertions.SQLCode func) {
 		try {
 			func.execute();
@@ -978,7 +988,7 @@ public class ApiTests {
 			assertEquals("double", md.getColumnTypeName(3));
 			assertEquals("boolean", md.getColumnTypeName(4));
 			assertEquals("varchar", md.getColumnTypeName(5));
-			if (monetVersion.serverReturnsNewMetadata())
+			if (monetVersion.returnsNewMetadata())
 				assertEquals("varchar", md.getColumnTypeName(6));
 			else
 				assertEquals("clob", md.getColumnTypeName(6));

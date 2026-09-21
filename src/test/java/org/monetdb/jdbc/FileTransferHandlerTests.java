@@ -182,7 +182,7 @@ public class FileTransferHandlerTests extends OnClientTestsParent {
 		conn.setDownloadHandler(new FileTransferHandler(tempDir2, StandardCharsets.UTF_8));
 		String quoted = tempDir1.resolve("data.txt").toAbsolutePath().toString().replaceAll("'", "''");
 		assertSQLException("not in download directory", () -> stmt.execute("COPY SELECT * FROM foo INTO R'" + quoted + "' ON CLIENT"));
-		if (monetVersion.serverCanRefuseDownload()) {
+		if (monetVersion.canRefuseDownload()) {
 			// connection is still alive
 			assertEquals(42, queryInt("SELECT SUM(i) FROM foo"));
 		}
