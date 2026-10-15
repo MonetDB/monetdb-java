@@ -1801,8 +1801,8 @@ public final class MonetDatabaseMetaData
 			"f.\"name\" AS \"PROCEDURE_NAME\", " +
 			"a.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(CASE a.\"inout\"" +
-				" WHEN 0 THEN (CASE a.\"number\" WHEN 0 THEN " + DatabaseMetaData.procedureColumnReturn + " ELSE " + DatabaseMetaData.procedureColumnOut + " END)" +
 				" WHEN 1 THEN " + DatabaseMetaData.procedureColumnIn +
+				" WHEN 0 THEN " + DatabaseMetaData.procedureColumnOut +
 				" ELSE " + DatabaseMetaData.procedureColumnUnknown + " END AS smallint) AS \"COLUMN_TYPE\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("a.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"a.\"type\" AS \"TYPE_NAME\", " +
@@ -4096,8 +4096,8 @@ public final class MonetDatabaseMetaData
 			"f.\"name\" AS \"FUNCTION_NAME\", " +
 			"a.\"name\" AS \"COLUMN_NAME\", " +
 			"cast(CASE a.\"inout\"" +
-				" WHEN 0 THEN (CASE a.\"number\" WHEN 0 THEN " + DatabaseMetaData.functionReturn + " ELSE " + DatabaseMetaData.functionColumnOut + " END)" +
 				" WHEN 1 THEN " + DatabaseMetaData.functionColumnIn +
+				" WHEN 0 THEN (CASE WHEN f.\"type\" IN (5,7) THEN " + DatabaseMetaData.functionColumnResult + " ELSE " + DatabaseMetaData.functionReturn + " END)" +
 				" ELSE " + DatabaseMetaData.functionColumnUnknown + " END AS smallint) AS \"COLUMN_TYPE\", " +
 			"cast(").append(MonetDriver.getSQLTypeMap("a.\"type\"")).append(" AS int) AS \"DATA_TYPE\", " +
 			"a.\"type\" AS \"TYPE_NAME\", " +

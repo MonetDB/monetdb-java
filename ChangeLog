@@ -1,6 +1,11 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Oct 15 2026 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
+- Corrected method DatabaseMetaData.getFunctionColumns() for result column
+  COLUMN_TYPE. For functions that return a table, the returned output
+  columns now return DatabaseMetaData.functionColumnResult as COLUMN_TYPE.
+
 * Wed Sep 16 2026 Joeri van Ruth <joeri.van.ruth@monetdbsolutions.com>
 - switched build system to use Maven
 - The groupId in the Maven coordinates has changed from 'monetdb' to
