@@ -126,8 +126,8 @@ public final class JMonetDB {
 		// FIXME: Control needs to respect Xhash
 
 		if (copts.getOption("Xdebug").isPresent()) {
-			final String fname = copts.getOption("Xdebug").getArgument();
-			ctl.setDebug(fname);
+			System.err.println("Xdebug is no longer supported.");
+			System.exit(1);
 		}
 
 		final String[] commands = copts.getOption("command").getArguments();

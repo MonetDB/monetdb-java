@@ -1,6 +1,10 @@
 # ChangeLog file for monetdb-java
 # This file is updated with Maddlog
 
+* Thu Oct 15 2026 Joeri van Ruth joeri.van.ruth@monetdbsolutions.com
+- The 'debug' and 'logfile' connect options are now ignored. The related
+  fields and methods of class MapiSocket have been removed.
+
 * Thu Oct 15 2026 Martin van Dinther <martin.van.dinther@monetdbsolutions.com>
 - Corrected method DatabaseMetaData.getFunctionColumns() for result column
   COLUMN_TYPE. For functions that return a table, the returned output

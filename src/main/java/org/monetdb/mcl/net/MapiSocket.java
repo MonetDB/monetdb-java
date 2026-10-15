@@ -239,15 +239,6 @@ public final class MapiSocket {
 	}
 
 	/**
-	 * Enables/disables debug mode with logging to file
-	 *
-	 * @param debug Value to set
-	 */
-	public void setDebug(final boolean debug) {
-		target.setDebug(debug);
-	}
-
-	/**
 	 * Connects to the given host and port, logging in as the given
 	 * user.  If followRedirect is false, a RedirectionException is
 	 * thrown when a redirect is encountered.
@@ -300,11 +291,7 @@ public final class MapiSocket {
 	 */
 	public List<String> connect(Target target, OptionsCallback callback) throws MCLException, MCLParseException, IOException {
 		// Get rid of any earlier connection state, including the existing target.
-		// (But preserve the logging)
-		Writer tmpLog = this.log;
-		this.log = null;
 		close();
-		this.log = tmpLog;
 		this.target = target;
 
 		Target.Validated validated;
@@ -701,19 +688,6 @@ public final class MapiSocket {
 	}
 
 	/**
-	 * Enables logging to a file what is read and written from and to
-	 * the server.  Logging can be enabled at any time.  However, it is
-	 * encouraged to start debugging before actually connecting the
-	 * socket.
-	 *
-	 * @param filename the name of the file to write to
-	 * @throws IOException if the file could not be opened for writing
-	 */
-	public void debug(final String filename) throws IOException {
-		debug(new FileWriter(filename));
-	}
-
-	/**
 	 * Enables logging to a stream what is read and written from and to
 	 * the server.  Logging can be enabled at any time.  However, it is
 	 * encouraged to start debugging before actually connecting the
@@ -728,44 +702,12 @@ public final class MapiSocket {
 //	}
 
 	/**
-	 * Enables logging to a stream what is read and written from and to
-	 * the server.  Logging can be enabled at any time.  However, it is
-	 * encouraged to start debugging before actually connecting the
-	 * socket.
-	 *
-	 * @param out to write the log to
-	 */
-	public void debug(final Writer out) {
-		log = out;
-		setDebug(true);
-	}
-
-	/**
 	 * Get the log Writer.
 	 *
 	 * @return the log writer
 	 */
 	public Writer getLogWriter() {
 		return log;
-	}
-
-	/**
-	 * Writes a logline tagged with a timestamp using the given type and message
-	 * and optionally flushes afterwards.
-	 *
-	 * Used for debugging purposes only and represents a message data that is
-	 * connected to reading (RD or RX) or writing (TD or TX) to the socket.
-	 * R=Receive, T=Transmit, D=Data, X=??
-	 *
-	 * @param type  message type: either RD, RX, TD or TX
-	 * @param message  the message to log
-	 * @param flush  whether we need to flush buffered data to the logfile.
-	 * @throws IOException if an IO error occurs while writing to the logfile
-	 */
-	private final void log(final String type, final String message, final boolean flush) throws IOException {
-		log.write(type + System.currentTimeMillis() + ": " + message + "\n");
-		if (flush)
-			log.flush();
 	}
 
 	/**
@@ -776,10 +718,6 @@ public final class MapiSocket {
 	 */
 	public boolean setInsertFakePrompts(boolean b) {
 		return fromMonet.setInsertFakePrompts(b);
-	}
-
-	public boolean isDebug() {
-		return target.isDebug();
 	}
 
 	public boolean canClientInfo() {
@@ -818,16 +756,6 @@ public final class MapiSocket {
 			// write the block (as final) then flush.
 			writeBlock(true);
 			out.flush();
-
-			// it's a bit nasty if an exception is thrown from the log,
-			// but ignoring it can be nasty as well, so it is decided to
-			// let it go so there is feedback about something going wrong
-			// it's a bit nasty if an exception is thrown from the log,
-			// but ignoring it can be nasty as well, so it is decided to
-			// let it go so there is feedback about something going wrong
-			if (isDebug()) {
-				log.flush();
-			}
 		}
 
 		/**
@@ -858,15 +786,6 @@ public final class MapiSocket {
 			out.write(blklen);
 			// write the actual block
 			out.write(block, 0, writePos);
-
-			if (isDebug()) {
-				if (last) {
-					log("TD ", "write final block: " + writePos + " bytes", false);
-				} else {
-					log("TD ", "write block: " + writePos + " bytes", false);
-				}
-				log("TX ", new String(block, 0, writePos, StandardCharsets.UTF_8), true);
-			}
 
 			writePos = 0;
 		}
@@ -984,16 +903,10 @@ public final class MapiSocket {
 					// if we have read something before, we should have been
 					// able to read the whole, so make this fatal
 					if (off > 0) {
-						if (isDebug()) {
-							log("RD ", "the following incomplete block was received:", false);
-							log("RX ", new String(b, 0, off, StandardCharsets.UTF_8), true);
-						}
 						throw new IOException("Read from " +
 								con.getInetAddress().getHostName() + ":" +
 								con.getPort() + ": Incomplete block read from stream");
 					}
-					if (isDebug())
-						log("RD ", "server closed the connection (EOF)", true);
 					return false;
 				}
 				len -= s;
@@ -1043,14 +956,6 @@ public final class MapiSocket {
 
 			readPos = 0;
 
-			if (isDebug()) {
-				if (wasEndBlock) {
-					log("RD ", "read final block: " + blockLen + " bytes", false);
-				} else {
-					log("RD ", "read new block: " + blockLen + " bytes", false);
-				}
-			}
-
 			// sanity check to avoid bad servers make us do an ugly
 			// stack trace
 			if (blockLen > block.length)
@@ -1058,9 +963,6 @@ public final class MapiSocket {
 						blockLen + " > " + block.length);
 			if (!_read(block, blockLen))
 				return -1;
-
-			if (isDebug())
-				log("RX ", new String(block, 0, blockLen, StandardCharsets.UTF_8), true);
 
 			// if this is the last block, make it end with a newline and prompt
 			if (wasEndBlock) {
@@ -1074,9 +976,6 @@ public final class MapiSocket {
 						block[blockLen++] = b;
 					}
 					block[blockLen++] = '\n';
-					if (isDebug()) {
-						log("RD ", "inserting prompt", true);
-					}
 				}
 			}
 
@@ -1089,9 +988,6 @@ public final class MapiSocket {
 				if (readBlock() == -1)
 					return -1;
 			}
-
-			if (isDebug())
-				log("RX ", new String(block, readPos, 1, StandardCharsets.UTF_8), true);
 
 			return block[readPos++] & 0xFF;
 		}
@@ -1227,12 +1123,6 @@ public final class MapiSocket {
 			try {
 				con.close();	// close the socket
 				con = null;
-			} catch (IOException e) { /* ignore it */ }
-		}
-		if (isDebug() && log != null && log instanceof FileWriter) {
-			try {
-				log.close();
-				log = null;
 			} catch (IOException e) { /* ignore it */ }
 		}
 	}

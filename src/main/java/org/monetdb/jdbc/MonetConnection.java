@@ -163,31 +163,6 @@ public class MonetConnection
 		}
 		server = new MapiSocket();
 
-		// we're debugging here... uhm, should be off in real life
-		if (validated.isDebug()) {
-			try {
-				String fname = validated.getLogfile();
-				if (fname == null)
-					fname = "monet_" + System.currentTimeMillis() + ".log";
-
-				File f = new File(fname);
-
-				int ext = fname.lastIndexOf('.');
-				if (ext < 0)
-					ext = fname.length();
-				final String pre = fname.substring(0, ext);
-				final String suf = fname.substring(ext);
-
-				for (int i = 1; !f.createNewFile(); i++) {
-					f = new File(pre + "-" + i + suf);
-				}
-
-				server.debug(f.getAbsolutePath());	// enable logging on the MapiSocket level
-			} catch (IOException ex) {
-				throw new SQLNonTransientConnectionException("Opening logfile failed: " + ex.getMessage(), "08M01");
-			}
-		}
-
 		SqlOptionsCallback callback = null;
 		switch (validated.getLanguage()) {
 			case "sql":

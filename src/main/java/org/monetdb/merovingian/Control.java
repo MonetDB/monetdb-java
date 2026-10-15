@@ -53,8 +53,6 @@ public class Control {
 	private final int port;
 	/** The passphrase to use when connecting */
 	private final String passphrase;
-	/** The file we should write MapiSocket debuglog to */
-	private String debug;
 	private int soTimeout = -1; /* -1 means not initialized */
 
 
@@ -82,18 +80,6 @@ public class Control {
 	 */
 	public void setSoTimeout(int timeout) {
 		soTimeout = timeout;
-	}
-
-	/**
-	 * Instructs to write a MCL protocol debug log to the given file.
-	 * This affects any newly performed command, and can be changed
-	 * in between commands.  Passing null to this method disables the
-	 * debug log.
-	 *
-	 * @param filename the filename to write debug information to, or null
-	 */
-	public void setDebug(String filename) {
-		this.debug = filename;
 	}
 
 	private String controlHash(String pass, String salt) {
@@ -137,8 +123,6 @@ public class Control {
 		ms.setLanguage("control");
 		if (soTimeout != -1)
 			ms.setSoTimeout(soTimeout);
-		if (debug != null)
-			ms.debug(debug);
 		try {
 			ms.connect(host, port, "monetdb", passphrase);
 			min = ms.getReader();
