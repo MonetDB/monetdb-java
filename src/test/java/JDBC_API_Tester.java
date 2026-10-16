@@ -914,9 +914,9 @@ public final class JDBC_API_Tester extends JUnitTester {
 			"Resultset with 17 columns\n" +
 			"FUNCTION_CAT	FUNCTION_SCHEM	FUNCTION_NAME	COLUMN_NAME	COLUMN_TYPE	DATA_TYPE	TYPE_NAME	PRECISION	LENGTH	SCALE	RADIX	NULLABLE	REMARKS	CHAR_OCTET_LENGTH	ORDINAL_POSITION	IS_NULLABLE	SPECIFIC_NAME\n" +
 			"char(1)	varchar(1024)	varchar(256)	varchar(256)	smallint	int	varchar(1024)	int	int	smallint	smallint	smallint	char(1)	bigint	int	varchar(3)	varchar(10)\n" +
-			"null	jdbctst	func	val	4	12	varchar	1022	1022	null	null	2	null	4088	0		suppressed\n" +
-			"null	jdbctst	func	dt	3	91	date	0	0	null	null	2	null	null	1		suppressed\n" +
-			"null	jdbctst	func	id	3	4	int	10	4	0	10	2	null	null	2		suppressed\n" +
+			"null	jdbctst	func	val	5	12	varchar	1022	1022	null	null	2	null	4088	0		suppressed\n" +
+			"null	jdbctst	func	dt	5	91	date	0	0	null	null	2	null	null	1		suppressed\n" +
+			"null	jdbctst	func	id	5	4	int	10	4	0	10	2	null	null	2		suppressed\n" +
 			"null	jdbctst	func	id	1	-5	bigint	19	8	0	10	2	null	null	3		suppressed\n" +
 			"null	jdbctst	func	name	1	12	varchar	999	999	null	null	2	null	3996	4		suppressed\n" +
 			"null	jdbctst	func	dt	1	91	date	0	0	null	null	2	null	null	5		suppressed\n");
