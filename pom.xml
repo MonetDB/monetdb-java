@@ -97,7 +97,7 @@
                         <configuration>
                             <rules>
                                 <requireMavenVersion>
-                                    <version>3.9.10</version>
+                                    <version>3.10.0</version>
                                 </requireMavenVersion>
                             </rules>
                         </configuration>
@@ -114,7 +114,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>3.4.1</version>
+                <version>3.5.1</version>
                 <configuration>
                     <archive>
                         <manifest>
@@ -140,7 +140,9 @@
 
             <!-- Let the assembly plugin create a tests jar with dependencies -->
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.8.0</version>
                 <configuration>
                     <!-- <finalName>jdbctests</finalName> -->
                     <!-- <appendAssemblyId>false</appendAssemblyId> -->
@@ -163,7 +165,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
-                <version>3.6.1</version>
+                <version>3.6.2</version>
                 <executions>
                     <execution>
                         <id>parse-version-number</id>
@@ -178,7 +180,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <version>3.7.0</version>
+                <version>3.11.0</version>
                 <executions>
                     <execution>
                         <id>copy-jdbc-jar</id>
@@ -258,7 +260,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.4</version>
+                <version>3.6.0</version>
                 <configuration>
                     <!-- set this explicitly because JDBC_API_Tester does not match the default patterns -->
                     <includes>
