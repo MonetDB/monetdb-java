@@ -101,8 +101,8 @@ jobs:
           - 21
           - 25
           - 26
-        monetdbversion:    # need this to force Dec2025-SP2 as Latest == Dec2025-SP3 is not available on macOS
-          - Dec2025-SP2
+        monetdbversion:
+          - Latest     # occasionally needs to be pinned to the specific version Homebrew serves
         include:
           # Oracle JVM < 17 not supported by actions/setup-java
           - java: 8
