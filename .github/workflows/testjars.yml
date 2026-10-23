@@ -155,7 +155,7 @@ jobs:
           - "monetdb/monetdb:Dec2023-SP4"
           - "monetdb/monetdb:Jun2023-SP3"
           - "monetdb/monetdb:Sep2022-SP3"
-          # These containers are too old to be compatible with our tests
+          # These containers are too old to be compatible with our tests:
           # - "monetdb/monetdb:Jan2022-SP4"
           # - "monetdb/monetdb:Jul2021-SP2"
     runs-on: ubuntu-latest

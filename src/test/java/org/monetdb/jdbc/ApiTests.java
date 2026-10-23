@@ -847,11 +847,17 @@ public class ApiTests {
 	public void testDebug() throws SQLException {
 		// DEBUG has not been supported by MonetDB for a while but the old jdbc test
 		// suite had a test for it so we include it.
-		//
-		// The original test had the following comment:
-		//     From Jun2023 we skip the comparison as it gives a different error msg on power8 platform: syntax error, unexpected IDENT in: "debug"
-		// let's see what happens and adjust this test accordingly
-		assertSQLException("unexpected IDENT", () -> stmt.executeQuery("DEBUG SELECT 42"));
+
+		String expectedErrorMessage;
+		// The precise version boundaries may be wrong but this is enough to pass CI.
+		if (monetVersion.isAtLeast(11, 49, 0)) // Dec2023 and later
+			expectedErrorMessage = "unexpected IDENT";
+		else if (monetVersion.isAtLeast(11, 47, 0)) // Jun2023
+			expectedErrorMessage = "syntax error in: \"debug\"";
+		else  // earlier
+			expectedErrorMessage = "only supported in interactive mode";
+
+		assertSQLException(expectedErrorMessage, () -> stmt.executeQuery("DEBUG SELECT 42"));
 	}
 
 	@Test
