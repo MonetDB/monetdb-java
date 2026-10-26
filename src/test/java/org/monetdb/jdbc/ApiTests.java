@@ -313,8 +313,8 @@ public class ApiTests {
 		// 4c. but commit fails due to the error, causing a rollback
 		// which turns autocommit back on
 		ignoreFailures("COMMIT");
-		assertFalse(conn.getAutoCommit());
-		assertFalse(isActuallyAutoCommit(helper));
+		assertTrue(conn.getAutoCommit());
+		assertTrue(isActuallyAutoCommit(helper));
 
 
 		// At the end of the test, autocommit is on
